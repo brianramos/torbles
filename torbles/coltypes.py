@@ -182,10 +182,13 @@ def _as_us(v):
 
 
 class TimestampCodec(Codec):
+    """TIMESTAMP: code = microseconds since the epoch - min. TIMESTAMP WITH TIME ZONE (zoned=True): the instant's
+    microseconds since the epoch in UTC; decoded with displacement +00:00"""
     kind = "timestamp"; sql_type = "TIMESTAMP"
 
-    def __init__(self, offset=0):
-        self.offset = int(offset); self.affine = None
+    def __init__(self, offset=0, zoned=False):
+        self.offset = int(offset); self.affine = None; self.zoned = bool(zoned)
+        if zoned: self.sql_type = "TIMESTAMP WITH TIME ZONE"
 
     def interval(self, op, v):
         b = _int_bounds(op, _as_us(v))
@@ -195,13 +198,17 @@ class TimestampCodec(Codec):
 
     def literal(self, v):
         if isinstance(v, str): v = _dt.datetime.fromisoformat(v)
+        if self.zoned and isinstance(v, _dt.datetime):
+            if v.tzinfo is not None: v = v.astimezone(_dt.timezone.utc)
+            return f"TIMESTAMPTZ '{v.replace(tzinfo=None).isoformat(sep=' ')}+00'"
         if isinstance(v, _dt.datetime): return f"TIMESTAMP '{v.replace(tzinfo=None).isoformat(sep=' ')}'"
         return f"TIMESTAMP '{_as_date(v).isoformat()} 00:00:00'"
 
     def decode(self, codes):
-        return [EPOCH_TS + _dt.timedelta(microseconds=int(c) + self.offset) for c in np.asarray(codes).tolist()]
+        out = [EPOCH_TS + _dt.timedelta(microseconds=int(c) + self.offset) for c in np.asarray(codes).tolist()]
+        return [x.replace(tzinfo=_dt.timezone.utc) for x in out] if self.zoned else out
 
-    def _state(self): return dict(offset=self.offset)
+    def _state(self): return dict(offset=self.offset, zoned=self.zoned) if self.zoned else dict(offset=self.offset)
 
 
 class DictCodec(Codec):
@@ -287,7 +294,7 @@ def from_json(d, values=None):
     if k == "bool": return BoolCodec()
     if k == "decimal": return DecimalCodec(d["scale"], d["offset"], d.get("sql_type"))
     if k == "date": return DateCodec(d["offset"])
-    if k == "timestamp": return TimestampCodec(d["offset"])
+    if k == "timestamp": return TimestampCodec(d["offset"], d.get("zoned", False))
     if k == "dict": return DictCodec(values if values is not None else [], d.get("sql_type", "VARCHAR"))
     if k == "rank": return RankCodec(from_json(d["base"]), values if values is not None else [])
     raise ValueError(f"unknown column type {k}")

@@ -179,6 +179,20 @@ def nkey(v):
     return v
 
 
+def _ckeys(vals, t):
+    """values -> their comparison keys under the collation of type t (unchanged without one)"""
+    f = T.coll_key(t) if t is not None else None
+    if f is None: return vals
+    return [f(v) if isinstance(v, str) else v for v in vals]
+
+
+def _out_type(q, i):
+    """the type of output column i of a query"""
+    if isinstance(q, I.Select): return q.items[i][0].t
+    if isinstance(q, I.SetOp): return q.items[i][1]
+    return None
+
+
 def cmp_key(desc, nulls_first):
     """a cmp function for sorting values in one direction with NULL placement"""
     def c(a, b):
@@ -204,7 +218,11 @@ def sort_rows(idx, keys, specs):
 # ================================================================== queries
 def run(db, q, engine="alg"):
     """execute a bound statement -> Relation (values as returned to the caller)"""
-    import decimal
+    import decimal, sqlfront
+    T.SESSION["zone"] = getattr(db, "_sql_zone", None)
+    if isinstance(q, sqlfront.SetSession):
+        db._sql_zone = q.zone
+        return Relation([], [], [])
     F.CLOCK["now"] = None
     cx = Cx(db, engine)
     with decimal.localcontext(T.CTX):
@@ -279,6 +297,9 @@ def run_setop(q, cx):
         return out
     ra, rb = conv(a), conv(b)
     op = q.op
+    kf = [T.coll_key(t) for t in types]
+    if any(kf):                                       # collated columns: rows equal when their keys are
+        return _setop_collated(q, ra, rb, kf, names_types=(q.items, types), cx=cx)
     if op == "union":
         rows = ra + rb
         if not q.all: rows = _distinct(rows)
@@ -309,6 +330,37 @@ def run_setop(q, cx):
     return Relation(names, types, rows)
 
 
+def _setop_collated(q, ra, rb, kf, names_types, cx):
+    def key(r): return tuple(nkey(f(v) if f is not None and isinstance(v, str) else v) for v, f in zip(r, kf))
+    if q.op == "union":
+        rows = ra + rb
+        if not q.all:
+            seen, out = set(), []
+            for r in rows:
+                k = key(r)
+                if k not in seen: seen.add(k); out.append(r)
+            rows = out
+    else:
+        cb = {}
+        for r in rb: cb[key(r)] = cb.get(key(r), 0) + 1
+        rows, seen = [], set()
+        for r in ra:
+            k = key(r)
+            if q.all:
+                if (cb.get(k, 0) > 0) == (q.op == "intersect"):
+                    rows.append(r)
+                if cb.get(k, 0) > 0: cb[k] -= 1
+            elif k not in seen and (k in cb) == (q.op == "intersect"):
+                seen.add(k); rows.append(r)
+    items, types = names_types
+    names = [n for n, _ in items]
+    rel = Rel(len(rows))
+    for i in range(len(names)): rel.cols[("pos", i)] = [r[i] for r in rows]
+    order = [(("pos", o[0][1]), o[1], o[2]) for o in q.order]
+    rows = _order_limit(rows, rel, order, q, cx, None)
+    return Relation(names, types, rows)
+
+
 def _distinct(rows):
     seen, out = set(), []
     for r in rows:
@@ -323,14 +375,14 @@ def _order_limit(rows, rel, order, q, cx, extra_rel):
     keys = []
     if order:
         for spec, desc, nf in order:
-            if spec[0] == "pos": keys.append([r[spec[1]] for r in rows])
-            else: keys.append(ev(spec[1], rel, cx))
+            if spec[0] == "pos": keys.append(_ckeys([r[spec[1]] for r in rows], _out_type(q, spec[1])))
+            else: keys.append(_ckeys(ev(spec[1], rel, cx), spec[1].t))
         for kcol in keys:
             for v in kcol:
                 if isinstance(v, Err): raise SqlError(v.msg)
         idx = sort_rows(idx, keys, [(d, nf) for _, d, nf in order])
-    off = _int_param(q.offset, "OFFSET") or 0
-    lim = q.limit
+    off = _int_param(_count_value(q.offset, cx), "OFFSET") or 0
+    lim = _count_value(q.limit, cx)
     if lim is not None:
         if q.percent:
             p = float(lim)
@@ -351,12 +403,77 @@ def _order_limit(rows, rel, order, q, cx, extra_rel):
     return [rows[i] for i in idx]
 
 
+def _count_value(v, cx):
+    """a FETCH / OFFSET count: a constant, or ("expr", e) evaluated now"""
+    if isinstance(v, tuple) and len(v) == 2 and v[0] == "expr":
+        x = ev(v[1], Rel(1), cx)[0]
+        if isinstance(x, Err): raise SqlError(x.msg)
+        if x is None: raise SqlError("FETCH / OFFSET count is NULL")
+        return x
+    return v
+
+
 def _int_param(v, what):
     if v is None: return None
     if isinstance(v, float): v = int(v)
     if isinstance(v, Decimal): v = int(v)
     if not isinstance(v, int) or v < 0: raise SqlError(f"{what} must be a non-negative integer")
     return v
+
+
+# ================================================================== TABLESAMPLE
+_M64 = np.uint64(0xFFFFFFFFFFFFFFFF)
+
+
+def _mix64(x):
+    """splitmix64, element-wise on uint64 (wrapping arithmetic)"""
+    with np.errstate(over="ignore"):
+        z = x + np.uint64(0x9E3779B97F4A7C15)
+        z = (z ^ (z >> np.uint64(30))) * np.uint64(0xBF58476D1CE4E5B9)
+        z = (z ^ (z >> np.uint64(27))) * np.uint64(0x94D049BB133111EB)
+        return z ^ (z >> np.uint64(31))
+
+
+def _sample_seed(sp, cx):
+    """REPEATABLE (seed): that seed; else one random seed per statement"""
+    if sp.seed is not None: return int(sp.seed) & 0xFFFFFFFFFFFFFFFF
+    k = ("sample", id(sp))
+    if k not in cx.memo: cx.memo[k] = int.from_bytes(__import__("os").urandom(8), "little")
+    return cx.memo[k]
+
+
+def sample_mask(n, used, sp, cx):
+    """the stored rows a TABLESAMPLE keeps: BERNOULLI each row, SYSTEM each 64-row block (one word of every plane),
+    with probability p %; RESERVOIR n rows: the n rows of smallest hash. The decision for a row is a hash of the seed
+    and the row's position, so REPEATABLE (s) keeps the same rows in every query."""
+    seed = _mix64(np.array([_sample_seed(sp, cx)], np.uint64))[0]
+    idx = np.arange(n, dtype=np.uint64)
+    unit = (idx >> np.uint64(6)) if sp.method == "system" else idx
+    h = _mix64(unit ^ seed)
+    used = np.asarray(used[:n], bool) if used is not None else np.ones(n, bool)
+    if sp.rows is not None:
+        cand = np.nonzero(used)[0]
+        keep = cand[np.argsort(h[cand], kind="stable")[:sp.rows]]
+        mask = np.zeros(n, bool); mask[keep] = True
+        return mask
+    thr = float(sp.pct) / 100.0 * 2.0 ** 53
+    return ((h >> np.uint64(11)).astype(np.float64) < thr) & used
+
+
+def sample_rel(rel, sp, cx):
+    """a TABLESAMPLE of a multiset (rows standing for cnt rows each): each row kept with probability p (a binomial
+    number of the cnt rows), or n rows drawn without replacement (a multivariate hypergeometric draw)"""
+    rng = np.random.default_rng(_sample_seed(sp, cx))
+    cnt = np.asarray(rel.cnt, np.int64)
+    if sp.rows is not None:
+        k = min(sp.rows, int(cnt.sum()))
+        new = rng.multivariate_hypergeometric(cnt, k) if len(cnt) else cnt
+    else:
+        new = rng.binomial(cnt, float(sp.pct) / 100.0) if len(cnt) else cnt
+    keep = [i for i in range(rel.n) if new[i] > 0]
+    out = rel.take(keep)
+    out.cnt = [int(new[i]) for i in keep]
+    return out
 
 
 # ================================================================== SELECT
@@ -483,8 +600,9 @@ def finish_select(s, rel, aggs, wins, aggplan, cx):
             out = out.take(keep); rows = [rows[i] for i in keep]
         else:
             seen, keep = set(), []
+            kf = [T.coll_key(t) for t in types]
             for i, r in enumerate(rows):
-                k = tuple(nkey(v) for v in r)
+                k = tuple(nkey(f(v) if f is not None and isinstance(v, str) else v) for v, f in zip(r, kf))
                 if k not in seen: seen.add(k); keep.append(i)
             out = out.take(keep); rows = [rows[i] for i in keep]
     rows = _order_limit(rows, out, s.order, s, cx, None)
@@ -498,6 +616,8 @@ def aggregate(s, rel, aggs, aggplan, cx):
         for v in col:
             if isinstance(v, Err): raise SqlError(v.msg)
     sets = s.sets if s.sets is not None else [list(range(len(s.group)))]
+    gkeys = [_ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
+    collated = [gk is not gv for gk, gv in zip(gkeys, gvals)]
     out_groups = []                                  # (set index, key values tuple, member row indexes)
     for si, st in enumerate(sets):
         if not st:                                   # GROUP BY () or no GROUP BY: one group, even with no rows
@@ -505,11 +625,15 @@ def aggregate(s, rel, aggs, aggplan, cx):
         gm = {}
         order = []
         for i in range(rel.n):
-            k = tuple(nkey(gvals[j][i]) for j in st)
+            k = tuple(nkey(gkeys[j][i]) for j in st)
             g = gm.get(k)
             if g is None:
-                g = gm[k] = (tuple(gvals[j][i] for j in st), []); order.append(k)
+                g = gm[k] = (list(gvals[j][i] for j in st), []); order.append(k)
+            else:
+                for p_, j in enumerate(st):
+                    if collated[j] and gvals[j][i] is not None and F.cmp_values(gvals[j][i], g[0][p_]) < 0: g[0][p_] = gvals[j][i]
             g[1].append(i)
+        for k in order: gm[k] = (tuple(gm[k][0]), gm[k][1])
         for k in order:
             vals, members = gm[k]
             out_groups.append((si, vals, members))
@@ -577,7 +701,7 @@ def agg_values(a, rel, members, plan, cx):
     args = [ev(x, rel, cx) for x in a.args]
     filt = truth(ev(a.filter, rel, cx)) if a.filter is not None else None
     fset = set(filt) if filt is not None else None
-    okeys = [ev(o[0], rel, cx) for o in a.order]
+    okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in a.order]
     for col in args + okeys:
         for v in col:
             if isinstance(v, Err): raise SqlError(v.msg)
@@ -593,8 +717,9 @@ def agg_values(a, rel, members, plan, cx):
             rows.append((vals, w, i))
         if a.distinct:
             seen, dd = set(), []
+            akf = [T.coll_key(x.t) for x in a.args]
             for r in rows:
-                k = tuple(nkey(v) for v in r[0])
+                k = tuple(nkey(f(v) if f is not None and isinstance(v, str) else v) for v, f in zip(r[0], akf))
                 if k not in seen: seen.add(k); dd.append((r[0], 1, r[2]))
             rows = dd
         if a.order:
@@ -680,8 +805,8 @@ def compute_windows(wins, rel, cx):
     n = rel.n
     for w in wins:
         if w.key() in rel.cols: continue
-        parts = [ev(p, rel, cx) for p in w.partition]
-        okeys = [ev(o[0], rel, cx) for o in w.order]
+        parts = [_ckeys(ev(p, rel, cx), p.t) for p in w.partition]
+        okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]
         args = [ev(a, rel, cx) for a in w.args]
         filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
         for col in parts + okeys + args:
@@ -1100,9 +1225,16 @@ def plan_star(s, bindings, need, aggs, cx):
             else: return None, None
         lefts[b] = (e[1].name, cf, cd)
     rest = [c for c in conj if id(c) not in consumed]
+    if s.sample is not None or any(b.sample is not None for b in lefts): return None, None
     cx.stats["star_blocks"] += 1
     P = _Planner(s, fact, dims, fks, cx)
     P.left = lefts
+    for b in dims:                                     # a sampled dimension: its kept rows, a row mask
+        if b.sample is not None:
+            t = P.tab[b]
+            P.samples.append(algq.RowMask(t, sample_mask(t.n, t.used, b.sample, cx), (), sql="TABLESAMPLE"))
+    if fact.sample is not None:                       # a sampled fact: its kept rows, ANDed with the passing rows
+        P.fact_sample = sample_mask(fact.table.n, getattr(fact.table, "used", None), fact.sample, cx)
     try: return P.run(rest, need, aggs)
     except _NotStarNow:
         cx.stats["star_blocks"] -= 1
@@ -1129,6 +1261,7 @@ class _Planner:
         self.fkb = dict(fks)                                        # fk name -> dim binding
         self.hidden = {}                                            # fk name -> hidden binding for an implicit join
         self.left, self.nulled = {}, set()                          # LEFT JOIN dims; dims NULL in the current pass
+        self.samples, self.fact_sample = [], None                   # TABLESAMPLE: dimension row masks; fact rows
 
     # columns -------------------------------------------------------------
     def canon(self, col):
@@ -1443,7 +1576,7 @@ class _Planner:
         the ON terms), the dimension's columns NULL in the latter. Each aggregate's per-group state (counts,
         moment sums, extremes) is kept per row of the result, so that the passes add up."""
         joins0 = dict(self.joins)
-        configs = [dict(joined=dict(joins0), nulled=set(), extra=[])]
+        configs = [dict(joined=dict(joins0), nulled=set(), extra=list(self.samples))]
         for b, (fk, cf, cd) in self.left.items():
             tf = None
             if cf:
@@ -1554,9 +1687,9 @@ class _Planner:
             atom_list.append((k, kpos[cb], vpos.get(cb)))
         nkeys = len(keys) + sum(1 for c in {self.canon(c): c for c in atoms.values()}.values()
                                 if self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {}))
-        if nkeys > algq.MAXKEY:
-            # more columns than GROUP BY keys: the passing rows themselves (a row bitmap), their columns read from the
-            # planes; every aggregate is then computed from its arguments' values
+        if nkeys > algq.MAXKEY or self.fact_sample is not None:
+            # more columns than GROUP BY keys (or a sampled fact): the passing rows themselves (a row bitmap), their
+            # columns read from the planes; every aggregate is then computed from its arguments' values
             for k, a in aggs.items():
                 for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
                     for col in I.cols_of(x):
@@ -1731,6 +1864,7 @@ class _Planner:
         for p in preds: q.where(p)
         self.cx.stats["engine_queries"] += 1
         ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
+        if self.fact_sample is not None: ids = ids[self.fact_sample[np.asarray(ids, np.int64)]]
         rel = Rel(len(ids))
         fact = self.tab[self.fact]
         cache = {}
@@ -1936,6 +2070,7 @@ def run_general(s, bindings, need, aggs, cx):
     # WHERE terms on one FROM item that is not on the NULL side of an outer join go down to that item
     where = [fold_subqueries(fold_outer(c, cx), cx) for c in _conjuncts(s.where)]
     pushed, rest = {}, []
+    if s.sample is not None: rest, where = where, []          # USING SAMPLE: after the joins, before WHERE
     for c in where:
         bs = {x.b for x in I.cols_of(c)}
         if len(bs) == 1 and not I.has(c, I.Subq) and not I.has(c, I.Outer) and not next(iter(bs)).outer_null:
@@ -1944,6 +2079,7 @@ def run_general(s, bindings, need, aggs, cx):
             if c.v is not True: rest.append(c)
         else: rest.append(c)
     rel = _materialize(s.from_, per, pushed, cx)
+    if s.sample is not None: rel = sample_rel(rel, s.sample, cx)
     if rest:
         rel = rel.take(truth(ev(_and(rest), rel, cx)))
     return rel, {}
@@ -1958,6 +2094,12 @@ def _materialize(f, per, pushed, cx):
 
 def _mat_binding(b, cols, conds, cx):
     cols = list(cols.values())
+    if b.sample is not None and b.table is None:                # a sampled derived table: a sample of its rows
+        sp, b.sample = b.sample, None
+        try: rel = _mat_binding(b, {c.key(): c for c in cols}, [], cx)
+        finally: b.sample = sp
+        rel = sample_rel(rel, sp, cx)
+        return rel.take(truth(ev(_and(conds), rel, cx))) if conds else rel
     if b.table is not None:
         s = I.Select(); s.from_ = b
         s.items = []; s.where = _and(conds) if conds else None

@@ -16,8 +16,10 @@ import sqlfuncs as F
 # ================================================================== ISO pre-pass
 _TOK = re.compile(r"""
     (?P<ws>\s+) | (?P<lc>--[^\n]*) | (?P<bc>/\*.*?\*/) |
-    (?P<str>[eE]?'(?:[^']|'')*') | (?P<qid>"(?:[^"]|"")*") |
-    (?P<num>(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?) |
+    (?P<ustr>[uU]&'(?:[^']|'')*') | (?P<uqid>[uU]&"(?:[^"]|"")*") | (?P<bstr>[xX]'(?:[^']|'')*') |
+    (?P<str>[eEnN]?'(?:[^']|'')*') | (?P<qid>"(?:[^"]|"")*") |
+    (?P<num>0[xX](?:_?[0-9A-Fa-f])+ | 0[oO](?:_?[0-7])+ | 0[bB](?:_?[01])+ |
+            (?:\d(?:_?\d)*(?:\.(?:\d(?:_?\d)*)?)? | \.\d(?:_?\d)*)(?:[eE][+-]?\d(?:_?\d)*)?) |
     (?P<id>[A-Za-z_][A-Za-z_0-9$]*) |
     (?P<op>::|<=|>=|<>|!=|\|\||->>|->|\*\*|//|<<|>>|!~~\*|!~~|~~\*|~~~|~~|[-+*/%^=<>!~&|(),.;\[\]{}:?#@$])
 """, re.X | re.S)
@@ -30,14 +32,55 @@ class Tok:
     def __repr__(self): return self.s
 
 
+def _unicode_escapes(body, esc, what):
+    """the text of a U&'...' literal or U&"..." identifier: <esc>XXXX and <esc>+XXXXXX are code points, <esc><esc> is
+    the escape character itself (ISO 5.3)"""
+    out, i = [], 0
+    while i < len(body):
+        c = body[i]
+        if c != esc: out.append(c); i += 1; continue
+        if body[i + 1:i + 2] == esc: out.append(esc); i += 2; continue
+        m = re.match(r"\+([0-9A-Fa-f]{6})|([0-9A-Fa-f]{4})", body[i + 1:])
+        if not m: raise SqlError(f"invalid Unicode escape in {what}")
+        cp = int(m.group(1) or m.group(2), 16)
+        if cp > 0x10FFFF or 0xD800 <= cp <= 0xDFFF: raise SqlError(f"invalid Unicode code point {cp:X} in {what}")
+        out.append(chr(cp)); i += 1 + len(m.group(0))
+    return "".join(out)
+
+
+def _num_text(s):
+    """a numeric literal as DuckDB reads it: underscores dropped, 0x / 0o / 0b integers in decimal (ISO 2023 T661, T662)"""
+    s = s.replace("_", "")
+    if len(s) > 2 and s[0] == "0" and s[1] in "xXoObB":
+        return str(int(s[2:], {"x": 16, "o": 8, "b": 2}[s[1].lower()]))
+    return s
+
+
 def tokenize(sql):
     out, i = [], 0
     while i < len(sql):
         m = _TOK.match(sql, i)
         if not m: raise SqlError(f"syntax error at {sql[i:i + 20]!r}")
-        k = m.lastgroup
-        if k not in ("ws", "lc", "bc"): out.append(Tok(k, m.group(0)))
+        k, x = m.lastgroup, m.group(0)
         i = m.end()
+        if k in ("ws", "lc", "bc"): continue
+        if k == "num": x = _num_text(x)
+        elif k in ("ustr", "uqid"):
+            q = x[2]; body = x[3:-1].replace(q + q, q)
+            esc = "\\"
+            m2 = re.match(r"(\s|--[^\n]*|/\*.*?\*/)*UESCAPE\s*'([^'])'", sql[i:], re.I | re.S)
+            if m2:
+                esc = m2.group(2); i += m2.end()
+                if esc in "0123456789abcdefABCDEF+'\" \t\n": raise SqlError(f"invalid UESCAPE character {esc!r}")
+            text = _unicode_escapes(body, esc, "a Unicode literal")
+            if k == "ustr": k, x = "str", "'" + text.replace("'", "''") + "'"
+            else: k, x = "qid", '"' + text.replace('"', '""') + '"'
+        elif k == "str" and x[0] in "nN": x = x[1:]                       # national character literal: one character set
+        if k == "str" and x[0] == "'" and out and out[-1].k == "str" and out[-1].s[0] == "'":
+            out[-1] = Tok("str", out[-1].s[:-1] + x[1:]); continue        # 'a' 'b': one literal (ISO 5.3 separators)
+        if k == "bstr" and out and out[-1].k == "bstr":
+            out[-1] = Tok("bstr", out[-1].s[:-1] + x[2:]); continue
+        out.append(Tok(k, x))
     return out
 
 
@@ -65,6 +108,8 @@ def _match_open(t, j):
 def _operand_back(t, j):
     """start index of the primary expression ending at token j"""
     i = j
+    if t[i].k == "str" and i > 0 and t[i - 1].up() in ("DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL"):
+        return i - 1                                    # a typed literal: TIMESTAMP '...'
     if t[i].s == ")":
         i = _match_open(t, i)
         if i > 0 and t[i - 1].k in ("id", "qid") and t[i - 1].up() not in _KW_BREAK: i -= 1
@@ -280,6 +325,27 @@ def iso_prepass(sql):
                 if e < len(t) and t[e].up() == "ESCAPE":
                     f_end = _operand_fwd(t, e + 1); args.append(_text(t, e + 1, f_end)); e = f_end
                 t[i + 2:e] = tokenize(f"__iso_similar_pat({', '.join(args)})"); changed = True; break
+            # TIMESTAMP / TIME [WITH | WITHOUT TIME ZONE] '<literal>': WITH TIME ZONE when said, or when the literal
+            # has a time zone (ISO 5.3)
+            if u in ("TIMESTAMP", "TIME") and not (prev is not None and prev.up() in ("AS", "WITHOUT", "WITH")):
+                j = i + 1; zoned = None
+                if _kw(t, j, "WITH", "TIME", "ZONE"): zoned = True; j += 3
+                elif _kw(t, j, "WITHOUT", "TIME", "ZONE"): zoned = False; j += 3
+                if j < len(t) and t[j].k == "str" and t[j].s[0] == "'":
+                    lit = t[j].s[1:-1].replace("''", "'")
+                    if zoned is None: zoned = T.has_zone(lit)
+                    name = (u + "TZ") if zoned else u
+                    if name != u or j != i + 1:
+                        t[i:j] = [Tok("id", "TIMESTAMPTZ" if name == "TIMESTAMPTZ" else name)]; changed = True; break
+            # <datetime primary> AT LOCAL  ->  __iso_at_local(...)
+            if u == "AT" and i + 1 < len(t) and t[i + 1].up() == "LOCAL" and i > 0:
+                a = _operand_back(t, i - 1)
+                t[a:i + 2] = [Tok("id", "__iso_at_local"), Tok("op", "(")] + t[a:i] + [Tok("op", ")")]; changed = True; break
+            # TABLESAMPLE BERNOULLI | SYSTEM (p) [REPEATABLE (s)]: p is a percentage (ISO 7.6)
+            if u == "TABLESAMPLE" and i + 2 < len(t) and t[i + 1].up() in ("BERNOULLI", "SYSTEM") and t[i + 2].s == "(":
+                c = _match_paren(t, i + 2)
+                if not any(x.s == "%" or x.up() in ("PERCENT", "ROWS") for x in t[i + 3:c]):
+                    t[c:c] = [Tok("id", "PERCENT")]; changed = True; break
             # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME (the binder keeps the common columns only)
             if u == "CORRESPONDING":
                 t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True; changed = True; break
@@ -312,7 +378,7 @@ _FN_ALIAS = {"**": "power", "^": "power", "~~": "like", "!~~": "not_like", "~~*"
              "instr": "position", "nullif": "nullif", "len": "length", "ucase": "upper", "lcase": "lower", "substr": "substring",
              "datepart": "date_part", "datediff": "date_diff", "datesub": "date_sub", "datetrunc": "date_trunc",
              "get_current_timestamp": "current_timestamp", "now": "current_timestamp", "transaction_timestamp": "current_timestamp",
-             "localtimestamp": "current_timestamp", "localtime": "current_time", "today": "current_date", "pow": "power",
+             "today": "current_date", "pow": "power",
              "truncate": "trunc"}
 _AGG_ALIAS = {"mean": "avg", "variance": "var_samp", "stddev": "stddev_samp", "string_agg": "string_agg", "group_concat": "string_agg",
               "listagg": "string_agg", "list": "array_agg", "arbitrary": "any_value", "bool_and": "every", "any": "bool_or",
@@ -322,6 +388,10 @@ _AGG_ALIAS = {"mean": "avg", "variance": "var_samp", "stddev": "stddev_samp", "s
 _WIN_KIND = {"WINDOW_ROW_NUMBER": "row_number", "WINDOW_RANK": "rank", "WINDOW_RANK_DENSE": "dense_rank",
              "WINDOW_PERCENT_RANK": "percent_rank", "WINDOW_CUME_DIST": "cume_dist", "WINDOW_NTILE": "ntile", "WINDOW_LAG": "lag",
              "WINDOW_LEAD": "lead", "WINDOW_FIRST_VALUE": "first_value", "WINDOW_LAST_VALUE": "last_value", "WINDOW_NTH_VALUE": "nth_value"}
+
+
+_NILADIC = {"CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP", "CURRENT_USER", "USER",
+            "SESSION_USER", "SYSTEM_USER", "CURRENT_ROLE", "CURRENT_CATALOG", "CURRENT_SCHEMA", "CURRENT_PATH"}
 
 
 def lit_of(v, strlit=False):
@@ -341,10 +411,30 @@ def cast_to(e, t, try_=False):
     return I.Cast(e, t, try_)
 
 
+_COLLATED = {"=", "<>", "<", "<=", ">", ">=", "is_distinct", "is_not_distinct", "between", "between_sym", "in", "like",
+             "position", "starts_with", "ends_with", "contains", "replace", "split_part", "strpos"}
+
+
+def _collated_args(name, args):
+    """comparisons of strings under an explicit collation (ISO 9.15): every string argument compared by its key"""
+    colls = {a.t.coll for a in args if getattr(a.t, "coll", None)}
+    if not colls: return args
+    if len(colls) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(colls))}")
+    c = colls.pop()
+    if T.collation(c) is None: return [I.Lit(a.v, T.VARCHAR, getattr(a, "strlit", False)) if isinstance(a, I.Lit) else a for a in args]
+    out = []
+    for a in args:
+        if a.t.id in ("VARCHAR", "NULL") or (isinstance(a, I.Lit) and a.strlit):
+            a = make_func("__ckey", [a, I.Lit(c, T.VARCHAR)])
+        out.append(a)
+    return out
+
+
 def make_func(name, args, extra=None):
     """a typed scalar call: the registry's typer gives the result type and the argument conversions"""
     s = F.SCALARS.get(name)
     if s is None: raise SqlError(f"Scalar Function with name {name} does not exist")
+    if name in _COLLATED: args = _collated_args(name, args)
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
@@ -404,7 +494,19 @@ class Scope:
 def _ieq(a, b): return a == b or a.lower() == b.lower()
 
 
+def _shown(b, c):
+    """the name a FROM item shows for its column c (a table's columns renamed by AS x(a, b, ...))"""
+    d = getattr(b, "display", None)
+    return d.get(c, c) if d else c
+
+
 def _find_col(b, name):
+    if getattr(b, "display", None):
+        for c, t, nl in b.cols:
+            if _shown(b, c) == name: return I.Col(b, c, t, nl)
+        for c, t, nl in b.cols:
+            if _shown(b, c).lower() == name.lower(): return I.Col(b, c, t, nl)
+        return None
     for c, t, nl in b.cols:
         if c == name: return I.Col(b, c, t, nl)
     for c, t, nl in b.cols:
@@ -549,11 +651,13 @@ class Binder:
         if typ == "BASE_TABLE":
             b = self.table_binding(ft["table_name"], ft.get("alias") or None)
             if ft.get("column_name_alias"): b = _rename(b, ft["column_name_alias"])
+            b.sample = _sample_spec(ft.get("sample"))
             out.append(b); return b
         if typ == "SUBQUERY":
             q = self.bind_query(ft["subquery"]["node"], parent)
             names = list(ft.get("column_name_alias") or []) + [n for n, _ in q_columns(q)][len(ft.get("column_name_alias") or []):]
             b = I.Binding(ft.get("alias") or f"subquery{len(out)}", [(n, t, True) for n, (_, t) in zip(names, q_columns(q))], q=q)
+            b.sample = _sample_spec(ft.get("sample"))
             out.append(b); return b
         if typ == "EXPRESSION_LIST":
             rows = []
@@ -582,8 +686,8 @@ class Binder:
             lb, rb = out[:nleft], out[nleft:]
             using = list(ft.get("using_columns") or [])
             if ref == "NATURAL":
-                lnames = {c.lower() for b in lb for c, _, _ in b.cols}
-                using = [c for b in rb for c, _, _ in b.cols if c.lower() in lnames]
+                lnames = {_shown(b, c).lower() for b in lb for c, _, _ in b.cols}
+                using = [_shown(b, c) for b in rb for c, _, _ in b.cols if _shown(b, c).lower() in lnames]
                 if not using: kind = "cross" if kind == "inner" else kind
             j = I.Join(kind, left, right)
             sc = Scope(out, parent)
@@ -628,6 +732,7 @@ class Binder:
         s = I.Select()
         bindings = []
         s.from_ = self.bind_from(node.get("from_table") or {"type": "EMPTY"}, parent, bindings)
+        s.sample = _sample_spec(node.get("sample"))
         using = {}
         def collect(j):
             if isinstance(j, I.Join):
@@ -716,8 +821,8 @@ class Binder:
                     if isinstance(le, I.Func) and le.fn == "__iso_pct":           # ISO FETCH ... PERCENT: ceiling
                         s.percent = "iso"; le = le.args[0]
                     if (t == "LIMIT_PERCENT_MODIFIER" or m.get("limit_type") == "PERCENTAGE") and not s.percent: s.percent = True
-                    s.limit = _const(le, "LIMIT")
-                if off is not None: s.offset = _const(self.expr(off, Scope([], sc), Ctx(where="OFFSET")), "OFFSET")
+                    s.limit = _count_param(le, "FETCH FIRST / LIMIT")
+                if off is not None: s.offset = _count_param(self.expr(off, Scope([], sc), Ctx(where="OFFSET")), "OFFSET")
             elif t == "DISTINCT_MODIFIER":
                 if setop: continue
                 s.distinct = True
@@ -763,10 +868,11 @@ class Binder:
         walk(from_)
         for b in sc.bindings:
             if rel and not _ieq(b.alias, rel): continue
-            for c, t, nl in b.cols:
+            for c0, t, nl in b.cols:
+                c = _shown(b, c0)
                 if c.lower() in excl: continue
-                if not rel and (id(b), c.lower()) in using_cols: continue
-                col = I.Col(b, c, t, nl)
+                if not rel and (id(b), c0.lower()) in using_cols: continue
+                col = I.Col(b, c0, t, nl)
                 if not rel and c.lower() in sc.using and sc.using[c.lower()].key() != col.key() and c.lower() in seen_using: continue
                 if not rel and c.lower() in sc.using:
                     seen_using.add(c.lower()); col = sc.using[c.lower()]
@@ -776,7 +882,7 @@ class Binder:
         return out
 
     def name_of(self, e, x):
-        if isinstance(x, I.Col) and e["class"] == "COLUMN_REF": return x.name
+        if isinstance(x, I.Col) and e["class"] == "COLUMN_REF": return _shown(x.b, x.name)
         loc, ln = e.get("query_location"), e.get("query_location_length")
         if isinstance(loc, int) and isinstance(ln, int) and 0 < ln < 1000 and loc < len(self.text):
             return self.text[loc:loc + ln]
@@ -850,7 +956,10 @@ class Binder:
         if c == "FUNCTION": return self.function(e, sc, ctx)
         if c == "WINDOW": return self.window(e, sc, ctx)
         if c == "SUBQUERY": return self.subquery(e, sc, ctx)
-        if c == "COLLATE": return self.expr(e["child"], sc, ctx)
+        if c == "COLLATE":
+            x = self.expr(e["child"], sc, ctx)
+            if isinstance(x, I.Lit) and x.t.id == "VARCHAR": x = I.Lit(x.v, T.VARCHAR)
+            return self.func("__collate", [x, I.Lit(str(e["collation"]).upper(), T.VARCHAR)])
         if c == "POSITIONAL_REFERENCE": raise SqlError("positional references (#n) are not supported")
         if c == "STAR": raise SqlError("* is only allowed in the SELECT list or COUNT(*)")
         raise SqlError(f"expression {c} is not supported")
@@ -899,6 +1008,8 @@ class Binder:
             s = s.parent; depth += 1
         if len(names) == 1 and ctx.aliases and names[0].lower() in ctx.aliases:      # an output column alias (DuckDB)
             return ctx.aliases[names[0].lower()]
+        if len(names) == 1 and names[0].upper() in _NILADIC:                       # CURRENT_DATE, CURRENT_USER, ...
+            return self.func(names[0].lower(), [])
         raise SqlError(f'Referenced column "{".".join(names)}" not found in FROM clause')
 
     def operator(self, e, sc, ctx):
@@ -968,6 +1079,10 @@ class Binder:
             return self.func("date_part", args)
         if name == "__iso_nth_value_last": raise SqlError("NTH_VALUE ... FROM LAST is only a window function")
         name = _FN_ALIAS.get(name, name)
+        if name.upper() in ("CURRENT_TIME", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP") and len(args) == 1:
+            p = _const(args[0], f"the precision of {name.upper()}")      # CURRENT_TIMESTAMP(p): p fractional digits
+            if not isinstance(p, int) or not 0 <= p <= 6: raise SqlError(f"invalid precision {p} for {name.upper()}")
+            return self.func("__frac_trunc", [self.func(name, []), I.Lit(p, T.INTEGER)])
         if name not in F.SCALARS: raise SqlError(f"Scalar Function with name {e['function_name']} does not exist")
         return self.func(name, args)
 
@@ -1010,6 +1125,10 @@ class Binder:
             params = tuple(_const(a, name[7:]) for a in args)
             if len(params) != len(orders): raise SqlError("hypothetical set function: one argument per ORDER BY column")
             args = [o[0] for o in orders]
+        if name in ("min", "max") and len(args) == 1 and T.coll_key(args[0].t) is not None:
+            # MIN / MAX under a collation: the value of least / greatest key
+            args = [args[0], self.func("__ckey", [args[0], I.Lit(args[0].t.coll, T.VARCHAR)])]
+            name = "arg_min" if name == "min" else "arg_max"
         a = F.AGGS.get(name)
         if a is None: raise SqlError(f"unknown aggregate function {name}")
         if name in ("string_agg", "__iso_listagg") or a.name == "string_agg":
@@ -1098,6 +1217,33 @@ def _frame(e, bind):
     return (mode, a, b)
 
 
+def _sample_spec(sm):
+    """DuckDB's parse of TABLESAMPLE / USING SAMPLE -> I.Sample"""
+    if not sm: return None
+    size = sm.get("sample_size") or {}
+    v = size.get("value")
+    if size.get("is_null") or v is None: raise SqlError("TABLESAMPLE needs a sample size")
+    method = (sm.get("method") or "system").lower()
+    seed = sm.get("seed") if sm.get("repeatable") or (sm.get("seed") is not None and sm.get("seed") >= 0) else None
+    if sm.get("is_percentage"):
+        pct = Decimal(str(v))
+        if not 0 <= pct <= 100: raise SqlError(f"TABLESAMPLE percentage {v} is outside 0 .. 100")
+        return I.Sample("system" if method == "system" else "bernoulli" if method == "bernoulli" else method, pct=pct, seed=seed)
+    n = int(v)
+    if n < 0: raise SqlError("TABLESAMPLE: a negative number of rows")
+    return I.Sample("reservoir", rows=n, seed=seed)
+
+
+def _count_param(e, where):
+    """a row count of FETCH FIRST / OFFSET: a constant, or an expression without columns (a scalar subquery, a
+    parameter-free expression: ISO F860 / F865), evaluated when the query runs"""
+    try: return _const(e, where)
+    except SqlError:
+        if I.cols_of(e) or I.has(e, I.Outer) or I.has(e, I.Agg) or I.has(e, I.Win):
+            raise SqlError(f"{where} must not reference columns")
+        return ("expr", e)
+
+
 def _const(e, where):
     if isinstance(e, I.Lit): return e.v
     if isinstance(e, I.Func) and e.fn == "list_value" and all(isinstance(a, I.Lit) for a in e.args): return [a.v for a in e.args]
@@ -1112,10 +1258,15 @@ def _is_plain_col(x, n): return isinstance(x, I.Col) and x.name.lower() == n.low
 
 
 def _rename(b, names):
+    """a table under AS x(a, b, ...): its first columns shown (and referenced) by the new names; a stored table keeps
+    its column names underneath (the planes are read by them)"""
+    if len(names) > len(b.cols): raise SqlError(f"table {b.alias} has {len(b.cols)} columns, {len(names)} names given")
+    if b.table is not None:
+        nb = I.Binding(b.alias, b.cols, table=b.table, q=b.q)
+        nb.display = {c: names[i] for i, (c, _, _) in enumerate(b.cols) if i < len(names)}
+        return nb
     cols = [(names[i] if i < len(names) else c, t, nl) for i, (c, t, nl) in enumerate(b.cols)]
-    nb = I.Binding(b.alias, cols, table=b.table, q=b.q)
-    nb.renamed = {names[i]: c for i, (c, _, _) in enumerate(b.cols) if i < len(names)}
-    return nb
+    return I.Binding(b.alias, cols, table=b.table, q=b.q)
 
 
 def _visible_cols(t):
@@ -1199,12 +1350,52 @@ def _first_col(x, gk):
     return "?"
 
 
+class SetSession:
+    """SET TIME ZONE ... (ISO 19.4) / SET TimeZone = ... : changes the SQL-session time zone of the database"""
+    def __init__(self, zone): self.zone = zone          # a tzinfo, or None: the default (LOCAL)
+
+
+def split_statements(sql):
+    """the statements of a script (top-level semicolons; strings, identifiers and comments respected)"""
+    out, start = [], 0
+    for m in _TOK.finditer(sql):
+        if m.lastgroup == "op" and m.group(0) == ";":
+            out.append(sql[start:m.start()]); start = m.end()
+    out.append(sql[start:])
+    return [x for x in out if tokenize(x)]
+
+
+def _set_statement(db, text):
+    """SET TIME ZONE LOCAL | <interval or zone name>, SET TimeZone = 'zone' / SET timezone TO 'zone' (None: not a SET)"""
+    t = tokenize(text)
+    if not t or t[0].up() != "SET": return None
+    if _kw(t, 1, "TIME", "ZONE"):
+        rest = t[3:]
+        if len(rest) == 1 and rest[0].up() == "LOCAL": return SetSession(None)
+        expr = _text(rest, 0, len(rest))
+    elif len(t) >= 3 and t[1].up() in ("TIMEZONE", "TIME_ZONE") and (t[2].s == "=" or t[2].up() == "TO"):
+        expr = _text(t, 3, len(t))
+        if len(t) == 4 and t[3].up() in ("LOCAL", "DEFAULT"): return SetSession(None)
+    else:
+        raise SqlError(f"SET {t[1].s if len(t) > 1 else ''}: only SET TIME ZONE is supported")
+    q = bind(db, "SELECT " + expr)[0]
+    import sqlexec
+    v = sqlexec.run(db, q).rows[0][0]
+    if isinstance(v, __import__("datetime").timedelta): v = T.Interval(0, 0, v // __import__("datetime").timedelta(microseconds=1))
+    return SetSession(T.zone_of(v))
+
+
 def bind(db, sql):
     """SQL text -> [bound statement]"""
-    nodes, text = parse(sql)
-    flags = dict(FLAGS)
+    T.SESSION["zone"] = getattr(db, "_sql_zone", None)
     out = []
-    for n in nodes:
-        b = Binder(db, text, flags)
-        out.append(b.bind_statement(n))
+    for text in split_statements(sql):
+        st = _set_statement(db, text)
+        if st is not None:
+            out.append(st); db._sql_zone = st.zone; T.SESSION["zone"] = st.zone; continue
+        nodes, ptext = parse(text)
+        flags = dict(FLAGS)
+        for n in nodes:
+            b = Binder(db, ptext, flags)
+            out.append(b.bind_statement(n))
     return out

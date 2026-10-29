@@ -20,16 +20,19 @@ class SqlError(Exception):
 
 
 class SqlType:
-    __slots__ = ("id", "p", "s", "child")
+    """a data type; coll: the explicit collation of a character string (COLLATE), not part of the type's identity"""
+    __slots__ = ("id", "p", "s", "child", "coll")
 
-    def __init__(self, id, p=None, s=None, child=None):
-        self.id, self.p, self.s, self.child = id, p, s, child
+    def __init__(self, id, p=None, s=None, child=None, coll=None):
+        self.id, self.p, self.s, self.child, self.coll = id, p, s, child, coll
 
     def __eq__(self, o): return isinstance(o, SqlType) and (self.id, self.p, self.s, self.child) == (o.id, o.p, o.s, o.child)
     def __hash__(self): return hash((self.id, self.p, self.s, self.child))
     def __repr__(self):
         if self.id == "DECIMAL": return f"DECIMAL({self.p},{self.s})"
         if self.id == "LIST": return f"{self.child!r}[]"
+        if self.id in _DISPLAY: return _DISPLAY[self.id]
+        if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
     __str__ = __repr__
 
@@ -43,7 +46,12 @@ class SqlType:
     @property
     def floating(self): return self.id in ("FLOAT", "DOUBLE")
     @property
-    def temporal(self): return self.id in ("DATE", "TIME", "TIMESTAMP")
+    def temporal(self): return self.id in ("DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ")
+    @property
+    def zoned(self): return self.id in ("TIMESTAMPTZ", "TIMETZ")
+
+
+_DISPLAY = {"TIMESTAMPTZ": "TIMESTAMP WITH TIME ZONE", "TIMETZ": "TIME WITH TIME ZONE"}
 
 
 INT_RANGE = {"TINYINT": (-2**7, 2**7 - 1), "SMALLINT": (-2**15, 2**15 - 1), "INTEGER": (-2**31, 2**31 - 1),
@@ -56,6 +64,7 @@ _INT_ORDER = ["TINYINT", "UTINYINT", "SMALLINT", "USMALLINT", "INTEGER", "UINTEG
 BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, HUGEINT = (SqlType(x) for x in ("BOOLEAN", "TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT"))
 UTINYINT, USMALLINT, UINTEGER, UBIGINT, UHUGEINT = (SqlType(x) for x in ("UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT"))
 FLOAT, DOUBLE, VARCHAR, DATE, TIME, TIMESTAMP, INTERVAL, NULL, BLOB = (SqlType(x) for x in ("FLOAT", "DOUBLE", "VARCHAR", "DATE", "TIME", "TIMESTAMP", "INTERVAL", "NULL", "BLOB"))
+TIMESTAMPTZ, TIMETZ = SqlType("TIMESTAMPTZ"), SqlType("TIMETZ")
 def DECIMAL(p=18, s=3): return SqlType("DECIMAL", min(int(p), 38), int(s))
 def LIST(t): return SqlType("LIST", child=t)
 
@@ -67,6 +76,9 @@ _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYIN
           "FLOAT8": "DOUBLE", "DOUBLE PRECISION": "DOUBLE", "VARCHAR": "VARCHAR", "TEXT": "VARCHAR", "STRING": "VARCHAR",
           "CHAR": "VARCHAR", "BPCHAR": "VARCHAR", "CHARACTER": "VARCHAR", "CHARACTER VARYING": "VARCHAR", "NVARCHAR": "VARCHAR",
           "DATE": "DATE", "TIME": "TIME", "TIMESTAMP": "TIMESTAMP", "DATETIME": "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE": "TIMESTAMP",
+          "TIME WITHOUT TIME ZONE": "TIME", "TIMESTAMPTZ": "TIMESTAMPTZ", "TIMESTAMP WITH TIME ZONE": "TIMESTAMPTZ",
+          "TIMETZ": "TIMETZ", "TIME WITH TIME ZONE": "TIMETZ", "TIMESTAMP_US": "TIMESTAMP",
+          "TIMESTAMP_S": "TIMESTAMP", "TIMESTAMP_MS": "TIMESTAMP", "TIMESTAMP_NS": "TIMESTAMP",
           "INTERVAL": "INTERVAL", "BLOB": "BLOB", "BYTEA": "BLOB", "VARBINARY": "BLOB", "NULL": "NULL"}
 
 
@@ -79,9 +91,9 @@ def type_from_name(name, args=()):
         a = [int(x) for x in args] if args else [int(x) for x in (m.group(2), m.group(3)) if x is not None] if m else []
         if not a: return DECIMAL(18, 3)
         return DECIMAL(a[0], a[1] if len(a) > 1 else 0)
-    u = re.sub(r"\s*\(.*\)$", "", u)                      # VARCHAR(20), CHAR(3), TIMESTAMP(6): the length is not kept
+    u = re.sub(r"\s*\(\s*\d+\s*\)", "", u)                  # VARCHAR(20), CHAR(3), TIMESTAMP(6): the length is not kept
+    u = re.sub(r"\s*\(.*\)$", "", u)
     if u in _NAMES: return SqlType(_NAMES[u])
-    if u.startswith("TIMESTAMP"): return TIMESTAMP
     raise SqlError(f"type {name} is not supported")
 
 
@@ -93,6 +105,49 @@ def from_codec(cd):
     except SqlError: pass
     k = getattr(cd, "kind", "")
     return {"bool": BOOLEAN, "date": DATE, "timestamp": TIMESTAMP, "dict": VARCHAR}.get(k, BIGINT)
+
+
+# ------------------------------------------------------------------ collations
+def _noaccent(x):
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", x) if not unicodedata.combining(c))
+
+
+def _nfc(x):
+    import unicodedata
+    return unicodedata.normalize("NFC", x)
+
+
+_COLLATIONS = {"BINARY": None, "C": None, "POSIX": None, "UCS_BASIC": None, "SQL_TEXT": None, "SQL_IDENTIFIER": None,
+               "SQL_CHARACTER": None, "NOCASE": str.lower, "NOACCENT": _noaccent, "NFC": _nfc}
+
+
+def collation(name):
+    """a collation's name -> its key function on strings (None: code point order). NOCASE, NOACCENT, NFC and their
+    combinations (NOCASE.NOACCENT) as in DuckDB; UCS_BASIC (ISO), BINARY, C, POSIX: code point order."""
+    parts = [x.strip().upper() for x in str(name).split(".") if x.strip()]
+    fns = []
+    for x in parts:
+        if x not in _COLLATIONS:
+            if x in ("UNICODE", "UCA", "DEFAULT"):
+                raise SqlError(f"collation {name}: the Unicode Collation Algorithm is not available (use NOCASE, NOACCENT, NFC, BINARY)")
+            raise SqlError(f"unknown collation {name!r} (NOCASE, NOACCENT, NFC, BINARY, UCS_BASIC, C, POSIX)")
+        if _COLLATIONS[x] is not None: fns.append(_COLLATIONS[x])
+    if not fns: return None
+    def key(v, fns=tuple(fns)):
+        for f in fns: v = f(v)
+        return v
+    return key
+
+
+def coll_key(t):
+    """the comparison key function of a type's collation (None: values compare as they are)"""
+    c = getattr(t, "coll", None)
+    return collation(c) if c else None
+
+
+def with_coll(t, name):
+    return SqlType(t.id, t.p, t.s, t.child, name.upper())
 
 
 # ------------------------------------------------------------------ intervals
@@ -175,6 +230,8 @@ def supertype(a, b, literal_a=False, literal_b=False):
         s = max(da.s, db.s); w = max(da.p - da.s, db.p - db.s)
         return DECIMAL(min(38, w + s), s)
     if {a.id, b.id} == {"DATE", "TIMESTAMP"}: return TIMESTAMP
+    if {a.id, b.id} in ({"DATE", "TIMESTAMPTZ"}, {"TIMESTAMP", "TIMESTAMPTZ"}): return TIMESTAMPTZ
+    if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
     if a.id == "VARCHAR" or b.id == "VARCHAR": return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
     if a.id == "BOOLEAN" and b.numeric: return b
@@ -219,8 +276,87 @@ def _parse_int_str(x):
 
 
 _DATE_RE = re.compile(r"\s*(-?\d{1,6})-(\d{1,2})-(\d{1,2})(?:\s*\(BC\))?\s*$")
-_TS_RE = re.compile(r"\s*(-?\d{1,6})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?)?\s*(?:Z|[+-]\d{2}(?::?\d{2})?)?\s*$")
-_TIME_RE = re.compile(r"\s*(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?\s*$")
+_ZONE = r"(Z|UTC|GMT|[+-]\d{1,2}(?::?\d{2})?|[A-Za-z][A-Za-z0-9_+\-]*(?:/[A-Za-z0-9_+\-]+)+)"
+_TS_RE = re.compile(r"\s*(-?\d{1,6})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?)?\s*" + _ZONE + r"?\s*$")
+_TIME_RE = re.compile(r"\s*(\d{1,2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?\s*" + _ZONE + r"?\s*$")
+
+
+# ------------------------------------------------------------------ time zones
+# A value WITH TIME ZONE is an instant together with its time zone displacement (ISO/IEC 9075-2 4.6): a Python
+# datetime / time whose tzinfo is a fixed offset. Values WITHOUT TIME ZONE meet zoned ones through the SQL-session
+# time zone (SET TIME ZONE; by default the machine's zone, like DuckDB's TimeZone setting).
+SESSION = {"zone": None}
+
+
+def _default_zone():
+    import os
+    for name in (os.environ.get("TZ", "").lstrip(":"),):
+        if name:
+            try: return zone_of(name)
+            except SqlError: pass
+    try:
+        link = os.path.realpath("/etc/localtime")
+        if "zoneinfo/" in link: return zone_of(link.split("zoneinfo/", 1)[1])
+    except OSError: pass
+    return _dt.timezone.utc
+
+
+def session_zone():
+    if SESSION["zone"] is None: SESSION["zone"] = _default_zone()
+    return SESSION["zone"]
+
+
+def zone_of(spec):
+    """a time zone from 'UTC', 'Z', '+02:00', '-0530', 'Europe/Paris', or an interval (a displacement)"""
+    if isinstance(spec, _dt.tzinfo): return spec
+    if isinstance(spec, Interval):
+        if spec.months or spec.days: raise SqlError("a time zone displacement must be an interval of hours and minutes")
+        us = spec.micros
+        if abs(us) > 18 * 3_600_000_000 or us % 60_000_000: raise SqlError(f"invalid time zone displacement {spec}")
+        return _dt.timezone(_dt.timedelta(microseconds=us))
+    s = str(spec).strip()
+    if s.upper() in ("Z", "UTC", "GMT", "ZULU", "UCT", "UNIVERSAL", "ETC/UTC"): return _dt.timezone.utc
+    m = re.fullmatch(r"(?:UTC|GMT)?([+-])(\d{1,2})(?::?(\d{2}))?", s, re.I)
+    if m:
+        h, mi = int(m.group(2)), int(m.group(3) or 0)
+        if h > 18 or mi > 59: raise SqlError(f"invalid time zone displacement {s!r}")
+        off = _dt.timedelta(hours=h, minutes=mi)
+        return _dt.timezone(-off if m.group(1) == "-" else off)
+    try:
+        import zoneinfo
+        return zoneinfo.ZoneInfo(s)
+    except Exception:
+        raise SqlError(f"unknown time zone {s!r}")
+
+
+def fixed(aware):
+    """a zoned value with its displacement as a fixed offset (named zones resolve to their offset at that instant)"""
+    if isinstance(aware.tzinfo, _dt.timezone): return aware
+    return aware.replace(tzinfo=_dt.timezone(aware.utcoffset()))
+
+
+def localize(naive, zone=None):
+    """a TIMESTAMP (or TIME) taken as local time in zone (default: the session's) -> its zoned value"""
+    z = zone_of(zone) if zone is not None else session_zone()
+    if isinstance(naive, _dt.time):
+        off = _dt.datetime.combine(_dt.date.today(), naive).replace(tzinfo=z).utcoffset()
+        return naive.replace(tzinfo=_dt.timezone(off))
+    return fixed(naive.replace(tzinfo=z))
+
+
+def in_zone(aware, zone=None):
+    """the same instant with the displacement of zone (default: the session's)"""
+    z = zone_of(zone) if zone is not None else session_zone()
+    if isinstance(aware, _dt.time):
+        d = _dt.datetime.combine(_dt.date(2000, 1, 3), aware.replace(tzinfo=None)) - aware.utcoffset()
+        d = d.replace(tzinfo=_dt.timezone.utc).astimezone(z)
+        return d.timetz().replace(tzinfo=_dt.timezone(d.utcoffset()))
+    return fixed(aware.astimezone(z))
+
+
+def local(aware):
+    """a zoned value as local time of the session (TIMESTAMP / TIME WITHOUT TIME ZONE)"""
+    return in_zone(aware).replace(tzinfo=None)
 
 
 def parse_date(s):
@@ -230,21 +366,59 @@ def parse_date(s):
     except ValueError: raise SqlError(f"Conversion Error: date field value out of range: \"{s}\"")
 
 
-def parse_timestamp(s):
+def _parse_ts(s):
     m = _TS_RE.match(s)
     if not m: raise SqlError(f"Conversion Error: invalid timestamp field format: \"{s}\"")
     frac = (m.group(7) or "").ljust(6, "0")[:6]
     try:
-        return _dt.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4) or 0), int(m.group(5) or 0),
-                            int(m.group(6) or 0), int(frac or 0))
+        v = _dt.datetime(int(m.group(1)), int(m.group(2)), int(m.group(3)), int(m.group(4) or 0), int(m.group(5) or 0),
+                         int(m.group(6) or 0), int(frac or 0))
     except ValueError: raise SqlError(f"Conversion Error: timestamp field value out of range: \"{s}\"")
+    return v, m.group(8)
 
 
-def parse_time(s):
+def has_zone(s):
+    """does a datetime string carry a time zone (ISO: its literal is WITH TIME ZONE)?"""
+    m = _TS_RE.match(s) or _TIME_RE.match(s)
+    return bool(m and m.group(m.re.groups))
+
+
+def parse_timestamp(s):
+    """TIMESTAMP (WITHOUT TIME ZONE) from text; a time zone in the text is ignored (DuckDB, PostgreSQL)"""
+    return _parse_ts(s)[0]
+
+
+def parse_timestamptz(s):
+    v, z = _parse_ts(s)
+    if z: return fixed(v.replace(tzinfo=zone_of(z)))
+    return localize(v)
+
+
+def _parse_tm(s):
     m = _TIME_RE.match(s)
     if not m: raise SqlError(f"Conversion Error: invalid time field format: \"{s}\"")
     frac = (m.group(4) or "").ljust(6, "0")[:6]
-    return _dt.time(int(m.group(1)), int(m.group(2)), int(m.group(3) or 0), int(frac or 0))
+    try: v = _dt.time(int(m.group(1)), int(m.group(2)), int(m.group(3) or 0), int(frac or 0))
+    except ValueError: raise SqlError(f"Conversion Error: time field value out of range: \"{s}\"")
+    return v, m.group(5)
+
+
+def parse_time(s): return _parse_tm(s)[0]
+
+
+def parse_timetz(s):
+    v, z = _parse_tm(s)
+    if z:
+        zz = zone_of(z)
+        return v.replace(tzinfo=zz if isinstance(zz, _dt.timezone) else _dt.timezone(_dt.datetime.combine(_dt.date.today(), v).replace(tzinfo=zz).utcoffset()))
+    return localize(v)
+
+
+def fmt_offset(off):
+    """+HH or +HH:MM (DuckDB's and ISO's text of a displacement)"""
+    us = off // _dt.timedelta(microseconds=1); sg = "-" if us < 0 else "+"; us = abs(us)
+    h, mi = us // 3_600_000_000, us // 60_000_000 % 60
+    return f"{sg}{h:02d}" + (f":{mi:02d}" if mi else "")
 
 
 _IV_UNITS = {"year": (12, 0, 0), "years": (12, 0, 0), "y": (12, 0, 0), "month": (1, 0, 0), "months": (1, 0, 0), "mon": (1, 0, 0),
@@ -303,13 +477,15 @@ def to_text(v, t):
         return format(v, "f")
     if isinstance(v, float): return fmt_double(v)
     if isinstance(v, _dt.datetime):
-        s = v.strftime("%Y-%m-%d %H:%M:%S")
+        s = f"{v.year:04d}-{v.month:02d}-{v.day:02d} {v.hour:02d}:{v.minute:02d}:{v.second:02d}"
         if v.microsecond: s += f".{v.microsecond:06d}".rstrip("0")
+        if v.tzinfo is not None: s += fmt_offset(v.utcoffset())
         return s
     if isinstance(v, _dt.date): return v.isoformat()
     if isinstance(v, _dt.time):
         s = v.strftime("%H:%M:%S")
         if v.microsecond: s += f".{v.microsecond:06d}".rstrip("0")
+        if v.tzinfo is not None: s += fmt_offset(v.utcoffset())
         return s
     if isinstance(v, Interval): return str(v)
     if isinstance(v, list): return "[" + ", ".join("NULL" if x is None else to_text(x, t.child if t is not None and t.id == "LIST" else None) for x in v) + "]"
@@ -381,20 +557,32 @@ def _cast(v, src, dst, err):
             raise SqlError(f"Conversion Error: could not convert string '{v}' to BOOLEAN")
         raise SqlError(f"Conversion Error: cannot cast {src} to BOOLEAN")
     if d == "DATE":
-        if isinstance(v, _dt.datetime): return v.date()
+        if isinstance(v, _dt.datetime): return (local(v) if v.tzinfo is not None else v).date()
         if isinstance(v, _dt.date): return v
         if isinstance(v, str): return parse_date(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to DATE")
     if d == "TIMESTAMP":
-        if isinstance(v, _dt.datetime): return v
+        if isinstance(v, _dt.datetime): return local(v) if v.tzinfo is not None else v
         if isinstance(v, _dt.date): return _dt.datetime(v.year, v.month, v.day)
         if isinstance(v, str): return parse_timestamp(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to TIMESTAMP")
+    if d == "TIMESTAMPTZ":
+        if isinstance(v, _dt.datetime): return fixed(v) if v.tzinfo is not None else localize(v)
+        if isinstance(v, _dt.date): return localize(_dt.datetime(v.year, v.month, v.day))
+        if isinstance(v, str): return parse_timestamptz(v)
+        raise SqlError(f"Conversion Error: cannot cast {src} to TIMESTAMP WITH TIME ZONE")
     if d == "TIME":
-        if isinstance(v, _dt.datetime): return v.time()
-        if isinstance(v, _dt.time): return v
+        if isinstance(v, _dt.datetime): return (local(v) if v.tzinfo is not None else v).time()
+        if isinstance(v, _dt.time): return local(v) if v.tzinfo is not None else v
         if isinstance(v, str): return parse_time(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to TIME")
+    if d == "TIMETZ":
+        if isinstance(v, _dt.datetime):
+            a = fixed(v) if v.tzinfo is not None else localize(v)
+            return a.timetz()
+        if isinstance(v, _dt.time): return fixed(v) if v.tzinfo is not None else localize(v)
+        if isinstance(v, str): return parse_timetz(v)
+        raise SqlError(f"Conversion Error: cannot cast {src} to TIME WITH TIME ZONE")
     if d == "INTERVAL":
         if isinstance(v, Interval): return v
         if isinstance(v, str): return parse_interval(v)
@@ -420,9 +608,9 @@ def py_type(v):
         return DECIMAL(max(p, 1), s)
     if isinstance(v, float): return DOUBLE
     if isinstance(v, str): return VARCHAR
-    if isinstance(v, _dt.datetime): return TIMESTAMP
+    if isinstance(v, _dt.datetime): return TIMESTAMP if v.tzinfo is None else TIMESTAMPTZ
     if isinstance(v, _dt.date): return DATE
-    if isinstance(v, _dt.time): return TIME
+    if isinstance(v, _dt.time): return TIME if v.tzinfo is None else TIMETZ
     if isinstance(v, (Interval, _dt.timedelta)): return INTERVAL
     raise SqlError(f"no SQL type for {type(v).__name__}")
 

@@ -130,6 +130,8 @@ def _arith_typer(op):
 
 def _temporal_arith(op, a, b, args):
     I, D, TS, TM = "INTERVAL", "DATE", "TIMESTAMP", "TIME"
+    if a.zoned or b.zoned:                         # WITH TIME ZONE: the same rules, zoned results
+        return _zoned_arith(op, a, b, args)
     if _strlit(args[0]) and b.id in (D, TS, I): a = b if op != "-" or b.id == I else a
     if _strlit(args[1]) and a.id in (D, TS) and op == "-": b = a
     if _strlit(args[1]) and a.id in (D, TS, TM) and op in ("+", "-") and b.id == "VARCHAR": b = T.INTERVAL
@@ -153,6 +155,23 @@ def _temporal_arith(op, a, b, args):
         if a.id == I and b.numeric: return T.INTERVAL, None
         if b.id == I and a.numeric: return T.INTERVAL, None
     if op == "/" and a.id == I and b.numeric: return T.INTERVAL, None
+    return None
+
+
+def _zoned_arith(op, a, b, args):
+    I, Z, ZT = "INTERVAL", "TIMESTAMPTZ", "TIMETZ"
+    # a string literal on the other side: an interval, or (subtracted from a timestamp) a timestamp
+    if _strlit(args[0]) and op == "+" and b.id in (Z, ZT): a = T.INTERVAL
+    if _strlit(args[1]) and a.id in (Z, ZT):
+        b = T.TIMESTAMPTZ if op == "-" and a.id == Z and re.match(r"\s*-?\d{1,6}-\d", str(args[1].v)) else T.INTERVAL
+    ids = (a.id, b.id)
+    if a.id in (Z, "TIMESTAMP", "DATE") and b.id in (Z, "TIMESTAMP", "DATE") and op == "-": return T.INTERVAL, [T.TIMESTAMPTZ, T.TIMESTAMPTZ]
+    if op == "+" and ids in ((Z, I), (I, Z)): return T.TIMESTAMPTZ, [a if a.id != "VARCHAR" else T.INTERVAL, b if b.id != "VARCHAR" else T.INTERVAL]
+    if op == "-" and ids == (Z, I): return T.TIMESTAMPTZ, None
+    if op == "+" and ids in ((ZT, I), (I, ZT)): return T.TIMETZ, None
+    if op == "-" and ids == (ZT, I): return T.TIMETZ, None
+    if op == "-" and a.id in (ZT, "TIME") and b.id in (ZT, "TIME"): return T.INTERVAL, [T.TIMETZ, T.TIMETZ]
+    if op == "+" and ids in (("DATE", ZT), (ZT, "DATE")): return T.TIMESTAMPTZ, None
     return None
 
 
@@ -186,7 +205,7 @@ def _add(a, b):
 def _time_add(t, iv, sign):
     us = (t.hour * 3600 + t.minute * 60 + t.second) * 1_000_000 + t.microsecond + sign * iv.micros
     us %= 86_400_000_000
-    return _dt.time(us // 3_600_000_000, us // 60_000_000 % 60, us // 1_000_000 % 60, us % 1_000_000)
+    return _dt.time(us // 3_600_000_000, us // 60_000_000 % 60, us // 1_000_000 % 60, us % 1_000_000, tzinfo=t.tzinfo)
 
 
 def _sub(a, b):
@@ -195,6 +214,8 @@ def _sub(a, b):
     if isinstance(b, Interval) and isinstance(a, (_dt.date, _dt.datetime)): return T.add_interval(a, b, -1)
     if isinstance(a, _dt.time) and isinstance(b, Interval): return _time_add(a, b, -1)
     if isinstance(a, _dt.time) and isinstance(b, _dt.time):
+        if a.tzinfo is not None and b.tzinfo is not None:            # TIME WITH TIME ZONE: compare the UTC times
+            a, b = T.in_zone(a, _dt.timezone.utc), T.in_zone(b, _dt.timezone.utc)
         return Interval(0, 0, ((a.hour - b.hour) * 3600 + (a.minute - b.minute) * 60 + a.second - b.second) * 1_000_000 + a.microsecond - b.microsecond)
     if isinstance(a, _dt.datetime) or isinstance(b, _dt.datetime):
         d = _to_dt(a) - _to_dt(b)
@@ -270,6 +291,10 @@ def cmp_values(a, b):
     as its midnight)"""
     if isinstance(a, _dt.date) and isinstance(b, _dt.date) and isinstance(a, _dt.datetime) != isinstance(b, _dt.datetime):
         a, b = _to_dt(a), _to_dt(b)
+    if isinstance(a, (_dt.datetime, _dt.time)) and isinstance(b, (_dt.datetime, _dt.time)) and (a.tzinfo is None) != (b.tzinfo is None):
+        a = T.localize(a) if a.tzinfo is None else a; b = T.localize(b) if b.tzinfo is None else b
+        if isinstance(a, _dt.time):
+            a, b = T.in_zone(a, _dt.timezone.utc).replace(tzinfo=None), T.in_zone(b, _dt.timezone.utc).replace(tzinfo=None)
     if isinstance(a, float) or isinstance(b, float):
         an, bn = a != a, b != b
         if an or bn: return 0 if an and bn else (1 if an else -1)
@@ -895,9 +920,22 @@ def _parts(f, d):
         if f in ("second", "seconds", "sec", "s"): return d.micros // 1_000_000 % 60
         if f == "epoch": return (d.months * 30 * 86400 + d.days * 86400) + d.micros / 1e6
         raise SqlError(f"EXTRACT({f}) from an interval is not supported")
+    if f in ("timezone", "timezone_hour", "timezone_minute"):
+        # ISO: the displacement of the value (0 for a value without time zone)
+        off = d.utcoffset() if isinstance(d, (_dt.datetime, _dt.time)) and d.tzinfo is not None else None
+        us = 0 if off is None else off // _dt.timedelta(microseconds=1)
+        sg = -1 if us < 0 else 1; us = abs(us)
+        if f == "timezone": return sg * us // 1_000_000
+        if f == "timezone_hour": return sg * (us // 3_600_000_000)
+        return sg * (us // 60_000_000 % 60)
     if isinstance(d, _dt.time):
+        names = {"hour": "hour", "hours": "hour", "h": "hour", "hr": "hour", "minute": "minute", "minutes": "minute", "min": "minute",
+                 "m": "minute", "second": "second", "seconds": "second", "sec": "second", "s": "second", "millisecond": "millisecond",
+                 "milliseconds": "millisecond", "ms": "millisecond", "microsecond": "microsecond", "microseconds": "microsecond",
+                 "us": "microsecond", "epoch": "epoch"}
+        if f not in names: raise SqlError(f"EXTRACT({f}) from a time is not supported")
         return {"hour": d.hour, "minute": d.minute, "second": d.second, "millisecond": d.second * 1000 + d.microsecond // 1000,
-                "microsecond": d.second * 1_000_000 + d.microsecond, "epoch": d.hour * 3600 + d.minute * 60 + d.second + d.microsecond / 1e6}[f]
+                "microsecond": d.second * 1_000_000 + d.microsecond, "epoch": d.hour * 3600 + d.minute * 60 + d.second + d.microsecond / 1e6}[names[f]]
     dd = d.date() if isinstance(d, _dt.datetime) else d
     if f in ("year", "years", "yr", "y"): return d.year
     if f in ("month", "months", "mon"): return d.month
@@ -921,8 +959,8 @@ def _parts(f, d):
     if f in ("millisecond", "milliseconds", "ms", "msec"): return tm.second * 1000 + tm.microsecond // 1000
     if f in ("microsecond", "microseconds", "us", "usec"): return tm.second * 1_000_000 + tm.microsecond
     if f in ("epoch",):
-        e = tm - _dt.datetime(1970, 1, 1); return e.days * 86400 + e.seconds + e.microseconds / 1e6
-    if f in ("timezone", "timezone_hour", "timezone_minute"): return 0
+        e = tm - (_dt.datetime(1970, 1, 1, tzinfo=_dt.timezone.utc) if tm.tzinfo is not None else _dt.datetime(1970, 1, 1))
+        return e.days * 86400 + e.seconds + e.microseconds / 1e6
     raise SqlError(f"unknown date part {f!r}")
 
 
@@ -963,6 +1001,8 @@ def _make_time(h, mi, s): return _dt.time(h, mi, int(s), int(round((s - int(s)) 
 
 
 def _trunc_dt(f, d):
+    if isinstance(d, _dt.datetime) and d.tzinfo is not None:        # zoned: truncate its local time, keep its zone
+        return T.fixed(_trunc_dt(f, d.replace(tzinfo=None)).replace(tzinfo=d.tzinfo))
     f = f.lower(); t = _to_dt(d)
     if f in ("millennium",): return _dt.datetime((t.year // 1000) * 1000, 1, 1)
     if f in ("century",): return _dt.datetime((t.year // 100) * 100, 1, 1)
@@ -980,7 +1020,7 @@ def _trunc_dt(f, d):
     raise SqlError(f"unknown date part {f!r}")
 
 
-@scalar("date_trunc datetrunc", lambda a: (T.TIMESTAMP, None))
+@scalar("date_trunc datetrunc", lambda a: (T.TIMESTAMPTZ if a[1].t.zoned else T.TIMESTAMP, None))
 def _date_trunc(f, d): return _trunc_dt(f, d)
 
 
@@ -988,8 +1028,12 @@ def _months_between(a, b):
     return (b.year - a.year) * 12 + (b.month - a.month)
 
 
-@scalar("date_diff datediff", lambda a: (T.BIGINT, [None, T.TIMESTAMP if a[1].t.id == "TIMESTAMP" or a[2].t.id == "TIMESTAMP" else None,
-                                                     T.TIMESTAMP if a[1].t.id == "TIMESTAMP" or a[2].t.id == "TIMESTAMP" else None]))
+def _dd_t(a):
+    if a[1].t.zoned or a[2].t.zoned: return T.TIMESTAMPTZ
+    return T.TIMESTAMP if a[1].t.id == "TIMESTAMP" or a[2].t.id == "TIMESTAMP" else None
+
+
+@scalar("date_diff datediff", lambda a: (T.BIGINT, [None, _dd_t(a), _dd_t(a)]))
 def _date_diff(f, a, b):
     f = f.lower(); A, B = _to_dt(a), _to_dt(b)
     if f in ("year", "years", "yr", "y"): return B.year - A.year
@@ -1092,18 +1136,75 @@ def _hms(s, end, start="HOUR"):
     return us
 
 
-# the clock: one instant per query (set by the executor)
+# the clock: one instant per statement (set by the executor), seen in the SQL-session time zone
 CLOCK = {"now": None}
 
 
 def _now():
-    if CLOCK["now"] is None: CLOCK["now"] = _dt.datetime.now()
-    return CLOCK["now"]
+    """CURRENT_TIMESTAMP: the statement's instant with the session's displacement"""
+    if CLOCK["now"] is None: CLOCK["now"] = _dt.datetime.now(_dt.timezone.utc)
+    return T.in_zone(CLOCK["now"])
 
 
 scalar("current_date today", fixed(T.DATE), deterministic=False)(lambda: _now().date())
-scalar("current_timestamp now get_current_timestamp localtimestamp transaction_timestamp", fixed(T.TIMESTAMP), deterministic=False)(lambda: _now())
-scalar("current_time localtime get_current_time", fixed(T.TIME), deterministic=False)(lambda: _now().time())
+scalar("current_timestamp now get_current_timestamp transaction_timestamp", fixed(T.TIMESTAMPTZ), deterministic=False)(lambda: _now())
+scalar("localtimestamp", fixed(T.TIMESTAMP), deterministic=False)(lambda: _now().replace(tzinfo=None))
+scalar("current_time get_current_time", fixed(T.TIMETZ), deterministic=False)(lambda: _now().timetz())
+scalar("localtime", fixed(T.TIME), deterministic=False)(lambda: _now().time())
+
+
+def _at_typer(args):
+    """x AT TIME ZONE z / x AT LOCAL (ISO 6.36): the same instant with another displacement, WITH TIME ZONE"""
+    x = args[1]
+    if x.t.id in ("TIME", "TIMETZ"): return T.TIMETZ, [None, T.TIMETZ]
+    if x.t.id in ("TIMESTAMP", "TIMESTAMPTZ", "DATE") or _strlit(x): return T.TIMESTAMPTZ, [None, T.TIMESTAMPTZ]
+    raise SqlError(f"AT TIME ZONE needs a datetime, not {x.t}")
+
+
+@scalar("timezone __iso_at_zone", _at_typer)
+def _at_zone(z, x): return T.in_zone(x, z)
+
+
+@scalar("__frac_trunc", same_as())
+def _frac_trunc(v, p):
+    """a datetime with p fractional digits of seconds (TIMESTAMP(p), CURRENT_TIMESTAMP(p))"""
+    q = 10 ** (6 - p)
+    return v.replace(microsecond=v.microsecond // q * q)
+
+
+scalar("__iso_at_local", lambda a: _at_typer([None] + list(a)), deterministic=False)(lambda x: T.in_zone(x))
+
+
+# SQL-session values (ISO 6.4 <general value specification>)
+def _user():
+    import getpass
+    try: return getpass.getuser()
+    except Exception: return "torbles"
+
+
+scalar("current_user user session_user system_user", fixed(T.VARCHAR), deterministic=False)(_user)
+scalar("current_role", fixed(T.VARCHAR), nulls="custom", deterministic=False)(lambda: None)
+scalar("current_catalog current_database", fixed(T.VARCHAR), deterministic=False)(lambda: "memory")
+scalar("current_schema", fixed(T.VARCHAR), deterministic=False)(lambda: "main")
+scalar("current_path", fixed(T.VARCHAR), deterministic=False)(lambda: '"main"')
+
+
+# ------------------------------------------------------------------ collations
+def _collate_typer(args):
+    x, c = args
+    if x.t.id not in ("VARCHAR", "NULL"): raise SqlError(f"COLLATE applies to character strings, not {x.t}")
+    T.collation(c.v)                                  # an unknown collation fails here
+    return T.with_coll(T.VARCHAR, c.v), None
+
+
+scalar("__collate", _collate_typer)(lambda x, c: x)                 # the value itself; the type carries the collation
+
+
+@scalar("__ckey", fixed(T.VARCHAR))
+def _ckey(x, c):
+    """the comparison key of a string under a collation"""
+    f = T.collation(c)
+    return f(x) if f is not None else x
 
 
 # ------------------------------------------------------------------ others

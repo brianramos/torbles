@@ -29,6 +29,7 @@ import keydesign
 FORMAT = 1
 _INT_TYPES = {"TINYINT", "SMALLINT", "INTEGER", "BIGINT", "UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "HUGEINT", "UHUGEINT"}
 _TS_TYPES = {"TIMESTAMP", "TIMESTAMP_S", "TIMESTAMP_MS"}
+_TSTZ_TYPES = {"TIMESTAMP WITH TIME ZONE", "TIMESTAMPTZ"}
 _FLOAT_TYPES = {"FLOAT", "DOUBLE", "REAL"}
 
 
@@ -355,7 +356,7 @@ class Database:
 
     def _pk_rows(self, name, pk, typ, n):
         """how a key value finds its row: (kind, data). Rows are in key order, so row = rank of the key."""
-        if _base_type(typ) in ("int", "date", "bool", "ts"):
+        if _base_type(typ) in ("int", "date", "bool", "ts", "tstz"):
             r = _raw(pk, typ)
             k = self.con.execute(f"SELECT CAST({r} AS BIGINT) AS k FROM {self._t(name)} ORDER BY {_q(pk)}").fetchnumpy()["k"]
             return ("int", np.asarray(k, np.int64))
@@ -480,6 +481,7 @@ def _base_type(t):
     if u.startswith("DECIMAL") or u.startswith("NUMERIC"): return "dec"
     if u == "DATE": return "date"
     if u in _TS_TYPES: return "ts"
+    if u in _TSTZ_TYPES: return "tstz"
     if u == "BOOLEAN": return "bool"
     if u in ("VARCHAR", "TEXT", "STRING") or u.startswith("VARCHAR"): return "str"
     if u in _FLOAT_TYPES: return "float"
@@ -490,7 +492,7 @@ def _supported(t):
     b = _base_type(t)
     if b != "other": return True, None
     u = t.upper()
-    if u.startswith("TIMESTAMP"): return False, f"type {t}: use TIMESTAMP (microseconds, no time zone)"
+    if u.startswith("TIMESTAMP"): return False, f"type {t}: use TIMESTAMP or TIMESTAMP WITH TIME ZONE (microseconds)"
     return False, f"type {t} is not supported"
 
 
@@ -504,6 +506,7 @@ def _raw_expr(col, typ):
     if b == "bool": return f"CAST({col} AS INTEGER)"
     if b == "date": return f"({col} - DATE '1970-01-01')"
     if b == "ts": return f"epoch_us(CAST({col} AS TIMESTAMP))"
+    if b == "tstz": return f"epoch_us({col})"
     if b == "dec":
         s = _dec_scale(typ)
         # |v| < 10^(p - s), so v * 10^s < 10^p <= 10^38: exact in DECIMAL(38, s) and in HUGEINT
@@ -522,6 +525,7 @@ def _codec(typ, lo):
     if b == "bool": return ct.BoolCodec() if lo == 0 else ct.IntCodec(lo, "BOOLEAN")
     if b == "date": return ct.DateCodec(lo)
     if b == "ts": return ct.TimestampCodec(lo)
+    if b == "tstz": return ct.TimestampCodec(lo, zoned=True)
     if b == "dec": return ct.DecimalCodec(_dec_scale(typ), lo, typ.upper())
     raise ValueError(typ)
 
@@ -534,6 +538,9 @@ def _int_values(vals, typ):
         s = _dec_scale(typ); return [Decimal((int(int(v) < 0), tuple(map(int, str(abs(int(v))))), -s)) for v in vals]
     if b == "date": return [ct.EPOCH + __import__("datetime").timedelta(days=v) for v in vals]
     if b == "ts": return [ct.EPOCH_TS + __import__("datetime").timedelta(microseconds=v) for v in vals]
+    if b == "tstz":
+        import datetime as _d
+        return [(ct.EPOCH_TS + _d.timedelta(microseconds=v)).replace(tzinfo=_d.timezone.utc) for v in vals]
     return vals
 
 
@@ -542,6 +549,7 @@ def _fill_literal(typ, v):
     if b == "str": return "'" + str(v).replace("'", "''") + "'"
     if b == "date": return f"DATE '{v}'"
     if b == "ts": return f"TIMESTAMP '{v}'"
+    if b == "tstz": return f"TIMESTAMPTZ '{v}'"
     if b == "bool": return "TRUE" if v else "FALSE"
     return f"CAST({v} AS {typ})"
 

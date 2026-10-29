@@ -239,11 +239,19 @@ class Binding:
     def __init__(self, alias, cols, table=None, q=None, rows=None):
         self.alias, self.cols, self.table, self.q, self.rows = alias, list(cols), table, q, rows
         self.outer_null = False
+        self.sample = None                     # TABLESAMPLE: a Sample
     def col(self, name):
         for c, t, nl in self.cols:
             if c == name: return Col(self, c, t, nl)
         return None
     def __repr__(self): return f"Binding({self.alias})"
+
+
+class Sample:
+    """TABLESAMPLE BERNOULLI | SYSTEM (p) [REPEATABLE (seed)] (ISO 7.6), or a number of rows (DuckDB's USING SAMPLE n
+    ROWS / RESERVOIR): method bernoulli | system | reservoir; pct or rows; seed None when not repeatable"""
+    def __init__(self, method, pct=None, rows=None, seed=None):
+        self.method, self.pct, self.rows, self.seed = method, pct, rows, seed
 
 
 class Join:
@@ -267,6 +275,7 @@ class Select:
         self.distinct_on = None
         self.order = []                       # [(expr, desc, nulls_first)]
         self.limit = None; self.offset = None; self.with_ties = False; self.percent = False
+        self.sample = None                    # USING SAMPLE (DuckDB): on the FROM result, before WHERE
 
 
 class SetOp:
@@ -436,6 +445,7 @@ def to_sql(q):
     else: raise T.SqlError("this query cannot be rendered as SQL text")
     if q.order:
         out += " ORDER BY " + ", ".join(f"{(str(o[0][1] + 1) if o[0][0] == 'pos' else expr_sql(o[0][1]))} {'DESC' if o[1] else 'ASC'} NULLS {'FIRST' if o[2] else 'LAST'}" for o in q.order)
-    if q.limit is not None: out += f" LIMIT {q.limit}" + (" PERCENT" if q.percent else "")
-    if q.offset is not None: out += f" OFFSET {q.offset}"
+    cnt = lambda v: f"({expr_sql(v[1])})" if isinstance(v, tuple) else str(v)
+    if q.limit is not None: out += f" LIMIT {cnt(q.limit)}" + (" PERCENT" if q.percent else "")
+    if q.offset is not None: out += f" OFFSET {cnt(q.offset)}"
     return out
