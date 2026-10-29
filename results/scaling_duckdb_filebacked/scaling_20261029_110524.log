@@ -1,0 +1,75 @@
+== torble 1.0.0-rc1 scaling benchmark
+model name	: Intel(R) Core(TM) Ultra 9 290HX Plus
+WSL: 24 cores, 54 GiB memory
+NVIDIA GeForce RTX 5090 Laptop GPU, 24463 MiB, 610.74
+== build
+libgpu.so: native build
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+tensor cores: tile matrix product, tensor-core b1 MMA (mma.sync.m16n8k256 and.popc), self-test passed
+
+== SF1 (6M fact rows)
+SF1: generated in 4s, DuckDB load 1s; {'customer': 30000, 'part': 200000, 'supplier': 2000, 'date': 2556, 'lineorder': 6001171}
+generated and loaded in 5 s
+ingestion (24 build threads): dimensions 0.10 s, fact columns read from DuckDB 0.36 s, keys re-encoded 0.01 s, torble build 0.11 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.1 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 0.67 GiB
+all results match DuckDB
+
+== SF3 (18M fact rows)
+SF3: generated in 11s, DuckDB load 3s; {'customer': 90000, 'part': 400000, 'supplier': 6000, 'date': 2556, 'lineorder': 17996656}
+generated and loaded in 14 s
+ingestion (24 build threads): dimensions 0.18 s, fact columns read from DuckDB 1.21 s, keys re-encoded 0.03 s, torble build 0.29 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.2 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 1.75 GiB
+all results match DuckDB
+
+== SF10 (60M fact rows)
+ingestion (24 build threads): dimensions 0.29 s, fact columns read from DuckDB 3.14 s, keys re-encoded 0.08 s, torble build 0.95 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.3 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 5.54 GiB
+all results match DuckDB
+
+== SF30 (180M fact rows)
+SF30: generated in 114s, DuckDB load 33s; {'customer': 900000, 'part': 1000000, 'supplier': 60000, 'date': 2556, 'lineorder': 179998484}
+generated and loaded in 147 s
+ingestion (24 build threads): dimensions 0.47 s, fact columns read from DuckDB 13.93 s, keys re-encoded 0.33 s, torble build 4.52 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.7 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 16.45 GiB
+all results match DuckDB
+
+== SF50 (300M fact rows)
+SF50: generated in 209s, DuckDB load 69s; {'customer': 1500000, 'part': 1200000, 'supplier': 100000, 'date': 2556, 'lineorder': 300005884}
+generated and loaded in 281 s
+ingestion (24 build threads): dimensions 0.79 s, fact columns read from DuckDB 26.18 s, keys re-encoded 0.69 s, torble build 13.06 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 1.6 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+SF50 derived    Q2.1 cpu-mm@24T: first   1520.0 ms  best     33.3 ms engine   33.0 ms   DuckDB 24T best    125.7 ms  MISMATCH  on cpu  joins ['part:cubes', 'supplier:cubes']
+SF50 derived    Q4.1 cpu-mm@24T: first    761.5 ms  best     43.9 ms engine   43.7 ms   DuckDB 24T best    229.4 ms  MISMATCH  on cpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF50 derived    Q4.2 cpu-mm@24T: first     54.1 ms  best     38.2 ms engine   37.9 ms   DuckDB 24T best    190.1 ms  MISMATCH  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF50 derived    Q4.3 cpu-mm@24T: first     21.8 ms  best     21.1 ms engine   20.5 ms   DuckDB 24T best    147.4 ms  MISMATCH  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF50 derived    Q2.1 gpu-word: first      3.3 ms  best      2.9 ms engine    2.8 ms kernel   2.44 ms   DuckDB 24T best    125.7 ms  MISMATCH  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF50 derived    Q4.1 gpu-word: first      3.4 ms  best      3.4 ms engine    3.3 ms kernel   3.00 ms   DuckDB 24T best    229.4 ms  MISMATCH  on gpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF50 derived    Q4.2 gpu-word: first      3.1 ms  best      3.1 ms engine    3.1 ms kernel   2.78 ms   DuckDB 24T best    190.1 ms  MISMATCH  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF50 derived    Q4.3 gpu-word: first      2.0 ms  best      2.0 ms engine    1.7 ms kernel   1.33 ms   DuckDB 24T best    147.4 ms  MISMATCH  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+peak memory 27.44 GiB
+MISMATCHES
+
+== thread scaling at SF10
+all results match DuckDB
+13 official SSB queries, total ms, best of 3, end to end
+  SF         rows     DuckDB  torble CPU  torble GPU  GPU kernels  GPU vs DuckDB  all match
+   1    6,001,171       62.0        15.0         4.6         0.67          13.5x  True
+   3   17,996,656      112.0        29.2         5.8         1.64          19.5x  True
+  10   59,986,214      250.8        78.9         8.9         4.67          28.2x  True
+  30  179,998,484      734.3       221.1        18.8        14.04          39.1x  True
+  50  300,005,884     1497.5       359.4        29.8        25.25          50.2x  False
+
+threads at SF10:
+    1 threads: DuckDB   2803.3 ms   torble CPU    981.5 ms
+    2 threads: DuckDB   1501.8 ms   torble CPU    512.5 ms
+    4 threads: DuckDB    793.6 ms   torble CPU    264.5 ms
+    8 threads: DuckDB    449.1 ms   torble CPU    147.2 ms
+   12 threads: DuckDB    349.9 ms   torble CPU    109.9 ms
+   16 threads: DuckDB    299.2 ms   torble CPU     90.9 ms
+   24 threads: DuckDB    260.3 ms   torble CPU     82.1 ms
+
+== done. Results: /mnt/c/Users/brian/Documents/torble-1.0.0-rc1/results/scaling

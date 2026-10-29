@@ -1,0 +1,9 @@
+10,000,000 fact rows; promo 2000 intervals, events 500, milestones 40, tiers 10
+query                                         torble 1T  torble 2T  DuckDB 2T Duck pre 2T  join pairs
+I1 promo interval join, by kind                  28.3ms     21.3ms  47781.6ms      49.5ms  233,790,881
+I2 + customer join, by region x kind            109.5ms     68.0ms  43781.6ms     131.4ms  233,790,881
+I3 band join date in [day-3, day+3], count       10.3ms      8.1ms   7355.3ms      36.4ms  13,637,303
+I4 inequality date < start, region 3             30.3ms     31.0ms    528.5ms      48.0ms  39,333,781
+I5 price tiers (range lookup), by tier           41.5ms     23.3ms   1003.5ms      80.4ms  10,000,000
+I6 filtered promos + fact filter, total          28.7ms     20.7ms   6076.1ms      51.4ms  49,442,324
+all engines agree

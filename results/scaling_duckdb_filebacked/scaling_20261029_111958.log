@@ -1,0 +1,35 @@
+== torble 1.0.0-rc1 scaling benchmark
+model name	: Intel(R) Core(TM) Ultra 9 290HX Plus
+WSL: 24 cores, 54 GiB memory
+NVIDIA GeForce RTX 5090 Laptop GPU, 24463 MiB, 610.74
+== build
+libgpu.so: native build
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+tensor cores: tile matrix product, tensor-core b1 MMA (mma.sync.m16n8k256 and.popc), self-test passed
+
+== SF50 (300M fact rows)
+ingestion (24 build threads): dimensions 0.58 s, fact columns read from DuckDB 17.80 s, keys re-encoded 0.41 s, torble build 6.17 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 1.9 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 27.36 GiB
+all results match DuckDB
+
+== thread scaling at SF10
+all results match DuckDB
+13 official SSB queries, total ms, best of 3, end to end
+  SF         rows     DuckDB  torble CPU  torble GPU  GPU kernels  GPU vs DuckDB  all match
+   1    6,001,171       62.0        15.0         4.6         0.67          13.5x  True
+   3   17,996,656      112.0        29.2         5.8         1.64          19.5x  True
+  10   59,986,214      250.8        78.9         8.9         4.67          28.2x  True
+  30  179,998,484      734.3       221.1        18.8        14.04          39.1x  True
+  50  300,005,884     1221.6       344.1        29.1        24.25          41.9x  True
+
+threads at SF10:
+    1 threads: DuckDB   2829.4 ms   torble CPU    880.0 ms
+    2 threads: DuckDB   1468.4 ms   torble CPU    446.1 ms
+    4 threads: DuckDB    764.1 ms   torble CPU    230.0 ms
+    8 threads: DuckDB    442.6 ms   torble CPU    126.6 ms
+   12 threads: DuckDB    342.9 ms   torble CPU     97.4 ms
+   16 threads: DuckDB    296.8 ms   torble CPU     81.9 ms
+   24 threads: DuckDB    263.6 ms   torble CPU     77.2 ms
+
+== done. Results: /mnt/c/Users/brian/Documents/torble-1.0.0-rc1/results/scaling

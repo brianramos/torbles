@@ -1,0 +1,256 @@
+== torble 1.0.0-rc1
+model name	: Intel(R) Core(TM) Ultra 9 290HX Plus
+WSL: 24 cores
+NVIDIA GeForce RTX 5090 Laptop GPU, 24463 MiB, 610.74
+Build cuda_13.3.r13.3/compiler.38244171_0
+== python environment
+== build
+cc -O2 -march=native -shared -fPIC torble/alg.c -o torble/libalg.so -lpthread
+g++ -O2 -DEMULATE -x c++ -shared -fPIC torble/gpu.cu -o torble/libgpu_emu.so
+libgpu.so: native build
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+tensor cores: tile matrix product, tensor-core b1 MMA (mma.sync.m16n8k256 and.popc), self-test passed
+== every correctness test (GPU tests on the GPU)
+torble 1.0.0rc1 | CPU kernel: AVX2 (vpshufb popcount) | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+== CPU engine vs plain columns vs DuckDB
+  star schema, every join form, 1/2 threads    ok   (0.6s)
+  edge cases and fixes                         ok   (0.8s)
+  order-encoded bounds (rnd as bounds)         ok   (4.1s)
+  range / band / inequality joins              ok   (4.4s)
+  derived surrogates                           ok   (3.9s)
+  additive deltas (moved dimension rows)       ok   (3.2s)
+  self-extending (64-bit) columns              ok   (0.5s)
+  compiled-plan reuse                          ok   (0.9s)
+== GROUP BY modes
+  previous GROUP BY path (mask split / rows)   ok   (0.5s)
+  planner without native planning or cache     ok   (0.5s)
+== GPU executor vs CPU engine (CUDA)
+  GPU per-word kernel (default)                ok   (0.7s)
+  GPU tile matrix product, __popc              ok   (0.7s)
+  GPU tile matrix product, tensor cores        ok   (0.7s)
+  GPU with dense group arrays (split mode)     ok   (0.7s)
+== CPU kernel variants
+  matrix product, scalar popcount              ok   (0.5s)
+
+ALL TESTS PASSED
+== official SSB data (SF10)
+== DuckDB (1 and 24 threads)
+SF10 Q1.1 1T: first    758.4 ms  best    175.2 ms
+SF10 Q1.2 1T: first    175.3 ms  best    174.2 ms
+SF10 Q1.3 1T: first    155.4 ms  best    153.5 ms
+SF10 Q2.1 1T: first    774.4 ms  best    212.2 ms
+SF10 Q2.2 1T: first    192.0 ms  best    191.4 ms
+SF10 Q2.3 1T: first    155.6 ms  best    155.0 ms
+SF10 Q3.1 1T: first    496.8 ms  best    334.7 ms
+SF10 Q3.2 1T: first    205.5 ms  best    180.2 ms
+SF10 Q3.3 1T: first    118.2 ms  best    120.7 ms
+SF10 Q3.4 1T: first    106.0 ms  best    101.0 ms
+SF10 Q4.1 1T: first    660.9 ms  best    353.6 ms
+SF10 Q4.2 1T: first    359.3 ms  best    341.0 ms
+SF10 Q4.3 1T: first    232.3 ms  best    215.3 ms
+SF10 K1 1T: first    100.4 ms  best     96.7 ms
+SF10 K2 1T: first     88.4 ms  best     87.8 ms
+SF10 K3 1T: first     63.9 ms  best     62.5 ms
+SF10 M1 1T: first    877.5 ms  best    870.2 ms
+SF10 M2 1T: first   1148.2 ms  best   1127.2 ms
+SF10 M3 1T: first    392.8 ms  best    389.1 ms
+SF10 Q1.1 24T: first     19.7 ms  best     16.4 ms
+SF10 Q1.2 24T: first     13.9 ms  best     12.1 ms
+SF10 Q1.3 24T: first     10.8 ms  best     10.9 ms
+SF10 Q2.1 24T: first     29.8 ms  best     21.4 ms
+SF10 Q2.2 24T: first     21.2 ms  best     19.2 ms
+SF10 Q2.3 24T: first     14.2 ms  best     13.7 ms
+SF10 Q3.1 24T: first     29.9 ms  best     26.9 ms
+SF10 Q3.2 24T: first     20.1 ms  best     17.4 ms
+SF10 Q3.3 24T: first     13.5 ms  best     13.1 ms
+SF10 Q3.4 24T: first     10.9 ms  best     10.0 ms
+SF10 Q4.1 24T: first     33.9 ms  best     30.8 ms
+SF10 Q4.2 24T: first     36.9 ms  best     32.5 ms
+SF10 Q4.3 24T: first     22.5 ms  best     22.1 ms
+SF10 K1 24T: first      9.7 ms  best      8.9 ms
+SF10 K2 24T: first      6.8 ms  best      6.3 ms
+SF10 K3 24T: first      7.5 ms  best      6.0 ms
+SF10 M1 24T: first     60.4 ms  best     61.2 ms
+SF10 M2 24T: first     76.0 ms  best     73.4 ms
+SF10 M3 24T: first     26.4 ms  best     25.2 ms
+== torble (derived-surrogate keys): CPU 1 and 24 threads, GPU (per-word kernel = default, tile kernel, dense groups)
+ingestion (24 build threads): dimensions 0.30 s, fact columns read from DuckDB 3.23 s, keys re-encoded 0.08 s, torble build 0.99 s
+official keys recovered from the stored surrogates (projection / arithmetic), all rows: {'lo_custkey': True, 'lo_suppkey': True, 'lo_partkey': True, 'lo_orderdate': True}
+SF10 derived keys: 59,986,214 rows, fetch+re-encode 3.7s, torble build 1.0s, fk bits {'lo_custkey': 29, 'lo_suppkey': 25, 'lo_partkey': 32, 'lo_orderdate': 12} = 98, lineorder torble 3103 MiB
+  key fields: {'customer': {'c_region': 3, 'c_nation': 3, 'c_city': 4, 'official key': 19}, 'supplier': {'s_region': 3, 's_nation': 3, 's_city': 4, 'official key': 15}, 'part': {'p_mfgr': 3, 'p_category': 3, 'p_brand1': 6, 'official key': 20}, 'date': 'year|month|day by arithmetic'}
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.3 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+CPU matrix kernel: AVX2 (vpshufb popcount)
+SF10 derived    Q1.1 cpu-mm@1T: first     89.2 ms  best     89.2 ms engine   89.1 ms   DuckDB 1T best    175.2 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    Q1.2 cpu-mm@1T: first     41.7 ms  best     39.5 ms engine   39.5 ms   DuckDB 1T best    174.2 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    Q1.3 cpu-mm@1T: first     66.4 ms  best     65.1 ms engine   65.0 ms   DuckDB 1T best    153.5 ms  match  on cpu  joins ['date:comparators']
+SF10 derived    Q2.1 cpu-mm@1T: first   1049.3 ms  best     71.7 ms engine   71.4 ms   DuckDB 1T best    212.2 ms  match  on cpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q2.2 cpu-mm@1T: first     99.5 ms  best     69.9 ms engine   69.7 ms   DuckDB 1T best    191.4 ms  match  on cpu  joins ['part:comparators', 'supplier:cubes']
+SF10 derived    Q2.3 cpu-mm@1T: first     35.7 ms  best     34.9 ms engine   34.8 ms   DuckDB 1T best    155.0 ms  match  on cpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q3.1 cpu-mm@1T: first    397.6 ms  best    130.8 ms engine  130.5 ms   DuckDB 1T best    334.7 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.2 cpu-mm@1T: first    180.4 ms  best     46.2 ms engine   45.7 ms   DuckDB 1T best    180.2 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.3 cpu-mm@1T: first     60.9 ms  best     53.8 ms engine   53.5 ms   DuckDB 1T best    120.7 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.4 cpu-mm@1T: first     52.9 ms  best     51.4 ms engine   51.2 ms   DuckDB 1T best    101.0 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']
+SF10 derived    Q4.1 cpu-mm@1T: first    581.5 ms  best    114.3 ms engine  114.1 ms   DuckDB 1T best    353.6 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF10 derived    Q4.2 cpu-mm@1T: first     84.5 ms  best     73.1 ms engine   72.8 ms   DuckDB 1T best    341.0 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    Q4.3 cpu-mm@1T: first     49.4 ms  best     48.1 ms engine   47.6 ms   DuckDB 1T best    215.3 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    K1 cpu-mm@1T: first    325.8 ms  best     88.6 ms engine   88.4 ms   DuckDB 1T best     96.7 ms  match  on cpu  joins ['customer:comparators']
+SF10 derived    K2 cpu-mm@1T: first     31.9 ms  best     30.5 ms engine   30.5 ms   DuckDB 1T best     87.8 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    K3 cpu-mm@1T: first     43.9 ms  best     32.1 ms engine   32.0 ms   DuckDB 1T best     62.5 ms  match  on cpu  joins ['supplier:cubes']
+SF10 derived    M1 cpu-mm@1T: first    229.6 ms  best    226.4 ms engine  226.2 ms   DuckDB 1T best    870.2 ms  match  on cpu  joins []
+SF10 derived    M2 cpu-mm@1T: first   1038.0 ms  best   1028.4 ms engine 1028.2 ms   DuckDB 1T best   1127.2 ms  match  on cpu  joins []
+SF10 derived    M3 cpu-mm@1T: first   1212.9 ms  best   1217.0 ms engine 1216.8 ms   DuckDB 1T best    389.1 ms  match  on cpu  joins []
+SF10 derived    Q1.1 cpu-mm@24T: first      8.0 ms  best      6.3 ms engine    6.3 ms   DuckDB 24T best     16.4 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    Q1.2 cpu-mm@24T: first      4.3 ms  best      4.2 ms engine    4.2 ms   DuckDB 24T best     12.1 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    Q1.3 cpu-mm@24T: first      5.0 ms  best      5.0 ms engine    5.0 ms   DuckDB 24T best     10.9 ms  match  on cpu  joins ['date:comparators']
+SF10 derived    Q2.1 cpu-mm@24T: first      8.3 ms  best      7.0 ms engine    6.7 ms   DuckDB 24T best     21.4 ms  match  on cpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q2.2 cpu-mm@24T: first      7.0 ms  best      6.3 ms engine    6.2 ms   DuckDB 24T best     19.2 ms  match  on cpu  joins ['part:comparators', 'supplier:cubes']
+SF10 derived    Q2.3 cpu-mm@24T: first      3.8 ms  best      3.6 ms engine    3.4 ms   DuckDB 24T best     13.7 ms  match  on cpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q3.1 cpu-mm@24T: first      9.7 ms  best      9.9 ms engine    9.5 ms   DuckDB 24T best     26.9 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.2 cpu-mm@24T: first      8.0 ms  best      7.0 ms engine    6.4 ms   DuckDB 24T best     17.4 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.3 cpu-mm@24T: first      6.1 ms  best      4.9 ms engine    4.6 ms   DuckDB 24T best     13.1 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.4 cpu-mm@24T: first      4.8 ms  best      5.1 ms engine    4.9 ms   DuckDB 24T best     10.0 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']
+SF10 derived    Q4.1 cpu-mm@24T: first     10.6 ms  best     10.6 ms engine   10.4 ms   DuckDB 24T best     30.8 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF10 derived    Q4.2 cpu-mm@24T: first      8.7 ms  best      8.7 ms engine    8.4 ms   DuckDB 24T best     32.5 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    Q4.3 cpu-mm@24T: first      5.5 ms  best      4.6 ms engine    4.2 ms   DuckDB 24T best     22.1 ms  match  on cpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    K1 cpu-mm@24T: first      8.6 ms  best      8.3 ms engine    8.1 ms   DuckDB 24T best      8.9 ms  match  on cpu  joins ['customer:comparators']
+SF10 derived    K2 cpu-mm@24T: first      4.3 ms  best      4.4 ms engine    4.3 ms   DuckDB 24T best      6.3 ms  match  on cpu  joins ['date:cubes']
+SF10 derived    K3 cpu-mm@24T: first      5.6 ms  best      4.5 ms engine    4.3 ms   DuckDB 24T best      6.0 ms  match  on cpu  joins ['supplier:cubes']
+SF10 derived    M1 cpu-mm@24T: first     18.9 ms  best     17.5 ms engine   17.3 ms   DuckDB 24T best     61.2 ms  match  on cpu  joins []
+SF10 derived    M2 cpu-mm@24T: first     81.9 ms  best     80.0 ms engine   79.7 ms   DuckDB 24T best     73.4 ms  match  on cpu  joins []
+SF10 derived    M3 cpu-mm@24T: first     92.2 ms  best     84.1 ms engine   83.8 ms   DuckDB 24T best     25.2 ms  match  on cpu  joins []
+SF10 derived    Q1.1 gpu-word: first      0.6 ms  best      0.5 ms engine    0.5 ms kernel   0.45 ms   DuckDB 24T best     16.4 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.2 gpu-word: first      0.5 ms  best      0.5 ms engine    0.5 ms kernel   0.39 ms   DuckDB 24T best     12.1 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.3 gpu-word: first      0.4 ms  best      0.4 ms engine    0.4 ms kernel   0.34 ms   DuckDB 24T best     10.9 ms  match  on gpu  joins ['date:comparators']
+SF10 derived    Q2.1 gpu-word: first      1.1 ms  best      1.0 ms engine    0.9 ms kernel   0.51 ms   DuckDB 24T best     21.4 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q2.2 gpu-word: first      0.9 ms  best      0.7 ms engine    0.7 ms kernel   0.38 ms   DuckDB 24T best     19.2 ms  match  on gpu  joins ['part:comparators', 'supplier:cubes']
+SF10 derived    Q2.3 gpu-word: first      0.7 ms  best      0.5 ms engine    0.5 ms kernel   0.28 ms   DuckDB 24T best     13.7 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q3.1 gpu-word: first      1.2 ms  best      1.4 ms engine    1.3 ms kernel   0.85 ms   DuckDB 24T best     26.9 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.2 gpu-word: first      1.1 ms  best      1.0 ms engine    0.8 ms kernel   0.36 ms   DuckDB 24T best     17.4 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.3 gpu-word: first      0.9 ms  best      0.7 ms engine    0.6 ms kernel   0.35 ms   DuckDB 24T best     13.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.4 gpu-word: first      0.8 ms  best      0.6 ms engine    0.6 ms kernel   0.38 ms   DuckDB 24T best     10.0 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']
+SF10 derived    Q4.1 gpu-word: first      1.1 ms  best      1.1 ms engine    1.0 ms kernel   0.78 ms   DuckDB 24T best     30.8 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF10 derived    Q4.2 gpu-word: first      1.0 ms  best      0.9 ms engine    0.8 ms kernel   0.60 ms   DuckDB 24T best     32.5 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    Q4.3 gpu-word: first      0.9 ms  best      0.9 ms engine    0.6 ms kernel   0.30 ms   DuckDB 24T best     22.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    K1 gpu-word: first      0.9 ms  best      0.8 ms engine    0.7 ms kernel   0.48 ms   DuckDB 24T best      8.9 ms  match  on gpu  joins ['customer:comparators']
+SF10 derived    K2 gpu-word: first      0.4 ms  best      0.4 ms engine    0.4 ms kernel   0.32 ms   DuckDB 24T best      6.3 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    K3 gpu-word: first      0.5 ms  best      0.5 ms engine    0.5 ms kernel   0.23 ms   DuckDB 24T best      6.0 ms  match  on gpu  joins ['supplier:cubes']
+SF10 derived    M1 gpu-word: first      2.5 ms  best      2.4 ms engine    2.4 ms kernel   2.07 ms   DuckDB 24T best     61.2 ms  match  on gpu  joins []
+SF10 derived    M2 gpu-word: first      6.8 ms  best      6.5 ms engine    6.4 ms kernel   5.88 ms   DuckDB 24T best     73.4 ms  match  on gpu  joins []
+SF10 derived    M3 gpu-word: first     13.0 ms  best     12.4 ms engine   12.3 ms kernel  11.74 ms   DuckDB 24T best     25.2 ms  match  on gpu  joins []
+SF10 derived    Q1.1 gpu-popc: first      0.5 ms  best      0.5 ms engine    0.5 ms kernel   0.37 ms   DuckDB 24T best     16.4 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.2 gpu-popc: first      0.5 ms  best      0.4 ms engine    0.4 ms kernel   0.31 ms   DuckDB 24T best     12.1 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.3 gpu-popc: first      0.4 ms  best      0.3 ms engine    0.3 ms kernel   0.27 ms   DuckDB 24T best     10.9 ms  match  on gpu  joins ['date:comparators']
+SF10 derived    Q2.1 gpu-popc: first      3.0 ms  best      3.0 ms engine    2.9 ms kernel   2.50 ms   DuckDB 24T best     21.4 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q2.2 gpu-popc: first      2.3 ms  best      2.1 ms engine    2.0 ms kernel   1.65 ms   DuckDB 24T best     19.2 ms  match  on gpu  joins ['part:comparators', 'supplier:cubes']
+SF10 derived    Q2.3 gpu-popc: first      1.5 ms  best      1.5 ms engine    1.4 ms kernel   1.06 ms   DuckDB 24T best     13.7 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q3.1 gpu-popc: first      7.9 ms  best      7.7 ms engine    7.6 ms kernel   7.21 ms   DuckDB 24T best     26.9 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.2 gpu-popc: first      2.3 ms  best      2.2 ms engine    1.9 ms kernel   1.46 ms   DuckDB 24T best     17.4 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.3 gpu-popc: first      2.0 ms  best      1.8 ms engine    1.7 ms kernel   1.45 ms   DuckDB 24T best     13.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.4 gpu-popc: first      1.9 ms  best      1.9 ms engine    1.8 ms kernel   1.46 ms   DuckDB 24T best     10.0 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']
+SF10 derived    Q4.1 gpu-popc: first      5.2 ms  best      5.1 ms engine    5.0 ms kernel   4.63 ms   DuckDB 24T best     30.8 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF10 derived    Q4.2 gpu-popc: first      3.3 ms  best      3.2 ms engine    3.1 ms kernel   2.75 ms   DuckDB 24T best     32.5 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    Q4.3 gpu-popc: first     11.2 ms  best      1.9 ms engine    1.5 ms kernel   1.16 ms   DuckDB 24T best     22.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    K1 gpu-popc: first      1.5 ms  best      1.4 ms engine    1.3 ms kernel   1.03 ms   DuckDB 24T best      8.9 ms  match  on gpu  joins ['customer:comparators']
+SF10 derived    K2 gpu-popc: first      0.4 ms  best      0.3 ms engine    0.3 ms kernel   0.27 ms   DuckDB 24T best      6.3 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    K3 gpu-popc: first      0.8 ms  best      0.8 ms engine    0.7 ms kernel   0.45 ms   DuckDB 24T best      6.0 ms  match  on gpu  joins ['supplier:cubes']
+SF10 derived    M1 gpu-popc: first     11.8 ms  best     11.9 ms engine   11.8 ms kernel  11.43 ms   DuckDB 24T best     61.2 ms  match  on gpu  joins []
+SF10 derived    M2 gpu-popc: first     58.0 ms  best     57.8 ms engine   57.7 ms kernel  57.07 ms   DuckDB 24T best     73.4 ms  match  on gpu  joins []
+SF10 derived    M3 gpu-popc: first    131.6 ms  best    131.1 ms engine  130.8 ms kernel 130.24 ms   DuckDB 24T best     25.2 ms  match  on gpu  joins []
+SF10 derived    Q1.1 gpu-split: first      0.5 ms  best      0.5 ms engine    0.5 ms kernel   0.37 ms   DuckDB 24T best     16.4 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.2 gpu-split: first      0.4 ms  best      0.4 ms engine    0.4 ms kernel   0.31 ms   DuckDB 24T best     12.1 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    Q1.3 gpu-split: first      0.4 ms  best      0.4 ms engine    0.4 ms kernel   0.27 ms   DuckDB 24T best     10.9 ms  match  on gpu  joins ['date:comparators']
+SF10 derived    Q2.1 gpu-split: first      0.9 ms  best      0.8 ms engine    0.6 ms kernel   0.41 ms   DuckDB 24T best     21.4 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q2.2 gpu-split: first      0.7 ms  best      0.6 ms engine    0.5 ms kernel   0.31 ms   DuckDB 24T best     19.2 ms  match  on gpu  joins ['part:comparators', 'supplier:cubes']
+SF10 derived    Q2.3 gpu-split: first      0.6 ms  best      0.5 ms engine    0.5 ms kernel   0.23 ms   DuckDB 24T best     13.7 ms  match  on gpu  joins ['part:cubes', 'supplier:cubes']
+SF10 derived    Q3.1 gpu-split: first      1.1 ms  best      1.1 ms engine    0.9 ms kernel   0.70 ms   DuckDB 24T best     26.9 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.2 gpu-split: first      9.3 ms  best      8.7 ms engine    5.1 ms kernel   0.38 ms   DuckDB 24T best     17.4 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.3 gpu-split: first      8.8 ms  best      8.6 ms engine    5.5 ms kernel   0.30 ms   DuckDB 24T best     13.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']
+SF10 derived    Q3.4 gpu-split: first      8.9 ms  best      7.6 ms engine    4.7 ms kernel   0.31 ms   DuckDB 24T best     10.0 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']
+SF10 derived    Q4.1 gpu-split: first      1.0 ms  best      0.8 ms engine    0.8 ms kernel   0.59 ms   DuckDB 24T best     30.8 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']
+SF10 derived    Q4.2 gpu-split: first      0.8 ms  best      0.8 ms engine    0.7 ms kernel   0.47 ms   DuckDB 24T best     32.5 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    Q4.3 gpu-split: first      9.8 ms  best      8.5 ms engine    5.2 ms kernel   0.31 ms   DuckDB 24T best     22.1 ms  match  on gpu  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']
+SF10 derived    K1 gpu-split: first      0.9 ms  best      0.6 ms engine    0.5 ms kernel   0.38 ms   DuckDB 24T best      8.9 ms  match  on gpu  joins ['customer:comparators']
+SF10 derived    K2 gpu-split: first      0.4 ms  best      0.3 ms engine    0.3 ms kernel   0.27 ms   DuckDB 24T best      6.3 ms  match  on gpu  joins ['date:cubes']
+SF10 derived    K3 gpu-split: first      0.5 ms  best      0.4 ms engine    0.3 ms kernel   0.18 ms   DuckDB 24T best      6.0 ms  match  on gpu  joins ['supplier:cubes']
+SF10 derived    M1 gpu-split: first      4.7 ms  best      4.7 ms engine    4.6 ms kernel   4.36 ms   DuckDB 24T best     61.2 ms  match  on gpu  joins []
+SF10 derived    M2 gpu-split: first      6.4 ms  best      6.2 ms engine    6.1 ms kernel   5.86 ms   DuckDB 24T best     73.4 ms  match  on gpu  joins []
+SF10 derived    M3 gpu-split: first      8.4 ms  best      8.4 ms engine    8.3 ms kernel   7.97 ms   DuckDB 24T best     25.2 ms  match  on gpu  joins []
+peak memory 5.54 GiB
+all results match DuckDB
+SF10, 59,986,214 rows. GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+CPU matrix kernel: AVX2 (vpshufb popcount); GPU matrix kernels: {'gpu-word': 'per-word mask splitting + popcounts, sparse group table', 'gpu-popc': 'tile matrix product, __popc'}
+ingestion (24 threads): dimensions 0.30 s, fact columns read from DuckDB 3.23 s, keys re-encoded 0.08 s, torble build 0.99 s; GPU upload 0.29 s
+all results equal DuckDB's: True
+
+End to end (Python planning + engine), best of 3, ms
+        query |     DuckDB 1T |    DuckDB 24T |     cpu-mm@1T |    cpu-mm@24T |      gpu-word |      gpu-popc |     gpu-split
+         Q1.1 |         175.2 |          16.4 |          89.2 |           6.3 |           0.5 |           0.5 |           0.5
+         Q1.2 |         174.2 |          12.1 |          39.5 |           4.2 |           0.5 |           0.4 |           0.4
+         Q1.3 |         153.5 |          10.9 |          65.1 |           5.0 |           0.4 |           0.3 |           0.4
+         Q2.1 |         212.2 |          21.4 |          71.7 |           7.0 |           1.0 |           3.0 |           0.8
+         Q2.2 |         191.4 |          19.2 |          69.9 |           6.3 |           0.7 |           2.1 |           0.6
+         Q2.3 |         155.0 |          13.7 |          34.9 |           3.6 |           0.5 |           1.5 |           0.5
+         Q3.1 |         334.7 |          26.9 |         130.8 |           9.9 |           1.4 |           7.7 |           1.1
+         Q3.2 |         180.2 |          17.4 |          46.2 |           7.0 |           1.0 |           2.2 |           8.7
+         Q3.3 |         120.7 |          13.1 |          53.8 |           4.9 |           0.7 |           1.8 |           8.6
+         Q3.4 |         101.0 |          10.0 |          51.4 |           5.1 |           0.6 |           1.9 |           7.6
+         Q4.1 |         353.6 |          30.8 |         114.3 |          10.6 |           1.1 |           5.1 |           0.8
+         Q4.2 |         341.0 |          32.5 |          73.1 |           8.7 |           0.9 |           3.2 |           0.8
+         Q4.3 |         215.3 |          22.1 |          48.1 |           4.6 |           0.9 |           1.9 |           8.5
+           K1 |          96.7 |           8.9 |          88.6 |           8.3 |           0.8 |           1.4 |           0.6
+           K2 |          87.8 |           6.3 |          30.5 |           4.4 |           0.4 |           0.3 |           0.3
+           K3 |          62.5 |           6.0 |          32.1 |           4.5 |           0.5 |           0.8 |           0.4
+           M1 |         870.2 |          61.2 |         226.4 |          17.5 |           2.4 |          11.9 |           4.7
+           M2 |        1127.2 |          73.4 |        1028.4 |          80.0 |           6.5 |          57.8 |           6.2
+           M3 |         389.1 |          25.2 |        1217.0 |          84.1 |          12.4 |         131.1 |           8.4
+13 SSB querie |        2708.1 |         246.5 |         887.9 |          83.2 |          10.3 |          31.4 |          39.4
+GROUP BY (Q2- |        2205.2 |         207.0 |         694.1 |          67.7 |           8.9 |          30.2 |          38.2
+        K1-K3 |         247.0 |          21.2 |         151.3 |          17.2 |           1.7 |           2.5 |           1.3
+        M1-M3 |        2386.5 |         159.8 |        2471.8 |         181.5 |          21.3 |         200.7 |          19.3
+ SSB, 1st run |        4390.2 |         277.1 |        2789.1 |          89.7 |          11.0 |          41.7 |          43.2
+(1st run: the query planned from scratch; best of 3: torble reuses the compiled plan, DuckDB plans every run)
+
+Engine call only (no planning) and GPU kernel time, ms; groups = result rows
+        query |        groups | cpu-mm@1T eng | cpu-mm@24T eng |  gpu-word eng |  gpu-popc eng | gpu-split eng | gpu-word kern | gpu-popc kern | gpu-split kern
+         Q1.1 |             - |         89.12 |          6.27 |          0.53 |          0.46 |          0.46 |          0.45 |          0.37 |          0.37
+         Q1.2 |             - |         39.51 |          4.16 |          0.47 |          0.36 |          0.39 |          0.39 |          0.31 |          0.31
+         Q1.3 |             - |         65.05 |          4.98 |          0.41 |          0.32 |          0.36 |          0.34 |          0.27 |          0.27
+         Q2.1 |           280 |         71.40 |          6.70 |          0.91 |          2.90 |          0.61 |          0.51 |          2.50 |          0.41
+         Q2.2 |            56 |         69.75 |          6.16 |          0.65 |          2.03 |          0.55 |          0.38 |          1.65 |          0.31
+         Q2.3 |             7 |         34.76 |          3.44 |          0.51 |          1.42 |          0.45 |          0.28 |          1.06 |          0.23
+         Q3.1 |           150 |        130.53 |          9.51 |          1.27 |          7.63 |          0.94 |          0.85 |          7.21 |          0.70
+         Q3.2 |           600 |         45.67 |          6.42 |          0.78 |          1.89 |          5.12 |          0.36 |          1.46 |          0.38
+         Q3.3 |            24 |         53.53 |          4.64 |          0.61 |          1.72 |          5.48 |          0.35 |          1.45 |          0.30
+         Q3.4 |             4 |         51.24 |          4.90 |          0.61 |          1.84 |          4.71 |          0.38 |          1.46 |          0.31
+         Q4.1 |            35 |        114.05 |         10.38 |          1.03 |          5.03 |          0.76 |          0.78 |          4.63 |          0.59
+         Q4.2 |           100 |         72.84 |          8.41 |          0.85 |          3.08 |          0.68 |          0.60 |          2.75 |          0.47
+         Q4.3 |           796 |         47.63 |          4.15 |          0.56 |          1.51 |          5.17 |          0.30 |          1.16 |          0.31
+           K1 |             5 |         88.43 |          8.11 |          0.73 |          1.32 |          0.55 |          0.48 |          1.03 |          0.38
+           K2 |             - |         30.47 |          4.32 |          0.40 |          0.33 |          0.33 |          0.32 |          0.27 |          0.27
+           K3 |             7 |         32.00 |          4.34 |          0.47 |          0.73 |          0.33 |          0.23 |          0.45 |          0.18
+           M1 |            35 |        226.24 |         17.25 |          2.39 |         11.79 |          4.62 |          2.07 |         11.43 |          4.36
+           M2 |           125 |       1028.15 |         79.74 |          6.37 |         57.66 |          6.13 |          5.88 |         57.07 |          5.86
+           M3 |            77 |       1216.78 |         83.84 |         12.29 |        130.85 |          8.30 |         11.74 |        130.24 |          7.97
+       13 SSB |               |        885.06 |         80.12 |          9.19 |         30.20 |         25.66 |          5.98 |         26.28 |          4.97
+     GROUP BY |               |        691.39 |         64.70 |          7.79 |         29.05 |         24.47 |          4.80 |         25.34 |          4.02
+        K1-K3 |               |        150.90 |         16.77 |          1.59 |          2.38 |          1.20 |          1.03 |          1.75 |          0.83
+        M1-M3 |               |       2471.17 |        180.83 |         21.06 |        200.30 |         19.05 |         19.70 |        198.74 |         18.20
+
+matrix-product tiles: [group-slots dense, group-slots sparse, pairs evaluated per word (tile table full), tiles with groups]
+  Q2.1: cpu-mm@24T [0, 462065, 0, 14646]
+  Q2.2: cpu-mm@24T [0, 89912, 0, 14629]
+  Q2.3: cpu-mm@24T [0, 11088, 0, 8133]
+  Q3.1: cpu-mm@24T [0, 1326471, 0, 14646]
+  Q3.2: cpu-mm@24T [0, 86996, 0, 14595]
+  Q3.3: cpu-mm@24T [0, 3477, 0, 3067]
+  Q3.4: cpu-mm@24T [0, 55, 0, 55]
+  Q4.1: cpu-mm@24T [0, 408204, 0, 14646]
+  Q4.2: cpu-mm@24T [0, 215826, 0, 14646]
+  Q4.3: cpu-mm@24T [0, 4609, 0, 3954]
+  M1: cpu-mm@24T [503024, 9582, 0, 14646]
+  M2: cpu-mm@24T [1777531, 53193, 0, 14646]
+  M3: cpu-mm@24T [1127279, 459, 0, 14646]
+  K1: cpu-mm@24T [10, 70805, 0, 14646]
+  K3: cpu-mm@24T [0, 2971, 0, 2732]
+
+== done. Report: /mnt/c/Users/brian/Documents/torble-1.0.0-rc1/results/rc1_validation/rc1_report_sf10.txt

@@ -1,0 +1,31 @@
+/bin/bash: line 1:  1581 Killed                  python3 ssb_torble.py 10 official
+SF10 coordinate keys: 59,986,214 rows, fetch+re-encode 19.6s, torble build 20.0s, fk bits {'lo_custkey': 21, 'lo_suppkey': 17, 'lo_partkey': 22, 'lo_orderdate': 12} = 72, lineorder torble 2660 MiB
+  coordinate fields: {'customer': {'c_region': 3, 'c_nation': 3, 'c_city': 4, 'seq': 11}, 'supplier': {'s_region': 3, 's_nation': 3, 's_city': 4, 'seq': 7}, 'part': {'p_mfgr': 3, 'p_category': 3, 'p_brand1': 6, 'seq': 10}, 'date': {'d_year': 3, 'd_monthnuminyear': 4, 'd_daynuminmonth': 5, 'seq': 0}}
+SF10 coordinate Q1.1 1T: first    168.6 ms  best    167.6 ms   DuckDB best    462.8 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 coordinate Q1.2 1T: first     75.3 ms  best     71.5 ms   DuckDB best    373.0 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 coordinate Q1.3 1T: first    104.6 ms  best    104.0 ms   DuckDB best    214.1 ms  match  joins ['date:comparators']  agg bilinear (popcount algebra)
+SF10 coordinate Q2.1 1T: first    487.9 ms  best     91.7 ms   DuckDB best    455.2 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 coordinate Q2.2 1T: first    139.5 ms  best    109.8 ms   DuckDB best    422.3 ms  match  joins ['part:comparators', 'supplier:cubes']  agg general
+SF10 coordinate Q2.3 1T: first     64.5 ms  best     55.4 ms   DuckDB best    344.0 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 coordinate Q3.1 1T: first    292.7 ms  best    174.2 ms   DuckDB best    752.6 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.2 1T: first    232.7 ms  best    123.6 ms   DuckDB best    398.3 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.3 1T: first    140.3 ms  best    116.6 ms   DuckDB best    273.2 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.4 1T: first    116.2 ms  best    114.9 ms   DuckDB best    248.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q4.1 1T: first    288.1 ms  best    155.4 ms   DuckDB best    745.9 ms  match  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']  agg general
+SF10 coordinate Q4.2 1T: first    184.3 ms  best    117.5 ms   DuckDB best    788.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 coordinate Q4.3 1T: first    116.8 ms  best    107.4 ms   DuckDB best    494.3 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 coordinate Q1.1 2T: first     89.6 ms  best     86.9 ms   DuckDB best    198.9 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 coordinate Q1.2 2T: first     38.7 ms  best     38.1 ms   DuckDB best    178.1 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 coordinate Q1.3 2T: first     55.0 ms  best     55.1 ms   DuckDB best    170.7 ms  match  joins ['date:comparators']  agg bilinear (popcount algebra)
+SF10 coordinate Q2.1 2T: first     55.5 ms  best     58.5 ms   DuckDB best    252.0 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 coordinate Q2.2 2T: first     64.1 ms  best     67.8 ms   DuckDB best    210.3 ms  match  joins ['part:comparators', 'supplier:cubes']  agg general
+SF10 coordinate Q2.3 2T: first     41.5 ms  best     33.9 ms   DuckDB best    174.1 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 coordinate Q3.1 2T: first     98.2 ms  best     99.1 ms   DuckDB best    381.4 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.2 2T: first     77.6 ms  best     73.2 ms   DuckDB best    217.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.3 2T: first     65.8 ms  best     65.4 ms   DuckDB best    136.6 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q3.4 2T: first     74.3 ms  best     76.5 ms   DuckDB best    119.3 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 coordinate Q4.1 2T: first     91.9 ms  best     90.9 ms   DuckDB best    390.8 ms  match  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']  agg general
+SF10 coordinate Q4.2 2T: first     85.6 ms  best     78.7 ms   DuckDB best    393.6 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 coordinate Q4.3 2T: first     70.3 ms  best     66.6 ms   DuckDB best    286.1 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+peak memory 5.82 GiB
+all results match DuckDB

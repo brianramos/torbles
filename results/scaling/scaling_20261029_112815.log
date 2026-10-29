@@ -1,0 +1,59 @@
+== torbles 1.0.0-rc1 scaling benchmark
+model name	: Intel(R) Core(TM) Ultra 9 290HX Plus
+WSL: 24 cores, 54 GiB memory
+NVIDIA GeForce RTX 5090 Laptop GPU, 24463 MiB, 610.74
+== build
+libgpu.so: native build
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+tensor cores: tile matrix product, tensor-core b1 MMA (mma.sync.m16n8k256 and.popc), self-test passed
+
+== SF1 (6M fact rows)
+SF1: tables copied into an in-memory DuckDB database in 0.1 s
+ingestion (24 build threads): dimensions 0.10 s, fact columns read from DuckDB 0.33 s, keys re-encoded 0.01 s, torble build 0.10 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.1 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 0.69 GiB
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf1/torbles_derived_scaling.json': No such file or directory
+
+== SF3 (18M fact rows)
+SF3: tables copied into an in-memory DuckDB database in 0.2 s
+ingestion (24 build threads): dimensions 0.16 s, fact columns read from DuckDB 1.10 s, keys re-encoded 0.03 s, torble build 0.28 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.1 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 1.75 GiB
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf3/torbles_derived_scaling.json': No such file or directory
+
+== SF10 (60M fact rows)
+SF10: tables copied into an in-memory DuckDB database in 0.3 s
+ingestion (24 build threads): dimensions 0.29 s, fact columns read from DuckDB 3.21 s, keys re-encoded 0.08 s, torble build 0.95 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.3 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 5.54 GiB
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf10/torbles_derived_scaling.json': No such file or directory
+
+== SF30 (180M fact rows)
+SF30: tables copied into an in-memory DuckDB database in 1.5 s
+ingestion (24 build threads): dimensions 0.40 s, fact columns read from DuckDB 10.62 s, keys re-encoded 0.29 s, torble build 3.26 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 0.8 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 16.44 GiB
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf30/torbles_derived_scaling.json': No such file or directory
+
+== SF50 (300M fact rows)
+SF50: tables copied into an in-memory DuckDB database in 1.6 s
+ingestion (24 build threads): dimensions 0.56 s, fact columns read from DuckDB 21.94 s, keys re-encoded 0.67 s, torble build 10.93 s
+GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0; value planes uploaded and decoded in 1.3 s; matrix kernel: per-word mask splitting + popcounts, sparse group table
+peak memory 27.33 GiB
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf50/torbles_derived_scaling.json': No such file or directory
+
+== thread scaling at SF10
+all results match DuckDB
+cp: cannot stat '/home/brian/torble_gpu_run/ssbdata/sf10/torbles_derived_threads.json': No such file or directory
+Traceback (most recent call last):
+  File "/home/brian/torbles_rc1_run/src/bench/ssb/ssb_scaling.py", line 32, in <module>
+    D = json.load(open(os.path.join(td, "duckdb_results.json"))); T = json.load(open(os.path.join(td, "torbles_derived_threads.json")))
+                                                                                ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/c/Users/brian/Documents/torbles-1.0.0-rc1/results/scaling/threads_sf10/torbles_derived_threads.json'
+
+== done. Results: /mnt/c/Users/brian/Documents/torbles-1.0.0-rc1/results/scaling

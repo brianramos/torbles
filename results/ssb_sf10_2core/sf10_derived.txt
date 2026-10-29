@@ -1,0 +1,37 @@
+official keys recovered from the stored surrogates (projection / arithmetic), all rows: {'lo_custkey': True, 'lo_suppkey': True, 'lo_partkey': True, 'lo_orderdate': True}
+SF10 derived keys: 59,986,214 rows, fetch+re-encode 15.9s, torble build 15.8s, fk bits {'lo_custkey': 29, 'lo_suppkey': 25, 'lo_partkey': 32, 'lo_orderdate': 12} = 98, lineorder torble 3103 MiB
+  key fields: {'customer': {'c_region': 3, 'c_nation': 3, 'c_city': 4, 'official key': 19}, 'supplier': {'s_region': 3, 's_nation': 3, 's_city': 4, 'official key': 15}, 'part': {'p_mfgr': 3, 'p_category': 3, 'p_brand1': 6, 'official key': 20}, 'date': 'year|month|day by arithmetic'}
+SF10 derived    Q1.1 1T: first    328.9 ms  best    188.5 ms   DuckDB best    471.7 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 derived    Q1.2 1T: first    235.7 ms  best     69.7 ms   DuckDB best    509.7 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 derived    Q1.3 1T: first    128.0 ms  best    107.3 ms   DuckDB best    228.4 ms  match  joins ['date:comparators']  agg bilinear (popcount algebra)
+SF10 derived    Q2.1 1T: first   3320.2 ms  best     98.3 ms   DuckDB best    460.9 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 derived    Q2.2 1T: first    210.2 ms  best    110.2 ms   DuckDB best    480.1 ms  match  joins ['part:comparators', 'supplier:cubes']  agg general
+SF10 derived    Q2.3 1T: first     60.7 ms  best     60.5 ms   DuckDB best    412.0 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 derived    Q3.1 1T: first    950.1 ms  best    179.0 ms   DuckDB best    890.9 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.2 1T: first    526.5 ms  best    192.1 ms   DuckDB best    403.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.3 1T: first    175.5 ms  best    128.4 ms   DuckDB best    400.1 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.4 1T: first    115.4 ms  best    107.8 ms   DuckDB best    265.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']  agg general
+SF10 derived    Q4.1 1T: first   1370.6 ms  best    157.6 ms   DuckDB best    866.0 ms  match  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']  agg general
+SF10 derived    Q4.2 1T: first    146.4 ms  best    129.1 ms   DuckDB best    771.3 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 derived    Q4.3 1T: first    207.9 ms  best    117.8 ms   DuckDB best    519.0 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 derived    K1 1T: first    775.2 ms  best    143.7 ms   DuckDB best    248.9 ms  match  joins ['customer:comparators']  agg mask split + popcounts
+SF10 derived    K2 1T: first     61.8 ms  best     51.8 ms   DuckDB best    208.8 ms  match  joins ['date:cubes']  agg linear (popcount algebra)
+SF10 derived    K3 1T: first    161.7 ms  best     85.2 ms   DuckDB best    180.9 ms  match  joins ['supplier:cubes']  agg mask split + popcounts
+SF10 derived    Q1.1 2T: first    106.4 ms  best     84.3 ms   DuckDB best    321.5 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 derived    Q1.2 2T: first     43.8 ms  best     42.3 ms   DuckDB best    199.3 ms  match  joins ['date:cubes']  agg bilinear (popcount algebra)
+SF10 derived    Q1.3 2T: first     76.1 ms  best     63.7 ms   DuckDB best    154.2 ms  match  joins ['date:comparators']  agg bilinear (popcount algebra)
+SF10 derived    Q2.1 2T: first     62.6 ms  best     57.5 ms   DuckDB best    267.7 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 derived    Q2.2 2T: first     67.3 ms  best     66.8 ms   DuckDB best    253.9 ms  match  joins ['part:comparators', 'supplier:cubes']  agg general
+SF10 derived    Q2.3 2T: first     37.4 ms  best     39.5 ms   DuckDB best    204.3 ms  match  joins ['part:cubes', 'supplier:cubes']  agg general
+SF10 derived    Q3.1 2T: first    150.3 ms  best    114.6 ms   DuckDB best    503.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.2 2T: first    109.2 ms  best    111.1 ms   DuckDB best    231.6 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.3 2T: first    153.8 ms  best     77.6 ms   DuckDB best    150.6 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators']  agg general
+SF10 derived    Q3.4 2T: first     64.3 ms  best     67.2 ms   DuckDB best    151.4 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:cubes']  agg general
+SF10 derived    Q4.1 2T: first    132.8 ms  best    139.3 ms   DuckDB best    466.2 ms  match  joins ['customer:cubes', 'supplier:cubes', 'part:cubes']  agg general
+SF10 derived    Q4.2 2T: first    153.7 ms  best     94.4 ms   DuckDB best    437.2 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 derived    Q4.3 2T: first     80.0 ms  best     70.7 ms   DuckDB best    314.5 ms  match  joins ['customer:cubes', 'supplier:cubes', 'date:comparators', 'part:cubes']  agg general
+SF10 derived    K1 2T: first    122.9 ms  best    107.9 ms   DuckDB best    146.9 ms  match  joins ['customer:comparators']  agg mask split + popcounts
+SF10 derived    K2 2T: first     43.7 ms  best     37.6 ms   DuckDB best    133.7 ms  match  joins ['date:cubes']  agg linear (popcount algebra)
+SF10 derived    K3 2T: first     52.3 ms  best     38.3 ms   DuckDB best     95.6 ms  match  joins ['supplier:cubes']  agg mask split + popcounts
+peak memory 5.51 GiB
+all results match DuckDB

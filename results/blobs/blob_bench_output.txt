@@ -1,0 +1,42 @@
+CLOB: 500,000 objects, 234 MiB of payload
+  ran torble  in    7.6 s
+  ran duckdb  in    8.2 s
+  ran lmdb    in   13.2 s
+  ran fs      in   95.1 s
+operation                 torble      duckdb        lmdb          fs
+load                     900.4ms    3073.8ms     489.8ms   26824.0ms
+get_10k                   31.4ms      54.1ms      15.3ms     143.5ms
+get_range_1k               1.9ms       8.5ms       0.6ms      14.3ms
+prefix                     1.7ms      24.5ms     308.0ms    4360.7ms
+lengths                    0.5ms      15.8ms     276.3ms    1797.5ms
+group_leading             17.7ms      33.3ms     487.5ms    6072.3ms
+contains                 569.8ms      90.9ms     820.5ms    4751.4ms
+replace_1pct              19.2ms      58.1ms      21.8ms    1146.2ms
+get_10k_after             29.2ms      53.8ms      15.9ms      96.3ms
+prefix_after               2.0ms      22.8ms     347.6ms    3868.5ms
+contains_after           580.5ms      81.9ms     598.6ms    5007.9ms
+size                       252MiB       426MiB       288MiB       234MiB
+peak memory               0.81GiB      0.88GiB      0.71GiB      0.71GiB
+torble storage: {'planes': '8.6 MiB', 'sidecars': '16.6 MiB', 'payload': '226.5 MiB', 'directory': '0.1 MiB'}
+all engines agree
+BLOB: 50,000 objects, 794 MiB of payload
+  ran torble  in    9.6 s
+  ran duckdb  in   56.1 s
+  ran lmdb    in    9.6 s
+  ran fs      in   35.4 s
+operation                 torble      duckdb        lmdb          fs
+load                    1712.0ms    8374.7ms    1623.7ms   23309.6ms
+get_10k                   71.5ms     321.8ms      49.7ms     133.0ms
+get_range_1k               7.5ms      26.8ms       4.0ms      12.3ms
+prefix                     0.3ms     400.9ms      41.3ms     456.1ms
+lengths                    0.2ms     233.6ms      35.1ms     139.4ms
+group_leading              4.4ms     398.2ms      56.3ms     534.4ms
+contains                 573.7ms    5478.2ms     584.0ms    1149.0ms
+replace_1pct               4.9ms     292.8ms       8.2ms     147.7ms
+get_10k_after             66.7ms     303.2ms      43.7ms     144.1ms
+prefix_after               0.3ms     409.6ms      56.3ms     383.1ms
+contains_after           571.3ms    5825.6ms     652.3ms    1072.8ms
+size                       795MiB       795MiB       880MiB       794MiB
+peak memory               2.37GiB      2.90GiB      1.70GiB      1.59GiB
+torble storage: {'planes': '0.9 MiB', 'sidecars': '1.7 MiB', 'payload': '792.7 MiB', 'directory': '0.0 MiB'}
+all engines agree
