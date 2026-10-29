@@ -305,8 +305,8 @@ keys and with the automatic ones. Best of 3, ms; the 0.1.0 columns are the SF10 
 | **13 SSB queries** | **223.4** | **83.2** | **79.4** | **10.3** | **10.7** | **887.9** | **892.2** | **2164.6** |
 | **M1-M3** | **139.4** | **181.5** | **59.7** | **21.3** | **13.7** | **2471.8** | **871.3** | **2001.9** |
 
-On one thread M3 is still a little slower than DuckDB (290 against 269 ms; on the 2-vCPU VM at SF1 it is faster,
-59.9 against 68.4): the Core Ultra's DuckDB runs this query proportionally faster. With the automatic keys
+On one thread M3 is still a little slower than DuckDB on this machine (290 against 269 ms), while on the 2-vCPU VM at
+SF1 it is faster (59.9 against 68.4). With the automatic keys
 (`auto_keys_sf10.txt`): loaded in 7.5 s; the 13 queries in 80.1 ms on 24 CPU threads and 9.1 ms on the GPU; M1-M3
 17.7 / 21.8 / 17.1 ms on the CPU and 2.0 / 6.0 / 4.5 ms on the GPU. Files: `results/validation_sf10_rtx5090_0.2.0/`.
 
