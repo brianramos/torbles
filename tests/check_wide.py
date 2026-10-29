@@ -18,11 +18,12 @@ dim = pd.DataFrame(dict(d_key=np.arange(nd), d_grp=rng.integers(0, 7, nd),
 fact = pd.DataFrame(dict(f_d=rng.integers(0, nd, nf), f_g=rng.integers(0, 5, nf), f_qty=rng.integers(-50, 50, nf),
                          f_big=rng.integers(-2**62, 2**62, nf), f_big2=rng.integers(0, 2**44, nf, dtype=np.int64),
                          f_few=rng.choice(np.array([-2**62, -5, 0, 7, 2**61 + 3, 2**62], np.int64), nf),
-                         f_amt=np.round(rng.uniform(-1e9, 1e9, nf), 2)))
+                         f_amt=np.round(rng.uniform(-1e9, 1e9, nf), 2),
+                         f_u=rng.choice(np.array([0, 1, 2**63, 2**64 - 1], np.uint64), nf)))
 ddl = """
 CREATE TABLE dim (d_key INTEGER PRIMARY KEY, d_grp INTEGER, d_wide BIGINT, d_price DECIMAL(10, 2));
 CREATE TABLE fact (f_d INTEGER REFERENCES dim(d_key), f_g INTEGER, f_qty INTEGER, f_big BIGINT, f_big2 BIGINT, f_few BIGINT,
-                   f_amt DECIMAL(12, 2));
+                   f_amt DECIMAL(12, 2), f_u UBIGINT);
 """
 db = torbles.from_ddl(ddl, {"dim": dim, "fact": fact}, keep_plain=True)
 f, d = db["fact"], db["dim"]
@@ -41,6 +42,7 @@ cases = {   # name: (query, DuckDB SQL)
                                        f"SELECT SUM({H('f_big')} - 2 * {H('f_big2')}) FROM fact WHERE f_qty > 10"),
     "GROUP BY big, few (128-bit codes)": (db.query(f).where(f.f_qty < -40).group_by(f.f_few, f.f_big).sum(f.f_qty),
                                           "SELECT f_few, f_big, SUM(f_qty) FROM fact WHERE f_qty < -40 GROUP BY f_few, f_big"),
+    "GROUP BY ubigint: 2^64 codes":   (db.query(f).group_by(f.f_u).count(), "SELECT f_u, COUNT(*) FROM fact GROUP BY f_u"),
     "GROUP BY big2, big, g COUNT":    (db.query(f).where(f.f_qty == 7).group_by(f.f_big2, f.f_big, f.f_g).count(),
                                        "SELECT f_big2, f_big, f_g, COUNT(*) FROM fact WHERE f_qty = 7 GROUP BY f_big2, f_big, f_g"),
     "bridge: SUM(dim wide * qty)":    (db.query(f).join(d).group_by(f.f_g).sum(d.d_wide * f.f_qty),

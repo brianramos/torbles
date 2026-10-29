@@ -35,8 +35,9 @@ Engine
   against DuckDB's 120 in HUGEINT). Past 2^127, and for columns without an affine code (a dimension column wider than 32 bits),
   the histogram bridge: those columns are summed per value as hidden GROUP BY keys and the parts are put together in
   exact arithmetic. Decimal results keep every digit.
-- GROUP BY codes are 128-bit past 2^64 (up to 2^128 - 2 groups), up to 12 key columns; the general GROUP BY path has
-  sparse output; the dense-array path falls back to the sparse product instead of refusing.
+- GROUP BY codes are 128-bit past 2^64 (up to 2^128 - 2 groups), up to 12 key columns (a column repeated in the GROUP
+  BY is grouped once); the general GROUP BY path has sparse output; the dense-array path falls back to the sparse
+  product instead of refusing.
 - Dense GROUP BY bridges, each behind a switch and measured in an ablation (SSB SF1): factoring the measure through
   the GROUP BY key (on), a row kernel built on a staged 64 x 64 bit transpose (chosen per tile by the cost model with
   a margin), a Shannon splitting tree, direct tile slots and Moebius inversion over the key bits (off: no gain). SSB

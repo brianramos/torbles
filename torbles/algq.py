@@ -1667,7 +1667,9 @@ class Query:
                 raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
             ng = 1
             for r_ in radix: ng *= int(r_)                    # exact (may pass 2^64)
-            plan.ngroups = min(ng, (1 << 64) - 1); plan.widekey = int(ng > (1 << 64))   # 128-bit group codes past 2^64
+            # 128-bit group codes from 2^64 groups on: a 64-bit code stays below 2^64 - 1, which the GPU executor's
+            # group table (and 0.2.0's 64-bit tables) use as the empty slot
+            plan.ngroups = min(ng, (1 << 64) - 1); plan.widekey = int(ng >= (1 << 64))
             if mm or sparse_general: self._mm_alloc(plan, min(ng, 1 << 14))
             else:
                 if ng > 1 << 25: raise ValueError("group domain too large")
