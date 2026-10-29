@@ -12,7 +12,7 @@
 enum { P_TRUE, P_EQ, P_NE, P_LT, P_LE, P_GT, P_GE, P_BETWEEN, P_AND, P_OR, P_NOT, P_PREFIX, P_BIT, P_CUBE, P_CLT, P_CGE, P_XOR };   /* P_XOR: additive (F2) correction */
 /* P_CLT / P_CGE(col, a = constant, b = plane mask): the code formed by the planes in mask (most significant id bit first)
    is < a / >= a. The factored comparator polynomial sum_j (1 + x_j) c_j E_j on any set of variables. */   /* P_CUBE(col, a = values, b = plane mask): AND of literals on any planes */   /* P_BIT(col, a = bit): value bit a is set */   /* P_PREFIX(col, a = value, b = nbits): top nbits == a */
-enum { A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM };   /* A_MM: GROUP BY as one AND-popcount matrix product, see below */   /* A_DOM: dominance sums over x < t_k, see below */   /* A_POLYG: GROUP BY with a degree-2 polynomial measure, by mask splitting */
+enum { A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS };   /* A_ROWS: the passing rows as a bitmap (out_rows) */   /* A_MM: GROUP BY as one AND-popcount matrix product, see below */   /* A_DOM: dominance sums over x < t_k, see below */   /* A_POLYG: GROUP BY with a degree-2 polynomial measure, by mask splitting */
 enum { M_FCOL, M_ATTR, M_CONST, M_ADD, M_SUB, M_MUL };
 
 typedef struct { int32_t op, col; uint32_t a, b; } pinstr_t;
@@ -51,6 +51,12 @@ typedef struct {
     /* 128-bit group codes (widekey = 1): the mixed-radix code of a GROUP BY whose key domain passes 2^64 (at most
      * 2^128 - 2 groups); sparse output only, the code's high words in out_key_hi */
     int32_t widekey; uint64_t *out_key_hi;
+    /* MIN and MAX of one fact column's codes per group (ext_on = 1, on the A_POLYG and A_GENERAL paths): by plane
+     * elimination over a group's rows in a word, most significant plane first (min: keep the rows with a 0 when any
+     * has one; max: with a 1). Codes are order-preserving, so the extreme codes are the extreme values. Results: min
+     * in out_sum / total_sum, max in out_sum_hi / total_sum_hi. */
+    int32_t ext_on, ext_col;
+    uint64_t *out_rows;                                 /* A_ROWS: one bit per fact row, set when the row passes */
 } qplan_t;
 #define KM(m, v) ((m) ? ((v) & (m)) : (v))
 

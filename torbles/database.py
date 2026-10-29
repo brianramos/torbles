@@ -376,6 +376,16 @@ class Database:
         """a query over this database's tables (fact: a table or its name)"""
         return Query(self.tables[fact] if isinstance(fact, str) else fact)
 
+    def sql(self, text, engine="alg"):
+        """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
+        (.columns, .rows, .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
+        see docs/SQL.md for how each part of a query is evaluated and for the functions supported."""
+        import sqlfront, sqlexec
+        out = None
+        for q in sqlfront.bind(self, text):
+            out = sqlexec.run(self, q, engine)
+        return out
+
     def sql_result(self, q):
         """run the query's SQL rendering on the source (DuckDB) and return it in torbles' result form"""
         if self.con is None:

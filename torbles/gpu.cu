@@ -455,6 +455,7 @@ typedef struct {
 
 static int supported(const qplan_t *q) {
     if (q->wide || q->widekey) return 0;                        /* 128-bit sums or group codes: the CPU engine */
+    if (q->ext_on || q->agg == A_ROWS) return 0;                /* MIN / MAX and row bitmaps: the CPU engine */
     if (q->nsemi) return 0;                                     /* semi-join lookups stay on the CPU */
     if (q->agg == A_GENERAL) return 0;                         /* the caller converts what it can to A_POLYG / A_MM */
     if (q->agg == A_MM && !q->nkey) return 0;

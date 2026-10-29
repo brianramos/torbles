@@ -21,7 +21,7 @@ from pathlib import Path
 
 MAXCOL = 31                      # columns per torble, hidden ones included (torble.h)
 P = dict(TRUE=0, EQ=1, NE=2, LT=3, LE=4, GT=5, GE=6, BETWEEN=7, AND=8, OR=9, NOT=10, PREFIX=11, BIT=12, CUBE=13, CLT=14, CGE=15, XOR=16)
-A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM = range(7)
+A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS = range(8)
 M = dict(FCOL=0, ATTR=1, CONST=2, ADD=3, SUB=4, MUL=5)
 
 class PInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("col", ctypes.c_int32), ("a", ctypes.c_uint32), ("b", ctypes.c_uint32)]
@@ -47,7 +47,8 @@ class QPlan(ctypes.Structure):
                 ("xrows", ctypes.c_void_p), ("xmode", ctypes.c_int32),
                 ("out_cap", ctypes.c_uint64), ("out_n", ctypes.c_uint64), ("out_key", ctypes.c_void_p), ("mm_stats", ctypes.c_int64 * 4),
                 ("wide", ctypes.c_int32), ("pl_coef_hi", ctypes.c_int64 * 8), ("pb_coef_hi", ctypes.c_int64 * 8), ("p_const_hi", ctypes.c_int64),
-                ("out_sum_hi", ctypes.c_void_p), ("total_sum_hi", ctypes.c_int64), ("widekey", ctypes.c_int32), ("out_key_hi", ctypes.c_void_p)]
+                ("out_sum_hi", ctypes.c_void_p), ("total_sum_hi", ctypes.c_int64), ("widekey", ctypes.c_int32), ("out_key_hi", ctypes.c_void_p),
+                ("ext_on", ctypes.c_int32), ("ext_col", ctypes.c_int32), ("out_rows", ctypes.c_void_p)]
 KEY_MAX = (1 << 128) - 2          # group codes are 128-bit (all ones marks an empty slot): at most 2^128 - 2 groups
 
 M64 = (1 << 64) - 1
@@ -256,6 +257,22 @@ class BoolOp(Pred):
     def __init__(self, op, l, r): self.op, self.l, self.r = op, l, r
 class Not(Pred):
     def __init__(self, x): self.x = x
+class RowMask(Pred):
+    """a dimension filter given as its rows: mask[i] is True when dimension row i passes (any predicate, evaluated on
+    the dimension's distinct values). It joins like every dimension filter: as the bitmap of a join polynomial or a
+    semi-join. cols: the attributes the predicate reads (they guide the join polynomial's form)."""
+    def __init__(self, table, mask, cols=(), sql=None):
+        self.table, self.cols, self.sql = table, set(cols), sql
+        m = np.zeros(((table.n + 63) // 64 + 1) * 64, np.uint8); m[:table.n] = np.asarray(mask, bool)[:table.n]
+        self.bm = np.packbits(m, bitorder="little").view(np.uint64)
+class CodeSet(Pred):
+    """a filter on one fact column given as the set of its codes that pass (any predicate of that column, evaluated on
+    the codes it can hold): a semi-join of the column against a bitmap over its code domain. Only as an AND-term."""
+    def __init__(self, col, mask, sql=None):
+        self.col, self.sql = col, sql
+        mask = np.asarray(mask, bool); self.n = len(mask)
+        m = np.zeros(((self.n + 63) // 64 + 1) * 64, np.uint8); m[:self.n] = mask
+        self.bm = np.packbits(m, bitorder="little").view(np.uint64); self.frac = float(mask.mean()) if self.n else 0.0
 
 def _maxcode(col):
     t = col.table
@@ -698,13 +715,15 @@ class JoinPoly:
         return kind, nf + nc
 
 def pred_cols(p):
-    if isinstance(p, (Cmp, Between)): return {p.col.name}
+    if isinstance(p, (Cmp, Between, CodeSet)): return {p.col.name}
+    if isinstance(p, RowMask): return set(p.cols)
     if isinstance(p, BoolOp): return pred_cols(p.l) | pred_cols(p.r)
     if isinstance(p, Not): return pred_cols(p.x)
     return set()
 
 def tables_of(p):
-    if isinstance(p, (Cmp, Between)): return {p.col.table}
+    if isinstance(p, (Cmp, Between, CodeSet)): return {p.col.table}
+    if isinstance(p, RowMask): return {p.table}
     if isinstance(p, BoolOp): return tables_of(p.l) | tables_of(p.r)
     if isinstance(p, Not): return tables_of(p.x)
     if isinstance(p, Col): return {p.table}
@@ -1009,6 +1028,13 @@ def _exact_dec(v, scale):
     v = int(v)
     return Decimal((int(v < 0), tuple(int(d) for d in str(abs(v))), -scale))
 
+def copy_query(q):
+    import copy
+    c = copy.copy(q); c._plan_cache = {}
+    for a in ("_codeq", "_lowered_measure", "_fq"):
+        if a in c.__dict__: del c.__dict__[a]
+    return c
+
 def lower_measure(e, fact):
     """A measure over typed columns -> (an integer expression over stored codes, decimal scale). A column with an affine
     codec is (code + offset) / 10^s; constants are exact decimals. Sums and differences are brought to a common scale,
@@ -1045,6 +1071,11 @@ def lower_measure(e, fact):
     return low, scale
 
 # ------------------------------------------------------------------ queries
+def _merge_vals(a, b):
+    """two partial results of one group: sums add, (min, max) pairs combine"""
+    if isinstance(a, tuple): return (min(a[0], b[0]), max(a[1], b[1])) if len(a) == 2 and not isinstance(a[0], tuple) else tuple(x + y for x, y in zip(a, b))
+    return a + b
+
 class Query:
     def __init__(self, fact, join_mode="prefix"):
         """join_mode: how a dimension filter (a polynomial f in the fk's bit variables, see JoinPoly) is evaluated.
@@ -1077,8 +1108,17 @@ class Query:
         self.rjoin = (dim, x, lo, hi); self.rjoin_sql = (op, y); return self
     def where(self, p): self.pred = p if self.pred is None else (self.pred & p); return self
     def group_by(self, *cols): self.keys = list(cols); return self
-    def sum(self, e): self.measure = e; return self
-    def count(self): self.measure = None; return self
+    def sum(self, e): self.measure = e; self._ext = None; return self
+    def count(self): self.measure = None; self._ext = None; return self
+    def minmax(self, col):
+        """MIN and MAX of a fact column per group, by plane elimination: run() gives (min, max), or {key: (min, max)}"""
+        if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
+        if col.name in getattr(self.fact, "wide", {}): raise ValueError(f"{col.name}: MIN / MAX of a self-extending column")
+        self.measure = None; self._ext = col; return self
+    def rows(self, engine="alg"):
+        """the ids of the fact rows that pass the filters and joins (a row bitmap from the engine)"""
+        q = copy_query(self); q.keys = []; q.measure = None; q._ext = None; q._rows = True
+        return q._run_codes("plain" if engine == "plain" else "alg")
 
     def sql(self):
         keys = [expr_sql(k) for k in self.keys]
@@ -1187,10 +1227,14 @@ class Query:
         rB = B._run_codes(engine)
         self.device, self.kernel_ms = A.device, getattr(A, "kernel_ms", None)
         self.last_plan, self.range_used, self.delta_rows = A.last_plan, A.range_used, int(sum(bin(int(x)).count("1") for x in D[words.astype(np.int64)])) if len(words) else 0
+        if getattr(self, "_rows", False): return np.union1d(rA, rB)
         if self.keys:
             out = dict(rA)
-            for key, v in rB.items(): out[key] = out.get(key, 0) + v
+            for key, v in rB.items(): out[key] = v if key not in out else (_merge_vals(out[key], v) if getattr(self, "_ext", None) is not None else out[key] + v)
             return out
+        if getattr(self, "_ext", None) is not None:
+            if rA is None or rB is None: return rA if rB is None else rB
+            return (min(rA[0], rB[0]), max(rA[1], rB[1]))
         if self.measure is None: return rA + rB
         return None if rA is None and rB is None else (rA or 0) + (rB or 0)
 
@@ -1243,7 +1287,8 @@ class Query:
         for key, v in r.items():
             it, nk = iter(key), []
             for B in spans: nk.append(next(it) + (next(it) << B) if B is not None else next(it))
-            out[tuple(nk)] = out.get(tuple(nk), 0) + v
+            k = tuple(nk)
+            out[k] = v if k not in out else _merge_vals(out[k], v)
         return out
 
     def run(self, engine="alg"):
@@ -1394,12 +1439,17 @@ class Query:
             q = self._codeq = copy.copy(self); q._codes = True; q._src_measure = self.measure
             q._plan_cache = {}
         q.measure, q.pred, q.keys, q.joins, q.join_mode = lm[1], self.pred, self.keys, self.joins, self.join_mode
+        q._ext = getattr(self, "_ext", None)
         q.range_mode = getattr(self, "range_mode", "auto")
         r = q._run_codes(engine)
         for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         scale = lm[2]
         val = (lambda v: v if v is None or not scale else _exact_dec(v, scale)) if self.measure is not None else (lambda v: v)
+        ext = getattr(self, "_ext", None)
+        if ext is not None:                          # MIN / MAX codes -> values of the column's type
+            ecd = ext.codec()
+            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else tuple(ecd.decode(_codes_array(list(v)))))
         if not self.keys: return val(r)
         decs = []
         for k in self.keys:
@@ -1462,9 +1512,9 @@ class Query:
             ts = tables_of(c)
             if len(ts) != 1: raise ValueError("each AND-term must refer to one table")
             groups.setdefault(next(iter(ts)), []).append(c)
-        # fact filter: one Boolean polynomial over the fact's bit planes
-        prog = []
-        for i, c in enumerate(groups.get(fact, [])):
+        # fact filter: one Boolean polynomial over the fact's bit planes (code sets: semi-joins on the column)
+        prog = []; codesets = [c for c in groups.get(fact, []) if isinstance(c, CodeSet)]
+        for i, c in enumerate([c for c in groups.get(fact, []) if not isinstance(c, CodeSet)]):
             compile_pred(c, fact, prog)
             if i: prog.append(PInstr(P["AND"], 0, 0, 0))
         # inner-join semantics: every joined foreign key must point at an existing row (one plane: its _refok bit)
@@ -1476,17 +1526,24 @@ class Query:
         self.range_used = []
         # dimension filters -> bitmaps -> (range predicates on the fk planes | semi-joins, most selective first)
         semis = []
+        for cs in codesets:
+            keep.append(cs.bm)
+            semis.append((cs.frac, fact.idx(cs.col.name), cs.bm, cs.n, 0))
         for dim, preds in groups.items():
             if dim is fact: continue
             if dim not in self.joins: raise ValueError(f"{dim.name} is not joined")
             dp = []
-            for i, c in enumerate(preds):
+            for i, c in enumerate([c for c in preds if not isinstance(c, RowMask)]):
                 compile_pred(c, dim, dp)
                 if i: dp.append(PInstr(P["AND"], 0, 0, 0))
             arr = (PInstr * len(dp))(*dp)
             bm = np.zeros((dim.n + 63) // 64 + 1, dtype=np.uint64); keep.append(bm)
             if engine == "alg": cnt = lib.at_filter_bitmap_masked(dim.at, arr, len(dp), bm.ctypes.data, dim.used_bm.ctypes.data)
             else: cnt = lib.pt_filter_bitmap(dim.pt, arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
+            rms = [c for c in preds if isinstance(c, RowMask)]
+            if rms:                                    # rows given by mask: AND them in
+                for rm in rms: bm &= rm.bm[:len(bm)]
+                cnt = int(np.unpackbits(bm.view(np.uint8)).sum())
             fkn = self.joins[dim]; fkc = fact.idx(fkn); b = fact.width(fkn); space = fact.space(fkn, dim)
             on_cluster = fact.cluster == fkn and getattr(fact, "cluster_sorted", False) and space.sg is None
             if on_cluster:
@@ -1557,10 +1614,19 @@ class Query:
                 return (np.array([_join128(a, b) for a, b in zip(out_sum, out_hi)], object), out_cnt.astype(np.int64),
                         _join128(plan.total_sum, plan.total_sum_hi), int(plan.total_cnt))
             return out_sum.copy(), out_cnt.astype(np.int64), int(plan.total_sum), int(plan.total_cnt)
+        if getattr(self, "_rows", False):         # the passing rows as a bitmap
+            plan.agg = A_ROWS; plan.nkey = 0
+            out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
+            plan.nattr = 0
+            self._exec("plain" if engine == "plain" else "cpu", fact, plan); self.last_plan = plan
+            return np.nonzero(np.unpackbits(out_rows.view(np.uint8), bitorder="little")[:fact.n])[0].astype(np.uint64)
+        ext = getattr(self, "_ext", None)
+        if ext is not None: plan.ext_on, plan.ext_col = 1, fact.idx(ext.name)
         # aggregation
         lin = self._linear(self.measure) if self.measure is not None else None
         wide = self._wide; plan.wide = wide
-        if wide and not self.keys:
+        if ext is not None and not self.keys: plan.agg = A_GENERAL; plan.nkey = 0     # MIN / MAX of the whole result
+        elif wide and not self.keys:
             # 128-bit SUM without GROUP BY: the measure over each word's passing rows by popcount algebra, folded in
             # 128 bits (the measure must be a polynomial of degree <= 2 in fact columns)
             poly = poly2(self.measure, fact)
@@ -1584,6 +1650,7 @@ class Query:
             mm_ok = (engine == "alg" and bool(self.keys) and poly is not None and len([m for m in poly if len(m) == 1]) <= 8
                      and len([m for m in poly if len(m) == 2]) <= 8
                      and sum(fact.width(m[0]) * (fact.width(m[1]) if len(m) == 2 else 1) for m in poly if m) <= 1024)
+            if ext is not None: mm_ok = False              # MIN / MAX: mask splitting or row by row, never the matrix product
             mm = (GROUPBY == "mm" or wide) and mm_ok      # 128-bit sums: the matrix product (or mask splitting)
             # the matrix product's output is sparse (no dense key domain): its group codes are 128-bit (64-bit while the
             # domain fits), so the radix product must stay below 2^128 - 1; the dense arrays of the other path need 2^22
@@ -1675,7 +1742,8 @@ class Query:
                 if ng > 1 << 25: raise ValueError("group domain too large")
                 out_sum = np.zeros(ng, dtype=np.int64); out_cnt = np.zeros(ng, dtype=np.uint64); keep += [out_sum, out_cnt]
                 plan.out_sum, plan.out_cnt = out_sum.ctypes.data, out_cnt.ctypes.data
-                if wide: out_hi = np.zeros(ng, dtype=np.int64); keep.append(out_hi); plan.out_sum_hi = out_hi.ctypes.data
+                if wide or ext is not None: out_hi = np.zeros(ng, dtype=np.int64); keep.append(out_hi); plan.out_sum_hi = out_hi.ctypes.data
+                if ext is not None: out_sum.fill(np.iinfo(np.int64).max)
         elif self.measure is None: plan.agg = A_COUNT
         elif lin is not None:
             plan.agg = A_LIN; plan.nlin = len(lin)
@@ -1687,7 +1755,7 @@ class Query:
             plan.attr_fkcol[i] = fk; plan.attr_vals[i] = vals.ctypes.data; plan.attr_n[i] = len(vals); plan.attr_kmask[i] = km; keep.append(vals)
         sparse = bool(self.keys) and bool(plan.out_key)
         ctx = dict(plan=plan, keep=keep, radix=radix if self.keys else None, kmaps=kmaps if self.keys else None,
-                   dense=((out_sum, out_cnt) + ((out_hi,) if wide else ())) if self.keys and not sparse else None, sparse=sparse, wide=wide,
+                   dense=((out_sum, out_cnt) + ((out_hi,) if wide or ext is not None else ())) if self.keys and not sparse else None, sparse=sparse, wide=wide, ext=ext is not None,
                    widekey=bool(self.keys) and bool(plan.widekey),
                    mm_out=getattr(self, "_mm_out", None) if sparse else None,
                    range_used=self.range_used, scanned=getattr(self, "scanned", None), fresh=True)
@@ -1701,13 +1769,13 @@ class Query:
     def _plan_sig(self, engine):
         """cache key of the compiled plan (None: do not cache): engine, GROUP BY mode, join form, derived-surrogate
         versions; plus the query's parts, compared by identity (a changed query has new parts)"""
-        if not PLAN_CACHE: return None
+        if not PLAN_CACHE or getattr(self, "_rows", False): return None
         for a in ("_inpass", "_xrows", "_word_ranges", "_dom", "_lookup_dims", "_force_lookup"):
             if getattr(self, a, None): return None
         surr = getattr(self.fact, "surr", {})
-        key = (engine, self._dev, GROUPBY, self.join_mode, tuple(sorted((k, sg.version) for k, sg in surr.items() if sg is not None)),
+        key = (engine, self._dev, GROUPBY, self.join_mode, getattr(self, "_ext", None) is not None, getattr(self, "_rows", False), tuple(sorted((k, sg.version) for k, sg in surr.items() if sg is not None)),
                tuple((d.name, f) for d, f in self.joins.items()), len(self.keys), getattr(self, "_wide", 0), self.fact.n)
-        objs = (self.pred, self.measure) + tuple(self.keys) + tuple(self.joins)
+        objs = (self.pred, self.measure, getattr(self, "_ext", None), getattr(self, "_rows", False)) + tuple(self.keys) + tuple(self.joins)
         return key, objs
 
     def _finish(self, ctx):
@@ -1716,6 +1784,7 @@ class Query:
         if not ctx.pop("fresh", False):             # a cached plan: clear its outputs
             if ctx["dense"] is not None and ctx.get("touched") is not None:     # only the entries the last run set
                 for a in ctx["dense"]: a[ctx["touched"]] = 0
+                if ctx.get("ext"): ctx["dense"][0][ctx["touched"]] = np.iinfo(np.int64).max
             if ctx.get("sparse"):
                 self._mm_out = ctx["mm_out"]; plan.out_n = 0
                 self._mm_bind(plan); plan.out_cap = len(self._mm_out[0])
@@ -1726,6 +1795,9 @@ class Query:
         self.last_plan = plan
         wide = ctx.get("wide", 0)
         if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"][:2]
+        ext = ctx.get("ext", False)
+        if not self.keys and ext:    # MIN / MAX of nothing is NULL
+            return (int(plan.total_sum), int(plan.total_sum_hi)) if plan.total_cnt else None
         if not self.keys:            # SQL semantics: COUNT of nothing is 0, SUM of nothing is NULL
             if self.measure is None: return int(plan.total_cnt)
             if not plan.total_cnt: return None
@@ -1737,7 +1809,7 @@ class Query:
             gk, gs, gc, gh, gkh = gk[o], gs[o], gc[o], gh[o], gkh[o]
         else:
             nz = np.nonzero(out_cnt)[0]; gk, gs, gc = nz, out_sum[nz], out_cnt[nz]; ctx["touched"] = nz
-            gh = ctx["dense"][2][nz] if wide else None
+            gh = ctx["dense"][2][nz] if wide or ext else None
         if wide: gs = np.array([_join128(a, b) for a, b in zip(gs.tolist(), gh.tolist())], object)   # exact 128-bit sums
         def digits():
             """the mixed-radix digits of the group codes, one array per key (128-bit codes: Python integers)"""
@@ -1771,13 +1843,14 @@ class Query:
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)
         cn = np.asarray(gc, np.int64).tolist()
         vs = (gs.tolist() if wide else np.asarray(gs, np.int64).tolist()) if self.measure is not None else cn
+        if ext: vs = list(zip(np.asarray(gs, np.int64).tolist(), np.asarray(gh, np.int64).tolist()))
         if getattr(self, "_both", False):
             out = {}
             for key, v, c in zip(keys, vs, cn): o = out.get(key, (0, 0)); out[key] = (o[0] + v, o[1] + c)
             return out
         if len(set(keys)) == len(keys): return dict(zip(keys, vs))
-        out = {}
-        for key, v in zip(keys, vs): out[key] = out.get(key, 0) + v
+        out = {}                                    # several codes of one value (lookup keys): their groups merge
+        for key, v in zip(keys, vs): out[key] = v if key not in out else (_merge_vals(out[key], v) if ext else out[key] + v)
         return out
 
     def _run_range(self, engine):
