@@ -243,8 +243,9 @@ floating point, in an order the engine does not reproduce.
 
 **What is still refused** (each with the reason): arithmetic on DOUBLE columns, strings, dates, timestamps and
 booleans; GROUP BY keys needing more than 128 bits together, or more than 12 key columns; constants with more than 18
-decimal places; filter programs longer than 1024 instructions. In the fuzzer, torbles now refuses fewer queries than
-DuckDB rejects (DuckDB stops on overflow in its own BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly).
+decimal places; filter programs longer than 1024 instructions. In the final fuzz record torbles refused 119 of 162,325
+queries (all GROUP BY keys past 128 bits) where DuckDB rejected 13,030 (overflow in its own BIGINT and DECIMAL(18)
+arithmetic, which torbles evaluates exactly).
 
 ## Dense GROUP BY: bridges and their ablation (0.2.0)
 

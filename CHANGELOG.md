@@ -49,9 +49,11 @@ Correctness
   planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
   the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
   overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
-  group count overflowing 63 bits; later, 64-bit unsigned group keys decoded through int64. Refusals went from 2.3x
-  the queries DuckDB rejects to a few percent of them (128-bit sums and group codes, the histogram bridge); the
-  fuzzer counts only documented refusals and its cases no longer depend on Python's hash seed.
+  group count overflowing 63 bits; later, 64-bit unsigned group keys decoded through int64 and a GROUP BY with
+  exactly 2^64 groups on the GPU path. Final record: 162,325 queries over 4,806 random schemas, 149,176 answers
+  compared, no mismatch; torbles refused 119 (GROUP BY keys past 128 bits) where DuckDB rejected 13,030 (before the
+  128-bit work: 31,595 refusals, 2.3x DuckDB's rejections). The fuzzer counts only documented refusals, and its cases
+  no longer depend on Python's hash seed.
 - New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
   a 40-case fuzz run; `make test` runs them all.
 

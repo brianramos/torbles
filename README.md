@@ -122,13 +122,14 @@ values, empty tables, sizes around word and tile boundaries) and random queries 
 `NOT` and `OR`; GROUP BY on fact and dimension columns; COUNT or SUM of random polynomials with decimal constants), run
 on randomly chosen engines and planner settings, saved and reloaded, with a flipped bit repaired on load. Any answer
 that differs from DuckDB's, and any exception other than a documented refusal, is a failure with a one-line replay
-command. Before this release the fuzzer found six bugs, all fixed: an empty fact table crashing the join planner,
+command. Before this release the fuzzer found seven bugs, all fixed: an empty fact table crashing the join planner,
 64-bit keys compared through floating point, decimal scaling overflowing at DECIMAL(18), 64-bit timestamps in
-dimensions, GROUP BY on a 64-bit column after reloading, and the group count overflowing 63 bits. After the fixes, a
-final run over six new seeds (5,016 random schemas, 169,600 queries) compared 124,364 answers with DuckDB's and found
-no mismatch and no unexpected error. The rest were documented refusals (19%: sums that could exceed 64 bits, GROUP BY
-keys wider than 64 bits together, arithmetic on columns that cannot be summed) or queries DuckDB itself rejected (8%,
-mostly integer overflow in its own arithmetic).
+dimensions, GROUP BY on a 64-bit column after reloading, the group count overflowing 63 bits, and a GROUP BY with
+exactly 2^64 groups on the GPU path. The final record, six seeds of 800 cases (4,806 random schemas, 162,325 queries),
+compared 149,176 answers with DuckDB's and found no mismatch and no unexpected error. torbles refused 119 queries
+(0.07%, all GROUP BY keys needing more than 128 bits together); DuckDB rejected 13,030 (8%, overflow in its own
+BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly). Every engine mode passes the same way
+(results/fuzz).
 
 ## Results
 
