@@ -167,6 +167,7 @@ class Database:
             t = Table(name, data, msb=tuple(fk), refs=refs or None, extend=extend or None, cluster=cluster)
             t.codecs, t.pk, t.sqlname = codecs, pk, name
             t.nullable = nullable                       # column -> its validity column
+            t.col_order = [c for c in cols[name] if c in data]          # the declared order (SELECT *)
             t.fk_nulls = {c: int(st["rows"] - st["nonnull"][c]) for c in fk}     # NULL references (never join)
             self.tables[name] = t
             if name in dims:
@@ -734,7 +735,7 @@ def save(db, path):
             colmax={c: int(t.colmax(c)) for c in t.cols if c in t._colmax or c in t.data},
             wmax=getattr(t, "_wmax", {}), wide={c: list(v) for c, v in getattr(t, "wide", {}).items()}, sidecars=side,
             codecs=codecs, refs=refs, pk=getattr(t, "pk", None), orphans=getattr(t, "orphans", {}),
-            nullable=getattr(t, "nullable", {}), fk_nulls=getattr(t, "fk_nulls", {}),
+            nullable=getattr(t, "nullable", {}), fk_nulls=getattr(t, "fk_nulls", {}), col_order=getattr(t, "col_order", None),
             used_all=bool(t.used.all()), meta=m, dense_dim=any(t is ot._refdim.get(f) for ot in db.tables.values() for f in getattr(ot, "_refdim", {})))
         man["tables"][name]["meta"] = json.loads(json.dumps(m, default=str))
     with open(os.path.join(path, "manifest.json.tmp"), "w") as f: json.dump(man, f, indent=1, default=str)
@@ -807,6 +808,7 @@ def load(path, validate=True, con=None):
             t.refbit[fk], t.surr[fk], t._refdim[fk] = int(r["bit"]), sg, dim
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}
         t.nullable = dict(m.get("nullable", {})); t.fk_nulls = {k: int(v) for k, v in m.get("fk_nulls", {}).items()}
+        if m.get("col_order"): t.col_order = list(m["col_order"])
         if validate:                              # faces first: nothing is decoded from unchecked planes
             rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
             for part, at_ in [("", t.at)] + [(c, sc["side"]) for c, sc in t.sidecars.items()]:

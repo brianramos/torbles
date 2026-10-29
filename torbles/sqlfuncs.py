@@ -575,7 +575,7 @@ scalar("|", _int2)(lambda a, b: a | b)
 scalar("xor", _int2)(lambda a, b: a ^ b)
 scalar("<<", _int2)(lambda a, b: a << b)
 scalar(">>", _int2)(lambda a, b: a >> b)
-scalar("~", same_as())(lambda a: ~a)
+scalar("__bitnot", same_as())(lambda a: ~a)
 
 
 @scalar("width_bucket", lambda a: (T.BIGINT, [T.DOUBLE, T.DOUBLE, T.DOUBLE, T.BIGINT]))
@@ -1484,8 +1484,8 @@ def _quantile_cont_one(rows, q):
     return ffloat(frac(a) + (frac(b) - frac(a)) * (pos - lo))
 
 
-def _quantile_disc_one(rows, q):
-    rs = _sorted_rows(rows)
+def _quantile_disc_one(rows, q, desc=False):
+    rs = _sorted_rows(rows, desc)
     n = sum(w for _, w in rs)
     if not n: return None
     k = max(0, math.ceil(Fraction(q) * n) - 1) if not isinstance(q, float) else max(0, math.ceil(q * n - 1e-12) - 1)
@@ -1516,9 +1516,9 @@ def _quantile_cont(rows, p=()):
 
 @agg("quantile_disc percentile_disc quantile", lambda ts, p=(): T.LIST(ts[0]) if p and isinstance(p[0], list) else ts[0])
 def _quantile_disc(rows, p=()):
-    q = _q_param(p)
-    if isinstance(q, list): return None if not rows else [_quantile_disc_one(rows, x) for x in q]
-    return _quantile_disc_one(rows, q)
+    q = _q_param(p); desc = len(p) > 1 and p[1] == "desc"
+    if isinstance(q, list): return None if not rows else [_quantile_disc_one(rows, x, desc) for x in q]
+    return _quantile_disc_one(rows, q, desc)
 
 
 @agg("median", lambda ts, p=(): ts[0] if ts[0].id == "DECIMAL" or ts[0].temporal or not ts[0].numeric else T.DOUBLE)
@@ -1531,11 +1531,15 @@ def _median(rows, p=()):
 
 @agg("mode", lambda ts, p=(): ts[0])
 def _mode(rows, p=()):
-    cnt, first = {}, {}
-    for i, ((v,), w) in enumerate(rows):
-        cnt[v] = cnt.get(v, 0) + w; first.setdefault(v, i)
+    """the most frequent value; ties: the first in the sort order (WITHIN GROUP (ORDER BY x [DESC])), else the smallest"""
+    cnt = {}
+    for (v,), w in rows: cnt[v] = cnt.get(v, 0) + w
     if not cnt: return None
-    return max(cnt, key=lambda v: (cnt[v], -first[v]))
+    top = max(cnt.values())
+    cands = [v for v, c in cnt.items() if c == top]
+    import functools
+    cands.sort(key=functools.cmp_to_key(cmp_values), reverse=bool(p) and p[0] == "desc")
+    return cands[0]
 
 
 @agg("string_agg listagg group_concat", lambda ts, p=(): T.VARCHAR, ordered=True, nargs=1)

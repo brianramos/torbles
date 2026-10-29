@@ -1447,7 +1447,10 @@ class _Planner:
         for b, (fk, cf, cd) in self.left.items():
             tf = None
             if cf:
+                # fact-side ON terms: a foreign key read there is its own value (a hidden join, never the joined dim)
+                self.nulled = {b}
                 tfs = [self.native_tf(c) for c in cf]
+                self.nulled = set()
                 if any(x is None for x in tfs): raise _NotStarNow()
                 T_ = tfs[0][0]
                 for x in tfs[1:]: T_ = algq.BoolOp("AND", T_, x[0])
@@ -1474,6 +1477,7 @@ class _Planner:
         parts, plans = [], []
         for c in configs:
             self.joins = dict(c["joined"]); self.nulled = set(c["nulled"])
+            for fk, hb in self.hidden.items(): self.joins[hb] = fk         # implicit joins drop no row (no orphans)
             rel, plan = self.run_pass(rest, need, aggs, c["extra"])
             parts.append(rel); plans.append(plan)
         self.joins, self.nulled = joins0, set()
@@ -1722,10 +1726,21 @@ class _Planner:
             except (TypeError, OverflowError, ValueError) as ex:
                 if "group domain too large" in str(ex): raise _TooManyGroups()
                 raise SqlError(f"the engine cannot run this block: {ex}")
+        def first_poly(vid):
+            return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
+        def both(extra, m):                      # one engine run: the sums of m and the row counts
+            q = query(extra).sum(m); q._both = True
+            return run(q)
+        pre = {}                                 # variant -> (counts, sums of its first moment)
         if empty:
             base = {} if keys else 0
         else:
-            base = run(query([]).count())
+            m0 = first_poly(0)
+            if m0 is not None:
+                r = both([], m0)
+                if keys: base = {g: v[1] for g, v in r.items()}; pre[0] = {g: v[0] for g, v in r.items()}
+                else: base = r[1]; pre[0] = r[0]
+            else: base = run(query([]).count())
         if not keys:
             n = base if not empty else 0
             rel = Rel(1 if n else 0); rel.cnt = [n] if n else []
@@ -1738,16 +1753,21 @@ class _Planner:
         for vid in sorted(set(variants.values())):
             extra = vpreds[vid]
             if vid != 0:
-                if empty: cnts = {} if keys else 0
+                m1 = first_poly(vid)
+                if empty or not groups: cnts = {} if keys else 0
+                elif m1 is not None:
+                    r = both(extra, m1)
+                    if keys: cnts = {g: v[1] for g, v in r.items()}; pre[vid] = {g: v[0] for g, v in r.items()}
+                    else: cnts = r[1]; pre[vid] = r[0]
                 else: cnts = run(query(extra).count())
                 rel.vcnt[vid] = [cnts.get(g, 0) for g in groups] if keys else ([cnts] if groups else [])
             for mi, m in enumerate(mlist[vid]):
                 ext = isinstance(m, tuple) and m[0] == "ext"
                 if empty or not groups: sums = {} if keys else None
                 elif ext: sums = run(query(extra).minmax(algq.Col(self.tab[self.fact], m[1])))
+                elif vid in pre and m is first_poly(vid): sums = pre[vid]
                 else: sums = run(query(extra).sum(m))
-                mk = m if ext else (vid, mi)
-                if ext: mk = (vid, m)
+                mk = (vid, m) if ext else (vid, mi)
                 if keys: rel.mom[mk] = [sums.get(g) for g in groups]
                 else: rel.mom[mk] = [sums] if groups else []
         return rel

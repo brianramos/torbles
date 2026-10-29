@@ -1080,9 +1080,13 @@ def lower_measure(e, fact):
     return low, scale
 
 # ------------------------------------------------------------------ queries
+class MinMax(tuple):
+    """(min, max) of a group (Query.minmax)"""
+
 def _merge_vals(a, b):
-    """two partial results of one group: sums add, (min, max) pairs combine"""
-    if isinstance(a, tuple): return (min(a[0], b[0]), max(a[1], b[1])) if len(a) == 2 and not isinstance(a[0], tuple) else tuple(x + y for x, y in zip(a, b))
+    """two partial results of one group: sums add, (sum, count) pairs add, (min, max) pairs combine"""
+    if isinstance(a, MinMax): return MinMax((min(a[0], b[0]), max(a[1], b[1])))
+    if isinstance(a, tuple): return tuple((x + y) if x is not None and y is not None else (x if y is None else y) for x, y in zip(a, b))
     return a + b
 
 class Query:
@@ -1239,11 +1243,12 @@ class Query:
         if getattr(self, "_rows", False): return np.union1d(rA, rB)
         if self.keys:
             out = dict(rA)
-            for key, v in rB.items(): out[key] = v if key not in out else (_merge_vals(out[key], v) if getattr(self, "_ext", None) is not None else out[key] + v)
+            for key, v in rB.items(): out[key] = v if key not in out else _merge_vals(out[key], v)
             return out
         if getattr(self, "_ext", None) is not None:
             if rA is None or rB is None: return rA if rB is None else rB
-            return (min(rA[0], rB[0]), max(rA[1], rB[1]))
+            return MinMax((min(rA[0], rB[0]), max(rA[1], rB[1])))
+        if getattr(self, "_both", False): return _merge_vals(rA, rB)
         if self.measure is None: return rA + rB
         return None if rA is None and rB is None else (rA or 0) + (rB or 0)
 
@@ -1382,7 +1387,7 @@ class Query:
         import copy
         nk = len(self.keys)
         def sub(meas):
-            q = copy.copy(self); q._nobridge = True; q._plan_cache = {}
+            q = copy.copy(self); q._nobridge = True; q._plan_cache = {}; q._both = False
             for a in ("_codeq", "_lowered_measure", "_fq"):
                 if a in q.__dict__: del q.__dict__[a]
             q.keys = list(self.keys) + [cols[h] for h in H]; q.measure = meas
@@ -1422,13 +1427,20 @@ class Query:
             k = g[:nk]
             out[k] = out.get(k, Fraction(0)) + acc
         scale = _dec_scale_of(self.measure)
+        both = getattr(self, "_both", False)
+        if both:                                            # the row counts per group, for (sum, count) results
+            cnt = {}
+            for g, n in (counts.items() if (() in resid or not sums) else sub(None).items()):
+                cnt[g[:nk]] = cnt.get(g[:nk], 0) + n
         def fin(v):
             if floats: return float(v)
             if not scale: return int(v) if v.denominator == 1 else float(v)
             x = v * 10 ** scale
             return _exact_dec(int(x), scale) if x.denominator == 1 else Decimal(v.numerator) / Decimal(v.denominator)
         if not self.keys:
+            if both: return (fin(out[()]) if () in out else None, cnt.get((), 0))
             return fin(out[()]) if () in out else None
+        if both: return {k: (fin(v), cnt.get(k, 0)) for k, v in out.items()}
         return {k: fin(v) for k, v in out.items()}
 
     def _typed(self):
@@ -1448,7 +1460,7 @@ class Query:
             q = self._codeq = copy.copy(self); q._codes = True; q._src_measure = self.measure
             q._plan_cache = {}
         q.measure, q.pred, q.keys, q.joins, q.join_mode = lm[1], self.pred, self.keys, self.joins, self.join_mode
-        q._ext = getattr(self, "_ext", None)
+        q._ext = getattr(self, "_ext", None); q._both = getattr(self, "_both", False)
         q.range_mode = getattr(self, "range_mode", "auto")
         r = q._run_codes(engine)
         for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows"):
@@ -1458,7 +1470,9 @@ class Query:
         ext = getattr(self, "_ext", None)
         if ext is not None:                          # MIN / MAX codes -> values of the column's type
             ecd = ext.codec()
-            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else tuple(ecd.decode(_codes_array(list(v)))))
+            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else MinMax(ecd.decode(_codes_array(list(v)))))
+        if getattr(self, "_both", False) and self.measure is not None:
+            v0 = val; val = lambda v: v if v is None else (v0(v[0]), v[1])
         if not self.keys: return val(r)
         decs = []
         for k in self.keys:
@@ -1806,11 +1820,12 @@ class Query:
         if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"][:2]
         ext = ctx.get("ext", False)
         if not self.keys and ext:    # MIN / MAX of nothing is NULL
-            return (int(plan.total_sum), int(plan.total_sum_hi)) if plan.total_cnt else None
+            return MinMax((int(plan.total_sum), int(plan.total_sum_hi))) if plan.total_cnt else None
         if not self.keys:            # SQL semantics: COUNT of nothing is 0, SUM of nothing is NULL
             if self.measure is None: return int(plan.total_cnt)
-            if not plan.total_cnt: return None
-            return _join128(plan.total_sum, plan.total_sum_hi) if wide else int(plan.total_sum)
+            if not plan.total_cnt: return (None, 0) if getattr(self, "_both", False) else None
+            v = _join128(plan.total_sum, plan.total_sum_hi) if wide else int(plan.total_sum)
+            return (v, int(plan.total_cnt)) if getattr(self, "_both", False) else v
         wkey = ctx.get("widekey", False)
         if ctx.get("sparse"):               # sparse output: (group code, sum, count) per group present
             n = int(plan.out_n); gk, gs, gc, gh, gkh = (a[:n] for a in self._mm_out)
@@ -1852,7 +1867,7 @@ class Query:
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)
         cn = np.asarray(gc, np.int64).tolist()
         vs = (gs.tolist() if wide else np.asarray(gs, np.int64).tolist()) if self.measure is not None else cn
-        if ext: vs = list(zip(np.asarray(gs, np.int64).tolist(), np.asarray(gh, np.int64).tolist()))
+        if ext: vs = [MinMax(p) for p in zip(np.asarray(gs, np.int64).tolist(), np.asarray(gh, np.int64).tolist())]
         if getattr(self, "_both", False):
             out = {}
             for key, v, c in zip(keys, vs, cn): o = out.get(key, (0, 0)); out[key] = (o[0] + v, o[1] + c)

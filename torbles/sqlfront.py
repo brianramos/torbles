@@ -941,7 +941,7 @@ class Binder:
             return I.Func("__first", [lit, args[0]], T.VARCHAR) if I.has(args[0], I.Agg) or I.has(args[0], I.Win) else lit
         if name == "-" and len(args) == 1: return self.func("neg", args)
         if name == "+" and len(args) == 1: return args[0]
-        if name == "~" and len(args) == 1: return self.func("~", args)
+        if name == "~" and len(args) == 1: return self.func("__bitnot", args)
         if name == "~" and len(args) == 2: return self.func("regexp_matches", args)
         if name == "row": return I.Func("row", args, T.NULL)
         if name == "regexp_full_match" and len(args) == 2 and isinstance(args[1], I.Func) and args[1].fn == "__iso_similar_pat":
@@ -984,8 +984,10 @@ class Binder:
             # PERCENTILE_CONT(p) WITHIN GROUP (ORDER BY x [DESC]) / MODE() WITHIN GROUP (ORDER BY x)
             if name != "mode":
                 q = _const(args[0], name) if args else None
-                if orders[0][1]: q = [1 - Decimal(str(x)) for x in q] if isinstance(q, list) else 1 - Decimal(str(q))
-                params = (q,)
+                if orders[0][1] and name == "quantile_cont":
+                    q = [1 - Decimal(str(x)) for x in q] if isinstance(q, list) else 1 - Decimal(str(q))
+                params = (q, "desc") if orders[0][1] and name == "quantile_disc" else (q,)
+            else: params = ("desc" if orders[0][1] else "asc",)
             args = [orders[0][0]]; orders = []
         elif name in ("quantile_cont", "quantile_disc") and len(args) == 2:
             params = (_const(args[1], name),); args = args[:1]
@@ -1107,7 +1109,10 @@ def _rename(b, names):
 
 
 def _visible_cols(t):
-    return [c for c in t.cols if not c.startswith("_") and "#" not in c]
+    order = getattr(t, "col_order", None)
+    cs = [c for c in t.cols if not c.startswith("_") and "#" not in c]
+    if order: cs = [c for c in order if c in cs] + [c for c in cs if c not in order]
+    return cs
 
 
 def q_columns(q):
