@@ -1,0 +1,102 @@
+SF10: loaded in 7.5 s (DuckDB read, types, key design, torbles build), AVX2 (vpshufb popcount)
+customer: 300,000 rows, primary key c_custkey, clustered by c_custkey
+    c_custkey                    INTEGER          int       19 bits
+    c_name                       VARCHAR          dict      19 bits
+    c_address                    VARCHAR          dict      19 bits
+    c_city                       VARCHAR          dict       8 bits
+    c_nation                     VARCHAR          dict       5 bits
+    c_region                     VARCHAR          dict       3 bits
+    c_phone                      VARCHAR          dict      19 bits
+    c_mktsegment                 VARCHAR          dict       3 bits
+    key design: derived surrogate, 29 bits = c_region 3 | c_nation 3 | c_city 4 | row 19
+      attributes on the key's bits: c_region, c_nation, c_city
+date: 2,556 rows, primary key d_datekey, clustered by d_datekey
+    d_datekey                    INTEGER          int       16 bits
+    d_date                       VARCHAR          dict      12 bits
+    d_dayofweek                  VARCHAR          dict       3 bits
+    d_month                      VARCHAR          dict       4 bits
+    d_year                       INTEGER          int        3 bits
+    d_yearmonthnum               INTEGER          int       10 bits
+    d_yearmonth                  VARCHAR          dict       7 bits
+    d_daynuminweek               INTEGER          int        3 bits
+    d_daynuminmonth              INTEGER          int        5 bits
+    d_daynuminyear               INTEGER          int        9 bits
+    d_monthnuminyear             INTEGER          int        4 bits
+    d_weeknuminyear              INTEGER          int        6 bits
+    d_sellingseason              VARCHAR          dict       3 bits
+    d_lastdayinweekfl            INTEGER          int        1 bits
+    d_lastdayinmonthfl           INTEGER          int        1 bits
+    d_holidayfl                  INTEGER          int        1 bits
+    d_weekdayfl                  INTEGER          int        1 bits
+    key design: derived surrogate, 20 bits = d_sellingseason 3 | d_month 2 | d_yearmonth 3 | row 12
+      attributes on the key's bits: d_sellingseason, d_year, d_month, d_monthnuminyear, d_yearmonth, d_yearmonthnum
+part: 800,000 rows, primary key p_partkey, clustered by p_partkey
+    p_partkey                    INTEGER          int       20 bits
+    p_name                       VARCHAR          dict      14 bits
+    p_mfgr                       VARCHAR          dict       3 bits
+    p_category                   VARCHAR          dict       5 bits
+    p_brand1                     VARCHAR          dict      10 bits
+    p_color                      VARCHAR          dict       7 bits
+    p_type                       VARCHAR          dict       8 bits
+    p_size                       INTEGER          int        6 bits
+    p_container                  VARCHAR          dict       6 bits
+    key design: derived surrogate, 32 bits = p_mfgr 3 | p_category 3 | p_brand1 6 | row 20
+      attributes on the key's bits: p_mfgr, p_category, p_brand1
+supplier: 20,000 rows, primary key s_suppkey, clustered by s_suppkey
+    s_suppkey                    INTEGER          int       15 bits
+    s_name                       VARCHAR          dict      15 bits
+    s_address                    VARCHAR          dict      15 bits
+    s_city                       VARCHAR          dict       8 bits
+    s_nation                     VARCHAR          dict       5 bits
+    s_region                     VARCHAR          dict       3 bits
+    s_phone                      VARCHAR          dict      15 bits
+    key design: derived surrogate, 25 bits = s_region 3 | s_nation 3 | s_city 4 | row 15
+      attributes on the key's bits: s_region, s_nation, s_city
+lineorder: 59,986,214 rows
+    lo_quantity                  INTEGER          int        6 bits
+    lo_extendedprice             INTEGER          int       24 bits
+    lo_discount                  INTEGER          int        4 bits
+    lo_revenue                   INTEGER          int       24 bits
+    lo_supplycost                INTEGER          int       17 bits
+    lo_custkey                   INTEGER          ref       29 bits -> customer.c_custkey
+    lo_orderdate                 INTEGER          ref       20 bits -> date.d_datekey
+    lo_partkey                   INTEGER          ref       32 bits -> part.p_partkey
+    lo_suppkey                   INTEGER          ref       25 bits -> supplier.s_suppkey
+  cpu  Q1.1       6.03 ms  ok  joins as date:cubes  (cpu)
+  cpu  Q1.2       3.53 ms  ok  joins as date:cubes  (cpu)
+  cpu  Q1.3       5.79 ms  ok  joins as date:comparators  (cpu)
+  cpu  Q2.1       7.05 ms  ok  joins as part:cubes, supplier:cubes  (cpu)
+  cpu  Q2.2       6.24 ms  ok  joins as part:comparators, supplier:cubes  (cpu)
+  cpu  Q2.3       3.62 ms  ok  joins as part:cubes, supplier:cubes  (cpu)
+  cpu  Q3.1       9.60 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (cpu)
+  cpu  Q3.2       6.20 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (cpu)
+  cpu  Q3.3       5.03 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (cpu)
+  cpu  Q3.4       4.87 ms  ok  joins as customer:cubes, supplier:cubes, date:cubes  (cpu)
+  cpu  Q4.1       8.92 ms  ok  joins as customer:cubes, supplier:cubes, part:cubes  (cpu)
+  cpu  Q4.2       8.26 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators, part:cubes  (cpu)
+  cpu  Q4.3       4.90 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators, part:cubes  (cpu)
+  cpu  K1         7.27 ms  ok  joins as customer:comparators  (cpu)
+  cpu  K3         3.92 ms  ok  joins as supplier:cubes  (cpu)
+  cpu  M1        17.66 ms  ok  joins as -  (cpu)
+  cpu  M2        21.83 ms  ok  joins as -  (cpu)
+  cpu  M3        17.08 ms  ok  joins as -  (cpu)
+  cpu: 13 of 13 SSB queries answered correctly, 80.1 ms in all (correct answers only); all results match DuckDB
+  gpu  Q1.1       0.49 ms  ok  joins as date:cubes  (gpu)
+  gpu  Q1.2       0.42 ms  ok  joins as date:cubes  (gpu)
+  gpu  Q1.3       0.45 ms  ok  joins as date:comparators  (gpu)
+  gpu  Q2.1       0.92 ms  ok  joins as part:cubes, supplier:cubes  (gpu)
+  gpu  Q2.2       0.56 ms  ok  joins as part:comparators, supplier:cubes  (gpu)
+  gpu  Q2.3       0.45 ms  ok  joins as part:cubes, supplier:cubes  (gpu)
+  gpu  Q3.1       0.97 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (gpu)
+  gpu  Q3.2       0.93 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (gpu)
+  gpu  Q3.3       0.64 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators  (gpu)
+  gpu  Q3.4       0.67 ms  ok  joins as customer:cubes, supplier:cubes, date:cubes  (gpu)
+  gpu  Q4.1       0.97 ms  ok  joins as customer:cubes, supplier:cubes, part:cubes  (gpu)
+  gpu  Q4.2       0.80 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators, part:cubes  (gpu)
+  gpu  Q4.3       0.84 ms  ok  joins as customer:cubes, supplier:cubes, date:comparators, part:cubes  (gpu)
+  gpu  K1         0.72 ms  ok  joins as customer:comparators  (gpu)
+  gpu  K3         0.52 ms  ok  joins as supplier:cubes  (gpu)
+  gpu  M1         1.98 ms  ok  joins as -  (gpu)
+  gpu  M2         5.99 ms  ok  joins as -  (gpu)
+  gpu  M3         4.52 ms  ok  joins as -  (gpu)
+  gpu: 13 of 13 SSB queries answered correctly, 9.1 ms in all (correct answers only); all results match DuckDB

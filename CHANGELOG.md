@@ -73,6 +73,9 @@ Benchmarks
   (automatic keys), 111 ms (hand-designed keys; 113 ms with 0.1.0) and 311 ms for DuckDB in memory; with the GROUP BY
   bridges, M1-M3 in 96 ms against DuckDB's 228. Only answers equal to DuckDB's are timed. `bench/ssb/ablation.sh`
   measures every bridge; `wsl/run_validation.sh` runs `ssb_auto.py` too.
+- Validated on the RTX 5090 laptop (`results/validation_sf10_rtx5090_0.2.0`): every test, the GPU tests on the GPU,
+  and SSB SF10 with every result equal to DuckDB's. M1-M3 on 24 CPU threads: 59.7 ms (0.1.0: 181.5; DuckDB 139.4);
+  the 13 queries in 79.4 ms on the CPU and 10.7 ms on the GPU (DuckDB 223.4); with the automatic keys, 80.1 and 9.1 ms.
 
 ## 0.1.0 (2026-10-29)
 

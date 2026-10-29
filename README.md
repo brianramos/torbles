@@ -169,8 +169,25 @@ time over the rounds is kept; ms:
 Loading SF1 takes 2.4 s with the automatic design (DuckDB read, types, key design, build) against 1.3 s for the
 hand-written loader, which reads fewer dimension columns. The planner reads which bits each attribute occupies from
 the key design, so first runs no longer pay for discovering them (first runs of the 13 queries: 286 ms, against 141 ms
-warm, on 2 threads). To measure it with the GPU at SF10, `bash wsl/run_validation.sh 10` now runs it after the
-hand-designed benchmark.
+warm, on 2 threads).
+
+### SF10 on the laptop (0.2.0): Core Ultra 9 290HX (24 cores) and RTX 5090 Laptop GPU
+
+`bash wsl/run_validation.sh 10` builds the engine and the CUDA executor, runs every test (the GPU tests on the GPU),
+and benchmarks SSB SF10 (60M rows) with the hand-designed keys and with the automatic ones. Every test passed and every
+result equals DuckDB's. Best of 3, ms, the same laptop for both releases:
+
+| | DuckDB 1 thread | DuckDB 24 threads | torbles CPU, 1 thread | torbles CPU, 24 threads | torbles GPU |
+|---|---|---|---|---|---|
+| 13 SSB queries, 0.2.0 | 2164.6 | 223.4 | 892.2 | 79.4 | 10.7 |
+| 13 SSB queries, 0.1.0 | 2708.1 | 246.5 | 887.9 | 83.2 | 10.3 |
+| M1-M3, 0.2.0 | 2001.9 | 139.4 | **871.3** | **59.7** | **13.7** |
+| M1-M3, 0.1.0 | 2386.5 | 159.8 | 2471.8 | 181.5 | 21.3 |
+
+The GROUP BY bridges take M1-M3 on 24 CPU threads from 182 to 60 ms (DuckDB 139); M3 alone from 84 to 17.8 ms (DuckDB
+19.4), and on the GPU from 12.4 to 5.2 ms, since factoring the measure through the key happens in the planner. With
+the automatic keys (`torbles.from_duckdb`, loaded in 7.5 s): the 13 queries in 80.1 ms on the CPU and 9.1 ms on the
+GPU, all equal to DuckDB's. Reports: `results/validation_sf10_rtx5090_0.2.0/`.
 
 ### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
 
@@ -264,10 +281,9 @@ dimensions, deltas, and self-extension.
 - **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
-- **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns, 12
-  GROUP BY keys, 128-bit fields), and the release was tested with the CPU emulation of the kernels only (the CUDA
-  build compiles with nvcc 12.0): run `make gpu && make test` on an NVIDIA GPU before relying on it. Semi-join lookups, the general GROUP BY path and 128-bit sums or group codes run on the CPU (the
-  query falls back automatically).
+- **GPU executor:** validated on one GPU only, the RTX 5090 Laptop GPU (compute 12.0, CUDA 12.4): every test on the
+  GPU and the SF10 benchmark pass (above). Semi-join lookups, the general GROUP BY path and 128-bit sums or group codes
+  run on the CPU (the query falls back automatically).
 - **Blob payload integrity.** The payload heap is not covered by the torus faces; the heads and lengths are.
 - **Platforms:** x86-64 Linux / WSL2. The AVX-512 VPOPCNTDQ kernel is untested on hardware.
 
