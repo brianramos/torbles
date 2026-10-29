@@ -46,19 +46,19 @@ totals rather than single rows.
 
 | query | DuckDB | torbles, official keys | torbles, coordinate keys | torbles, derived surrogate |
 |---|---|---|---|---|
-| Q1.1 | 322 | 114 | 88 | 84 |
-| Q1.2 | 199 | 101 | 54 | 42 |
-| Q1.3 | 154 | 117 | 81 | 64 |
-| Q2.1 | 268 | 520 | 77 | 58 |
-| Q2.2 | 254 | 389 | 83 | 67 |
-| Q2.3 | 204 | 340 | 39 | 39 |
-| Q3.1 | 503 | 783 | 116 | 115 |
-| Q3.2 | 232 | 445 | 99 | 111 |
-| Q3.3 | 151 | 326 | 79 | 78 |
-| Q3.4 | 151 | 86 | 82 | 67 |
-| Q4.1 | 466 | 756 | 97 | 139 |
-| Q4.2 | 437 | 415 | 80 | 94 |
-| Q4.3 | 315 | 307 | 66 | 71 |
+| Q1.1 | 34.1 | 18.7 | 88 | 84 |
+| Q1.2 | 23.4 | 13.5 | 54 | 42 |
+| Q1.3 | 18.0 | 11.7 | 81 | 64 |
+| Q2.1 | 42.7 | 26.3 | 77 | 58 |
+| Q2.2 | 37.3 | 23.4 | 83 | 67 |
+| Q2.3 | 27.5 | 17.3 | 39 | 39 |
+| Q3.1 | 60.0 | 36.8 | 116 | 115 |
+| Q3.2 | 35.7 | 23.3 | 99 | 111 |
+| Q3.3 | 25.1 | 20.1 | 79 | 78 |
+| Q3.4 | 18.6 | 13.9 | 82 | 67 |
+| Q4.1 | 59.8 | 36.5 | 97 | 139 |
+| Q4.2 | 60.4 | 40.2 | 80 | 94 |
+| Q4.3 | 35.4 | 29.2 | 66 | 71 |
 | K1 | 147 | 92 | 312 | 108 |
 | K2 | 134 | 110 | 43 | 38 |
 | K3 | 96 | 33 | 32 | 38 |
@@ -200,15 +200,34 @@ first runs include loading columns into DuckDB's buffer cache. Tables and the gr
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 
-## Automatic keys (`ssb_auto.py`, 0.2.0), SF1, 2 vCPUs
+## Automatic keys (`ssb_auto.py`, 0.2.0) and CPU performance, SF1, 2 vCPUs
 
 The official DuckDB database, loaded with `torbles.from_duckdb(db, schema="schema.sql", columns={"lineorder": the 9
 columns the queries read})`: keys from the standard DDL, layout from the key design, queries written with the data's
-values. Every result equals DuckDB's answer to the official SQL. Best of 3, ms, end to end.
+values. Every result equals DuckDB's answer to the official SQL. Both engines in memory (`SSB_DUCK_INMEM=1`). Four
+interleaved rounds of every configuration (the VM varies by up to 25% between identical runs); per query, the best
+time over the rounds (each round itself best of 3); ms.
 
-| query | DuckDB 2T | hand-designed keys (0.1.0 design) | automatic keys |
-|---|---|---|---|
-| 13 SSB queries | 430.6 | 122.3 | 141.2 |
+| query | DuckDB 1T | DuckDB 2T | 0.1.0 hand 1T | 0.2.0 hand 1T | 0.2.0 auto 1T | 0.1.0 hand 2T | 0.2.0 hand 2T | 0.2.0 auto 2T |
+|---|---|---|---|---|---|---|---|---|
+| Q1.1 | 34.1 | 18.7 | 16.2 | 16.0 | 16.0 | 9.2 | 8.8 | 9.2 |
+| Q1.2 | 23.4 | 13.5 | 8.4 | 7.8 | 8.1 | 5.3 | 4.9 | 4.8 |
+| Q1.3 | 18.0 | 11.7 | 11.2 | 10.7 | 15.5 | 6.7 | 6.9 | 10.5 |
+| Q2.1 | 42.7 | 26.3 | 13.0 | 12.9 | 15.1 | 8.6 | 8.6 | 9.9 |
+| Q2.2 | 37.3 | 23.4 | 12.5 | 12.9 | 12.9 | 7.4 | 7.4 | 8.2 |
+| Q2.3 | 27.5 | 17.3 | 7.1 | 6.9 | 6.9 | 4.2 | 4.1 | 4.5 |
+| Q3.1 | 60.0 | 36.8 | 28.3 | 28.1 | 28.1 | 16.1 | 15.3 | 15.9 |
+| Q3.2 | 35.7 | 23.3 | 14.8 | 14.1 | 15.6 | 8.4 | 8.5 | 8.8 |
+| Q3.3 | 25.1 | 20.1 | 12.4 | 11.8 | 11.9 | 7.0 | 6.7 | 7.3 |
+| Q3.4 | 18.6 | 13.9 | 11.8 | 11.2 | 10.9 | 6.5 | 6.2 | 6.5 |
+| Q4.1 | 59.8 | 36.5 | 20.6 | 21.6 | 29.5 | 15.3 | 15.2 | 15.1 |
+| Q4.2 | 60.4 | 40.2 | 20.4 | 19.9 | 22.7 | 11.1 | 11.5 | 12.7 |
+| Q4.3 | 35.4 | 29.2 | 12.6 | 12.0 | 12.1 | 6.9 | 7.0 | 9.0 |
+| M1 | 163.7 | 92.0 | 47.5 | 50.5 | 46.4 | 25.5 | 24.4 | 28.3 |
+| M2 | 181.9 | 99.4 | 214.8 | 210.0 | 232.8 | 109.4 | 112.6 | 112.1 |
+| M3 | 68.4 | 36.9 | 244.6 | 240.3 | 264.0 | 124.4 | 134.4 | 129.2 |
+| **13 SSB queries** | **478.0** | **310.8** | **189.3** | **185.8** | **205.2** | **112.7** | **111.2** | **122.4** |
+| **M1-M3** | **414.1** | **228.3** | **507.0** | **500.8** | **543.3** | **259.4** | **271.5** | **269.6** |
 
 Key designs found: customer and supplier region | nation | city | row; part mfgr | category | brand | row; date
 selling season | month | year-month | row. Loading: 2.4 s (DuckDB read, types, key design, build) against 1.3 s for

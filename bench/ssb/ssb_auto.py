@@ -5,7 +5,7 @@
 the standard DDL (schema.sql), and the key layout is found by the automatic key design. The 13 official queries are
 written with the values as they appear in the data (strings, years), and every result is compared with DuckDB's
 answer to the official SQL. Times: best of 3, end to end.
-    python3 ssb_auto.py <SF> [engines, default cpu,gpu]      (writes torbles_auto.json next to the data)"""
+    python3 ssb_auto.py <SF> [engines, default cpu,gpu; cpu@N for N threads]   (writes torbles_auto.json next to the data)"""
 import sys, os, time, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 import duckdb, torbles
@@ -48,18 +48,21 @@ def official(name):
     if not g: return rows[0][0]
     agg = [i for i, x in enumerate(cols) if x not in g][0]
     return {tuple(r[cols.index(k)] for k in g): r[agg] for r in rows}
+wants = {name: official(name) for name in queries}          # DuckDB first, then closed: nothing runs beside the timings
+con.close()
 out = dict(sf=sf, rows=lo.n, load_s=t_load, kernel=torbles.mm_kernel(), times={}, match={}, plans={},
            design={t: db.meta[t].get("design") for t in db.tables})
 for eng in engines:
+    torbles.set_threads(int(eng.split("@")[1]) if "@" in eng else (os.cpu_count() or 1))
     if eng == "gpu":
         try: torbles.gpu_name()
         except Exception as e: print("no GPU:", e); continue
     tot, ok_all = 0.0, True
     for name, q in queries.items():
-        want = official(name)
+        want = wants[name]
         best = None
         for i in range(3):
-            t1 = time.perf_counter(); got = q.run("alg" if eng == "cpu" else eng); dt_ = time.perf_counter() - t1
+            t1 = time.perf_counter(); got = q.run("alg" if eng.startswith("cpu") else eng); dt_ = time.perf_counter() - t1
             best = dt_ if best is None else min(best, dt_)
         ok = got == want; ok_all &= ok
         out["times"][f"{name}/{eng}"] = best; out["match"][f"{name}/{eng}"] = ok

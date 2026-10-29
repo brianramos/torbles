@@ -128,24 +128,40 @@ mostly integer overflow in its own arithmetic).
 
 ## Results
 
-### SSB with nothing designed by hand (0.2.0)
+### SSB with nothing designed by hand (0.2.0), and CPU performance
 
 `bench/ssb/ssb_auto.py` loads the official SSB database with `torbles.from_duckdb`, takes the keys from the standard
 DDL in `bench/ssb/schema.sql`, lets the key design find the layout, and writes the 13 official queries with the values
-as they appear in the data (`p_category == "MFGR#12"`). Every result equals DuckDB's answer to the official SQL. Against
-the hand-designed keys of 0.1.0, on the same small machine (SF1, 6M rows, 2 vCPUs, best of 3, ms):
+as they appear in the data (`p_category == "MFGR#12"`). Every result equals DuckDB's answer to the official SQL.
 
-| | DuckDB, 2 threads | torbles, hand-designed keys | torbles, automatic keys |
-|---|---|---|---|
-| 13 SSB queries | 431 | 122 | 141 |
-| loading (read, design, build) | | 1.3 s | 2.4 s |
+CPU only, SF1 (6M rows), a 2-vCPU cloud VM (AVX2), both engines in memory. This machine is noisy (single runs of the
+same configuration vary by up to 25%), so the configurations were run in four interleaved rounds and each query's best
+time over the rounds is kept; ms:
 
-The automatic design finds the hierarchies the hand design used (region > nation > city, mfgr > category > brand).
-For the dates it finds selling season > month > year-month, which puts the season, month and year on the key's bits
-and leaves the day to the row bits (the primary key is chronological, so day ranges stay comparators). The planner reads which bits each
-attribute occupies from the key design, so the first runs no longer pay for discovering them (first runs of the 13
-queries: 286 ms against 141 ms warm). To measure it with the GPU at SF10, `bash wsl/run_validation.sh 10` now runs
-it after the hand-designed benchmark.
+| | DuckDB | torbles 0.1.0, hand-designed keys | torbles 0.2.0, hand-designed keys | torbles 0.2.0, automatic keys |
+|---|---|---|---|---|
+| 13 SSB queries, 1 thread | 478.0 | 189.3 | 185.8 | 205.2 |
+| 13 SSB queries, 2 threads | 310.8 | 112.7 | 111.2 | 122.4 |
+| M1-M3 (unfiltered GROUP BY, every row), 1 thread | 414.1 | 507.0 | 500.8 | 543.3 |
+| M1-M3, 2 threads | 228.3 | 259.4 | 271.5 | 269.6 |
+
+- **The 13 SSB queries:** torbles' CPU engine is 2.5x DuckDB with the hand-designed keys and 2.3-2.5x with the
+  automatic ones. In 0.1.0, on 24 cores and 6M to 300M rows, it was 2.6-4.1x (below).
+- **0.2.0 did not change CPU speed:** with the same keys it is within noise of 0.1.0.
+- **Automatic keys cost about 10%** against the hand design, almost all of it in Q1.3 (week of the year: the hand
+  design had the day in the key's fields, the automatic one finds it only in the row bits) and Q4.1-Q4.2 on one thread.
+- **The CPU's weak spot is a dense GROUP BY with a product measure.** M3 (`GROUP BY d_year, lo_discount` over every
+  row, `SUM(lo_extendedprice * lo_discount)`) takes 240 ms against DuckDB's 68 ms on one thread. Every one of its 77
+  groups is present in every 4096-row tile, and the product costs 24 x 4 plane pairs per group per tile, which is far
+  more than one multiply-add per row. M1 (a single measure) is 3.5x faster than DuckDB. Choosing per-row arithmetic
+  over plane pairs when groups are dense is the next planner improvement; the GPU does not have this problem (M1-M3
+  at SF10: 21 ms against 160 ms for DuckDB on 24 threads, in 0.1.0).
+
+Loading SF1 takes 2.4 s with the automatic design (DuckDB read, types, key design, build) against 1.3 s for the
+hand-written loader, which reads fewer dimension columns. The planner reads which bits each attribute occupies from
+the key design, so first runs no longer pay for discovering them (first runs of the 13 queries: 286 ms, against 141 ms
+warm, on 2 threads). To measure it with the GPU at SF10, `bash wsl/run_validation.sh 10` now runs it after the
+hand-designed benchmark.
 
 ### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
 
@@ -240,6 +256,8 @@ dimensions, deltas, and self-extension.
 - **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns), and the
   release was tested with the CPU emulation of the kernels only: run `make gpu && make test` on an NVIDIA GPU before
   relying on it. Semi-join lookups and the general GROUP BY path run on the CPU (the query falls back automatically).
+- **CPU, dense GROUP BY with a product measure:** slower than DuckDB (SSB M3: 3.5x) when every group is present in
+  every tile; see the results above.
 - **Blob payload integrity.** The payload heap is not covered by the torus faces; the heads and lengths are.
 - **Platforms:** x86-64 Linux / WSL2. The AVX-512 VPOPCNTDQ kernel is untested on hardware.
 

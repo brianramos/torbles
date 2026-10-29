@@ -54,8 +54,9 @@ Changed (engine API)
 
 Benchmarks
 - `bench/ssb/schema.sql` (the SSB keys as standard DDL) and `bench/ssb/ssb_auto.py`: SSB loaded with nothing designed
-  by hand; every result equals DuckDB's; at SF1 on 2 vCPUs, 141 ms for the 13 queries against 122 ms with the
-  hand-designed keys and 431 ms for DuckDB. `wsl/run_validation.sh` runs it too.
+  by hand; every result equals DuckDB's. CPU, SF1, 2 vCPUs, best of four interleaved rounds: the 13 queries in 122 ms
+  (automatic keys), 111 ms (hand-designed keys; 113 ms with 0.1.0) and 311 ms for DuckDB in memory. A dense GROUP BY
+  with a product measure (M3) is 3.5x slower than DuckDB on the CPU. `wsl/run_validation.sh` runs it too.
 
 ## 0.1.0 (2026-10-29)
 
