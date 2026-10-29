@@ -6,7 +6,7 @@
 #define TORBLES_H
 #define TORBLES_VERSION "0.1.0"
 #include <stdint.h>
-#define MAXCOL 15
+#define MAXCOL 31                /* columns per torble (the torus has one row per column plus a wrap row) */
 #define NB 33
 enum { P_TRUE, P_EQ, P_NE, P_LT, P_LE, P_GT, P_GE, P_BETWEEN, P_AND, P_OR, P_NOT, P_PREFIX, P_BIT, P_CUBE, P_CLT, P_CGE, P_XOR };   /* P_XOR: additive (F2) correction */
 /* P_CLT / P_CGE(col, a = constant, b = plane mask): the code formed by the planes in mask (most significant id bit first)
@@ -47,14 +47,15 @@ typedef struct {
 typedef struct atable_s {
     uint64_t n, nw; int32_t k, width[MAXCOL], msb[MAXCOL];   /* msb: column stored most-significant-bit first */
     uint64_t *V[MAXCOL][NB];          /* V planes, NULL = implicit zero */
-    uint64_t *H[MAXCOL + 1][NB];      /* H planes for rows 0..k-1, index k = wrap row 15 */
-    int32_t nfaces; uint64_t *face[16 * 32][4]; int32_t fterms[16 * 32];
+    uint64_t *H[MAXCOL + 1][NB];      /* H planes for rows 0..k-1, index k = the wrap row */
+    int32_t nfaces; uint64_t *face[(MAXCOL + 1) * NB][4]; int32_t fterms[(MAXCOL + 1) * NB];
     uint64_t bytes;
     /* self-extending columns: column c is virtual when vflag[c] = (flag column) + 1. Its value bits live only for the
      * flagged rows, in a sidecar torble vside[c] (one column, rows in order). The sidecar row of a flagged row is
      * its rank: vrank[c][w] = flagged rows before word w, plus the popcount of the flag bits before it in the word.
      * No pointer is stored; the address is computed from the flag plane. */
     int32_t vflag[MAXCOL]; const struct atable_s *vside[MAXCOL]; const uint32_t *vrank[MAXCOL];
+    void *map; uint64_t maplen;       /* loaded from a file: the planes live in this private mapping (at_load) */
 } atable_t;
 
 static inline uint64_t tb_pdep(uint64_t src, uint64_t mask) {   /* scatter the low bits of src into the set bits of mask */

@@ -6,7 +6,7 @@
  * Column c is torus row c; with value width b the potential phi_c has bits 1..b, so only these planes can be nonzero:
  *   V_c[j] = phi_c(j) ^ phi_c(j+1),         j = 0..b_c
  *   H_i[j] = phi_i(j) ^ phi_(i+1)(j),       i < k-1;   H_(k-1)[j] = phi_(k-1)(j);   wrap H_15[j] = phi_0(j)
- * Every other plane of the 16 x 32 torus is zero and is not stored; faces through it are still checked.
+ * Every other plane of the torus (k + 1 rows, NB lanes) is zero and is not stored; faces through it are still checked.
  *   decode   : value bit j = XOR of V_c[0..j]                     (prefix over planes, 64 rows per op)
  *   validate : face(i,j) = H_i[j] ^ H_i[j+1] ^ V_i[j] ^ V_(i+1)[j] (XOR of planes)
  *   filter   : any predicate is a Boolean polynomial evaluated on value planes
@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #include <pthread.h>
 #include <stdatomic.h>
 
@@ -164,7 +165,25 @@ static void build_range(void *v, uint64_t w0, uint64_t w1) {
         for (int j = 1; j < NB; j++) if (t->H[k][j]) t->H[k][j][w] = val[0][j - 1];
     }
 }
+/* face list: every face of the torus that touches a stored plane (which planes exist decides the faces) */
+static void at_faces(atable_t *t) {
+    int k = t->k; t->nfaces = 0;
+    for (int ii = 0; ii <= k; ii++) {
+        int hrow = ii, vrow = ii < k ? ii : -1, vnext = ii < k ? (ii + 1 < k ? ii + 1 : -1) : 0;   /* ii == k is the wrap row */
+        for (int j = 0; j < NB; j++) {                 /* lanes are wide enough for 32-bit values (potentials need 33 bits) */
+            uint64_t *terms[4]; int nt = 0;
+            if (t->H[hrow][j]) terms[nt++] = t->H[hrow][j];
+            if (j + 1 < NB && t->H[hrow][j + 1]) terms[nt++] = t->H[hrow][j + 1];
+            if (vrow >= 0 && t->V[vrow][j]) terms[nt++] = t->V[vrow][j];
+            if (vnext >= 0 && t->V[vnext][j]) terms[nt++] = t->V[vnext][j];
+            if (!nt) continue;
+            for (int q = 0; q < nt; q++) t->face[t->nfaces][q] = terms[q];
+            t->fterms[t->nfaces++] = nt;
+        }
+    }
+}
 atable_t *at_create(uint64_t n, int ncols, const uint32_t **cols, const int32_t *msb) {
+    if (ncols < 1 || ncols > MAXCOL) return NULL;
     atable_t *t = calloc(1, sizeof *t);
     t->n = n; t->nw = (n + 63) / 64; t->k = ncols;
     for (int c = 0; c < ncols; c++) t->msb[c] = msb ? msb[c] : 0;
@@ -177,22 +196,93 @@ atable_t *at_create(uint64_t n, int ncols, const uint32_t **cols, const int32_t 
     }
     for (int j = 1; j <= t->width[0]; j++) t->H[k][j] = plane_alloc(t);
     bctx_t b = {t, cols}; par_for(t->nw, 2048, build_range, &b);
-    /* face list: every face of the 16 x 32 torus that touches a stored plane */
-    for (int ii = 0; ii <= k; ii++) {
-        int hrow = ii, vrow = ii < k ? ii : -1, vnext = ii < k ? (ii + 1 < k ? ii + 1 : -1) : 0;   /* ii == k is torus row 15 */
-        if (k == 16) break;
-        for (int j = 0; j < NB; j++) {                 /* lanes are wide enough for 32-bit values (potentials need 33 bits) */
-            uint64_t *terms[4]; int nt = 0;
-            if (t->H[hrow][j]) terms[nt++] = t->H[hrow][j];
-            if (j + 1 < NB && t->H[hrow][j + 1]) terms[nt++] = t->H[hrow][j + 1];
-            if (vrow >= 0 && j <= t->width[vrow] && t->V[vrow][j]) terms[nt++] = t->V[vrow][j];
-            if (vnext >= 0 && j <= t->width[vnext] && t->V[vnext][j]) terms[nt++] = t->V[vnext][j];
-            if (!nt) continue;
-            for (int q = 0; q < nt; q++) t->face[t->nfaces][q] = terms[q];
-            t->fterms[t->nfaces++] = nt;
-        }
-    }
+    at_faces(t);
     return t;
+}
+/* ---------------------------------------------------------------- persistence
+ * A torble file: a header (magic, version, shape, widths, the directory of stored planes, a hash of the header), then
+ * every stored plane, each 64-byte aligned. at_load maps the file privately (copy-on-write: repairs and fault
+ * injection never touch the file) and points the planes into the mapping; nothing is copied or decoded. The planes
+ * carry their own integrity check: the torus faces are recomputed from them, so a loaded torble is validated (and
+ * single-bit faults repaired) by the same at_validate / at_repair as one just built. */
+#include <stdio.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#define TB_MAGIC "TORBLE\x01\x00"
+#define TB_FORMAT 1
+#define TB_SAVED_COLS 64
+typedef struct { char magic[8]; uint32_t format, endian; uint64_t n, nw; int32_t k, nplanes, maxcol, pad;
+                 int32_t width[TB_SAVED_COLS], msb[TB_SAVED_COLS]; uint64_t hdrlen, planebytes, hash; } tbhdr_t;
+static uint64_t tb_fnv(const void *p, size_t len, uint64_t h) {
+    const unsigned char *c = p; for (size_t i = 0; i < len; i++) { h ^= c[i]; h *= 0x100000001b3ULL; } return h;
+}
+static uint64_t tb_planebytes(uint64_t nw) { return ((nw * 8) + 63) & ~(uint64_t)63; }
+/* returns 0, or -1 if the file cannot be written */
+int at_save(const atable_t *t, const char *path) {
+    char tmp[4096]; if (snprintf(tmp, sizeof tmp, "%s.tmp", path) >= (int)sizeof tmp) return -1;
+    uint8_t dir[(2 * MAXCOL + 2) * NB][4]; int np = 0;
+    for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) if (t->V[c][j]) { dir[np][0] = 0; dir[np][1] = (uint8_t)c; dir[np][2] = (uint8_t)j; dir[np][3] = 0; np++; }
+    for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) if (t->H[i][j]) { dir[np][0] = 1; dir[np][1] = (uint8_t)i; dir[np][2] = (uint8_t)j; dir[np][3] = 0; np++; }
+    tbhdr_t h; memset(&h, 0, sizeof h); memcpy(h.magic, TB_MAGIC, 8); h.format = TB_FORMAT; h.endian = 0x01020304u;
+    h.n = t->n; h.nw = t->nw; h.k = t->k; h.nplanes = np; h.maxcol = MAXCOL;
+    for (int c = 0; c < t->k; c++) { h.width[c] = t->vflag[c] ? -1 : t->width[c]; h.msb[c] = t->msb[c]; }   /* -1: virtual (restored by the caller) */
+    h.planebytes = tb_planebytes(t->nw);
+    h.hdrlen = (sizeof h + (uint64_t)np * 4 + 4095) & ~(uint64_t)4095;
+    h.hash = tb_fnv(dir, (size_t)np * 4, tb_fnv(&h, offsetof(tbhdr_t, hash), 0xcbf29ce484222325ULL));
+    FILE *f = fopen(tmp, "wb"); if (!f) return -1;
+    int ok = fwrite(&h, sizeof h, 1, f) == 1 && fwrite(dir, 4, np, f) == (size_t)np;
+    static const char zeros[4096];
+    uint64_t at = sizeof h + (uint64_t)np * 4;
+    if (ok && h.hdrlen > at) ok = fwrite(zeros, 1, h.hdrlen - at, f) == h.hdrlen - at;
+    for (int p = 0; ok && p < np; p++) {
+        const uint64_t *pl = dir[p][0] ? t->H[dir[p][1]][dir[p][2]] : t->V[dir[p][1]][dir[p][2]];
+        ok = fwrite(pl, 8, t->nw, f) == t->nw;
+        if (ok && h.planebytes > t->nw * 8) ok = fwrite(zeros, 1, h.planebytes - t->nw * 8, f) == h.planebytes - t->nw * 8;
+    }
+    if (fflush(f) != 0) ok = 0;
+    if (ok) fsync(fileno(f));
+    if (fclose(f) != 0) ok = 0;
+    if (!ok || rename(tmp, path) != 0) { remove(tmp); return -1; }
+    return 0;
+}
+/* err: 0 ok, 1 cannot open/map, 2 not a torble file, 3 format/version or build mismatch, 4 header damaged, 5 truncated */
+atable_t *at_load(const char *path, int *err) {
+    int fd = open(path, O_RDONLY); if (fd < 0) { *err = 1; return NULL; }
+    struct stat st; if (fstat(fd, &st) != 0 || (uint64_t)st.st_size < sizeof(tbhdr_t)) { close(fd); *err = st.st_size < (off_t)sizeof(tbhdr_t) ? 5 : 1; return NULL; }
+    void *m = mmap(NULL, (size_t)st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0); close(fd);
+    if (m == MAP_FAILED) { *err = 1; return NULL; }
+    tbhdr_t *h = m; *err = 0;
+    if (memcmp(h->magic, TB_MAGIC, 8)) *err = 2;
+    else if (h->format != TB_FORMAT || h->endian != 0x01020304u || h->k < 1 || h->k > MAXCOL) *err = 3;
+    else if (h->nplanes < 1 || h->nplanes > (2 * MAXCOL + 2) * NB || sizeof *h + (uint64_t)h->nplanes * 4 > h->hdrlen || h->hdrlen > (uint64_t)st.st_size) *err = 4;
+    else if (tb_fnv((char *)m + sizeof *h, (size_t)h->nplanes * 4, tb_fnv(h, offsetof(tbhdr_t, hash), 0xcbf29ce484222325ULL)) != h->hash) *err = 4;
+    else if (h->planebytes != tb_planebytes(h->nw) || h->nw != (h->n + 63) / 64) *err = 4;
+    else if (h->hdrlen + (uint64_t)h->nplanes * h->planebytes > (uint64_t)st.st_size) *err = 5;
+    if (*err) { munmap(m, (size_t)st.st_size); return NULL; }
+    atable_t *t = calloc(1, sizeof *t);
+    t->n = h->n; t->nw = h->nw; t->k = h->k; t->map = m; t->maplen = (uint64_t)st.st_size;
+    for (int c = 0; c < t->k; c++) { t->width[c] = h->width[c] < 0 ? 1 : h->width[c]; t->msb[c] = h->msb[c]; }
+    const uint8_t (*dir)[4] = (const void *)((char *)m + sizeof *h);
+    for (int p = 0; p < h->nplanes; p++) {
+        int kind = dir[p][0], row = dir[p][1], j = dir[p][2];
+        if (j >= NB || (kind == 0 && row >= t->k) || (kind == 1 && row > t->k) || kind > 1) { *err = 4; munmap(m, (size_t)st.st_size); free(t); return NULL; }
+        uint64_t *pl = (uint64_t *)((char *)m + h->hdrlen + (uint64_t)p * h->planebytes);
+        if (kind) t->H[row][j] = pl; else t->V[row][j] = pl;
+    }
+    t->bytes = (uint64_t)h->nplanes * t->nw * 8;
+    at_faces(t);
+    return t;
+}
+/* release a torble: its planes (built) or its mapping (loaded) */
+void at_free(atable_t *t) {
+    if (!t) return;
+    if (t->map) munmap(t->map, (size_t)t->maplen);
+    else {
+        for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) free(t->V[c][j]);
+        for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) free(t->H[i][j]);
+    }
+    free(t);
 }
 /* make column c virtual: its values are in sidecar `side` for the rows flagged in column flagcol (rank directory) */
 void at_set_virtual(atable_t *t, int c, int flagcol, const atable_t *side, const uint32_t *rank) {
@@ -983,10 +1073,13 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
 /* ---------------------------------------------------------------- multithreading
  * Every 64-row word is independent, so work is handed out in chunks from an atomic counter. Each thread keeps its
  * own totals and group arrays; integer sums merge exactly, so results do not depend on the thread count. */
-static int NTHREADS = 1;
-static int nthreads(void) { return NTHREADS; }
+static int NTHREADS = 0;                               /* 0: every online CPU (at most 64), decided at first use */
+static int nthreads(void) {
+    if (!NTHREADS) { long c = sysconf(_SC_NPROCESSORS_ONLN); NTHREADS = c < 1 ? 1 : c > 64 ? 64 : (int)c; }
+    return NTHREADS;
+}
 void at_set_threads(int n) { NTHREADS = n < 1 ? 1 : n > 64 ? 64 : n; }
-int at_get_threads(void) { return NTHREADS; }
+int at_get_threads(void) { return nthreads(); }
 typedef struct {
     int kind; const void *t; const qplan_t *q; const uint64_t *chunks; uint64_t nchunks, limit; _Atomic uint64_t *next;
     int64_t *osum; uint64_t *ocnt; int64_t total; uint64_t cnt; touch_t tl; int extra; mtile_t *mt;
@@ -1021,21 +1114,24 @@ static uint64_t make_chunks(const qplan_t *q, uint64_t nunits, uint64_t chunk, u
     *out = c; return n;
 }
 static void run_parallel(int kind, const void *t, qplan_t *q, uint64_t nunits, uint64_t chunk, uint64_t limit, uint64_t div) {
-    int T = NTHREADS; job_t jobs[64]; pthread_t th[64]; _Atomic uint64_t next = 0;
+    int T = nthreads(); job_t jobs[64]; pthread_t th[64]; _Atomic uint64_t next = 0;
     uint64_t *chunks; uint64_t nchunks = make_chunks(q, nunits, chunk, div, &chunks);
     if ((uint64_t)T > nchunks) T = nchunks ? (int)nchunks : 1;      /* no more threads than chunks */
     int mm = kind == 0 && q->agg == A_MM;
+    /* sparse output (out_key set): the matrix product always; the general path when the key domain is too large
+     * for dense arrays. Every thread then accumulates into its own hash table. */
+    int sparse = mm || (q->agg == A_GENERAL && q->out_key && q->nkey);
     for (int i = 0; i < T; i++) {
         jobs[i] = (job_t){kind, t, q, chunks, nchunks, limit, &next, q->out_sum, q->out_cnt, 0, 0, {0}, 0, NULL};
-        if ((i || mm) && q->nkey) jobs[i].extra = 1;
+        if ((i || sparse) && q->nkey) jobs[i].extra = 1;
         if (mm) { jobs[i].mt = mm_tile(i); mm_prepare(t, q, jobs[i].mt); }
     }
     pool_jobs(T, qworker, jobs, sizeof jobs[0]); (void)th;
     q->total_sum = jobs[0].total; q->total_cnt = jobs[0].cnt;
-    if (mm) {                                            /* sparse output: the groups present, merged across threads */
+    if (sparse) {                                        /* sparse output: the groups present, merged across threads */
         touch_t *h0 = &jobs[0].tl; memset(q->mm_stats, 0, sizeof q->mm_stats);
         for (int i = 0; i < T; i++) {
-            for (int k = 0; k < 4; k++) q->mm_stats[k] += jobs[i].mt->st[k];
+            if (mm) for (int k = 0; k < 4; k++) q->mm_stats[k] += jobs[i].mt->st[k];
             if (i) { q->total_sum += jobs[i].total; q->total_cnt += jobs[i].cnt;
                      touch_t *h = &jobs[i].tl;
                      for (uint64_t x = 0; x < h->cap; x++) if (h->key[x] != TEMPTY) hadd_n(h0, h->key[x], h->sum[x], h->cnt[x]);
@@ -1076,7 +1172,7 @@ uint64_t at_repair(atable_t *t) {
     uint64_t nbad = at_validate(t, NULL, 0), fixed = 0;
     if (!nbad) return 0;
     uint64_t *bad = malloc(nbad * 8); at_validate(t, bad, nbad);
-    uint64_t *planes[MAXCOL * 2 * NB]; int np = 0;
+    uint64_t *planes[(2 * MAXCOL + 2) * NB]; int np = 0;
     for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) if (t->V[c][j]) planes[np++] = t->V[c][j];
     for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) if (t->H[i][j]) planes[np++] = t->H[i][j];
     for (uint64_t b = 0; b < nbad; b++) {
