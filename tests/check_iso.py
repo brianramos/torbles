@@ -141,5 +141,59 @@ expect("SELECT a, b, x.v FROM t AS x(a, b) WHERE a = 2", [(2, int(tdf.k[2]), int
 check(db.sql("SELECT * FROM g AS h(a) LIMIT 1").columns == ["a", "gname"], "SELECT * shows the new names")
 refuses("SELECT gid FROM g AS h(a)", ["gid"], "a renamed column is not visible by its old name")
 
+print("== predicates: NORMALIZED, MATCH, PERIOD, row IS NULL, extended CASE")
+expect("SELECT 'é' IS NORMALIZED, 'é' IS NFD NORMALIZED, 'e' IS NOT NFKC NORMALIZED, NORMALIZE('é', NFD) IS NFD NORMALIZED, "
+       "CAST(NULL AS VARCHAR) IS NORMALIZED", [(True, False, False, True, None)])
+expect("SELECT (1, 2) MATCH (SELECT 1, 2), (1, NULL) MATCH (SELECT 3, 4), (1, NULL) MATCH FULL (SELECT 1, 2), "
+       "(1, NULL) MATCH PARTIAL (SELECT 1, 2), (1, NULL) MATCH UNIQUE PARTIAL (SELECT * FROM (VALUES (1, 2), (1, 3)) v(a, b)), "
+       "(NULL, NULL) MATCH FULL (SELECT 1, 2), 5 MATCH UNIQUE (SELECT v FROM t WHERE id < 0)", [(True, True, False, True, False, True, False)])
+expect("SELECT count(*) FROM g WHERE gid MATCH (SELECT k FROM t WHERE v > 98)",
+       [(int(gdf.gid.isin(tdf.k[tdf.v > 98]).sum()),)], "MATCH correlated to a table, as a filter")
+expect("SELECT PERIOD (DATE '2020-01-01', DATE '2020-02-01') OVERLAPS PERIOD (DATE '2020-01-31', DATE '2020-03-01'), "
+       "PERIOD (1, 5) CONTAINS 3, PERIOD (1, 5) CONTAINS 5, PERIOD (1, 5) CONTAINS PERIOD (2, 5), PERIOD (1, 3) IMMEDIATELY PRECEDES PERIOD (3, 4), "
+       "PERIOD (1, 3) PRECEDES PERIOD (2, 4), PERIOD (5, 6) SUCCEEDS PERIOD (1, 5), PERIOD (5, 6) IMMEDIATELY SUCCEEDS PERIOD (1, 4), PERIOD (1, 2) EQUALS PERIOD (1, 2)",
+       [(True, True, False, True, True, False, True, False, True)])
+expect("SELECT count(*) FROM t WHERE PERIOD (ts, ts + INTERVAL '1' DAY) OVERLAPS PERIOD (TIMESTAMP '2020-06-01 00:00:00', TIMESTAMP '2020-06-02 00:00:00')",
+       [(int(((tdf.ts < pd.Timestamp("2020-06-02")) & (tdf.ts + pd.Timedelta(days=1) > pd.Timestamp("2020-06-01"))).sum()),)], "PERIOD predicates on columns")
+expect("SELECT (1, NULL) IS NULL, (NULL, NULL) IS NULL, (1, 2) IS NOT NULL, (1, NULL) IS NOT NULL", [(False, True, True, False)])
+expect("SELECT count(*) FILTER (WHERE c = 'small'), count(*) FILTER (WHERE c = 'mid'), count(*) FILTER (WHERE c = 'big') FROM "
+       "(SELECT CASE v WHEN 0, 1, 2 THEN 'small' WHEN < 50 THEN 'mid' WHEN BETWEEN 50 AND 89 THEN 'big' WHEN IS NULL THEN 'none' ELSE 'top' END AS c FROM t) s",
+       [(int((tdf.v <= 2).sum()), int(((tdf.v > 2) & (tdf.v < 50)).sum()), int(((tdf.v >= 50) & (tdf.v <= 89)).sum()))], "extended CASE (F262, F263)")
+
+print("== GROUP BY DISTINCT / ALL, functional dependencies")
+expect("SELECT k, count(*) FROM (VALUES (1), (1), (2)) v(k) GROUP BY DISTINCT ROLLUP (k), ROLLUP (k) ORDER BY 1 NULLS FIRST", [(None, 3), (1, 2), (2, 1)])
+expect("SELECT count(*) FROM (SELECT k, count(*) FROM (VALUES (1), (1), (2)) v(k) GROUP BY ALL ROLLUP (k), ROLLUP (k)) x", [(7,)])
+vs_duckdb("SELECT k, count(*) FROM t GROUP BY ALL ORDER BY 1", "GROUP BY ALL without a list (DuckDB)")
+gname = dict(zip(gdf.gid, gdf.gname))
+expect("SELECT g.gid, g.gname, count(*) FROM t JOIN g ON t.k = g.gid GROUP BY g.gid ORDER BY 1 LIMIT 3",
+       [(i, gname[i], int((tdf.k == i).sum())) for i in range(3)], "columns of a table grouped by its primary key")
+expect("SELECT t.k, g.gname, count(*) FROM t JOIN g ON t.k = g.gid GROUP BY t.k ORDER BY 1 LIMIT 3",
+       [(i, gname[i], int((tdf.k == i).sum())) for i in range(3)], "... and through the join equality")
+refuses("SELECT k, v FROM t GROUP BY k", ["must appear in the GROUP BY"])
+
+print("== intervals")
+expect("SELECT CAST('1-2' AS INTERVAL YEAR TO MONTH) = INTERVAL '14' MONTH, CAST('3 04:05:06.5' AS INTERVAL DAY TO SECOND), "
+       "CAST(90 AS INTERVAL MINUTE), CAST(1.5 AS INTERVAL DAY), INTERVAL '100' HOUR(3), INTERVAL -'1:30' HOUR TO MINUTE, ABS(INTERVAL '-3' DAY)",
+       [(True, dt.timedelta(days=3, hours=4, minutes=5, seconds=6.5), dt.timedelta(minutes=90), dt.timedelta(days=1.5), dt.timedelta(hours=100),
+         -dt.timedelta(minutes=90), dt.timedelta(days=3))])
+expect("SELECT (DATE '2020-03-15' - DATE '2020-01-20') DAY, (TIMESTAMP '2020-03-15 10:30:00' - TIMESTAMP '2020-01-20 12:00:00') DAY TO SECOND, "
+       "(DATE '2021-03-15' - DATE '2020-04-20') YEAR TO MONTH = INTERVAL '10' MONTH, (TIMESTAMP '2020-01-01 10:59:00' - TIMESTAMP '2020-01-01 09:00:00') HOUR, "
+       "(DATE '2020-01-01' - DATE '2020-03-01') MONTH = INTERVAL '-2' MONTH",
+       [(dt.timedelta(days=55), dt.timedelta(days=54, hours=22, minutes=30), True, dt.timedelta(hours=1), True)], "(a - b) <qualifier>")
+refuses("SELECT CAST('13-1' AS INTERVAL HOUR TO MINUTE) + CAST('1-13' AS INTERVAL YEAR TO MONTH)", ["invalid interval"])
+
+print("== character and binary strings")
+expect("SELECT CHAR_LENGTH('héllo' USING OCTETS), CHARACTER_LENGTH('héllo' USING CHARACTERS), POSITION('l' IN 'héllo' USING OCTETS), "
+       "SUBSTRING('héllo' FROM 4 FOR 2 USING OCTETS), OVERLAY('héllo' PLACING 'XY' FROM 2 FOR 2 USING OCTETS), TRANSLATE('héllo' USING LATIN1)",
+       [(6, 5, 4, "ll", "hXYllo", "héllo")])
+refuses("SELECT TRANSLATE('日本' USING ASCII)", ["untranslatable"])
+refuses("SELECT SUBSTRING('héllo' FROM 3 FOR 1 USING OCTETS)", ["splits a character"])
+expect("SELECT X'ab00', X'01' || X'02ff', OCTET_LENGTH(X'0102'), SUBSTRING(X'010203' FROM 2 FOR 1), POSITION(X'03' IN X'010203'), "
+       "TRIM(X'000100'), TRIM(LEADING X'01' FROM X'010102'), X'01' < X'ff', CAST('a\\xAAb' AS BLOB), CAST(X'610062ff' AS VARCHAR), typeof(X'00')",
+       [(b"\xab\x00", b"\x01\x02\xff", 2, b"\x02", 3, b"\x01", b"\x02", True, b"a\xaab", "a\\x00b\\xFF", "BLOB")])
+expect("SELECT X'6162' LIKE X'6125', X'6162' LIKE X'5F5F5F', hex(X'0aff'), unhex('0aff'), encode('é'), decode(X'c3a9'), "
+       "OVERLAY(X'010203' PLACING X'ff' FROM 2), CAST(X'00' AS BINARY VARYING(3)), CAST('x' AS CHARACTER LARGE OBJECT), CAST(X'01' AS BINARY LARGE OBJECT)",
+       [(True, False, "0AFF", b"\n\xff", b"\xc3\xa9", "é", b"\x01\xff\x03", b"\x00", "x", b"\x01")])
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

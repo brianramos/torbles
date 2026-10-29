@@ -26,8 +26,8 @@ _TOK = re.compile(r"""
 
 
 class Tok:
-    __slots__ = ("k", "s")
-    def __init__(self, k, s): self.k, self.s = k, s
+    __slots__ = ("k", "s", "done")
+    def __init__(self, k, s): self.k, self.s, self.done = k, s, False
     def up(self): return self.s.upper() if self.k == "id" else None
     def __repr__(self): return self.s
 
@@ -153,6 +153,15 @@ def _split_commas(t, a, b):
 def _text(t, a, b): return " ".join(x.s for x in t[a:b])
 
 
+def _depth0(t, a, k):
+    """is token k at parenthesis depth 0 relative to a?"""
+    d = 0
+    for j in range(a, k):
+        if t[j].s in ("(", "["): d += 1
+        elif t[j].s in (")", "]"): d -= 1
+    return d == 0
+
+
 def _kw(t, i, *words):
     return all(i + k < len(t) and t[i + k].up() == w for k, w in enumerate(words))
 
@@ -199,6 +208,88 @@ def _rx_args(t, a, b, name):
 
 
 FLAGS = {}
+
+_UNITS = ("YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND")
+_CMP_OPS = ("=", "<>", "!=", "<", ">", "<=", ">=")
+_PRED_START = ("IS", "NOT", "BETWEEN", "IN", "LIKE", "ILIKE", "SIMILAR", "MEMBER", "SUBMULTISET", "OVERLAPS", "LIKE_REGEX", "GLOB")
+
+
+def _marker(neg, name, args):
+    """a postfix predicate  x <pred>  as  x IS [NOT] DISTINCT FROM __iso_pred_<name>(args): DuckDB parses it with the
+    precedence of a predicate, and the binder turns it back into the predicate"""
+    return tokenize(f"IS {'' if neg else 'NOT '}DISTINCT FROM __iso_pred_{name}({', '.join(args)})")
+
+
+def _qualifier(t, j):
+    """an interval qualifier at j: <unit> [(p [, s])] [TO <unit> [(p)]] -> (text 'DAY TO SECOND', end index) or None"""
+    if j >= len(t) or t[j].up() not in _UNITS: return None
+    a = t[j].up(); j += 1
+    if j < len(t) and t[j].s == "(": j = _match_paren(t, j) + 1
+    b = None
+    if j + 1 < len(t) and t[j].up() == "TO" and t[j + 1].up() in _UNITS:
+        b = t[j + 1].up(); j += 2
+        if j < len(t) and t[j].s == "(": j = _match_paren(t, j) + 1
+    return (a if b is None else f"{a} TO {b}"), j
+
+
+def _case_end(t, i):
+    """index of the END closing the CASE at i"""
+    d = 0
+    for j in range(i, len(t)):
+        u = t[j].up()
+        if u == "CASE": d += 1
+        elif u == "END":
+            d -= 1
+            if d == 0: return j
+    raise SqlError("CASE without END")
+
+
+def _case_top(t, a, b, words):
+    """top-level (outside parentheses and nested CASE) positions of the keywords in words within a..b-1"""
+    out, d, c = [], 0, 0
+    for j in range(a, b):
+        x = t[j]
+        if x.s == "(": d += 1
+        elif x.s == ")": d -= 1
+        elif x.up() == "CASE": c += 1
+        elif x.up() == "END": c -= 1
+        elif d == 0 and c == 0 and x.up() in words: out.append(j)
+    return out
+
+
+def _extended_case(t, i):
+    """CASE x WHEN 1, 2 THEN .. WHEN > 5 THEN .. WHEN IS NULL THEN .. (ISO F262 / F263) -> a searched CASE, or None"""
+    e = _case_end(t, i)
+    tops = _case_top(t, i + 1, e, ("WHEN", "THEN", "ELSE"))
+    if not tops or t[tops[0]].up() != "WHEN" or tops[0] == i + 1: return None
+    op = t[i + 1:tops[0]]
+    whens = [k for k in tops if t[k].up() == "WHEN"]
+    thens = [k for k in tops if t[k].up() == "THEN"]
+    if len(whens) != len(thens): return None
+    ext = False
+    conds = []
+    for w, th in zip(whens, thens):
+        items = _split_commas(t, w + 1, th)
+        if len(items) > 1: ext = True
+        parts = []
+        for a, b in items:
+            first = t[a]
+            if first.s in _CMP_OPS or first.up() in _PRED_START:
+                ext = True; parts.append(["("] + [x.s for x in op] + [")"] + [x.s for x in t[a:b]])
+            else:
+                parts.append(["("] + [x.s for x in op] + [")", "=", "("] + [x.s for x in t[a:b]] + [")"])
+        conds.append(" OR ".join("(" + " ".join(p) + ")" for p in parts))
+    if not ext: return None
+    out = [Tok("id", "CASE")]
+    k = 0
+    pos = whens + [e]
+    for idx, (w, th) in enumerate(zip(whens, thens)):
+        nxt = next((x for x in tops if x > th and t[x].up() in ("WHEN", "ELSE")), e)
+        out += [Tok("id", "WHEN")] + tokenize(conds[idx]) + t[th:nxt]
+    els = next((x for x in tops if t[x].up() == "ELSE"), None)
+    if els is not None: out += t[els:e]
+    out.append(Tok("id", "END"))
+    return out, e
 
 
 def iso_prepass(sql):
@@ -346,6 +437,128 @@ def iso_prepass(sql):
                 c = _match_paren(t, i + 2)
                 if not any(x.s == "%" or x.up() in ("PERCENT", "ROWS") for x in t[i + 3:c]):
                     t[c:c] = [Tok("id", "PERCENT")]; changed = True; break
+            # multi-word type names DuckDB's grammar lacks: BINARY VARYING, BINARY / CHARACTER LARGE OBJECT, ...
+            if u in ("BINARY", "CHARACTER", "CHAR", "NCHAR", "NATIONAL"):
+                for words, name in ((("BINARY", "VARYING"), "VARBINARY"), (("BINARY", "LARGE", "OBJECT"), "BLOB"),
+                                    (("CHARACTER", "LARGE", "OBJECT"), "CLOB"), (("CHAR", "LARGE", "OBJECT"), "CLOB"),
+                                    (("NATIONAL", "CHARACTER", "LARGE", "OBJECT"), "NCLOB"), (("NATIONAL", "CHAR", "LARGE", "OBJECT"), "NCLOB"),
+                                    (("NCHAR", "LARGE", "OBJECT"), "NCLOB"), (("NCHAR", "VARYING"), "VARCHAR"),
+                                    (("NATIONAL", "CHAR", "VARYING"), "VARCHAR"), (("NATIONAL", "CHAR"), "VARCHAR")):
+                    if _kw(t, i, *words):
+                        t[i:i + len(words)] = [Tok("id", name)]; changed = True; break
+                if changed: break
+            # x IS [NOT] [NFC | NFD | NFKC | NFKD] NORMALIZED
+            if u == "IS":
+                j = i + 1; neg = False
+                if j < len(t) and t[j].up() == "NOT": neg = True; j += 1
+                form = "NFC"
+                if j < len(t) and t[j].up() in ("NFC", "NFD", "NFKC", "NFKD"): form = t[j].up(); j += 1
+                if j < len(t) and t[j].up() == "NORMALIZED":
+                    t[i:j + 1] = _marker(neg, "normalized", [f"'{form}'"]); changed = True; break
+            # <row> MATCH [UNIQUE] [SIMPLE | PARTIAL | FULL] (<subquery>)  (ISO 8.13)
+            if u == "MATCH" and i > 0:
+                j = i + 1; uniq = False; kind = "SIMPLE"
+                if j < len(t) and t[j].up() == "UNIQUE": uniq = True; j += 1
+                if j < len(t) and t[j].up() in ("SIMPLE", "PARTIAL", "FULL"): kind = t[j].up(); j += 1
+                if j + 1 < len(t) and t[j].s == "(" and t[j + 1].up() in ("SELECT", "WITH", "VALUES", "TABLE"):
+                    c = _match_paren(t, j)
+                    t[i:c + 1] = _marker(False, "match", [f"'{kind}'", "TRUE" if uniq else "FALSE"]) [:-1] + [Tok("op", ",")] + t[j:c + 1] + [Tok("op", ")")]
+                    changed = True; break
+            # PERIOD (s1, e1) <OVERLAPS | EQUALS | CONTAINS | [IMMEDIATELY] PRECEDES | SUCCEEDS> PERIOD (s2, e2) | x
+            # (ISO 8.20, periods closed-open [s, e)): comparisons of the bounds, so plane predicates where they apply
+            if u == "PERIOD" and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                lp = [_text(t, a, b) for a, b in _split_commas(t, i + 2, c)]
+                j = c + 1; imm = False
+                if j < len(t) and t[j].up() == "IMMEDIATELY": imm = True; j += 1
+                op = t[j].up() if j < len(t) else None
+                if len(lp) == 2 and op in ("OVERLAPS", "EQUALS", "CONTAINS", "PRECEDES", "SUCCEEDS"):
+                    s1, e1 = f"({lp[0]})", f"({lp[1]})"
+                    if _kw(t, j + 1, "PERIOD") and j + 2 < len(t) and t[j + 2].s == "(":
+                        c2 = _match_paren(t, j + 2)
+                        rp = [_text(t, a, b) for a, b in _split_commas(t, j + 3, c2)]
+                        if len(rp) != 2: raise SqlError("PERIOD (start, end) takes two values")
+                        s2, e2 = f"({rp[0]})", f"({rp[1]})"; end = c2 + 1
+                        cond = {"OVERLAPS": f"{s1} < {e2} AND {s2} < {e1}", "EQUALS": f"{s1} = {s2} AND {e1} = {e2}",
+                                "CONTAINS": f"{s1} <= {s2} AND {e1} >= {e2}",
+                                "PRECEDES": f"{e1} = {s2}" if imm else f"{e1} <= {s2}",
+                                "SUCCEEDS": f"{s1} = {e2}" if imm else f"{s1} >= {e2}"}[op]
+                    elif op == "CONTAINS":
+                        end = _operand_fwd(t, j + 1); x = f"({_text(t, j + 1, end)})"
+                        cond = f"{s1} <= {x} AND {e1} > {x}"
+                    else: raise SqlError(f"PERIOD ... {op} needs a PERIOD on its right")
+                    if imm and op not in ("PRECEDES", "SUCCEEDS"): raise SqlError("IMMEDIATELY goes with PRECEDES or SUCCEEDS")
+                    t[i:end] = tokenize(f"({cond})"); changed = True; break
+            # simple CASE with extended WHEN operands (lists, comparisons, predicates)
+            if u == "CASE" and i + 1 < len(t) and t[i + 1].up() != "WHEN" and not getattr(t[i], "done", False):
+                x = _extended_case(t, i)
+                if x is None: t[i].done = True
+                else:
+                    out, e = x; out[0].done = True
+                    t[i:e + 1] = out; changed = True; break
+            # GROUP BY DISTINCT | ALL <grouping elements> (ISO T434): duplicate grouping sets removed / kept
+            if u == "GROUP" and _kw(t, i + 1, "BY") and i + 2 < len(t) and t[i + 2].up() in ("DISTINCT", "ALL"):
+                nxt = t[i + 3] if i + 3 < len(t) else None
+                if t[i + 2].up() == "DISTINCT":
+                    t[i + 2:i + 3] = [Tok("id", "__iso_gb_distinct"), Tok("op", "("), Tok("op", ")"), Tok("op", ",")]; changed = True; break
+                if nxt is not None and nxt.s not in (";", ")") and nxt.up() not in ("HAVING", "ORDER", "LIMIT", "OFFSET", "QUALIFY",
+                                                                                  "WINDOW", "UNION", "EXCEPT", "INTERSECT", "FETCH"):
+                    del t[i + 2]; changed = True; break               # ISO ALL: the default (DuckDB's GROUP BY ALL has no list)
+            # CAST(x AS INTERVAL <qualifier>)
+            if u == "CAST" and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                a = _top_kw(t, i + 2, c, "AS")
+                if a >= 0 and a + 1 < c and t[a + 1].up() == "INTERVAL":
+                    q = _qualifier(t, a + 2)
+                    if q is not None and q[1] == c:
+                        t[i:c + 1] = tokenize(f"__iso_interval_cast({_text(t, i + 2, a)}, '{q[0]}')"); changed = True; break
+            # INTERVAL [+|-] 'text' <unit> [(p)] [TO <unit> [(p)]]
+            if u == "INTERVAL" and i + 1 < len(t):
+                j = i + 1; sign = ""
+                if t[j].s in ("+", "-") and j + 1 < len(t) and t[j + 1].k == "str": sign = t[j].s; j += 1
+                if t[j].k == "str":
+                    q = _qualifier(t, j + 1)
+                    if q is not None and (sign or "(" in [x.s for x in t[j + 1:q[1]]]):
+                        body = t[j].s[1:-1]
+                        if sign == "-": body = body[1:] if body.startswith("-") else "-" + body
+                        t[i:q[1]] = tokenize(f"__iso_interval('{body}', '{q[0]}')"); changed = True; break
+            # (<datetime> - <datetime>) <qualifier>: the difference as an interval of those fields (ISO 6.42)
+            if u in _UNITS and prev is not None and prev.s == ")" and not (i >= 2 and t[i - 2].up() == "AS"):
+                a = _match_open(t, i - 1)
+                if not (a > 0 and (t[a - 1].k in ("id", "qid") and t[a - 1].up() not in _KW_BREAK)):
+                    minus = [k for k in range(a + 1, i - 1) if t[k].s == "-" and _depth0(t, a + 1, k)
+                             and t[k - 1].s not in _CMP_OPS + ("(", ",", "+", "-", "*", "/") and t[k - 1].up() not in _KW_BREAK]
+                    q = _qualifier(t, i)
+                    if minus and q is not None:
+                        m = minus[-1]
+                        t[a:q[1]] = tokenize(f"__iso_dt_diff(({_text(t, a + 1, m)}), ({_text(t, m + 1, i - 1)}), '{q[0]}')")
+                        changed = True; break
+            # CHAR_LENGTH / POSITION / SUBSTRING / OVERLAY (... USING CHARACTERS | OCTETS)
+            if u in ("CHAR_LENGTH", "CHARACTER_LENGTH", "POSITION", "SUBSTRING", "OVERLAY") and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                k = _top_kw(t, i + 2, c, "USING")
+                if k >= 0 and k + 1 < c and t[k + 1].up() in ("CHARACTERS", "OCTETS"):
+                    octets = t[k + 1].up() == "OCTETS"
+                    del t[k:k + 2]; c -= 2
+                    if octets:
+                        if u in ("CHAR_LENGTH", "CHARACTER_LENGTH"): t[i] = Tok("id", "octet_length")
+                        else:
+                            inner = t[i + 2:c]
+                            if u == "POSITION":
+                                m = _top_kw(t, i + 2, c, "IN")
+                                args = [_text(t, i + 2, m), _text(t, m + 1, c)]
+                            else:
+                                kws = [j for j in range(i + 2, c) if t[j].up() in ("FROM", "FOR", "PLACING") and _depth0(t, i + 2, j)]
+                                cuts = [i + 2] + kws + [c]
+                                args = [_text(t, cuts[x] + (0 if x == 0 else 1), cuts[x + 1]) for x in range(len(cuts) - 1)]
+                            t[i:c + 1] = tokenize(f"__iso_{u.lower()}_octets({', '.join(args)})")
+                    changed = True; break
+            # TRANSLATE (x USING <transliteration>)
+            if u in ("TRANSLATE", "CONVERT") and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                k = _top_kw(t, i + 2, c, "USING")
+                if k >= 0 and k + 2 == c:
+                    t[i:c + 1] = tokenize(f"__iso_transliterate({_text(t, i + 2, k)}, '{t[k + 1].s}')"); changed = True; break
             # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME (the binder keeps the common columns only)
             if u == "CORRESPONDING":
                 t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True; changed = True; break
@@ -435,6 +648,8 @@ def make_func(name, args, extra=None):
     s = F.SCALARS.get(name)
     if s is None: raise SqlError(f"Scalar Function with name {name} does not exist")
     if name in _COLLATED: args = _collated_args(name, args)
+    if name in F.BINARY and any(a.t.id == "BLOB" for a in args):         # binary strings: their own functions
+        name = F.BINARY[name]; s = F.SCALARS[name]
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
@@ -759,7 +974,11 @@ class Binder:
             s.where = self.boolean(self.expr(node["where_clause"], sc, Ctx(where="WHERE")), "WHERE")
         # GROUP BY
         groups = []
+        gb_distinct, idxmap = False, []
         for g in node.get("group_expressions") or []:
+            if g["class"] == "FUNCTION" and g["function_name"] == "__iso_gb_distinct":
+                gb_distinct = True; idxmap.append(None); continue
+            idxmap.append(len(groups))
             if g["class"] == "CONSTANT" and g["literal"]["kind"] == "INTEGER":
                 k = int(g["literal"]["text"])
                 if not 1 <= k <= len(items): raise SqlError(f"GROUP BY term out of range: {k}")
@@ -787,7 +1006,13 @@ class Binder:
         s.group = uniq
         sets = node.get("group_sets") or []
         if sets:
-            s.sets = [sorted({pos[i] for i in st}) for st in sets]
+            s.sets = [sorted({pos[idxmap[i]] for i in st if idxmap[i] is not None}) for st in sets]
+            if gb_distinct:                              # GROUP BY DISTINCT: each grouping set once
+                seen = []
+                for st in s.sets:
+                    if st not in seen: seen.append(st)
+                s.sets = seen
+            if s.sets == [list(range(len(uniq)))] and len(sets) == 1: s.sets = None
         if node.get("aggregate_handling") == "FORCE_AGGREGATES":          # GROUP BY ALL
             s.group = [x for x, _ in items if not I.has(x, I.Agg) and not I.has(x, I.Win) and I.cols_of(x)]
             s.sets = None
@@ -798,7 +1023,9 @@ class Binder:
         s.aggregate = bool(s.group) or s.sets is not None or any(I.has(x, I.Agg) for x, _ in items) or s.having is not None \
             or (s.qualify is not None and I.has(s.qualify, I.Agg))
         self.bind_modifiers(node, s, sc, aliases=aliases)
-        if s.aggregate: _check_grouped(s)
+        if s.aggregate:
+            _functional_dependencies(s)
+            _check_grouped(s)
         return s
 
     def bind_modifiers(self, node, s, sc, setop=False, aliases=None):
@@ -924,7 +1151,12 @@ class Binder:
         if c == "CONSTANT": return self.constant(e["literal"])
         if c == "COLUMN_REF": return self.column(e["column_names"], sc, ctx)
         if c == "COMPARISON":
-            return self.cmp(_CMP[e["type"]], self.expr(e["left"], sc, ctx), self.expr(e["right"], sc, ctx))
+            r = e["right"]
+            if r.get("class") == "FUNCTION" and r["function_name"].startswith("__iso_pred_") \
+                    and e["type"] in ("COMPARE_DISTINCT_FROM", "COMPARE_NOT_DISTINCT_FROM"):
+                x = self.iso_pred(r["function_name"][11:], e["left"], r.get("arguments") or [], sc, ctx)
+                return self.func("not", [x]) if e["type"] == "COMPARE_DISTINCT_FROM" else x
+            return self.cmp(_CMP[e["type"]], self.expr(e["left"], sc, ctx), self.expr(r, sc, ctx))
         if c == "CONJUNCTION":
             kids = [self.boolean(self.expr(x, sc, ctx), "AND/OR") for x in e["children"]]
             fn = "and" if e["type"] == "CONJUNCTION_AND" else "or"
@@ -964,6 +1196,24 @@ class Binder:
         if c == "STAR": raise SqlError("* is only allowed in the SELECT list or COUNT(*)")
         raise SqlError(f"expression {c} is not supported")
 
+    def iso_pred(self, name, left, args, sc, ctx):
+        """the postfix predicates the pre-pass wrote as  x IS NOT DISTINCT FROM __iso_pred_<name>(...)"""
+        arg = lambda k: args[k]["expression"] if "expression" in args[k] else args[k]
+        if name == "normalized":
+            x = self.expr(left, sc, ctx)
+            if x.t.id not in ("VARCHAR", "NULL") and not getattr(x, "strlit", False): raise SqlError(f"IS NORMALIZED applies to character strings, not {x.t}")
+            return self.func("__is_normalized", [x, self.expr(arg(0), sc, ctx)])
+        if name == "match":
+            x = self.expr(left, sc, ctx)
+            if not _is_row(x): x = I.Func("row", [x], T.SqlType("ROW"))
+            kind = self.expr(arg(0), sc, ctx).v; uniq = self.expr(arg(1), sc, ctx).v
+            sq = arg(2)
+            if sq.get("class") != "SUBQUERY": raise SqlError("MATCH needs a subquery")
+            q = self.bind_query(sq["subquery"]["node"], sc)
+            if len(q_columns(q)) != len(x.args): raise SqlError("MATCH: the row and the subquery have different degrees")
+            return I.Subq("match", q, T.BOOLEAN, x, (kind, bool(uniq)), correlated=_correlated(q))
+        raise SqlError(f"internal: unknown ISO predicate {name}")
+
     def type_of(self, te):
         name = te["type_name"]
         if name.lower() == "list":
@@ -994,6 +1244,10 @@ class Binder:
             return I.Lit(d, T.DECIMAL(p, s))
         if k == "STRING" or k == "VARCHAR": return I.Lit(txt, T.VARCHAR, True)
         if k == "BOOLEAN": return I.Lit(txt.lower() == "true", T.BOOLEAN)
+        if k in ("HEX", "BLOB"):                                         # X'...': a binary string literal
+            h = re.sub(r"\s+", "", txt)
+            try: return I.Lit(bytes.fromhex(h), T.BLOB)
+            except ValueError: raise SqlError(f"invalid binary string literal X'{txt}'")
         raise SqlError(f"literal of kind {k} is not supported")
 
     def column(self, names, sc, ctx):
@@ -1016,8 +1270,10 @@ class Binder:
         t = e["type"]; kids = e.get("children") or []
         if t == "OPERATOR_NOT":
             return self.func("not", [self.boolean(self.expr(kids[0], sc, ctx), "NOT")])
-        if t == "OPERATOR_IS_NULL": return self.func("is_null", [self.expr(kids[0], sc, ctx)])
-        if t == "OPERATOR_IS_NOT_NULL": return self.func("is_not_null", [self.expr(kids[0], sc, ctx)])
+        if t in ("OPERATOR_IS_NULL", "OPERATOR_IS_NOT_NULL"):
+            x = self.expr(kids[0], sc, ctx); fn = "is_null" if t == "OPERATOR_IS_NULL" else "is_not_null"
+            if _is_row(x): return make_and([self.func(fn, [a]) for a in x.args])     # every field NULL / not NULL (ISO 8.8)
+            return self.func(fn, [x])
         if t in ("COMPARE_IN", "COMPARE_NOT_IN"):
             x = self.expr(kids[0], sc, ctx)
             vals = [self.expr(k, sc, ctx) for k in kids[1:]]
@@ -1322,6 +1578,51 @@ def _block_exprs(s):
     for o in s.order:
         if o[0][0] == "expr": out.append(o[0][1])
     return out
+
+
+def _functional_dependencies(s):
+    """ISO T301: a column functionally dependent on the GROUP BY columns may be used outside aggregates. Known
+    dependencies: a table's columns on its primary key, and equal columns (= conjuncts of WHERE and of inner-join ON
+    conditions) on each other. The dependent columns join the GROUP BY list (which changes no group)."""
+    if s.sets is not None or not s.group: return
+    arrows = []                                       # (x, y): x determines y
+    def coleq(c):
+        return isinstance(c, I.Func) and c.fn == "=" and len(c.args) == 2 and all(isinstance(a, I.Col) for a in c.args)
+    def sides(f):
+        out = set()
+        def go(x):
+            if isinstance(x, I.Join): go(x.left); go(x.right)
+            elif isinstance(x, I.Binding): out.add(x)
+        go(f); return out
+    def conds(f):
+        if isinstance(f, I.Join):
+            conds(f.left); conds(f.right)
+            for c in conjuncts(f.cond):
+                if not coleq(c): continue
+                a, b = c.args
+                if f.kind in ("inner", "cross"): arrows.extend([(a, b), (b, a)])
+                elif f.kind in ("left", "right"):     # the preserved side determines the other (NULL when unmatched)
+                    other = sides(f.right if f.kind == "left" else f.left)
+                    if a.b not in other and b.b in other: arrows.append((a, b))
+                    elif b.b not in other and a.b in other: arrows.append((b, a))
+    conds(s.from_)
+    for c in conjuncts(s.where):
+        if coleq(c): arrows.extend([(c.args[0], c.args[1]), (c.args[1], c.args[0])])
+    have = {g.key(): g for g in s.group if isinstance(g, I.Col)}
+    grew = True
+    while grew:
+        grew = False
+        for x, y in arrows:
+            if x.key() in have and y.key() not in have: have[y.key()] = y; grew = True
+    keyed = {c.b for c in have.values() if c.b.table is not None and getattr(c.b.table, "pk", None) == c.name}
+    if not keyed: return
+    gk = {g.key() for g in s.group}
+    exprs = [x for x, _ in s.items] + [s.having, s.qualify] + [o[0][1] for o in s.order if o[0][0] == "expr"]
+    for x in exprs:
+        if x is None: continue
+        for c in I.find(x, I.Col, stop=(I.Agg,)):
+            if c.key() not in gk and (c.b in keyed or c.key() in have):
+                s.group.append(c); gk.add(c.key())
 
 
 def _check_grouped(s):

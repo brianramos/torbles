@@ -79,7 +79,12 @@ _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYIN
           "TIME WITHOUT TIME ZONE": "TIME", "TIMESTAMPTZ": "TIMESTAMPTZ", "TIMESTAMP WITH TIME ZONE": "TIMESTAMPTZ",
           "TIMETZ": "TIMETZ", "TIME WITH TIME ZONE": "TIMETZ", "TIMESTAMP_US": "TIMESTAMP",
           "TIMESTAMP_S": "TIMESTAMP", "TIMESTAMP_MS": "TIMESTAMP", "TIMESTAMP_NS": "TIMESTAMP",
-          "INTERVAL": "INTERVAL", "BLOB": "BLOB", "BYTEA": "BLOB", "VARBINARY": "BLOB", "NULL": "NULL"}
+          "INTERVAL": "INTERVAL", "BLOB": "BLOB", "BYTEA": "BLOB", "VARBINARY": "BLOB", "NULL": "NULL", "BINARY": "BLOB",
+          "BINARY VARYING": "BLOB", "BINARY LARGE OBJECT": "BLOB", "CLOB": "VARCHAR", "NCLOB": "VARCHAR", "NCHAR": "VARCHAR",
+          "CHARACTER LARGE OBJECT": "VARCHAR", "CHAR LARGE OBJECT": "VARCHAR", "NATIONAL CHARACTER": "VARCHAR",
+          "NATIONAL CHAR": "VARCHAR", "NATIONAL CHARACTER VARYING": "VARCHAR", "NATIONAL CHAR VARYING": "VARCHAR",
+          "NCHAR VARYING": "VARCHAR", "NATIONAL CHARACTER LARGE OBJECT": "VARCHAR", "NCHAR LARGE OBJECT": "VARCHAR",
+          "CHAR VARYING": "VARCHAR"}
 
 
 def type_from_name(name, args=()):
@@ -489,7 +494,24 @@ def to_text(v, t):
         return s
     if isinstance(v, Interval): return str(v)
     if isinstance(v, list): return "[" + ", ".join("NULL" if x is None else to_text(x, t.child if t is not None and t.id == "LIST" else None) for x in v) + "]"
+    if isinstance(v, (bytes, bytearray)): return blob_text(v)
     return str(v)
+
+
+def blob_text(b):
+    """a binary string as text (DuckDB): printable ASCII as it is, every other octet as \\xHH"""
+    return "".join(chr(c) if 32 <= c < 127 and c != 92 else f"\\x{c:02X}" for c in b)
+
+
+def parse_blob(s):
+    """text -> a binary string: \\xHH escapes and ASCII characters (DuckDB's VARCHAR -> BLOB)"""
+    out, i = bytearray(), 0
+    while i < len(s):
+        if s[i] == "\\" and i + 4 <= len(s) and s[i + 1] in "xX" and re.fullmatch(r"[0-9A-Fa-f]{2}", s[i + 2:i + 4]):
+            out.append(int(s[i + 2:i + 4], 16)); i += 4; continue
+        if ord(s[i]) > 127: raise SqlError(f"Conversion Error: non-ASCII character {s[i]!r} in a VARCHAR -> BLOB conversion (use \\xHH)")
+        out.append(ord(s[i])); i += 1
+    return bytes(out)
 
 
 def cast_value(v, src, dst, err=True):
@@ -587,6 +609,10 @@ def _cast(v, src, dst, err):
         if isinstance(v, Interval): return v
         if isinstance(v, str): return parse_interval(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to INTERVAL")
+    if d == "BLOB":
+        if isinstance(v, (bytes, bytearray)): return bytes(v)
+        if isinstance(v, str): return parse_blob(v)
+        raise SqlError(f"Conversion Error: cannot cast {src} to BLOB")
     if d == "LIST":
         if isinstance(v, list): return [cast_value(x, src.child if src is not None and src.id == "LIST" else None, dst.child, err) for x in v]
         raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
@@ -612,6 +638,7 @@ def py_type(v):
     if isinstance(v, _dt.date): return DATE
     if isinstance(v, _dt.time): return TIME if v.tzinfo is None else TIMETZ
     if isinstance(v, (Interval, _dt.timedelta)): return INTERVAL
+    if isinstance(v, (bytes, bytearray)): return BLOB
     raise SqlError(f"no SQL type for {type(v).__name__}")
 
 

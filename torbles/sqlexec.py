@@ -1049,10 +1049,28 @@ def _subq_result(e, r):
         return True
     if e.kind == "any":
         return [row[0] if len(row) == 1 else list(row) for row in r.rows]
+    if e.kind == "match": return list(r.rows)
     raise SqlError(e.kind)
 
 
+def _match(e, rows, x):
+    """row MATCH [UNIQUE] SIMPLE | PARTIAL | FULL (rows) (ISO 8.13): TRUE or FALSE, never UNKNOWN"""
+    kind, uniq = e.op
+    nulls = [v is None for v in x]
+    if kind == "SIMPLE" and any(nulls): return True
+    if kind in ("PARTIAL", "FULL") and all(nulls): return True
+    if kind == "FULL" and any(nulls): return False
+    hits = 0
+    for row in rows:
+        if all(v is None or (w is not None and F.cmp_values(v, w) == 0) for v, w in zip(x, row)):
+            hits += 1
+            if not uniq: return True
+            if hits > 1: return False
+    return hits == 1 if uniq else False
+
+
 def _subq_apply(e, r, x):
+    if e.kind == "match": return x if isinstance(x, Err) else _match(e, r, x)
     if e.kind != "any": return r
     if isinstance(x, Err): return x
     op = F.SCALARS[e.op].impl

@@ -453,7 +453,15 @@ def _dbl(n=1):
     return ty
 
 
-scalar("abs", _num1)(lambda x: abs(x))
+def _abs_typer(args):
+    if args[0].t.id == "INTERVAL": return T.INTERVAL, None
+    return _num1(args)
+
+
+@scalar("abs", _abs_typer)
+def _abs(x):
+    if isinstance(x, Interval): return -x if x._key() < 0 else x        # ABS(interval) (ISO 6.30)
+    return abs(x)
 
 
 @scalar("sign", lambda a: (T.TINYINT, None))
@@ -1109,31 +1117,92 @@ for _n, _iv in (("to_years", _to_iv(months=12)), ("to_months", _to_iv(months=1))
     scalar(_n, fixed(T.INTERVAL))(_iv)
 
 
+_DT_FIELDS = ["DAY", "HOUR", "MINUTE", "SECOND"]
+_DT_US = {"HOUR": 3_600_000_000, "MINUTE": 60_000_000, "SECOND": 1_000_000}
+_DT_MAX = {"HOUR": 24, "MINUTE": 60, "SECOND": 60}
+
+
+def _iv_text(text, qual):
+    """an <unquoted interval string> under an interval qualifier (ISO 5.3): '1-2' YEAR TO MONTH, '3 04:05:06.5'
+    DAY TO SECOND, '90' MINUTE, '-1:30' HOUR TO MINUTE, ..."""
+    s = str(text).strip(); sign = 1
+    if s[:1] in "+-":
+        sign = -1 if s[0] == "-" else 1; s = s[1:].strip()
+    q = qual.upper().split(); start, end = q[0], q[-1]
+    bad = SqlError(f"invalid interval string {text!r} for INTERVAL {qual}")
+    try:
+        if start in ("YEAR", "MONTH"):
+            if start == "YEAR" and end == "MONTH":
+                y, m = s.split("-")
+                if int(m) >= 12: raise bad
+                return Interval(sign * (int(y) * 12 + int(m)))
+            if end != start: raise bad
+            return Interval(sign * int(s) * (12 if start == "YEAR" else 1))
+        fields = _DT_FIELDS[_DT_FIELDS.index(start):_DT_FIELDS.index(end) + 1]
+        if not fields: raise bad
+        if start == "DAY" and len(fields) > 1:
+            d, rest = s.split(None, 1); parts = [d] + rest.split(":")
+        else: parts = s.split(":")
+        if len(parts) != len(fields): raise bad
+        days = us = 0
+        for k, (f, p) in enumerate(zip(fields, parts)):
+            v = Decimal(p) if f == "SECOND" else int(p)
+            if v < 0 or (k > 0 and v >= _DT_MAX[f]): raise bad
+            if f == "DAY": days = int(v)
+            else: us += int(v * _DT_US[f])
+        return Interval(0, sign * days, sign * us)
+    except (ValueError, ArithmeticError): raise bad
+
+
 @scalar("__iso_interval", fixed(T.INTERVAL))
 def _iso_interval(text, qual):
-    """INTERVAL '<text>' <start> TO <end> (YEAR TO MONTH, DAY TO SECOND, HOUR TO MINUTE, ...)"""
-    s = text.strip(); neg = s.startswith("-")
-    if neg: s = s[1:].strip()
-    q = qual.upper().split()
-    start, end = q[0], q[-1]
-    try:
-        if start == "YEAR":
-            y, _, m = s.partition("-"); iv = Interval(int(y) * 12 + int(m or 0))
-        elif start == "DAY":
-            d, _, rest = s.partition(" "); iv = Interval(0, int(d), _hms(rest, end) if rest else 0)
-        else:
-            iv = Interval(0, 0, _hms(s, end, start))
-    except ValueError: return Err(f"invalid interval literal {text!r} {qual}")
-    return -iv if neg else iv
+    """INTERVAL '<text>' <qualifier> (YEAR TO MONTH, DAY TO SECOND, HOUR(3), ...)"""
+    try: return _iv_text(text, qual)
+    except SqlError as e: return Err(str(e))
 
 
-def _hms(s, end, start="HOUR"):
-    parts = s.split(":")
-    units = ["HOUR", "MINUTE", "SECOND"][["HOUR", "MINUTE", "SECOND"].index(start):]
-    us = 0
-    for u, p in zip(units, parts):
-        us += int(Decimal(p) * {"HOUR": 3_600_000_000, "MINUTE": 60_000_000, "SECOND": 1_000_000}[u])
-    return us
+@scalar("__iso_interval_cast", fixed(T.INTERVAL))
+def _iso_interval_cast(x, qual):
+    """CAST(x AS INTERVAL <qualifier>): a string in that form, or an exact number of the single field"""
+    if isinstance(x, Interval): return x
+    if isinstance(x, (int, Decimal, float)) and not isinstance(x, bool):
+        q = qual.upper().split()
+        if len(q) != 1: return Err(f"CAST of a number to INTERVAL {qual}: a single field is needed")
+        f = q[0]
+        if f in ("YEAR", "MONTH"):
+            if x != int(x): return Err(f"CAST({x} AS INTERVAL {f}): not a whole number")
+            return Interval(int(x) * (12 if f == "YEAR" else 1))
+        if f == "DAY":
+            d = Decimal(str(x)); di = int(d)
+            return Interval(0, di, int((d - di) * 86_400_000_000))
+        return Interval(0, 0, int(Decimal(str(x)) * _DT_US[f]))
+    try: return _iv_text(str(x), qual)
+    except SqlError as e: return Err(str(e))
+
+
+@scalar("__iso_dt_diff", lambda a: (T.INTERVAL, [T.TIMESTAMPTZ if (a[0].t.zoned or a[1].t.zoned) else T.TIMESTAMP if (a[0].t.id == "TIMESTAMP" or a[1].t.id == "TIMESTAMP") else None,
+                                                T.TIMESTAMPTZ if (a[0].t.zoned or a[1].t.zoned) else T.TIMESTAMP if (a[0].t.id == "TIMESTAMP" or a[1].t.id == "TIMESTAMP") else None, None]))
+def _iso_dt_diff(a, b, qual):
+    """(a - b) <qualifier>: the difference of two datetimes as an interval of those fields (ISO 6.42), the trailing
+    field truncated toward zero"""
+    q = qual.upper().split(); start, end = q[0], q[-1]
+    if isinstance(a, _dt.time):
+        A = _dt.datetime.combine(_dt.date(2000, 1, 3), a.replace(tzinfo=None)) - (a.utcoffset() or _dt.timedelta())
+        B = _dt.datetime.combine(_dt.date(2000, 1, 3), b.replace(tzinfo=None)) - (b.utcoffset() or _dt.timedelta())
+    else: A, B = _to_dt(a), _to_dt(b)
+    if start in ("YEAR", "MONTH"):
+        m = _months_between(B, A)
+        if m > 0 and (A.day, A.time()) < (B.day, B.time()): m -= 1
+        if m < 0 and (A.day, A.time()) > (B.day, B.time()): m += 1
+        if end == "YEAR": m = int(m / 12) * 12
+        return Interval(m)
+    us = (A - B) // _dt.timedelta(microseconds=1)
+    unit = {"DAY": 86_400_000_000, "HOUR": 3_600_000_000, "MINUTE": 60_000_000, "SECOND": 1}[end]
+    us = int(us / unit) * unit if unit > 1 else us
+    if start == "DAY":
+        d = int(us / 86_400_000_000)
+        return Interval(0, d, us - d * 86_400_000_000)
+    return Interval(0, 0, us)
 
 
 # the clock: one instant per statement (set by the executor), seen in the SQL-session time zone
@@ -1187,6 +1256,141 @@ scalar("current_role", fixed(T.VARCHAR), nulls="custom", deterministic=False)(la
 scalar("current_catalog current_database", fixed(T.VARCHAR), deterministic=False)(lambda: "memory")
 scalar("current_schema", fixed(T.VARCHAR), deterministic=False)(lambda: "main")
 scalar("current_path", fixed(T.VARCHAR), deterministic=False)(lambda: '"main"')
+
+
+# ------------------------------------------------------------------ binary strings (ISO 6.33 / 8.5: BLOB)
+BINARY = {"||": "__b_concat", "concat": "__b_concat", "octet_length": "__b_octet_length", "length": "__b_octet_length",
+          "char_length": "__b_octet_length", "strlen": "__b_octet_length", "substring": "__b_substring", "position": "__b_position",
+          "overlay": "__b_overlay", "trim": "__b_trim", "btrim": "__b_trim", "ltrim": "__b_ltrim", "rtrim": "__b_rtrim",
+          "like": "__b_like", "not_like": "__b_not_like", "starts_with": "__b_starts_with", "reverse": "__b_reverse"}
+
+
+def _bin_args(n, out=T.BLOB, argt=None):
+    def ty(args):
+        if len(args) not in (n if isinstance(n, tuple) else (n,)): raise SqlError("wrong number of arguments")
+        casts = []
+        for i, a in enumerate(args):
+            want = (argt[i] if argt and i < len(argt) else T.BLOB)
+            casts.append(None if a.t == want else want)
+        return out, casts
+    return ty
+
+
+scalar("__b_concat", _bin_args((2, 3, 4, 5, 6, 7, 8)))(lambda *xs: b"".join(xs))
+scalar("__b_octet_length", _bin_args(1, T.BIGINT))(lambda b: len(b))
+scalar("__b_reverse", _bin_args(1))(lambda b: b[::-1])
+
+
+@scalar("__b_substring", _bin_args((2, 3), T.BLOB, [T.BLOB, T.BIGINT, T.BIGINT]))
+def _b_substring(b, start, n=None):
+    if n is not None and n < 0: return Err("SUBSTRING: negative length")
+    lo = start - 1; hi = len(b) if n is None else lo + n
+    return b[max(lo, 0):max(hi, 0)]
+
+
+scalar("__b_position", _bin_args(2, T.BIGINT))(lambda b, sub: b.find(sub) + 1)
+
+
+@scalar("__b_overlay", _bin_args((3, 4), T.BLOB, [T.BLOB, T.BLOB, T.BIGINT, T.BIGINT]))
+def _b_overlay(b, r, start, n=None):
+    if n is None: n = len(r)
+    return b[:start - 1] + r + b[start - 1 + n:]
+
+
+def _trim_octets(c): return b"\x00" if c is None else c
+
+
+scalar("__b_trim", _bin_args((1, 2)))(lambda b, c=None: b.strip(_trim_octets(c)))
+scalar("__b_ltrim", _bin_args((1, 2)))(lambda b, c=None: b.lstrip(_trim_octets(c)))
+scalar("__b_rtrim", _bin_args((1, 2)))(lambda b, c=None: b.rstrip(_trim_octets(c)))
+scalar("__b_starts_with", _bin_args(2, T.BOOLEAN))(lambda b, p: b.startswith(p))
+
+
+def _b_like(b, p, e=None):
+    """<octet like predicate>: X'25' (%) and X'5F' (_) are the wildcards"""
+    return like_regex(p.decode("latin-1"), _esc(e.decode("latin-1") if isinstance(e, bytes) else e)).fullmatch(b.decode("latin-1")) is not None
+
+
+scalar("__b_like", _bin_args((2, 3), T.BOOLEAN))(_b_like)
+scalar("__b_not_like", _bin_args((2, 3), T.BOOLEAN))(lambda b, p, e=None: not _b_like(b, p, e))
+
+
+@scalar("hex to_hex", lambda a: (T.VARCHAR, None))
+def _hex(x):
+    if isinstance(x, (bytes, bytearray)): return x.hex().upper()
+    if isinstance(x, str): return x.encode("utf-8").hex().upper()
+    if isinstance(x, int): return format(x & ((1 << 64) - 1) if x < 0 else x, "X")
+    return Err(f"hex: unsupported value {x!r}")
+
+
+@scalar("unhex from_hex", lambda a: (T.BLOB, [T.VARCHAR]))
+def _unhex(s):
+    try: return bytes.fromhex(s if len(s) % 2 == 0 else "0" + s)
+    except ValueError: return Err(f"unhex: invalid hexadecimal {s!r}")
+
+
+scalar("encode", lambda a: (T.BLOB, [T.VARCHAR]))(lambda s: s.encode("utf-8"))
+
+
+@scalar("decode", lambda a: (T.VARCHAR, [T.BLOB]))
+def _decode(b):
+    try: return b.decode("utf-8")
+    except UnicodeDecodeError: return Err("decode: the BLOB is not valid UTF-8")
+
+
+# ------------------------------------------------------------------ ISO string forms
+@scalar("__iso_pred_normalized", fixed(T.BOOLEAN))
+def _is_normalized(x, form): return unicodedata.is_normalized(form.upper(), x)
+
+
+scalar("__is_normalized", lambda a: (T.BOOLEAN, [T.VARCHAR, None]))(_is_normalized)
+
+
+def _octets(s): return s.encode("utf-8")
+
+
+def _from_octets(b, what):
+    try: return b.decode("utf-8")
+    except UnicodeDecodeError: raise SqlError(f"{what} USING OCTETS splits a character")
+
+
+@scalar("__iso_position_octets", lambda a: (T.BIGINT, [T.VARCHAR, T.VARCHAR]))
+def _pos_octets(a, b):
+    """POSITION(a IN b USING OCTETS): the octet position (1-based, 0 when absent)"""
+    return _octets(b).find(_octets(a)) + 1
+
+
+@scalar("__iso_substring_octets", lambda a: (T.VARCHAR, [T.VARCHAR, T.BIGINT, T.BIGINT]))
+def _substr_octets(s, start, n=None):
+    b = _octets(s)
+    lo = start - 1; hi = len(b) if n is None else lo + n
+    if n is not None and n < 0: return Err("SUBSTRING: negative length")
+    return _from_octets(b[max(lo, 0):max(hi, 0)], "SUBSTRING")
+
+
+@scalar("__iso_overlay_octets", lambda a: (T.VARCHAR, [T.VARCHAR, T.VARCHAR, T.BIGINT, T.BIGINT]))
+def _overlay_octets(s, r, start, n=None):
+    b, rb = _octets(s), _octets(r)
+    if n is None: n = len(rb)
+    return _from_octets(b[:start - 1] + rb + b[start - 1 + n:], "OVERLAY")
+
+
+_TRANSLIT = {"UTF8": "utf-8", "UTF-8": "utf-8", "SQL_TEXT": "utf-8", "SQL_CHARACTER": "utf-8", "UTF16": "utf-16", "UTF32": "utf-32",
+             "UCS2": "utf-16", "LATIN1": "latin-1", "ISO8859_1": "latin-1", "ASCII": "ascii", "SQL_ASCII": "ascii", "WIN1252": "cp1252"}
+
+
+@scalar("__iso_transliterate", lambda a: (T.VARCHAR, [T.VARCHAR, None]))
+def _transliterate(x, name):
+    """TRANSLATE(x USING <character set>): x when every character exists in that character set, else an error"""
+    enc = _TRANSLIT.get(name.upper().replace("-", "_").replace("UTF_", "UTF"), _TRANSLIT.get(name.upper()))
+    if enc is None: return Err(f"unknown transliteration {name}")
+    try: x.encode(enc)
+    except UnicodeEncodeError as e: return Err(f"TRANSLATE USING {name}: untranslatable character {x[e.start]!r}")
+    return x
+
+
+@scalar("row", lambda a: (T.SqlType("ROW"), None), nulls="custom")
+def _row(*xs): return list(xs)
 
 
 # ------------------------------------------------------------------ collations

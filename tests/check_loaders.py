@@ -77,9 +77,9 @@ try:
     dup = pd.concat([store, store.iloc[:3]])
     try: torbles.from_frames({"store": dup, "sales": sales}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"}); check(False, "duplicate key refused")
     except torbles.LoadError as e: check("duplicate" in str(e), "a primary key with duplicates is refused")
-    odd = store.copy(); odd["blob"] = [b"x"] * n
+    odd = store.copy(); odd["tags"] = [[1, 2]] * n
     db8 = torbles.from_frames({"store": odd, "sales": sales}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"})
-    check(any("blob" in x for x in db8.notes) and "blob" not in db8["store"].cols, "an unsupported column type is skipped with a note")
+    check(any("tags" in x for x in db8.notes) and "tags" not in db8["store"].cols, "an unsupported column type is skipped with a note")
     wide = pd.DataFrame({f"c{i}": rng.integers(0, 9, 10) for i in range(40)})
     try: torbles.from_frames({"w": wide}); check(False, "too many columns refused")
     except torbles.LoadError as e: check("columns=" in str(e), "more columns than a torble holds: refused, with the columns= hint")

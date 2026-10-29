@@ -318,7 +318,7 @@ class Database:
         fv = fill.get(f"{name}.{c}", fill.get(c))
         if fv is not None:
             lit = _fill_literal(typ, fv); col = f"coalesce({col}, {lit})"
-        if base in ("str", "float"):
+        if base in ("str", "float", "blob"):
             if base == "float":
                 nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
                 if nan: return None, None, f"{nan} NaN / infinite value(s)"
@@ -327,7 +327,8 @@ class Database:
             # NULLs sort last, so the ranks of the values do not depend on them; a NULL's code is 0 (its validity says NULL)
             codes = self.con.execute(f"SELECT CAST(CASE WHEN {col} IS NULL THEN 0 ELSE dense_rank() OVER (ORDER BY {col} NULLS LAST) - 1 END AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
-            return np.asarray(codes), ct.DictCodec(vals, "VARCHAR" if base == "str" else "DOUBLE"), None
+            if base == "blob": vals = [bytes(v) for v in vals]
+            return np.asarray(codes), ct.DictCodec(vals, {"str": "VARCHAR", "blob": "BLOB"}.get(base, "DOUBLE")), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
         lo, hi = st["min"].get(c), st["max"].get(c)
         if fv is not None:
@@ -484,6 +485,7 @@ def _base_type(t):
     if u in _TSTZ_TYPES: return "tstz"
     if u == "BOOLEAN": return "bool"
     if u in ("VARCHAR", "TEXT", "STRING") or u.startswith("VARCHAR"): return "str"
+    if u in ("BLOB", "BYTEA", "VARBINARY", "BINARY"): return "blob"
     if u in _FLOAT_TYPES: return "float"
     return "other"
 
@@ -547,6 +549,7 @@ def _int_values(vals, typ):
 def _fill_literal(typ, v):
     b = _base_type(typ)
     if b == "str": return "'" + str(v).replace("'", "''") + "'"
+    if b == "blob": return f"X'{bytes(v).hex()}'" if isinstance(v, (bytes, bytearray)) else "'" + str(v).replace("'", "''") + "'::BLOB"
     if b == "date": return f"DATE '{v}'"
     if b == "ts": return f"TIMESTAMP '{v}'"
     if b == "tstz": return f"TIMESTAMPTZ '{v}'"
@@ -728,7 +731,8 @@ def save(db, path):
             if cd.kind == "dict":
                 if cd.numeric: arrays[f"dict:{c}"] = np.asarray([float(v) if not isinstance(v, int) else v for v in cd.values], object if any(isinstance(v, int) for v in cd.values) else np.float64)
                 else:
-                    blob, offs = ct.pack_strings(cd.values); arrays[f"dictblob:{c}"] = blob; arrays[f"dictoffs:{c}"] = offs
+                    vs = [v.decode("latin-1") for v in cd.values] if cd.sql_type == "BLOB" else cd.values
+                    blob, offs = ct.pack_strings(vs); arrays[f"dictblob:{c}"] = blob; arrays[f"dictoffs:{c}"] = offs
         refs = {}
         for fk, bit in t.refbit.items():
             sg = t.surr.get(fk); dim = t._refdim[fk]
@@ -806,7 +810,9 @@ def load(path, validate=True, con=None):
             if j["kind"] == "rank": vals = [int(x) for x in man["intdicts"][name][f"rank:{c}"]]
             if j["kind"] == "dict":
                 fb = base + "." + _fname(f"dictblob:{c}") + ".npy"
-                if os.path.exists(fb): vals = ct.unpack_strings(np.load(fb), np.load(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
+                if os.path.exists(fb):
+                    vals = ct.unpack_strings(np.load(fb), np.load(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
+                    if j.get("sql_type") == "BLOB": vals = [v.encode("latin-1") for v in vals]
                 elif f"dict:{c}" in man.get("intdicts", {}).get(name, {}):
                     vals = [int(x) for x in man["intdicts"][name][f"dict:{c}"]]
                     vals = _int_values(vals, j.get("sql_type", "BIGINT"))
