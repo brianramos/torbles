@@ -16,7 +16,7 @@ dimension columns; COUNT or SUM of a random polynomial with decimal constants) o
 settings: CPU or GPU kernels, every join form, both GROUP BY modes, 1 to 4 threads, cached plans. Every few cases the
 database is saved, reloaded (memory-mapped, faces validated), damaged by one flipped bit and reloaded (repaired), and
 queried again. A result that differs from DuckDB's is a failure; so is any exception other than a documented refusal
-(a sum that could overflow 64 bits, a sum over a column that cannot be summed, a group domain too large)."""
+(a sum that could pass 128 bits, a sum over a column that cannot be summed, a group domain past 2^128)."""
 import argparse, datetime as dt, json, os, random, shutil, sys, tempfile, time, traceback
 from decimal import Decimal
 import numpy as np
@@ -27,9 +27,9 @@ import algq                                                       # noqa: E402
 from algq import Query                                            # noqa: E402
 import database                                                   # noqa: E402
 
-REFUSALS = (OverflowError,)
+REFUSALS = ()                     # by message only: an unexpected OverflowError (say, from numpy) is a bug, not a refusal
 REFUSAL_TEXT = ("cannot be summed", "group domain too large", "filter program too long", "more than 18 decimal places",
-                "expected a")
+                "expected a", "SUM may exceed 128 bits", "SUM needs 128 bits", "hidden GROUP BY columns")
 ALPHABET = list("abcAB z'_%-") + ["é", "ß", "日", "🙂", "Z", "0", "9"]
 
 
@@ -76,7 +76,7 @@ def _rand_column(r, name, n, kind=None, card=None):
         pool = [base + dt.timedelta(microseconds=r.randint(0, span)) for _ in range(card)]
         return Col(name, "TIMESTAMP", [r.choice(pool) for _ in range(n)])
     if kind == "str":
-        pool = list({_rand_string(r) for _ in range(card)}) or [""]
+        pool = sorted({_rand_string(r) for _ in range(card)}) or [""]
         return Col(name, "VARCHAR", [r.choice(pool) for _ in range(n)])
     if kind == "bool":
         return Col(name, "BOOLEAN", [r.random() < 0.3 for _ in range(n)])

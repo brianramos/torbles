@@ -33,7 +33,7 @@ class BuildEngine(build_py):
         arch = ["-march=x86-64-v2", "-mtune=generic"] if os.environ.get("TORBLES_PORTABLE") else ["-march=native"]
         if not _run([cc, "-O2", *arch, "-shared", "-fPIC", os.path.join(src, "alg.c"), "-o", os.path.join(out, "libalg.so"), "-lpthread"], src):
             sys.exit("could not compile torbles/alg.c: a C compiler (gcc or clang) is needed")
-        if not _run([cxx, "-O2", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", os.path.join(src, "gpu.cu"), "-o", os.path.join(out, "libgpu_emu.so")], src):
+        if not _run([cxx, "-O2", "-fwrapv", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", os.path.join(src, "gpu.cu"), "-o", os.path.join(out, "libgpu_emu.so")], src):
             sys.exit("could not compile the GPU emulation (torbles/gpu.cu as C++): a C++ compiler is needed")
         nvcc = shutil.which("nvcc") or ("/usr/local/cuda/bin/nvcc" if os.path.exists("/usr/local/cuda/bin/nvcc") else None)
         if nvcc and os.environ.get("TORBLES_CUDA", "1") != "0" and not os.environ.get("TORBLES_PORTABLE"):

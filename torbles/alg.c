@@ -362,29 +362,44 @@ uint64_t at_validate(const atable_t *t, uint64_t *bad, uint64_t maxbad) {
     return nb;
 }
 
-/* per-thread group accumulator for worker threads: small open-addressing hash, merged into the result at the end */
-typedef struct { uint64_t *key; int64_t *sum; uint64_t *cnt; uint64_t cap, n; } touch_t;
-#define TEMPTY (~0ULL)
-static inline uint64_t thash(uint64_t k) { return (k * 0x9E3779B97F4A7C15ULL) ^ ((k * 0x9E3779B97F4A7C15ULL) >> 29); }
+/* per-thread group accumulator for worker threads: small open-addressing hash, merged into the result at the end.
+ * Group codes are 128-bit (a GROUP BY whose key domain passes 2^64: widekey plans); sum holds each group's sum modulo
+ * 2^64, shi the high word of a 128-bit sum (wide plans) */
+typedef unsigned __int128 u128;                     /* 128-bit codes and sums: modular (two's complement) arithmetic */
+#define U128(hi, lo) (((u128)(uint64_t)(hi) << 64) | (uint64_t)(lo))
+typedef struct { u128 *key; int64_t *sum; uint64_t *cnt; uint64_t cap, n; int64_t *shi; } touch_t;
+#define TEMPTY (~(u128)0)                           /* codes stay below 2^128 - 2: the planner bounds the key domain */
+static inline uint64_t thash(u128 k) {
+    uint64_t x = (uint64_t)k ^ ((uint64_t)(k >> 64) * 0xC2B2AE3D27D4EB4FULL);
+    return (x * 0x9E3779B97F4A7C15ULL) ^ ((x * 0x9E3779B97F4A7C15ULL) >> 29);
+}
 static void hgrow(touch_t *h) {
-    uint64_t oc = h->cap, nc = oc ? 2 * oc : 4096; uint64_t *ok = h->key; int64_t *os = h->sum; uint64_t *on = h->cnt;
-    h->key = malloc(nc * 8); h->sum = calloc(nc, 8); h->cnt = calloc(nc, 8); h->cap = nc;
-    memset(h->key, 0xFF, nc * 8);
+    uint64_t oc = h->cap, nc = oc ? 2 * oc : 4096; u128 *ok = h->key; int64_t *os = h->sum, *oh = h->shi; uint64_t *on = h->cnt;
+    h->key = malloc(nc * sizeof(u128)); h->sum = calloc(nc, 8); h->cnt = calloc(nc, 8); h->shi = calloc(nc, 8); h->cap = nc;
+    memset(h->key, 0xFF, nc * sizeof(u128));
     for (uint64_t i = 0; i < oc; i++) if (ok[i] != TEMPTY) {
         uint64_t j = thash(ok[i]) & (nc - 1);
         while (h->key[j] != TEMPTY) j = (j + 1) & (nc - 1);
-        h->key[j] = ok[i]; h->sum[j] = os[i]; h->cnt[j] = on[i];
+        h->key[j] = ok[i]; h->sum[j] = os[i]; h->cnt[j] = on[i]; h->shi[j] = oh[i];
     }
-    free(ok); free(os); free(on);
+    free(ok); free(os); free(on); free(oh);
 }
-static inline void hadd_n(touch_t *h, uint64_t key, int64_t v, uint64_t n);
-static inline void hadd(touch_t *h, uint64_t key, int64_t v) { hadd_n(h, key, v, 1); }
-static inline void hadd_n(touch_t *h, uint64_t key, int64_t v, uint64_t nadd) {
+static void hfree(touch_t *h) { free(h->key); free(h->sum); free(h->cnt); free(h->shi); }
+static inline uint64_t hslot(touch_t *h, u128 key) {
     if (2 * (h->n + 1) > h->cap) hgrow(h);
     uint64_t j = thash(key) & (h->cap - 1);
     while (h->key[j] != key && h->key[j] != TEMPTY) j = (j + 1) & (h->cap - 1);
     if (h->key[j] == TEMPTY) { h->key[j] = key; h->n++; }
-    h->sum[j] += v; h->cnt[j] += nadd;
+    return j;
+}
+/* a 128-bit sum kept as (lo, hi) words */
+static inline void add128(int64_t *lo, int64_t *hi, u128 v) { u128 x = U128(*hi, *lo) + v; *lo = (int64_t)(uint64_t)x; *hi = (int64_t)(uint64_t)(x >> 64); }
+static inline void hadd_n(touch_t *h, u128 key, uint64_t v, uint64_t nadd) {
+    uint64_t j = hslot(h, key); h->sum[j] = (int64_t)((uint64_t)h->sum[j] + v); h->cnt[j] += nadd;
+}
+static inline void hadd(touch_t *h, u128 key, uint64_t v) { hadd_n(h, key, v, 1); }
+static inline void hadd_w(touch_t *h, u128 key, u128 v, uint64_t nadd) {
+    uint64_t j = hslot(h, key); add128(&h->sum[j], &h->shi[j], v); h->cnt[j] += nadd;
 }
 /* ---------------------------------------------------------------- algebraic evaluation, one 64-row word at a time */
 typedef struct { int8_t nd[MAXCOL]; uint64_t p[MAXCOL][32]; } dec_t;   /* nd[c]: planes of column c decoded so far */
@@ -549,14 +564,14 @@ void at_tail_offsets(const atable_t *t, int lc, uint32_t H, const uint64_t *dir,
         out[i] = dir[w] + pre[rows[i] & 63];
     }
 }
-static inline int64_t eval_meas(const qplan_t *q, const uint32_t *fv, const uint32_t *av) {
-    int64_t st[24]; int sp = 0;
+static inline uint64_t eval_meas(const qplan_t *q, const uint32_t *fv, const uint32_t *av) {   /* modular: exact mod 2^64 */
+    uint64_t st[24]; int sp = 0;
     for (int i = 0; i < q->nmeas; i++) {
         const minstr_t *I = &q->meas[i];
         switch (I->op) {
         case M_FCOL: st[sp++] = fv[I->arg]; break;
         case M_ATTR: st[sp++] = av[I->arg]; break;
-        case M_CONST: st[sp++] = I->c; break;
+        case M_CONST: st[sp++] = (uint64_t)I->c; break;
         case M_ADD: sp--; st[sp - 1] += st[sp]; break;
         case M_SUB: sp--; st[sp - 1] -= st[sp]; break;
         default: sp--; st[sp - 1] *= st[sp]; break;
@@ -567,22 +582,45 @@ static inline int64_t eval_meas(const qplan_t *q, const uint32_t *fv, const uint
 /* plane weight: bit position of plane j of column c */
 static inline int pw(const atable_t *t, int c, int j) { return t->msb[c] ? t->width[c] - 1 - j : j; }
 /* sum of the degree-2 measure over the rows in mask M: popcount algebra, no per-row arithmetic */
-static inline int64_t poly_sum(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t M) {
-    int64_t s = q->p_const * __builtin_popcountll(M);
+static inline uint64_t poly_sum(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t M) {   /* modular */
+    uint64_t s = (uint64_t)q->p_const * (uint64_t)__builtin_popcountll(M);
     for (int i = 0; i < q->npl; i++) {
-        int c = q->pl_col[i]; const uint64_t *x = decode(t, D, c, w); int64_t a = 0;
-        for (int j = 0; j < t->width[c]; j++) a += (int64_t)__builtin_popcountll(x[j] & M) << pw(t, c, j);
-        s += q->pl_coef[i] * a;
+        int c = q->pl_col[i]; const uint64_t *x = decode(t, D, c, w); uint64_t a = 0;
+        for (int j = 0; j < t->width[c]; j++) a += (uint64_t)__builtin_popcountll(x[j] & M) << pw(t, c, j);
+        s += (uint64_t)q->pl_coef[i] * a;
     }
     for (int i = 0; i < q->npb; i++) {
         int ca = q->pb_a[i], cb = q->pb_b[i];
-        const uint64_t *x = decode(t, D, ca, w), *y = decode(t, D, cb, w); int64_t a = 0;
+        const uint64_t *x = decode(t, D, ca, w), *y = decode(t, D, cb, w); uint64_t a = 0;
         for (int k = 0; k < t->width[cb]; k++) {
             uint64_t yk = y[k] & M; if (!yk) continue;
-            int64_t r = 0; for (int j = 0; j < t->width[ca]; j++) r += (int64_t)__builtin_popcountll(x[j] & yk) << pw(t, ca, j);
+            uint64_t r = 0; for (int j = 0; j < t->width[ca]; j++) r += (uint64_t)__builtin_popcountll(x[j] & yk) << pw(t, ca, j);
             a += r << pw(t, cb, k);
         }
-        s += q->pb_coef[i] * a;
+        s += (uint64_t)q->pb_coef[i] * a;
+    }
+    return s;
+}
+/* the same sum with 128-bit coefficients and accumulators (wide plans). A product of two 32-bit columns is the
+ * 32 x 32 matrix of plane pairs; a 64-bit value is two such columns (low and high words), so the product of two
+ * 64-bit values is the 64 x 64 matrix of plane pairs, weights 2^(j+k) up to 2^126. The popcounts are exact counts;
+ * only the fold is 128-bit. */
+static inline u128 poly_sum_w(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t M) {
+    u128 s = U128(q->p_const_hi, q->p_const) * (u128)__builtin_popcountll(M);
+    for (int i = 0; i < q->npl; i++) {
+        int c = q->pl_col[i]; const uint64_t *x = decode(t, D, c, w); uint64_t a = 0;
+        for (int j = 0; j < t->width[c]; j++) a += (uint64_t)__builtin_popcountll(x[j] & M) << pw(t, c, j);
+        s += U128(q->pl_coef_hi[i], q->pl_coef[i]) * (u128)a;
+    }
+    for (int i = 0; i < q->npb; i++) {
+        int ca = q->pb_a[i], cb = q->pb_b[i];
+        const uint64_t *x = decode(t, D, ca, w), *y = decode(t, D, cb, w); u128 a = 0;
+        for (int k = 0; k < t->width[cb]; k++) {
+            uint64_t yk = y[k] & M; if (!yk) continue;
+            uint64_t r = 0; for (int j = 0; j < t->width[ca]; j++) r += (uint64_t)__builtin_popcountll(x[j] & yk) << pw(t, ca, j);
+            a += (u128)r << pw(t, cb, k);
+        }
+        s += U128(q->pb_coef_hi[i], q->pb_coef[i]) * a;
     }
     return s;
 }
@@ -600,22 +638,23 @@ static inline int64_t poly_sum(const atable_t *t, const qplan_t *q, dec_t *D, ui
 #define TSB 8
 #define TS (1 << TSB)
 typedef struct {
-    uint64_t code[TS], nz[TS], cnt[TS]; uint8_t used[TS]; int occ[TS], nocc;
+    u128 code[TS]; uint64_t nz[TS], cnt[TS]; uint8_t used[TS]; int occ[TS], nocc;
     uint64_t M[TS][TW];
     uint64_t xt[MAXCOL][32][TW];          /* decoded measure planes of the tile, plane-major: X^T tile */
     uint64_t ones[TW];
-    int64_t rowv[TW * 64];                /* per-row measure values of the tile (row mode of a flush) */
+    uint64_t rowv[TW * 64];                /* per-row measure values of the tile (row mode of a flush) */
     mplane_t P[MAXMP]; int np, npair; uint32_t mcols; int64_t st[4];
+    u128 W[MAXMP], WC, tw;                /* wide plans: plane weights (coefficient x 2^(j+k)), constant term, total */
     /* row kernel (dense tiles): every row's key fields and measure columns packed into one 64-bit word by one bit
      * matrix transpose per 64-row word; groups accumulated in a small array indexed by group code (or the hash) */
-    int rk_ok, rk_nfill, rk_off[6], rk_bits[6], rm_off[MAXCOL], rm_bits[MAXCOL];
+    int rk_ok, rk_nfill, rk_off[MAXKEY], rk_bits[MAXKEY], rm_off[MAXCOL], rm_bits[MAXCOL];
     int16_t rf_col[64], rf_plane[64], rf_slot[64]; int8_t rf_key[64];
     uint64_t rk_R; int rk_dense, rk_kbits, use_rows, use_mob, tile_rows, since; double rk_ratio;
-    int64_t *asum; uint64_t *acnt; uint32_t *touched; uint32_t ntouched;
+    uint64_t *asum; uint64_t *acnt; uint32_t *touched; uint32_t ntouched; u128 *asumw;   /* asumw: 128-bit sums (wide plans) */
     int kt_ok, kt_n, kt_direct; int16_t kt_col[64], kt_plane[64];   /* splitting tree: the key bits, least significant first */
     /* Möbius bridge: masks of the monomials over the key bits (positive literals only) for the tile's words, their sums
      * and counts accumulated in the monomial basis, turned into group sums by inclusion-exclusion at the end */
-    int mob_ok, tile_mob, mob_dirty; uint64_t mobU; uint64_t *mob; int64_t *msum; int64_t *mcnt;
+    int mob_ok, tile_mob, mob_dirty; uint64_t mobU; uint64_t *mob; uint64_t *msum; uint64_t *mcnt;
 } mtile_t;
 #define MOB_MAXBITS 10
 #define RK_DENSE (1 << 16)
@@ -695,6 +734,7 @@ static mtile_t *mm_tile(int i) {
         memset(T->nz, 0, sizeof T->nz); memset(T->cnt, 0, sizeof T->cnt); memset(T->M, 0, sizeof T->M);
         for (int k = 0; k < TW; k++) T->ones[k] = ~0ULL;
         T->asum = calloc(RK_DENSE, 8); T->acnt = calloc(RK_DENSE, 8); T->touched = malloc(RK_DENSE * 4); T->ntouched = 0;
+        T->asumw = calloc(RK_DENSE, sizeof(u128));
         T->mob = calloc((size_t)TW << MOB_MAXBITS, 8); T->msum = calloc((size_t)1 << MOB_MAXBITS, 8); T->mcnt = calloc((size_t)1 << MOB_MAXBITS, 8);
         T->mob_dirty = 0; T->mobU = 0;
         MTILES[i] = T;
@@ -714,7 +754,9 @@ static void mm_prepare(const atable_t *t, const qplan_t *q, mtile_t *T) {
     int kpos = (int)kbt;                               /* key i's field ends where key i-1's starts */
 #define RK_FILL(c, j, slot, k) do { if (n < 64 && (slot) < 64) { T->rf_col[n] = (int16_t)(c); T->rf_plane[n] = (int16_t)(j); T->rf_slot[n] = (int16_t)(slot); T->rf_key[n] = (int8_t)(k); n++; } else ok = 0; } while (0)
     for (int i = 0; i < q->nkey; i++) R = (q->key_radix[i] && R <= UINT64_MAX / q->key_radix[i]) ? R * q->key_radix[i] : UINT64_MAX;
-    if (R == UINT64_MAX) ok = 0;
+    memset(T->rk_off, 0, sizeof T->rk_off); memset(T->rk_bits, 0, sizeof T->rk_bits);   /* no layout left from another query */
+    int laid = R != UINT64_MAX;                        /* the fields below are laid out only when the code fits 64 bits */
+    if (!laid) ok = 0;
     for (int i = 0; i < q->nkey && ok; i++) {
         int kind = q->key_kind[i], c = q->key_arg[i];
         if (kind == 1) { T->rk_off[i] = -1; T->rk_bits[i] = 0; continue; }       /* looked up per row */
@@ -738,7 +780,7 @@ static void mm_prepare(const atable_t *t, const qplan_t *q, mtile_t *T) {
     T->rk_dense = T->rk_kbits >= 0 ? T->rk_kbits <= 16 : R <= RK_DENSE;   /* dense array indexed by the code */
     T->use_rows = MMROWS == 2 && T->rk_ok; T->use_mob = 0; T->tile_rows = 0; T->since = 0; T->ntouched = 0; T->rk_ratio = -1;
     /* splitting tree: bit pos of the concatenated key code (key 0 most significant) comes from plane kt_plane[pos] */
-    T->kt_ok = T->rk_kbits >= 0 && T->rk_kbits <= 64 && q->nkey > 0; T->kt_n = 0;
+    T->kt_ok = laid && T->rk_kbits >= 0 && T->rk_kbits <= 64 && q->nkey > 0; T->kt_n = 0;
     if (T->kt_ok) {
         for (int i = 0; i < q->nkey; i++) {
             int kind = q->key_kind[i], c = q->key_arg[i], nb = T->rk_bits[i], o = T->rk_off[i];
@@ -751,11 +793,21 @@ static void mm_prepare(const atable_t *t, const qplan_t *q, mtile_t *T) {
     }
     T->kt_direct = T->rk_R <= TS;                      /* the group code is the tile slot: no hashing */
     T->mob_ok = T->kt_ok && T->kt_n <= MOB_MAXBITS && MMMOB != 0; T->tile_mob = 0; T->mob_dirty = 0; T->mobU = 0;
+    T->tw = 0;
+    if (q->wide) {                                  /* 128-bit weights, in the order of tb_mm_planes */
+        int n = 0; T->WC = U128(q->p_const_hi, q->p_const);
+        for (int i = 0; i < q->npl; i++) { int c = q->pl_col[i]; u128 cf = U128(q->pl_coef_hi[i], q->pl_coef[i]);
+            for (int j = 0; j < t->width[c]; j++) T->W[n++] = cf << pw(t, c, j); }
+        for (int i = 0; i < q->npb; i++) { int a = q->pb_a[i], b = q->pb_b[i]; u128 cf = U128(q->pb_coef_hi[i], q->pb_coef[i]);
+            for (int j = 0; j < t->width[a]; j++) for (int k = 0; k < t->width[b]; k++) T->W[n++] = cf << (pw(t, a, j) + pw(t, b, k)); }
+        T->mob_ok = 0; T->use_mob = 0;
+    }
+    if (q->widekey) { T->rk_ok = 0; T->kt_ok = 0; T->kt_direct = 0; T->mob_ok = 0; T->use_rows = 0; T->use_mob = 0; }
     T->use_mob = MMMOB == 1 && T->mob_ok;
 }
 /* the row kernel for one word: keys and measure of every passing row from one transpose, accumulated by group code */
-static inline void mm_rows_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t F, mtile_t *T, touch_t *tl, int64_t *total) {
-    uint32_t kl[6][64];
+static inline void mm_rows_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t F, mtile_t *T, touch_t *tl, uint64_t *total) {
+    uint32_t kl[MAXKEY][64];
     for (int i = 0; i < q->nkey; i++) if (q->key_kind[i] == 1) {        /* looked-up keys: one gather per row */
         int a = q->key_arg[i], c = q->attr_fkcol[a]; const uint64_t *x = decode(t, D, c, w); uint64_t G = F;
         while (G) { int r = __builtin_ctzll(G); G &= G - 1;
@@ -771,17 +823,38 @@ static inline void mm_rows_word(const atable_t *t, const qplan_t *q, dec_t *D, u
     }
     transpose64(A);
     uint64_t G = F;
+    if (q->wide) {                                      /* 128-bit sums: each row's polynomial with 128-bit coefficients */
+        int concat = T->rk_kbits >= 0 && T->rk_dense && q->npb <= 2 && q->npl <= 4;   /* the index mm_rows_flush expects */
+        const uint64_t km = T->rk_kbits >= 0 && T->rk_kbits < 64 ? (1ULL << T->rk_kbits) - 1 : ~0ULL;
+        const u128 c0 = U128(q->p_const_hi, q->p_const);
+#define FLDW(x, c) (((x) >> T->rm_off[c]) & ((1ULL << T->rm_bits[c]) - 1))
+        while (G) {
+            int r = __builtin_ctzll(G); G &= G - 1; uint64_t x = A[r], code = 0;
+            if (concat) code = x & km;
+            else for (int i = 0; i < q->nkey; i++) {
+                uint64_t kv = q->key_kind[i] == 1 ? kl[i][r] : (x >> T->rk_off[i]) & ((T->rk_bits[i] >= 64) ? ~0ULL : ((1ULL << T->rk_bits[i]) - 1));
+                code = code * q->key_radix[i] + kv; }
+            u128 v = c0;
+            for (int l = 0; l < q->npl; l++) v += U128(q->pl_coef_hi[l], q->pl_coef[l]) * (u128)FLDW(x, q->pl_col[l]);
+            for (int l = 0; l < q->npb; l++) v += U128(q->pb_coef_hi[l], q->pb_coef[l]) * (u128)(FLDW(x, q->pb_a[l]) * FLDW(x, q->pb_b[l]));
+            if (T->rk_dense) { if (!T->acnt[code]) T->touched[T->ntouched++] = (uint32_t)code; T->asumw[code] += v; T->acnt[code]++; }
+            else hadd_w(tl, code, v, 1);
+            T->tw += v;
+        }
+#undef FLDW
+        return;
+    }
     if (T->rk_kbits >= 0 && T->rk_dense && q->npb <= 2 && q->npl <= 4) {
         /* the common case: the code is the low key bits; at most 4 linear and 2 product terms, unrolled */
-        const uint64_t km = (1ULL << T->rk_kbits) - 1; int64_t loc = 0;
-        int lo_[4], lw_[4], ao_[2], aw_[2], bo_[2], bw_[2]; int64_t lc_[4] = {0}, bc_[2] = {0};
+        const uint64_t km = (1ULL << T->rk_kbits) - 1; uint64_t loc = 0;
+        int lo_[4], lw_[4], ao_[2], aw_[2], bo_[2], bw_[2]; uint64_t lc_[4] = {0}, bc_[2] = {0};
         for (int l = 0; l < 4; l++) { int c = l < q->npl ? q->pl_col[l] : -1; lo_[l] = c >= 0 ? T->rm_off[c] : 0; lw_[l] = c >= 0 ? T->rm_bits[c] : 0; lc_[l] = c >= 0 ? q->pl_coef[l] : 0; }
         for (int l = 0; l < 2; l++) { int a = l < q->npb ? q->pb_a[l] : -1, b = l < q->npb ? q->pb_b[l] : -1;
             ao_[l] = a >= 0 ? T->rm_off[a] : 0; aw_[l] = a >= 0 ? T->rm_bits[a] : 0; bo_[l] = b >= 0 ? T->rm_off[b] : 0; bw_[l] = b >= 0 ? T->rm_bits[b] : 0; bc_[l] = a >= 0 ? q->pb_coef[l] : 0; }
-#define FLD(x, o, w) ((int64_t)(((x) >> (o)) & ((1ULL << (w)) - 1)))
+#define FLD(x, o, w) (((x) >> (o)) & ((1ULL << (w)) - 1))
         while (G) {
             int r = __builtin_ctzll(G); G &= G - 1; uint64_t x = A[r], code = x & km;
-            int64_t v = q->p_const + lc_[0] * FLD(x, lo_[0], lw_[0]) + lc_[1] * FLD(x, lo_[1], lw_[1]) + lc_[2] * FLD(x, lo_[2], lw_[2])
+            uint64_t v = (uint64_t)q->p_const + lc_[0] * FLD(x, lo_[0], lw_[0]) + lc_[1] * FLD(x, lo_[1], lw_[1]) + lc_[2] * FLD(x, lo_[2], lw_[2])
                       + lc_[3] * FLD(x, lo_[3], lw_[3]) + bc_[0] * FLD(x, ao_[0], aw_[0]) * FLD(x, bo_[0], bw_[0])
                       + bc_[1] * FLD(x, ao_[1], aw_[1]) * FLD(x, bo_[1], bw_[1]);
             if (!T->acnt[code]) T->touched[T->ntouched++] = (uint32_t)code;
@@ -796,10 +869,10 @@ static inline void mm_rows_word(const atable_t *t, const qplan_t *q, dec_t *D, u
             uint64_t kv = q->key_kind[i] == 1 ? kl[i][r] : (x >> T->rk_off[i]) & ((T->rk_bits[i] >= 64) ? ~0ULL : ((1ULL << T->rk_bits[i]) - 1));
             code = code * q->key_radix[i] + kv;
         }
-        int64_t v = q->p_const;
-        for (int l = 0; l < q->npl; l++) { int c = q->pl_col[l]; v += q->pl_coef[l] * (int64_t)((x >> T->rm_off[c]) & ((1ULL << T->rm_bits[c]) - 1)); }
+        uint64_t v = (uint64_t)q->p_const;
+        for (int l = 0; l < q->npl; l++) { int c = q->pl_col[l]; v += (uint64_t)q->pl_coef[l] * ((x >> T->rm_off[c]) & ((1ULL << T->rm_bits[c]) - 1)); }
         for (int l = 0; l < q->npb; l++) { int a = q->pb_a[l], b = q->pb_b[l];
-            v += q->pb_coef[l] * (int64_t)((x >> T->rm_off[a]) & ((1ULL << T->rm_bits[a]) - 1)) * (int64_t)((x >> T->rm_off[b]) & ((1ULL << T->rm_bits[b]) - 1)); }
+            v += (uint64_t)q->pb_coef[l] * ((x >> T->rm_off[a]) & ((1ULL << T->rm_bits[a]) - 1)) * ((x >> T->rm_off[b]) & ((1ULL << T->rm_bits[b]) - 1)); }
         if (T->rk_dense) { if (!T->acnt[code]) T->touched[T->ntouched++] = (uint32_t)code; T->asum[code] += v; T->acnt[code]++; }
         else hadd_n(tl, code, v, 1);
         *total += v;
@@ -811,7 +884,9 @@ static void mm_rows_flush(const qplan_t *q, mtile_t *T, touch_t *tl) {
         uint32_t c = T->touched[k]; uint64_t code = c;
         if (concat) { code = 0;                          /* fields (key 0 most significant) -> mixed radix */
             for (int i = 0; i < q->nkey; i++) code = code * q->key_radix[i] + ((c >> T->rk_off[i]) & ((1ULL << T->rk_bits[i]) - 1)); }
-        hadd_n(tl, code, T->asum[c], T->acnt[c]); T->asum[c] = 0; T->acnt[c] = 0;
+        if (q->wide) { hadd_w(tl, code, T->asumw[c], T->acnt[c]); T->asumw[c] = 0; }
+        else hadd_n(tl, code, T->asum[c], T->acnt[c]);
+        T->asum[c] = 0; T->acnt[c] = 0;
     }
     T->ntouched = 0;
 }
@@ -841,22 +916,22 @@ static void mm_flush_mob(const atable_t *t, const qplan_t *q, mtile_t *T, uint64
         uint64_t *ms = T->mob + ((size_t)S << 6), any = 0, n = 0;
         for (uint64_t u = U; u; u &= u - 1) { int i = __builtin_ctzll(u); any |= ms[i]; n += __builtin_popcountll(ms[i]); }
         if (!any) { for (uint64_t u = U; u; u &= u - 1) ms[__builtin_ctzll(u)] = 0; continue; }
-        int64_t v = q->p_const * (int64_t)n;
+        uint64_t v = (uint64_t)q->p_const * n;
         if (T->np) {
             if (dense) { for (int i = 0; i < TW; i++) if (!(U >> i & 1)) ms[i] = 0; MMROW(ms, xa, xb, T->np, C); }
             else { memset(C, 0, (size_t)T->np * 8);
                 for (uint64_t u = U; u; u &= u - 1) { int i = __builtin_ctzll(u); uint64_t mm_ = ms[i];
                     for (int p = 0; p < T->np; p++) C[p] += __builtin_popcountll(mm_ & xa[p][i] & xb[p][i]); } }
-            for (int p = 0; p < T->np; p++) v += T->P[p].w * (int64_t)C[p];
+            for (int p = 0; p < T->np; p++) v += (uint64_t)T->P[p].w * C[p];
         }
-        T->msum[S] += v; T->mcnt[S] += (int64_t)n;
+        T->msum[S] += v; T->mcnt[S] += n;
         for (uint64_t u = U; u; u &= u - 1) ms[__builtin_ctzll(u)] = 0;
     }
     T->mobU = 0; T->mob_dirty = 1;
 }
 /* inclusion-exclusion (the Möbius transform of the superset lattice): the sum over the rows whose key bits are
  * exactly g is sum over S containing g of (-1)^|S - g| (sum over the monomial S). Then the groups go to the table. */
-static void mm_mob_finish(const qplan_t *q, mtile_t *T, touch_t *tl, int64_t *total) {
+static void mm_mob_finish(const qplan_t *q, mtile_t *T, touch_t *tl, uint64_t *total) {
     int nb = T->kt_n; uint32_t NS = 1u << nb;
     for (int i = 0; i < nb; i++) for (uint32_t S = 0; S < NS; S++) if (!(S >> i & 1)) {
         T->msum[S] -= T->msum[S | (1u << i)]; T->mcnt[S] -= T->mcnt[S | (1u << i)]; }
@@ -864,7 +939,7 @@ static void mm_mob_finish(const qplan_t *q, mtile_t *T, touch_t *tl, int64_t *to
         if (T->mcnt[g]) {
             uint64_t key = 0;
             for (int i = 0; i < q->nkey; i++) key = key * q->key_radix[i] + ((g >> T->rk_off[i]) & ((1ULL << T->rk_bits[i]) - 1));
-            hadd_n(tl, key, T->msum[g], (uint64_t)T->mcnt[g]); *total += T->msum[g];
+            hadd_n(tl, key, T->msum[g], T->mcnt[g]); *total += T->msum[g];
         }
         T->msum[g] = 0; T->mcnt[g] = 0;
     }
@@ -874,7 +949,7 @@ static void mm_mob_finish(const qplan_t *q, mtile_t *T, touch_t *tl, int64_t *to
  * C_tile, then SUM/COUNT per group into the thread's table */
 /* row mode of a tile: the measure's integer value for every row of the words holding groups (each measure column's
  * planes transposed once per word: 64 rows at a time), then each group's sum gathered from its mask bits */
-static void mm_flush_rows(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total) {
+static void mm_flush_rows(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, uint64_t *total) {
     uint64_t v64[MAXCOL][64], A[64]; uint32_t mc0 = T->mcols;
     for (uint64_t u = U; u; u &= u - 1) {
         int i = __builtin_ctzll(u); uint32_t mc = mc0;
@@ -883,17 +958,17 @@ static void mm_flush_rows(const atable_t *t, const qplan_t *q, mtile_t *T, uint6
             transpose64(A);
             if (t->msb[c]) for (int r = 0; r < 64; r++) v64[c][r] = revb((uint32_t)A[r], b);
             else for (int r = 0; r < 64; r++) v64[c][r] = A[r]; }
-        int64_t *o = T->rowv + (size_t)i * 64;
+        uint64_t *o = T->rowv + (size_t)i * 64;
         for (int r = 0; r < 64; r++) {
-            int64_t v = q->p_const;
-            for (int l = 0; l < q->npl; l++) v += q->pl_coef[l] * (int64_t)v64[q->pl_col[l]][r];
-            for (int l = 0; l < q->npb; l++) v += q->pb_coef[l] * (int64_t)v64[q->pb_a[l]][r] * (int64_t)v64[q->pb_b[l]][r];
+            uint64_t v = (uint64_t)q->p_const;
+            for (int l = 0; l < q->npl; l++) v += (uint64_t)q->pl_coef[l] * v64[q->pl_col[l]][r];
+            for (int l = 0; l < q->npb; l++) v += (uint64_t)q->pb_coef[l] * v64[q->pb_a[l]][r] * v64[q->pb_b[l]][r];
             o[r] = v;
         }
     }
     for (int k = 0; k < T->nocc; k++) {
-        int s = T->occ[k]; int64_t v = 0; uint64_t nzm = T->nz[s];
-        while (nzm) { int i = __builtin_ctzll(nzm); nzm &= nzm - 1; uint64_t m = T->M[s][i]; const int64_t *o = T->rowv + (size_t)i * 64;
+        int s = T->occ[k]; uint64_t v = 0; uint64_t nzm = T->nz[s];
+        while (nzm) { int i = __builtin_ctzll(nzm); nzm &= nzm - 1; uint64_t m = T->M[s][i]; const uint64_t *o = T->rowv + (size_t)i * 64;
             while (m) { v += o[__builtin_ctzll(m)]; m &= m - 1; }
             T->M[s][i] = 0; }
         hadd_n(tl, T->code[s], v, T->cnt[s]); *total += v;
@@ -901,8 +976,8 @@ static void mm_flush_rows(const atable_t *t, const qplan_t *q, mtile_t *T, uint6
     }
     T->nocc = 0;
 }
-static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total);
-static void mm_flush(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t wb, uint64_t nwt, touch_t *tl, int64_t *total) {
+static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, uint64_t *total);
+static void mm_flush(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t wb, uint64_t nwt, touch_t *tl, uint64_t *total) {
     if (!T->nocc) return;
     T->st[3]++;
     uint64_t U = 0; for (int i = 0; i < T->nocc; i++) U |= T->nz[T->occ[i]];
@@ -933,7 +1008,7 @@ static void mm_decode_tile(const atable_t *t, mtile_t *T, uint64_t wb, uint64_t 
         }
     }
 }
-static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total) {
+static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, uint64_t *total) {
     /* Plane popcounts cost (groups x measure planes) per tile; per-row values cost a transpose per measure column and
      * word plus a few operations per row, whatever the number of groups. Dense GROUP BYs with wide or product measures
      * (many groups in every tile) are cheaper per row; selective ones keep the popcount algebra. */
@@ -947,7 +1022,7 @@ static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_
         double crow = nu * (ncol * MMC_TRANS + 64.0 * (q->npl + 2 * q->npb) * MMC_TERM) + rows * MMC_GATHER;
         /* the next tiles: the row kernel if it would have cost less than this tile's splitting and product */
         double ckern = nu * MMC_TRANS + rows * (MMC_ROW + MMC_TERM * (q->npl + 2 * q->npb));
-        int frows = T->np && MMROWS != 0 && (MMROWS == 1 || crow < RK_MARGIN * cpop);   /* this tile's fold per row */
+        int frows = !q->wide && T->np && MMROWS != 0 && (MMROWS == 1 || crow < RK_MARGIN * cpop);   /* this tile's fold per row */
         double cmm = csplit + (frows ? crow : cpop);
         double cmob = T->mob_ok ? nu * (double)(1u << T->kt_n) * MMC_MOBAND + (double)(1u << T->kt_n) * (T->np + 1) * MMC_DENSE : 1e300;
         T->use_rows = 0; T->use_mob = 0;
@@ -990,24 +1065,31 @@ static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_
             while (nzm) { int i = __builtin_ctzll(nzm); nzm &= nzm - 1; uint64_t m = T->M[s][i];
                 for (int p = 0; p < T->np; p++) C[p] += __builtin_popcountll(m & xa[p][i] & xb[p][i]); }
         }
-        int64_t v = q->p_const * (int64_t)T->cnt[s];
-        for (int p = 0; p < T->np; p++) v += T->P[p].w * (int64_t)C[p];
-        hadd_n(tl, T->code[s], v, T->cnt[s]); *total += v;
+        if (q->wide) {                                         /* exact counts, 128-bit weights */
+            u128 v = T->WC * (u128)T->cnt[s];
+            for (int p = 0; p < T->np; p++) v += T->W[p] * (u128)C[p];
+            hadd_w(tl, T->code[s], v, T->cnt[s]); T->tw += v;
+        } else {
+            uint64_t v = (uint64_t)q->p_const * T->cnt[s];
+            for (int p = 0; p < T->np; p++) v += (uint64_t)T->P[p].w * C[p];
+            hadd_n(tl, T->code[s], v, T->cnt[s]); *total += v;
+        }
         nzm = T->nz[s]; while (nzm) { int i = __builtin_ctzll(nzm); nzm &= nzm - 1; T->M[s][i] = 0; }
         T->nz[s] = 0; T->cnt[s] = 0; T->used[s] = 0;
     }
     T->nocc = 0;
 }
 /* the groups of one word: split F into the masks of its distinct keys, each placed in its tile slot (row of M^T) */
-static inline void mm_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, int64_t *total) {
-    uint32_t kl[6][64]; int slot[6], ns = 0;
+/* wk: 128-bit group codes (a compile-time constant in each of the two copies below) */
+static inline __attribute__((always_inline)) void mm_word_k(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, uint64_t *total, const int wk) {
+    uint32_t kl[MAXKEY][64]; int slot[MAXKEY], ns = 0;
     for (int i = 0; i < q->nkey; i++) if (q->key_kind[i] == 1) {        /* looked-up keys: one gather per row */
         int a = q->key_arg[i], sl = slot[i] = ns++, c = q->attr_fkcol[a]; const uint64_t *x = decode(t, D, c, w); uint64_t G = F;
         while (G) { int r = __builtin_ctzll(G); G &= G - 1;
             uint32_t fk = KM(q->attr_kmask[a], extract_col(t, x, c, r));
             if (fk >= q->attr_n[a]) F &= ~(1ULL << r); else kl[sl][r] = q->attr_vals[a][fk]; }
     }
-    const uint64_t *kp[6][32]; int kb[6], km[6];
+    const uint64_t *kp[MAXKEY][32]; int kb[MAXKEY], km[MAXKEY];
     for (int i = 0; i < q->nkey; i++) {
         int c = q->key_arg[i]; const uint64_t *x; kb[i] = 0;
         if (q->key_kind[i] == 1) continue;
@@ -1019,32 +1101,38 @@ static inline void mm_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64
     }
     uint64_t R = F;
     while (R) {
-        int r = __builtin_ctzll(R); uint64_t M = R, key = 0;
+        int r = __builtin_ctzll(R); uint64_t M = R, k64 = 0; u128 kw = 0;
         for (int i = 0; i < q->nkey; i++) {
             uint64_t kv = 0;
             if (q->key_kind[i] == 1) { kv = kl[slot[i]][r]; uint64_t G = M;
                 while (G) { int rr = __builtin_ctzll(G); G &= G - 1; if (kl[slot[i]][rr] != kv) M &= ~(1ULL << rr); } }
             else for (int j = 0; j < kb[i]; j++) { uint64_t pl = *kp[i][j], bit = (pl >> r) & 1; M &= bit ? pl : ~pl; kv |= bit << (km[i] ? kb[i] - 1 - j : j); }
-            key = key * q->key_radix[i] + kv;
+            if (wk) kw = kw * q->key_radix[i] + kv; else k64 = k64 * q->key_radix[i] + kv;
         }
         R &= ~M;
+        const u128 key = wk ? kw : (u128)k64;
         uint32_t h;
-        if (MMDIRECT && T->kt_direct) h = (uint32_t)key;                           /* the code is the slot */
-        else { h = (uint32_t)((key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));           /* tile slot: open addressing */
+        if (MMDIRECT && T->kt_direct) h = (uint32_t)k64;                           /* the code is the slot */
+        else { h = wk ? (uint32_t)(((uint64_t)kw ^ (uint64_t)(kw >> 64) * 0xC2B2AE3D27D4EB4FULL) * 0x9E3779B97F4A7C15ULL >> (64 - TSB))
+                      : (uint32_t)((k64 * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));        /* tile slot: open addressing */
                while (T->used[h] && T->code[h] != key) h = (h + 1) & (TS - 1); }
         if (!T->used[h]) {
             if (!(MMDIRECT && T->kt_direct) && T->nocc >= TS * 3 / 4) {             /* tile table full: this pair is evaluated directly */
-                int64_t v = poly_sum(t, q, D, w, M); hadd_n(tl, key, v, __builtin_popcountll(M)); *total += v; T->st[2]++; continue;
+                if (q->wide) { u128 v = poly_sum_w(t, q, D, w, M); hadd_w(tl, key, v, __builtin_popcountll(M)); T->tw += v; }
+                else { uint64_t v = poly_sum(t, q, D, w, M); hadd_n(tl, key, v, __builtin_popcountll(M)); *total += v; }
+                T->st[2]++; continue;
             }
             T->used[h] = 1; T->code[h] = key; T->occ[T->nocc++] = h;
         }
         T->M[h][wi] |= M; T->nz[h] |= 1ULL << wi; T->cnt[h] += __builtin_popcountll(M);
     }
 }
+static void mm_word_64(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, uint64_t *total) { mm_word_k(t, q, D, w, wi, F, T, tl, total, 0); }
+static void mm_word_128(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, uint64_t *total) { mm_word_k(t, q, D, w, wi, F, T, tl, total, 1); }
 /* the groups of one word by Shannon expansion over the key bits: a mask is split by the next key bit's plane into
  * its 0 and 1 halves (two ANDs), empty halves are dropped, and a leaf's path is its group code. Every group present
  * costs at most two ANDs per key bit, shared along common prefixes; when the codes fit the tile, the code is the slot. */
-static inline void mm_word_tree(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, int64_t *total) {
+static inline void mm_word_tree(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, uint64_t *total) {
     uint64_t P[64]; int nb = T->kt_n;
     for (int pos = 0; pos < nb; pos++) { int c = T->kt_col[pos], j = T->kt_plane[pos];
         P[pos] = decode_n(t, D, c, w, t->vflag[c] ? t->width[c] : j + 1)[j]; }
@@ -1057,17 +1145,19 @@ static inline void mm_word_tree(const atable_t *t, const qplan_t *q, dec_t *D, u
             if (m1) { sm[sp] = m1; sc[sp] = (cb << 1) | 1; sd[sp] = d - 1; sp++; }
             continue;
         }
-        uint64_t key = 0;                               /* concatenated fields -> mixed-radix group code */
+        u128 key = 0;                                   /* concatenated fields -> mixed-radix group code */
         for (int i = 0; i < q->nkey; i++) key = key * q->key_radix[i] + ((cb >> T->rk_off[i]) & ((T->rk_bits[i] >= 64) ? ~0ULL : ((1ULL << T->rk_bits[i]) - 1)));
         uint32_t h;
         if (MMDIRECT && T->kt_direct) h = (uint32_t)key;
         else {
-            h = (uint32_t)((key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));
+            h = (uint32_t)(((uint64_t)key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));
             while (T->used[h] && T->code[h] != key) h = (h + 1) & (TS - 1);
         }
         if (!T->used[h]) {
             if (!(MMDIRECT && T->kt_direct) && T->nocc >= TS * 3 / 4) {
-                int64_t v = poly_sum(t, q, D, w, m); hadd_n(tl, key, v, __builtin_popcountll(m)); *total += v; T->st[2]++; continue;
+                if (q->wide) { u128 v = poly_sum_w(t, q, D, w, m); hadd_w(tl, key, v, __builtin_popcountll(m)); T->tw += v; }
+                else { uint64_t v = poly_sum(t, q, D, w, m); hadd_n(tl, key, v, __builtin_popcountll(m)); *total += v; }
+                T->st[2]++; continue;
             }
             T->used[h] = 1; T->code[h] = key; T->occ[T->nocc++] = h;
         }
@@ -1075,8 +1165,8 @@ static inline void mm_word_tree(const atable_t *t, const qplan_t *q, dec_t *D, u
     }
 }
 static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint64_t w1,
-                          int64_t *osum, uint64_t *ocnt, int64_t *ptotal, uint64_t *pcnt, touch_t *tl, mtile_t *T) {
-    dec_t D; int64_t total = 0; uint64_t cnt = 0;
+                          int64_t *osum, uint64_t *ocnt, uint64_t *ptotal, uint64_t *pcnt, touch_t *tl, mtile_t *T, u128 *ptw) {
+    dec_t D; uint64_t total = 0; uint64_t cnt = 0; u128 tw = 0;
     uint64_t needf = 0;                                  /* fact columns needed as integers (general path) */
     for (int i = 0; i < q->nmeas; i++) if (q->meas[i].op == M_FCOL) needf |= 1ULL << q->meas[i].arg;
     for (int i = 0; i < q->nkey; i++) if (q->key_kind[i] == 0) needf |= 1ULL << q->key_arg[i];
@@ -1086,7 +1176,9 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
         if (T && (w - w0) % TW == 0) {                   /* tile boundary: fold the last tile, choose the next one's kernel */
             if (w > w0) { if (T->tile_mob) mm_flush_mob(t, q, T, w - TW, TW); else mm_flush(t, q, T, w - TW, TW, tl, &total); }
             int forced = (MMMOB == 1 && T->mob_ok) || (MMROWS >= 2 && T->rk_ok);
-            if ((T->use_rows || T->use_mob) && (forced || T->since < 31)) {   /* every 32nd tile is measured again */
+            /* a popcount tile measures the model again: every 32nd tile, or every 256th when the row kernel is far ahead
+             * (a popcount tile with more groups than the tile table holds evaluates the rest word by word) */
+            if ((T->use_rows || T->use_mob) && (forced || T->since < (T->use_rows && T->rk_ratio < RK_MARGIN / 4 ? 255 : 31))) {
                 T->tile_rows = T->use_rows; T->tile_mob = T->use_mob; T->since++; }
             else { T->tile_rows = 0; T->tile_mob = 0; T->since = 0; }
         }
@@ -1112,13 +1204,14 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             if (T->tile_mob) mm_mob_word(t, &D, w, (int)((w - w0) % TW), F, T);
             else if (T->tile_rows) mm_rows_word(t, q, &D, w, F, T, tl, &total);
             else if (MMTREE && T->kt_ok) mm_word_tree(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
-            else mm_word(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
+            else if (q->widekey) mm_word_128(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
+            else mm_word_64(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
             continue; }
         if (q->agg == A_LIN) {                           /* SUM = sum_j 2^j popcount(x_j & F) */
             for (int i = 0; i < q->nlin; i++) {
-                const uint64_t *x = decode(t, &D, q->lin_col[i], w); int64_t s = 0;
-                for (int j = 0; j < t->width[q->lin_col[i]]; j++) s += (int64_t)__builtin_popcountll(x[j] & F) << j;
-                total += q->lin_coef[i] * s;
+                const uint64_t *x = decode(t, &D, q->lin_col[i], w); uint64_t s = 0;
+                for (int j = 0; j < t->width[q->lin_col[i]]; j++) s += (uint64_t)__builtin_popcountll(x[j] & F) << j;
+                total += (uint64_t)q->lin_coef[i] * s;
             }
             continue;
         }
@@ -1126,7 +1219,7 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             /* GROUP BY by mask splitting: the rows sharing the first row's key are an AND of key-plane literals
              * (a monomial); the measure over them is popcount algebra. Remove them and repeat. On a table
              * clustered by the key this is almost always a single step per 64-row word. */
-            const uint64_t *kp[6][32]; int kb[6], km[6];
+            const uint64_t *kp[MAXKEY][32]; int kb[MAXKEY], km[MAXKEY];
             for (int i = 0; i < q->nkey; i++) {
                 int c = q->key_arg[i]; const uint64_t *x;
                 if (q->key_kind[i] == 3) {
@@ -1140,7 +1233,7 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             }
             uint64_t R = F;
             while (R) {
-                int r = __builtin_ctzll(R); uint64_t M = R, key = 0;
+                int r = __builtin_ctzll(R); uint64_t M = R; u128 key = 0;
                 for (int i = 0; i < q->nkey; i++) {
                     uint64_t kv = 0;
                     for (int j = 0; j < kb[i]; j++) {
@@ -1149,9 +1242,12 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
                     }
                     key = key * q->key_radix[i] + kv;
                 }
-                int64_t v = poly_sum(t, q, &D, w, M); uint64_t n = __builtin_popcountll(M);
-                if (tl) hadd_n(tl, key, v, n); else { osum[key] += v; ocnt[key] += n; }
-                total += v; R &= ~M;
+                uint64_t n = __builtin_popcountll(M);
+                if (q->wide) { u128 v = poly_sum_w(t, q, &D, w, M); tw += v;
+                    if (q->nkey) { if (tl) hadd_w(tl, key, v, n); else { add128(&osum[(uint64_t)key], &q->out_sum_hi[(uint64_t)key], v); ocnt[(uint64_t)key] += n; } } }
+                else { uint64_t v = poly_sum(t, q, &D, w, M); total += v;
+                    if (q->nkey) { if (tl) hadd_n(tl, key, v, n); else { osum[(uint64_t)key] += v; ocnt[(uint64_t)key] += n; } } }
+                R &= ~M;
             }
             continue;
         }
@@ -1163,17 +1259,18 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             for (int k = 0; k < q->ndom; k++) {
                 uint64_t lt = cmp_any(t, x, q->dom_col, P_LT, q->dom_t[k]) & F, M = lt & ~below; below = lt;
                 if (!M) continue;
-                int64_t v = poly_sum(t, q, &D, w, M); uint64_t n = __builtin_popcountll(M);
-                if (tl) hadd_n(tl, k, v, n); else { osum[k] += v; ocnt[k] += n; }
+                uint64_t n = __builtin_popcountll(M);
+                if (q->wide) { u128 v = poly_sum_w(t, q, &D, w, M); if (tl) hadd_w(tl, k, v, n); else { add128(&osum[k], &q->out_sum_hi[k], v); ocnt[k] += n; } }
+                else { uint64_t v = poly_sum(t, q, &D, w, M); if (tl) hadd_n(tl, k, v, n); else { osum[k] += v; ocnt[k] += n; } }
             }
-            total += poly_sum(t, q, &D, w, F);
+            if (q->wide) tw += poly_sum_w(t, q, &D, w, F); else total += poly_sum(t, q, &D, w, F);
             continue;
         }
         if (q->agg == A_BIL) {                           /* SUM(x*y) = sum_jk 2^(j+k) popcount(x_j & y_k & F) */
             const uint64_t *x = decode(t, &D, q->bil_a, w), *y = decode(t, &D, q->bil_b, w);
             int bx = t->width[q->bil_a], by = t->width[q->bil_b];
             for (int j = 0; j < bx; j++) { uint64_t xf = x[j] & F; if (!xf) continue;
-                int64_t s = 0; for (int k = 0; k < by; k++) s += (int64_t)__builtin_popcountll(xf & y[k]) << k;
+                uint64_t s = 0; for (int k = 0; k < by; k++) s += (uint64_t)__builtin_popcountll(xf & y[k]) << k;
                 total += s << j; }
             continue;
         }
@@ -1192,8 +1289,8 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             int orphan = 0;
             for (int a = 0; a < q->nattr; a++) { uint32_t fk = KM(q->attr_kmask[a], fv[q->attr_fkcol[a]]); if (fk >= q->attr_n[a]) { orphan = 1; break; } av[a] = q->attr_vals[a][fk]; }
             if (orphan) { cnt--; continue; }                 /* foreign key outside the dimension: no join partner */
-            int64_t m = q->nmeas ? eval_meas(q, fv, av) : 0;
-            uint64_t key = 0;
+            uint64_t m = q->nmeas && !q->wide ? eval_meas(q, fv, av) : 0;
+            u128 key = 0;
             for (int i = 0; i < q->nkey; i++) {
                 uint64_t kv;
                 if (q->key_kind[i] == 3) {               /* coordinate projection: read the field's planes */
@@ -1203,7 +1300,15 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
                             : extract_msb(decode_n(t, &D, q->key_arg[i], w, q->key_nbits[i]), q->key_nbits[i], r);   /* field read from the fk planes */
                 key = key * q->key_radix[i] + kv;
             }
-            if (q->nkey) { if (tl) hadd(tl, key, m); else { osum[key] += m; ocnt[key]++; } }
+            if (q->wide) {                               /* 128 bits: the measure as its polynomial, row by row */
+                u128 v = U128(q->p_const_hi, q->p_const);
+                for (int i = 0; i < q->npl; i++) v += U128(q->pl_coef_hi[i], q->pl_coef[i]) * (u128)fv[q->pl_col[i]];
+                for (int i = 0; i < q->npb; i++) v += U128(q->pb_coef_hi[i], q->pb_coef[i]) * (u128)((uint64_t)fv[q->pb_a[i]] * fv[q->pb_b[i]]);
+                tw += v;
+                if (q->nkey) { if (tl) hadd_w(tl, key, v, 1); else { add128(&osum[(uint64_t)key], &q->out_sum_hi[(uint64_t)key], v); ocnt[(uint64_t)key]++; } }
+                continue;
+            }
+            if (q->nkey) { if (tl) hadd(tl, key, m); else { osum[(uint64_t)key] += m; ocnt[(uint64_t)key]++; } }
             total += m;
         }
     }
@@ -1211,7 +1316,8 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
         if (T->tile_mob) mm_flush_mob(t, q, T, wb, w1 - wb); else mm_flush(t, q, T, wb, w1 - wb, tl, &total); }
     if (T && T->ntouched) mm_rows_flush(q, T, tl);
     if (T && T->mob_dirty) mm_mob_finish(q, T, tl, &total);
-    *ptotal += total; *pcnt += cnt;
+    if (T) { tw += T->tw; T->tw = 0; }
+    *ptotal += total; *pcnt += cnt; *ptw += tw;
 }
 
 /* ---------------------------------------------------------------- plain columnar baseline: same plans */
@@ -1300,9 +1406,17 @@ uint64_t pt_filter_bitmap(const ptable_t *t, const pinstr_t *prog, int n, uint64
     }
     return cnt;
 }
+/* the degree-2 measure of one row in 128 bits (wide plans on the plain baseline: row-wise int128, as a columnar engine
+ * would do it) */
+static inline u128 pt_row_w(const ptable_t *t, const qplan_t *q, uint64_t row) {
+    u128 v = U128(q->p_const_hi, q->p_const);
+    for (int i = 0; i < q->npl; i++) v += U128(q->pl_coef_hi[i], q->pl_coef[i]) * (u128)t->col[q->pl_col[i]][row];
+    for (int i = 0; i < q->npb; i++) v += U128(q->pb_coef_hi[i], q->pb_coef[i]) * (u128)((uint64_t)t->col[q->pb_a[i]][row] * t->col[q->pb_b[i]][row]);
+    return v;
+}
 static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint64_t rb,
-                          int64_t *osum, uint64_t *ocnt, int64_t *ptotal, uint64_t *pcnt, touch_t *tl) {
-    uint8_t m[CH]; int64_t total = 0; uint64_t cnt = 0; uint32_t fv[MAXCOL], av[8];
+                          int64_t *osum, uint64_t *ocnt, uint64_t *ptotal, uint64_t *pcnt, touch_t *tl, u128 *ptw) {
+    uint8_t m[CH]; uint64_t total = 0; uint64_t cnt = 0; uint32_t fv[MAXCOL], av[8]; u128 tw = 0;
     for (uint64_t r0 = ra; r0 < rb; r0 += CH) {
         int len = (int)(rb - r0 < CH ? rb - r0 : CH);
         eval_prog_chunk(t, q->prog, q->nprog, r0, len, m);
@@ -1313,14 +1427,14 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
             for (int r = 0; r < len; r++) if (m[r]) { uint32_t v = KM(km, fk[r]); m[r] = v < q->semi_n[s] && (bm[v >> 6] >> (v & 63) & 1); }
         }
         if (q->agg == A_LIN) {
-            for (int i = 0; i < q->nlin; i++) { const uint32_t *x = t->col[q->lin_col[i]] + r0; int64_t s = 0;
-                for (int r = 0; r < len; r++) s += m[r] ? x[r] : 0; total += q->lin_coef[i] * s; }
+            for (int i = 0; i < q->nlin; i++) { const uint32_t *x = t->col[q->lin_col[i]] + r0; uint64_t s = 0;
+                for (int r = 0; r < len; r++) s += m[r] ? x[r] : 0; total += (uint64_t)q->lin_coef[i] * s; }
             for (int r = 0; r < len; r++) cnt += m[r];
             continue;
         }
         if (q->agg == A_BIL) {
-            const uint32_t *x = t->col[q->bil_a] + r0, *y = t->col[q->bil_b] + r0; int64_t s = 0;
-            for (int r = 0; r < len; r++) { s += m[r] ? (int64_t)x[r] * y[r] : 0; cnt += m[r]; }
+            const uint32_t *x = t->col[q->bil_a] + r0, *y = t->col[q->bil_b] + r0; uint64_t s = 0;
+            for (int r = 0; r < len; r++) { s += m[r] ? (uint64_t)x[r] * y[r] : 0; cnt += m[r]; }
             total += s; continue;
         }
         if (q->agg == A_DOM) {                           /* plain engine: the same slices, row by row */
@@ -1328,11 +1442,14 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
             for (int r = 0; r < len; r++) {
                 if (!m[r]) continue;
                 cnt++;
-                int64_t v = q->p_const;
-                for (int i = 0; i < q->npl; i++) v += q->pl_coef[i] * (int64_t)t->col[q->pl_col[i]][r0 + r];
-                for (int i = 0; i < q->npb; i++) v += q->pb_coef[i] * (int64_t)t->col[q->pb_a[i]][r0 + r] * t->col[q->pb_b[i]][r0 + r];
-                total += v;
                 int k = 0; while (k < q->ndom && x[r] >= q->dom_t[k]) k++;
+                if (q->wide) { u128 v = pt_row_w(t, q, r0 + r); tw += v;
+                    if (k < q->ndom) { if (tl) hadd_w(tl, k, v, 1); else { add128(&osum[k], &q->out_sum_hi[k], v); ocnt[k]++; } }
+                    continue; }
+                uint64_t v = (uint64_t)q->p_const;
+                for (int i = 0; i < q->npl; i++) v += (uint64_t)q->pl_coef[i] * t->col[q->pl_col[i]][r0 + r];
+                for (int i = 0; i < q->npb; i++) v += (uint64_t)q->pb_coef[i] * t->col[q->pb_a[i]][r0 + r] * t->col[q->pb_b[i]][r0 + r];
+                total += v;
                 if (k < q->ndom) { if (tl) hadd(tl, k, v); else { osum[k] += v; ocnt[k]++; } }
             }
             continue;
@@ -1341,9 +1458,9 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
             for (int r = 0; r < len; r++) {
                 if (!m[r]) continue;
                 cnt++;
-                int64_t v = q->p_const; uint64_t key = 0;
-                for (int i = 0; i < q->npl; i++) v += q->pl_coef[i] * (int64_t)t->col[q->pl_col[i]][r0 + r];
-                for (int i = 0; i < q->npb; i++) v += q->pb_coef[i] * (int64_t)t->col[q->pb_a[i]][r0 + r] * t->col[q->pb_b[i]][r0 + r];
+                uint64_t v = (uint64_t)q->p_const; u128 key = 0;
+                for (int i = 0; i < q->npl; i++) v += (uint64_t)q->pl_coef[i] * t->col[q->pl_col[i]][r0 + r];
+                for (int i = 0; i < q->npb; i++) v += (uint64_t)q->pb_coef[i] * t->col[q->pb_a[i]][r0 + r] * t->col[q->pb_b[i]][r0 + r];
                 for (int i = 0; i < q->nkey; i++) {
                     uint32_t x = t->col[q->key_arg[i]][r0 + r];
                     uint64_t kv = x;
@@ -1352,7 +1469,10 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
                         while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; kv = (kv << 1) | ((x >> (wd - 1 - j)) & 1); } }
                     key = key * q->key_radix[i] + kv;
                 }
-                if (tl) hadd(tl, key, v); else { osum[key] += v; ocnt[key]++; }
+                if (q->wide) { u128 vw = pt_row_w(t, q, r0 + r); tw += vw;
+                    if (q->nkey) { if (tl) hadd_w(tl, key, vw, 1); else { add128(&osum[(uint64_t)key], &q->out_sum_hi[(uint64_t)key], vw); ocnt[(uint64_t)key]++; } }
+                    continue; }
+                if (q->nkey) { if (tl) hadd(tl, key, v); else { osum[(uint64_t)key] += v; ocnt[(uint64_t)key]++; } }
                 total += v;
             }
             continue;
@@ -1365,8 +1485,8 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
             int orphan = 0;
             for (int a = 0; a < q->nattr; a++) { uint32_t fk = KM(q->attr_kmask[a], fv[q->attr_fkcol[a]]); if (fk >= q->attr_n[a]) { orphan = 1; break; } av[a] = q->attr_vals[a][fk]; }
             if (orphan) { cnt--; continue; }
-            int64_t mv = q->nmeas ? eval_meas(q, fv, av) : 0;
-            uint64_t key = 0;
+            uint64_t mv = q->nmeas && !q->wide ? eval_meas(q, fv, av) : 0;
+            u128 key = 0;
             for (int i = 0; i < q->nkey; i++) {
                 uint64_t kv = q->key_kind[i] == 0 ? fv[q->key_arg[i]] : q->key_kind[i] == 1 ? av[q->key_arg[i]]
                             : q->key_kind[i] == 2 ? fv[q->key_arg[i]] >> (t->width[q->key_arg[i]] - q->key_nbits[i]) : 0;
@@ -1374,11 +1494,14 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
                     while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; kv = (kv << 1) | ((x >> (wd - 1 - j)) & 1); } }
                 key = key * q->key_radix[i] + kv;
             }
-            if (q->nkey) { if (tl) hadd(tl, key, mv); else { osum[key] += mv; ocnt[key]++; } }
+            if (q->wide) { u128 v = pt_row_w(t, q, r0 + r); tw += v;       /* the measure as its degree-2 polynomial */
+                if (q->nkey) { if (tl) hadd_w(tl, key, v, 1); else { add128(&osum[(uint64_t)key], &q->out_sum_hi[(uint64_t)key], v); ocnt[(uint64_t)key]++; } }
+                continue; }
+            if (q->nkey) { if (tl) hadd(tl, key, mv); else { osum[(uint64_t)key] += mv; ocnt[(uint64_t)key]++; } }
             total += mv;
         }
     }
-    *ptotal += total; *pcnt += cnt;
+    *ptotal += total; *pcnt += cnt; *ptw += tw;
 }
 
 /* ---------------------------------------------------------------- multithreading
@@ -1393,7 +1516,7 @@ void at_set_threads(int n) { NTHREADS = n < 1 ? 1 : n > 64 ? 64 : n; }
 int at_get_threads(void) { return nthreads(); }
 typedef struct {
     int kind; const void *t; const qplan_t *q; const uint64_t *chunks; uint64_t nchunks, limit; _Atomic uint64_t *next;
-    int64_t *osum; uint64_t *ocnt; int64_t total; uint64_t cnt; touch_t tl; int extra; mtile_t *mt;
+    int64_t *osum; uint64_t *ocnt; uint64_t total; uint64_t cnt; touch_t tl; int extra; mtile_t *mt; u128 totalw;
 } job_t;
 static void *qworker(void *arg) {
     job_t *j = arg;
@@ -1402,8 +1525,8 @@ static void *qworker(void *arg) {
         if (i >= j->nchunks) break;
         uint64_t u0 = j->chunks[2 * i], u1 = j->chunks[2 * i + 1];
         touch_t *tl = j->extra ? &j->tl : NULL;
-        if (j->kind == 0) at_query_part(j->t, j->q, u0, u1, j->osum, j->ocnt, &j->total, &j->cnt, tl, j->mt);
-        else pt_query_part(j->t, j->q, u0 * CH, u1 * CH < j->limit ? u1 * CH : j->limit, j->osum, j->ocnt, &j->total, &j->cnt, tl);
+        if (j->kind == 0) at_query_part(j->t, j->q, u0, u1, j->osum, j->ocnt, &j->total, &j->cnt, tl, j->mt, &j->totalw);
+        else pt_query_part(j->t, j->q, u0 * CH, u1 * CH < j->limit ? u1 * CH : j->limit, j->osum, j->ocnt, &j->total, &j->cnt, tl, &j->totalw);
     }
     return NULL;
 }
@@ -1431,44 +1554,53 @@ static void run_parallel(int kind, const void *t, qplan_t *q, uint64_t nunits, u
     int mm = kind == 0 && q->agg == A_MM;
     /* sparse output (out_key set): the matrix product always; the general path when the key domain is too large
      * for dense arrays. Every thread then accumulates into its own hash table. */
-    int sparse = mm || (q->agg == A_GENERAL && q->out_key && q->nkey);
+    int sparse = mm || ((q->agg == A_GENERAL || q->agg == A_POLYG) && q->out_key && q->nkey);
     for (int i = 0; i < T; i++) {
-        jobs[i] = (job_t){kind, t, q, chunks, nchunks, limit, &next, q->out_sum, q->out_cnt, 0, 0, {0}, 0, NULL};
+        jobs[i] = (job_t){kind, t, q, chunks, nchunks, limit, &next, q->out_sum, q->out_cnt, 0, 0, {0}, 0, NULL, 0};
         if ((i || sparse) && q->nkey) jobs[i].extra = 1;
         if (mm) { jobs[i].mt = mm_tile(i); mm_prepare(t, q, jobs[i].mt); }
     }
     pool_jobs(T, qworker, jobs, sizeof jobs[0]); (void)th;
     q->total_sum = jobs[0].total; q->total_cnt = jobs[0].cnt;
+    if (q->wide) { u128 tw = 0; for (int i = 0; i < T; i++) tw += jobs[i].totalw;
+                   q->total_sum_hi = (int64_t)(uint64_t)(tw >> 64); q->total_sum = (int64_t)(uint64_t)tw; }
     if (sparse) {                                        /* sparse output: the groups present, merged across threads */
         touch_t *h0 = &jobs[0].tl; memset(q->mm_stats, 0, sizeof q->mm_stats);
         for (int i = 0; i < T; i++) {
             if (mm) for (int k = 0; k < 4; k++) q->mm_stats[k] += jobs[i].mt->st[k];
-            if (i) { q->total_sum += jobs[i].total; q->total_cnt += jobs[i].cnt;
+            if (i) { if (!q->wide) q->total_sum += jobs[i].total;
+                     q->total_cnt += jobs[i].cnt;
                      touch_t *h = &jobs[i].tl;
-                     for (uint64_t x = 0; x < h->cap; x++) if (h->key[x] != TEMPTY) hadd_n(h0, h->key[x], h->sum[x], h->cnt[x]);
-                     free(h->key); free(h->sum); free(h->cnt); }
+                     for (uint64_t x = 0; x < h->cap; x++) if (h->key[x] != TEMPTY) hadd_w(h0, h->key[x], U128(h->shi[x], h->sum[x]), h->cnt[x]);
+                     hfree(h); }
         }
         uint64_t n = 0;
         for (uint64_t x = 0; x < h0->cap; x++) if (h0->key[x] != TEMPTY) {
-            if (n < q->out_cap) { q->out_key[n] = h0->key[x]; q->out_sum[n] = h0->sum[x]; q->out_cnt[n] = h0->cnt[x]; }
+            if (n < q->out_cap) { q->out_key[n] = (uint64_t)h0->key[x]; q->out_sum[n] = h0->sum[x]; q->out_cnt[n] = h0->cnt[x];
+                                  if (q->out_key_hi) q->out_key_hi[n] = (uint64_t)(h0->key[x] >> 64);
+                                  if (q->wide) q->out_sum_hi[n] = h0->shi[x]; }
             n++;
         }
-        q->out_n = n; free(h0->key); free(h0->sum); free(h0->cnt); free(chunks); return;
+        q->out_n = n; hfree(h0); free(chunks); return;
     }
     for (int i = 1; i < T; i++) {
-        q->total_sum += jobs[i].total; q->total_cnt += jobs[i].cnt;
+        if (!q->wide) q->total_sum += jobs[i].total;
+        q->total_cnt += jobs[i].cnt;
         if (q->nkey) {
             touch_t *h = &jobs[i].tl;
-            for (uint64_t x = 0; x < h->cap; x++) if (h->key[x] != TEMPTY) { q->out_sum[h->key[x]] += h->sum[x]; q->out_cnt[h->key[x]] += h->cnt[x]; }
-            free(h->key); free(h->sum); free(h->cnt);
+            for (uint64_t x = 0; x < h->cap; x++) if (h->key[x] != TEMPTY) {
+                uint64_t k = (uint64_t)h->key[x]; q->out_cnt[k] += h->cnt[x];
+                if (q->wide) add128(&q->out_sum[k], &q->out_sum_hi[k], U128(h->shi[x], h->sum[x])); else q->out_sum[k] = (int64_t)((uint64_t)q->out_sum[k] + (uint64_t)h->sum[x]); }
+            hfree(h);
         }
     }
     free(chunks);
 }
 int64_t at_query(const atable_t *t, qplan_t *q) {
+    if (q->wide && q->agg != A_MM && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2;
     if (q->agg == A_MM) { static mplane_t tmp[MAXMP]; mm_init(); if (!q->nkey || tb_mm_planes(t->width, t->msb, q, tmp) < 0) return -1; }
     run_parallel(0, t, q, t->nw, 512, 0, 1); return 0; }      /* ranges in words */      /* ranges in words */
-int64_t pt_query(const ptable_t *t, qplan_t *q) { run_parallel(1, t, q, (t->n + CH - 1) / CH, 16, t->n, CH / 64); return 0; }   /* same word ranges, in CH-row chunks */
+int64_t pt_query(const ptable_t *t, qplan_t *q) { if (q->wide && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2; run_parallel(1, t, q, (t->n + CH - 1) / CH, 16, t->n, CH / 64); return 0; }   /* same word ranges, in CH-row chunks */
 
 /* repair single-bit faults: for each corrupted row, find the stored plane whose flip clears all its faces */
 static int row_ok(const atable_t *t, uint64_t r) {

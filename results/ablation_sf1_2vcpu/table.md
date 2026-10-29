@@ -1,7 +1,7 @@
 | configuration | 13 SSB 1T | 13 SSB 2T | M1 1T | M2 1T | M3 1T | M1-M3 1T | M1-M3 2T | answers |
 |---|---|---|---|---|---|---|---|---|
 | DuckDB (in memory) | 478.0 | 310.8 | 163.7 | 181.9 | 68.4 | 414.1 | 228.3 | reference |
-| 0.2.0 as committed | 208.2 | 116.7 | 49.7 | 211.7 | 244.0 | 505.4 | 269.5 | all equal DuckDB |
+| 0.2.0 before the bridges | 208.2 | 116.7 | 49.7 | 211.7 | 244.0 | 505.4 | 269.5 | all equal DuckDB |
 | + vectorized transpose (bridges off) | 212.2 | 117.5 | 48.1 | 219.1 | 257.3 | 524.5 | 268.5 | all equal DuckDB |
 | + factor through the key | 211.6 | 119.7 | 48.5 | 212.4 | 115.7 | 376.6 | 199.8 | all equal DuckDB |
 | + splitting tree, direct slots | 240.4 | 126.2 | 64.4 | 245.1 | 282.5 | 592.0 | 299.3 | all equal DuckDB |
@@ -16,7 +16,7 @@
 | factor + row kernel, no margin (model as is) | 219.2 | 128.9 | 59.8 | 73.4 | 61.7 | 194.9 | 102.7 | all equal DuckDB |
 | defaults: factor + row kernel at margin 0.5 | 213.1 | 114.8 | 48.2 | 71.1 | 59.9 | 179.2 | 96.1 | all equal DuckDB |
 
-| query (1 thread) | DuckDB | 0.2.0 as committed | + vectorized transpose (bridges off) | + factor through the key | factor + row kernel, no margin (model as is) | defaults: factor + row kernel at margin 0.5 |
+| query (1 thread) | DuckDB | 0.2.0 before the bridges | + vectorized transpose (bridges off) | + factor through the key | factor + row kernel, no margin (model as is) | defaults: factor + row kernel at margin 0.5 |
 |---|---|---|---|---|---|---|
 | Q1.1 | 34.1 | 16.6 | 16.3 | 17.0 | 16.6 | 16.2 |
 | Q1.2 | 23.4 | 7.8 | 7.8 | 8.5 | 8.0 | 8.2 |

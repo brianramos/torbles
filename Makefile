@@ -22,7 +22,7 @@ $(T)/libalg.so: $(T)/alg.c $(T)/torble.h
 	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c -o $@ -lpthread
 
 $(T)/libgpu_emu.so: $(T)/gpu.cu $(T)/torble.h
-	$(CXX) -O2 -DEMULATE -x c++ -shared -fPIC $(T)/gpu.cu -o $@
+	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(T)/gpu.cu -o $@
 
 gpu: $(T)/libalg.so
 	@cd $(T) && ( $(NVCC) -O3 -arch=native -shared -Xcompiler -fPIC gpu.cu -o libgpu.so 2>nvcc.err && echo "libgpu.so: native build" ) \

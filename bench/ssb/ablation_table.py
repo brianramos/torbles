@@ -8,7 +8,7 @@ from ssb_common import datadir
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "ablation_out")
 D = datadir(1) + "/"
 Q = [f"Q{x}" for x in ("1.1","1.2","1.3","2.1","2.2","2.3","3.1","3.2","3.3","3.4","4.1","4.2","4.3")]; M = ["M1", "M2", "M3"]
-names = {"a_committed": "0.2.0 as committed", "b_transpose": "+ vectorized transpose (bridges off)", "c_factor": "+ factor through the key",
+names = {"a_committed": "0.2.0 before the bridges", "b_transpose": "+ vectorized transpose (bridges off)", "c_factor": "+ factor through the key",
          "d_tree": "+ splitting tree, direct slots", "e_direct": "+ direct slots only", "f_rows": "+ row kernel (cost-chosen)",
          "g_mobius": "+ Möbius (cost-chosen)", "h_factor_rows": "+ factor + row kernel", "i_factor_mobius": "+ factor + Möbius",
          "j_factor_rows_mobius": "+ factor + row kernel + Möbius", "k_rows_forced": "factor + row kernel on every tile",

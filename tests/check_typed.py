@@ -48,7 +48,10 @@ Q = {
  "group by dates": db.query(s).join(d).where(d.d_yearmonth == "Feb1995").group_by(d.d_date).count(),
  "no row passes": db.query(s).where(s.f_qty > 1000).sum(s.f_price),
 }
-refused = {"sum that can overflow 64 bits": lambda: db.query(s).sum(s.f_big).run(),
+Q |= {"128-bit sum of 64-bit values": db.query(s).sum(s.f_big),
+      "128-bit sums by group": db.query(s).group_by(s.f_flag).sum(s.f_big * s.f_price),
+      "128-bit sums, dimension groups": db.query(s).join(c).where(c.c_segment != "C").group_by(c.c_region).sum(s.f_big - s.f_qty)}
+refused = {"sum of a timestamp column": lambda: db.query(s).sum(s.f_ts).run(),
            "sum over a string column": lambda: db.query(s).join(c).sum(c.c_name).run(),
            "filter on a foreign key itself": lambda: db.query(s).where(s.f_cust == 10).count().run()}
 fails = 0
@@ -63,6 +66,15 @@ for name, q in Q.items():
     q.join_mode = "auto"; q.run("alg")
     fails += bool(bad)
     print(f"  {name:36s} {'ok' if not bad else 'FAIL ' + ' '.join(bad[:6])}   joins as {', '.join(f'{x[0]}:{x[1]}' for x in q.range_used) or '-'}")
+# past 128 bits: the histogram bridge sums f_big * f_price per value of f_big (DuckDB overflows BIGINT here: compared
+# with Python's exact integers)
+from decimal import Decimal
+import decimal
+with decimal.localcontext(decimal.Context(prec=200)): want3 = sum(int(b) * int(b) * Decimal(str(p)) for b, p in zip(fact.f_big, fact.f_price))
+for eng in ("alg", "gpu", "plain"):
+    got3 = db.query(s).sum(s.f_big * s.f_big * s.f_price).run(eng)
+    ok3 = got3 == want3; fails += not ok3
+    print(f"  {'sum past 128 bits (bridge), ' + eng:36s} {'ok' if ok3 else f'FAIL {got3} != {want3}'}")
 for name, f in refused.items():
     try: f(); print(f"  refused: {name:28s} NOT REFUSED"); fails += 1
     except (OverflowError, TypeError) as e: print(f"  refused: {name:28s} ok ({type(e).__name__}: {str(e)[:70]})")

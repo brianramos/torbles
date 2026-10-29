@@ -77,8 +77,12 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   | VARCHAR | rank in the sorted dictionary | `=`, `<`, `between`, `isin`, `startswith`, group |
   | DOUBLE, FLOAT | rank in the sorted values | compare, group (to sum one exactly, load it as DECIMAL: `types=`) |
 
+  A referenced table's integer or decimal column whose values span more than 32 bits is stored as its rank; it can
+  still be summed (the histogram bridge sums the rest of the measure per value and multiplies exactly).
+
   Constants are compared exactly, as SQL does: `price > 10.005` on a DECIMAL(10, 2) column, a 64-bit integer against
-  a 64-bit key, a timestamp against a DATE. A sum that could overflow 64 bits is refused rather than wrapped.
+  a 64-bit key, a timestamp against a DATE. Sums are exact at any width: 64-bit when they fit, 128-bit past that,
+  and past 128 bits through the histogram bridge (below).
 - **NULLs** are refused at load, except in foreign keys (they never join); `fill_nulls={"t.col": value}` replaces
   them. Unsupported column types (BLOB, LIST, INTERVAL, ...) are skipped with a note.
 - **Key design.** For every referenced table, torbles finds the longest chain of functional dependencies among its
@@ -132,30 +136,34 @@ mostly integer overflow in its own arithmetic).
 
 `bench/ssb/ssb_auto.py` loads the official SSB database with `torbles.from_duckdb`, takes the keys from the standard
 DDL in `bench/ssb/schema.sql`, lets the key design find the layout, and writes the 13 official queries with the values
-as they appear in the data (`p_category == "MFGR#12"`). Every result equals DuckDB's answer to the official SQL.
+as they appear in the data (`p_category == "MFGR#12"`). Every result equals DuckDB's answer to the official SQL, and
+only answers that do are timed (a refused, failed or different answer is reported and left out of the totals).
 
 CPU only, SF1 (6M rows), a 2-vCPU cloud VM (AVX2), both engines in memory. This machine is noisy (single runs of the
 same configuration vary by up to 25%), so the configurations were run in four interleaved rounds and each query's best
 time over the rounds is kept; ms:
 
-| | DuckDB | torbles 0.1.0, hand-designed keys | torbles 0.2.0, hand-designed keys | torbles 0.2.0, automatic keys |
-|---|---|---|---|---|
-| 13 SSB queries, 1 thread | 478.0 | 189.3 | 185.8 | 205.2 |
-| 13 SSB queries, 2 threads | 310.8 | 112.7 | 111.2 | 122.4 |
-| M1-M3 (unfiltered GROUP BY, every row), 1 thread | 414.1 | 507.0 | 500.8 | 543.3 |
-| M1-M3, 2 threads | 228.3 | 259.4 | 271.5 | 269.6 |
+| | DuckDB | torbles 0.1.0, hand-designed keys | 0.2.0 before the GROUP BY bridges, hand-designed keys | same, automatic keys | **torbles 0.2.0, automatic keys** |
+|---|---|---|---|---|---|
+| 13 SSB queries, 1 thread | 478.0 | 189.3 | 185.8 | 205.2 | **213.1** |
+| 13 SSB queries, 2 threads | 310.8 | 112.7 | 111.2 | 122.4 | **114.8** |
+| M1-M3 (unfiltered GROUP BY, every row), 1 thread | 414.1 | 507.0 | 500.8 | 543.3 | **179.2** |
+| M1-M3, 2 threads | 228.3 | 259.4 | 271.5 | 269.6 | **96.1** |
 
-- **The 13 SSB queries:** torbles' CPU engine is 2.5x DuckDB with the hand-designed keys and 2.3-2.5x with the
-  automatic ones. In 0.1.0, on 24 cores and 6M to 300M rows, it was 2.6-4.1x (below).
-- **0.2.0 did not change CPU speed:** with the same keys it is within noise of 0.1.0.
+(The last column is from the bridges' ablation, three rounds of its own; the others from an earlier four-round run.)
+
+- **The 13 SSB queries:** torbles' CPU engine is 2.2-2.7x DuckDB with the automatic keys (2.5-2.8x with the
+  hand-designed ones). In 0.1.0, on 24 cores and 6M to 300M rows, it was 2.6-4.1x (below).
+- **The dense GROUP BY is no longer the CPU's weak spot.** M1-M3 group every row (M3: `GROUP BY d_year, lo_discount`,
+  `SUM(lo_extendedprice * lo_discount)`, every one of its 77 groups in every 4096-row tile). Before the bridges they
+  took 543 ms against DuckDB's 414: each tile multiplied 24 x 4 plane pairs per group. Two bridges between the plane
+  algebra and per-row arithmetic fixed it: factoring the measure through the GROUP BY key (M3's second factor is a key)
+  and a row kernel (one 64 x 64 bit transpose per 64 rows packs every row's keys and measure into one word), chosen per
+  tile by the cost model. M1-M3 now take 179 ms, 2.3x faster than DuckDB; M3 alone 59.9 ms against 68.4. Two other
+  bridges (a Shannon splitting tree, Moebius inversion over the key bits) lost in the ablation and are off
+  (docs/ENGINE.md, docs/SSB.md).
 - **Automatic keys cost about 10%** against the hand design, almost all of it in Q1.3 (week of the year: the hand
   design had the day in the key's fields, the automatic one finds it only in the row bits) and Q4.1-Q4.2 on one thread.
-- **The CPU's weak spot is a dense GROUP BY with a product measure.** M3 (`GROUP BY d_year, lo_discount` over every
-  row, `SUM(lo_extendedprice * lo_discount)`) takes 240 ms against DuckDB's 68 ms on one thread. Every one of its 77
-  groups is present in every 4096-row tile, and the product costs 24 x 4 plane pairs per group per tile, which is far
-  more than one multiply-add per row. M1 (a single measure) is 3.5x faster than DuckDB. Choosing per-row arithmetic
-  over plane pairs when groups are dense is the next planner improvement; the GPU does not have this problem (M1-M3
-  at SF10: 21 ms against 160 ms for DuckDB on 24 threads, in 0.1.0).
 
 Loading SF1 takes 2.4 s with the automatic design (DuckDB read, types, key design, build) against 1.3 s for the
 hand-written loader, which reads fewer dimension columns. The planner reads which bits each attribute occupies from
@@ -247,17 +255,18 @@ dimensions, deltas, and self-extension.
   in the same query, are not supported yet).
 - **Aggregates:** COUNT and SUM of polynomials in the columns. No AVG, MIN, MAX, COUNT DISTINCT or HAVING yet, and no
   SQL: queries are built in Python (`q.sql()` renders them for checking).
-- **Limits, refused rather than wrapped:** sums that could exceed 64 bits; GROUP BY keys that need more than 64 bits
-  together (two 64-bit columns); arithmetic on DOUBLE columns (load them as DECIMAL) and on dimension columns whose
-  values span more than 32 bits.
+- **Sums are exact at any width:** 64-bit sums when they fit, 128-bit sums from the same popcounts past 2^63 (a
+  product of two 64-bit values is the 64 x 64 matrix of plane pairs), and past 2^127 the histogram bridge (some columns
+  summed per value, the parts put together in exact arithmetic). Refused, with the reason: arithmetic on DOUBLE columns
+  (load them as DECIMAL), strings, dates and booleans; GROUP BY keys that need more than 128 bits together, or more than
+  12 key columns (a 64-bit fact column takes two). In the fuzzer, torbles refuses fewer queries than DuckDB rejects.
 - **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
 - **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns), and the
   release was tested with the CPU emulation of the kernels only: run `make gpu && make test` on an NVIDIA GPU before
-  relying on it. Semi-join lookups and the general GROUP BY path run on the CPU (the query falls back automatically).
-- **CPU, dense GROUP BY with a product measure:** slower than DuckDB (SSB M3: 3.5x) when every group is present in
-  every tile; see the results above.
+  relying on it. Semi-join lookups, the general GROUP BY path and 128-bit sums or group codes run on the CPU (the
+  query falls back automatically).
 - **Blob payload integrity.** The payload heap is not covered by the torus faces; the heads and lengths are.
 - **Platforms:** x86-64 Linux / WSL2. The AVX-512 VPOPCNTDQ kernel is untested on hardware.
 

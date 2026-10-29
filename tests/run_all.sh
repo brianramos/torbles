@@ -35,6 +35,9 @@ run "typed columns, every engine and join form"  python3 tests/check_typed.py
 run "loaders: DDL, files, Frictionless, frames"   python3 tests/check_loaders.py
 run "automatic key design"                        python3 tests/check_keydesign.py
 run "save / load, integrity on load"              python3 tests/check_persist.py
+run "sums and group codes past 64 bits"           python3 tests/check_wide.py
+run "  ... with the row kernel on every tile"     env TORBLES_MM_ROWS=2 python3 tests/check_wide.py 20000
+run "  ... with plane popcounts only"             env TORBLES_MM_ROWS=0 TORBLES_FACTOR=0 python3 tests/check_wide.py 20000
 run "differential fuzzing vs DuckDB (40 cases)"   python3 -m torbles.fuzz --seed 2026 --cases 40
 echo "== GROUP BY modes"
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py

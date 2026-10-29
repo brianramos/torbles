@@ -26,6 +26,7 @@ M = dict(FCOL=0, ATTR=1, CONST=2, ADD=3, SUB=4, MUL=5)
 
 class PInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("col", ctypes.c_int32), ("a", ctypes.c_uint32), ("b", ctypes.c_uint32)]
 class MInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("arg", ctypes.c_int32), ("c", ctypes.c_int64)]
+MAXKEY = 12                       # GROUP BY keys per plan (torble.h); a 64-bit fact column takes two
 class QPlan(ctypes.Structure):
     _fields_ = [("nprog", ctypes.c_int32), ("prog", PInstr * 1024),
                 ("nsemi", ctypes.c_int32), ("semi_col", ctypes.c_int32 * 8), ("semi_bm", ctypes.c_void_p * 8),
@@ -33,18 +34,56 @@ class QPlan(ctypes.Structure):
                 ("bil_a", ctypes.c_int32), ("bil_b", ctypes.c_int32),
                 ("nmeas", ctypes.c_int32), ("meas", MInstr * 48),
                 ("nattr", ctypes.c_int32), ("attr_fkcol", ctypes.c_int32 * 8), ("attr_vals", ctypes.c_void_p * 8),
-                ("nkey", ctypes.c_int32), ("key_kind", ctypes.c_int32 * 6), ("key_arg", ctypes.c_int32 * 6), ("key_radix", ctypes.c_uint64 * 6), ("key_nbits", ctypes.c_int32 * 6),
+                ("nkey", ctypes.c_int32), ("key_kind", ctypes.c_int32 * MAXKEY), ("key_arg", ctypes.c_int32 * MAXKEY), ("key_radix", ctypes.c_uint64 * MAXKEY), ("key_nbits", ctypes.c_int32 * MAXKEY),
                 ("ngroups", ctypes.c_uint64), ("out_sum", ctypes.c_void_p), ("out_cnt", ctypes.c_void_p),
                 ("total_sum", ctypes.c_int64), ("total_cnt", ctypes.c_uint64),
                 ("semi_n", ctypes.c_uint64 * 8), ("attr_n", ctypes.c_uint64 * 8),
                 ("npl", ctypes.c_int32), ("pl_col", ctypes.c_int32 * 8), ("pl_coef", ctypes.c_int64 * 8),
                 ("npb", ctypes.c_int32), ("pb_a", ctypes.c_int32 * 8), ("pb_b", ctypes.c_int32 * 8), ("pb_coef", ctypes.c_int64 * 8),
                 ("p_const", ctypes.c_int64), ("nranges", ctypes.c_uint64), ("ranges", ctypes.c_void_p),
-                ("key_mask", ctypes.c_uint32 * 6),
+                ("key_mask", ctypes.c_uint32 * MAXKEY),
                 ("dom_col", ctypes.c_int32), ("ndom", ctypes.c_int32), ("dom_t", ctypes.c_void_p),
                 ("semi_kmask", ctypes.c_uint32 * 8), ("attr_kmask", ctypes.c_uint32 * 8),
                 ("xrows", ctypes.c_void_p), ("xmode", ctypes.c_int32),
-                ("out_cap", ctypes.c_uint64), ("out_n", ctypes.c_uint64), ("out_key", ctypes.c_void_p), ("mm_stats", ctypes.c_int64 * 4)]
+                ("out_cap", ctypes.c_uint64), ("out_n", ctypes.c_uint64), ("out_key", ctypes.c_void_p), ("mm_stats", ctypes.c_int64 * 4),
+                ("wide", ctypes.c_int32), ("pl_coef_hi", ctypes.c_int64 * 8), ("pb_coef_hi", ctypes.c_int64 * 8), ("p_const_hi", ctypes.c_int64),
+                ("out_sum_hi", ctypes.c_void_p), ("total_sum_hi", ctypes.c_int64), ("widekey", ctypes.c_int32), ("out_key_hi", ctypes.c_void_p)]
+KEY_MAX = (1 << 128) - 2          # group codes are 128-bit (all ones marks an empty slot): at most 2^128 - 2 groups
+
+M64 = (1 << 64) - 1
+def _s64(x):
+    """the low 64 bits of an integer, as a signed 64-bit field (the engine's arithmetic is modular)"""
+    x &= M64
+    return x - (1 << 64) if x >> 63 else x
+def _hi64(x):
+    """the high word of a 128-bit two's complement integer, signed"""
+    return _s64(x >> 64)
+def _join128(lo, hi):
+    """(lo, hi) words of a 128-bit sum -> a Python int"""
+    return (int(hi) << 64) + (int(lo) & M64)
+
+def interval(e, fact):
+    """the range [lo, hi] of an integer expression over stored codes on one row: codes are in [0, colmax]"""
+    if isinstance(e, Const): return int(e.v), int(e.v)
+    if isinstance(e, Col): return 0, int(e.table.maxcode(e.name) if hasattr(e.table, "maxcode") else e.table.colmax(e.name))
+    (a, b), (c, d) = interval(e.l, fact), interval(e.r, fact)
+    if e.op == "+": return a + c, b + d
+    if e.op == "-": return a - d, b - c
+    ps = (a * c, a * d, b * c, b * d)
+    return min(ps), max(ps)
+
+SUM_BITS = 127                    # 128-bit two's complement sums: exact while |sum| < 2^127
+def sum_width(measure, fact):
+    """0: every sum of the measure fits 64 bits (|sum| < 2^63), 1: 128 bits (< 2^127). Each group's sum and the total
+    are at most rows x max |value of one row| (interval arithmetic on the expression, not on its expansion: the engine's
+    arithmetic is modular, so the expansion's terms may wrap as long as the result fits)."""
+    if measure is None: return 0
+    lo, hi = interval(measure, fact)
+    bound = max(1, fact.n) * max(abs(lo), abs(hi))
+    if bound >= 1 << SUM_BITS:
+        raise OverflowError(f"SUM may exceed 128 bits on {fact.n:,} rows (one row up to about 2^{max(abs(lo), abs(hi)).bit_length()}); "
+                            "torbles refuses rather than risk a wrong answer")
+    return int(bound >= 1 << 63)
 
 __version__ = "0.2.0"
 _libpath = Path(__file__).with_name("libalg.so")
@@ -406,6 +445,18 @@ def _poly_at(P, keycols, key):
         for x in K: t *= key[keycols[x]]
         v += t
     return v
+
+def _set_poly(plan, poly, wide, fact):
+    """a degree-2 polynomial's terms into the plan: coefficients as their low 64 bits (the engine's arithmetic is
+    modular) and, for 128-bit plans, their high words"""
+    fact_idx = fact.idx
+    lins = [(m[0], c) for m, c in poly.items() if len(m) == 1]; bils = [(m, c) for m, c in poly.items() if len(m) == 2]
+    c0 = poly.get((), 0); plan.p_const = _s64(c0); plan.p_const_hi = _hi64(c0) if wide else 0
+    plan.npl, plan.npb = len(lins), len(bils)
+    for i, (col, c) in enumerate(lins):
+        plan.pl_col[i], plan.pl_coef[i] = fact_idx(col), _s64(c); plan.pl_coef_hi[i] = _hi64(c) if wide else 0
+    for i, ((a, b), c) in enumerate(bils):
+        plan.pb_a[i], plan.pb_b[i], plan.pb_coef[i] = fact_idx(a), fact_idx(b), _s64(c); plan.pb_coef_hi[i] = _hi64(c) if wide else 0
 
 def poly2(e, fact):
     """expand an expression into a polynomial of degree <= 2 in fact columns: {(): c0, (x,): c, (a, b): c}"""
@@ -885,11 +936,84 @@ def _has_fraction(e):
     if isinstance(e, Arith): return _has_fraction(e.l) or _has_fraction(e.r)
     return False
 
+def _bridge_col(c):
+    """how a measure column takes part in the histogram bridge: None (summable as is), "hide" (no affine code but exact
+    values, integers or decimals: summed per value), "no" (cannot take part: DOUBLE, strings, dates, ...)"""
+    cd = c.codec()
+    if cd is None or cd.affine is not None: return None
+    base = getattr(cd, "base", None)
+    if base is not None: return "hide" if getattr(base, "affine", None) is not None else "no"      # rank of int / decimal
+    if getattr(cd, "kind", "") == "dict" and cd.numeric and not cd.floating: return "hide"
+    return "no"
+
+def _bridge_reason(q, e):
+    """why a failed query can go through the histogram bridge: "codec" (a column without an affine code), "wide" (128
+    bits needed, measure not a degree-2 polynomial of fact columns), "bound" (could pass 128 bits); None: it cannot"""
+    if q.measure is None or getattr(q, "_nobridge", False) or getattr(q, "_codes", False) or getattr(q, "rjoin", None) is not None: return None
+    msg = str(e)
+    if isinstance(e, TypeError) and "cannot be summed" in msg:
+        cols = []
+        def walk(x):
+            if isinstance(x, Col): cols.append(x)
+            elif isinstance(x, Arith): walk(x.l); walk(x.r)
+        walk(q.measure)
+        kinds = [_bridge_col(c) for c in cols]
+        return "codec" if "hide" in kinds and "no" not in kinds else None
+    if isinstance(e, OverflowError) and "polynomials of degree <= 2" in msg: return "wide"
+    if isinstance(e, OverflowError) and "SUM may exceed 128 bits" in msg: return "bound"
+    return None
+
+def _expand(e):
+    """a measure as exact monomials over its columns: {(column ids, sorted): Fraction}; a column id is (id(table), name)"""
+    from fractions import Fraction
+    from coltypes import _frac
+    if isinstance(e, Const): return {(): _frac(e.raw)} if e.raw is not None else {(): Fraction(0)}
+    if isinstance(e, Col): return {((id(e.table), e.name),): Fraction(1)}
+    l, r = _expand(e.l), _expand(e.r); out = {}
+    if e.op in "+-":
+        for k, v in l.items(): out[k] = out.get(k, 0) + v
+        for k, v in r.items(): out[k] = out.get(k, 0) + (v if e.op == "+" else -v)
+    else:
+        for ka, va in l.items():
+            for kb, vb in r.items():
+                k = tuple(sorted(ka + kb, key=lambda x: (x[1], x[0]))); out[k] = out.get(k, 0) + va * vb
+    return {k: v for k, v in out.items() if v}
+
+def _dec_scale_of(e):
+    """the decimal scale of a typed measure, as SQL types it: products add scales, sums take the larger"""
+    if isinstance(e, Const):
+        from coltypes import _frac
+        f, sc = _frac(e.raw), 0
+        while f.denominator != 1 and sc < 38: f *= 10; sc += 1
+        return sc
+    if isinstance(e, Col):
+        cd = e.codec()
+        if cd is None: return 0
+        if cd.affine is not None: return cd.affine[1]
+        base = getattr(cd, "base", None)
+        if base is not None and getattr(base, "affine", None) is not None: return base.affine[1]
+        import re
+        m = re.match(r"\s*DECIMAL\s*\(\s*\d+\s*,\s*(\d+)\s*\)", cd.sql_type.upper())
+        return int(m.group(1)) if m else 0
+    a, b = _dec_scale_of(e.l), _dec_scale_of(e.r)
+    return a + b if e.op == "*" else max(a, b)
+
+def _codes_array(c):
+    """key codes as an array for a codec's decode: int64, or Python integers past it (64-bit unsigned codes)"""
+    try: return np.asarray(c, np.int64)
+    except OverflowError: return np.asarray(c, object)
+
+def _exact_dec(v, scale):
+    """the integer v / 10^scale as a Decimal, every digit kept (128-bit sums have up to 39; the default context
+    rounds to 28)"""
+    v = int(v)
+    return Decimal((int(v < 0), tuple(int(d) for d in str(abs(v))), -scale))
+
 def lower_measure(e, fact):
     """A measure over typed columns -> (an integer expression over stored codes, decimal scale). A column with an affine
     codec is (code + offset) / 10^s; constants are exact decimals. Sums and differences are brought to a common scale,
     products add scales. The engine sums the integer expression exactly; the caller divides by 10^scale. Raises when
-    a column cannot be summed (strings, dates, floats) or when the sum could overflow 64 bits."""
+    a column cannot be summed (strings, dates, floats) or when the sum could pass 128 bits."""
     from fractions import Fraction
     from coltypes import _frac
     def lo(e):
@@ -917,32 +1041,8 @@ def lower_measure(e, fact):
             return Arith(e.op, a, b), S
         raise TypeError(f"unsupported measure term {e!r}")
     low, scale = lo(e)
-    bound = _sum_bound(low) * fact.n
-    if bound >= 1 << 62:
-        raise OverflowError(f"SUM may exceed 64 bits on {fact.n:,} rows (|terms| up to about 2^{bound.bit_length() - 1}); "
-                            "torbles refuses rather than risk a wrong answer")
+    sum_width(low, fact)                       # refuses a sum that could pass 128 bits
     return low, scale
-
-def _sum_bound(e):
-    """an upper bound of |e| on one row, from the expanded polynomial: sum of |coef| * prod(largest code)"""
-    def poly(e):
-        if isinstance(e, Const): return {(): e.v}
-        if isinstance(e, Col): return {((e.table, e.name),): 1}
-        l, r = poly(e.l), poly(e.r); out = {}
-        if e.op in "+-":
-            for k, v in l.items(): out[k] = out.get(k, 0) + v
-            for k, v in r.items(): out[k] = out.get(k, 0) + (v if e.op == "+" else -v)
-        else:
-            for ka, va in l.items():
-                for kb, vb in r.items():
-                    k = tuple(sorted(ka + kb, key=lambda x: (id(x[0]), x[1]))); out[k] = out.get(k, 0) + va * vb
-        return out
-    total = 0
-    for mono, c in poly(e).items():
-        m = abs(c)
-        for t, name in mono: m *= max(1, t.maxcode(name) if hasattr(t, "maxcode") else t.colmax(name))
-        total += m
-    return total
 
 # ------------------------------------------------------------------ queries
 class Query:
@@ -1052,14 +1152,18 @@ class Query:
                 self.device, self.kernel_ms = "gpu", ms.value
             else:
                 rc = (lib.pt_query if dev == "plain" else lib.at_query)(table.pt if dev == "plain" else table.at, ctypes.byref(plan))
+                if rc == -2: raise OverflowError("SUM needs 128 bits, which this engine evaluates for polynomials of degree <= 2 in fact columns")
                 if rc != 0: raise RuntimeError(f"plan not supported by the engine (agg {plan.agg}, keys {plan.nkey}, rc {rc}, dev {dev})")
             if not plan.out_key or plan.out_n <= plan.out_cap: return True
             self._mm_alloc(plan, int(plan.out_n) * 2)     # more groups than the output arrays hold: grow, rerun
 
     def _mm_alloc(self, plan, cap):
-        self._mm_out = (np.zeros(cap, np.uint64), np.zeros(cap, np.int64), np.zeros(cap, np.uint64))
+        self._mm_out = (np.zeros(cap, np.uint64), np.zeros(cap, np.int64), np.zeros(cap, np.uint64), np.zeros(cap, np.int64), np.zeros(cap, np.uint64))
         plan.out_cap, plan.out_n = cap, 0
-        plan.out_key, plan.out_sum, plan.out_cnt = (a.ctypes.data for a in self._mm_out)
+        self._mm_bind(plan)
+
+    def _mm_bind(self, plan):
+        plan.out_key, plan.out_sum, plan.out_cnt, plan.out_sum_hi, plan.out_key_hi = (a.ctypes.data for a in self._mm_out)
 
     def _moved(self):
         surr = getattr(self.fact, "surr", {})
@@ -1146,9 +1250,132 @@ class Query:
         """execute: "alg" (the algebraic CPU engine), "gpu" (the CUDA executor, or its emulation), or "plain" (the
         columnar baseline). GROUP BY returns {key tuple: value}, else a number (COUNT) or the SUM (None if no row).
         Typed columns: keys come back as their values (str, Decimal, date, ...), decimal sums as Decimal."""
-        if not getattr(self, "_codes", False) and self._typed():
-            return self._run_typed(engine)
-        return self._run_codes(engine)
+        ids = [(id(k.table), k.name) if isinstance(k, Col) else id(k) for k in self.keys]
+        if len(set(ids)) < len(ids) and not getattr(self, "_codes", False):
+            # the same GROUP BY column twice: group by each once, repeat it in the result
+            import copy
+            first = {}                                     # column -> its position among the distinct keys
+            for x in ids: first.setdefault(x, len(first))
+            q = copy.copy(self); q._plan_cache = {}
+            for a in ("_codeq", "_lowered_measure", "_fq"):
+                if a in q.__dict__: del q.__dict__[a]
+            q.keys = [k for i, k in enumerate(self.keys) if ids.index(ids[i]) == i]
+            r = q.run(engine)
+            for a in ("device", "kernel_ms", "last_plan", "range_used"):
+                if hasattr(q, a): setattr(self, a, getattr(q, a))
+            pos = [first[x] for x in ids]
+            return {tuple(k[p] for p in pos): v for k, v in r.items()}
+        try:
+            if not getattr(self, "_codes", False) and self._typed():
+                return self._run_typed(engine)
+            return self._run_codes(engine)
+        except (TypeError, OverflowError) as e:
+            why = _bridge_reason(self, e)
+            if why is None: raise
+            return self._run_bridge(engine, why)
+
+    def _run_bridge(self, engine, why):
+        """The histogram bridge: SUM(m) = sum over the values v of some columns H of m(v) restricted to the rows with
+        H = v. The measure is expanded into monomials; the columns of H leave each monomial as exact values: H joins
+        the GROUP BY (hidden keys), the engine sums each remaining monomial (the residual: fact columns, degree <= 2)
+        per group, and the result is put together in exact arithmetic,
+            SUM[k] = sum over the groups (k, v) of  sum_m  c_m * prod_(h in m) v_h * SUM_r(m)[k, v]   (r() = COUNT).
+        H holds the columns the engine cannot sum (no affine code: a referenced table's column wider than 32 bits),
+        the referenced tables' columns, and the fact columns past degree 2 (past degree 1 when even the degree-2
+        residuals could pass 128 bits). The products and sums in Python are exact: no 128-bit limit on the result."""
+        from fractions import Fraction
+        from coltypes import _frac
+        mono = _expand(self.measure)                          # {(column ids...): Fraction}, columns by (table, name)
+        cols = {}
+        def walk(e):
+            if isinstance(e, Col): cols[(id(e.table), e.name)] = e
+            elif isinstance(e, Arith): walk(e.l); walk(e.r)
+        walk(self.measure)
+        fact = self.fact
+        # always summed per value: columns without an affine code, and the referenced tables' columns (the engine's
+        # 128-bit sums are polynomials in fact columns)
+        hidden0 = {k for k, c in cols.items() if _bridge_col(c) == "hide" or c.table is not fact}
+        last = None
+        for cap in ((2, 1) if why != "bound" else (1,)):        # fact columns kept per monomial
+            hidden = set(hidden0)
+            while True:
+                over = [m for m in mono if len([x for x in m if x not in hidden]) > cap]
+                if not over: break
+                cnt = {}
+                for m in over:
+                    for x in m:
+                        if x not in hidden: cnt[x] = cnt.get(x, 0) + 1
+                def span(x):                                    # prefer the column with the fewest values
+                    t = cols[x].table
+                    return t.maxcode(cols[x].name) if hasattr(t, "maxcode") else t.colmax(cols[x].name)
+                hidden.add(max(cnt, key=lambda x: (cnt[x], -span(x), x[1])))
+            try: return self._bridge_eval(engine, mono, cols, hidden)
+            except OverflowError as e:                          # a residual still past 128 bits: one fact column less
+                if "SUM may exceed 128 bits" not in str(e): raise
+                last = e
+        raise last
+
+    def _bridge_eval(self, engine, mono, cols, hidden):
+        from fractions import Fraction
+        from coltypes import _frac
+        H = sorted(hidden, key=lambda x: (x[1], x[0]))
+        if len(self.keys) + len(H) > MAXKEY: raise OverflowError("the measure needs more hidden GROUP BY columns than the engine has keys")
+        resid = {}
+        for m, c in mono.items():
+            r = tuple(sorted((x for x in m if x not in hidden), key=lambda x: (x[1], x[0])))
+            hv = tuple(x for x in m if x in hidden)
+            resid.setdefault(r, []).append((hv, c))
+        import copy
+        nk = len(self.keys)
+        def sub(meas):
+            q = copy.copy(self); q._nobridge = True; q._plan_cache = {}
+            for a in ("_codeq", "_lowered_measure", "_fq"):
+                if a in q.__dict__: del q.__dict__[a]
+            q.keys = list(self.keys) + [cols[h] for h in H]; q.measure = meas
+            out = q.run(engine)
+            for a in ("device", "kernel_ms", "last_plan", "range_used"):
+                if hasattr(q, a): setattr(self, a, getattr(q, a))
+            if not q.keys: return {} if out is None or out == 0 and meas is None else {(): out}   # one group: ()
+            return out
+        sums = {}
+        for r in resid:
+            if not r: continue
+            m = None
+            for x in r: m = cols[x] if m is None else Arith("*", m, cols[x])
+            sums[r] = sub(m)
+        if () in resid or not sums: counts = sub(None)     # the groups (k, v) and their rows (COUNT: the constant term)
+        else:                                               # a group with rows has every residual's sum
+            counts = {}
+            for sr in sums.values():
+                for g in sr: counts[g] = 1
+        hpos = {h: nk + i for i, h in enumerate(H)}
+        out, floats = {}, False
+        for g, n in counts.items():
+            if not n: continue
+            acc = Fraction(0)
+            for r, terms in resid.items():
+                sr = n if not r else sums[r].get(g)
+                if sr is None: continue
+                if isinstance(sr, float): floats = True
+                f = _frac(sr)
+                for hv, c in terms:
+                    p = c
+                    for h in hv:
+                        v = g[hpos[h]]
+                        if isinstance(v, float): floats = True
+                        p *= _frac(v)
+                    acc += p * f
+            k = g[:nk]
+            out[k] = out.get(k, Fraction(0)) + acc
+        scale = _dec_scale_of(self.measure)
+        def fin(v):
+            if floats: return float(v)
+            if not scale: return int(v) if v.denominator == 1 else float(v)
+            x = v * 10 ** scale
+            return _exact_dec(int(x), scale) if x.denominator == 1 else Decimal(v.numerator) / Decimal(v.denominator)
+        if not self.keys:
+            return fin(out[()]) if () in out else None
+        return {k: fin(v) for k, v in out.items()}
 
     def _typed(self):
         tabs = {self.fact} | set(self.joins) | {k.table for k in self.keys if isinstance(k, Col)}
@@ -1172,7 +1399,7 @@ class Query:
         for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         scale = lm[2]
-        val = (lambda v: v if v is None or not scale else Decimal(int(v)).scaleb(-scale)) if self.measure is not None else (lambda v: v)
+        val = (lambda v: v if v is None or not scale else _exact_dec(v, scale)) if self.measure is not None else (lambda v: v)
         if not self.keys: return val(r)
         decs = []
         for k in self.keys:
@@ -1180,7 +1407,7 @@ class Query:
             decs.append(cd)
         if not r: return {}
         keys = list(r.keys()); cols = list(zip(*keys))
-        cols = [list(c) if cd is None else cd.decode(np.asarray(c, np.int64)) for c, cd in zip(cols, decs)]
+        cols = [list(c) if cd is None else cd.decode(_codes_array(c)) for c, cd in zip(cols, decs)]
         return {tuple(kk): val(r[k0]) for k0, kk in zip(keys, zip(*cols))}
 
     def _run_codes(self, engine="alg"):
@@ -1221,6 +1448,7 @@ class Query:
         self._dev = engine; engine = "alg" if engine == "gpu" else engine     # the GPU runs the algebraic plan
         import time as _time
         t_plan = _time.perf_counter()
+        self._wide = sum_width(self.measure, self.fact)     # 64- or 128-bit sums (refuses past 128 bits)
         sig = self._plan_sig(engine)
         if sig is not None:                          # same query, same data version: reuse the compiled plan
             c = getattr(self, "_plan_cache", {}).get(sig[0])
@@ -1316,20 +1544,30 @@ class Query:
             xname, ts = self._dom
             poly = poly2(self.measure, fact) if self.measure is not None else {(): 0}
             plan.agg = A_DOM; plan.dom_col = fact.idx(xname); plan.ndom = len(ts); plan.dom_t = ts.ctypes.data; keep.append(ts)
-            lins = [(m[0], c) for m, c in poly.items() if len(m) == 1]; bils = [(m, c) for m, c in poly.items() if len(m) == 2]
-            plan.p_const = poly.get((), 0); plan.npl, plan.npb = len(lins), len(bils)
-            for i, (col, c) in enumerate(lins): plan.pl_col[i], plan.pl_coef[i] = fact.idx(col), c
-            for i, ((a, b), c) in enumerate(bils): plan.pb_a[i], plan.pb_b[i], plan.pb_coef[i] = fact.idx(a), fact.idx(b), c
-            out_sum = np.zeros(len(ts), np.int64); out_cnt = np.zeros(len(ts), np.uint64); keep += [out_sum, out_cnt]
+            if poly is None: raise ValueError("a range join's measure must be a polynomial of degree <= 2 in fact columns")
+            _set_poly(plan, poly, self._wide, fact)
+            out_sum = np.zeros(len(ts), np.int64); out_cnt = np.zeros(len(ts), np.uint64); out_hi = np.zeros(len(ts), np.int64)
+            keep += [out_sum, out_cnt, out_hi]
             plan.ngroups, plan.nkey = len(ts), 1                # one group per slice (merged across threads like groups)
-            plan.out_sum, plan.out_cnt = out_sum.ctypes.data, out_cnt.ctypes.data
+            plan.out_sum, plan.out_cnt, plan.out_sum_hi = out_sum.ctypes.data, out_cnt.ctypes.data, out_hi.ctypes.data
             if not self._exec(self._dev, fact, plan):
                 r = self._run_codes("alg"); self.device = "cpu (gpu: " + self._gpu_fail + ")"; return r
             self.last_plan = plan
+            if self._wide:
+                return (np.array([_join128(a, b) for a, b in zip(out_sum, out_hi)], object), out_cnt.astype(np.int64),
+                        _join128(plan.total_sum, plan.total_sum_hi), int(plan.total_cnt))
             return out_sum.copy(), out_cnt.astype(np.int64), int(plan.total_sum), int(plan.total_cnt)
         # aggregation
         lin = self._linear(self.measure) if self.measure is not None else None
-        if self.keys or (self.measure is not None and lin is None and not self._bilinear()):
+        wide = self._wide; plan.wide = wide
+        if wide and not self.keys:
+            # 128-bit SUM without GROUP BY: the measure over each word's passing rows by popcount algebra, folded in
+            # 128 bits (the measure must be a polynomial of degree <= 2 in fact columns)
+            poly = poly2(self.measure, fact)
+            if poly is None or len([m for m in poly if len(m) == 1]) > 8 or len([m for m in poly if len(m) == 2]) > 8:
+                raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
+            plan.agg = A_POLYG; plan.nkey = 0; _set_poly(plan, poly, True, fact)
+        elif self.keys or (self.measure is not None and lin is None and not self._bilinear()):
             plan.agg = A_GENERAL
             meas = []
             def emit(e):
@@ -1346,11 +1584,13 @@ class Query:
             mm_ok = (engine == "alg" and bool(self.keys) and poly is not None and len([m for m in poly if len(m) == 1]) <= 8
                      and len([m for m in poly if len(m) == 2]) <= 8
                      and sum(fact.width(m[0]) * (fact.width(m[1]) if len(m) == 2 else 1) for m in poly if m) <= 1024)
-            mm = GROUPBY == "mm" and mm_ok
-            # the matrix product's output is sparse (no dense key domain): its group codes are 64-bit (all ones is the
-            # empty slot), so the radix product must stay below 2^64; the dense arrays of the other path need 2^22
-            dom_limit = ((1 << 64) - 1) if mm else (1 << 22)
+            mm = (GROUPBY == "mm" or wide) and mm_ok      # 128-bit sums: the matrix product (or mask splitting)
+            # the matrix product's output is sparse (no dense key domain): its group codes are 128-bit (64-bit while the
+            # domain fits), so the radix product must stay below 2^128 - 1; the dense arrays of the other path need 2^22
+            dom_limit = KEY_MAX if mm else (1 << 22)
             sparse_general = False
+            if len(self.keys) > MAXKEY:
+                raise ValueError(f"group domain too large: more than {MAXKEY} GROUP BY keys (a 64-bit fact column takes two)")
             cand = []
             for k in self.keys:
                 if isinstance(k, PlaneKey):
@@ -1372,10 +1612,10 @@ class Query:
                 return p_
             while _dom() > dom_limit:
                 fields = [c for c in cand if c[3] and not isinstance(c[0], PlaneKey)]
-                if not fields and not mm and dom_limit < (1 << 64) - 1:   # too many groups for dense arrays
+                if not fields and not mm and dom_limit < KEY_MAX:   # too many groups for dense arrays
                     if mm_ok: mm = True                      # the sparse matrix product,
                     else: sparse_general = True              # or the general path with sparse output (CPU)
-                    dom_limit = (1 << 64) - 1
+                    dom_limit = KEY_MAX
                     for c in cand: c[3] = c[2] is not None
                     continue
                 if not fields:
@@ -1415,20 +1655,25 @@ class Query:
                                                           (k.table is not fact and use_p and self.joins[k.table] == fact.cluster))
                 if k.table is not fact and not use_p: on_planes = False
                 steps *= (1 + fact.cluster_breaks / nw) if clustered else min(64, r, nat)
-            if mm or (not sparse_general and poly is not None and ((on_planes and steps <= 12) or self._dev == "gpu") and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8):
+            # mask splitting + popcounts: dense group arrays, or sparse output for 128-bit sums (the matrix product holds at
+            # most 1024 measure planes: a product of two 64-bit columns is 4096 plane pairs, folded per mask here)
+            polyg_ok = (not sparse_general or wide) and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8
+            if mm or (polyg_ok and ((on_planes and steps <= 12) or self._dev == "gpu" or (wide and on_planes))):
                 plan.agg = A_MM if mm else A_POLYG
-                lins = [(m[0], c) for m, c in poly.items() if len(m) == 1]; bils = [(m, c) for m, c in poly.items() if len(m) == 2]
-                plan.p_const = poly.get((), 0); plan.npl, plan.npb = len(lins), len(bils)
-                for i, (col, c) in enumerate(lins): plan.pl_col[i], plan.pl_coef[i] = fact.idx(col), c
-                for i, ((a, b), c) in enumerate(bils): plan.pb_a[i], plan.pb_b[i], plan.pb_coef[i] = fact.idx(a), fact.idx(b), c
+                _set_poly(plan, poly, wide, fact)
+            elif wide and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8:
+                _set_poly(plan, poly, wide, fact)               # the general path: row by row in 128 bits (lookup keys)
+            elif wide:
+                raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
             ng = 1
-            for r_ in radix: ng *= int(r_)                    # exact (may pass 2^63)
-            plan.ngroups = ng
+            for r_ in radix: ng *= int(r_)                    # exact (may pass 2^64)
+            plan.ngroups = min(ng, (1 << 64) - 1); plan.widekey = int(ng > (1 << 64))   # 128-bit group codes past 2^64
             if mm or sparse_general: self._mm_alloc(plan, min(ng, 1 << 14))
             else:
                 if ng > 1 << 25: raise ValueError("group domain too large")
                 out_sum = np.zeros(ng, dtype=np.int64); out_cnt = np.zeros(ng, dtype=np.uint64); keep += [out_sum, out_cnt]
                 plan.out_sum, plan.out_cnt = out_sum.ctypes.data, out_cnt.ctypes.data
+                if wide: out_hi = np.zeros(ng, dtype=np.int64); keep.append(out_hi); plan.out_sum_hi = out_hi.ctypes.data
         elif self.measure is None: plan.agg = A_COUNT
         elif lin is not None:
             plan.agg = A_LIN; plan.nlin = len(lin)
@@ -1440,7 +1685,8 @@ class Query:
             plan.attr_fkcol[i] = fk; plan.attr_vals[i] = vals.ctypes.data; plan.attr_n[i] = len(vals); plan.attr_kmask[i] = km; keep.append(vals)
         sparse = bool(self.keys) and bool(plan.out_key)
         ctx = dict(plan=plan, keep=keep, radix=radix if self.keys else None, kmaps=kmaps if self.keys else None,
-                   dense=(out_sum, out_cnt) if self.keys and not sparse else None, sparse=sparse,
+                   dense=((out_sum, out_cnt) + ((out_hi,) if wide else ())) if self.keys and not sparse else None, sparse=sparse, wide=wide,
+                   widekey=bool(self.keys) and bool(plan.widekey),
                    mm_out=getattr(self, "_mm_out", None) if sparse else None,
                    range_used=self.range_used, scanned=getattr(self, "scanned", None), fresh=True)
         if sig is not None:
@@ -1458,7 +1704,7 @@ class Query:
             if getattr(self, a, None): return None
         surr = getattr(self.fact, "surr", {})
         key = (engine, self._dev, GROUPBY, self.join_mode, tuple(sorted((k, sg.version) for k, sg in surr.items() if sg is not None)),
-               tuple((d.name, f) for d, f in self.joins.items()), len(self.keys))
+               tuple((d.name, f) for d, f in self.joins.items()), len(self.keys), getattr(self, "_wide", 0), self.fact.n)
         objs = (self.pred, self.measure) + tuple(self.keys) + tuple(self.joins)
         return key, objs
 
@@ -1470,36 +1716,49 @@ class Query:
                 for a in ctx["dense"]: a[ctx["touched"]] = 0
             if ctx.get("sparse"):
                 self._mm_out = ctx["mm_out"]; plan.out_n = 0
-                plan.out_key, plan.out_sum, plan.out_cnt = (a.ctypes.data for a in self._mm_out); plan.out_cap = len(self._mm_out[0])
+                self._mm_bind(plan); plan.out_cap = len(self._mm_out[0])
             self.range_used, self.scanned = ctx["range_used"], ctx["scanned"]
         if not self._exec(self._dev, self.fact, plan):
             r = self._run_codes("alg"); self.device = "cpu (gpu: " + self._gpu_fail + ")"; return r
         if ctx.get("sparse"): ctx["mm_out"] = self._mm_out          # grown if the groups did not fit
         self.last_plan = plan
-        if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"]
+        wide = ctx.get("wide", 0)
+        if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"][:2]
         if not self.keys:            # SQL semantics: COUNT of nothing is 0, SUM of nothing is NULL
             if self.measure is None: return int(plan.total_cnt)
-            return int(plan.total_sum) if plan.total_cnt else None
+            if not plan.total_cnt: return None
+            return _join128(plan.total_sum, plan.total_sum_hi) if wide else int(plan.total_sum)
+        wkey = ctx.get("widekey", False)
         if ctx.get("sparse"):               # sparse output: (group code, sum, count) per group present
-            n = int(plan.out_n); gk, gs, gc = (a[:n] for a in self._mm_out)
-            o = np.argsort(gk, kind="stable"); gk, gs, gc = gk[o], gs[o], gc[o]          # uint64 group codes
+            n = int(plan.out_n); gk, gs, gc, gh, gkh = (a[:n] for a in self._mm_out)
+            o = np.lexsort((gk, gkh)) if wkey else np.argsort(gk, kind="stable")      # group codes, in order
+            gk, gs, gc, gh, gkh = gk[o], gs[o], gc[o], gh[o], gkh[o]
         else:
             nz = np.nonzero(out_cnt)[0]; gk, gs, gc = nz, out_sum[nz], out_cnt[nz]; ctx["touched"] = nz
+            gh = ctx["dense"][2][nz] if wide else None
+        if wide: gs = np.array([_join128(a, b) for a, b in zip(gs.tolist(), gh.tolist())], object)   # exact 128-bit sums
+        def digits():
+            """the mixed-radix digits of the group codes, one array per key (128-bit codes: Python integers)"""
+            if not wkey:
+                cols, rem = [], np.asarray(gk, np.uint64)
+                for r in reversed(radix): cols.append(rem % np.uint64(r)); rem = rem // np.uint64(r)
+                return cols[::-1]
+            cols = [[] for _ in radix]
+            for lo_, hi_ in zip(gk.tolist(), gkh.tolist()):
+                c = (int(hi_) << 64) | int(lo_)
+                for i in range(len(radix) - 1, -1, -1): c, d = divmod(c, int(radix[i])); cols[i].append(d)
+            return [np.array(c_, np.uint64) for c_ in cols]
         if getattr(self, "_raw", False):    # arrays instead of a dict: (key matrix, sums, counts)
-            cols, rem = [], np.asarray(gk, np.uint64)
-            for r in reversed(radix): cols.append((rem % np.uint64(r)).astype(np.int64)); rem = rem // np.uint64(r)
-            cols = cols[::-1]
+            cols = [c_.astype(np.int64) for c_ in digits()]
             for i, m in enumerate(kmaps):
                 if m is not None:
                     lut = np.full(radix[i], -1, np.int64); lut[np.fromiter(m.keys(), np.int64)] = np.fromiter(m.values(), np.int64)
                     cols[i] = lut[cols[i]]
             km = np.stack(cols, 1) if cols else np.zeros((len(gk), 0), np.int64)
             cn = np.asarray(gc, np.int64)
-            return km, (np.array(gs, np.int64) if self.measure is not None else cn), cn
+            return km, ((gs if wide else np.array(gs, np.int64)) if self.measure is not None else cn), cn
         # keys in bulk: mixed-radix digits by array arithmetic, value maps by lookup tables (cached on the plan)
-        cols, rem = [], np.asarray(gk, np.uint64)
-        for r in reversed(radix): cols.append(rem % np.uint64(r)); rem = rem // np.uint64(r)
-        cols = cols[::-1]
+        cols = digits()
         luts = ctx.setdefault("luts", {})
         for i, m in enumerate(kmaps):
             if m is None: continue
@@ -1508,7 +1767,8 @@ class Query:
                 lut = np.full(int(kk.max()) + 1 if len(kk) else 1, -1, np.int64); lut[kk] = vv; luts[i] = lut
             cols[i] = luts[i][cols[i]]
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)
-        cn = np.asarray(gc, np.int64).tolist(); vs = np.asarray(gs, np.int64).tolist() if self.measure is not None else cn
+        cn = np.asarray(gc, np.int64).tolist()
+        vs = (gs.tolist() if wide else np.asarray(gs, np.int64).tolist()) if self.measure is not None else cn
         if getattr(self, "_both", False):
             out = {}
             for key, v, c in zip(keys, vs, cn): o = out.get(key, (0, 0)); out[key] = (o[0] + v, o[1] + c)
@@ -1574,7 +1834,8 @@ class Query:
         if self.range_path == "slices":
             inner._dom = (x.name, ts.astype(np.uint32))
             ss, sc, tot_s, tot_c = inner._run_codes(engine); self.device, self.kernel_ms = inner.device, inner.kernel_ms
-            Ds, Dc = np.concatenate([[0], np.cumsum(ss)]), np.concatenate([[0], np.cumsum(sc)])   # D(t) at t = 0, ts...
+            Ds = np.concatenate([np.array([0], object), np.cumsum(np.asarray(ss, object))])        # D(t) at t = 0, ts... (exact)
+            Dc = np.concatenate([[0], np.cumsum(sc)])
             def D(arr, tot, t):                                # D(t) for any bound: 0 below the data, the total above it
                 return np.where(t <= 0, 0, np.where(t > xmax, tot, arr[np.searchsorted(ts, t, "right")]))
             gu, ginv = np.unique(gk, axis=0, return_inverse=True) if len(gk) else (np.zeros((0, len(dkeys)), np.int64), np.zeros(0, np.int64))
@@ -1592,7 +1853,7 @@ class Query:
         inner.keys = fkeys + [x]; inner._raw = True
         km_, ms_, mc_ = inner._run_codes(engine); self.device, self.kernel_ms = inner.device, inner.kernel_ms
         # fact side: (k, x) -> (sum, count)
-        mk, mx, ms, mc = km_[:, :-1], km_[:, -1], ms_.astype(np.int64), mc_
+        mk, mx, ms, mc = km_[:, :-1], km_[:, -1], (ms_ if ms_.dtype == object else ms_.astype(np.int64)), mc_
         # order-preserving coordinates: x values, lo, hi + 1, and +infinity for an unbounded top
         parts = [mx] + ([lov] if lov is not None else []) + ([hiv + 1] if hiv is not None else [])
         coords = np.unique(np.concatenate(parts)) if sum(len(p) for p in parts) else np.zeros(0, np.int64)
@@ -1605,7 +1866,7 @@ class Query:
         np.add.at(H, (ginv, np.searchsorted(coords, hiv + 1) if hiv is not None else np.full(len(ids), INF)), 1)
         if lov is not None: np.add.at(H, (ginv, np.searchsorted(coords, lov)), -1)
         Mc = np.zeros((len(ku), size), np.int64); np.add.at(Mc, (kinv, xr), mc)
-        big = len(ms) and int(np.abs(ms).max()) * max(1, len(ms)) * max(1, int(np.abs(H).sum())) >= 1 << 62
+        big = ms.dtype == object or (len(ms) and int(np.abs(ms).max()) * max(1, len(ms)) * max(1, int(np.abs(H).sum())) >= 1 << 62)
         Ms = np.zeros((len(ku), size), object if big else np.int64); np.add.at(Ms, (kinv, xr), ms.astype(object) if big else ms)
         Rs, Rc = dominance(Ms, H if not big else H.astype(object), nb), dominance(Mc, H, nb)
         out = {}

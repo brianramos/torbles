@@ -27,9 +27,20 @@ Persistence
 Engine
 - A torble holds up to 31 columns (the torus has one row per column plus the wrap row). This also fixes an overflow
   of the face list for 15 full-width columns in 0.1.0.
-- GROUP BY codes are 64-bit (the radix product may reach 2^64 - 1); the general GROUP BY path has sparse output
-  (any key domain); the dense-array path falls back to the sparse product instead of refusing.
-- Sums that could exceed 64 bits are refused instead of wrapping.
+- Exact sums at any width. All engine arithmetic is modular (unsigned 64-bit), so a 64-bit plan is exact whenever its
+  true sums fit, judged by interval arithmetic on the measure as written. Past 2^63, 128-bit sums from the same
+  popcounts: a 64-bit value is two 32-bit columns, a product of two is the 64 x 64 matrix of plane pairs (weights up
+  to 2^126), folded with 128-bit coefficients in the matrix product and in mask splitting, row by row in the row
+  kernel, the general path and the plain baseline (`bench/ssb/wide_sums.py`: SSB SF1, 128-bit sums by year in 76 ms
+  against DuckDB's 120 in HUGEINT). Past 2^127, and for columns without an affine code (a dimension column wider than 32 bits),
+  the histogram bridge: those columns are summed per value as hidden GROUP BY keys and the parts are put together in
+  exact arithmetic. Decimal results keep every digit.
+- GROUP BY codes are 128-bit past 2^64 (up to 2^128 - 2 groups), up to 12 key columns; the general GROUP BY path has
+  sparse output; the dense-array path falls back to the sparse product instead of refusing.
+- Dense GROUP BY bridges, each behind a switch and measured in an ablation (SSB SF1): factoring the measure through
+  the GROUP BY key (on), a row kernel built on a staged 64 x 64 bit transpose (chosen per tile by the cost model with
+  a margin), a Shannon splitting tree, direct tile slots and Moebius inversion over the key bits (off: no gain). SSB
+  M1-M3 from 505 to 179 ms on one thread (DuckDB 414), the 13 queries unchanged.
 - Queries use every core by default (`set_threads(n)` changes it).
 
 Correctness
@@ -37,8 +48,9 @@ Correctness
   planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
   the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
   overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
-  group count overflowing 63 bits. After the fixes: 169,600 queries over 5,016 random schemas, 124,364 answers
-  compared, no mismatch.
+  group count overflowing 63 bits; later, 64-bit unsigned group keys decoded through int64. Refusals went from 2.3x
+  the queries DuckDB rejects to a few percent of them (128-bit sums and group codes, the histogram bridge); the
+  fuzzer counts only documented refusals and its cases no longer depend on Python's hash seed.
 - New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
   a 40-case fuzz run; `make test` runs them all.
 
@@ -55,8 +67,9 @@ Changed (engine API)
 Benchmarks
 - `bench/ssb/schema.sql` (the SSB keys as standard DDL) and `bench/ssb/ssb_auto.py`: SSB loaded with nothing designed
   by hand; every result equals DuckDB's. CPU, SF1, 2 vCPUs, best of four interleaved rounds: the 13 queries in 122 ms
-  (automatic keys), 111 ms (hand-designed keys; 113 ms with 0.1.0) and 311 ms for DuckDB in memory. A dense GROUP BY
-  with a product measure (M3) is 3.5x slower than DuckDB on the CPU. `wsl/run_validation.sh` runs it too.
+  (automatic keys), 111 ms (hand-designed keys; 113 ms with 0.1.0) and 311 ms for DuckDB in memory; with the GROUP BY
+  bridges, M1-M3 in 96 ms against DuckDB's 228. Only answers equal to DuckDB's are timed. `bench/ssb/ablation.sh`
+  measures every bridge; `wsl/run_validation.sh` runs `ssb_auto.py` too.
 
 ## 0.1.0 (2026-10-29)
 

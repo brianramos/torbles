@@ -480,7 +480,7 @@ def _int_values(vals, typ):
     b = _base_type(typ)
     if b == "dec":
         from decimal import Decimal
-        s = _dec_scale(typ); return [Decimal(v).scaleb(-s) for v in vals]
+        s = _dec_scale(typ); return [Decimal((int(int(v) < 0), tuple(map(int, str(abs(int(v))))), -s)) for v in vals]
     if b == "date": return [ct.EPOCH + __import__("datetime").timedelta(days=v) for v in vals]
     if b == "ts": return [ct.EPOCH_TS + __import__("datetime").timedelta(microseconds=v) for v in vals]
     return vals

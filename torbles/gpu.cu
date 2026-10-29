@@ -160,7 +160,7 @@ template <class Emit> DEV void split_g(const gtable_t *T, const qplan_t *q, uint
 DEV void word_g(const gtable_t *T, const qplan_t *q, uint32_t *const *avals, uint64_t w, int64_t *gsum, uint64_t *gcnt, int64_t *tot, uint64_t *cnt) {
     uint64_t F = filter_g(T, q, w);
     if (!F) return;
-    uint32_t kl[2][64]; int slot[6];
+    uint32_t kl[2][64]; int slot[MAXKEY];
     F = lookups_g(T, q, avals, w, F, kl, slot);
     if (!F) return;
     *cnt += popc(F);
@@ -266,7 +266,7 @@ DEV void gather_one(const mmctx_t *X, unsigned int i, unsigned long long *ok, un
  * splitting) and sums the measure over each part by popcount algebra */
 DEV void word_mm(const gtable_t *T, const qplan_t *q, uint32_t *const *avals, uint64_t w, const mmctx_t *X, int64_t *tot, uint64_t *cnt) {
     uint64_t F = filter_g(T, q, w); if (!F) return;
-    uint32_t kl[2][64]; int slot[6];
+    uint32_t kl[2][64]; int slot[MAXKEY];
     F = lookups_g(T, q, avals, w, F, kl, slot); if (!F) return;
     *cnt += popc(F);
     split_g(T, q, w, F, kl, slot, [&](uint64_t key, uint64_t M) {
@@ -296,7 +296,7 @@ MMT DEV void mm_phase1(const gtable_t *T, const qplan_t *q, uint32_t *const *ava
     S->wmap[tid] = ok ? w : GEMPTY;
     if (!ok) return;
     uint64_t F = filter_g(T, q, w); if (!F) return;
-    uint32_t kl[2][64]; int slot[6];
+    uint32_t kl[2][64]; int slot[MAXKEY];
     F = lookups_g(T, q, avals, w, F, kl, slot); if (!F) return;
     *cnt += popc(F);
     split_g(T, q, w, F, kl, slot, [&](uint64_t key, uint64_t M) {
@@ -454,6 +454,7 @@ typedef struct {
 } handle_t;
 
 static int supported(const qplan_t *q) {
+    if (q->wide || q->widekey) return 0;                        /* 128-bit sums or group codes: the CPU engine */
     if (q->nsemi) return 0;                                     /* semi-join lookups stay on the CPU */
     if (q->agg == A_GENERAL) return 0;                         /* the caller converts what it can to A_POLYG / A_MM */
     if (q->agg == A_MM && !q->nkey) return 0;

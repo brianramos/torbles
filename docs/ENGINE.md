@@ -164,8 +164,8 @@ the codes that exist (TRUE, FALSE, `=`, `<=`, `>=`, BETWEEN). Codes wider than 3
 in a fact; in a referenced table they are ranked (`RankCodec`), which keeps dimension codes within 32 bits.
 Measures are lowered once per query: a column becomes `code + offset` at scale s (DECIMAL(p, s)), sums and differences
 are brought to a common scale, products add scales; the engine sums the integer polynomial and the result is divided
-by 10^scale (`Decimal`). The polynomial's bound (sum of |coefficient| x largest codes, times the rows) must stay below
-2^62, or the query is refused. Group keys come back decoded.
+by 10^scale (`Decimal`), every digit kept. How wide the sums must be is decided when the plan is made (next section).
+Group keys come back decoded.
 
 **Keys** (`database.py`). The loader reads PRIMARY KEY / FOREIGN KEY declarations through the standard
 INFORMATION_SCHEMA views (TABLE_CONSTRAINTS, KEY_COLUMN_USAGE, REFERENTIAL_CONSTRAINTS), from a DDL script parsed in a
@@ -193,3 +193,93 @@ with `MAP_PRIVATE` (repairs and fault injection stay in memory) and rebuilds the
 **Fuzzing** (`fuzz.py`). Each case is reproducible from (seed, case); queries are generated as data and materialized
 on whichever database is being tested (built, reloaded, reloaded from a copy with one flipped bit), so one replay
 command reproduces a failure.
+
+## Exact sums: modular 64-bit, 128-bit, and past 128 bits (0.2.0)
+
+**Modular arithmetic.** Every sum in the engine is computed modulo 2^64, in unsigned arithmetic (no undefined
+overflow): the popcount folds, the row kernel, per-row evaluation, the merges of the threads. A measure's expansion may
+have terms much larger than its value (an offset of 2^62 times a column, less the same offset times another), and they
+may wrap: the sum is exact when its true value is below 2^63 in magnitude. The planner bounds it by interval arithmetic
+on the measure as written, not on its expansion: each group's sum, and the total, is at most rows x max |one row's
+value|. Below 2^63 the plan is the 64-bit one, as before.
+
+**128 bits: the 64 x 64 plane pairs.** Up to 2^127 the plan is marked wide. The popcounts do not change: they are exact
+counts of rows. Only their weighted fold needs more than 64 bits. A 64-bit value is stored as two 32-bit columns (the
+low and high words of a self-extending column), so a product of two 64-bit values is the 64 x 64 matrix of plane pairs,
+weights 2^(j+k) from 2^0 to 2^126, and coefficients have a high word too (an offset of 2^63, squared, is 2^126). The fold
+is sum_p W_p C_p, with W_p = coefficient x 2^(j+k) a 128-bit integer and C_p the plane pair's popcount: one 128-bit
+multiply-add per plane pair, per group, per tile of 4096 rows. The matrix product (A_MM) folds its tiles this way.
+Measured at SSB SF1 on one thread (`bench/ssb/wide_sums.py`, DuckDB computing in HUGEINT): `SUM(lo_extendedprice *
+lo_revenue)` needs 128 bits (6M rows of up to 2^47) and takes 61 ms against DuckDB's 41; by year, 76 ms against 120
+(the row kernel, with 128-bit accumulators); with a third factor, `lo_quantity`, summed per value by the bridge below,
+98 ms against 133.
+Products of two 64-bit columns (4096 plane pairs, more than the 1024 measure planes of the matrix product) go through
+mask splitting, with the same 128-bit fold per (word, group) mask. The general path (GROUP BY keys read by lookup) and
+the plain baseline evaluate the polynomial per row in 128 bits, and so does the row kernel when the cost model picks it
+for a dense tile (its per-group accumulators become 128-bit). Sums come back as (low, high) words. The Moebius bridge
+sums in 64 bits and is not used for wide plans; neither is the GPU executor (the query runs on the CPU). The refusal
+threshold moved from an expanded bound of 2^62 to an interval bound of 2^127.
+
+**128-bit group codes.** A group's code is the mixed-radix number of its keys. When the radix product passes 2^64 (two
+64-bit columns, or one and a few more keys), the codes are 128-bit in the tiles, the per-thread tables and the output
+(the high words in `out_key_hi`); the planner allows up to 2^128 - 2 groups and 12 key columns (a 64-bit fact column
+takes two). The splitting tree, the row kernel and the Moebius bridge index by 64-bit codes and step aside.
+
+**Past 128 bits, and columns without an affine code: the histogram bridge.** SUM(m) is the sum, over the values v
+taken by some columns H, of m restricted to the rows where H = v, and on those rows the columns of H are constants.
+The measure is expanded into monomials with exact rational coefficients; the columns of H leave each monomial as
+values: H joins the GROUP BY as hidden keys, the engine sums each monomial's residual (fact columns, degree <= 2) per
+group, and the parts are put together in exact arithmetic,
+
+    SUM[k] = sum over the groups (k, v) of  sum_m  c_m * prod_(h in m) v_h * SUM_r(m)[k, v]        (SUM_() = COUNT).
+
+H holds the columns without an affine code (a referenced table's column whose values span more than 32 bits is
+rank-coded), the referenced tables' columns (the engine's 128-bit sums are polynomials of fact columns), and fact
+columns past degree 2, or past degree 1 when the degree-2 residuals could still pass 128 bits. The result has no width
+limit. The cost is one engine query per distinct residual (and a COUNT when the measure has a constant term), over as
+many groups as the hidden values take; of the candidate columns, the one with the fewest values is hidden first. It
+runs only for queries that would otherwise be refused. DOUBLE columns are not bridged: SQL sums them in
+floating point, in an order the engine does not reproduce.
+
+**What is still refused** (each with the reason): arithmetic on DOUBLE columns, strings, dates, timestamps and
+booleans; GROUP BY keys needing more than 128 bits together, or more than 12 key columns; constants with more than 18
+decimal places; filter programs longer than 1024 instructions. In the fuzzer, torbles now refuses fewer queries than
+DuckDB rejects (DuckDB stops on overflow in its own BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly).
+
+## Dense GROUP BY: bridges and their ablation (0.2.0)
+
+An unfiltered GROUP BY with every group in every tile was the CPU's weak spot: SSB M3 (`GROUP BY d_year, lo_discount`,
+`SUM(lo_extendedprice * lo_discount)`, 77 groups) took 244 ms on one thread against DuckDB's 68. Each tile split every
+word into its ~77 groups and then multiplied 24 x 4 plane pairs per group: far more than one multiply-add per row.
+Four bridges between the plane algebra and per-row arithmetic were implemented behind switches and measured on SSB SF1
+(2 vCPUs, three interleaved rounds, best per query; only answers equal to DuckDB's are timed; `bench/ssb/ablation.sh`,
+`results/ablation_sf1_2vcpu`):
+
+- **Factor through the key** (`TORBLES_FACTOR`, on). A monomial is split into the part that depends only on the GROUP
+  BY keys and the rest: SUM = P_R(key) SUM(R) + P_1(key) COUNT, with P_R and P_1 evaluated per group in Python. In M3,
+  `lo_discount` is a key, so the plane-pair product becomes the plain sum of one column: 244 -> 116 ms.
+- **Row kernel** (`TORBLES_MM_ROWS`, chosen per tile). Every passing row's key fields and measure columns packed in
+  one word by one 64 x 64 bit transpose per 64 rows (a staged, vectorizable transpose: 88 ns instead of 356), and the
+  sums accumulated in an array indexed by group code. M2 212 -> 71 ms, M3 -> 60. The cost model's choice needs a margin:
+  at a ratio of 0.33 (M2, M3) the row kernel is 3x faster as predicted, at 0.70 (M1) and 0.88 (Q3.1) it is slower
+  (M1 60 ms against 48, Q3.1 33 against 28). The row kernel is chosen when the model puts it below half the popcount
+  product's cost, smoothed over the tiles (`TORBLES_RK_MARGIN`, default 0.5); the same margin applies to folding a
+  tile per row. A popcount tile measures the model again every 32 tiles, every 256 when the row kernel is far ahead
+  (a popcount tile with more groups than its 256 slots evaluates the rest word by word, which is expensive).
+- **Shannon splitting tree and direct tile slots** (`TORBLES_SPLIT=tree`, `TORBLES_DIRECT=1`, off). Splitting a word by
+  its key bits (two ANDs per bit, shared prefixes) and using the code as the slot when it fits: slower (13 queries
+  240 ms against 212) and neutral.
+- **Moebius inversion over the key bits** (`TORBLES_MOBIUS=1` or `-1`, off). The tile in the monomial basis of the key
+  bits (one AND per monomial), turned into groups by inclusion-exclusion: no gain when chosen by cost, 382 ms for the
+  13 queries when forced.
+
+| SF1, ms | 13 SSB, 1 thread | 13 SSB, 2 threads | M1-M3, 1 thread | M1-M3, 2 threads |
+|---|---|---|---|---|
+| DuckDB (in memory) | 478.0 | 310.8 | 414.1 | 228.3 |
+| 0.2.0 before the bridges | 208.2 | 116.7 | 505.4 | 269.5 |
+| defaults: factor + row kernel at margin 0.5 | 213.1 | 114.8 | 179.2 | 96.1 |
+
+The 13 queries are where they were (within the VM's noise); M1-M3 go from 505 to 179 ms, 2.3x faster than DuckDB, and
+M3 alone takes 59.9 ms against DuckDB's 68.4. Every configuration of the ablation, and every forced mode, passes the tests
+and the fuzzer with no mismatch. The full table is in docs/SSB.md.
+

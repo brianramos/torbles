@@ -8,6 +8,7 @@
 #include <stdint.h>
 #define MAXCOL 31                /* columns per torble (the torus has one row per column plus a wrap row) */
 #define NB 33
+#define MAXKEY 12               /* GROUP BY keys per plan (a 64-bit fact column takes two: low and high words) */
 enum { P_TRUE, P_EQ, P_NE, P_LT, P_LE, P_GT, P_GE, P_BETWEEN, P_AND, P_OR, P_NOT, P_PREFIX, P_BIT, P_CUBE, P_CLT, P_CGE, P_XOR };   /* P_XOR: additive (F2) correction */
 /* P_CLT / P_CGE(col, a = constant, b = plane mask): the code formed by the planes in mask (most significant id bit first)
    is < a / >= a. The factored comparator polynomial sum_j (1 + x_j) c_j E_j on any set of variables. */   /* P_CUBE(col, a = values, b = plane mask): AND of literals on any planes */   /* P_BIT(col, a = bit): value bit a is set */   /* P_PREFIX(col, a = value, b = nbits): top nbits == a */
@@ -24,7 +25,7 @@ typedef struct {
     int32_t bil_a, bil_b;
     int32_t nmeas; minstr_t meas[48];
     int32_t nattr; int32_t attr_fkcol[8]; const uint32_t *attr_vals[8];
-    int32_t nkey; int32_t key_kind[6], key_arg[6]; uint64_t key_radix[6]; int32_t key_nbits[6];   /* kind 2 = top-bit prefix of an fk */
+    int32_t nkey; int32_t key_kind[MAXKEY], key_arg[MAXKEY]; uint64_t key_radix[MAXKEY]; int32_t key_nbits[MAXKEY];   /* kind 2 = top-bit prefix of an fk */
     uint64_t ngroups; int64_t *out_sum; uint64_t *out_cnt;
     int64_t total_sum; uint64_t total_cnt;
     uint64_t semi_n[8], attr_n[8];                    /* dimension sizes: out-of-range foreign keys never match */
@@ -32,7 +33,7 @@ typedef struct {
     int32_t npl, pl_col[8]; int64_t pl_coef[8];
     int32_t npb, pb_a[8], pb_b[8]; int64_t pb_coef[8]; int64_t p_const;
     uint64_t nranges; const uint64_t *ranges;          /* optional [start, end) unit ranges to scan (physical order as index) */
-    uint32_t key_mask[6];                              /* key kind 3: projection of the fk planes in this mask (code = those bits, first plane most significant) */
+    uint32_t key_mask[MAXKEY];                              /* key kind 3: projection of the fk planes in this mask (code = those bits, first plane most significant) */
     int32_t dom_col, ndom; const uint32_t *dom_t;      /* A_DOM: column x and ascending thresholds t_k */
     uint32_t semi_kmask[8], attr_kmask[8];             /* join through a derived surrogate: dimension row = fk & mask (0 = no mask) */
     const uint64_t *xrows; int32_t xmode;              /* delta plane (one bit per fact row): 1 = only these rows, 2 = all but these */
@@ -41,6 +42,15 @@ typedef struct {
      * caller retries with larger arrays. mm_stats: [0] tile-slots evaluated dense, [1] sparse, [2] (word, group)
      * pairs past a full tile table (evaluated per word), [3] tiles with groups. */
     uint64_t out_cap, out_n; uint64_t *out_key; int64_t mm_stats[4];
+    /* 128-bit sums (wide = 1). The popcounts are exact counts; only their weighted fold needs more than 64 bits: a
+     * 64-bit value is two 32-bit columns, so a product of two of them is the 64 x 64 matrix of plane pairs, weights
+     * 2^(j+k) up to 2^126. A coefficient is hi * 2^64 + (uint64) lo (lo in the 64-bit fields above), and every sum
+     * comes back as (lo, hi) words: out_sum / out_sum_hi, total_sum / total_sum_hi. All arithmetic is modular, 64-bit
+     * included: a 64-bit plan is exact when its true sums are below 2^63 in magnitude, a wide one below 2^127. */
+    int32_t wide; int64_t pl_coef_hi[8], pb_coef_hi[8], p_const_hi; int64_t *out_sum_hi; int64_t total_sum_hi;
+    /* 128-bit group codes (widekey = 1): the mixed-radix code of a GROUP BY whose key domain passes 2^64 (at most
+     * 2^128 - 2 groups); sparse output only, the code's high words in out_key_hi */
+    int32_t widekey; uint64_t *out_key_hi;
 } qplan_t;
 #define KM(m, v) ((m) ? ((v) & (m)) : (v))
 
@@ -97,11 +107,11 @@ static inline int tb_mm_planes(const int32_t *width, const int32_t *msb, const q
 #define TB_PW(c, j) (msb[c] ? width[c] - 1 - (j) : (j))
     for (int i = 0; i < q->npl; i++) { int c = q->pl_col[i];
         for (int j = 0; j < width[c]; j++) { if (n == MAXMP) return -1;
-            P[n].ca = (int16_t)c; P[n].ja = (int16_t)j; P[n].cb = -1; P[n].jb = 0; P[n].w = q->pl_coef[i] * ((int64_t)1 << TB_PW(c, j)); n++; } }
+            P[n].ca = (int16_t)c; P[n].ja = (int16_t)j; P[n].cb = -1; P[n].jb = 0; P[n].w = (int64_t)((uint64_t)q->pl_coef[i] << TB_PW(c, j)); n++; } }   /* modular */
     for (int i = 0; i < q->npb; i++) { int a = q->pb_a[i], b = q->pb_b[i];
         for (int j = 0; j < width[a]; j++) for (int k = 0; k < width[b]; k++) { if (n == MAXMP) return -1;
             P[n].ca = (int16_t)a; P[n].ja = (int16_t)j; P[n].cb = (int16_t)b; P[n].jb = (int16_t)k;
-            P[n].w = q->pb_coef[i] * ((int64_t)1 << (TB_PW(a, j) + TB_PW(b, k))); n++; } }
+            P[n].w = (int64_t)((uint64_t)q->pb_coef[i] << (TB_PW(a, j) + TB_PW(b, k))); n++; } }
 #undef TB_PW
     return n;
 }
