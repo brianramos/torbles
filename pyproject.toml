@@ -1,0 +1,48 @@
+# Copyright 2026 Brian Richard RAMOS
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torbles"
+dynamic = ["version"]
+description = "An algebraic relational datastore on torus-encoded bit planes: filters as Boolean polynomials, sums as popcounts, joins as substitutions"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "Brian Richard RAMOS"}]
+keywords = ["database", "olap", "bit planes", "popcount", "gpu", "cuda", "star schema", "duckdb"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Topic :: Database :: Database Engines/Servers",
+]
+dependencies = ["numpy>=1.22", "duckdb>=1.1"]
+
+[project.optional-dependencies]
+frames = ["pandas>=1.5", "pyarrow>=10"]
+test = ["pandas>=1.5", "pyarrow>=10"]
+
+[project.urls]
+Homepage = "https://github.com/brianramos/torbles"
+Source = "https://github.com/brianramos/torbles"
+Issues = "https://github.com/brianramos/torbles/issues"
+
+[project.scripts]
+torbles-fuzz = "torbles.fuzz:main"
+
+[tool.setuptools]
+packages = ["torbles"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+torbles = ["*.so", "*.h", "*.c", "*.cu"]
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}

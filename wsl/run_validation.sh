@@ -53,4 +53,7 @@ echo "== torbles (derived-surrogate keys): CPU 1 and $CORES threads, GPU (per-wo
 TORBLES_OUT_TAG=_validation TORBLES_ENGINES="cpu-mm@1,cpu-mm@$CORES,gpu-word,gpu-popc,gpu-split" python ssb_torbles.py "$SF" derived || die "torbles run failed"
 cp "$SSB_DATA/sf$SF/duckdb_results.json" "$SSB_DATA/sf$SF/torbles_derived_validation.json" "$OUT/"
 python ssb_mm_report.py "$OUT/torbles_derived_validation.json" "$OUT/duckdb_results.json" | tee "$OUT/validation_report_sf$SF.txt"
+echo "== torbles with automatic keys: the database loaded with torbles.from_duckdb, keys from schema.sql, CPU and GPU"
+python ssb_auto.py "$SF" cpu,gpu | tee "$OUT/auto_keys_sf$SF.txt" || die "automatic-key run failed"
+cp "$SSB_DATA/sf$SF/torbles_auto.json" "$OUT/torbles_auto_sf$SF.json"
 echo; echo "== done. Report: $OUT/validation_report_sf$SF.txt"

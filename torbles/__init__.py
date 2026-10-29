@@ -18,6 +18,7 @@ if _here not in _sys.path: _sys.path.insert(0, _here)       # the engine modules
 from algq import *                                          # noqa: F401,F403
 from algq import __version__, Table, Query, Col, Surrogate, PlaneKey, set_threads, set_build_threads, set_groupby, gpu_name, gpu_mm, mm_kernel  # noqa: F401
 from blobcol import BlobStore                               # noqa: F401
-_sys.modules.setdefault("torbles.algq", _sys.modules["algq"])     # one module object, however it is imported
 from database import Database, from_duckdb, from_ddl, from_frictionless, from_frames, keys_from_ddl, load, LoadError   # noqa: F401
-import coltypes, keydesign                                  # noqa: F401
+import algq, blobcol, coltypes, database, keydesign         # noqa: F401,E402
+for _m in ("algq", "blobcol", "coltypes", "database", "keydesign"):   # one module object, however it is imported
+    _sys.modules.setdefault("torbles." + _m, _sys.modules[_m])

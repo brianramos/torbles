@@ -1,5 +1,56 @@
 # Changelog
 
+## 0.2.0 (2026-10-29), alpha
+
+Bring your own data: install with pip, load typed tables with their keys, get answers checked against DuckDB.
+
+Loading
+- Loaders: `from_duckdb` (a database file or connection), `from_ddl` (a standard SQL schema plus CSV / Parquet /
+  JSON files or data frames), `from_frictionless` (a Frictionless Data Package), `from_frames`. DuckDB reads the
+  sources and does the conversions (dictionary ranks, decimal scaling, key lookups) in parallel.
+- Keys from standard declarations: PRIMARY KEY / FOREIGN KEY constraints read through INFORMATION_SCHEMA, a DDL
+  script (`schema=`), or Frictionless Table Schema keys; key inference is opt-in and reported.
+- Typed columns (`coltypes.py`): signed and 64-bit integers, DECIMAL (exact sums, returned as `Decimal`), DATE,
+  TIMESTAMP, BOOLEAN, VARCHAR (dictionary; `startswith`), DOUBLE (dictionary). Comparisons with constants become exact
+  code intervals, as SQL compares them. `types=` loads a column as another type (a DOUBLE amount as DECIMAL).
+- NULLs refused outside foreign keys (`fill_nulls=`); unsupported types skipped with a note; `columns=` subsets.
+- Automatic key design (`keydesign.py`): functional-dependency chains found on the full data become derived
+  surrogates `cell << w | row`, dense-ranked or shortened when they do not fit 32 bits; the planner is told which
+  bits each attribute occupies (coordinate hints), so filters are cubes or comparators from the first query.
+- `db.describe()`, `db.verify(q)` (the query's SQL on the source, compared), `q.sql()` in the source's schema.
+
+Persistence
+- `db.save(path)` / `torbles.load(path)`: one file per torble (header hashed, planes 64-byte aligned), memory-mapped
+  privately on load; every torus face is checked, single-bit faults are repaired in memory, more is refused.
+  Saving writes new files and renames them. Native `at_save`, `at_load`, `at_free`.
+
+Engine
+- A torble holds up to 31 columns (the torus has one row per column plus the wrap row). This also fixes an overflow
+  of the face list for 15 full-width columns in 0.1.0.
+- GROUP BY codes are 64-bit (the radix product may reach 2^64 - 1); the general GROUP BY path has sparse output
+  (any key domain); the dense-array path falls back to the sparse product instead of refusing.
+- Sums that could exceed 64 bits are refused instead of wrapping.
+- Queries use every core by default (`set_threads(n)` changes it).
+
+Correctness
+- `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
+  planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
+  the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
+  overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
+  group count overflowing 63 bits.
+- New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
+  a 40-case fuzz run; `make test` runs them all.
+
+Packaging
+- `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`
+  makes a wheel for other x86-64 machines; `torbles-fuzz` console script.
+- GitHub Actions: tests and fuzzing on every push (Python 3.9 / 3.11 / 3.13), wheels and PyPI publishing on a tag.
+
+Benchmarks
+- `bench/ssb/schema.sql` (the SSB keys as standard DDL) and `bench/ssb/ssb_auto.py`: SSB loaded with nothing designed
+  by hand; every result equals DuckDB's; at SF1 on 2 vCPUs, 141 ms for the 13 queries against 122 ms with the
+  hand-designed keys and 431 ms for DuckDB. `wsl/run_validation.sh` runs it too.
+
 ## 0.1.0 (2026-10-29)
 
 First public release of torbles (a torble is a toroidal table; torbles is the engine and package): a research

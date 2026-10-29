@@ -1,0 +1,50 @@
+# Copyright 2026 Brian Richard RAMOS
+# SPDX-License-Identifier: Apache-2.0
+# On a version tag (v*): the sdist and manylinux x86-64 wheels (portable build: the popcount kernels choose AVX2 /
+# AVX-512 at run time), tested, then published to PyPI by trusted publishing. To enable publishing, add this
+# repository as a trusted publisher of the "torbles" project on pypi.org (environment "pypi"); until then the
+# publish job fails and the built files remain available as workflow artifacts.
+name: release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+jobs:
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install build && python -m build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+  wheels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pypa/cibuildwheel@v2.21.3
+        env:
+          CIBW_BUILD: "cp312-manylinux_x86_64"
+          CIBW_ENVIRONMENT: "TORBLES_PORTABLE=1"
+          CIBW_TEST_REQUIRES: "pandas"
+          CIBW_TEST_COMMAND: "torbles-fuzz --seed 1 --cases 20"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: wheelhouse/*.whl
+  publish:
+    needs: [sdist, wheels]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1

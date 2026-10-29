@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-# torbles 0.1.0
+# torbles 0.2.0
 #   make            CPU engine (torbles/libalg.so) and the CPU emulation of the GPU kernels (torbles/libgpu_emu.so)
 #   make gpu        CUDA executor (torbles/libgpu.so); falls back to PTX for older nvcc, and to the __popc build if
 #                   nvcc rejects the b1 tensor-core MMA for this GPU

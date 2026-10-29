@@ -4,7 +4,7 @@
 /* Shared definitions of the torbles engine (alg.c) and its optional GPU executor (gpu.cu). */
 #ifndef TORBLES_H
 #define TORBLES_H
-#define TORBLES_VERSION "0.1.0"
+#define TORBLES_VERSION "0.2.0"
 #include <stdint.h>
 #define MAXCOL 31                /* columns per torble (the torus has one row per column plus a wrap row) */
 #define NB 33

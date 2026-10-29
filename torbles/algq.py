@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""torbles 0.1.0: algebraic queries over torbles.
+"""torbles 0.2.0: algebraic queries over torbles.
 
 Queries are built as algebraic expressions (operator overloading), compiled into:
   - Boolean polynomials over bit planes (filters), one program per table,
@@ -46,7 +46,7 @@ class QPlan(ctypes.Structure):
                 ("xrows", ctypes.c_void_p), ("xmode", ctypes.c_int32),
                 ("out_cap", ctypes.c_uint64), ("out_n", ctypes.c_uint64), ("out_key", ctypes.c_void_p), ("mm_stats", ctypes.c_int64 * 4)]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 _libpath = Path(__file__).with_name("libalg.so")
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
@@ -138,6 +138,25 @@ class Const(Expr):
 class Arith(Expr):
     def __init__(self, op, l, r): self.op, self.l, self.r = op, l, r
 _SQLOP = dict(EQ="=", NE="<>", LT="<", LE="<=", GT=">", GE=">=")
+import re as _re
+_RESERVED = set("""
+    all analyse analyze and anti any array as asc asof asymmetric at authorization between bigint binary bit
+    boolean both by case cast char character check coalesce collate collation column columns concurrently
+    constraint create cross dec decimal default deferrable desc describe distinct do else end except exists
+    extract false fetch float for foreign freeze from full generated glob group grouping grouping_id having
+    ilike in initially inner inout int integer intersect interval into is isnull join lambda lateral leading
+    left like limit map national natural nchar none not notnull null nullif numeric offset on only or order
+    out outer overlaps overlay pivot pivot_longer pivot_wider placing position positional precision primary
+    qualify real references returning right row select semi setof show similar smallint some struct
+    substring summarize symmetric table tablesample then time timestamp to trailing treat trim true try_cast
+    tuple union unique unpack unpivot using values varchar variadic verbose when where window with
+    xmlattributes xmlconcat xmlelement xmlexists xmlforest xmlnamespaces xmlparse xmlpi xmlroot xmlserialize
+    xmltable
+""".split())                                       # keywords that cannot be bare identifiers (DuckDB, standard SQL)
+def _ident(name):
+    """an SQL identifier: as is when plain, else double-quoted"""
+    return name if _re.fullmatch(r"[a-z_][a-z0-9_]*", name) and name not in _RESERVED else '"' + name.replace('"', '""') + '"'
+def _qc(col): return f"{_ident(col.table.name)}.{_ident(col.name)}"
 class Col(Expr):
     def __init__(self, table, name): self.table, self.name = table, name
     def codec(self): return getattr(self.table, "codecs", {}).get(self.name)
@@ -164,7 +183,7 @@ class Col(Expr):
         lo, hi = cd.interval("GE", a), cd.interval("LE", b)
         iv = None if lo is None or hi is None else (lo[0], hi[1])
         p = _code_pred(self, iv)
-        p.sql = f"{self.table.name}.{self.name} BETWEEN {cd.literal(a)} AND {cd.literal(b)}"
+        p.sql = f"{_qc(self)} BETWEEN {cd.literal(a)} AND {cd.literal(b)}"
         return p
     def isin(self, vals):
         vals = list(vals)
@@ -173,14 +192,14 @@ class Col(Expr):
         for v in vals[1:]: p = p | (self == v)
         cd = self.codec()
         if cd is not None:
-            p.sql = f"{self.table.name}.{self.name} IN ({', '.join(cd.literal(v) for v in vals)})"
+            p.sql = f"{_qc(self)} IN ({', '.join(cd.literal(v) for v in vals)})"
         return p
     def startswith(self, prefix):
         """string prefix match: one interval of the sorted dictionary"""
         cd = self.codec()
         if cd is None or not hasattr(cd, "prefix_interval"): raise TypeError(f"{self.table.name}.{self.name} is not a string column")
         p = _code_pred(self, cd.prefix_interval(prefix))
-        p.sql = f"starts_with({self.table.name}.{self.name}, {cd.literal(prefix)})"
+        p.sql = f"starts_with({_qc(self)}, {cd.literal(prefix)})"
         return p
 class Pred:
     sql = None                                         # the predicate in the source's terms (typed columns)
@@ -217,7 +236,7 @@ def _typed_cmp(col, cd, op, v):
         p = Not(_typed_cmp(col, cd, "EQ", v))
     else:
         p = _code_pred(col, cd.interval(op, v))
-    p.sql = f"{col.table.name}.{col.name} {_SQLOP[op]} {cd.literal(v)}"
+    p.sql = f"{_qc(col)} {_SQLOP[op]} {cd.literal(v)}"
     return p
 
 def id_ranges(bm, n):
@@ -695,6 +714,10 @@ class Table:
         if k in ("cols", "data") or k.startswith("_"): raise AttributeError(k)
         if k in self.cols: return Col(self, k)
         raise AttributeError(k)
+    def __getitem__(self, k):
+        """a column by name (for names that are not Python identifiers: t["Région"])"""
+        if k in self.cols: return Col(self, k)
+        raise KeyError(f"{self.name} has no column {k!r}")
     def idx(self, c): return self.cols.index(c)
     def width(self, c): return lib.at_width(self.at, self.idx(c))
     def nrows(self): return len(self.used_ids)
@@ -781,12 +804,12 @@ def compile_pred(p, table, prog):
     else: raise TypeError(p)
 def pred_sql(p):
     if getattr(p, "sql", None): return p.sql
-    if isinstance(p, Cmp): return f"{p.col.table.name}.{p.col.name} {dict(EQ='=', NE='<>', LT='<', LE='<=', GT='>', GE='>=')[p.op]} {p.v}"
-    if isinstance(p, Between): return f"{p.col.table.name}.{p.col.name} BETWEEN {p.a} AND {p.b}"
+    if isinstance(p, Cmp): return f"{_qc(p.col)} {dict(EQ='=', NE='<>', LT='<', LE='<=', GT='>', GE='>=')[p.op]} {p.v}"
+    if isinstance(p, Between): return f"{_qc(p.col)} BETWEEN {p.a} AND {p.b}"
     if isinstance(p, BoolOp): return f"({pred_sql(p.l)} {p.op} {pred_sql(p.r)})"
     if isinstance(p, Not): return f"(NOT {pred_sql(p.x)})"
 def expr_sql(e):
-    if isinstance(e, Col): return f"{e.table.name}.{e.name}"
+    if isinstance(e, Col): return _qc(e)
     if isinstance(e, Const):
         if e.v is not None: return str(e.v)
         from coltypes import _frac
@@ -910,14 +933,15 @@ class Query:
     def sql(self):
         keys = [expr_sql(k) for k in self.keys]
         agg = f"SUM({expr_sql(self.measure)})" if self.measure is not None else "COUNT(*)"
-        s = f"SELECT {', '.join(keys + [agg])} FROM {self.fact.name}"
-        for dim, fk in self.joins.items(): s += f" JOIN {dim.name} ON {self.fact.name}.{fk} = {dim.name}.{getattr(dim, 'pk', None) or 'id'}"
+        F = _ident(self.fact.name)
+        s = f"SELECT {', '.join(keys + [agg])} FROM {F}"
+        for dim, fk in self.joins.items(): s += f" JOIN {_ident(dim.name)} ON {F}.{_ident(fk)} = {_ident(dim.name)}.{_ident(getattr(dim, 'pk', None) or 'id')}"
         if getattr(self, "rjoin", None) is not None:
             dim, x, lo, hi = self.rjoin
             if getattr(self, "rjoin_sql", None) is not None: on = f"{expr_sql(x)} {self.rjoin_sql[0]} {expr_sql(self.rjoin_sql[1])}"
             elif lo is not None and hi is not None: on = f"{expr_sql(x)} BETWEEN {expr_sql(lo)} AND {expr_sql(hi)}"
             else: on = f"{expr_sql(x)} >= {expr_sql(lo)}" if lo is not None else f"{expr_sql(x)} <= {expr_sql(hi)}"
-            s += f" JOIN {dim.name} ON {on}"
+            s += f" JOIN {_ident(dim.name)} ON {on}"
         if self.pred is not None: s += " WHERE " + " AND ".join(pred_sql(c) for c in conjuncts(self.pred))
         if keys: s += " GROUP BY " + ", ".join(keys)
         return s
@@ -931,8 +955,9 @@ class Query:
         fkeys = [k for k in self.keys if k.table is not dim]
         sel = [f"{expr_sql(k)} AS k{i}" for i, k in enumerate(fkeys)] + [f"{expr_sql(x)} AS kx",
                (f"SUM({expr_sql(self.measure)})" if self.measure is not None else "COUNT(*)") + " AS v"]
-        inner = f"SELECT {', '.join(sel)} FROM {self.fact.name}"
-        for d, fk in self.joins.items(): inner += f" JOIN {d.name} ON {self.fact.name}.{fk} = {d.name}.{getattr(d, 'pk', None) or 'id'}"
+        F = _ident(self.fact.name)
+        inner = f"SELECT {', '.join(sel)} FROM {F}"
+        for d, fk in self.joins.items(): inner += f" JOIN {_ident(d.name)} ON {F}.{_ident(fk)} = {_ident(d.name)}.{_ident(getattr(d, 'pk', None) or 'id')}"
         if others: inner += " WHERE " + " AND ".join(pred_sql(c) for c in others)
         inner += " GROUP BY " + ", ".join([expr_sql(k) for k in fkeys] + [expr_sql(x)])
         if getattr(self, "rjoin_sql", None) is not None: on = f"m.kx {self.rjoin_sql[0]} {expr_sql(self.rjoin_sql[1])}"
@@ -940,7 +965,7 @@ class Query:
         else: on = f"m.kx >= {expr_sql(lo)}" if lo is not None else f"m.kx <= {expr_sql(hi)}"
         it = iter(range(len(fkeys)))
         keys = [expr_sql(k) if k.table is dim else f"m.k{next(it)}" for k in self.keys]
-        s = f"WITH m AS ({inner}) SELECT {', '.join(keys + ['SUM(m.v)'])} FROM m JOIN {dim.name} ON {on}"
+        s = f"WITH m AS ({inner}) SELECT {', '.join(keys + ['SUM(m.v)'])} FROM m JOIN {_ident(dim.name)} ON {on}"
         if dpreds: s += " WHERE " + " AND ".join(pred_sql(c) for c in dpreds)
         if keys: s += " GROUP BY " + ", ".join(keys)
         return s

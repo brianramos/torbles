@@ -198,3 +198,18 @@ first runs include loading columns into DuckDB's buffer cache. Tables and the gr
 
 ---
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+## Automatic keys (`ssb_auto.py`, 0.2.0), SF1, 2 vCPUs
+
+The official DuckDB database, loaded with `torbles.from_duckdb(db, schema="schema.sql", columns={"lineorder": the 9
+columns the queries read})`: keys from the standard DDL, layout from the key design, queries written with the data's
+values. Every result equals DuckDB's answer to the official SQL. Best of 3, ms, end to end.
+
+| query | DuckDB 2T | hand-designed keys (0.1.0 design) | automatic keys |
+|---|---|---|---|
+| 13 SSB queries | 430.6 | 122.3 | 141.2 |
+
+Key designs found: customer and supplier region | nation | city | row; part mfgr | category | brand | row; date
+selling season | month | year-month | row. Loading: 2.4 s (DuckDB read, types, key design, build) against 1.3 s for
+the hand-written loader, which reads fewer dimension columns.

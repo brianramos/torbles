@@ -1,67 +1,148 @@
 # torbles
 
-**An algebraic relational datastore on torus-encoded bit planes.** Version 0.1.0, a research prototype: the
-benchmark results are measured and verified, but it is not yet a database to deploy (see
-[Known limitations](#known-limitations-010)). The API may change.
+**An algebraic relational datastore on torus-encoded bit planes.** Version 0.2.0, alpha: you can install it, load
+your own tables with their types and keys, and get answers checked against DuckDB. Features are still missing and
+the API may change (see [Known limitations](#known-limitations-020)).
 
 A *torble* is a toroidal table: it stores every column as bit planes (plane j holds bit j of 64 rows per machine
-word) laid out on a 16 x 32 torus whose faces are XOR checks, so every row is protected and single-bit faults are found and repaired. Queries are
-not executed row by row. They are compiled into algebra over the planes:
+word) laid out on a torus whose faces are XOR checks, so every row is protected and single-bit faults are found and
+repaired. Queries are not executed row by row. They are compiled into algebra over the planes:
 
 - **Filters** are Boolean polynomials over the planes, evaluated 64 rows per instruction.
 - **SUM** is popcount algebra: `SUM(x) = sum_j 2^j popcount(x_j & F)`. Products of columns use pairs of planes.
 - **An equi-join is a substitution.** A dimension filter is a polynomial in the primary key's bits. Replacing the
   primary key with the foreign key evaluates the join directly on the fact's planes: no hash table, no probe.
   Hierarchical keys turn filters into a few cubes (ANDs of literals) or comparators.
+- **The key layout is found from the data.** At load, torbles finds each dimension's hierarchy (functional
+  dependencies such as city -> nation -> region) and stores it in the foreign keys' bits, so the joins above apply to
+  your schema without hand design.
 - **Range, band and inequality joins** use the same comparator polynomial, with dominance sums for aggregation.
-- **Derived surrogates** keep official keys while giving the planner the hierarchy as id bits. Dimension changes are
-  additive: a delta plane plus a second pass, and the fact is never rewritten. Values wider than 32 bits are
-  self-extending records, addressed by rank (a popcount), never by stored pointers.
 - **GROUP BY is one matrix product**, `C = M^T X` (group masks AND-popcount measure planes), with sparse output.
 - **Optional GPU executor (CUDA).** One thread per 64-row word, a sparse group table on the GPU, and optional
-  tensor-core b1 MMA kernels. On an RTX 5090 Laptop GPU, the 13 official SSB queries on 300 million rows run in
-  29.5 ms end to end, against 896 ms for DuckDB on 24 threads (in memory).
+  tensor-core b1 MMA kernels. On an RTX 5090 Laptop GPU, the 13 official SSB queries on 300 million rows ran in
+  29.5 ms end to end (0.1.0), against 896 ms for DuckDB on 24 threads (in memory).
 
-Every result is cross-checked against DuckDB and a plain columnar baseline across join forms, thread counts,
-GROUP BY modes and the GPU kernels.
+Every result is checked against DuckDB: by the test suite, and by a differential fuzzer that generates random typed
+schemas and queries and compares every answer (`python -m torbles.fuzz`).
 
 ## Quick start
 
-Requirements: Linux (or WSL2), gcc/g++, Python 3.9+ with numpy; duckdb and pandas for the tests and benchmarks;
-nvcc for the optional GPU executor.
+Requirements: Linux x86-64 (or WSL2), a C and C++ compiler, Python 3.9+. Optional: nvcc for the GPU executor.
 
-    make                 # CPU engine + CPU emulation of the GPU kernels
-    make test            # every correctness test (about a minute; the GPU tests use the emulation without a GPU)
-    make gpu             # optional: the CUDA executor (then `make test` runs the GPU tests on the GPU)
+    pip install .            # builds the engine for this machine (and the CUDA executor if nvcc is found)
+
+or, working in the repository: `make` (engine), `make test` (every test, about a minute and a half), `make gpu`.
 
 ```python
-import sys; sys.path.insert(0, ".")              # the repository root
-import numpy as np, torbles
-from torbles import Table, Query
+import torbles
 
-customer = Table("customer", {"region": np.array([0, 1, 1, 2], np.uint32), "nation": np.array([0, 5, 6, 10], np.uint32)})
-sales = Table("sales", {"cust": np.array([0, 1, 2, 3, 1, 2], np.uint32), "amount": np.array([10, 20, 30, 40, 50, 60], np.uint32)},
-              msb=("cust",), refs={"cust": customer})
+# keys from a standard SQL schema; data from files, data frames or a DuckDB database
+db = torbles.from_ddl("""
+    CREATE TABLE customer (c_id INTEGER PRIMARY KEY, region VARCHAR, nation VARCHAR, city VARCHAR);
+    CREATE TABLE sales (s_cust INTEGER REFERENCES customer (c_id), day DATE, amount DECIMAL(12, 2), qty INTEGER);
+""", {"customer": "customer.csv", "sales": "sales.parquet"})
 
-q = (Query(sales).join(customer, sales.cust)
-       .where(customer.region == 1)
-       .group_by(customer.nation)
-       .sum(sales.amount))
-print(q.run("alg"))      # {(5,): 70, (6,): 90}; "gpu" runs it on CUDA, "plain" on the columnar baseline
-print(q.sql())           # the same query as SQL, for cross-checking
+s, c = db["sales"], db["customer"]
+q = (db.query(s).join(c)
+       .where((c.region == "EUROPE") & s.day.between("2024-01-01", "2024-03-31"))
+       .group_by(c.nation)
+       .sum(s.amount * s.qty))
+q.run()              # {('FRANCE',): Decimal('81234.50'), ...}   "gpu" runs it on CUDA
+q.sql()              # the same query in your schema's SQL;  db.verify(q) runs it on DuckDB and compares
+print(db.describe()) # column types, and the key design found for each dimension
+
+db.save("shop.torbles")                    # one file per torble, memory-mapped on load
+db = torbles.load("shop.torbles")          # every torus face checked; single-bit faults repaired
 ```
 
-Main entry points (`torbles/algq.py`):
-- `Table(name, columns, msb=, refs=, extend=, virtual=)`
+Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constraints, or `schema="schema.sql"`),
+`torbles.from_frictionless("datapackage.json")` (Frictionless Table Schema keys for CSV / Parquet), and
+`torbles.from_frames({...}, primary_keys=..., foreign_keys=...)`.
+
+### Your data
+
+- **Keys** come from standard schema declarations: `PRIMARY KEY` / `FOREIGN KEY ... REFERENCES` in SQL DDL, read
+  through the standard `INFORMATION_SCHEMA` views of the source, or a Frictionless Data Table Schema next to the
+  files. Keys can also be given as arguments. Guessing keys from column names and values is opt-in
+  (`build(infer_keys=True)`) and reported in `db.notes`, because a wrong guess silently changes what joins.
+  Foreign keys are not enforced: a reference without a match (or NULL) never joins, as in an SQL inner join.
+- **Types**, each stored as an order-preserving code, so comparisons become intervals of codes:
+
+  | SQL type | stored as | in queries |
+  |---|---|---|
+  | TINYINT ... BIGINT, UBIGINT, HUGEINT | value - minimum (64-bit ranges in self-extending columns) | compare, group, sum |
+  | DECIMAL(p, s) | value x 10^s - minimum | compare, group, sum (exact: sums come back as `Decimal`) |
+  | DATE, TIMESTAMP | days / microseconds - minimum | compare (`date`, `datetime` or ISO strings), group |
+  | BOOLEAN | 0 / 1 | compare, group |
+  | VARCHAR | rank in the sorted dictionary | `=`, `<`, `between`, `isin`, `startswith`, group |
+  | DOUBLE, FLOAT | rank in the sorted values | compare, group (to sum one exactly, load it as DECIMAL: `types=`) |
+
+  Constants are compared exactly, as SQL does: `price > 10.005` on a DECIMAL(10, 2) column, a 64-bit integer against
+  a 64-bit key, a timestamp against a DATE. A sum that could overflow 64 bits is refused rather than wrapped.
+- **NULLs** are refused at load, except in foreign keys (they never join); `fill_nulls={"t.col": value}` replaces
+  them. Unsupported column types (BLOB, LIST, INTERVAL, ...) are skipped with a note.
+- **Key design.** For every referenced table, torbles finds the longest chain of functional dependencies among its
+  low-cardinality columns (on the full data), ranks each level within its parent and stores
+  `hierarchy cell << w | row` in the foreign keys (`row` = the rank of the primary key, so the key itself stays a
+  projection of the low bits). If the fields do not fit 32 bits, the cell is replaced by its dense rank, then levels are
+  dropped; with nothing left, the foreign key is the plain row. `db.describe()` shows the result, for example on SSB:
+
+      customer:  derived surrogate, 25 bits = c_region 3 | c_nation 3 | c_city 4 | row 15
+      part:      derived surrogate, 30 bits = p_mfgr 3 | p_category 3 | p_brand1 6 | row 18
+
+- **Integrity on load.** A saved torble carries its torus faces: on load, every face is recomputed from the stored
+  planes, single-bit faults are repaired in memory, and a row with more than one lost bit is refused. Headers are
+  hashed; truncated files are refused. Saving writes new files and renames them, so open databases are unaffected.
+
+### Engine-level API
+
+The typed API is built on the engine's own API (`torbles/algq.py`), which works on uint32 columns and hand-made keys:
+
+- `Table(name, columns, msb=, refs=, extend=, virtual=)`, `Surrogate(w, s_of_row)`
 - `Query(fact).join(dim, fk).where(pred).group_by(...).sum(expr) / .count()`
 - `.join_range(dim, x, lo, hi)` and `.join_ineq(dim, x, op, y)`
-- `Surrogate(w, s_of_row)`
-- `set_threads(n)`, `set_build_threads(n)`, `set_groupby("mm" | "split")`, `gpu_mm("word" | "popc" | "mma")`
+- `set_threads(n)` (default: all cores), `set_build_threads(n)`, `set_groupby("mm" | "split")`, `gpu_mm("word" | "popc" | "mma")`
 
 `torbles/blobcol.py` has `BlobStore` for CLOB/BLOB columns. The engine is `torbles/alg.c` (CPU) and `torbles/gpu.cu`
 (CUDA), sharing `torbles/torble.h`.
 
+### Differential fuzzing
+
+    python -m torbles.fuzz --minutes 10          # or: torbles-fuzz --seed 42 --cases 200 (needs pandas: pip install '.[test]')
+
+Random star schemas (1 to 3 dimensions with hierarchies; signed, 64-bit and unsigned integers, decimals, dates,
+timestamps, strings with quotes and Unicode, booleans, doubles; orphaned and NULL references, extreme and constant
+values, empty tables, sizes around word and tile boundaries) and random queries (every comparison, `IN`, prefix,
+`NOT` and `OR`; GROUP BY on fact and dimension columns; COUNT or SUM of random polynomials with decimal constants), run
+on randomly chosen engines and planner settings, saved and reloaded, with a flipped bit repaired on load. Any answer
+that differs from DuckDB's, and any exception other than a documented refusal, is a failure with a one-line replay
+command. Before this release, 70,000 fuzzed queries over seven seeds found nine bugs, all fixed: an empty fact table
+crashing the join planner, 64-bit keys compared through floating point, decimal scaling overflowing at DECIMAL(18),
+64-bit columns in dimensions, the 64-bit column lowering re-applying offsets, two group-code limits and two persistence
+details. Since then the fuzzer has found no mismatch.
+
 ## Results
+
+### SSB with nothing designed by hand (0.2.0)
+
+`bench/ssb/ssb_auto.py` loads the official SSB database with `torbles.from_duckdb`, takes the keys from the standard
+DDL in `bench/ssb/schema.sql`, lets the key design find the layout, and writes the 13 official queries with the values
+as they appear in the data (`p_category == "MFGR#12"`). Every result equals DuckDB's answer to the official SQL. Against
+the hand-designed keys of 0.1.0, on the same small machine (SF1, 6M rows, 2 vCPUs, best of 3, ms):
+
+| | DuckDB, 2 threads | torbles, hand-designed keys | torbles, automatic keys |
+|---|---|---|---|
+| 13 SSB queries | 431 | 122 | 141 |
+| loading (read, design, build) | | 1.3 s | 2.4 s |
+
+The automatic design finds the hierarchies the hand design used (region > nation > city, mfgr > category > brand).
+For the dates it finds selling season > month > year-month, which puts the season, month and year on the key's bits
+and leaves the day to the row bits (the primary key is chronological, so day ranges stay comparators). The planner reads which bits each
+attribute occupies from the key design, so the first runs no longer pay for discovering them (first runs of the 13
+queries: 286 ms against 141 ms warm). To measure it with the GPU at SF10, `bash wsl/run_validation.sh 10` now runs
+it after the hand-designed benchmark.
+
+### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
 
 ![torbles on the official Star Schema Benchmark, SF1 to SF50](docs/img/ssb_scaling.png)
 
@@ -75,7 +156,7 @@ Main entry points (`torbles/algq.py`):
 ### Official Star Schema Benchmark, scaling from 6M to 300M rows
 
 Setup:
-- The 13 official queries on official `ssb-dbgen` data, derived-surrogate keys.
+- torbles 0.1.0, hand-designed derived-surrogate keys; the 13 official queries on official `ssb-dbgen` data.
 - Core Ultra 9 290HX (24 cores, AVX2) and RTX 5090 Laptop GPU, WSL2.
 - Both engines answer from memory: DuckDB 2.0.0 runs on an in-memory copy of its tables (the 9 fact
   columns the queries read, as torbles loads), with its default memory limit.
@@ -128,25 +209,34 @@ dimensions, deltas, and self-extension.
 
 ## Layout
 
-    torbles/     the engine: torble.h, alg.c (CPU), gpu.cu (CUDA / emulation), algq.py (planner, API), blobcol.py
+    torbles/     the engine: torble.h, alg.c (CPU), gpu.cu (CUDA / emulation), algq.py (planner, engine API);
+                 coltypes.py (column types), database.py (loaders, persistence), keydesign.py, fuzz.py, blobcol.py
     tests/       correctness tests (run_all.sh runs them all) and their data generators
-    bench/       benchmarks: ssb/ (official SSB), blob_bench.py, ineq_bench.py, scale_tables.py
+    bench/       benchmarks: ssb/ (official SSB, schema.sql), blob_bench.py, ineq_bench.py, scale_tables.py
     results/     measured results (JSON, logs, reports)
     docs/        ENGINE.md (design and every feature), SSB.md (benchmark method and results)
     wsl/         run_validation.sh (build, test, benchmark) and run_scaling.sh (SF1-SF50 and threads), WSL2 + NVIDIA GPU
+    .github/     CI (tests and fuzzing on every push) and release (wheels to PyPI on a version tag)
 
-## Known limitations (0.1.0)
+## Known limitations (0.2.0)
 
-- **In-memory only.** There is no on-disk format yet; tables are built from arrays at load.
-- **Column width.** Values are unsigned 32-bit. Wider values need declared self-extending columns.
-- **First-query cost.** After loading, the first queries on each dimension discover its coordinate structure (which
-  id bits each attribute depends on). This is done once, in Python, and dominates the first runs: the 13 queries' first
-  runs on the CPU took 2.1 s at SF10 and 7.5 s at SF50, against 77 ms and 338 ms once warm. Doing it at load time,
-  natively, is the next step.
-- **GPU fallbacks.** Semi-join lookups (unstructured dimension filters) run on the CPU, and the query falls back to
-  the CPU engine. The GPU also takes at most 2 looked-up GROUP BY keys and 6 keys in all.
+- **No NULLs** outside foreign keys (refused at load; `fill_nulls=` replaces them).
+- **Joins:** star joins, one hop from the queried table to each dimension; single-column keys (composite keys are
+  noted and skipped); one foreign key per dimension in a query (role-playing joins, two foreign keys to one dimension
+  in the same query, are not supported yet).
+- **Aggregates:** COUNT and SUM of polynomials in the columns. No AVG, MIN, MAX, COUNT DISTINCT or HAVING yet, and no
+  SQL: queries are built in Python (`q.sql()` renders them for checking).
+- **Limits, refused rather than wrapped:** sums that could exceed 64 bits; GROUP BY keys that need more than 64 bits
+  together (two 64-bit columns); arithmetic on DOUBLE columns (load them as DECIMAL) and on dimension columns whose
+  values span more than 32 bits.
+- **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
+- **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
+  through the engine API's deltas excepted, which are not saved yet).
+- **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns), and the
+  release was tested with the CPU emulation of the kernels only: run `make gpu && make test` on an NVIDIA GPU before
+  relying on it. Semi-join lookups and the general GROUP BY path run on the CPU (the query falls back automatically).
 - **Blob payload integrity.** The payload heap is not covered by the torus faces; the heads and lengths are.
-- **AVX-512.** The VPOPCNTDQ kernel is untested on hardware: neither test machine has it.
+- **Platforms:** x86-64 Linux / WSL2. The AVX-512 VPOPCNTDQ kernel is untested on hardware.
 
 ## License
 

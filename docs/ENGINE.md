@@ -1,8 +1,9 @@
 # Algebraic torbles
 
 Torbles stored as torus **bit planes**: plane j of a torus lane holds bit j of that lane for 64 rows per word.
-Only planes that can be nonzero are stored (277 of the 1024 planes of a 9-column 16x32 torus at 30M rows),
-so a torble is smaller than plain uint32 columns, and every row still validates against all of its faces.
+The torus has one row per column plus a wrap row (up to 31 columns since 0.2.0; 16 rows in 0.1.0) and one lane per bit.
+Only planes that can be nonzero are stored (277 of the 1024 planes of a 9-column 16x32 torus at 30M rows), and every
+row still validates against all of its faces.
 
 Queries are built as algebraic expressions (`algq.py`) and executed algebraically:
 - decode: value bit j = XOR of V planes 0..j (64 rows per instruction)
@@ -149,3 +150,46 @@ Queries are built as algebraic expressions (`algq.py`) and executed algebraicall
 
 ---
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+## Typed data, loaders and persistence (0.2.0)
+
+**Column types** (`coltypes.py`). Every type is stored as an order-preserving unsigned code: integers, decimals,
+dates and timestamps as their exact integer representation minus the column's minimum (no offset for non-negative
+values when it would not narrow the column), booleans as 0 / 1, strings and doubles as their rank in the sorted
+distinct values. A comparison with a constant is turned into an interval of codes, computed exactly (`Fraction`), so it
+has SQL's meaning: `x > 10.005` on DECIMAL(10, 2) is `code >= 1001 - min`; a string absent from the dictionary gives
+an empty interval (FALSE), or the interval between its neighbours for `<` and `>`. The interval is simplified against
+the codes that exist (TRUE, FALSE, `=`, `<=`, `>=`, BETWEEN). Codes wider than 32 bits go to self-extending columns
+in a fact; in a referenced table they are ranked (`RankCodec`), which keeps dimension codes within 32 bits.
+Measures are lowered once per query: a column becomes `code + offset` at scale s (DECIMAL(p, s)), sums and differences
+are brought to a common scale, products add scales; the engine sums the integer polynomial and the result is divided
+by 10^scale (`Decimal`). The polynomial's bound (sum of |coefficient| x largest codes, times the rows) must stay below
+2^62, or the query is refused. Group keys come back decoded.
+
+**Keys** (`database.py`). The loader reads PRIMARY KEY / FOREIGN KEY declarations through the standard
+INFORMATION_SCHEMA views (TABLE_CONSTRAINTS, KEY_COLUMN_USAGE, REFERENTIAL_CONSTRAINTS), from a DDL script parsed in a
+scratch DuckDB connection, or from Frictionless Table Schemas. A referenced table is stored sorted by its primary key,
+so its row is the key's rank; a foreign key value is mapped to that row natively (a lookup table when the keys are
+dense, a binary search when not, a DuckDB join for strings), and a value without a match gets row n, which no
+reference bit accepts.
+
+**Key design** (`keydesign.py`). Candidates are a dimension's columns with 2 to n/2 distinct values. A -> B holds when B
+is constant on every run of A (sorted once per A, checked on all rows). Equivalent columns (A <-> B) collapse; for
+each column f, the longest chain of dependencies ending at f is found by dynamic programming over increasing
+cardinality, and the chain whose finest level determines the most columns wins. Levels are ranked within their parent
+and concatenated into a cell code; the surrogate is `cell << w | row`. For every column the finest level determines,
+the bits it depends on are found by flipping cell bits (cells are dense, so flips land on other cells) and verified;
+they are given to the planner as coordinate hints, which `attr_coords` checks against the data before using.
+Without the hints, a sparse surrogate (one row per cell) hides its coordinates from single-bit flips, and the planner
+falls back to prefixes of the key: at SSB SF1 that made the date's year a 256-value key instead of a 7-value one and
+M3 four times slower.
+
+**Persistence.** `at_save` writes a header (magic, format, shape, widths, the directory of stored planes, an FNV hash
+of all of it) and the planes, 64-byte aligned, to a temporary file that is renamed into place. `at_load` maps the file
+with `MAP_PRIVATE` (repairs and fault injection stay in memory) and rebuilds the face list from the planes present.
+`torbles.load` validates the faces of every torble and its sidecars before anything is decoded from them.
+
+**Fuzzing** (`fuzz.py`). Each case is reproducible from (seed, case); queries are generated as data and materialized
+on whichever database is being tested (built, reloaded, reloaded from a copy with one flipped bit), so one replay
+command reproduces a failure.

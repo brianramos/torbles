@@ -122,11 +122,11 @@ class Database:
                 if c in fk: continue
                 codes, cd, why = self._encode(name, c, typ, st, order_by, name in dims, fill)
                 if cd is None: self.notes.append(f"{name}.{c}: not loaded ({why})"); continue
-                if codes.size and int(codes.max()) > 0xFFFFFFFF:
+                if codes.dtype == np.uint64 and codes.size and int(codes.max()) > 0xFFFFFFFF:
                     if name in dims: raise LoadError(f"{name}.{c}: internal error, dimension codes wider than 32 bits")
                     extend[c] = 32
                     data[c] = codes
-                else: data[c] = codes.astype(np.uint32)
+                else: data[c] = np.ascontiguousarray(codes, np.uint32)
                 codecs[c] = cd; info[c] = dict(type=typ, codec=cd.kind)
             refs = {}
             for c, (dname, dpk) in fk.items():
@@ -302,7 +302,7 @@ class Database:
             if base == "float": vals = [float(v) for v in vals]
             codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {col}) - 1 AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
-            return np.asarray(codes, np.uint64), ct.DictCodec(vals, "VARCHAR" if base == "str" else "DOUBLE"), None
+            return np.asarray(codes), ct.DictCodec(vals, "VARCHAR" if base == "str" else "DOUBLE"), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
         lo, hi = st["min"].get(c), st["max"].get(c)
         if fv is not None:
@@ -317,11 +317,11 @@ class Database:
             vals = [int(r[0]) for r in self.con.execute(f"SELECT DISTINCT {raw} AS v FROM {self._t(name)} ORDER BY v").fetchall()]
             codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {raw}) - 1 AS UINTEGER) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
             cd = ct.RankCodec(_codec(typ, 0), vals)
-            return np.asarray(codes, np.uint64), cd, None
+            return np.asarray(codes), cd, None
         target = "UINTEGER" if span <= 0xFFFFFFFF else "UBIGINT"
         inner = f"CAST({raw} AS BIGINT) - ({lo})" if -(1 << 62) < lo < (1 << 62) and -(1 << 62) < hi < (1 << 62) else f"CAST({raw} AS HUGEINT) - ({lo})"
         codes = self.con.execute(f"SELECT CAST({inner} AS {target}) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
-        return np.asarray(codes, np.uint64), _codec(typ, lo), None
+        return np.asarray(codes), _codec(typ, lo), None
 
     def _pk_rows(self, name, pk, typ, n):
         """how a key value finds its row: (kind, data). Rows are in key order, so row = rank of the key."""
