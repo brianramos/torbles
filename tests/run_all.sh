@@ -10,6 +10,15 @@ set -u
 cd "$(dirname "$0")/.."
 export PYTHONPATH="$PWD:$PWD/torbles:$PWD/tests"
 [ -f torbles/libgpu.so ] && export TORBLES_GPU_LIB="$PWD/torbles/libgpu.so"
+missing=$(python3 -c "
+import importlib.util as u
+print(' '.join(m for m in ('numpy', 'pandas', 'duckdb') if u.find_spec(m) is None))")
+if [ -n "$missing" ]; then   # one clear message instead of a failure per test
+  echo "the tests need Python packages that $(command -v python3) does not have: $missing"
+  echo "install them (pip install $missing, or pip install '.[test]') or activate the environment that has them"
+  echo "(wsl/run_validation.sh makes one: source ~/torble_gpu_run/venv/bin/activate, or ~/torbles_run/venv/bin/activate)"
+  exit 1
+fi
 python3 -c "import algq; print('torbles', algq.__version__, '| CPU kernel:', algq.mm_kernel(), '| GPU:', algq.gpu_name())" || exit 1
 fails=0
 run() {   # name, command...
