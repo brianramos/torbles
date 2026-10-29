@@ -4,7 +4,8 @@
 """SSB with nothing designed by hand: the official DuckDB database is loaded by torbles.from_duckdb, the keys come from
 the standard DDL (schema.sql), and the key layout is found by the automatic key design. The 13 official queries are
 written with the values as they appear in the data (strings, years), and every result is compared with DuckDB's
-answer to the official SQL. Times: best of 3, end to end.
+answer to the official SQL. Times: best of 3, end to end. Only queries answered correctly are timed: a query that is
+refused, fails or differs from DuckDB is reported and left out of the totals.
     python3 ssb_auto.py <SF> [engines, default cpu,gpu; cpu@N for N threads]   (writes torbles_auto.json next to the data)"""
 import sys, os, time, json
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
@@ -57,19 +58,26 @@ for eng in engines:
     if eng == "gpu":
         try: torbles.gpu_name()
         except Exception as e: print("no GPU:", e); continue
-    tot, ok_all = 0.0, True
+    tot, nok, ok_all = 0.0, 0, True
     for name, q in queries.items():
         want = wants[name]
-        best = None
+        best, got, err = None, None, None
         for i in range(3):
-            t1 = time.perf_counter(); got = q.run("alg" if eng.startswith("cpu") else eng); dt_ = time.perf_counter() - t1
+            try:
+                t1 = time.perf_counter(); got = q.run("alg" if eng.startswith("cpu") else eng); dt_ = time.perf_counter() - t1
+            except Exception as e:
+                err = f"{type(e).__name__}: {e}"; break
             best = dt_ if best is None else min(best, dt_)
-        ok = got == want; ok_all &= ok
-        out["times"][f"{name}/{eng}"] = best; out["match"][f"{name}/{eng}"] = ok
+        ok = err is None and got == want; ok_all &= ok
+        out["match"][f"{name}/{eng}"] = ok
+        if ok: out["times"][f"{name}/{eng}"] = best          # only correct answers are timed
         out["plans"][name] = [list(x) for x in q.range_used]
-        if name.startswith("Q"): tot += best
+        if name.startswith("Q") and ok: tot += best; nok += 1
         how = ", ".join(f"{x[0]}:{x[1]}" for x in q.range_used) or "-"
-        print(f"  {eng:4s} {name:5s} {best * 1e3:9.2f} ms  {'ok' if ok else 'MISMATCH'}  joins as {how}  ({getattr(q, 'device', '')})")
-    print(f"  {eng}: 13 SSB queries {tot * 1e3:.1f} ms in all; {'all results match DuckDB' if ok_all else 'MISMATCHES'}")
-    out[f"total_ms/{eng}"] = tot * 1e3
+        if ok: print(f"  {eng:4s} {name:5s} {best * 1e3:9.2f} ms  ok  joins as {how}  ({getattr(q, 'device', '')})")
+        else: print(f"  {eng:4s} {name:5s}      not timed: {err or 'MISMATCH'}")
+    nq = sum(1 for n in queries if n.startswith("Q"))
+    print(f"  {eng}: {nok} of {nq} SSB queries answered correctly, {tot * 1e3:.1f} ms in all (correct answers only); "
+          f"{'all results match DuckDB' if ok_all else 'MISMATCHES or failures'}")
+    out[f"total_ms/{eng}"] = tot * 1e3; out[f"total_n/{eng}"] = nok
 json.dump(out, open(os.path.join(datadir(sf), "torbles_auto.json"), "w"), indent=1, default=str)

@@ -93,6 +93,9 @@ import os as _os
 GROUPBY = _os.environ.get("TORBLES_GROUPBY", "mm")
 # compiled plans are reused when the same query runs again on the same data version (TORBLES_PLAN_CACHE=0: off)
 PLAN_CACHE = _os.environ.get("TORBLES_PLAN_CACHE", "1") != "0"
+# bridge "factor through the key": measure factors that are GROUP BY key columns are constant per group and are
+# multiplied in after the sum (TORBLES_FACTOR=0: off)
+FACTOR = _os.environ.get("TORBLES_FACTOR", "1") != "0"
 NATIVE_PLAN = _os.environ.get("TORBLES_NATIVE_PLAN", "1") != "0"      # join-polynomial terms planned in C (jp_terms)
 def set_groupby(mode):
     global GROUPBY
@@ -356,6 +359,53 @@ def prefix_key(space, attr, b):
                 res = (L, dict(zip(g[starts].tolist(), a[starts].tolist()))); break
         memo[ck] = res
     return memo[ck]
+
+def poly_fact(e, fact):
+    """expand a measure into a polynomial of any degree in fact columns: {sorted tuple of column names: coef}; None if
+    it involves another table's columns"""
+    if isinstance(e, Const): return {(): e.v} if e.v is not None else None
+    if isinstance(e, Col): return {(e.name,): 1} if e.table is fact else None
+    if not isinstance(e, Arith): return None
+    l, r = poly_fact(e.l, fact), poly_fact(e.r, fact)
+    if l is None or r is None: return None
+    out = {}
+    if e.op in "+-":
+        for k, v in l.items(): out[k] = out.get(k, 0) + v
+        for k, v in r.items(): out[k] = out.get(k, 0) + (v if e.op == "+" else -v)
+    else:
+        for ka, va in l.items():
+            for kb, vb in r.items():
+                k = tuple(sorted(ka + kb)); out[k] = out.get(k, 0) + va * vb
+    return {k: v for k, v in out.items() if v}
+
+def factor_through_keys(measure, keys, fact):
+    """The bridge between the GROUP BY key and the measure. Within a group, a key column is a constant, so every
+    monomial of the measure splits into (key part) x (rest): SUM_g(measure) = sum over rest-monomials R of
+    P_R(key_g) * SUM_g(R), with P_R a polynomial in the key columns. When at most one rest-monomial is not constant,
+    one pass gives SUM_g(R) and COUNT_g, and the polynomials are applied per group afterwards: a product of a measure
+    column with a key column costs the measure's planes, not their pairs.
+    -> (R or None, P_R, P_1, {key column: position}) or None when nothing factors"""
+    keycols = {k.name: i for i, k in enumerate(keys) if isinstance(k, Col) and k.table is fact}
+    if not keycols or measure is None: return None
+    poly = poly_fact(measure, fact)
+    if poly is None: return None
+    parts = {}
+    for mono, c in poly.items():
+        K = tuple(x for x in mono if x in keycols); R = tuple(x for x in mono if x not in keycols)
+        d = parts.setdefault(R, {}); d[K] = d.get(K, 0) + c
+    if not any(K for d in parts.values() for K in d): return None
+    rest = [R for R in parts if R]
+    if len(rest) > 1: return None
+    R = rest[0] if rest else None
+    return R, (parts[R] if R else {}), parts.get((), {}), keycols
+
+def _poly_at(P, keycols, key):
+    v = 0
+    for K, c in P.items():
+        t = c
+        for x in K: t *= key[keycols[x]]
+        v += t
+    return v
 
 def poly2(e, fact):
     """expand an expression into a polynomial of degree <= 2 in fact columns: {(): c0, (x,): c, (a, b): c}"""
@@ -1143,6 +1193,31 @@ class Query:
                 used = {t for c in conjuncts(self.pred) for t in tables_of(c)} | {k.table for k in self.keys if not isinstance(k, PlaneKey)}
                 moved = {d: fk for d, fk in moved.items() if d in used}
                 if moved: return self._run_delta(engine, moved)
+        if FACTOR and self.keys and self.measure is not None and not getattr(self, "_factored", False) \
+                and not getattr(self, "_raw", False) and getattr(self, "_dom", None) is None:
+            fq = getattr(self, "_fq", None)
+            if fq is None or fq[0] is not self.measure or fq[1] != tuple(map(id, self.keys)):
+                f = factor_through_keys(self.measure, self.keys, self.fact); q2 = None
+                if f is not None:
+                    import copy
+                    q2 = copy.copy(self); q2._factored = True; q2._both = True; q2._plan_cache = {}
+                    R = f[0]; m = None
+                    for c in (R or ()): m = Col(self.fact, c) if m is None else Arith("*", m, Col(self.fact, c))
+                    q2.measure = m
+                fq = self._fq = (self.measure, tuple(map(id, self.keys)), q2, f)
+            if fq[2] is not None:
+                q2, (R, PR, P1, keycols) = fq[2], fq[3]
+                q2.pred, q2.joins, q2.join_mode = self.pred, self.joins, self.join_mode
+                for a_ in ("_xrows", "_word_ranges", "_lookup_dims", "_force_lookup", "_inpass"):
+                    if hasattr(self, a_): setattr(q2, a_, getattr(self, a_))
+                r = q2._run_codes(engine)
+                for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned"):
+                    if hasattr(q2, a_): setattr(self, a_, getattr(q2, a_))
+                out = {}
+                for key, (sm, n) in r.items():
+                    v = (_poly_at(PR, keycols, key) * sm if R else 0) + _poly_at(P1, keycols, key) * n
+                    out[key] = (v, n) if getattr(self, "_both", False) else v
+                return out
         self._dev = engine; engine = "alg" if engine == "gpu" else engine     # the GPU runs the algebraic plan
         import time as _time
         t_plan = _time.perf_counter()

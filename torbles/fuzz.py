@@ -118,8 +118,8 @@ def make_case(seed):
         if pk_kind == "dense": keys, typ = list(range(1, n + 1)), "INTEGER"
         elif pk_kind == "sparse": keys, typ = sorted(r.sample(range(0, 50 * n + 10), n)), "INTEGER"
         elif pk_kind == "neg": keys, typ = [k - n // 2 for k in r.sample(range(0, 3 * n + 3), n)], "INTEGER"
-        elif pk_kind == "big": keys, typ = list({r.randint(-(2**62), 2**62) for _ in range(n)}), "BIGINT"
-        elif pk_kind == "str": keys, typ = list({_rand_string(r, 8) + str(i) for i in range(n)}), "VARCHAR"
+        elif pk_kind == "big": keys, typ = sorted({r.randint(-(2**62), 2**62) for _ in range(n)}), "BIGINT"
+        elif pk_kind == "str": keys, typ = sorted({_rand_string(r, 8) + str(i) for i in range(n)}), "VARCHAR"   # sorted: no hash order
         else:
             step = r.choice([1, 3]); keys, typ = [dt.date(2000, 1, 1) + dt.timedelta(days=i * step) for i in range(n)], "DATE"
         r.shuffle(keys); n = len(keys)
@@ -438,6 +438,10 @@ def main(argv=None):
     print(f"\n{ncase + (0 if failures else 1) if a.case is None else 1} case(s), {sum(tot.values())} queries in {time.time() - t0:.0f} s: {tot}")
     if reasons:
         print("refusals (and queries DuckDB rejected):"); [print(f"  {v:5d}  {k}") for k, v in sorted(reasons.items(), key=lambda x: -x[1])[:20]]
+    # a refusal is a query DuckDB answers and torbles declines (queries DuckDB rejects are not asked of torbles): the
+    # goal is fewer refusals than DuckDB errors
+    print(f"refused by torbles {tot['refused']}, rejected by DuckDB {tot['duckdb-error']}: "
+          f"{'refused <= DuckDB errors' if tot['refused'] <= tot['duckdb-error'] else 'MORE REFUSALS THAN DuckDB ERRORS'}")
     print("NO MISMATCHES" if not failures else f"{len(failures)} FAILURE(S)")
     return 1 if failures else 0
 

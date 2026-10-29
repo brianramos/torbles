@@ -124,14 +124,16 @@ static inline uint32_t rev32(uint32_t x) {
     x = ((x >> 4) & 0x0F0F0F0Fu) | ((x & 0x0F0F0F0Fu) << 4); return __builtin_bswap32(x);
 }
 static inline uint32_t revb(uint32_t x, int b) { return rev32(x) >> (32 - b); }
-static void transpose64(uint64_t A[64]) {               /* A[r] bit j <- A[j] bit r */
-    uint64_t m = 0x00000000FFFFFFFFULL;
-    for (int j = 32; j; j >>= 1, m ^= m << j)
-        for (int k = 0; k < 64; k = ((k | j) + 1) & ~j) {
-            uint64_t t = ((A[k] >> j) ^ A[k | j]) & m;
-            A[k] ^= t << j; A[k | j] ^= t;
-        }
+/* A[r] bit j <- A[j] bit r: the butterfly stage by stage, each stage over contiguous blocks of words so the compiler
+ * vectorizes it (about 4x faster than one loop over k with a computed stride) */
+#define TB_STAGE(J, MASK) do { const uint64_t m_ = (MASK); \
+    for (int b_ = 0; b_ < 64; b_ += 2 * (J)) for (int k = b_; k < b_ + (J); k++) { \
+        uint64_t t_ = ((A[k] >> (J)) ^ A[k + (J)]) & m_; A[k] ^= t_ << (J); A[k + (J)] ^= t_; } } while (0)
+static inline void transpose64(uint64_t *restrict A) {
+    TB_STAGE(32, 0x00000000FFFFFFFFULL); TB_STAGE(16, 0x0000FFFF0000FFFFULL); TB_STAGE(8, 0x00FF00FF00FF00FFULL);
+    TB_STAGE(4, 0x0F0F0F0F0F0F0F0FULL); TB_STAGE(2, 0x3333333333333333ULL); TB_STAGE(1, 0x5555555555555555ULL);
 }
+#undef TB_STAGE_DOC
 static uint64_t *plane_alloc(atable_t *t) {          /* not cleared: the build writes every word of every plane */
     uint64_t *p = aligned_alloc(64, ((t->nw * 8) + 63) & ~(size_t)63);
     t->bytes += t->nw * 8; return p;
@@ -602,8 +604,21 @@ typedef struct {
     uint64_t M[TS][TW];
     uint64_t xt[MAXCOL][32][TW];          /* decoded measure planes of the tile, plane-major: X^T tile */
     uint64_t ones[TW];
+    int64_t rowv[TW * 64];                /* per-row measure values of the tile (row mode of a flush) */
     mplane_t P[MAXMP]; int np, npair; uint32_t mcols; int64_t st[4];
+    /* row kernel (dense tiles): every row's key fields and measure columns packed into one 64-bit word by one bit
+     * matrix transpose per 64-row word; groups accumulated in a small array indexed by group code (or the hash) */
+    int rk_ok, rk_nfill, rk_off[6], rk_bits[6], rm_off[MAXCOL], rm_bits[MAXCOL];
+    int16_t rf_col[64], rf_plane[64], rf_slot[64]; int8_t rf_key[64];
+    uint64_t rk_R; int rk_dense, rk_kbits, use_rows, use_mob, tile_rows, since; double rk_ratio;
+    int64_t *asum; uint64_t *acnt; uint32_t *touched; uint32_t ntouched;
+    int kt_ok, kt_n, kt_direct; int16_t kt_col[64], kt_plane[64];   /* splitting tree: the key bits, least significant first */
+    /* Möbius bridge: masks of the monomials over the key bits (positive literals only) for the tile's words, their sums
+     * and counts accumulated in the monomial basis, turned into group sums by inclusion-exclusion at the end */
+    int mob_ok, tile_mob, mob_dirty; uint64_t mobU; uint64_t *mob; int64_t *msum; int64_t *mcnt;
 } mtile_t;
+#define MOB_MAXBITS 10
+#define RK_DENSE (1 << 16)
 typedef void (*mmrow_fn)(const uint64_t *m, const uint64_t *const *xa, const uint64_t *const *xb, int np, uint64_t *out);
 static void mm_row_scalar(const uint64_t *m, const uint64_t *const *xa, const uint64_t *const *xb, int np, uint64_t *out) {
     for (int p = 0; p < np; p++) { const uint64_t *a = xa[p], *b = xb[p]; uint64_t s = 0;
@@ -638,6 +653,19 @@ __attribute__((target("avx512f,avx512vpopcntdq"))) static void mm_row_vpop(const
 #undef VP
 }
 static mmrow_fn MMROW; static const char *MMNAME = "unset"; static int MMSPARSE = 12;
+/* cost model of a tile (rough cycles), for the choice between plane popcounts and per-row values:
+ * one (group, measure plane) over a dense tile row of M^T, one (word, plane) of a sparse group, a 64x64 transpose of
+ * one column for one word, one term per row, one selected row gathered into its group's sum.
+ * TORBLES_MM_ROWS=0 / 1 forces the plane popcounts / the per-row values. */
+static double MMC_DENSE = 64, MMC_SPARSE = 1.5, MMC_TRANS = 200, MMC_TERM = 1.5, MMC_GATHER = 3, MMC_SPLIT_KEY = 24, MMC_SPLIT_BIT = 2,
+              MMC_ROW = 6, MMC_MOBAND = 1.5; static int MMROWS = -1;   /* TORBLES_MM_ROWS: 0 popcounts only, 1 per-row measure in flushes, 2 row kernel */
+static int MMTREE = 0;                     /* TORBLES_SPLIT: "scan" (default) or "tree": how a word is split into its groups */
+static int MMDIRECT = 0;                   /* TORBLES_DIRECT=1: the group code is the tile slot when it fits (no hashing) */
+static int MMMOB = 0;                      /* TORBLES_MOBIUS: 0 off (default), 1 every tile, -1 chosen by cost */
+/* the row kernel replaces the popcount product only when the model puts it below RK_MARGIN of the product's cost:
+ * measured on SSB SF1 (ablation in docs/ENGINE.md), the model is right about dense, many-group tiles (M2, M3: the
+ * row kernel 3x faster at a model ratio of 0.33) and optimistic about the rest (M1 at 0.70, Q3.1 at 0.88: slower) */
+static double RK_MARGIN = 0.5;
 static void mm_init(void) {
     if (MMROW) return;
     const char *e = getenv("TORBLES_POPCNT"), *sp = getenv("TORBLES_MM_SPARSE");
@@ -646,9 +674,14 @@ static void mm_init(void) {
     if (e && !strcmp(e, "scalar")) vpop = avx2 = 0;
     if (e && !strcmp(e, "avx2")) vpop = 0;
     if (sp) MMSPARSE = atoi(sp);
-    if (vpop) { MMNAME = "AVX-512 VPOPCNTDQ"; MMSPARSE = sp ? MMSPARSE : 6; MMROW = mm_row_vpop; }
+    if (vpop) { MMNAME = "AVX-512 VPOPCNTDQ"; MMSPARSE = sp ? MMSPARSE : 6; MMROW = mm_row_vpop; MMC_DENSE = 24; }
     else if (avx2) { MMNAME = "AVX2 (vpshufb popcount)"; MMROW = mm_row_avx2; }
-    else { MMNAME = "scalar POPCNT"; MMSPARSE = 64; MMROW = mm_row_scalar; }
+    else { MMNAME = "scalar POPCNT"; MMSPARSE = 64; MMROW = mm_row_scalar; MMC_DENSE = 128; }
+    const char *rw = getenv("TORBLES_MM_ROWS"); if (rw && *rw) MMROWS = atoi(rw);
+    const char *sp_ = getenv("TORBLES_SPLIT"); if (sp_ && *sp_) MMTREE = strcmp(sp_, "tree") == 0;
+    const char *rm_ = getenv("TORBLES_RK_MARGIN"); if (rm_ && *rm_) RK_MARGIN = atof(rm_);
+    const char *dr_ = getenv("TORBLES_DIRECT"); if (dr_ && *dr_) MMDIRECT = atoi(dr_) != 0;
+    const char *mb_ = getenv("TORBLES_MOBIUS"); if (mb_ && *mb_) MMMOB = atoi(mb_);
 }
 const char *at_mm_kernel(void) { mm_init(); return MMNAME; }
 
@@ -661,6 +694,9 @@ static mtile_t *mm_tile(int i) {
         memset(T->used, 0, sizeof T->used); T->nocc = 0;
         memset(T->nz, 0, sizeof T->nz); memset(T->cnt, 0, sizeof T->cnt); memset(T->M, 0, sizeof T->M);
         for (int k = 0; k < TW; k++) T->ones[k] = ~0ULL;
+        T->asum = calloc(RK_DENSE, 8); T->acnt = calloc(RK_DENSE, 8); T->touched = malloc(RK_DENSE * 4); T->ntouched = 0;
+        T->mob = calloc((size_t)TW << MOB_MAXBITS, 8); T->msum = calloc((size_t)1 << MOB_MAXBITS, 8); T->mcnt = calloc((size_t)1 << MOB_MAXBITS, 8);
+        T->mob_dirty = 0; T->mobU = 0;
         MTILES[i] = T;
     }
     pthread_mutex_unlock(&MTILE_MU);
@@ -671,13 +707,209 @@ static void mm_prepare(const atable_t *t, const qplan_t *q, mtile_t *T) {
     T->npair = 0;
     for (int p = 0; p < T->np; p++) { T->mcols |= 1u << T->P[p].ca; if (T->P[p].cb >= 0) { T->mcols |= 1u << T->P[p].cb; T->npair++; } }
     memset(T->st, 0, sizeof T->st);
+    /* row kernel layout: key fields first (value bits in order), then each measure column; at most 64 bits in all */
+    int off = 0, n = 0, ok = q->nkey > 0; uint64_t R = 1, kbt = 0;
+    for (int i = 0; i < q->nkey; i++) { int kind = q->key_kind[i], c = q->key_arg[i];
+        kbt += kind == 3 ? __builtin_popcount(q->key_mask[i]) : kind == 2 ? q->key_nbits[i] : kind == 0 ? t->width[c] : 0; }
+    int kpos = (int)kbt;                               /* key i's field ends where key i-1's starts */
+#define RK_FILL(c, j, slot, k) do { if (n < 64 && (slot) < 64) { T->rf_col[n] = (int16_t)(c); T->rf_plane[n] = (int16_t)(j); T->rf_slot[n] = (int16_t)(slot); T->rf_key[n] = (int8_t)(k); n++; } else ok = 0; } while (0)
+    for (int i = 0; i < q->nkey; i++) R = (q->key_radix[i] && R <= UINT64_MAX / q->key_radix[i]) ? R * q->key_radix[i] : UINT64_MAX;
+    if (R == UINT64_MAX) ok = 0;
+    for (int i = 0; i < q->nkey && ok; i++) {
+        int kind = q->key_kind[i], c = q->key_arg[i];
+        if (kind == 1) { T->rk_off[i] = -1; T->rk_bits[i] = 0; continue; }       /* looked up per row */
+        int nb = kind == 3 ? __builtin_popcount(q->key_mask[i]) : kind == 2 ? q->key_nbits[i] : t->width[c];
+        kpos -= nb; int o = kpos; T->rk_off[i] = o; T->rk_bits[i] = nb;
+        if (kind == 3) { uint32_t mk = q->key_mask[i]; int idx = 0;
+            while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; RK_FILL(c, j, o + nb - 1 - idx, 1); idx++; } }
+        else if (kind == 2) { for (int j = 0; j < nb; j++) RK_FILL(c, j, o + nb - 1 - j, 1); }
+        else { for (int j = 0; j < nb; j++) RK_FILL(c, j, o + (t->msb[c] ? nb - 1 - j : j), 1); }
+    }
+    off = (int)kbt;
+    int lookups = 0; for (int i = 0; i < q->nkey; i++) lookups += q->key_kind[i] == 1;
+    T->rk_kbits = lookups ? -1 : (int)kbt;            /* concatenated key bits (no looked-up key): the code is a mask */
+    uint32_t mc = T->mcols;
+    while (mc && ok) { int c = __builtin_ctz(mc); mc &= mc - 1; int wd = t->width[c];
+        T->rm_off[c] = off; T->rm_bits[c] = wd;
+        for (int j = 0; j < wd; j++) RK_FILL(c, j, off + (t->msb[c] ? wd - 1 - j : j), 0);
+        off += wd; }
+#undef RK_FILL
+    T->rk_ok = ok && off <= 64; T->rk_nfill = n; T->rk_R = R;
+    T->rk_dense = T->rk_kbits >= 0 ? T->rk_kbits <= 16 : R <= RK_DENSE;   /* dense array indexed by the code */
+    T->use_rows = MMROWS == 2 && T->rk_ok; T->use_mob = 0; T->tile_rows = 0; T->since = 0; T->ntouched = 0; T->rk_ratio = -1;
+    /* splitting tree: bit pos of the concatenated key code (key 0 most significant) comes from plane kt_plane[pos] */
+    T->kt_ok = T->rk_kbits >= 0 && T->rk_kbits <= 64 && q->nkey > 0; T->kt_n = 0;
+    if (T->kt_ok) {
+        for (int i = 0; i < q->nkey; i++) {
+            int kind = q->key_kind[i], c = q->key_arg[i], nb = T->rk_bits[i], o = T->rk_off[i];
+            if (kind == 3) { uint32_t mk = q->key_mask[i]; int idx = 0;
+                while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; T->kt_col[o + nb - 1 - idx] = (int16_t)c; T->kt_plane[o + nb - 1 - idx] = (int16_t)j; idx++; } }
+            else if (kind == 2) for (int j = 0; j < nb; j++) { T->kt_col[o + nb - 1 - j] = (int16_t)c; T->kt_plane[o + nb - 1 - j] = (int16_t)j; }
+            else for (int j = 0; j < nb; j++) { int pos = o + (t->msb[c] ? nb - 1 - j : j); T->kt_col[pos] = (int16_t)c; T->kt_plane[pos] = (int16_t)j; }
+        }
+        T->kt_n = T->rk_kbits;
+    }
+    T->kt_direct = T->rk_R <= TS;                      /* the group code is the tile slot: no hashing */
+    T->mob_ok = T->kt_ok && T->kt_n <= MOB_MAXBITS && MMMOB != 0; T->tile_mob = 0; T->mob_dirty = 0; T->mobU = 0;
+    T->use_mob = MMMOB == 1 && T->mob_ok;
+}
+/* the row kernel for one word: keys and measure of every passing row from one transpose, accumulated by group code */
+static inline void mm_rows_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, uint64_t F, mtile_t *T, touch_t *tl, int64_t *total) {
+    uint32_t kl[6][64];
+    for (int i = 0; i < q->nkey; i++) if (q->key_kind[i] == 1) {        /* looked-up keys: one gather per row */
+        int a = q->key_arg[i], c = q->attr_fkcol[a]; const uint64_t *x = decode(t, D, c, w); uint64_t G = F;
+        while (G) { int r = __builtin_ctzll(G); G &= G - 1;
+            uint32_t fk = KM(q->attr_kmask[a], extract_col(t, x, c, r));
+            if (fk >= q->attr_n[a]) F &= ~(1ULL << r); else kl[i][r] = q->attr_vals[a][fk]; }
+    }
+    if (!F) return;
+    uint64_t A[64]; memset(A, 0, sizeof A);
+    for (int k = 0; k < T->rk_nfill; k++) {
+        int c = T->rf_col[k], j = T->rf_plane[k];
+        const uint64_t *x = decode_n(t, D, c, w, t->vflag[c] ? t->width[c] : j + 1);
+        A[T->rf_slot[k]] = x[j];
+    }
+    transpose64(A);
+    uint64_t G = F;
+    if (T->rk_kbits >= 0 && T->rk_dense && q->npb <= 2 && q->npl <= 4) {
+        /* the common case: the code is the low key bits; at most 4 linear and 2 product terms, unrolled */
+        const uint64_t km = (1ULL << T->rk_kbits) - 1; int64_t loc = 0;
+        int lo_[4], lw_[4], ao_[2], aw_[2], bo_[2], bw_[2]; int64_t lc_[4] = {0}, bc_[2] = {0};
+        for (int l = 0; l < 4; l++) { int c = l < q->npl ? q->pl_col[l] : -1; lo_[l] = c >= 0 ? T->rm_off[c] : 0; lw_[l] = c >= 0 ? T->rm_bits[c] : 0; lc_[l] = c >= 0 ? q->pl_coef[l] : 0; }
+        for (int l = 0; l < 2; l++) { int a = l < q->npb ? q->pb_a[l] : -1, b = l < q->npb ? q->pb_b[l] : -1;
+            ao_[l] = a >= 0 ? T->rm_off[a] : 0; aw_[l] = a >= 0 ? T->rm_bits[a] : 0; bo_[l] = b >= 0 ? T->rm_off[b] : 0; bw_[l] = b >= 0 ? T->rm_bits[b] : 0; bc_[l] = a >= 0 ? q->pb_coef[l] : 0; }
+#define FLD(x, o, w) ((int64_t)(((x) >> (o)) & ((1ULL << (w)) - 1)))
+        while (G) {
+            int r = __builtin_ctzll(G); G &= G - 1; uint64_t x = A[r], code = x & km;
+            int64_t v = q->p_const + lc_[0] * FLD(x, lo_[0], lw_[0]) + lc_[1] * FLD(x, lo_[1], lw_[1]) + lc_[2] * FLD(x, lo_[2], lw_[2])
+                      + lc_[3] * FLD(x, lo_[3], lw_[3]) + bc_[0] * FLD(x, ao_[0], aw_[0]) * FLD(x, bo_[0], bw_[0])
+                      + bc_[1] * FLD(x, ao_[1], aw_[1]) * FLD(x, bo_[1], bw_[1]);
+            if (!T->acnt[code]) T->touched[T->ntouched++] = (uint32_t)code;
+            T->asum[code] += v; T->acnt[code]++; loc += v;
+        }
+#undef FLD
+        *total += loc; return;
+    }
+    while (G) {
+        int r = __builtin_ctzll(G); G &= G - 1; uint64_t x = A[r], code = 0;
+        for (int i = 0; i < q->nkey; i++) {
+            uint64_t kv = q->key_kind[i] == 1 ? kl[i][r] : (x >> T->rk_off[i]) & ((T->rk_bits[i] >= 64) ? ~0ULL : ((1ULL << T->rk_bits[i]) - 1));
+            code = code * q->key_radix[i] + kv;
+        }
+        int64_t v = q->p_const;
+        for (int l = 0; l < q->npl; l++) { int c = q->pl_col[l]; v += q->pl_coef[l] * (int64_t)((x >> T->rm_off[c]) & ((1ULL << T->rm_bits[c]) - 1)); }
+        for (int l = 0; l < q->npb; l++) { int a = q->pb_a[l], b = q->pb_b[l];
+            v += q->pb_coef[l] * (int64_t)((x >> T->rm_off[a]) & ((1ULL << T->rm_bits[a]) - 1)) * (int64_t)((x >> T->rm_off[b]) & ((1ULL << T->rm_bits[b]) - 1)); }
+        if (T->rk_dense) { if (!T->acnt[code]) T->touched[T->ntouched++] = (uint32_t)code; T->asum[code] += v; T->acnt[code]++; }
+        else hadd_n(tl, code, v, 1);
+        *total += v;
+    }
+}
+static void mm_rows_flush(const qplan_t *q, mtile_t *T, touch_t *tl) {
+    int concat = T->rk_kbits >= 0 && T->rk_dense && q->npb <= 2 && q->npl <= 4;
+    for (uint32_t k = 0; k < T->ntouched; k++) {
+        uint32_t c = T->touched[k]; uint64_t code = c;
+        if (concat) { code = 0;                          /* fields (key 0 most significant) -> mixed radix */
+            for (int i = 0; i < q->nkey; i++) code = code * q->key_radix[i] + ((c >> T->rk_off[i]) & ((1ULL << T->rk_bits[i]) - 1)); }
+        hadd_n(tl, code, T->asum[c], T->acnt[c]); T->asum[c] = 0; T->acnt[c] = 0;
+    }
+    T->ntouched = 0;
+}
+/* the monomial masks of one word: m_S = F & AND_{i in S} (key bit i), every S over the kt_n key bits, by adding the
+ * highest bit of S to the mask of S without it (one AND per monomial) */
+static inline void mm_mob_word(const atable_t *t, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T) {
+    int nb = T->kt_n; uint64_t P[MOB_MAXBITS];
+    for (int pos = 0; pos < nb; pos++) { int c = T->kt_col[pos], j = T->kt_plane[pos];
+        P[pos] = decode_n(t, D, c, w, t->vflag[c] ? t->width[c] : j + 1)[j]; }
+    uint64_t *m = T->mob; m[wi] = F;                     /* m[(S << 6) | wi]: monomial S, word wi of the tile */
+    for (uint32_t S = 1; S < (1u << nb); S++) {
+        int hb = 31 - __builtin_clz(S); m[((size_t)S << 6) | wi] = m[((size_t)(S ^ (1u << hb)) << 6) | wi] & P[hb];
+    }
+    T->mobU |= 1ULL << wi;
+}
+static void mm_decode_tile(const atable_t *t, mtile_t *T, uint64_t wb, uint64_t nwt, uint64_t U);
+/* the tile in the monomial basis: per monomial, its count and the measure's popcount product (the same AND-popcount
+ * rows as the group product, on monomial masks instead of group masks) */
+static void mm_flush_mob(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t wb, uint64_t nwt) {
+    uint64_t U = T->mobU; if (!U) return;
+    int nb = T->kt_n; uint32_t NS = 1u << nb;
+    mm_decode_tile(t, T, wb, nwt, U);
+    const uint64_t *xa[MAXMP], *xb[MAXMP]; uint64_t C[MAXMP];
+    for (int p = 0; p < T->np; p++) { xa[p] = T->xt[T->P[p].ca][T->P[p].ja]; xb[p] = T->P[p].cb >= 0 ? T->xt[T->P[p].cb][T->P[p].jb] : T->ones; }
+    int dense = __builtin_popcountll(U) > MMSPARSE;
+    for (uint32_t S = 0; S < NS; S++) {
+        uint64_t *ms = T->mob + ((size_t)S << 6), any = 0, n = 0;
+        for (uint64_t u = U; u; u &= u - 1) { int i = __builtin_ctzll(u); any |= ms[i]; n += __builtin_popcountll(ms[i]); }
+        if (!any) { for (uint64_t u = U; u; u &= u - 1) ms[__builtin_ctzll(u)] = 0; continue; }
+        int64_t v = q->p_const * (int64_t)n;
+        if (T->np) {
+            if (dense) { for (int i = 0; i < TW; i++) if (!(U >> i & 1)) ms[i] = 0; MMROW(ms, xa, xb, T->np, C); }
+            else { memset(C, 0, (size_t)T->np * 8);
+                for (uint64_t u = U; u; u &= u - 1) { int i = __builtin_ctzll(u); uint64_t mm_ = ms[i];
+                    for (int p = 0; p < T->np; p++) C[p] += __builtin_popcountll(mm_ & xa[p][i] & xb[p][i]); } }
+            for (int p = 0; p < T->np; p++) v += T->P[p].w * (int64_t)C[p];
+        }
+        T->msum[S] += v; T->mcnt[S] += (int64_t)n;
+        for (uint64_t u = U; u; u &= u - 1) ms[__builtin_ctzll(u)] = 0;
+    }
+    T->mobU = 0; T->mob_dirty = 1;
+}
+/* inclusion-exclusion (the Möbius transform of the superset lattice): the sum over the rows whose key bits are
+ * exactly g is sum over S containing g of (-1)^|S - g| (sum over the monomial S). Then the groups go to the table. */
+static void mm_mob_finish(const qplan_t *q, mtile_t *T, touch_t *tl, int64_t *total) {
+    int nb = T->kt_n; uint32_t NS = 1u << nb;
+    for (int i = 0; i < nb; i++) for (uint32_t S = 0; S < NS; S++) if (!(S >> i & 1)) {
+        T->msum[S] -= T->msum[S | (1u << i)]; T->mcnt[S] -= T->mcnt[S | (1u << i)]; }
+    for (uint32_t g = 0; g < NS; g++) {
+        if (T->mcnt[g]) {
+            uint64_t key = 0;
+            for (int i = 0; i < q->nkey; i++) key = key * q->key_radix[i] + ((g >> T->rk_off[i]) & ((1ULL << T->rk_bits[i]) - 1));
+            hadd_n(tl, key, T->msum[g], (uint64_t)T->mcnt[g]); *total += T->msum[g];
+        }
+        T->msum[g] = 0; T->mcnt[g] = 0;
+    }
+    T->mob_dirty = 0;
 }
 /* fold the tile: decode the measure planes of the tile's words (only words holding rows of some group), the product
  * C_tile, then SUM/COUNT per group into the thread's table */
+/* row mode of a tile: the measure's integer value for every row of the words holding groups (each measure column's
+ * planes transposed once per word: 64 rows at a time), then each group's sum gathered from its mask bits */
+static void mm_flush_rows(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total) {
+    uint64_t v64[MAXCOL][64], A[64]; uint32_t mc0 = T->mcols;
+    for (uint64_t u = U; u; u &= u - 1) {
+        int i = __builtin_ctzll(u); uint32_t mc = mc0;
+        while (mc) { int c = __builtin_ctz(mc); mc &= mc - 1; int b = t->width[c];
+            for (int j = 0; j < 64; j++) A[j] = j < b ? T->xt[c][j][i] : 0;
+            transpose64(A);
+            if (t->msb[c]) for (int r = 0; r < 64; r++) v64[c][r] = revb((uint32_t)A[r], b);
+            else for (int r = 0; r < 64; r++) v64[c][r] = A[r]; }
+        int64_t *o = T->rowv + (size_t)i * 64;
+        for (int r = 0; r < 64; r++) {
+            int64_t v = q->p_const;
+            for (int l = 0; l < q->npl; l++) v += q->pl_coef[l] * (int64_t)v64[q->pl_col[l]][r];
+            for (int l = 0; l < q->npb; l++) v += q->pb_coef[l] * (int64_t)v64[q->pb_a[l]][r] * (int64_t)v64[q->pb_b[l]][r];
+            o[r] = v;
+        }
+    }
+    for (int k = 0; k < T->nocc; k++) {
+        int s = T->occ[k]; int64_t v = 0; uint64_t nzm = T->nz[s];
+        while (nzm) { int i = __builtin_ctzll(nzm); nzm &= nzm - 1; uint64_t m = T->M[s][i]; const int64_t *o = T->rowv + (size_t)i * 64;
+            while (m) { v += o[__builtin_ctzll(m)]; m &= m - 1; }
+            T->M[s][i] = 0; }
+        hadd_n(tl, T->code[s], v, T->cnt[s]); *total += v;
+        T->nz[s] = 0; T->cnt[s] = 0; T->used[s] = 0;
+    }
+    T->nocc = 0;
+}
+static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total);
 static void mm_flush(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t wb, uint64_t nwt, touch_t *tl, int64_t *total) {
     if (!T->nocc) return;
     T->st[3]++;
     uint64_t U = 0; for (int i = 0; i < T->nocc; i++) U |= T->nz[T->occ[i]];
+    mm_decode_tile(t, T, wb, nwt, U);
+    mm_flush_choose_and_fold(t, q, T, U, tl, total);
+}
+static void mm_decode_tile(const atable_t *t, mtile_t *T, uint64_t wb, uint64_t nwt, uint64_t U) {
     uint32_t mc = T->mcols;
     while (mc) {
         int c = __builtin_ctz(mc); mc &= mc - 1; int b = t->width[c];
@@ -699,6 +931,36 @@ static void mm_flush(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t w
             while (u) { int i = __builtin_ctzll(u); u &= u - 1; uint64_t x = 0;
                 for (int j = 0; j < b; j++) { x ^= t->V[c][j][wb + i]; T->xt[c][j][i] = x; } }
         }
+    }
+}
+static void mm_flush_choose_and_fold(const atable_t *t, const qplan_t *q, mtile_t *T, uint64_t U, touch_t *tl, int64_t *total) {
+    /* Plane popcounts cost (groups x measure planes) per tile; per-row values cost a transpose per measure column and
+     * word plus a few operations per row, whatever the number of groups. Dense GROUP BYs with wide or product measures
+     * (many groups in every tile) are cheaper per row; selective ones keep the popcount algebra. */
+    {
+        double cpop = 0, rows = 0, csplit = 0; int kbits = 0;
+        for (int i = 0; i < q->nkey; i++) kbits += q->key_kind[i] == 1 ? 8 : T->rk_bits[i];
+        for (int k = 0; k < T->nocc; k++) { int s = T->occ[k], nzw = __builtin_popcountll(T->nz[s]);
+            cpop += nzw > MMSPARSE ? T->np * MMC_DENSE : (double)nzw * T->np * MMC_SPARSE; rows += (double)T->cnt[s];
+            csplit += nzw * (MMC_SPLIT_KEY + MMC_SPLIT_BIT * kbits); }
+        int nu = __builtin_popcountll(U), ncol = __builtin_popcount(T->mcols);
+        double crow = nu * (ncol * MMC_TRANS + 64.0 * (q->npl + 2 * q->npb) * MMC_TERM) + rows * MMC_GATHER;
+        /* the next tiles: the row kernel if it would have cost less than this tile's splitting and product */
+        double ckern = nu * MMC_TRANS + rows * (MMC_ROW + MMC_TERM * (q->npl + 2 * q->npb));
+        int frows = T->np && MMROWS != 0 && (MMROWS == 1 || crow < RK_MARGIN * cpop);   /* this tile's fold per row */
+        double cmm = csplit + (frows ? crow : cpop);
+        double cmob = T->mob_ok ? nu * (double)(1u << T->kt_n) * MMC_MOBAND + (double)(1u << T->kt_n) * (T->np + 1) * MMC_DENSE : 1e300;
+        T->use_rows = 0; T->use_mob = 0;
+        if (MMMOB == 1 && T->mob_ok) T->use_mob = 1;
+        else if (T->rk_ok && MMROWS >= 2) T->use_rows = 1;
+        else {
+            /* the ratio of the estimates, smoothed over the popcount tiles (one tile does not switch the kernel) */
+            double r = cmm > 0 ? ckern / cmm : 1, best = cmm;
+            T->rk_ratio = T->rk_ratio < 0 ? r : 0.75 * T->rk_ratio + 0.25 * r;
+            if (T->rk_ok && MMROWS != 0 && T->rk_ratio < RK_MARGIN) { best = ckern; T->use_rows = 1; }
+            if (T->mob_ok && MMMOB != 0 && cmob < best) { T->use_rows = 0; T->use_mob = 1; }
+        }
+        if (frows) { mm_flush_rows(t, q, T, U, tl, total); return; }
     }
     const uint64_t *xa[MAXMP], *xb[MAXMP]; uint64_t C[MAXMP];
     for (int p = 0; p < T->np; p++) { xa[p] = T->xt[T->P[p].ca][T->P[p].ja]; xb[p] = T->P[p].cb >= 0 ? T->xt[T->P[p].cb][T->P[p].jb] : T->ones; }
@@ -766,15 +1028,50 @@ static inline void mm_word(const atable_t *t, const qplan_t *q, dec_t *D, uint64
             key = key * q->key_radix[i] + kv;
         }
         R &= ~M;
-        uint32_t h = (uint32_t)((key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));    /* tile slot: open addressing */
-        while (T->used[h] && T->code[h] != key) h = (h + 1) & (TS - 1);
+        uint32_t h;
+        if (MMDIRECT && T->kt_direct) h = (uint32_t)key;                           /* the code is the slot */
+        else { h = (uint32_t)((key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));           /* tile slot: open addressing */
+               while (T->used[h] && T->code[h] != key) h = (h + 1) & (TS - 1); }
         if (!T->used[h]) {
-            if (T->nocc >= TS * 3 / 4) {                       /* tile table full: this pair is evaluated directly */
+            if (!(MMDIRECT && T->kt_direct) && T->nocc >= TS * 3 / 4) {             /* tile table full: this pair is evaluated directly */
                 int64_t v = poly_sum(t, q, D, w, M); hadd_n(tl, key, v, __builtin_popcountll(M)); *total += v; T->st[2]++; continue;
             }
             T->used[h] = 1; T->code[h] = key; T->occ[T->nocc++] = h;
         }
         T->M[h][wi] |= M; T->nz[h] |= 1ULL << wi; T->cnt[h] += __builtin_popcountll(M);
+    }
+}
+/* the groups of one word by Shannon expansion over the key bits: a mask is split by the next key bit's plane into
+ * its 0 and 1 halves (two ANDs), empty halves are dropped, and a leaf's path is its group code. Every group present
+ * costs at most two ANDs per key bit, shared along common prefixes; when the codes fit the tile, the code is the slot. */
+static inline void mm_word_tree(const atable_t *t, const qplan_t *q, dec_t *D, uint64_t w, int wi, uint64_t F, mtile_t *T, touch_t *tl, int64_t *total) {
+    uint64_t P[64]; int nb = T->kt_n;
+    for (int pos = 0; pos < nb; pos++) { int c = T->kt_col[pos], j = T->kt_plane[pos];
+        P[pos] = decode_n(t, D, c, w, t->vflag[c] ? t->width[c] : j + 1)[j]; }
+    uint64_t sm[130], sc[130]; int sd[130], sp = 1; sm[0] = F; sc[0] = 0; sd[0] = nb;
+    while (sp) {
+        sp--; uint64_t m = sm[sp], cb = sc[sp]; int d = sd[sp];
+        if (d) {
+            uint64_t p = P[d - 1], m1 = m & p, m0 = m & ~p;
+            if (m0) { sm[sp] = m0; sc[sp] = cb << 1; sd[sp] = d - 1; sp++; }
+            if (m1) { sm[sp] = m1; sc[sp] = (cb << 1) | 1; sd[sp] = d - 1; sp++; }
+            continue;
+        }
+        uint64_t key = 0;                               /* concatenated fields -> mixed-radix group code */
+        for (int i = 0; i < q->nkey; i++) key = key * q->key_radix[i] + ((cb >> T->rk_off[i]) & ((T->rk_bits[i] >= 64) ? ~0ULL : ((1ULL << T->rk_bits[i]) - 1)));
+        uint32_t h;
+        if (MMDIRECT && T->kt_direct) h = (uint32_t)key;
+        else {
+            h = (uint32_t)((key * 0x9E3779B97F4A7C15ULL) >> (64 - TSB));
+            while (T->used[h] && T->code[h] != key) h = (h + 1) & (TS - 1);
+        }
+        if (!T->used[h]) {
+            if (!(MMDIRECT && T->kt_direct) && T->nocc >= TS * 3 / 4) {
+                int64_t v = poly_sum(t, q, D, w, m); hadd_n(tl, key, v, __builtin_popcountll(m)); *total += v; T->st[2]++; continue;
+            }
+            T->used[h] = 1; T->code[h] = key; T->occ[T->nocc++] = h;
+        }
+        T->M[h][wi] |= m; T->nz[h] |= 1ULL << wi; T->cnt[h] += __builtin_popcountll(m);
     }
 }
 static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint64_t w1,
@@ -786,7 +1083,13 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
     for (int i = 0; i < q->nattr; i++) needf |= 1ULL << q->attr_fkcol[i];
     uint32_t fv[MAXCOL], av[8];
     for (uint64_t w = w0; w < w1; w++) {
-        if (T && w > w0 && (w - w0) % TW == 0) mm_flush(t, q, T, w - TW, TW, tl, &total);   /* tile boundary */
+        if (T && (w - w0) % TW == 0) {                   /* tile boundary: fold the last tile, choose the next one's kernel */
+            if (w > w0) { if (T->tile_mob) mm_flush_mob(t, q, T, w - TW, TW); else mm_flush(t, q, T, w - TW, TW, tl, &total); }
+            int forced = (MMMOB == 1 && T->mob_ok) || (MMROWS >= 2 && T->rk_ok);
+            if ((T->use_rows || T->use_mob) && (forced || T->since < 31)) {   /* every 32nd tile is measured again */
+                T->tile_rows = T->use_rows; T->tile_mob = T->use_mob; T->since++; }
+            else { T->tile_rows = 0; T->tile_mob = 0; T->since = 0; }
+        }
         DEC_RESET(D);
         uint64_t F = eval_prog(t, q->prog, q->nprog, &D, w) & rowmask(t, w);
         if (q->xmode) F &= q->xmode == 1 ? q->xrows[w] : ~q->xrows[w];
@@ -805,7 +1108,12 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
         if (!F) continue;
         cnt += __builtin_popcountll(F);
         if (q->agg == A_COUNT) continue;
-        if (T) { mm_word(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total); continue; }
+        if (T) {
+            if (T->tile_mob) mm_mob_word(t, &D, w, (int)((w - w0) % TW), F, T);
+            else if (T->tile_rows) mm_rows_word(t, q, &D, w, F, T, tl, &total);
+            else if (MMTREE && T->kt_ok) mm_word_tree(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
+            else mm_word(t, q, &D, w, (int)((w - w0) % TW), F, T, tl, &total);
+            continue; }
         if (q->agg == A_LIN) {                           /* SUM = sum_j 2^j popcount(x_j & F) */
             for (int i = 0; i < q->nlin; i++) {
                 const uint64_t *x = decode(t, &D, q->lin_col[i], w); int64_t s = 0;
@@ -899,7 +1207,10 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             total += m;
         }
     }
-    if (T && w1 > w0) { uint64_t wb = w0 + (w1 - 1 - w0) / TW * TW; mm_flush(t, q, T, wb, w1 - wb, tl, &total); }
+    if (T && w1 > w0) { uint64_t wb = w0 + (w1 - 1 - w0) / TW * TW;
+        if (T->tile_mob) mm_flush_mob(t, q, T, wb, w1 - wb); else mm_flush(t, q, T, wb, w1 - wb, tl, &total); }
+    if (T && T->ntouched) mm_rows_flush(q, T, tl);
+    if (T && T->mob_dirty) mm_mob_finish(q, T, tl, &total);
     *ptotal += total; *pcnt += cnt;
 }
 
