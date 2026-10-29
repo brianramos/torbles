@@ -1454,6 +1454,126 @@ def _list_extract(x, i):
     return x[i - 1] if 0 < i <= len(x) else (x[i] if -len(x) <= i < 0 else None)
 
 
+# ------------------------------------------------------------------ arrays (ISO 6.24, 6.47) and multisets (6.43, 6.48)
+def _coll(t): return t.child if t.id in ("LIST", "MULTISET") and t.child is not None else T.NULL
+
+
+@scalar("__iso_array_elem", lambda a: (_coll(a[0].t), [None, T.BIGINT]))
+def _array_elem(a, i):
+    """a[i]: 1-based; an index outside 1 .. CARDINALITY(a) is an error (ISO: data exception - array element error)"""
+    if not 1 <= i <= len(a): return Err(f"data exception: array element error (index {i}, cardinality {len(a)})")
+    return a[i - 1]
+
+
+@scalar("list_slice array_slice", lambda a: (a[0].t, [None, T.BIGINT, T.BIGINT]))
+def _list_slice(x, a, b):
+    """x[a:b] (DuckDB): 1-based, both ends included, negative positions count from the end"""
+    n = len(x)
+    lo = a - 1 if a > 0 else (n + a if a < 0 else 0); hi = b if b >= 0 else n + b + 1
+    return x[max(lo, 0):max(hi, 0)]
+
+
+@scalar("trim_array", lambda a: (a[0].t, [None, T.BIGINT]))
+def _trim_array(a, n):
+    if not 0 <= n <= len(a): return Err(f"data exception: array element error (TRIM_ARRAY by {n} of {len(a)})")
+    return a[:len(a) - n]
+
+
+@scalar("__list_concat", lambda a: (T.supertype_all([x.t for x in a]), None))
+def _list_concat(*xs): return [v for x in xs for v in x]
+
+
+def _ms_typer(args):
+    t = args[0].t
+    if t.id == "LIST": return T.MULTISET(t.child), None
+    if t.id in ("MULTISET", "NULL"): return t if t.id == "MULTISET" else T.MULTISET(T.INTEGER), None
+    raise SqlError(f"a multiset is made from a collection, not {t}")
+
+
+scalar("__ms_from_list", _ms_typer)(lambda x: list(x))
+
+
+def _mkeys(m):
+    """element keys of a multiset (NULLs are not distinct from each other)"""
+    from collections import Counter
+    import sqlexec
+    return Counter(sqlexec.nkey(v) for v in m)
+
+
+@scalar("set __ms_set", lambda a: (a[0].t, None))
+def _ms_set(m):
+    import sqlexec
+    seen, out = set(), []
+    for v in m:
+        k = sqlexec.nkey(v)
+        if k not in seen: seen.add(k); out.append(v)
+    return out
+
+
+@scalar("element __ms_element", lambda a: (_coll(a[0].t), None))
+def _ms_element(m):
+    """ELEMENT(m): its only element; NULL when m is empty; an error past one (cardinality violation)"""
+    if len(m) == 0: return None
+    if len(m) > 1: return Err(f"data exception: cardinality violation (ELEMENT of {len(m)} elements)")
+    return m[0]
+
+
+@scalar("__ms_is_a_set", fixed(T.BOOLEAN))
+def _ms_is_a_set(m): return all(c == 1 for c in _mkeys(m).values())
+
+
+@scalar("__ms_member", lambda a: (T.BOOLEAN, [_coll(a[1].t) if a[1].t.id in ("LIST", "MULTISET") else None, None]), nulls="custom")
+def _ms_member(x, m):
+    """x MEMBER OF m (ISO 8.16)"""
+    if m is None: return None
+    if not m: return False
+    if x is None: return None
+    if any(v is not None and cmp_values(v, x) == 0 for v in m): return True
+    return None if any(v is None for v in m) else False
+
+
+@scalar("__ms_submultiset", fixed(T.BOOLEAN), nulls="custom")
+def _ms_submultiset(a, b):
+    """a SUBMULTISET OF b (ISO 8.17): each element of a matched to a distinct equal element of b"""
+    if a is None or b is None: return None
+    if len(a) > len(b): return False
+    ka, kb = _mkeys([v for v in a if v is not None]), _mkeys([v for v in b if v is not None])
+    if any(kb.get(k, 0) < c for k, c in ka.items()):
+        return None if (any(v is None for v in b) and sum(max(0, c - kb.get(k, 0)) for k, c in ka.items()) <= sum(1 for v in b if v is None)) else False
+    if any(v is None for v in a): return None
+    return True
+
+
+def _ms_op(op):
+    def f(a, b, mode="ALL"):
+        import sqlexec
+        if mode.upper() == "DISTINCT": a, b = _ms_set(a), _ms_set(b)
+        if op == "UNION": return list(a) + list(b)
+        kb = _mkeys(b)
+        out = []
+        for v in a:
+            k = sqlexec.nkey(v)
+            if op == "EXCEPT":
+                if kb.get(k, 0) > 0: kb[k] -= 1
+                else: out.append(v)
+            else:
+                if kb.get(k, 0) > 0: kb[k] -= 1; out.append(v)
+        return out
+    return f
+
+
+for _op in ("UNION", "EXCEPT", "INTERSECT"):
+    scalar(f"__ms_{_op.lower()}", lambda a: (T.supertype(a[0].t, a[1].t), None))(_ms_op(_op))
+
+
+@scalar("__ms_eq", fixed(T.BOOLEAN))
+def _ms_eq(a, b):
+    """multisets are equal when every element occurs as often in both (ISO 8.2)"""
+    if any(v is None for v in a) or any(v is None for v in b):
+        return None if len(a) == len(b) else False
+    return _mkeys(a) == _mkeys(b)
+
+
 # ================================================================== aggregates
 class AggDef:
     """an aggregate function. typer(arg types, params) -> result type. final(rows, params) computes it from the
@@ -1856,6 +1976,30 @@ def _string_agg(rows, p=()):
     sep = p[0] if p else ","
     if sep is None: sep = ""
     return sep.join(str(v) for (v,), w in rows for _ in range(w))
+
+
+@agg("collect", lambda ts, p=(): T.MULTISET(ts[0]))
+def _collect(rows, p=()):
+    """COLLECT(x): the multiset of the group's values (NULLs eliminated); NULL for no rows"""
+    if not rows: return None
+    return [v for (v,), w in rows for _ in range(w)]
+
+
+@agg("fusion", lambda ts, p=(): ts[0] if ts[0].id == "MULTISET" else T.MULTISET(_coll(ts[0])))
+def _fusion(rows, p=()):
+    """FUSION(m): the multiset union (ALL) of the group's multisets"""
+    if not rows: return None
+    return [x for (v,), w in rows for _ in range(w) for x in v]
+
+
+@agg("intersection", lambda ts, p=(): ts[0] if ts[0].id == "MULTISET" else T.MULTISET(_coll(ts[0])))
+def _intersection(rows, p=()):
+    """INTERSECTION(m): the multiset intersection (ALL) of the group's multisets"""
+    if not rows: return None
+    acc = None
+    for (v,), w in rows:
+        for _ in range(w): acc = list(v) if acc is None else _ms_op("INTERSECT")(acc, v)
+    return acc
 
 
 @agg("array_agg list", lambda ts, p=(): T.LIST(ts[0]), skip_nulls=False, ordered=True)

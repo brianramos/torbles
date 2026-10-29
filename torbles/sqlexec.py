@@ -243,10 +243,37 @@ def run(db, q, engine="alg"):
 
 def run_query(q, cx):
     if isinstance(q, I.Select): return run_select(q, cx)
+    if isinstance(q, I.TableFn): return run_tablefn(q, cx)
     if isinstance(q, I.SetOp): return run_setop(q, cx)
     if isinstance(q, I.Values): return run_values(q, cx)
     if isinstance(q, I.Recursive): return run_recursive(q, cx)
     raise SqlError(f"internal: cannot run {q!r}")
+
+
+def run_tablefn(q, cx):
+    """UNNEST(a, b, ...) [WITH ORDINALITY]: one row per element, the shorter collections padded with NULLs (ISO 7.6);
+    range / generate_series"""
+    one = Rel(1)
+    vals = []
+    for a in q.args:
+        v = ev(a, one, cx)[0]
+        if isinstance(v, Err): raise SqlError(v.msg)
+        vals.append(v)
+    if q.name == "unnest":
+        cols = [v if v is not None else [] for v in vals]
+        n = max((len(c) for c in cols), default=0)
+        rows = [tuple(c[i] if i < len(c) else None for c in cols) for i in range(n)]
+    else:
+        if any(v is None for v in vals): rows = []
+        else:
+            if len(vals) == 1: lo, hi, st = 0, vals[0], 1
+            elif len(vals) == 2: lo, hi, st = vals[0], vals[1], 1
+            else: lo, hi, st = vals
+            if st == 0: raise SqlError(f"{q.name}: the step cannot be 0")
+            if q.name == "generate_series": hi = hi + (1 if st > 0 else -1)
+            rows = [(v,) for v in range(lo, hi, st)]
+    if q.ordinality: rows = [r + (i + 1,) for i, r in enumerate(rows)]
+    return Relation(q.names, q.types, rows)
 
 
 def run_values(q, cx):
@@ -512,11 +539,13 @@ def subqueries_in(exprs):
 
 def outer_refs_into(q, bset):
     """columns of the bindings bset that query q (or its subqueries) reads as correlated references"""
-    found = {}
+    found, seen = {}, set()
     def vx(x):
         if isinstance(x, I.Outer) and x.col.b in bset: found[x.col.key()] = x.col
         if isinstance(x, I.Subq): vq(x.q)
     def vq(q):
+        if id(q) in seen: return                       # a recursive CTE reads itself
+        seen.add(id(q))
         if isinstance(q, I.Select):
             exprs = [x for x, _ in q.items] + list(q.group) + [q.where, q.having, q.qualify] + \
                     [o[0][1] for o in q.order if o[0][0] == "expr"] + [j.cond for j in join_conds(q.from_)] + (q.distinct_on and [d[1] for d in q.distinct_on if d[0] == "expr"] or [])
@@ -526,6 +555,8 @@ def outer_refs_into(q, bset):
                 if b.q is not None and not hasattr(b, "shared"): vq(b.q)
         elif isinstance(q, I.SetOp): vq(q.left); vq(q.right)
         elif isinstance(q, I.Recursive): vq(q.base); vq(q.step)
+        elif isinstance(q, I.TableFn):
+            for a in q.args: I.walk(a, vx)
     vq(q)
     return list(found.values())
 
@@ -1016,11 +1047,13 @@ def eval_subquery(e, rel, cx):
 
 def _outer_cols(e):
     """the enclosing queries' columns a correlated subquery reads"""
-    found = {}
+    found, seen = {}, set()
     def vx(x):
         if isinstance(x, I.Outer): found[x.col.key()] = x.col
         if isinstance(x, I.Subq): vq(x.q)
     def vq(q):
+        if id(q) in seen: return
+        seen.add(id(q))
         if isinstance(q, I.Select):
             exprs = [x for x, _ in q.items] + list(q.group) + [q.where, q.having, q.qualify] + \
                     [o[0][1] for o in q.order if o[0][0] == "expr"] + [j.cond for j in join_conds(q.from_)]
@@ -1030,6 +1063,8 @@ def _outer_cols(e):
                 if b.q is not None: vq(b.q)
         elif isinstance(q, I.SetOp): vq(q.left); vq(q.right)
         elif isinstance(q, I.Recursive): vq(q.base); vq(q.step)
+        elif isinstance(q, I.TableFn):
+            for a in q.args: I.walk(a, vx)
     vq(e.q)
     return list(found.values())
 
@@ -1050,6 +1085,7 @@ def _subq_result(e, r):
     if e.kind == "any":
         return [row[0] if len(row) == 1 else list(row) for row in r.rows]
     if e.kind == "match": return list(r.rows)
+    if e.kind == "array": return [row[0] for row in r.rows]
     raise SqlError(e.kind)
 
 
@@ -2083,6 +2119,9 @@ def run_general(s, bindings, need, aggs, cx):
         for c in I.cols_of(x): cols[c.key()] = c
     for sq in subqueries_in(allx):
         for c in outer_refs_into(sq.q, set(bindings)): cols[c.key()] = c
+    for b in bindings:                                 # lateral items: the columns of earlier items they read
+        if b.q is not None and not hasattr(b, "shared"):
+            for c in outer_refs_into(b.q, set(bindings)): cols[c.key()] = c
     per = {}
     for c in cols.values(): per.setdefault(c.b, {})[c.key()] = c
     # WHERE terms on one FROM item that is not on the NULL side of an outer join go down to that item
@@ -2106,8 +2145,48 @@ def run_general(s, bindings, need, aggs, cx):
 def _materialize(f, per, pushed, cx):
     if isinstance(f, I.Binding): return _mat_binding(f, per.get(f, {}), pushed.get(f, []), cx)
     L = _materialize(f.left, per, pushed, cx)
+    lb = set(block_bindings(f.left))
+    refs = {}
+    for rb in block_bindings(f.right):
+        if rb.q is not None and not hasattr(rb, "shared"):
+            for c in outer_refs_into(rb.q, lb): refs[c.key()] = c
+    if refs: return _lateral(f, L, list(refs.values()), per, pushed, cx)
     R = _materialize(f.right, per, pushed, cx)
     return _join(f, L, R, cx)
+
+
+def _lateral(j, L, refs, per, pushed, cx):
+    """a lateral join: the right side evaluated once per distinct tuple of the left columns it reads"""
+    if j.kind in ("right", "full"): raise SqlError("a LATERAL item cannot be on the left of a RIGHT / FULL join")
+    lv = [L.cols[c.key()] for c in refs]
+    groups = {}
+    for i in range(L.n): groups.setdefault(tuple(nkey(v[i]) for v in lv), []).append(i)
+    li, rc, rv = [], [], {}
+    for idx in groups.values():
+        cx.outers.append({c.key(): lv[x][idx[0]] for x, c in enumerate(refs)})
+        try: R = _materialize(j.right, per, pushed, cx)
+        finally: cx.outers.pop()
+        for k in R.cols: rv.setdefault(k, [None] * len(li))
+        for i in idx:
+            for r in range(R.n):
+                li.append(i); rc.append(R.cnt[r])
+                for k in rv: rv[k].append(R.cols[k][r] if k in R.cols else None)
+    cols = list(rv)
+    C = Rel(len(li))
+    for k, v in L.cols.items(): C.cols[k] = [v[i] for i in li]
+    for k, v in rv.items(): C.cols[k] = v
+    C.cnt = [L.cnt[i] * c for i, c in zip(li, rc)]
+    conds_on = _conjuncts(j.cond)
+    if conds_on:
+        keep = truth(ev(_and(conds_on), C, cx)); C = C.take(keep); li = [li[k] for k in keep]
+    if j.kind == "left":
+        hit = set(li)
+        extra = [i for i in range(L.n) if i not in hit]
+        if extra:
+            P = L.take(extra)
+            for k in cols: P.cols[k] = [None] * P.n
+            C = _concat([C, P])
+    return C
 
 
 def _mat_binding(b, cols, conds, cx):

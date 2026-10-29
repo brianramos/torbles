@@ -84,12 +84,15 @@ def tokenize(sql):
     return out
 
 
+_OPEN, _CLOSE = {"(": ")", "[": "]"}, {")": "(", "]": "["}
+
+
 def _match_paren(t, i):
-    """index of the ')' matching the '(' at i"""
+    """index of the ')' / ']' matching the '(' / '[' at i"""
     d = 0
     for j in range(i, len(t)):
-        if t[j].s == "(": d += 1
-        elif t[j].s == ")":
+        if t[j].s in _OPEN: d += 1
+        elif t[j].s in _CLOSE:
             d -= 1
             if d == 0: return j
     raise SqlError("unbalanced parentheses")
@@ -98,8 +101,8 @@ def _match_paren(t, i):
 def _match_open(t, j):
     d = 0
     for i in range(j, -1, -1):
-        if t[i].s == ")": d += 1
-        elif t[i].s == "(":
+        if t[i].s in _CLOSE: d += 1
+        elif t[i].s in _OPEN:
             d -= 1
             if d == 0: return i
     raise SqlError("unbalanced parentheses")
@@ -110,9 +113,12 @@ def _operand_back(t, j):
     i = j
     if t[i].k == "str" and i > 0 and t[i - 1].up() in ("DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL"):
         return i - 1                                    # a typed literal: TIMESTAMP '...'
-    if t[i].s == ")":
-        i = _match_open(t, i)
-        if i > 0 and t[i - 1].k in ("id", "qid") and t[i - 1].up() not in _KW_BREAK: i -= 1
+    while True:
+        if t[i].s in _CLOSE:
+            i = _match_open(t, i)
+            if i > 0 and t[i - 1].k in ("id", "qid") and t[i - 1].up() not in _KW_BREAK: i -= 1
+            elif i > 0 and t[i].s == "[" and t[i - 1].s in _CLOSE: i -= 1; continue        # f(x)[2], a[1][2]
+        break
     while i >= 2 and t[i - 1].s == "." and t[i - 2].k in ("id", "qid"): i -= 2
     while i >= 2 and t[i - 1].s == "::": i -= 2
     return i
@@ -121,13 +127,14 @@ def _operand_back(t, j):
 def _operand_fwd(t, i):
     """end index (exclusive) of the primary expression starting at token i"""
     j = i
-    if t[j].s == "(": j = _match_paren(t, j) + 1
+    if t[j].s in _OPEN: j = _match_paren(t, j) + 1
     elif t[j].k in ("id", "qid"):
         j += 1
         while j + 1 < len(t) and t[j].s == "." : j += 2
-        if j < len(t) and t[j].s == "(": j = _match_paren(t, j) + 1
+        if j < len(t) and t[j].s in _OPEN: j = _match_paren(t, j) + 1
     elif t[j].s in ("-", "+"): return _operand_fwd(t, j + 1)
     else: j += 1
+    while j < len(t) and t[j].s == "[": j = _match_paren(t, j) + 1       # subscripts
     while j + 1 < len(t) and t[j].s == "::": j += 2
     return j
 
@@ -292,10 +299,27 @@ def _extended_case(t, i):
     return out, e
 
 
+def _multiset_ops(t):
+    """a MULTISET INTERSECT b binds tighter than MULTISET UNION / EXCEPT (ISO 6.48); each becomes __ms_<op>(a, b, mode)"""
+    for ops in (("INTERSECT",), ("UNION", "EXCEPT")):
+        changed = True
+        while changed:
+            changed = False
+            for i in range(1, len(t) - 1):
+                if t[i].up() == "MULTISET" and t[i + 1].up() in ops:
+                    j = i + 2; mode = "ALL"
+                    if j < len(t) and t[j].up() in ("ALL", "DISTINCT"): mode = t[j].up(); j += 1
+                    a = _operand_back(t, i - 1); b = _operand_fwd(t, j)
+                    t[a:b] = tokenize(f"__ms_{t[i + 1].up().lower()}({_text(t, a, i)}, {_text(t, j, b)}, '{mode}')")
+                    changed = True; break
+    return t
+
+
 def iso_prepass(sql):
     """rewrite ISO syntax that DuckDB's grammar does not accept into calls of marker functions"""
     FLAGS.clear()
     t = tokenize(sql)
+    t = _multiset_ops(t)
     changed = True
     guard = 0
     while changed:
@@ -447,6 +471,35 @@ def iso_prepass(sql):
                     if _kw(t, i, *words):
                         t[i:i + len(words)] = [Tok("id", name)]; changed = True; break
                 if changed: break
+            # MULTISET [...] / MULTISET (<query>) / ARRAY (<query>)
+            if u == "MULTISET" and i + 1 < len(t) and t[i + 1].s == "[":
+                d = 0
+                for c in range(i + 1, len(t)):
+                    if t[c].s == "[": d += 1
+                    elif t[c].s == "]":
+                        d -= 1
+                        if d == 0: break
+                t[i:c + 1] = [Tok("id", "__ms_from_list"), Tok("op", "(")] + t[i + 1:c + 1] + [Tok("op", ")")]; changed = True; break
+            if u in ("MULTISET", "ARRAY") and i + 2 < len(t) and t[i + 1].s == "(" and t[i + 2].up() in ("SELECT", "WITH", "VALUES", "TABLE"):
+                c = _match_paren(t, i + 1)
+                t[i:c + 1] = [Tok("id", "__iso_ms_q" if u == "MULTISET" else "__iso_array_q"), Tok("op", "(")] + t[i + 1:c + 1] + [Tok("op", ")")]
+                changed = True; break
+            # x [NOT] MEMBER [OF] m, a [NOT] SUBMULTISET [OF] b, m IS [NOT] A SET (ISO 8.16 - 8.18)
+            if u in ("MEMBER", "SUBMULTISET") and i > 0:
+                neg = prev.up() == "NOT"
+                j = i + 1 + (1 if _kw(t, i + 1, "OF") else 0)
+                b = _operand_fwd(t, j)
+                start = i - 1 if neg else i
+                t[start:b] = _marker(neg, u.lower(), [_text(t, j, b)]); changed = True; break
+            if u == "IS" and (_kw(t, i + 1, "A", "SET") or _kw(t, i + 1, "NOT", "A", "SET")):
+                neg = t[i + 1].up() == "NOT"
+                t[i:i + (4 if neg else 3)] = _marker(neg, "aset", []); changed = True; break
+            # CAST(x AS <type> MULTISET)
+            if u == "CAST" and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                a = _top_kw(t, i + 2, c, "AS")
+                if a >= 0 and t[c - 1].up() == "MULTISET":
+                    t[i:c + 1] = tokenize(f"__ms_from_list(CAST({_text(t, i + 2, a)} AS {_text(t, a + 1, c - 1)}[]))"); changed = True; break
             # x IS [NOT] [NFC | NFD | NFKC | NFKD] NORMALIZED
             if u == "IS":
                 j = i + 1; neg = False
@@ -650,6 +703,17 @@ def make_func(name, args, extra=None):
     if name in _COLLATED: args = _collated_args(name, args)
     if name in F.BINARY and any(a.t.id == "BLOB" for a in args):         # binary strings: their own functions
         name = F.BINARY[name]; s = F.SCALARS[name]
+    if name in ("||", "concat") and any(a.t.id == "LIST" for a in args):    # array concatenation
+        name = "__list_concat"; s = F.SCALARS[name]
+    if name in ("=", "<>", "is_not_distinct", "is_distinct") and any(a.t.id == "MULTISET" for a in args):
+        eq = make_func("__ms_eq", args)                                        # multiset (in)equality
+        if name in ("is_not_distinct", "is_distinct"):
+            nn = make_and([make_func("is_not_null", [a]) for a in args])
+            both = make_and([make_func("is_null", [a]) for a in args])
+            eq = make_func("or", [both, make_and([nn, make_func("coalesce", [eq, I.Lit(False, T.BOOLEAN)])])])
+        return eq if name in ("=", "is_not_distinct") else make_func("not", [eq])
+    if name in ("<", "<=", ">", ">=") and any(a.t.id == "MULTISET" for a in args):
+        raise SqlError("multisets compare only for equality")
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
@@ -889,9 +953,8 @@ class Binder:
         if typ == "JOIN":
             left = self.bind_from(ft["left"], parent, out)
             nleft = len(out)
-            if ft.get("ref_type") == "DEPENDENT" or ft.get("is_lateral"):
-                raise SqlError("LATERAL joins are not supported")
-            right = self.bind_from(ft["right"], parent, out)
+            # the right item may read the columns of the items before it (LATERAL, ISO T491; also UNNEST(t.a))
+            right = self.bind_from(ft["right"], Scope(list(out), parent), out)
             kind = {"INNER": "inner", "LEFT": "left", "RIGHT": "right", "OUTER": "full", "FULL": "full",
                     "SEMI": "semi", "ANTI": "anti"}.get(ft.get("join_type", "INNER"), None)
             if kind is None: raise SqlError(f"join type {ft.get('join_type')} is not supported")
@@ -929,18 +992,26 @@ class Binder:
         fn = ft["function"]
         name = fn["function_name"].lower()
         args = [self.expr(a["expression"], Scope([], parent), Ctx()) for a in fn["arguments"]]
-        if name in ("range", "generate_series") and all(isinstance(a, I.Lit) for a in args):
-            vals = [a.v for a in args]
-            if len(vals) == 1: lo, hi, st = 0, vals[0], 1
-            elif len(vals) == 2: lo, hi, st = vals[0], vals[1], 1
-            else: lo, hi, st = vals
-            if name == "generate_series": hi = hi + (1 if st > 0 else -1)
-            rows = [[I.Lit(v, T.BIGINT)] for v in range(lo, hi, st)]
-            nm = (ft.get("column_name_alias") or [name])[0]
-            q = I.Values(rows, [T.BIGINT], [nm])
-            b = I.Binding(ft.get("alias") or name, [(nm, T.BIGINT, False)], q=q)
-            out.append(b); return b
-        raise SqlError(f"table function {name} is not supported")
+        alias = list(ft.get("column_name_alias") or [])
+        ordinality = ft.get("with_ordinality") in ("WITH_ORDINALITY", True)
+        if name in ("range", "generate_series"):
+            if not 1 <= len(args) <= 3: raise SqlError(f"{name} takes 1 to 3 arguments")
+            args = [cast_to(a, T.BIGINT) if a.t.integer or a.t.id == "NULL" else a for a in args]
+            if any(not a.t.integer for a in args): raise SqlError(f"{name} of {', '.join(str(a.t) for a in args)} is not supported")
+            names, types = [name], [T.BIGINT]
+        elif name == "unnest":                       # UNNEST(collection, ...) [WITH ORDINALITY] (ISO 7.6)
+            if not args: raise SqlError("UNNEST needs a collection")
+            for a in args:
+                if a.t.id not in ("LIST", "MULTISET", "NULL"): raise SqlError(f"UNNEST of {a.t}: an array or a multiset is needed")
+            names = ["unnest"] if len(args) == 1 else [f"unnest{k + 1}" for k in range(len(args))]
+            types = [a.t.child if a.t.id != "NULL" else T.INTEGER for a in args]
+        else: raise SqlError(f"table function {name} is not supported")
+        if ordinality: names, types = names + ["ordinality"], types + [T.BIGINT]
+        names = alias + names[len(alias):]
+        if len(names) != len(types): raise SqlError(f"{name}: {len(types)} column(s), {len(alias)} name(s) given")
+        q = I.TableFn(name, args, names, types, ordinality)
+        b = I.Binding(ft.get("alias") or name, [(nm, t, True) for nm, t in zip(names, types)], q=q)
+        out.append(b); return b
 
     # ------------------------------------------------------------ SELECT
     def bind_select(self, node, parent):
@@ -1212,12 +1283,22 @@ class Binder:
             q = self.bind_query(sq["subquery"]["node"], sc)
             if len(q_columns(q)) != len(x.args): raise SqlError("MATCH: the row and the subquery have different degrees")
             return I.Subq("match", q, T.BOOLEAN, x, (kind, bool(uniq)), correlated=_correlated(q))
+        if name == "member":
+            return self.func("__ms_member", [self.expr(left, sc, ctx), self.expr(arg(0), sc, ctx)])
+        if name == "submultiset":
+            return self.func("__ms_submultiset", [self.expr(left, sc, ctx), self.expr(arg(0), sc, ctx)])
+        if name == "aset":
+            return self.func("__ms_is_a_set", [self.expr(left, sc, ctx)])
         raise SqlError(f"internal: unknown ISO predicate {name}")
 
     def type_of(self, te):
         name = te["type_name"]
         if name.lower() == "list":
             return T.LIST(self.type_of(te["children"][0]))
+        if name.lower() == "array":                            # <type> ARRAY [n]: an array of at most n elements
+            ch = te["children"]
+            n = int(ch[1]["literal"]["text"]) if len(ch) > 1 and ch[1].get("class") == "CONSTANT" else None
+            return T.LIST(self.type_of(ch[0]), n if n and n > 0 else None)
         args = []
         for ch in te.get("children") or []:
             if ch.get("class") == "CONSTANT": args.append(int(ch["literal"]["text"]))
@@ -1283,7 +1364,12 @@ class Binder:
             return self.func("not", [r]) if t == "COMPARE_NOT_IN" else r
         if t == "OPERATOR_COALESCE": return self.func("coalesce", [self.expr(k, sc, ctx) for k in kids])
         if t == "OPERATOR_NULLIF": return self.func("nullif", [self.expr(k, sc, ctx) for k in kids])
-        if t in ("ARRAY_EXTRACT",): return self.func("list_extract", [self.expr(k, sc, ctx) for k in kids])
+        if t == "ARRAY_EXTRACT":
+            a, i = (self.expr(k, sc, ctx) for k in kids)
+            if a.t.id in ("LIST", "MULTISET"): return self.func("__iso_array_elem", [a, i])     # ISO: an index past the end is an error
+            return self.func("list_extract", [a, i])
+        if t == "ARRAY_CONSTRUCTOR": return self.func("list_value", [self.expr(k, sc, ctx) for k in kids])
+        if t == "ARRAY_SLICE": return self.func("list_slice", [self.expr(k, sc, ctx) for k in kids])
         if t == "GROUPING_FUNCTION":
             if not ctx.agg: raise SqlError("GROUPING() is only allowed in the SELECT list, HAVING and ORDER BY of a grouped query")
             return I.Grouping([self.expr(k, sc, ctx) for k in kids])
@@ -1303,6 +1389,16 @@ class Binder:
         if name == "__iso_unique":
             q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
             return I.Subq("unique", q, T.BOOLEAN, correlated=_correlated(q))
+        if name in ("__iso_array_q", "__iso_ms_q"):                    # ARRAY (<query>) / MULTISET (<query>)
+            q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
+            cols = q_columns(q)
+            if len(cols) != 1: raise SqlError("ARRAY / MULTISET (<query>): the query must have one column")
+            t = T.LIST(cols[0][1]) if name == "__iso_array_q" else T.MULTISET(cols[0][1])
+            return I.Subq("array", q, t, correlated=_correlated(q))
+        if name == "array_max_cardinality":
+            a = self.expr(raw[0]["expression"], sc, ctx)
+            if a.t.id != "LIST": raise SqlError(f"ARRAY_MAX_CARDINALITY needs an array, not {a.t}")
+            return I.Lit(a.t.p, T.BIGINT)
         if name == "__iso_sym": raise SqlError("BETWEEN SYMMETRIC misplaced")
         if name in ("__iso_ties", "__iso_pct"): return I.Func(name, self.args_of(e, sc, ctx), T.BIGINT)
         if name == "grouping" or name == "grouping_id":
@@ -1538,6 +1634,7 @@ def q_columns(q):
     if isinstance(q, I.SetOp): return q.items
     if isinstance(q, I.Values): return list(zip(q.names, q.types))
     if isinstance(q, I.Recursive): return [(c, t) for c, t, _ in q.binding.cols]
+    if isinstance(q, I.TableFn): return list(zip(q.names, q.types))
     raise SqlError(f"not a query: {q!r}")
 
 
@@ -1567,6 +1664,8 @@ def _correlated(q):
                     if f.cond is not None: I.walk(f.cond, visit_expr)
                 elif isinstance(f, I.Binding) and f.q is not None and not hasattr(f, "shared"): visit_q(f.q)
         elif isinstance(q, I.SetOp): visit_q(q.left); visit_q(q.right)
+        elif isinstance(q, I.TableFn):
+            for a in q.args: I.walk(a, visit_expr)
     visit_q(q)
     return bool(found)
 

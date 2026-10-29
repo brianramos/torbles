@@ -195,5 +195,43 @@ expect("SELECT X'6162' LIKE X'6125', X'6162' LIKE X'5F5F5F', hex(X'0aff'), unhex
        "OVERLAY(X'010203' PLACING X'ff' FROM 2), CAST(X'00' AS BINARY VARYING(3)), CAST('x' AS CHARACTER LARGE OBJECT), CAST(X'01' AS BINARY LARGE OBJECT)",
        [(True, False, "0AFF", b"\n\xff", b"\xc3\xa9", "é", b"\x01\xff\x03", b"\x00", "x", b"\x01")])
 
+print("== arrays, multisets, UNNEST, LATERAL")
+expect("SELECT ARRAY[1, 2], ARRAY[1] || ARRAY[2, 3], CARDINALITY(ARRAY[1, 2, 3]), (ARRAY[1, 2])[2], TRIM_ARRAY(ARRAY[1, 2, 3], 2), "
+       "ARRAY_MAX_CARDINALITY(CAST(ARRAY[1] AS INTEGER ARRAY[10])), ARRAY(SELECT gid FROM g WHERE gid < 3 ORDER BY gid DESC)",
+       [([1, 2], [1, 2, 3], 3, 2, [1], 10, [2, 1, 0])])
+refuses("SELECT (ARRAY[1, 2])[3]", ["array element error"])
+refuses("SELECT CAST(ARRAY[1, 2, 3] AS INTEGER ARRAY[2])", ["right truncation"])
+expect("SELECT MULTISET[1, 2, 2], CARDINALITY(MULTISET[1, 2, 2]), SET(MULTISET[1, 2, 2]), ELEMENT(MULTISET[7]), ELEMENT(MULTISET(SELECT gid FROM g WHERE gid = 5)), "
+       "MULTISET[1, 2] = MULTISET[2, 1], MULTISET[1, 2] <> MULTISET[2, 2], CAST(ARRAY[1, 2] AS INTEGER MULTISET) = MULTISET[2, 1]",
+       [([1, 2, 2], 3, [1, 2], 7, 5, True, True, True)])
+refuses("SELECT ELEMENT(MULTISET[1, 2])", ["cardinality violation"])
+expect("SELECT 2 MEMBER OF MULTISET[1, 2], 3 NOT MEMBER MULTISET[1, 2], MULTISET[1, 1] SUBMULTISET OF MULTISET[1, 2, 1], "
+       "MULTISET[1, 1] SUBMULTISET MULTISET[1, 2], MULTISET[1, 2] IS A SET, MULTISET[1, 1] IS NOT A SET, NULL MEMBER OF MULTISET[1], 1 MEMBER OF MULTISET[NULL, 2]",
+       [(True, True, True, False, True, True, None, None)])
+expect("SELECT MULTISET[1, 1, 2] MULTISET UNION MULTISET[2, 3], MULTISET[1, 1, 2] MULTISET UNION DISTINCT MULTISET[2, 3], "
+       "MULTISET[1, 1, 2] MULTISET EXCEPT MULTISET[1], MULTISET[1, 1, 2] MULTISET EXCEPT DISTINCT MULTISET[1], "
+       "MULTISET[1, 1, 2] MULTISET INTERSECT ALL MULTISET[1, 1, 1], MULTISET[1] MULTISET UNION MULTISET[1, 1, 2] MULTISET INTERSECT MULTISET[1]",
+       [([1, 1, 2, 2, 3], [1, 2, 2, 3], [1, 2], [2], [1, 1], [1, 1])], "MULTISET UNION / EXCEPT / INTERSECT (INTERSECT binds tighter)")
+cnt = tdf[tdf.v < 3].groupby("k").size()
+got = db.sql("SELECT k, CARDINALITY(COLLECT(v)), CARDINALITY(SET(COLLECT(v))), CARDINALITY(FUSION(MULTISET[v, v])), INTERSECTION(MULTISET[1, v]) "
+             "FROM t WHERE v < 3 GROUP BY k ORDER BY k").rows
+from collections import Counter
+def inter(vs):
+    acc = None
+    for v in vs: acc = Counter([1, v]) if acc is None else acc & Counter([1, v])
+    return acc
+check([(k, c) for k, c, *_ in got] == [(int(k), int(c)) for k, c in cnt.items()] and all(f == 2 * c for _, c, _, f, _ in got)
+      and all(Counter(x) == inter(tdf[(tdf.v < 3) & (tdf.k == k)].v.tolist()) for k, _, _, _, x in got)
+      and all(d == len(set(tdf[(tdf.v < 3) & (tdf.k == k)].v)) for k, _, d, _, _ in got),
+      "COLLECT, FUSION, INTERSECTION per group", str(got[:3]))
+for q in ["SELECT * FROM unnest([10, 20]) WITH ORDINALITY AS u(x, n)",
+          "SELECT g.gid, u.x FROM g, unnest([g.gid, g.gid * 10]) AS u(x) WHERE g.gid < 4 ORDER BY 1, 2",
+          "SELECT g.gid, s.c FROM g, LATERAL (SELECT count(*) AS c, sum(v) AS sv FROM t WHERE t.k = g.gid AND t.v > g.gid) s ORDER BY 1",
+          "SELECT g.gid, s.b FROM g LEFT JOIN LATERAL (SELECT g.gid * 2 AS b WHERE g.gid % 3 = 0) s ON TRUE ORDER BY 1",
+          "SELECT g.gid, s.v FROM g CROSS JOIN LATERAL (SELECT v FROM t WHERE t.k = g.gid ORDER BY v DESC, id LIMIT 2) s ORDER BY 1, 2",
+          "SELECT k, x FROM (SELECT k, list(v ORDER BY v) AS a FROM t WHERE v < 2 GROUP BY k) q, unnest(q.a) AS u(x) ORDER BY 1, 2"]:
+    vs_duckdb(q)
+expect("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ARRAY['a']) AS u(x, y)", [(1, "a"), (2, None), (3, None)], "UNNEST of several collections (ISO: padded)")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

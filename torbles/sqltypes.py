@@ -31,6 +31,7 @@ class SqlType:
     def __repr__(self):
         if self.id == "DECIMAL": return f"DECIMAL({self.p},{self.s})"
         if self.id == "LIST": return f"{self.child!r}[]"
+        if self.id == "MULTISET": return f"{self.child!r} MULTISET"
         if self.id in _DISPLAY: return _DISPLAY[self.id]
         if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
@@ -66,7 +67,8 @@ UTINYINT, USMALLINT, UINTEGER, UBIGINT, UHUGEINT = (SqlType(x) for x in ("UTINYI
 FLOAT, DOUBLE, VARCHAR, DATE, TIME, TIMESTAMP, INTERVAL, NULL, BLOB = (SqlType(x) for x in ("FLOAT", "DOUBLE", "VARCHAR", "DATE", "TIME", "TIMESTAMP", "INTERVAL", "NULL", "BLOB"))
 TIMESTAMPTZ, TIMETZ = SqlType("TIMESTAMPTZ"), SqlType("TIMETZ")
 def DECIMAL(p=18, s=3): return SqlType("DECIMAL", min(int(p), 38), int(s))
-def LIST(t): return SqlType("LIST", child=t)
+def LIST(t, maxcard=None): return SqlType("LIST", p=maxcard, child=t)
+def MULTISET(t): return SqlType("MULTISET", child=t)
 
 _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYINT": "TINYINT", "INT1": "TINYINT",
           "SMALLINT": "SMALLINT", "INT2": "SMALLINT", "SHORT": "SMALLINT", "INTEGER": "INTEGER", "INT": "INTEGER", "INT4": "INTEGER",
@@ -239,6 +241,7 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
     if a.id == "VARCHAR" or b.id == "VARCHAR": return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
+    if a.id == "MULTISET" and b.id == "MULTISET": return MULTISET(supertype(a.child, b.child))
     if a.id == "BOOLEAN" and b.numeric: return b
     if b.id == "BOOLEAN" and a.numeric: return a
     raise SqlError(f"cannot combine types {a} and {b}")
@@ -613,8 +616,12 @@ def _cast(v, src, dst, err):
         if isinstance(v, (bytes, bytearray)): return bytes(v)
         if isinstance(v, str): return parse_blob(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to BLOB")
-    if d == "LIST":
-        if isinstance(v, list): return [cast_value(x, src.child if src is not None and src.id == "LIST" else None, dst.child, err) for x in v]
+    if d in ("LIST", "MULTISET"):
+        if isinstance(v, list):
+            out = [cast_value(x, src.child if src is not None and src.id in ("LIST", "MULTISET") else None, dst.child, err) for x in v]
+            if d == "LIST" and dst.p is not None and len(out) > dst.p:
+                raise SqlError(f"data exception: array data, right truncation ({len(out)} elements for {dst.child} ARRAY[{dst.p}])")
+            return out
         raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
     if d == "NULL": return None
     raise SqlError(f"cast to {dst} is not supported")

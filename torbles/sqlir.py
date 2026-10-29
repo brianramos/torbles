@@ -289,6 +289,13 @@ class Values:
     def __init__(self, rows, types, names): self.rows, self.types, self.names = rows, types, names
 
 
+class TableFn:
+    """a table function in FROM: UNNEST(collection, ...) [WITH ORDINALITY], range / generate_series; its arguments
+    may read columns of the FROM items before it (a lateral reference)"""
+    def __init__(self, name, args, names, types, ordinality=False):
+        self.name, self.args, self.names, self.types, self.ordinality = name, args, names, types, ordinality
+
+
 class Recursive:
     """WITH RECURSIVE: base UNION [ALL] step, step reading the binding itself"""
     def __init__(self, binding, base, step, all_): self.binding, self.base, self.step, self.all = binding, base, step, all_
