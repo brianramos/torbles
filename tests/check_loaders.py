@@ -65,8 +65,11 @@ try:
     check(not db6.meta["sales"]["foreign_keys"], "without declarations or infer_keys, no keys are guessed")
     # 5. refusals and notes
     nul = sales.copy().astype({"units": "float"}); nul.loc[5, "units"] = None
-    try: torbles.from_frames({"store": store, "sales": nul}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"}); check(False, "NULLs refused")
-    except torbles.LoadError as e: check("NULL" in str(e) and "fill_nulls" in str(e), "NULL values refused, with the fill_nulls hint")
+    dbn = torbles.from_frames({"store": store, "sales": nul}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"},
+                              types={"sales.units": "INTEGER"})
+    check("units" in dbn["sales"].nullable, "a column with NULLs gets a validity plane")
+    check(dbn.sql("SELECT count(units), sum(units), count(*) FROM sales").rows[0] ==
+          (len(sales) - 1, int(sales.units.sum()) - int(sales.units[5]), len(sales)), "NULLs skipped by COUNT(x) and SUM(x) (SQL)")
     db7 = torbles.from_frames({"store": store, "sales": nul}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"}, fill_nulls={"sales.units": 0},
                               types={"sales.units": "INTEGER", "sales.amount": "DECIMAL(8,2)"})
     q7 = db7.query(db7["sales"]).sum(db7["sales"].units)

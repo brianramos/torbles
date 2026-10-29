@@ -153,8 +153,12 @@ def _rx_args(t, a, b, name):
     return f"__iso_substring_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {occ or '1'})"
 
 
+FLAGS = {}
+
+
 def iso_prepass(sql):
     """rewrite ISO syntax that DuckDB's grammar does not accept into calls of marker functions"""
+    FLAGS.clear()
     t = tokenize(sql)
     changed = True
     guard = 0
@@ -276,9 +280,9 @@ def iso_prepass(sql):
                 if e < len(t) and t[e].up() == "ESCAPE":
                     f_end = _operand_fwd(t, e + 1); args.append(_text(t, e + 1, f_end)); e = f_end
                 t[i + 2:e] = tokenize(f"__iso_similar_pat({', '.join(args)})"); changed = True; break
-            # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME
+            # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME (the binder keeps the common columns only)
             if u == "CORRESPONDING":
-                t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; changed = True; break
+                t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True; changed = True; break
     return " ".join(x.s for x in t)
 
 
@@ -416,8 +420,8 @@ class Ctx:
 
 
 class Binder:
-    def __init__(self, db, text=""):
-        self.db, self.text = db, text
+    def __init__(self, db, text="", flags=None):
+        self.db, self.text, self.flags = db, text, dict(flags or {})
         self.ctes = []                 # stack of {name: CTE}
         self.subqueries = []
 
@@ -518,6 +522,9 @@ class Binder:
             for q in qs:
                 for n, _ in q_columns(q):
                     if n.lower() not in [x.lower() for x in names]: names.append(n)
+            if self.flags.get("corresponding"):            # ISO: the columns every operand has, in the first's order
+                names = [n for n in names if all(n.lower() in [m.lower() for m, _ in q_columns(q)] for q in qs)]
+                if not names: raise SqlError("CORRESPONDING: the operands have no column name in common")
             qs = [_project_by_name(q, names) for q in qs]
             op = "UNION"
         else:
@@ -935,6 +942,9 @@ class Binder:
             if not ctx.agg: raise SqlError("GROUPING() is only allowed in the SELECT list, HAVING and ORDER BY of a grouped query")
             return I.Grouping(self.args_of(e, sc, ctx))
         if name == "grouping_function": return I.Grouping(self.args_of(e, sc, ctx))
+        if name == "normalize" and len(raw) == 2 and raw[1]["expression"]["class"] == "COLUMN_REF" \
+                and raw[1]["expression"]["column_names"][-1].upper() in ("NFC", "NFD", "NFKC", "NFKD"):
+            return self.func("normalize", [self.expr(raw[0]["expression"], sc, ctx), I.Lit(raw[1]["expression"]["column_names"][-1].upper(), T.VARCHAR, True)])
         args = self.args_of(e, sc, ctx)
         if name == "typeof":
             lit = I.Lit(str(args[0].t) if args[0].t.id != "NULL" else '"NULL"', T.VARCHAR)
@@ -1034,7 +1044,7 @@ class Binder:
         ign = bool(e.get("ignore_nulls"))
         from_last = False
         if name == "__iso_nth_value_last": name, kind, from_last = "nth_value", "nth_value", True
-        if kind is None or e["type"] == "WINDOW_AGGREGATE":
+        if (kind is None or e["type"] == "WINDOW_AGGREGATE") and not from_last:
             aname = _AGG_ALIAS.get(name, name)
             if aname not in F.AGGS: raise SqlError(f"unknown window function {name}")
             params = ()
@@ -1192,8 +1202,9 @@ def _first_col(x, gk):
 def bind(db, sql):
     """SQL text -> [bound statement]"""
     nodes, text = parse(sql)
+    flags = dict(FLAGS)
     out = []
     for n in nodes:
-        b = Binder(db, text)
+        b = Binder(db, text, flags)
         out.append(b.bind_statement(n))
     return out

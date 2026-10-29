@@ -48,6 +48,11 @@ run "sums and group codes past 64 bits"           python3 tests/check_wide.py
 run "  ... with the row kernel on every tile"     env TORBLES_MM_ROWS=2 python3 tests/check_wide.py 20000
 run "  ... with plane popcounts only"             env TORBLES_MM_ROWS=0 TORBLES_FACTOR=0 python3 tests/check_wide.py 20000
 run "differential fuzzing vs DuckDB (40 cases)"   python3 -m torbles.fuzz --seed 2026 --cases 40
+echo "== SQL (db.sql and the Python API)"
+run "MIN/MAX by plane elimination, row bitmaps"  python3 tests/check_minmax.py
+run "SQL vs DuckDB, ISO forms, Python API, fuzzing" python3 tests/check_sql.py
+run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_sql.py
+run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
 echo "== GROUP BY modes"
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py

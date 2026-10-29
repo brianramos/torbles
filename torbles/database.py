@@ -787,7 +787,7 @@ def load(path, validate=True, con=None):
             side = algq.lib.at_load((base + "." + _fname(c) + ".side.tbl").encode(), ctypes.byref(err))
             if not side: raise LoadError(f"{name}.{c}: cannot load its sidecar")
             rank = np.load(base + "." + _fname(f"rank:{c}") + ".npy")
-            flagcol = t.wide[c.split("#")[0]][2] if c.endswith("#hi") else None
+            flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
             algq.lib.at_set_virtual(t.at, t.cols.index(c), t.cols.index(flagcol), side, rank.ctypes.data)
             t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
         # codecs

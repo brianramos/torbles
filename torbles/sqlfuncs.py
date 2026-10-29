@@ -266,7 +266,10 @@ def _cmp_typer(args):
 
 
 def cmp_values(a, b):
-    """-1 / 0 / 1 for two non-NULL values of one type (NaN equals NaN and is the largest)"""
+    """-1 / 0 / 1 for two non-NULL values of one type (NaN equals NaN and is the largest; a DATE meets a TIMESTAMP
+    as its midnight)"""
+    if isinstance(a, _dt.date) and isinstance(b, _dt.date) and isinstance(a, _dt.datetime) != isinstance(b, _dt.datetime):
+        a, b = _to_dt(a), _to_dt(b)
     if isinstance(a, float) or isinstance(b, float):
         an, bn = a != a, b != b
         if an or bn: return 0 if an and bn else (1 if an else -1)

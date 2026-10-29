@@ -1556,7 +1556,7 @@ static void pt_query_part(const ptable_t *t, const qplan_t *q, uint64_t ra, uint
             total += mv;
         }
     }
-    *ptotal += total; *pcnt += cnt; *ptw += tw;
+    *ptotal += total; *pcnt += cnt; *ptw += tw; *pemin = emin; *pemax = emax;
 }
 
 /* ---------------------------------------------------------------- multithreading
