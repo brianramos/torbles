@@ -14,7 +14,7 @@ NVCC ?= $(shell command -v nvcc 2>/dev/null || echo /usr/local/cuda/bin/nvcc)
 PY ?= python3
 SF ?= 1
 T := torbles
-export PYTHONPATH := $(CURDIR)/torbles:$(CURDIR)/tests
+export PYTHONPATH := $(CURDIR):$(CURDIR)/torbles:$(CURDIR)/tests
 
 all: $(T)/libalg.so $(T)/libgpu_emu.so
 

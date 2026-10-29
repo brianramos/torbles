@@ -73,7 +73,7 @@ class Database:
                 p = str(source); low = p.lower()
                 fn = "read_parquet" if ".parquet" in low or low.endswith(".pq") else \
                      "read_json_auto" if low.endswith((".json", ".ndjson", ".jsonl")) else "read_csv_auto"
-                self.con.execute(f"CREATE OR REPLACE TABLE {_q(name)} AS SELECT * FROM {fn}('{p.replace(chr(39), chr(39) * 2)}')")
+                self.con.execute(f"CREATE OR REPLACE TABLE {self._t(name)} AS SELECT * FROM {fn}('{p.replace(chr(39), chr(39) * 2)}')")
             elif hasattr(source, "create") and hasattr(source, "query") and hasattr(source, "columns"):
                 source.create(name)                                      # a DuckDB relation
             else:
@@ -81,19 +81,30 @@ class Database:
                     import pandas as pd; source = pd.DataFrame(source)
                 tmp = f"__torbles_src_{len(self._add)}"
                 self.con.register(tmp, source)
-                self.con.execute(f"CREATE OR REPLACE TABLE {_q(name)} AS SELECT * FROM {_q(tmp)}")
+                self.con.execute(f"CREATE OR REPLACE TABLE {self._t(name)} AS SELECT * FROM {_q(tmp)}")
                 self.con.unregister(tmp)
         self._add[name] = dict(primary_key=primary_key, foreign_keys=dict(foreign_keys or {}), columns=columns)
         return self
 
     # ------------------------------------------------------------------ build
-    def build(self, infer_keys=False, fill_nulls=None, keep_plain=False, threads=None, verbose=False):
-        """Read every added table, design the keys, build the torbles. Returns self."""
+    def build(self, infer_keys=False, fill_nulls=None, keep_plain=False, threads=None, verbose=False, types=None):
+        """Read every added table, design the keys, build the torbles. Returns self.
+        types: {"table.column": "SQL type"} loads a column as another type (e.g. a DOUBLE amount as DECIMAL(18, 2), to
+        sum it exactly); fill_nulls: {"table.column": value}; infer_keys: guess undeclared keys (reported in notes)."""
         t0 = time.perf_counter()
         if threads: algq.set_build_threads(threads); algq.set_threads(threads)
         con, names = self.con, list(self._add)
         fill = dict(fill_nulls or {})
+        self._src = {}
         cols = {n: self._columns(n) for n in names}
+        for spec, typ in (types or {}).items():                      # typed copies of the tables with overrides
+            t, _, c = spec.partition(".")
+            if t not in cols or c not in cols[t]: raise LoadError(f"types: no column {spec}")
+            cols[t][c] = typ
+        for t in {spec.partition(".")[0] for spec in (types or {})}:
+            sel = ", ".join(f"CAST({_q(c)} AS {ty}) AS {_q(c)}" if f"{t}.{c}" in types else _q(c) for c, ty in cols[t].items())
+            self.con.execute(f"CREATE OR REPLACE TEMP TABLE {_q('__torbles_typed_' + t)} AS SELECT {sel} FROM {_q(t)}")
+            self._src[t] = _q("__torbles_typed_" + t)
         pks, fks = self._keys(names, cols, infer_keys)
         dims = {d for f in fks.values() for d, _ in f.values()}
         for d in dims:
@@ -145,6 +156,10 @@ class Database:
         self._designs = designs
         return self
 
+    def _t(self, name):
+        """the SQL name to read a source table from"""
+        return getattr(self, "_src", {}).get(name, _q(name))
+
     def _columns(self, name):
         rows = self.con.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ? "
                                 "ORDER BY ordinal_position", [name]).fetchall()
@@ -192,9 +207,9 @@ class Database:
                     for d, dk in pks.items():
                         if d == n or not _name_match(c, dk, d): continue
                         if _base_type(cols[d][dk]) != _base_type(typ): continue
-                        miss = self.con.execute(f"SELECT count(*) FROM (SELECT DISTINCT {_q(c)} AS v FROM {_q(n)} WHERE {_q(c)} IS NOT NULL) x "
-                                                f"WHERE NOT EXISTS (SELECT 1 FROM {_q(d)} y WHERE y.{_q(dk)} = x.v)").fetchone()[0]
-                        tot = self.con.execute(f"SELECT count(DISTINCT {_q(c)}) FROM {_q(n)}").fetchone()[0]
+                        miss = self.con.execute(f"SELECT count(*) FROM (SELECT DISTINCT {_q(c)} AS v FROM {self._t(n)} WHERE {_q(c)} IS NOT NULL) x "
+                                                f"WHERE NOT EXISTS (SELECT 1 FROM {self._t(d)} y WHERE y.{_q(dk)} = x.v)").fetchone()[0]
+                        tot = self.con.execute(f"SELECT count(DISTINCT {_q(c)}) FROM {self._t(n)}").fetchone()[0]
                         if tot and miss <= 0.01 * tot:
                             fks[n][c] = (d, dk); self.notes.append(f"{n}.{c} -> {d}.{dk} (inferred: names and values match)")
                             break
@@ -244,7 +259,7 @@ class Database:
         cands = [c for c, t in cols.items() if _base_type(t) in ("int", "str", "date")]
         cands.sort(key=lambda c: (not re.search(r"(key|_?id)$", c, re.I), list(cols).index(c)))
         for c in cands[:6]:
-            tot, nn, d = self.con.execute(f"SELECT count(*), count({_q(c)}), count(DISTINCT {_q(c)}) FROM {_q(n)}").fetchone()
+            tot, nn, d = self.con.execute(f"SELECT count(*), count({_q(c)}), count(DISTINCT {_q(c)}) FROM {self._t(n)}").fetchone()
             if tot and nn == tot and d == tot and re.search(r"(key|id)$", c, re.I): return c
         return None
 
@@ -254,7 +269,7 @@ class Database:
             sel.append(f"count({_q(c)})")
             r = _raw(c, typ)
             if r is not None and c not in fk: sel += [f"min({r})", f"max({r})"]
-        row = self.con.execute(f"SELECT {', '.join(sel)} FROM {_q(name)}").fetchone()
+        row = self.con.execute(f"SELECT {', '.join(sel)} FROM {self._t(name)}").fetchone()
         st = dict(rows=int(row[0]), nonnull={}, min={}, max={}); i = 1
         for c, typ in cols.items():
             st["nonnull"][c] = int(row[i]); i += 1
@@ -266,7 +281,7 @@ class Database:
                     raise LoadError(f"{name}.{c} has {nulls:,} NULL value(s): NULLs are not supported yet. Pass "
                                     f"fill_nulls={{'{name}.{c}': value}} or leave the column out (columns=[...])")
         if pk is not None:
-            d, nn = self.con.execute(f"SELECT count(DISTINCT {_q(pk)}), count({_q(pk)}) FROM {_q(name)}").fetchone()
+            d, nn = self.con.execute(f"SELECT count(DISTINCT {_q(pk)}), count({_q(pk)}) FROM {self._t(name)}").fetchone()
             if d != st["rows"] or nn != st["rows"]:
                 raise LoadError(f"{name}.{pk} is not a primary key: {st['rows'] - nn} NULL(s), {nn - d} duplicate(s)")
         return st
@@ -281,17 +296,17 @@ class Database:
             lit = _fill_literal(typ, fv); col = f"coalesce({col}, {lit})"
         if base in ("str", "float"):
             if base == "float":
-                nan = self.con.execute(f"SELECT count(*) FROM {_q(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
+                nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
                 if nan: return None, None, f"{nan} NaN / infinite value(s)"
-            vals = [r[0] for r in self.con.execute(f"SELECT DISTINCT {col} AS v FROM {_q(name)} ORDER BY v").fetchall()]
+            vals = [r[0] for r in self.con.execute(f"SELECT DISTINCT {col} AS v FROM {self._t(name)} ORDER BY v").fetchall()]
             if base == "float": vals = [float(v) for v in vals]
-            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {col}) - 1 AS UINTEGER) AS c FROM {_q(name)}"
+            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {col}) - 1 AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
             return np.asarray(codes, np.uint64), ct.DictCodec(vals, "VARCHAR" if base == "str" else "DOUBLE"), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
         lo, hi = st["min"].get(c), st["max"].get(c)
         if fv is not None:
-            lo2, hi2 = self.con.execute(f"SELECT min({raw}), max({raw}) FROM {_q(name)}").fetchone(); lo, hi = lo2, hi2
+            lo2, hi2 = self.con.execute(f"SELECT min({raw}), max({raw}) FROM {self._t(name)}").fetchone(); lo, hi = lo2, hi2
         lo, hi = (0, 0) if lo is None else (int(lo), int(hi))
         if 0 < lo and hi <= 0xFFFFFFFF and hi.bit_length() == (hi - lo).bit_length():
             lo = 0                       # the value itself: no narrower with an offset, and no offset terms in sums
@@ -299,20 +314,20 @@ class Database:
         if span >= 1 << 64: return None, None, "value range wider than 64 bits"
         if is_dim and span > 0xFFFFFFFF:
             # a dimension stays within 32-bit codes: rank the distinct values instead (order-preserving)
-            vals = [int(r[0]) for r in self.con.execute(f"SELECT DISTINCT {raw} AS v FROM {_q(name)} ORDER BY v").fetchall()]
-            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {raw}) - 1 AS UINTEGER) AS c FROM {_q(name)}{order_by}").fetchnumpy()["c"]
+            vals = [int(r[0]) for r in self.con.execute(f"SELECT DISTINCT {raw} AS v FROM {self._t(name)} ORDER BY v").fetchall()]
+            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {raw}) - 1 AS UINTEGER) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
             cd = ct.RankCodec(_codec(typ, 0), vals)
             return np.asarray(codes, np.uint64), cd, None
         target = "UINTEGER" if span <= 0xFFFFFFFF else "UBIGINT"
         inner = f"CAST({raw} AS BIGINT) - ({lo})" if -(1 << 62) < lo < (1 << 62) and -(1 << 62) < hi < (1 << 62) else f"CAST({raw} AS HUGEINT) - ({lo})"
-        codes = self.con.execute(f"SELECT CAST({inner} AS {target}) AS c FROM {_q(name)}{order_by}").fetchnumpy()["c"]
+        codes = self.con.execute(f"SELECT CAST({inner} AS {target}) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
         return np.asarray(codes, np.uint64), _codec(typ, lo), None
 
     def _pk_rows(self, name, pk, typ, n):
         """how a key value finds its row: (kind, data). Rows are in key order, so row = rank of the key."""
         if _base_type(typ) in ("int", "date", "bool", "ts"):
             r = _raw(pk, typ)
-            k = self.con.execute(f"SELECT CAST({r} AS BIGINT) AS k FROM {_q(name)} ORDER BY {_q(pk)}").fetchnumpy()["k"]
+            k = self.con.execute(f"SELECT CAST({r} AS BIGINT) AS k FROM {self._t(name)} ORDER BY {_q(pk)}").fetchnumpy()["k"]
             return ("int", np.asarray(k, np.int64))
         return ("sql", None)
 
@@ -336,17 +351,17 @@ class Database:
                 L = hi - lo + 1
                 lut = np.full(L + 1, lut_final[n], np.int64); lut[keys - lo] = lut_final[:n]
                 idx = self.con.execute(f"SELECT CAST(CASE WHEN {r} BETWEEN {lo} AND {hi} THEN CAST({r} AS BIGINT) - ({lo}) ELSE {L} END AS UINTEGER) AS i "
-                                       f"FROM {_q(name)}").fetchnumpy()["i"]
+                                       f"FROM {self._t(name)}").fetchnumpy()["i"]
                 return algq.par_map(np.asarray(idx, np.uint32), lut)
             sent = (lo - 1) if lo > -(1 << 62) else (hi + 1)
-            v = np.asarray(self.con.execute(f"SELECT coalesce(CAST({r} AS BIGINT), {sent}) AS v FROM {_q(name)}").fetchnumpy()["v"], np.int64)
+            v = np.asarray(self.con.execute(f"SELECT coalesce(CAST({r} AS BIGINT), {sent}) AS v FROM {self._t(name)}").fetchnumpy()["v"], np.int64)
             pos = np.minimum(np.searchsorted(keys, v), max(0, len(keys) - 1))
             hit = (keys[pos] == v) if len(keys) else np.zeros(len(v), bool)
             rows = np.where(hit, pos, n)
             return lut_final[rows].astype(np.uint32)
         # other key types: matched in DuckDB, in the fact's row order
-        self.con.execute(f"CREATE OR REPLACE TEMP TABLE __torbles_rows AS SELECT {_q(dpk)} AS k, CAST(row_number() OVER (ORDER BY {_q(dpk)}) - 1 AS BIGINT) AS r FROM {_q(dname)}")
-        rows = self.con.execute(f"SELECT coalesce(m.r, {n}) AS r FROM {_q(name)} f LEFT JOIN __torbles_rows m ON f.{_q(c)} = m.k ORDER BY f.rowid").fetchnumpy()["r"]
+        self.con.execute(f"CREATE OR REPLACE TEMP TABLE __torbles_rows AS SELECT {_q(dpk)} AS k, CAST(row_number() OVER (ORDER BY {_q(dpk)}) - 1 AS BIGINT) AS r FROM {self._t(dname)}")
+        rows = self.con.execute(f"SELECT coalesce(m.r, {n}) AS r FROM {self._t(name)} f LEFT JOIN __torbles_rows m ON f.{_q(c)} = m.k ORDER BY f.rowid").fetchnumpy()["r"]
         self.con.execute("DROP TABLE __torbles_rows")
         return lut_final[np.asarray(rows, np.int64)].astype(np.uint32)
 
@@ -746,17 +761,21 @@ def load(path, validate=True, con=None):
                     sg.coords = r.get("coords") or {}
             t.refbit[fk], t.surr[fk], t._refdim[fk] = int(r["bit"]), sg, dim
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}
+        if validate:                              # faces first: nothing is decoded from unchecked planes
+            rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
+            for part, at_ in [("", t.at)] + [(c, sc["side"]) for c, sc in t.sidecars.items()]:
+                nbad = algq.lib.at_validate(at_, None, 0)
+                fixed = algq.lib.at_repair(at_) if nbad else 0
+                left = algq.lib.at_validate(at_, None, 0) if nbad else 0
+                rep["rows_with_faults"] += int(nbad); rep["repaired"] += int(fixed); rep["unrepaired"] += int(left)
+                if left: raise LoadError(f"{name}{'.' + part if part else ''}: {left} row(s) fail the torus face checks and could "
+                                         "not be repaired (more than one bit lost)")
+            db.integrity[name] = rep
         if m.get("dense_dim"):                    # a referenced table: its plain columns serve the planner (small)
             for c in t.cols:
                 if c not in t.sidecars: t.data[c] = t.decoded(c)
         elif t.cluster is not None and t.cluster not in t.sidecars:
             t.data[t.cluster] = t.decoded(t.cluster)
-        if validate:
-            nbad = algq.lib.at_validate(t.at, None, 0)
-            fixed = algq.lib.at_repair(t.at) if nbad else 0
-            left = algq.lib.at_validate(t.at, None, 0) if nbad else 0
-            db.integrity[name] = dict(rows_with_faults=int(nbad), repaired=int(fixed), unrepaired=int(left))
-            if left: raise LoadError(f"{name}: {left} row(s) fail the torus face checks and could not be repaired (more than one bit lost)")
         db.tables[name] = t
         db.meta[name] = m.get("meta", {})
     return db

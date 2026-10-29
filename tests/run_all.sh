@@ -4,11 +4,11 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
 # Every correctness test of torbles. Each compares the algebraic engine with the plain columnar baseline and/or DuckDB,
 # across join forms, thread counts and GROUP BY modes; the GPU tests compare the GPU executor with the CPU engine
-# (the real GPU when torbless/libgpu.so exists, else the CPU emulation of the same kernels).
+# (the real GPU when torbles/libgpu.so exists, else the CPU emulation of the same kernels).
 #   bash tests/run_all.sh [quick]
 set -u
 cd "$(dirname "$0")/.."
-export PYTHONPATH="$PWD/torbles:$PWD/tests"
+export PYTHONPATH="$PWD:$PWD/torbles:$PWD/tests"
 [ -f torbles/libgpu.so ] && export TORBLES_GPU_LIB="$PWD/torbles/libgpu.so"
 python3 -c "import algq; print('torbles', algq.__version__, '| CPU kernel:', algq.mm_kernel(), '| GPU:', algq.gpu_name())" || exit 1
 fails=0
@@ -17,7 +17,7 @@ run() {   # name, command...
   local t0=$(date +%s%N) out; out=$("$@" 2>&1); local rc=$?
   local ms=$(( ($(date +%s%N) - t0) / 1000000 )); local dt="$((ms / 1000)).$(( (ms % 1000) / 100 ))"
   local last=$(printf '%s\n' "$out" | tail -1)
-  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
+  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
   else printf '  %-44s FAIL (%ss)\n' "$name" "$dt"; printf '%s\n' "$out" | tail -15 | sed 's/^/      /'; fails=$((fails + 1)); fi
 }
 echo "== CPU engine vs plain columns vs DuckDB"
@@ -30,6 +30,12 @@ run "additive deltas (moved dimension rows)"      python3 tests/check_moves.py
 run "self-extending (64-bit) columns"             python3 tests/check_extend.py
 run "compiled-plan reuse"                         python3 tests/check_plancache.py
 run "values wider than 32 bits are refused"        python3 tests/check_widths.py
+echo "== typed data: loaders, key design, persistence"
+run "typed columns, every engine and join form"  python3 tests/check_typed.py
+run "loaders: DDL, files, Frictionless, frames"   python3 tests/check_loaders.py
+run "automatic key design"                        python3 tests/check_keydesign.py
+run "save / load, integrity on load"              python3 tests/check_persist.py
+run "differential fuzzing vs DuckDB (40 cases)"   python3 -m torbles.fuzz --seed 2026 --cases 40
 echo "== GROUP BY modes"
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py

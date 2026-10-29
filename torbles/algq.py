@@ -830,7 +830,9 @@ def lower_measure(e, fact):
             cd = e.codec()
             if cd is None: return e, 0
             if cd.affine is None:
-                raise TypeError(f"{e.table.name}.{e.name} ({cd.sql_type}) cannot be summed or used in arithmetic")
+                hint = (f"; load it as an exact DECIMAL: types={{'{e.table.name}.{e.name}': 'DECIMAL(18, 2)'}}"
+                        if cd.sql_type.upper() in ("DOUBLE", "FLOAT", "REAL") else "")
+                raise TypeError(f"{e.table.name}.{e.name} ({cd.sql_type}) cannot be summed or used in arithmetic{hint}")
             off, sc = cd.affine
             return (Arith("+", e, Const(off)) if off else e), sc
         if isinstance(e, Arith):
