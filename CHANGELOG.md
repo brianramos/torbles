@@ -37,7 +37,8 @@ Correctness
   planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
   the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
   overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
-  group count overflowing 63 bits.
+  group count overflowing 63 bits. After the fixes: 169,600 queries over 5,016 random schemas, 124,364 answers
+  compared, no mismatch.
 - New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
   a 40-case fuzz run; `make test` runs them all.
 
@@ -45,6 +46,11 @@ Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`
   makes a wheel for other x86-64 machines; `torbles-fuzz` console script.
 - GitHub Actions: tests and fuzzing on every push (Python 3.9 / 3.11 / 3.13), wheels and PyPI publishing on a tag.
+
+Changed (engine API)
+- Queries run on every core by default (0.1.0: one thread unless `set_threads` was called).
+- On plain uint32 tables, comparisons with negative, fractional or > 32-bit constants are exact (0.1.0 wrapped them).
+- `Query.join(dim)` finds the foreign key when exactly one references the dimension.
 
 Benchmarks
 - `bench/ssb/schema.sql` (the SSB keys as standard DDL) and `bench/ssb/ssb_auto.py`: SSB loaded with nothing designed

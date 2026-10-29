@@ -93,6 +93,8 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
 - **Integrity on load.** A saved torble carries its torus faces: on load, every face is recomputed from the stored
   planes, single-bit faults are repaired in memory, and a row with more than one lost bit is refused. Headers are
   hashed; truncated files are refused. Saving writes new files and renames them, so open databases are unaffected.
+  SSB SF1 (6M rows): saved in 0.5 s (312 MiB), loaded with every face validated in 0.1 s from the page cache,
+  against 2.4 s to build it from DuckDB.
 
 ### Engine-level API
 
@@ -116,10 +118,13 @@ values, empty tables, sizes around word and tile boundaries) and random queries 
 `NOT` and `OR`; GROUP BY on fact and dimension columns; COUNT or SUM of random polynomials with decimal constants), run
 on randomly chosen engines and planner settings, saved and reloaded, with a flipped bit repaired on load. Any answer
 that differs from DuckDB's, and any exception other than a documented refusal, is a failure with a one-line replay
-command. Before this release, 70,000 fuzzed queries over seven seeds found nine bugs, all fixed: an empty fact table
-crashing the join planner, 64-bit keys compared through floating point, decimal scaling overflowing at DECIMAL(18),
-64-bit columns in dimensions, the 64-bit column lowering re-applying offsets, two group-code limits and two persistence
-details. Since then the fuzzer has found no mismatch.
+command. Before this release the fuzzer found six bugs, all fixed: an empty fact table crashing the join planner,
+64-bit keys compared through floating point, decimal scaling overflowing at DECIMAL(18), 64-bit timestamps in
+dimensions, GROUP BY on a 64-bit column after reloading, and the group count overflowing 63 bits. After the fixes, a
+final run over six new seeds (5,016 random schemas, 169,600 queries) compared 124,364 answers with DuckDB's and found
+no mismatch and no unexpected error. The rest were documented refusals (19%: sums that could exceed 64 bits, GROUP BY
+keys wider than 64 bits together, arithmetic on columns that cannot be summed) or queries DuckDB itself rejected (8%,
+mostly integer overflow in its own arithmetic).
 
 ## Results
 

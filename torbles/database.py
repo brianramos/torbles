@@ -367,6 +367,8 @@ class Database:
 
     # ------------------------------------------------------------------ use
     def __getitem__(self, name): return self.tables[name]
+    def __repr__(self):
+        return "Database(" + ", ".join(f"{n}: {t.n:,} rows" for n, t in self.tables.items()) + ")"
     def __contains__(self, name): return name in self.tables
     def __iter__(self): return iter(self.tables)
 
@@ -376,6 +378,8 @@ class Database:
 
     def sql_result(self, q):
         """run the query's SQL rendering on the source (DuckDB) and return it in torbles' result form"""
+        if self.con is None:
+            raise RuntimeError("no source to run the SQL on: pass con= (a DuckDB connection holding the source tables) to torbles.load")
         rows = self.con.execute(q.sql()).fetchall()
         if q.keys: return {tuple(r[:-1]): r[-1] for r in rows}
         return rows[0][0] if rows else None
