@@ -441,7 +441,8 @@ class Binder:
                 try: typ = T.type_from_name(meta[c]["type"])
                 except SqlError: typ = None
             if typ is None: typ = T.from_codec(t.codecs.get(c))
-            cols.append((c, typ, c in getattr(t, "nullable", ())))
+            nl = c in getattr(t, "nullable", ()) or (c + "#raw") in getattr(t, "nullable", ()) or getattr(t, "fk_nulls", {}).get(c, 0) > 0
+            cols.append((c, typ, nl))
         return I.Binding(alias or t.name, cols, table=t)
 
     def cte_binding(self, cte, alias):

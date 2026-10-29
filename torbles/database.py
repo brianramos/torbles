@@ -17,7 +17,8 @@ Frictionless Data Table Schema (primaryKey / foreignKeys) next to CSV or Parquet
 as arguments are added. Guessing keys from names and values is opt-in (infer_keys=True) and reported, because a wrong
 guess silently changes what joins. Each referenced table is stored sorted by its primary key; each foreign key stores
 the referenced row's derived surrogate (see keydesign.py). torbles does not enforce foreign keys: a reference without a
-match (or NULL) never joins, as in an SQL inner join. NULLs elsewhere are refused (fill_nulls= replaces them)."""
+match (or NULL) never joins, as in an SQL inner join. A column with NULLs gets a validity plane (its hidden column
+c#v, 1 where the value is not NULL); fill_nulls= replaces NULLs by a value instead."""
 import json, os, re, time
 import numpy as np
 import algq
@@ -116,12 +117,17 @@ class Database:
             tb = time.perf_counter()
             pk, fk = pks.get(name), fks.get(name, {})
             st = stats[name]; n = st["rows"]
-            data, extend, codecs, info = {}, {}, {}, {}
+            data, extend, codecs, info, nullable = {}, {}, {}, {}, {}
             order_by = f" ORDER BY {_q(pk)}" if name in dims else ""
             for c, typ in cols[name].items():
                 if c in fk: continue
                 codes, cd, why = self._encode(name, c, typ, st, order_by, name in dims, fill)
                 if cd is None: self.notes.append(f"{name}.{c}: not loaded ({why})"); continue
+                if st.get("nulls", {}).get(c):           # a validity plane: 1 where the value is not NULL
+                    v = self.con.execute(f"SELECT CAST({_q(c)} IS NOT NULL AS UINTEGER) AS v FROM {self._t(name)}"
+                                         + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["v"]
+                    data[c + "#v"] = np.ascontiguousarray(np.asarray(v), np.uint32); nullable[c] = c + "#v"
+                    codecs[c + "#v"] = ct.BoolCodec()
                 if codes.dtype == np.uint64 and codes.size and int(codes.max()) > 0xFFFFFFFF:
                     if name in dims: raise LoadError(f"{name}.{c}: internal error, dimension codes wider than 32 bits")
                     extend[c] = 32
@@ -135,14 +141,33 @@ class Database:
                 data[c] = codes
                 refs[c] = (dt, ddes["surrogate"]) if ddes["surrogate"] is not None else dt
                 codecs[c] = RefCodec(dname, dpk); info[c] = dict(type=cols[name][c], codec="ref", references=f"{dname}.{dpk}")
+                # references without a match (NULL or dangling): the key's own values are kept as a column c#raw, so
+                # that the foreign key can be read as a value (the stored surrogate only names rows that exist)
+                nn = self.con.execute(f"SELECT count(*) FROM {self._t(name)} f WHERE NOT EXISTS (SELECT 1 FROM {self._t(dname)} d "
+                                      f"WHERE d.{_q(dpk)} = f.{_q(c)})").fetchone()[0]
+                if nn:
+                    rc = c + "#raw"
+                    lo, hi = self.con.execute(f"SELECT min({_raw(c, cols[name][c]) or _q(c)}), max({_raw(c, cols[name][c]) or _q(c)}) FROM {self._t(name)}").fetchone() \
+                        if _raw(c, cols[name][c]) is not None else (None, None)
+                    st2 = dict(rows=st["rows"], nonnull={rc: st["nonnull"][c]}, min={rc: lo}, max={rc: hi})
+                    rcodes, rcd, why = self._encode_as(name, c, cols[name][c], st2, rc, fill)
+                    if rcd is not None:
+                        if rcodes.dtype == np.uint64 and rcodes.size and int(rcodes.max()) > 0xFFFFFFFF: extend[rc] = 32; data[rc] = rcodes
+                        else: data[rc] = np.ascontiguousarray(rcodes, np.uint32)
+                        codecs[rc] = rcd
+                        if st["nonnull"][c] < st["rows"]:
+                            v = self.con.execute(f"SELECT CAST({_q(c)} IS NOT NULL AS UINTEGER) AS v FROM {self._t(name)} ORDER BY rowid").fetchnumpy()["v"]
+                            data[rc + "#v"] = np.ascontiguousarray(np.asarray(v), np.uint32); nullable[rc] = rc + "#v"; codecs[rc + "#v"] = ct.BoolCodec()
             if not data: raise LoadError(f"{name}: no column could be loaded")
             if len(data) + bool(refs) > algq.MAXCOL:
                 raise LoadError(f"{name}: {len(data)} columns; a torble holds {algq.MAXCOL - 1} (with foreign keys) - "
                                 f"choose the columns to load with add_table(..., columns=[...])")
             cluster = next((c for c in list(fk) + [c for c in data if c not in fk]
-                            if c not in extend and n > 1 and bool(np.all(data[c][1:] >= data[c][:-1]))), None)
+                            if c not in extend and "#" not in c and c not in nullable and n > 1 and bool(np.all(data[c][1:] >= data[c][:-1]))), None)
             t = Table(name, data, msb=tuple(fk), refs=refs or None, extend=extend or None, cluster=cluster)
             t.codecs, t.pk, t.sqlname = codecs, pk, name
+            t.nullable = nullable                       # column -> its validity column
+            t.fk_nulls = {c: int(st["rows"] - st["nonnull"][c]) for c in fk}     # NULL references (never join)
             self.tables[name] = t
             if name in dims:
                 rowmaps[name] = self._pk_rows(name, pk, cols[name][pk], n)
@@ -276,10 +301,7 @@ class Database:
             if _raw(c, typ) is not None and c not in fk:
                 st["min"][c], st["max"][c] = row[i], row[i + 1]; i += 2
             nulls = st["rows"] - st["nonnull"][c]
-            if nulls and c not in fk and f"{name}.{c}" not in fill and c not in fill:
-                if _supported(typ)[0]:
-                    raise LoadError(f"{name}.{c} has {nulls:,} NULL value(s): NULLs are not supported yet. Pass "
-                                    f"fill_nulls={{'{name}.{c}': value}} or leave the column out (columns=[...])")
+            st.setdefault("nulls", {})[c] = nulls if (c not in fk and f"{name}.{c}" not in fill and c not in fill) else 0
         if pk is not None:
             d, nn = self.con.execute(f"SELECT count(DISTINCT {_q(pk)}), count({_q(pk)}) FROM {self._t(name)}").fetchone()
             if d != st["rows"] or nn != st["rows"]:
@@ -298,9 +320,10 @@ class Database:
             if base == "float":
                 nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
                 if nan: return None, None, f"{nan} NaN / infinite value(s)"
-            vals = [r[0] for r in self.con.execute(f"SELECT DISTINCT {col} AS v FROM {self._t(name)} ORDER BY v").fetchall()]
+            vals = [r[0] for r in self.con.execute(f"SELECT DISTINCT {col} AS v FROM {self._t(name)} WHERE {col} IS NOT NULL ORDER BY v").fetchall()]
             if base == "float": vals = [float(v) for v in vals]
-            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {col}) - 1 AS UINTEGER) AS c FROM {self._t(name)}"
+            # NULLs sort last, so the ranks of the values do not depend on them; a NULL's code is 0 (its validity says NULL)
+            codes = self.con.execute(f"SELECT CAST(CASE WHEN {col} IS NULL THEN 0 ELSE dense_rank() OVER (ORDER BY {col} NULLS LAST) - 1 END AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
             return np.asarray(codes), ct.DictCodec(vals, "VARCHAR" if base == "str" else "DOUBLE"), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
@@ -314,14 +337,20 @@ class Database:
         if span >= 1 << 64: return None, None, "value range wider than 64 bits"
         if is_dim and span > 0xFFFFFFFF:
             # a dimension stays within 32-bit codes: rank the distinct values instead (order-preserving)
-            vals = [int(r[0]) for r in self.con.execute(f"SELECT DISTINCT {raw} AS v FROM {self._t(name)} ORDER BY v").fetchall()]
-            codes = self.con.execute(f"SELECT CAST(dense_rank() OVER (ORDER BY {raw}) - 1 AS UINTEGER) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
+            vals = [int(r[0]) for r in self.con.execute(f"SELECT DISTINCT {raw} AS v FROM {self._t(name)} WHERE {raw} IS NOT NULL ORDER BY v").fetchall()]
+            codes = self.con.execute(f"SELECT CAST(CASE WHEN {raw} IS NULL THEN 0 ELSE dense_rank() OVER (ORDER BY {raw} NULLS LAST) - 1 END AS UINTEGER) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
             cd = ct.RankCodec(_codec(typ, 0), vals)
             return np.asarray(codes), cd, None
         target = "UINTEGER" if span <= 0xFFFFFFFF else "UBIGINT"
         inner = f"CAST({raw} AS BIGINT) - ({lo})" if -(1 << 62) < lo < (1 << 62) and -(1 << 62) < hi < (1 << 62) else f"CAST({raw} AS HUGEINT) - ({lo})"
-        codes = self.con.execute(f"SELECT CAST({inner} AS {target}) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
+        codes = self.con.execute(f"SELECT CAST(coalesce({inner}, 0) AS {target}) AS c FROM {self._t(name)}{order_by}").fetchnumpy()["c"]
         return np.asarray(codes), _codec(typ, lo), None
+
+    def _encode_as(self, name, c, typ, st, key, fill):
+        """codes of column c under another name (key) of the stats"""
+        st = dict(st); st["min"] = dict(st["min"]); st["max"] = dict(st["max"])
+        st["min"][c] = st["min"].get(key); st["max"][c] = st["max"].get(key)
+        return self._encode(name, c, typ, st, "", False, fill)
 
     def _pk_rows(self, name, pk, typ, n):
         """how a key value finds its row: (kind, data). Rows are in key order, so row = rank of the key."""
@@ -332,7 +361,8 @@ class Database:
         return ("sql", None)
 
     def _design(self, name, t, pk, fk, n):
-        attrs = {c: t.data[c].astype(np.int64) for c in t.cols if c not in fk and c != pk and not c.startswith("_") and c in t.codecs}
+        attrs = {c: t.data[c].astype(np.int64) for c in t.cols if c not in fk and c != pk and not c.startswith("_") and c in t.codecs
+                 and "#" not in c and c not in getattr(t, "nullable", {})}
         des = keydesign.design(n, attrs)
         des["surrogate"] = Surrogate(des["w"], des["s_of_row"][:n]) if des["kind"] == "derived" else None
         if des["surrogate"] is not None: des["surrogate"].coords = des.get("coords", {})
@@ -704,6 +734,7 @@ def save(db, path):
             colmax={c: int(t.colmax(c)) for c in t.cols if c in t._colmax or c in t.data},
             wmax=getattr(t, "_wmax", {}), wide={c: list(v) for c, v in getattr(t, "wide", {}).items()}, sidecars=side,
             codecs=codecs, refs=refs, pk=getattr(t, "pk", None), orphans=getattr(t, "orphans", {}),
+            nullable=getattr(t, "nullable", {}), fk_nulls=getattr(t, "fk_nulls", {}),
             used_all=bool(t.used.all()), meta=m, dense_dim=any(t is ot._refdim.get(f) for ot in db.tables.values() for f in getattr(ot, "_refdim", {})))
         man["tables"][name]["meta"] = json.loads(json.dumps(m, default=str))
     with open(os.path.join(path, "manifest.json.tmp"), "w") as f: json.dump(man, f, indent=1, default=str)
@@ -775,6 +806,7 @@ def load(path, validate=True, con=None):
                     sg.coords = r.get("coords") or {}
             t.refbit[fk], t.surr[fk], t._refdim[fk] = int(r["bit"]), sg, dim
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}
+        t.nullable = dict(m.get("nullable", {})); t.fk_nulls = {k: int(v) for k, v in m.get("fk_nulls", {}).items()}
         if validate:                              # faces first: nothing is decoded from unchecked planes
             rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
             for part, at_ in [("", t.at)] + [(c, sc["side"]) for c, sc in t.sidecars.items()]:

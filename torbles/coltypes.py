@@ -252,7 +252,8 @@ class DictCodec(Codec):
         return "'" + str(v).replace("'", "''") + "'"
 
     def decode(self, codes):
-        vals = self.values; return [vals[int(c)] for c in np.asarray(codes).tolist()]
+        vals = self.values; n = len(vals)                 # a code past the dictionary: a NULL row of an all-NULL column
+        return [vals[int(c)] if int(c) < n else None for c in np.asarray(codes).tolist()]
 
     def _state(self): return dict(sql_type=self.sql_type)          # the values are stored next to the manifest
 
@@ -274,7 +275,9 @@ class RankCodec(Codec):
         return (None if lo is None else bisect_left(self.raw, lo), None if hi is None else bisect_right(self.raw, hi) - 1)
 
     def literal(self, v): return self.base.literal(v)
-    def decode(self, codes): return self.base.decode(np.asarray([self.raw[int(c)] for c in np.asarray(codes).tolist()], object))
+    def decode(self, codes):
+        n = len(self.raw)
+        return self.base.decode(np.asarray([self.raw[int(c)] if int(c) < n else 0 for c in np.asarray(codes).tolist()], object))
     def _state(self): return dict(base=self.base.to_json())
 
 

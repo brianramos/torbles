@@ -192,6 +192,15 @@ def subst(e, fn):
     return e
 
 
+def subst_post(e, fn):
+    """rebuild e bottom-up: children first, then fn(rebuilt node) gives the node to use"""
+    if isinstance(e, Func): x = Func(e.fn, [subst_post(a, fn) for a in e.args], e.t, e.extra)
+    elif isinstance(e, Case): x = Case([(subst_post(c, fn), subst_post(v, fn)) for c, v in e.whens], None if e.else_ is None else subst_post(e.else_, fn), e.t)
+    elif isinstance(e, Cast): x = Cast(subst_post(e.arg, fn), e.t, e.try_)
+    else: x = e
+    return fn(x)
+
+
 _OPS = {"+": "+", "-": "-", "*": "*", "/": "/", "//": "//", "%": "%", "||": "||", "=": "=", "<>": "<>", "<": "<", "<=": "<=",
         ">": ">", ">=": ">="}
 

@@ -44,6 +44,13 @@ NUM = ("INTEGER", "SMALLINT", "BIGINT", "UBIGINT", "DECIMAL", "DOUBLE")
 def is_num(t): return t.startswith(NUM)
 
 
+def moderate(c):
+    """a numeric column whose values DuckDB's DOUBLE statistics handle without losing digits (|x| < 2^20)"""
+    if not (c[2] in ("INTEGER", "SMALLINT", "BIGINT") or c[2].startswith("DECIMAL")): return False
+    vals = [v for v in c[3] if v is not None]
+    return all(abs(v) < 2 ** 20 for v in vals)
+
+
 def q(name): return '"' + name + '"'
 
 
@@ -58,7 +65,7 @@ class Gen:
         """(FROM text, [(alias, column, type, values)])"""
         r = self.r
         fcols, _, fks = self.fact
-        cols = [("f", c.name, c.typ, c.values) for c in fcols if c.name not in fks or r.random() < 0.05]
+        cols = [("f", c.name, c.typ, c.values) for c in fcols if c.name not in fks or r.random() < 0.3]
         parts = ["fact f"]
         joined = []
         for fk, d in fks.items():
@@ -69,7 +76,18 @@ class Gen:
                 cols += [(alias, c.name, c.typ, c.values) for c in dcols]
         style = r.random()
         if style < 0.5:
-            parts = ["fact f"] + [f"JOIN {d} {a} ON f.{q(fk)} = {a}.{q(pk)}" for a, d, fk, pk in joined]
+            parts = ["fact f"]
+            for a, d, fk, pk in joined:
+                if r.random() < 0.3:                         # LEFT JOIN, sometimes with more ON terms
+                    extra = ""
+                    if r.random() < 0.4:
+                        dc = [c for c in cols if c[0] == a]
+                        if dc: extra = f" AND {self.pred(dc, 2)}"
+                    elif r.random() < 0.3:
+                        fc = [c for c in cols if c[0] == "f"]
+                        if fc: extra = f" AND {self.pred(fc, 2)}"
+                    parts.append(f"LEFT JOIN {d} {a} ON f.{q(fk)} = {a}.{q(pk)}{extra}")
+                else: parts.append(f"JOIN {d} {a} ON f.{q(fk)} = {a}.{q(pk)}")
             return " ".join(parts), cols, []
         frm = ", ".join(["fact f"] + [f"{d} {a}" for a, d, fk, pk in joined])
         conds = [f"f.{q(fk)} = {a}.{q(pk)}" for a, d, fk, pk in joined]
@@ -178,9 +196,10 @@ class Gen:
         if x < 0.55:
             f = r.choice(["sum", "sum", "avg", "min", "max", "count", "stddev_pop", "var_samp", "sum_distinct", "median", "covar_pop", "corr", "regr_slope"])
             if f == "sum_distinct": return f"sum(DISTINCT {e}){filt}", "X"
+            if f == "median" and not moderate(c): return f"sum({e}){filt}", "X"
             if f in ("covar_pop", "corr", "regr_slope", "stddev_pop", "var_samp"):
                 # statistics on moderate values only: DuckDB evaluates them in DOUBLE, torbles exactly
-                mod = [cc for cc in cols if cc[2] in ("INTEGER", "SMALLINT") or (cc[2].startswith("DECIMAL") and int(cc[2][8:].split(",")[0]) <= 9)]
+                mod = [cc for cc in cols if moderate(cc)]
                 if not mod: return f"count(*){filt}", "BIGINT"
                 y, o = r.choice(mod), r.choice(mod)
                 if f in ("stddev_pop", "var_samp"): return f"{f}({self.ref(y)}){filt}", "DOUBLE"
@@ -279,6 +298,18 @@ class Gen:
         return f"SELECT {e} FROM {frm} WHERE {' AND '.join(where)}"
 
 
+def make_case(cs):
+    """fuzz.py's random star schema, with NULLs in some value columns"""
+    tables = fuzz.make_case(cs)
+    r = random.Random(cs + 31)
+    for name, (cols, pk, fks) in tables.items():
+        for c in cols:
+            if c.name == pk or c.name in fks or r.random() > 0.4: continue
+            frac = r.choice([0.02, 0.1, 0.5, 1.0])
+            c.values = [None if r.random() < frac else v for v in c.values]
+    return tables
+
+
 # ---------------------------------------------------------------------- comparison
 def _close(a, b, tol):
     if a is None or b is None:
@@ -346,7 +377,7 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
                 if cases is not None and case >= cases: break
                 if t_end is not None and time.time() > t_end: break
             cs = seed * 100003 + case
-            tables = fuzz.make_case(cs)
+            tables = make_case(cs)
             con = duckdb.connect()
             try: db, _ = fuzz.build_db(tables, cs, con)
             except Exception:

@@ -552,18 +552,26 @@ def _xsum(vals):
 
 def agg_values(a, rel, members, plan, cx):
     """one aggregate for every output group (members: the rel rows of each group)"""
-    if plan is not None and plan.get("kind") == "moment":
-        return moment_values(a, rel, members, plan)
-    if plan is not None and plan.get("kind") == "ext":
-        col = rel.mom[(plan["variant"], plan["key"])]; filt = plan.get("rowfilter"); j = 0 if a.name == "min" else 1
+    if plan is not None and plan.get("kind") == "state":
+        k = a.key()
+        if a.name in ("min", "max"):                 # the engine's extremes per row
+            col = rel.cols[("x", k)]; j = 0 if a.name == "min" else 1
+            out = []
+            for mem in members:
+                vals = [col[i][j] for i in mem if col[i] is not None]
+                if not vals: out.append(None); continue
+                best = vals[0]
+                for v in vals[1:]:
+                    if F.cmp_values(v, best) * (1 if j == 0 else -1) < 0: best = v
+                out.append(best)
+            return out
+        cnt = rel.cols[("n", k)]
+        nm = len(MOMENTS[a.name](None, None)) if a.name in MOMENTS else 0
         out = []
         for mem in members:
-            vals = [col[i][j] for i in mem if col[i] is not None and (filt is None or i in filt)]
-            if not vals: out.append(None); continue
-            best = vals[0]
-            for v in vals[1:]:
-                if (F.cmp_values(v, best) < 0) == (j == 0) and F.cmp_values(v, best) != 0: best = v
-            out.append(best)
+            n = sum(cnt[i] for i in mem)
+            sums = [_sum_exact(rel.cols[("m", k, j)][i] for i in mem) for j in range(nm)]
+            out.append(_moment_final(a.name, n, sums))
         return out
     d = F.AGGS[a.name]
     args = [ev(x, rel, cx) for x in a.args]
@@ -1052,13 +1060,17 @@ class StarPlan:
 def plan_star(s, bindings, need, aggs, cx):
     """run the block's star join on the engine; None when the FROM clause is not a star join"""
     joins = join_conds(s.from_)
+    left = {}                                         # LEFT JOIN dim: binding -> its ON conjuncts
     for j in joins:
-        if j.kind not in ("inner", "cross"): return None, None
+        if j.kind in ("inner", "cross"): continue
+        if j.kind == "left" and isinstance(j.right, I.Binding) and j.right.table is not None:
+            left[j.right] = _conjuncts(j.cond); continue
+        return None, None
     conj = []
     for j in joins:
-        conj += _conjuncts(j.cond)
+        if j.kind in ("inner", "cross"): conj += _conjuncts(j.cond)
     conj += _conjuncts(s.where)
-    edges = _edges(conj)
+    edges = _edges(conj + [c for cs in left.values() for c in cs])
     # the fact: every other binding is joined to it through one of its foreign keys
     fact, used = None, None
     cands = sorted(bindings, key=lambda b: -b.table.n)
@@ -1070,14 +1082,31 @@ def plan_star(s, bindings, need, aggs, cx):
             if e is None: ok = False; break
             dims[b] = e; fks[e[1].name] = b
         if ok: fact, used = f, (dims, fks); break
-    if fact is None: return None, None
+    if fact is None or fact in left: return None, None
     dims, fks = used
     if any(b.table is fact.table for b in dims): return None, None
     consumed = {id(e[0]) for e in dims.values()}
+    lefts = {}
+    for b, cs in left.items():                        # ON: the key equality, fact-only and dimension-only terms
+        e = dims.get(b)
+        if e is None or id(e[0]) not in {id(c) for c in cs}: return None, None
+        cf, cd = [], []
+        for c in cs:
+            if c is e[0]: continue
+            bs = {x.b for x in I.cols_of(c)}
+            if I.has(c, I.Subq) or I.has(c, I.Outer): return None, None
+            if bs <= {fact}: cf.append(c)
+            elif bs <= {b}: cd.append(c)
+            else: return None, None
+        lefts[b] = (e[1].name, cf, cd)
     rest = [c for c in conj if id(c) not in consumed]
     cx.stats["star_blocks"] += 1
     P = _Planner(s, fact, dims, fks, cx)
-    return P.run(rest, need, aggs)
+    P.left = lefts
+    try: return P.run(rest, need, aggs)
+    except _NotStarNow:
+        cx.stats["star_blocks"] -= 1
+        return None, None
 
 
 def _conjuncts(e):
@@ -1099,17 +1128,21 @@ class _Planner:
         self.joins = {b: e[1].name for b, e in dims.items()}       # dim binding -> fk name
         self.fkb = dict(fks)                                        # fk name -> dim binding
         self.hidden = {}                                            # fk name -> hidden binding for an implicit join
+        self.left, self.nulled = {}, set()                          # LEFT JOIN dims; dims NULL in the current pass
 
     # columns -------------------------------------------------------------
     def canon(self, col):
-        """the column the engine reads for col: a fact FK column is its dimension's key (the stored surrogate is not
-        the value); -> (binding, column name)"""
+        """the column the engine reads for col: a fact FK column is its raw values (when some references have no
+        match) or its dimension's key (the stored surrogate is not the value); -> (binding, column name)"""
         if col.b is self.fact:
             fi = _fk_info(col)
             if fi is not None:
+                if col.name + "#raw" in self.fact.table.cols: return self.fact, col.name + "#raw"
                 b = self.fkb.get(col.name)
+                if b is not None and b in self.nulled: b = None
                 if b is None:
                     b = self.hidden.get(col.name)
+                    if b is not None and b not in self.joins: self.joins[b] = col.name
                     if b is None:
                         orph = getattr(self.fact.table, "orphans", {}).get(col.name, 0)
                         if orph: raise SqlError(f"{self.fact.table.name}.{col.name} has {orph} reference(s) without a match; "
@@ -1158,29 +1191,58 @@ class _Planner:
 
     # predicates ------------------------------------------------------------
     def native(self, e):
-        """an IR predicate as a plane predicate (algq Pred), or None"""
+        """an IR predicate as a plane predicate that holds where e is TRUE (algq Pred), or None"""
+        tf = self.native_tf(e)
+        return None if tf is None else tf[0]
+
+    def valid(self, col):
+        """the plane predicate 'col IS NOT NULL' (None: the column has no NULLs)"""
+        b, name = self.canon(col)
+        t = self.tab[b]
+        vc = getattr(t, "nullable", {}).get(name)
+        if vc is None: return None
+        return algq.Cmp(algq.Col(t, vc), "EQ", 1)
+
+    def native_tf(self, e):
+        """(TRUE, FALSE) plane predicates of a three-valued predicate: where e is TRUE and where it is FALSE (rows where
+        it is UNKNOWN satisfy neither); None when e is not a plane predicate"""
+        def both(t, f): return (t, f)
+        def neg(p): return algq.Not(p)
+        def AND(a, b_): return algq.BoolOp("AND", a, b_)
+        def OR(a, b_): return algq.BoolOp("OR", a, b_)
+        def guard(col, p):                         # p on the codes, where col IS NOT NULL
+            v = self.valid(col)
+            return (p, neg(p)) if v is None else (AND(v, p), AND(v, neg(p)))
         if isinstance(e, I.Func):
             fn = e.fn
             if fn in ("and", "or"):
-                parts = [self.native(a) for a in e.args]
+                parts = [self.native_tf(a) for a in e.args]
                 if any(p is None for p in parts): return None
-                out = parts[0]
-                for p in parts[1:]: out = algq.BoolOp(fn.upper(), out, p)
-                return out
+                T_, F_ = parts[0]
+                for t, f in parts[1:]:
+                    T_, F_ = (AND(T_, t), OR(F_, f)) if fn == "and" else (OR(T_, t), AND(F_, f))
+                return T_, F_
             if fn == "not":
-                p = self.native(e.args[0]); return None if p is None else algq.Not(p)
+                p = self.native_tf(e.args[0]); return None if p is None else (p[1], p[0])
+            if fn in ("is_true", "is_false", "is_not_true", "is_not_false", "is_unknown", "is_not_unknown"):
+                p = self.native_tf(e.args[0])
+                if p is None: return None
+                t, f = p
+                return {"is_true": (t, neg(t)), "is_false": (f, neg(f)), "is_not_true": (neg(t), t), "is_not_false": (neg(f), f),
+                        "is_unknown": (AND(neg(t), neg(f)), OR(t, f)), "is_not_unknown": (OR(t, f), AND(neg(t), neg(f)))}[fn]
             if fn in ("=", "<>", "<", "<=", ">", ">="):
                 a, b = self.strip(e.args[0]), self.strip(e.args[1])
                 op = fn
                 if isinstance(a, I.Lit) and isinstance(b, I.Col): a, b = b, a; op = {"<": ">", "<=": ">=", ">": "<", ">=": "<="}.get(op, op)
                 if isinstance(a, I.Col) and isinstance(b, I.Lit):
-                    if b.v is None: return self._false(a)
+                    if b.v is None: f0 = self._false(a); return (f0, f0)          # comparison with NULL: UNKNOWN
                     v = self._lit_for(a, b)
                     if v is _NO: return None
                     c = self.algcol(a)
                     try:
-                        return {"=": c.__eq__, "<>": c.__ne__, "<": c.__lt__, "<=": c.__le__, ">": c.__gt__, ">=": c.__ge__}[op](v)
+                        p = {"=": c.__eq__, "<>": c.__ne__, "<": c.__lt__, "<=": c.__le__, ">": c.__gt__, ">=": c.__ge__}[op](v)
                     except (TypeError, ValueError): return None
+                    return guard(a, p)
                 return None
             if fn in ("between", "between_sym"):
                 x, lo, hi = (self.strip(a) for a in e.args)
@@ -1191,45 +1253,45 @@ class _Planner:
                     c = self.algcol(x)
                     try:
                         if fn == "between_sym" and F.cmp_values(a_, b_) > 0: a_, b_ = b_, a_
-                        return c.between(a_, b_)
+                        return guard(x, c.between(a_, b_))
                     except (TypeError, ValueError): return None
                 return None
             if fn == "in":
                 x = self.strip(e.args[0])
-                if isinstance(x, I.Col) and all(isinstance(_strip_cast(a), I.Lit) for a in e.args[1:]) and len(e.args) <= 65:
-                    vals = [self._lit_for(x, _strip_cast(a)) for a in e.args[1:] if _strip_cast(a).v is not None]
+                if isinstance(x, I.Col) and all(isinstance(self.strip(a), I.Lit) for a in e.args[1:]) and len(e.args) <= 65:
+                    lits = [self.strip(a) for a in e.args[1:]]
+                    has_null = any(l.v is None for l in lits)
+                    vals = [self._lit_for(x, l) for l in lits if l.v is not None]
                     if any(v is _NO for v in vals): return None
-                    if not vals: return self._false(x)
-                    try: return self.algcol(x).isin(vals)
+                    if not vals: f0 = self._false(x); return (f0, f0 if has_null else (self.valid(x) or self._true(x)))
+                    try: p = self.algcol(x).isin(vals)
                     except (TypeError, ValueError): return None
+                    t, f = guard(x, p)
+                    return (t, self._false(x) if has_null else f)
                 return None
             if fn in ("like", "starts_with", "prefix") and len(e.args) == 2:
-                x, p = _strip_cast(e.args[0]), e.args[1]
+                x, p = self.strip(e.args[0]), e.args[1]
                 if isinstance(x, I.Col) and isinstance(p, I.Lit) and isinstance(p.v, str) and x.t.id == "VARCHAR":
-                    pat = p.v
-                    if fn == "like":
-                        body = pat[:-1] if pat.endswith("%") else None
-                        if body is not None and "%" not in body and "_" not in body:
-                            try: return self.algcol(x).startswith(body)
-                            except TypeError: return None
-                        if "%" not in pat and "_" not in pat:
-                            try: return self.algcol(x) == pat
-                            except TypeError: return None
-                        return None
-                    try: return self.algcol(x).startswith(pat)
+                    pat = p.v; q = None
+                    try:
+                        if fn == "like":
+                            body = pat[:-1] if pat.endswith("%") else None
+                            if body is not None and "%" not in body and "_" not in body: q = self.algcol(x).startswith(body)
+                            elif "%" not in pat and "_" not in pat: q = self.algcol(x) == pat
+                        else: q = self.algcol(x).startswith(pat)
                     except TypeError: return None
+                    return None if q is None else guard(x, q)
                 return None
             if fn in ("is_null", "is_not_null"):
                 x = e.args[0]
-                if isinstance(x, I.Col) and not x.nullable:
-                    return self._false(x) if fn == "is_null" else self._true(x)
+                if isinstance(x, I.Col):
+                    v = self.valid(x)
+                    if v is None: v = self._true(x)
+                    return (neg(v), v) if fn == "is_null" else (v, neg(v))
                 return None
-            if fn in ("is_true", "is_not_false") and not e.args[0].nullable: return self.native(e.args[0])
-            if fn in ("is_false", "is_not_true") and not e.args[0].nullable:
-                p = self.native(e.args[0]); return None if p is None else algq.Not(p)
             return None
         if isinstance(e, I.Col) and e.t.id == "BOOLEAN":
-            try: return self.algcol(e) == True
+            try: return guard(e, self.algcol(e) == True)
             except TypeError: return None
         return None
 
@@ -1264,18 +1326,22 @@ class _Planner:
         """a predicate on one dimension: evaluated on the dimension's distinct value tuples -> its passing rows"""
         t = self.tab[b]; cols = I.cols_of(e)
         names = sorted({self.canon(c)[1] for c in cols})
+        nb = getattr(t, "nullable", {})
+        vcols = [nb[c] for c in names if c in nb]
+        vnames = {c: len(names) + i for i, c in enumerate(c for c in names if c in nb)}
         n = t.n
         if not names:
             v = ev(e, Rel(1), self.cx)[0]
             mask = np.full(n, v is True)
         else:
-            codes = np.stack([t.decoded(c).astype(np.int64) for c in names], 1)
+            codes = np.stack([t.decoded(c).astype(np.int64) for c in names + vcols], 1)
             u, inv = np.unique(codes, axis=0, return_inverse=True)
             inv = np.asarray(inv).ravel()
             r = Rel(len(u))
             for j, c in enumerate(names):
                 cd = t.codecs.get(c) if getattr(t, "codecs", None) else None
                 vals = cd.decode(u[:, j]) if cd is not None else u[:, j].tolist()
+                if c in vnames: vals = [None if not ok_ else x for x, ok_ in zip(vals, u[:, vnames[c]].tolist())]
                 for col in cols:
                     if self.canon(col)[1] == c: r.cols[col.key()] = vals
             res = ev(e, r, self.cx)
@@ -1284,10 +1350,11 @@ class _Planner:
             ok = np.array([x is True for x in res], bool)
             mask = ok[inv]
         mask &= t.used[:n] if len(t.used) >= n else mask
-        return algq.RowMask(t, mask, names, sql=I.render(e))
+        return algq.RowMask(t, mask, names + vcols, sql=I.render(e))     # the selection is a function of these columns
 
     def codeset(self, col, e):
-        """a predicate on one fact column: evaluated on every code the column can hold -> intervals or a code set"""
+        """a predicate on one fact column: evaluated on every code the column can hold -> intervals or a code set
+        (returns a list of engine predicates, or None)"""
         b, name = self.canon(col)
         t = self.tab[b]
         if name in getattr(t, "wide", {}): return None
@@ -1295,32 +1362,46 @@ class _Planner:
         cd = t.codecs.get(name) if getattr(t, "codecs", None) else None
         if cd is not None and getattr(cd, "kind", "") in ("dict", "rank"):
             mx = min(mx, len(cd.values if cd.kind == "dict" else cd.raw) - 1)
-        if mx < 0 or t.n == 0: return algq.Cmp(algq.Col(t, name), "LT", 0)
+        c = algq.Col(t, name)
+        v = self.valid(col)
+        # the value the predicate takes on a NULL
+        r0 = Rel(1)
+        for x in I.cols_of(e): r0.cols[x.key()] = [None]
+        at_null = ev(e, r0, self.cx)[0] if v is not None else None
+        if isinstance(at_null, Err): at_null = None
+        if mx < 0 or t.n == 0:                         # no values stored: only NULLs (or no rows)
+            return [algq.Not(v)] if (at_null is True and v is not None) else [algq.Cmp(c, "LT", 0)]
         if mx >= 1 << 22: return None
         codes = np.arange(mx + 1, dtype=np.int64)
         vals = cd.decode(codes) if cd is not None else codes.tolist()
         r = Rel(len(vals))
-        for c in I.cols_of(e): r.cols[c.key()] = vals
+        for x in I.cols_of(e): r.cols[x.key()] = vals
         res = ev(e, r, self.cx)
         for x in res:
             if isinstance(x, Err): raise SqlError(x.msg)
         ok = np.array([x is True for x in res], bool)
-        c = algq.Col(t, name)
-        if not ok.any(): return algq.Cmp(c, "LT", 0)
         edges = np.diff(np.concatenate([[0], ok.astype(np.int8), [0]]))
         starts, ends = np.nonzero(edges == 1)[0], np.nonzero(edges == -1)[0] - 1
+        p = None
         if len(starts) <= 8:
-            p = None
             for a_, b_ in zip(starts.tolist(), ends.tolist()):
                 q = algq._code_pred(c, (a_, b_))
                 p = q if p is None else algq.BoolOp("OR", p, q)
+            if p is None: p = algq.Cmp(c, "LT", 0)
+        if at_null is True:                           # NULL rows pass too: (NOT valid) OR (the codes)
+            if p is None: return None
+            out = algq.BoolOp("OR", algq.Not(v), p)
+            out.sql = I.render(e); return [out]
+        if p is not None:
+            if v is not None: p = algq.BoolOp("AND", v, p)
             p.sql = I.render(e)
-            return p
-        return algq.CodeSet(c, ok, sql=I.render(e))
+            return [p]
+        out = [algq.CodeSet(c, ok, sql=I.render(e))]
+        return out + ([v] if v is not None else [])
 
     # aggregates ------------------------------------------------------------
     def poly(self, e):
-        """an exact polynomial (algq expression) of e, or None"""
+        """an exact polynomial (algq expression) of e, or None (NULLs are excluded by the caller's variant)"""
         e0 = e
         if isinstance(e, I.Cast) and not e.try_:
             a, t = e.arg.t, e.t
@@ -1333,7 +1414,7 @@ class _Planner:
             if isinstance(e.v, Decimal): return algq.Const(e.v)
             return None
         if isinstance(e, I.Col):
-            if not e.t.exact or e.nullable: return None
+            if not e.t.exact: return None
             c = self.algcol(e)
             cd = c.codec()
             if cd is not None and getattr(cd, "kind", "") == "ref": return None
@@ -1357,35 +1438,101 @@ class _Planner:
 
     # the run ---------------------------------------------------------------
     def run(self, rest, need, aggs):
+        """the block's rows on the engine. A LEFT JOIN runs as disjoint passes: the matched rows, and the rows
+        without a match (no ON match on the fact side, a reference without a dimension row, a dimension row failing
+        the ON terms), the dimension's columns NULL in the latter. Each aggregate's per-group state (counts,
+        moment sums, extremes) is kept per row of the result, so that the passes add up."""
+        joins0 = dict(self.joins)
+        configs = [dict(joined=dict(joins0), nulled=set(), extra=[])]
+        for b, (fk, cf, cd) in self.left.items():
+            tf = None
+            if cf:
+                tfs = [self.native_tf(c) for c in cf]
+                if any(x is None for x in tfs): raise _NotStarNow()
+                T_ = tfs[0][0]
+                for x in tfs[1:]: T_ = algq.BoolOp("AND", T_, x[0])
+                tf = T_
+            md = self.rowmask(b, _and(cd)) if cd else None
+            nd = None
+            if md is not None:
+                t = self.tab[b]; mask = np.unpackbits(md.bm.view(np.uint8), bitorder="little")[:t.n].astype(bool)
+                nd = algq.RowMask(t, ~mask & t.used[:t.n], md.cols, sql="NOT " + (md.sql or ""))
+            orphans = getattr(self.fact.table, "orphans", {}).get(fk, 0)
+            new = []
+            for c in configs:
+                base_extra = c["extra"] + ([tf] if tf is not None else [])
+                m = dict(joined=dict(c["joined"]), nulled=set(c["nulled"]), extra=base_extra + ([md] if md is not None else []))
+                new.append(m)                                        # matched
+                j2 = dict(c["joined"]); j2.pop(b, None)
+                if tf is not None:
+                    new.append(dict(joined=dict(j2), nulled=c["nulled"] | {b}, extra=c["extra"] + [algq.Not(tf)]))
+                if orphans:
+                    new.append(dict(joined=dict(j2), nulled=c["nulled"] | {b}, extra=base_extra + [algq.RefOk(self.tab[self.fact], fk, False)]))
+                if nd is not None:
+                    new.append(dict(joined=dict(c["joined"]), nulled=c["nulled"] | {b}, extra=base_extra + [nd]))
+            configs = new
+        parts, plans = [], []
+        for c in configs:
+            self.joins = dict(c["joined"]); self.nulled = set(c["nulled"])
+            rel, plan = self.run_pass(rest, need, aggs, c["extra"])
+            parts.append(rel); plans.append(plan)
+        self.joins, self.nulled = joins0, set()
+        if len(parts) == 1: return parts[0], plans[0]
+        return _concat(parts), plans[0]
+
+    def nullify(self, e):
+        """e with the columns of the dimensions that are NULL in this pass replaced by NULL (and constants folded)"""
+        if not self.nulled or e is None: return e
+        def f(x):
+            if isinstance(x, I.Col) and x.b in self.nulled: return I.Lit(None, x.t)
+            return None
+        return _fold_consts(I.subst(e, f))
+
+    def run_pass(self, rest, need, aggs, extra):
         s, cx = self.s, self.cx
-        preds = []                     # engine predicates (algq), conjunction
+        preds = list(extra)            # engine predicates (algq), conjunction
         residual = []                  # IR conjuncts evaluated per group
         empty = False
         for c in rest:
-            c = fold_subqueries(fold_outer(c, cx), cx)
+            c = self.nullify(fold_subqueries(fold_outer(c, cx), cx))
             if isinstance(c, I.Lit):
                 if c.v is True: continue
                 empty = True; continue
             p = self.engine_pred(c)
-            if p is not None: preds.append(p)
+            if p is not None: preds += p
             else: residual.append(c)
-        atoms = dict(need)
+        atoms = {k: c for k, c in need.items() if c.b not in self.nulled}
+        nulled_atoms = {k: c for k, c in need.items() if c.b in self.nulled}
         for c in residual:
             for col in I.cols_of(c): atoms[col.key()] = col
             for sq in subqueries_in([c]):
                 for col in outer_refs_into(sq.q, set(self.tab)): atoms[col.key()] = col
         # aggregates: moments (polynomial arguments) or values (their columns become atoms)
-        variants = {(): 0}              # extra engine predicates (FILTER) -> variant id
+        variants = {(): 0}              # extra engine predicates (FILTER, IS NOT NULL) -> variant id
         vpreds = {0: []}
         moments = {}                    # (variant, moment index) registry: list of algq polynomials per variant
         mlist = {0: []}
         mkeys = {0: {}}
         aggplan = {}
+        modes = self.__dict__.setdefault("_mode", {})          # per aggregate, fixed by the first pass: state | value
         for k, a in aggs.items():
-            plan = self.agg_plan(a, variants, vpreds, mlist, mkeys)
+            if modes.get(k) != "value":
+                a2 = self.nullify_agg(a)
+                if a2 is None:                      # its arguments are NULL in this pass: nothing to aggregate here
+                    if k not in modes: modes[k] = "value" if self.agg_plan(a, {(): 0}, {0: []}, {0: []}, {0: {}}) is None else "state"
+                    if modes[k] == "state": aggplan[k] = dict(kind="zero"); continue
+                    plan = None
+                else:
+                    plan = self.agg_plan(a2, variants, vpreds, mlist, mkeys)
+                    if plan is None and modes.get(k) == "state": raise _NotStarNow()
+                    modes.setdefault(k, "state" if plan is not None else "value")
+            else: plan = None
             if plan is None:
+                modes[k] = "value"
                 for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
-                    for col in I.cols_of(x): atoms[col.key()] = col
+                    for col in I.cols_of(x):
+                        if col.b in self.nulled: nulled_atoms[col.key()] = col
+                        else: atoms[col.key()] = col
                     for sq in subqueries_in([x]):
                         for col in outer_refs_into(sq.q, set(self.tab)): atoms[col.key()] = col
             else:
@@ -1393,20 +1540,23 @@ class _Planner:
                 if plan.get("rowfilter_expr") is not None:
                     for col in I.cols_of(plan["rowfilter_expr"]): atoms[col.key()] = col
         # engine keys: one per distinct (binding, column)
-        keys, kpos, atom_list = [], {}, []
+        keys, kpos, vpos, atom_list = [], {}, {}, []
         for k, col in atoms.items():
             cb = self.canon(col)
             if cb not in kpos:
                 kpos[cb] = len(keys); keys.append(self.algcol(col))
-            atom_list.append((k, kpos[cb]))
-        nkeys = sum(2 if (self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {})) else 1
-                    for c in {self.canon(c): c for c in atoms.values()}.values())
+                vp = self.valid(col)
+                if vp is not None: vpos[cb] = len(keys); keys.append(vp.col)     # NULL: the validity is a key too
+            atom_list.append((k, kpos[cb], vpos.get(cb)))
+        nkeys = len(keys) + sum(1 for c in {self.canon(c): c for c in atoms.values()}.values()
+                                if self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {}))
         if nkeys > algq.MAXKEY:
             # more columns than GROUP BY keys: the passing rows themselves (a row bitmap), their columns read from the
             # planes; every aggregate is then computed from its arguments' values
             for k, a in aggs.items():
                 for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
-                    for col in I.cols_of(x): atoms[col.key()] = col
+                    for col in I.cols_of(x):
+                        (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
             aggplan = {}
             rel = self.rows_rel(atoms, preds, empty)
         else:
@@ -1415,9 +1565,11 @@ class _Planner:
                 # the atoms' code domain passes 2^128: the passing rows themselves
                 for k, a in aggs.items():
                     for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
-                        for col in I.cols_of(x): atoms[col.key()] = col
+                        for col in I.cols_of(x):
+                            (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
                 aggplan = {}
                 rel = self.rows_rel(atoms, preds, empty)
+        for k, col in nulled_atoms.items(): rel.cols[k] = [None] * rel.n
         for k, plan in aggplan.items():
             if plan.get("rowfilter_expr") is not None:
                 plan["rowfilter"] = set(truth(ev(plan["rowfilter_expr"], rel, cx)))
@@ -1428,10 +1580,24 @@ class _Planner:
                 if plan.get("rowfilter") is not None:
                     pos = {old: new for new, old in enumerate(keep)}
                     plan["rowfilter"] = {pos[i] for i in plan["rowfilter"] if i in pos}
-        return rel, aggplan
+        _states(rel, aggs, aggplan)
+        return rel, {k: dict(kind="state") for k in aggs if k in aggplan}
+
+    def nullify_agg(self, a):
+        """the aggregate as it reads in this pass (None: every argument is NULL here, so nothing is aggregated)"""
+        if not self.nulled: return a
+        args = [self.nullify(x) for x in a.args]
+        filt = self.nullify(a.filter) if a.filter is not None else None
+        if a.name != "count_star" and any(isinstance(x, I.Lit) and x.v is None for x in args) and F.AGGS[a.name].skip_nulls:
+            return None
+        if isinstance(filt, I.Lit):
+            if filt.v is not True: return None
+            filt = None
+        return I.Agg(a.name, args, a.t, a.distinct, filt, [(self.nullify(o[0]), o[1], o[2]) for o in a.order], a.params)
 
     def engine_pred(self, c):
-        """an AND-term as an engine predicate: plane predicate, dimension row mask, fact code set; None: residual"""
+        """an AND-term as engine predicates (a list, all must hold): plane predicate, dimension row mask, fact code
+        set; None: residual"""
         if I.has(c, I.Subq) or I.has(c, I.Outer) or I.has(c, I.Agg) or I.has(c, I.Win): return None
         if not _deterministic(c): return None
         bs = self.tables_of(c)
@@ -1440,51 +1606,61 @@ class _Planner:
         p = self.native(c)
         if p is not None:
             if p.sql is None: p.sql = I.render(c)
-            return p
+            return [p]
         if b is self.fact:
             cols = {self.canon(x) for x in I.cols_of(c)}
             if len(cols) == 1:
                 return self.codeset(I.cols_of(c)[0], c)
             return None
-        return self.rowmask(b, c)
+        return [self.rowmask(b, c)]
 
     def agg_plan(self, a, variants, vpreds, mlist, mkeys):
         """how an aggregate is computed: from engine moments ({kind: moment, variant, moments}), from the engine's
-        MIN / MAX by plane elimination ({kind: ext}), or None (from the values of its arguments per group)"""
+        MIN / MAX by plane elimination ({kind: ext}), or None (from the values of its arguments per group). A variant
+        is a set of extra engine predicates: the aggregate's FILTER and 'IS NOT NULL' of its nullable columns."""
         name = a.name
-        ext = name in ("min", "max") and len(a.args) == 1 and isinstance(a.args[0], I.Col) and not a.args[0].nullable \
+        ext = name in ("min", "max") and len(a.args) == 1 and isinstance(a.args[0], I.Col) \
             and self.canon(a.args[0])[0] is self.fact and self.canon(a.args[0])[1] not in getattr(self.fact.table, "wide", {})
         if (a.distinct and not ext) or a.order: return None
         if name not in MOMENTS and name != "count_star" and not ext: return None
-        # FILTER: extra engine predicates -> a variant of the engine queries; otherwise a per-group filter
-        v, rowfilter = 0, None
+        eps, rowfilter = [], None
         if a.filter is not None:
             f = fold_subqueries(fold_outer(a.filter, self.cx), self.cx)
-            parts = _conjuncts(f); eps = []
-            for c in parts:
+            for c in _conjuncts(f):
                 if isinstance(c, I.Lit) and c.v is True: continue
-                p = self.engine_pred(c) if not (isinstance(c, I.Lit)) else None
+                p = self.engine_pred(c) if not isinstance(c, I.Lit) else None
                 if p is None: eps = None; break
-                eps.append(p)
+                eps += p
             if eps is None:
-                if any(I.has(x, I.Subq) for x in [f]): return None
-                rowfilter = f
-            else:
-                key = tuple(id(p) for p in eps)
-                if key not in variants:
-                    variants[key] = len(variants); vpreds[variants[key]] = eps; mlist[variants[key]] = []; mkeys[variants[key]] = {}
-                v = variants[key]
-        if name == "count_star":
-            return dict(kind="moment", variant=v, moments=[], rowfilter_expr=rowfilter, name="count")
+                if I.has(f, I.Subq): return None
+                rowfilter, eps = f, []
+        if name != "count_star":
+            if name == "count" and isinstance(a.args[0], I.Col): pass       # COUNT(column): its validity alone
+            elif not ext:
+                y = a.args[0]; x = a.args[1] if len(a.args) > 1 else None
+                if self.poly(y) is None or (x is not None and self.poly(x) is None): return None
+            seen = set()
+            for arg in a.args:                         # NULL arguments are skipped: only rows where all are valid
+                for col in I.cols_of(arg):
+                    cb = self.canon(col)
+                    if cb in seen: continue
+                    seen.add(cb)
+                    vp = self.valid(col)
+                    if vp is not None: eps.append(vp)
+        key = tuple(sorted(id(p) for p in eps))
+        if eps:
+            sig = tuple(sorted(_pred_sig(p) for p in eps))
+            key = ("sig",) + sig
+        if key not in variants:
+            variants[key] = len(variants); vpreds[variants[key]] = list(eps); mlist[variants[key]] = []; mkeys[variants[key]] = {}
+        v = variants[key] if eps else 0
+        if name == "count_star" or name == "count":
+            return dict(kind="moment", variant=v, moments=[], rowfilter_expr=rowfilter)
         if ext:
             k = ("ext", self.canon(a.args[0])[1])
             if k not in mkeys[v]: mkeys[v][k] = k; mlist[v].append(k)
             return dict(kind="ext", variant=v, key=k, rowfilter_expr=rowfilter)
-        args = a.args
-        if any(x.nullable for x in args): return None
-        y = args[0]; x = args[1] if len(args) > 1 else None
-        if self.poly(y) is None or (x is not None and self.poly(x) is None): return None
-        if name == "count": return dict(kind="moment", variant=v, moments=[], rowfilter_expr=rowfilter)
+        y = a.args[0]; x = a.args[1] if len(a.args) > 1 else None
         ms = []
         for m in MOMENTS[name](y, x):
             k = _mkey(m)
@@ -1522,7 +1698,12 @@ class _Planner:
                 codes = t.decoded(name)[rows]
             cd = getattr(t, "codecs", {}).get(name)
             codes = codes.tolist()                       # Python integers: 64-bit codes past 2^63 stay exact
-            rel.cols[k] = cd.decode(algq._codes_array(codes)) if cd is not None else codes
+            vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
+            vc = getattr(t, "nullable", {}).get(name)
+            if vc is not None:
+                ok = fact_codes(vc) if b is self.fact else t.decoded(vc)[rows]
+                vals = [x if o else None for x, o in zip(vals, ok.tolist())]
+            rel.cols[k] = vals
         return rel
 
     def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist):
@@ -1552,8 +1733,8 @@ class _Planner:
         else:
             groups = list(base.keys())
             rel = Rel(len(groups)); rel.cnt = [base[g] for g in groups]
-        for k, pos in atom_list:
-            rel.cols[k] = [g[pos] for g in groups]
+        for k, pos, vp in atom_list:
+            rel.cols[k] = [g[pos] for g in groups] if vp is None else [g[pos] if g[vp] else None for g in groups]
         for vid in sorted(set(variants.values())):
             extra = vpreds[vid]
             if vid != 0:
@@ -1577,6 +1758,59 @@ _NO = object()
 
 class _TooManyGroups(Exception):
     pass
+
+
+def _states(rel, aggs, aggplan):
+    """each engine-computed aggregate's state per row: ("n", k) count, ("m", k, j) moment sums, ("x", k) extremes"""
+    for k, plan in aggplan.items():
+        kind = plan.get("kind")
+        filt = plan.get("rowfilter")
+        if kind == "zero":
+            rel.cols[("n", k)] = [0] * rel.n; rel.cols[("x", k)] = [None] * rel.n
+            for j in range(8): rel.cols[("m", k, j)] = [None] * rel.n
+            continue
+        v = plan["variant"]
+        if kind == "moment":
+            cnt = rel.vcnt.get(v, rel.cnt) if v != 0 else rel.cnt
+            rel.cols[("n", k)] = [c if filt is None or i in filt else 0 for i, c in enumerate(cnt)]
+            for j, m in enumerate(plan["moments"]):
+                col = rel.mom[(v, m)]
+                rel.cols[("m", k, j)] = [x if filt is None or i in filt else None for i, x in enumerate(col)]
+            for j in range(len(plan["moments"]), 8): rel.cols[("m", k, j)] = [None] * rel.n
+            rel.cols[("x", k)] = [None] * rel.n
+        elif kind == "ext":
+            col = rel.mom[(v, plan["key"])]
+            rel.cols[("x", k)] = [x if filt is None or i in filt else None for i, x in enumerate(col)]
+            rel.cols[("n", k)] = [0] * rel.n
+            for j in range(8): rel.cols[("m", k, j)] = [None] * rel.n
+
+
+class _NotStarNow(Exception):
+    pass
+
+
+def _fold_consts(e):
+    """evaluate the constant parts of an expression (bottom-up); AND with a FALSE term is FALSE, OR with a TRUE one TRUE"""
+    def f(x):
+        if isinstance(x, I.Func) and x.fn in ("and", "or"):
+            stop = x.fn == "or"
+            if any(isinstance(c, I.Lit) and c.v is stop for c in x.args): return I.Lit(stop, T.BOOLEAN)
+        if isinstance(x, (I.Func, I.Case, I.Cast)) and all(isinstance(c, I.Lit) for c in x.children()):
+            if isinstance(x, I.Func) and not F.SCALARS.get(x.fn, F.SCALARS["+"]).deterministic: return x
+            if isinstance(x, I.Func) and x.fn in ("row", "__iso_similar_pat"): return x
+            try: return I.Lit(eval_const(x), x.t)
+            except SqlError: return x
+        return x
+    return I.subst_post(e, f)
+
+
+def _pred_sig(p):
+    """a structural signature of an engine predicate (variants with the same predicates share engine queries)"""
+    if isinstance(p, algq.Cmp): return ("cmp", id(p.col.table), p.col.name, p.op, p.v)
+    if isinstance(p, algq.Between): return ("btw", id(p.col.table), p.col.name, p.a, p.b)
+    if isinstance(p, algq.BoolOp): return (p.op, _pred_sig(p.l), _pred_sig(p.r))
+    if isinstance(p, algq.Not): return ("not", _pred_sig(p.x))
+    return ("obj", id(p))
 
 
 def _mkey(m):

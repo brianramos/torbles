@@ -265,6 +265,10 @@ class RowMask(Pred):
         self.table, self.cols, self.sql = table, set(cols), sql
         m = np.zeros(((table.n + 63) // 64 + 1) * 64, np.uint8); m[:table.n] = np.asarray(mask, bool)[:table.n]
         self.bm = np.packbits(m, bitorder="little").view(np.uint64)
+class RefOk(Pred):
+    """the fact rows whose foreign key fk has (ok=True) or has not (ok=False) a matching dimension row: one plane, the
+    fk's bit of the hidden _refok column"""
+    def __init__(self, table, fk, ok=True, sql=None): self.table, self.fk, self.ok, self.sql = table, fk, ok, sql
 class CodeSet(Pred):
     """a filter on one fact column given as the set of its codes that pass (any predicate of that column, evaluated on
     the codes it can hold): a semi-join of the column against a bitmap over its code domain. Only as an AND-term."""
@@ -723,6 +727,7 @@ def pred_cols(p):
 
 def tables_of(p):
     if isinstance(p, (Cmp, Between, CodeSet)): return {p.col.table}
+    if isinstance(p, RefOk): return {p.table}
     if isinstance(p, RowMask): return {p.table}
     if isinstance(p, BoolOp): return tables_of(p.l) | tables_of(p.r)
     if isinstance(p, Not): return tables_of(p.x)
@@ -917,6 +922,10 @@ class Table:
         bad = (ctypes.c_uint64 * maxbad)(); n = lib.at_validate(self.at, bad, maxbad); return n, list(bad[:min(n, maxbad)])
 
 def compile_pred(p, table, prog):
+    if isinstance(p, RefOk):
+        prog.append(PInstr(P["BIT"], table.idx("_refok"), table.refbit[p.fk], 0))
+        if not p.ok: prog.append(PInstr(P["NOT"], 0, 0, 0))
+        return
     if isinstance(p, Cmp): prog.append(PInstr(P[p.op], table.idx(p.col.name), p.v, 0))
     elif isinstance(p, Between): prog.append(PInstr(P["BETWEEN"], table.idx(p.col.name), p.a, p.b))
     elif isinstance(p, BoolOp): compile_pred(p.l, table, prog); compile_pred(p.r, table, prog); prog.append(PInstr(P[p.op], 0, 0, 0))
