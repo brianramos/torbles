@@ -20,5 +20,8 @@ from algq import __version__, Table, Query, Col, Surrogate, PlaneKey, set_thread
 from blobcol import BlobStore                               # noqa: F401
 from database import Database, from_duckdb, from_ddl, from_frictionless, from_frames, keys_from_ddl, load, LoadError   # noqa: F401
 import algq, blobcol, coltypes, database, keydesign         # noqa: F401,E402
-for _m in ("algq", "blobcol", "coltypes", "database", "keydesign"):   # one module object, however it is imported
+import sqltypes, sqlir, sqlfuncs, sqlfront, sqlexec, sqlapi  # noqa: F401,E402
+from sqlapi import F                                        # noqa: F401,E402  SQL functions for the Python API
+from sqltypes import SqlError                               # noqa: F401,E402
+for _m in ("algq", "blobcol", "coltypes", "database", "keydesign", "sqltypes", "sqlir", "sqlfuncs", "sqlfront", "sqlexec", "sqlapi"):
     _sys.modules.setdefault("torbles." + _m, _sys.modules[_m])

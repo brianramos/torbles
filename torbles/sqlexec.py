@@ -1587,6 +1587,55 @@ class _Planner:
         _states(rel, aggs, aggplan)
         return rel, {k: dict(kind="state") for k in aggs if k in aggplan}
 
+    def case_plan(self, a, variants, vpreds, mlist, mkeys):
+        """SUM / AVG / COUNT of a CASE: each branch is a variant of the engine queries (the rows where its condition is
+        the first TRUE one), its value a moment polynomial or a constant; the result adds the branches up"""
+        e = a.args[0]
+        eps0 = []
+        if a.filter is not None:
+            for c in _conjuncts(fold_subqueries(fold_outer(a.filter, self.cx), self.cx)):
+                if isinstance(c, I.Lit) and c.v is True: continue
+                p = self.engine_pred(c) if not isinstance(c, I.Lit) else None
+                if p is None: return None
+                eps0 += p
+        whens = list(e.whens) + [(None, e.else_)]
+        branches, prior = [], []
+        for cond, val in whens:
+            preds = list(eps0)
+            for pc in prior:
+                p = self.engine_pred(I.Func("is_not_true", [pc], T.BOOLEAN))
+                if p is None: return None
+                preds += p
+            if cond is not None:
+                p = self.engine_pred(cond)
+                if p is None:
+                    if isinstance(cond, I.Lit): p = [] if cond.v is True else None
+                    if p is None: return None
+                preds += p
+                prior.append(cond)
+            if val is None or (isinstance(val, I.Lit) and val.v is None): continue        # NULL: nothing to add
+            if isinstance(val, I.Lit):
+                if isinstance(val.v, bool) or not isinstance(val.v, (int, Decimal)): return None
+                const, poly = val.v, None
+            else:
+                if a.name != "count" and self.poly(val) is None: return None
+                if a.name == "count" and not isinstance(val, I.Col) and self.poly(val) is None: return None
+                const, poly = None, val
+                for col in I.cols_of(val):
+                    vp = self.valid(col)
+                    if vp is not None: preds.append(vp)
+            sig = ("sig",) + tuple(sorted(_pred_sig(p) for p in preds)) if preds else ()
+            if sig not in variants:
+                variants[sig] = len(variants); vpreds[variants[sig]] = list(preds); mlist[variants[sig]] = []; mkeys[variants[sig]] = {}
+            v = variants[sig] if preds else 0
+            mi = None
+            if poly is not None and a.name != "count":
+                k = poly.key()
+                if k not in mkeys[v]: mkeys[v][k] = len(mlist[v]); mlist[v].append(self.poly(poly))
+                mi = mkeys[v][k]
+            branches.append((v, mi, const))
+        return dict(kind="case", branches=branches)
+
     def nullify_agg(self, a):
         """the aggregate as it reads in this pass (None: every argument is NULL here, so nothing is aggregated)"""
         if not self.nulled: return a
@@ -1623,6 +1672,8 @@ class _Planner:
         MIN / MAX by plane elimination ({kind: ext}), or None (from the values of its arguments per group). A variant
         is a set of extra engine predicates: the aggregate's FILTER and 'IS NOT NULL' of its nullable columns."""
         name = a.name
+        if name in ("sum", "avg", "count") and not a.distinct and not a.order and isinstance(a.args[0], I.Case):
+            return self.case_plan(a, variants, vpreds, mlist, mkeys)
         ext = name in ("min", "max") and len(a.args) == 1 and isinstance(a.args[0], I.Col) \
             and self.canon(a.args[0])[0] is self.fact and self.canon(a.args[0])[1] not in getattr(self.fact.table, "wide", {})
         if (a.distinct and not ext) or a.order: return None
@@ -1788,6 +1839,20 @@ def _states(rel, aggs, aggplan):
         if kind == "zero":
             rel.cols[("n", k)] = [0] * rel.n; rel.cols[("x", k)] = [None] * rel.n
             for j in range(8): rel.cols[("m", k, j)] = [None] * rel.n
+            continue
+        if kind == "case":                           # the branches add up: rows with a value, and their sum
+            n = [0] * rel.n; sm = [None] * rel.n
+            for v, mi, const in plan["branches"]:
+                cnt = rel.vcnt.get(v, rel.cnt) if v != 0 else rel.cnt
+                for i in range(rel.n):
+                    c = cnt[i]
+                    if not c: continue
+                    n[i] += c
+                    add = rel.mom[(v, mi)][i] if mi is not None else (const * c if const is not None else None)
+                    if add is not None: sm[i] = add if sm[i] is None else sm[i] + add
+            rel.cols[("n", k)] = n; rel.cols[("m", k, 0)] = sm
+            for j in range(1, 8): rel.cols[("m", k, j)] = [None] * rel.n
+            rel.cols[("x", k)] = [None] * rel.n
             continue
         v = plan["variant"]
         if kind == "moment":

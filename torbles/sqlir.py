@@ -283,3 +283,159 @@ class Values:
 class Recursive:
     """WITH RECURSIVE: base UNION [ALL] step, step reading the binding itself"""
     def __init__(self, binding, base, step, all_): self.binding, self.base, self.step, self.all = binding, base, step, all_
+
+
+# ------------------------------------------------------------------ SQL text of a bound query (Python API: to_sql)
+def _qi(name): return '"' + str(name).replace('"', '""') + '"'
+
+
+def _lit_sql(v, t):
+    import datetime as dt
+    from decimal import Decimal
+    if v is None: return "NULL" if t is None or t.id == "NULL" else f"CAST(NULL AS {t})"
+    if isinstance(v, bool): return "TRUE" if v else "FALSE"
+    if isinstance(v, int): return str(v) if -(2**31) <= v < 2**31 else f"CAST('{v}' AS {t if t is not None and t.integer else 'HUGEINT'})"
+    if isinstance(v, Decimal): return format(v, "f") if t is None or t.id != "DECIMAL" else f"CAST('{format(v, 'f')}' AS {t})"
+    if isinstance(v, float): return f"CAST('{T.fmt_double(v)}' AS DOUBLE)"
+    if isinstance(v, str): return "'" + v.replace("'", "''") + "'"
+    if isinstance(v, dt.datetime): return f"TIMESTAMP '{T.to_text(v, T.TIMESTAMP)}'"
+    if isinstance(v, dt.date): return f"DATE '{v.isoformat()}'"
+    if isinstance(v, dt.time): return f"TIME '{T.to_text(v, T.TIME)}'"
+    if isinstance(v, T.Interval): return f"INTERVAL '{v}'"
+    if isinstance(v, list): return "[" + ", ".join(_lit_sql(x, t.child if t is not None and t.id == "LIST" else None) for x in v) + "]"
+    raise T.SqlError(f"no SQL literal for {v!r}")
+
+
+_INFIX = {"+": "+", "-": "-", "*": "*", "/": "/", "//": "//", "%": "%", "||": "||", "=": "=", "<>": "<>", "<": "<",
+          "<=": "<=", ">": ">", ">=": ">=", "is_distinct": "IS DISTINCT FROM", "is_not_distinct": "IS NOT DISTINCT FROM",
+          "&": "&", "|": "|", "<<": "<<", ">>": ">>"}
+_POSTFIX = {"is_null": "IS NULL", "is_not_null": "IS NOT NULL", "is_true": "IS TRUE", "is_false": "IS FALSE",
+            "is_unknown": "IS UNKNOWN", "is_not_true": "IS NOT TRUE", "is_not_false": "IS NOT FALSE", "is_not_unknown": "IS NOT UNKNOWN"}
+
+
+def expr_sql(e):
+    if isinstance(e, Lit): return _lit_sql(e.v, e.t)
+    if isinstance(e, Col): return f"{_qi(e.b.alias)}.{_qi(e.name)}"
+    if isinstance(e, Outer): return expr_sql(e.col)
+    if isinstance(e, Func):
+        a = [expr_sql(x) for x in e.args]; fn = e.fn
+        if fn in _INFIX and len(a) == 2: return f"({a[0]} {_INFIX[fn]} {a[1]})"
+        if fn in _POSTFIX: return f"({a[0]} {_POSTFIX[fn]})"
+        if fn == "neg": return f"(- {a[0]})"
+        if fn == "__bitnot": return f"(~ {a[0]})"
+        if fn in ("and", "or"): return "(" + f" {fn.upper()} ".join(a) + ")"
+        if fn == "not": return f"(NOT {a[0]})"
+        if fn == "between": return f"({a[0]} BETWEEN {a[1]} AND {a[2]})"
+        if fn == "between_sym": return f"({a[0]} BETWEEN SYMMETRIC {a[1]} AND {a[2]})"
+        if fn == "in": return f"({a[0]} IN ({', '.join(a[1:])}))"
+        if fn in ("like", "ilike"): return f"({a[0]} {fn.upper()} {a[1]}" + (f" ESCAPE {a[2]}" if len(a) > 2 else "") + ")"
+        if fn == "glob": return f"({a[0]} GLOB {a[1]})"
+        if fn == "__iso_similar": return f"({a[0]} SIMILAR TO {a[1]}" + (f" ESCAPE {a[2]}" if len(a) > 2 else "") + ")"
+        if fn == "__iso_like_regex": return f"({a[0]} LIKE_REGEX {a[1]}" + (f" FLAG {a[2]}" if len(a) > 2 else "") + ")"
+        if fn == "__iso_overlaps": return f"(({a[0]}, {a[1]}) OVERLAPS ({a[2]}, {a[3]}))"
+        if fn in ("__first", "__grp"): return a[0]
+        if fn == "list_value": return "[" + ", ".join(a) + "]"
+        if fn == "row": return "(" + ", ".join(a) + ")"
+        return f"{fn}({', '.join(a)})"
+    if isinstance(e, Case):
+        out = "CASE " + " ".join(f"WHEN {expr_sql(c)} THEN {expr_sql(v)}" for c, v in e.whens)
+        return out + (f" ELSE {expr_sql(e.else_)}" if e.else_ is not None else "") + " END"
+    if isinstance(e, Cast): return f"{'TRY_CAST' if e.try_ else 'CAST'}({expr_sql(e.arg)} AS {e.t})"
+    if isinstance(e, Agg): return _agg_sql(e)
+    if isinstance(e, Win): return _win_sql(e)
+    if isinstance(e, Subq):
+        q = to_sql(e.q)
+        if e.kind == "scalar": return f"({q})"
+        if e.kind == "exists": return f"(EXISTS ({q}))"
+        if e.kind == "unique": return f"(UNIQUE ({q}))"
+        return f"({expr_sql(e.child)} {e.op} ANY ({q}))"
+    if isinstance(e, Grouping): return f"GROUPING({', '.join(expr_sql(x) for x in e.args)})"
+    raise T.SqlError(f"cannot render {e!r}")
+
+
+def _order_sql(order):
+    return ", ".join(f"{expr_sql(x) if isinstance(x, Node) else x} {'DESC' if d else 'ASC'} NULLS {'FIRST' if nf else 'LAST'}" for x, d, nf in order)
+
+
+def _agg_sql(e):
+    a = [expr_sql(x) for x in e.args]
+    filt = f" FILTER (WHERE {expr_sql(e.filter)})" if e.filter is not None else ""
+    dist = "DISTINCT " if e.distinct else ""
+    ob = f" ORDER BY {_order_sql(e.order)}" if e.order else ""
+    if e.name == "count_star": return f"count(*){filt}"
+    if e.name in ("quantile_cont", "quantile_disc"):
+        q = e.params[0]; desc = len(e.params) > 1 and e.params[1] == "desc"
+        return f"{e.name}({dist}{a[0]}, {_lit_sql(q, None) if not isinstance(q, list) else _lit_sql(q, None)}){filt}" if not desc else \
+            f"percentile_disc({_lit_sql(q, None)}) WITHIN GROUP (ORDER BY {a[0]} DESC){filt}"
+    if e.name == "mode" and e.params: return f"mode() WITHIN GROUP (ORDER BY {a[0]}{' DESC' if e.params[0] == 'desc' else ''}){filt}"
+    if e.name == "string_agg": return f"string_agg({dist}{a[0]}, {_lit_sql(e.params[0], None)}{ob}){filt}"
+    if e.name == "__iso_listagg": return f"LISTAGG({dist}{a[0]}, {_lit_sql(e.params[0], None)}) WITHIN GROUP (ORDER BY {_order_sql(e.order)}){filt}"
+    if e.name.startswith("__iso_h"):
+        return f"{e.name[7:].upper()}({', '.join(_lit_sql(p, None) for p in e.params)}) WITHIN GROUP (ORDER BY {_order_sql(e.order)}){filt}"
+    return f"{e.name}({dist}{', '.join(a)}{ob}){filt}"
+
+
+def _bound_sql(b):
+    kind, x = b
+    if kind == "unbounded_preceding": return "UNBOUNDED PRECEDING"
+    if kind == "unbounded_following": return "UNBOUNDED FOLLOWING"
+    if kind == "current": return "CURRENT ROW"
+    return f"{expr_sql(x)} {'PRECEDING' if kind == 'preceding' else 'FOLLOWING'}"
+
+
+def _win_sql(w):
+    a = [expr_sql(x) for x in w.args]
+    if w.name == "count_star": head = "count(*)"
+    elif w.name in ("string_agg",): head = f"string_agg({a[0]}, {_lit_sql(w.params[0], None)})"
+    elif w.name in ("quantile_cont", "quantile_disc"): head = f"{w.name}({a[0]}, {_lit_sql(w.params[0], None)})"
+    else: head = f"{w.name}({'DISTINCT ' if w.distinct else ''}{', '.join(a)}{' IGNORE NULLS' if w.ignore_nulls else ''})"
+    if w.from_last: head = head.replace("nth_value(", "nth_value(", 1) + " FROM LAST"
+    if w.filter is not None: head += f" FILTER (WHERE {expr_sql(w.filter)})"
+    parts = []
+    if w.partition: parts.append("PARTITION BY " + ", ".join(expr_sql(p) for p in w.partition))
+    if w.order: parts.append("ORDER BY " + _order_sql(w.order))
+    if w.frame is not None and w.name not in ("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "ntile", "lag", "lead"):
+        mode, s0, e0 = w.frame
+        parts.append(f"{mode.upper()} BETWEEN {_bound_sql(s0)} AND {_bound_sql(e0)}")
+        if w.exclude: parts.append("EXCLUDE " + w.exclude.replace("_", " ").replace("CURRENT ROW", "CURRENT ROW"))
+    return f"{head} OVER ({' '.join(parts)})"
+
+
+def _from_sql(f):
+    if f is None: return ""
+    if isinstance(f, Binding):
+        if f.table is not None: return f"{_qi(getattr(f.table, 'sqlname', f.table.name))} AS {_qi(f.alias)}"
+        if isinstance(f.q, Values):
+            rows = ", ".join("(" + ", ".join(expr_sql(x) for x in r) + ")" for r in f.q.rows)
+            return f"(VALUES {rows}) AS {_qi(f.alias)}({', '.join(_qi(c) for c, _, _ in f.cols)})"
+        return f"({to_sql(f.q)}) AS {_qi(f.alias)}({', '.join(_qi(c) for c, _, _ in f.cols)})"
+    l, r = _from_sql(f.left), _from_sql(f.right)
+    if f.kind == "cross": return f"{l} CROSS JOIN {r}"
+    kw = {"inner": "JOIN", "left": "LEFT JOIN", "right": "RIGHT JOIN", "full": "FULL JOIN", "semi": "SEMI JOIN", "anti": "ANTI JOIN"}[f.kind]
+    return f"{l} {kw} {r} ON {expr_sql(f.cond) if f.cond is not None else 'TRUE'}"
+
+
+def to_sql(q):
+    """a bound query as SQL text (ISO forms where torbles has them; DuckDB runs the rest)"""
+    if isinstance(q, Select):
+        out = "SELECT " + ("DISTINCT " if q.distinct and not q.distinct_on else "")
+        if q.distinct_on: out += "DISTINCT ON (" + ", ".join(expr_sql(d[1]) if d[0] == "expr" else str(d[1] + 1) for d in q.distinct_on) + ") "
+        out += ", ".join(f"{expr_sql(x)} AS {_qi(n)}" for x, n in q.items)
+        if q.from_ is not None: out += " FROM " + _from_sql(q.from_)
+        if q.where is not None: out += " WHERE " + expr_sql(q.where)
+        if q.group or q.sets is not None:
+            g = [expr_sql(x) for x in q.group]
+            if q.sets is None: out += " GROUP BY " + ", ".join(g)
+            else: out += " GROUP BY GROUPING SETS (" + ", ".join("(" + ", ".join(g[i] for i in st) + ")" for st in q.sets) + ")"
+        if q.having is not None: out += " HAVING " + expr_sql(q.having)
+        if q.qualify is not None: out += " QUALIFY " + expr_sql(q.qualify)
+    elif isinstance(q, SetOp):
+        out = f"({to_sql(q.left)}) {q.op.upper()}{' ALL' if q.all else ''} ({to_sql(q.right)})"
+    elif isinstance(q, Values):
+        return "VALUES " + ", ".join("(" + ", ".join(expr_sql(x) for x in r) + ")" for r in q.rows)
+    else: raise T.SqlError("this query cannot be rendered as SQL text")
+    if q.order:
+        out += " ORDER BY " + ", ".join(f"{(str(o[0][1] + 1) if o[0][0] == 'pos' else expr_sql(o[0][1]))} {'DESC' if o[1] else 'ASC'} NULLS {'FIRST' if o[2] else 'LAST'}" for o in q.order)
+    if q.limit is not None: out += f" LIMIT {q.limit}" + (" PERCENT" if q.percent else "")
+    if q.offset is not None: out += f" OFFSET {q.offset}"
+    return out

@@ -407,6 +407,16 @@ class Database:
         """a query over this database's tables (fact: a table or its name)"""
         return Query(self.tables[fact] if isinstance(fact, str) else fact)
 
+    def table(self, name, alias=None):
+        """a table for the Python SQL API: columns as typed expressions (see sqlapi; F holds the functions)"""
+        import sqlapi
+        return sqlapi.TableRef(self, name, alias)
+
+    def select(self, *items):
+        """a SELECT built in Python (sqlapi.Query): .where() .group_by() .having() .order_by() .limit() .run()"""
+        import sqlapi
+        return sqlapi.Query(self, items)
+
     def sql(self, text, engine="alg"):
         """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
         (.columns, .rows, .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
