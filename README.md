@@ -264,9 +264,9 @@ dimensions, deltas, and self-extension.
 - **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
-- **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns), and the
-  release was tested with the CPU emulation of the kernels only: run `make gpu && make test` on an NVIDIA GPU before
-  relying on it. Semi-join lookups, the general GROUP BY path and 128-bit sums or group codes run on the CPU (the
+- **GPU executor:** in 0.2.0 the CUDA kernels are unchanged, but the shared header changed (up to 31 columns, 12
+  GROUP BY keys, 128-bit fields), and the release was tested with the CPU emulation of the kernels only (the CUDA
+  build compiles with nvcc 12.0): run `make gpu && make test` on an NVIDIA GPU before relying on it. Semi-join lookups, the general GROUP BY path and 128-bit sums or group codes run on the CPU (the
   query falls back automatically).
 - **Blob payload integrity.** The payload heap is not covered by the torus faces; the heads and lengths are.
 - **Platforms:** x86-64 Linux / WSL2. The AVX-512 VPOPCNTDQ kernel is untested on hardware.
