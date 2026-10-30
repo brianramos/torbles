@@ -25,7 +25,16 @@ class Lit(Node):
     def __init__(self, v, t, strlit=False): self.v, self.t, self.strlit = v, t, strlit
     @property
     def nullable(self): return self.v is None
-    def _key(self): return ("lit", type(self.v).__name__, self.v if not isinstance(self.v, list) else tuple(self.v), str(self.t))
+    def _key(self): return ("lit", type(self.v).__name__, _vkey(self.v), str(self.t))
+
+
+def _vkey(v):
+    """a hashable key of a value (arrays and rows nest; 1, 1.0 and TRUE stay apart; NaN equals NaN)"""
+    if isinstance(v, list): return ("\0list",) + tuple(_vkey(x) for x in v)
+    if isinstance(v, tuple): return ("\0row",) + tuple(_vkey(x) for x in v)
+    if isinstance(v, float) and v != v: return ("\0nan",)
+    if isinstance(v, dict): return ("\0dict",) + tuple(sorted((str(k), _vkey(x)) for k, x in v.items()))
+    return (type(v).__name__, v)
 
 
 class Col(Node):

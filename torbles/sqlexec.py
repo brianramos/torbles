@@ -587,6 +587,9 @@ def outer_refs_into(q, bset):
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, vx)
             if getattr(q, 'input', None) is not None: vq(q.input)
+        elif isinstance(q, I.Values):
+            for r in q.rows:
+                for x in r: I.walk(x, vx)
     vq(q)
     return list(found.values())
 
@@ -1193,6 +1196,9 @@ def _outer_cols(e):
                 if b.q is not None: vq(b.q)
         elif isinstance(q, I.SetOp): vq(q.left); vq(q.right)
         elif isinstance(q, I.Recursive): vq(q.base); vq(q.step)
+        elif isinstance(q, I.Values):
+            for r in q.rows:
+                for x in r: I.walk(x, vx)
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, vx)
             if getattr(q, 'input', None) is not None: vq(q.input)

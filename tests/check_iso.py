@@ -530,5 +530,12 @@ for plan, want in (("", union), ("PLAN DEFAULT (CROSS)", cross + [(2, None, None
     expect(f"SELECT * FROM JSON_TABLE({J}, {C} {plan})", want, f"JSON_TABLE {plan or 'default plan (OUTER, UNION)'}")
 refuses(f"SELECT * FROM JSON_TABLE({J}, {C} PLAN (p OUTER pa))", ["PLAN"], "a plan names every NESTED PATH")
 
+vs_duckdb("SELECT (ARRAY[ARRAY[1, 2], ARRAY[3]])[1], [[1, 2], [3]], (SELECT max(x) FROM (VALUES ([1, 2]), ([1, 3])) v(x))", "nested arrays")
+vs_duckdb("SELECT x FROM UNNEST([[1, 2], [3], NULL]) AS u(x) ORDER BY x NULLS FIRST", "UNNEST of nested arrays")
+vs_duckdb("SELECT g.gid, (SELECT max(x) FROM (VALUES (g.gid), (7)) v(x)), s.x FROM g, LATERAL (SELECT * FROM (VALUES (g.gid), (g.gid * 2)) v(x)) s ORDER BY 1, 3",
+          "outer references inside VALUES (scalar subquery, LATERAL)")
+vs_duckdb("SELECT g.gid, s.c, (WITH e AS (SELECT * FROM t WHERE t.k = g.gid AND t.v > 50) SELECT count(*) FROM e) FROM g, "
+          "LATERAL (WITH d AS (SELECT * FROM t WHERE t.k = g.gid) SELECT count(*) AS c FROM d) s ORDER BY 1", "a WITH inside a correlated or LATERAL subquery sees the outer columns")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

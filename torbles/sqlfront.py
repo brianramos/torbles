@@ -1433,20 +1433,21 @@ class Binder:
         if cte.get("q") is None:
             cte["binding_in_progress"] = True
             q = self.bind_cte(cte)
-            cte["q"] = q
+            cte["q"] = q; cte["correlated"] = cte.get("parent") is not None and _correlated(q)
             cte["binding_in_progress"] = False
         q = cte["q"]
         qc = [n for n, _ in q_columns(q)]
         names = list(cte["aliases"] or []) + qc[len(cte["aliases"] or []):]        # SEARCH / CYCLE add columns
         cols = [(n, t, True) for n, (_, t) in zip(names, q_columns(q))]
         b = I.Binding(alias, cols, q=q)
-        b.shared = cte                     # materialized once per query
-        return b
+        if not cte.get("correlated"): b.shared = cte      # materialized once per query (one that reads an enclosing
+        return b                                          # query's columns runs like a derived table, per outer tuple)
 
     def bind_cte(self, cte):
         node = cte["node"]
+        parent = cte.get("parent")                         # a WITH inside a subquery sees the enclosing queries
         if node["type"] == "RECURSIVE_CTE_NODE":
-            base = self.bind_query(node["left"], None)
+            base = self.bind_query(node["left"], parent)
             names = cte["aliases"] or [n for n, _ in q_columns(base)]
             sc = (self.flags.get("search_cycle") or {}).get(cte["name"].lower())
             cols = [(n, t, True) for n, (_, t) in zip(names, q_columns(base))]
@@ -1455,12 +1456,12 @@ class Binder:
             rec = I.Recursive(b, base, None, bool(node.get("union_all")))
             b.rec = rec; b.q = rec
             cte["recursive_binding"] = b
-            rec.step = self.bind_query(node["right"], None)
+            rec.step = self.bind_query(node["right"], parent)
             st = q_columns(rec.step)
             if len(st) != len(names): raise SqlError("the recursive part of a CTE must have as many columns as its base")
             if sc: rec.step = _search_cycle_step(rec, names, sc, self)
             return rec
-        return self.bind_query(node, None)
+        return self.bind_query(node, parent)
 
     def _references(self, node, name):
         s = json.dumps(node)
@@ -1470,19 +1471,19 @@ class Binder:
     def bind_statement(self, node):
         return self.bind_query(node, None)
 
-    def push_ctes(self, node, recursive_hint=False):
+    def push_ctes(self, node, parent=None):
         m = (node.get("cte_map") or {}).get("map") or []
         if not m: return False
         frame = {}
         for kv in m:
             v = kv["value"]
             frame[kv["key"]] = dict(name=kv["key"], node=v["query_node"], aliases=v.get("aliases") or [], q=None,
-                                    recursive=True)
+                                    recursive=True, parent=parent)
         self.ctes.append(frame)
         return True
 
     def bind_query(self, node, parent):
-        pushed = self.push_ctes(node)
+        pushed = self.push_ctes(node, parent)
         try:
             t = node["type"]
             if t == "SELECT_NODE": q = self.bind_select(node, parent)
@@ -2712,6 +2713,10 @@ def _correlated(q):
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, visit_expr)
             if getattr(q, 'input', None) is not None: visit_q(q.input)
+        elif isinstance(q, I.Values):
+            for r in q.rows:
+                for x in r: I.walk(x, visit_expr)
+        elif isinstance(q, I.Recursive): visit_q(q.base); visit_q(q.step)
     visit_q(q)
     return bool(found)
 
