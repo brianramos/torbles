@@ -2695,7 +2695,11 @@ class _Planner:
                             (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
                 aggplan = {}
                 rel = self.rows_rel(atoms, preds, empty)
-        for k, col in nulled_atoms.items(): rel.cols[k] = [None] * rel.n
+        for k, col in nulled_atoms.items():               # the NULL side of a LEFT JOIN pass: NULL codes of the column's codec,
+            t = self.tab.get(col.b)                        # so the passes concatenate as codes
+            cd = getattr(t, "codecs", {}).get(col.name) if t is not None else None
+            if COLUMNAR and cd is not None: rel.cols.put(k, ColArr(np.zeros(rel.n, np.int64), np.zeros(rel.n, bool), cd))
+            else: rel.cols[k] = [None] * rel.n
         for k, plan in aggplan.items():
             if plan.get("rowfilter_expr") is not None:
                 plan["rowfilter"] = set(truth(ev(plan["rowfilter_expr"], rel, cx)))
@@ -2993,8 +2997,9 @@ class _Planner:
                 out.append(np.where(valid, c, -1) if valid is not None and c.dtype != object else c)
             return out
         def rowvals(g):
-            """the key tuples of a run as hashable values (a run that gave values, not codes)"""
-            cols = [[nkey(v) for v in vals] if codes is None else codes.tolist() for codes, _, vals in g.keys]
+            """the key tuples of a run as hashable values (runs that gave values and runs that gave codes meet here)"""
+            cols = [[nkey(v) for v in (vals if codes is None else ColArr(codes, valid, vals).decode())]
+                    for codes, valid, vals in g.keys]
             return list(zip(*cols)) if cols else [()] * len(g)
         pre = {}
         m0 = first_poly(0)
