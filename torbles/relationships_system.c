@@ -472,6 +472,12 @@ void *tr_system_source_create(const qplan_t *q) {
 
 void tr_system_source_free(void *source) { free(source); }
 
+int32_t tr_system_source_restore(qplan_t *q, const void *source) {
+    if (!q || !source) return TR_INVALID;
+    apply_patch(q, source);
+    return TR_OK;
+}
+
 int32_t tr_plan_system_from_source(tr_catalog *catalog, const atable_t *t, qplan_t *live,
                                     const void *source, int32_t backend, int32_t mode, tr_system_trace *trace) {
     if (!live || !source) return TR_INVALID;

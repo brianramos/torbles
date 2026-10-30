@@ -66,6 +66,7 @@ run "proof-aware compiled plan reuse"             python3 -m unittest discover -
 run "0.2 adaptive matrix integration"              python3 -m unittest discover -s tests -p test_upstream_enhancements.py
 run "physical cache and GPU profile elision"       python3 -m unittest discover -s tests -p test_physical_cache.py
 run "hybrid native regions and shared DAGs"         python3 -m unittest discover -s tests -p test_relationship_dag.py
+run "native whole-stage algebra and finalization"  python3 -m unittest discover -s tests -p test_relationship_stages.py
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py
 echo "== GPU executor vs CPU engine ($( [ -n "${TORBLES_GPU_LIB:-}" ] && echo CUDA || echo emulated ))"

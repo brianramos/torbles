@@ -82,6 +82,7 @@ int32_t tr_plan_system_cached(tr_catalog *, const atable_t *, qplan_t *, int32_t
  * Only measure fields are restored; live predicates, keys and output storage stay. */
 void *tr_system_source_create(const qplan_t *);
 void tr_system_source_free(void *);
+int32_t tr_system_source_restore(qplan_t *, const void *);
 int32_t tr_plan_system_from_source(tr_catalog *, const atable_t *, qplan_t *, const void *,
                                     int32_t backend, int32_t mode, tr_system_trace *);
 /* Internal native DAG compiler and bytecode verifier. */
@@ -92,4 +93,24 @@ typedef struct {
 int32_t tr_dag_optimize(const atable_t *, const qplan_t *, qplan_t *, tr_dag_stats *);
 int32_t tr_measure_valid(const qplan_t *, int32_t columns);
 void tr_system_cache_free(void *);
+
+/* Experimental whole-stage algebra. Semantic plans own coefficients and small
+ * residual buffers; live output addresses are rebound only by finish(). */
+enum { TR_STAGE_OFF = 0, TR_STAGE_AUTO = 1, TR_STAGE_COMPOSE = 2 };
+typedef struct {
+    int32_t choice, reason, cache_hit, scan_count, hidden_key, key_col, key_domain;
+    int32_t input_degree, residual_degree, source_ops, residual_terms, coefficient_terms;
+    uint64_t workspace_bytes;
+    double chain_cost, compose_cost;
+    int32_t candidate_count, partition_kind;
+} tr_stage_trace;
+/* Returns 0=preserve, 1=selected, or a TR_* error for an invalid request. */
+int32_t tr_stage_prepare(void **, tr_catalog *, const atable_t *, qplan_t *, const void *,
+                          int32_t backend, int32_t mode, tr_stage_trace *);
+int32_t tr_stage_scan_count(const void *);
+qplan_t *tr_stage_scan(void *, int32_t);
+int32_t tr_stage_weights(const void *, int32_t scan_or_minus1, int64_t *out5);
+int32_t tr_stage_reset(void *);
+int32_t tr_stage_finish(void *, qplan_t *);
+void tr_stage_free(void *);
 #endif

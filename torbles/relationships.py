@@ -53,6 +53,14 @@ class SystemTrace(C.Structure):
         ("hybrid_cost", C.c_double)]
 
 
+class StageTrace(C.Structure):
+    _fields_ = [(n, C.c_int32) for n in ("choice", "reason", "cache_hit", "scan_count",
+                 "hidden_key", "key_col", "key_domain", "input_degree", "residual_degree",
+                 "source_ops", "residual_terms", "coefficient_terms")] + [
+        ("workspace_bytes", C.c_uint64), ("chain_cost", C.c_double), ("compose_cost", C.c_double),
+        ("candidate_count", C.c_int32), ("partition_kind", C.c_int32)]
+
+
 def _locked(fn):
     @functools.wraps(fn)
     def call(self, *args, **kw):
@@ -76,6 +84,14 @@ for _name, _restype, _args in (
     ("tr_system_source_create", C.c_void_p, [C.POINTER(algq.QPlan)]),
     ("tr_system_source_free", None, [C.c_void_p]),
     ("tr_plan_system_from_source", C.c_int32, [C.c_void_p, C.c_void_p, C.POINTER(algq.QPlan), C.c_void_p, C.c_int32, C.c_int32, C.POINTER(SystemTrace)]),
+    ("tr_stage_prepare", C.c_int32, [C.POINTER(C.c_void_p), C.c_void_p, C.c_void_p,
+        C.POINTER(algq.QPlan), C.c_void_p, C.c_int32, C.c_int32, C.POINTER(StageTrace)]),
+    ("tr_stage_scan_count", C.c_int32, [C.c_void_p]),
+    ("tr_stage_scan", C.POINTER(algq.QPlan), [C.c_void_p, C.c_int32]),
+    ("tr_stage_reset", C.c_int32, [C.c_void_p]),
+    ("tr_stage_finish", C.c_int32, [C.c_void_p, C.POINTER(algq.QPlan)]),
+    ("tr_stage_weights", C.c_int32, [C.c_void_p, C.c_int32, C.POINTER(C.c_int64)]),
+    ("tr_stage_free", None, [C.c_void_p]),
 ):
     _fn = getattr(_lib, _name)
     _fn.restype, _fn.argtypes = _restype, _args
@@ -111,15 +127,64 @@ class _SystemSource:
             self.handle = None
 
 
+class _StageHandle:
+    """Own a bounded native stage graph and its grouped intermediate buffers."""
+    def __init__(self):
+        self.handle = C.c_void_p()
+        self.explanation = None
+
+    def close(self):
+        if self.handle.value:
+            _lib.tr_stage_free(self.handle)
+            self.handle.value = None
+
+    def __del__(self):
+        self.close()
+
+    def reset(self):
+        _check(_lib.tr_stage_reset(self.handle))
+
+    def scans(self):
+        count = _lib.tr_stage_scan_count(self.handle)
+        _check(count)
+        for i in range(count):
+            pointer = _lib.tr_stage_scan(self.handle, i)
+            if not pointer:
+                raise RuntimeError("native stage scan unavailable")
+            yield pointer.contents
+
+    def finish(self, plan):
+        _check(_lib.tr_stage_finish(self.handle, C.byref(plan)))
+
+    def explain(self, table, key_col):
+        constant = (C.c_int64 * 5)()
+        _check(_lib.tr_stage_weights(self.handle, -1, constant))
+        reductions = []
+        for i, scan in enumerate(self.scans()):
+            weights = (C.c_int64 * 5)()
+            _check(_lib.tr_stage_weights(self.handle, i, weights))
+            linear = [{"column": table.cols[scan.pl_col[j]], "coefficient": int(scan.pl_coef[j])}
+                      for j in range(scan.npl)]
+            quadratic = [{"columns": [table.cols[scan.pb_a[j]], table.cols[scan.pb_b[j]]],
+                          "coefficient": int(scan.pb_coef[j])} for j in range(scan.npb)]
+            reductions.append(dict(aggregate=int(scan.agg), constant=int(scan.p_const), linear=linear, quadratic=quadratic,
+                                   key_polynomial=list(weights), emits_counts=True))
+        self.explanation = dict(reductions=reductions, count_key_polynomial=list(constant),
+                                coordinates="stored integer codes; key polynomial is ascending power order",
+                                key_codec_offset=int(table.codecs[table.cols[key_col]].offset))
+        return self.explanation
+
+
 class Catalog:
     """Table-scoped native equations. close() detaches and frees native buffers."""
     def __init__(self, table, columns=None, *, modules=("affine", "product", "sum"),
-                 max_candidates=256, max_rows=1_000_000, attach=True, system_strategy="auto"):
+                 max_candidates=256, max_rows=1_000_000, attach=True, system_strategy="auto", stage_strategy="off"):
         self.table, self._handle = table, None
         self._lock = threading.RLock()
         self._rewrite_cache = OrderedDict()
         self._proof_generation = 0
         self.system_strategy = system_strategy
+        self.stage_strategy = stage_strategy
         if table.n > max_rows:
             raise ValueError(f"table has {table.n} rows; prototype max_rows={max_rows}")
         if max_candidates < 0 or max_candidates > 100_000:
@@ -174,6 +239,48 @@ class Catalog:
         if value not in ("auto", "chain", "combine", "hybrid"):
             raise ValueError("system_strategy must be auto, chain, combine, or hybrid")
         with self._lock: self._system_strategy = value
+
+    @property
+    def stage_strategy(self):
+        return self._stage_strategy
+
+    @stage_strategy.setter
+    def stage_strategy(self, value):
+        if value not in ("off", "auto", "compose"):
+            raise ValueError("stage_strategy must be off, auto, or compose")
+        with self._lock: self._stage_strategy = value
+
+    @staticmethod
+    def _stage_handle():
+        return _StageHandle()
+
+    @_locked
+    def _prepare_stage(self, plan, backend, source, owner):
+        if not self._handle:
+            return False, {"choice": "preserve", "reason": "closed", "scan_devices": []}
+        trace = StageTrace()
+        target = {"gpu": 1, "plain": 2}.get(backend, 0)
+        mode = {"off": 0, "auto": 1, "compose": 2}[self._stage_strategy]
+        rc = _lib.tr_stage_prepare(C.byref(owner.handle), self._handle, self.table.at,
+                                  C.byref(plan), source.handle, target, mode, C.byref(trace))
+        _check(rc)
+        reasons = {0: "cost", 1: "forced", 2: "unsupported shape", 3: "nullable or unclassified dependency",
+                   4: "bounds or budget", 5: "no benefit", 6: "closed or stale", 7: "backend", 8: "invalid"}
+        info = {name: getattr(trace, name) for name, _ in StageTrace._fields_}
+        info.update(choice="stages" if rc == 1 else "preserve",
+                    reason=reasons.get(trace.reason, "unsupported"), backend=backend,
+                    strategy=self._stage_strategy, scan_devices=[], row_fallback=False,
+                    cost_unit="relative whole-stage work, not elapsed time",
+                    cost_model={"cpu_word_weight": 0.9, "gpu_work_divisor": 16.0,
+                                "pilot": "CPU word weight adjusted on separate SF1 C3/C4 controls; heuristic, not globally calibrated"},
+                    intermediate_storage="bounded native grouped buffers",
+                    partition={0: "none", 1: "full key separation", 2: "common key factor"}.get(trace.partition_kind, "unknown"),
+                    key_column=self.table.cols[trace.key_col] if rc == 1 else None)
+        if not trace.cache_hit:
+            owner.explanation = None
+        if rc == 1:
+            info.update(owner.explanation or owner.explain(self.table, trace.key_col))
+        return rc == 1, info
 
     @_locked
     def _plan_system(self, plan, backend, source=None):

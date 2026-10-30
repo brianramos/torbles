@@ -1262,6 +1262,8 @@ class Query:
         import time as _time
         catalog = getattr(table, "_relationships", None)
         self.system_plan_ms = 0.0
+        self.stage_plan_ms = 0.0
+        self.stage_plan = {"choice": "preserve", "reason": "disabled", "scan_devices": []}
         if catalog is None:
             self.system_plan = {"choice": "preserve", "reason": "disabled"}
         else:
@@ -1269,11 +1271,51 @@ class Query:
             source = getattr(plan, "_system_source", None)
             if source is None:
                 source = plan._system_source = catalog._capture_system_source(plan)
+            if catalog.stage_strategy != "off":
+                t_stage = _time.perf_counter()
+                owner = getattr(plan, "_stage_handle", None)
+                if owner is None:
+                    owner = plan._stage_handle = catalog._stage_handle()
+                selected, self.stage_plan = catalog._prepare_stage(plan, dev, source, owner)
+                self.stage_plan_ms = (_time.perf_counter() - t_stage) * 1e3
+                if selected:
+                    self.system_plan = {"choice": "stages", "reason": "native stage composition"}
+                    t0 = _time.perf_counter()
+                    try:
+                        return self._exec_stages(dev, table, plan, owner)
+                    finally:
+                        self.exec_ms = (_time.perf_counter() - t0) * 1e3
+            t_system = _time.perf_counter()
             self.system_plan = catalog._plan_system(plan, dev, source=source)
             self.system_plan_ms = (_time.perf_counter() - t_system) * 1e3
         t0 = _time.perf_counter()
         try: return self._exec_loop(dev, table, plan)
         finally: self.exec_ms = (_time.perf_counter() - t0) * 1e3     # the engine call alone (no planning)
+
+    def _exec_stages(self, dev, table, plan, owner):
+        """Dispatch legacy scans; all decomposition and final arithmetic stay native."""
+        import time as _time
+        owner.reset()
+        devices, scan_ms, kernel_ms = [], [], []
+        for scan in owner.scans():
+            start = _time.perf_counter()
+            if not self._exec_loop(dev, table, scan):
+                self.stage_plan.update(scan_devices=devices, row_fallback=(dev == "gpu"),
+                                       failure=getattr(self, "_gpu_fail", "unsupported scan"))
+                return False
+            scan_ms.append((_time.perf_counter() - start) * 1e3)
+            devices.append(self.device)
+            if self.kernel_ms is not None:
+                kernel_ms.append(self.kernel_ms)
+        start = _time.perf_counter()
+        owner.finish(plan)
+        self.stage_plan.update(scan_devices=devices, scan_exec_ms=scan_ms,
+                               finalizer_device="cpu(native)",
+                               finalizer_ms=(_time.perf_counter() - start) * 1e3,
+                               row_fallback=(dev == "gpu" and any(d != "gpu" for d in devices)))
+        self.device = "gpu+cpu-finalize" if devices and all(d == "gpu" for d in devices) else "cpu(stages)"
+        self.kernel_ms = sum(kernel_ms) if kernel_ms else None
+        return True
 
     def _exec_loop(self, dev, table, plan):
         while True:
@@ -1322,6 +1364,8 @@ class Query:
         self.device, self.kernel_ms = A.device, getattr(A, "kernel_ms", None)
         self.last_plan, self.range_used, self.delta_rows = A.last_plan, A.range_used, int(sum(bin(int(x)).count("1") for x in D[words.astype(np.int64)])) if len(words) else 0
         self.system_plan = {"choice": "partitioned", "passes": [getattr(A, "system_plan", {}), getattr(B, "system_plan", {})]}
+        self.stage_plan = {"choice": "partitioned", "passes": [getattr(A, "stage_plan", {}), getattr(B, "stage_plan", {})]}
+        self.stage_plan_ms = getattr(A, "stage_plan_ms", 0) + getattr(B, "stage_plan_ms", 0)
         if getattr(self, "_rows", False): return np.union1d(rA, rB)
         if self.keys:
             out = dict(rA)
@@ -1380,7 +1424,7 @@ class Query:
             if cols_wanted: q._cols_owner = None
         self.device, self.kernel_ms = getattr(q, "device", None), getattr(q, "kernel_ms", None)
         self.last_plan, self.range_used = q.last_plan, q.range_used
-        for a in ("delta_rows", "_lookup_keys", "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms"):
+        for a in ("delta_rows", "_lookup_keys", "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms", "stage_plan", "stage_plan_ms"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         if not self.keys: return r
         if isinstance(r, CodeGroups):                # columns: value = base + 2^B hi, by array arithmetic
@@ -1420,7 +1464,7 @@ class Query:
                 if a in q.__dict__: del q.__dict__[a]
             q.keys = [k for i, k in enumerate(self.keys) if ids.index(ids[i]) == i]
             r = q.run(engine)
-            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan"):
+            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan", "stage_plan", "stage_plan_ms"):
                 if hasattr(q, a): setattr(self, a, getattr(q, a))
             pos = [first[x] for x in ids]
             return {tuple(k[p] for p in pos): v for k, v in r.items()}
@@ -1492,7 +1536,7 @@ class Query:
                 if a in q.__dict__: del q.__dict__[a]
             q.keys = list(self.keys) + [cols[h] for h in H]; q.measure = meas
             out = q.run(engine)
-            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan"):
+            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan", "stage_plan", "stage_plan_ms"):
                 if hasattr(q, a): setattr(self, a, getattr(q, a))
             if not q.keys: return {} if out is None or out == 0 and meas is None else {(): out}   # one group: ()
             return out
@@ -1582,7 +1626,7 @@ class Query:
         try: r = q._run_codes(engine)
         finally: q._cols_owner = None
         for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows",
-                  "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms"):
+                  "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms", "stage_plan", "stage_plan_ms"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         scale = lm[2]
         val = (lambda v: v if v is None or not scale else _exact_dec(v, scale)) if self.measure is not None else (lambda v: v)
@@ -1670,7 +1714,7 @@ class Query:
                 except (ValueError, OverflowError, TypeError) as error:
                     self.relationship_plan = dict(info, status="fallback", reason=str(error))
                 else:
-                    for name in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows", "system_plan", "system_plan_ms"):
+                    for name in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows", "system_plan", "system_plan_ms", "stage_plan", "stage_plan_ms"):
                         if hasattr(q, name): setattr(self, name, getattr(q, name))
                     return result
         self._lookup_keys = set(getattr(self, "_force_lookup", ()))
@@ -1702,7 +1746,7 @@ class Query:
                 try: r = q2._run_codes(engine)
                 finally:
                     if cols_wanted: q2._cols_owner = None
-                for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "system_plan", "system_plan_ms"):
+                for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "system_plan", "system_plan_ms", "stage_plan", "stage_plan_ms"):
                     if hasattr(q2, a_): setattr(self, a_, getattr(q2, a_))
                 if isinstance(r, CodeGroups):        # columns: the key polynomials on the key code arrays (exact integers)
                     n = np.asarray(r.cnt if r.cnt is not None else r.vals)

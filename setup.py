@@ -35,6 +35,7 @@ class BuildEngine(build_py):
                      os.path.join(src, "relationships.c"), os.path.join(src, "relationships_optimizer.c"),
                      os.path.join(src, "relationships_system.c"),
                      os.path.join(src, "relationships_dag.c"),
+                     os.path.join(src, "relationships_stage.c"),
                      "-o", os.path.join(out, "libalg.so"), "-lpthread"], src):
             sys.exit("could not compile torbles/alg.c: a C compiler (gcc or clang) is needed")
         if not _run([cxx, "-O2", "-fwrapv", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", os.path.join(src, "gpu.cu"), "-o", os.path.join(out, "libgpu_emu.so")], src):
