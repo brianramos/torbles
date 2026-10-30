@@ -130,7 +130,9 @@ A filter on one table becomes a plane predicate, a row mask of the dimension or 
 function in it runs on distinct values, not rows); joins to dimensions are substitutions; COUNT, SUM, AVG, the
 variances, covariances and regressions are exact popcount sums of polynomials; MIN and MAX are computed on the planes by
 eliminating rows plane by plane; CASE inside SUM and FILTER clauses become variants of the engine query. Everything else
-runs on the distinct tuples the engine's GROUP BY returns. [docs/SQL.md](docs/SQL.md) lists every ISO construct with
+runs on the distinct tuples the engine's GROUP BY returns, and window functions, GROUP BY over those tuples and ORDER BY
+run as array algebra: the keys become dense order codes, one sort orders every partition or group, and each function
+is arithmetic on positions, exact prefix sums of its moments or range minima. [docs/SQL.md](docs/SQL.md) lists every ISO construct with
 where it runs, what is not supported (statements other than queries, SQL/XML, property graphs, ...) and the few places
 where torbles follows ISO and DuckDB does not. All 13 SSB queries written in SQL give DuckDB's answers, each in one
 engine query.

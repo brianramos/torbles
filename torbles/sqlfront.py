@@ -889,17 +889,15 @@ def iso_prepass(sql):
                     else: rep = [Tok("id", "LIMIT"), Tok("id", "__iso_pct"), Tok("op", "(")] + nt + [Tok("op", ")")]
                     t[i:end] = rep; changed = True; break
             # NTH_VALUE(x, n) FROM FIRST | FROM LAST; f(x) RESPECT NULLS | IGNORE NULLS OVER
-            if u in ("NTH_VALUE", "FIRST_VALUE", "LAST_VALUE", "LAG", "LEAD") and i + 1 < len(t) and t[i + 1].s == "(":
+            if u in ("NTH_VALUE", "FIRST_VALUE", "LAST_VALUE", "LAG", "LEAD", "__ISO_NTH_VALUE_LAST") and i + 1 < len(t) and t[i + 1].s == "(":
                 c = _match_paren(t, i + 1)
                 if _kw(t, c + 1, "FROM", "FIRST"): del t[c + 1:c + 3]; changed = True; break
                 if _kw(t, c + 1, "FROM", "LAST"):
                     del t[c + 1:c + 3]; t[i] = Tok("id", "__iso_nth_value_last"); changed = True; break
                 if _kw(t, c + 1, "RESPECT", "NULLS"): del t[c + 1:c + 3]; changed = True; break
-                if _kw(t, c + 1, "IGNORE", "NULLS"):
+                if _kw(t, c + 1, "IGNORE", "NULLS"):           # DuckDB reads it at the end of the arguments
                     del t[c + 1:c + 3]
-                    args = _split_commas(t, i + 2, c)
-                    a0 = args[0][1]
-                    t[a0:a0] = [Tok("id", "IGNORE"), Tok("id", "NULLS")]
+                    t[c:c] = [Tok("id", "IGNORE"), Tok("id", "NULLS")]
                     changed = True; break
             # INTERVAL 'x' <unit> TO <unit>
             if u == "INTERVAL" and i + 4 < len(t) and t[i + 1].k == "str" and t[i + 3].up() == "TO":
@@ -2440,6 +2438,10 @@ class Binder:
             nf = {"NULLS_FIRST": True, "NULLS FIRST": True}.get(o.get("null_order"), False)
             order.append((self.expr(o["expression"], sc, ictx), o["type"] == "DESCENDING", nf))
         frame = _frame(e, lambda x: self.expr(x, sc, ictx))
+        if frame[0] == "range" and len(order) == 1 and order[0][0].t.id in ("DOUBLE", "REAL", "FLOAT"):
+            # RANGE over an approximate key: key - offset is DOUBLE arithmetic (an exact offset is converted)
+            frame = (frame[0],) + tuple((bd[0], I.Cast(bd[1], T.DOUBLE)) if bd[1] is not None and bd[1].t.numeric
+                                        and bd[1].t.id not in ("DOUBLE", "REAL", "FLOAT") else bd for bd in frame[1:])
         filt = self.boolean(self.expr(e["filter_expr"], sc, actx), "FILTER") if e.get("filter_expr") is not None else None
         excl = e.get("exclude_clause") or None
         if excl in ("NO_OTHER", "NO OTHERS", "NONE"): excl = None

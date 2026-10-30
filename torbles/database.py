@@ -319,9 +319,6 @@ class Database:
         if fv is not None:
             lit = _fill_literal(typ, fv); col = f"coalesce({col}, {lit})"
         if base in ("str", "float", "blob", "json", "row"):
-            if base == "float":
-                nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
-                if nan: return None, None, f"{nan} NaN / infinite value(s)"
             vals = [r[0] for r in self.con.execute(f"SELECT DISTINCT {col} AS v FROM {self._t(name)} WHERE {col} IS NOT NULL ORDER BY v").fetchall()]
             if base == "float": vals = [float(v) for v in vals]
             # NULLs sort last, so the ranks of the values do not depend on them; a NULL's code is 0 (its validity says NULL)

@@ -72,8 +72,17 @@ dimension's columns NULL; the per-group states of every aggregate add up across 
 Everything else is evaluated at the *group level*, on the engine's distinct atom tuples, each standing for its count of
 rows: residual predicates, GROUP BY expressions, grouping sets, the other aggregates (from the (group, argument value,
 count) tuples), HAVING, window functions, DISTINCT, ORDER BY, FETCH. When the atoms need more than 12 GROUP BY columns
-or a code domain past 2^128, the engine returns the passing rows' bitmap instead and the atoms' values are read from
-the planes for those rows.
+or a code domain past 2^128, or the block has no aggregate (its result has one row per fact row anyway), the engine
+returns the passing rows' bitmap instead and the atoms' values are read from the planes for those rows.
+
+That group-level work is array algebra as well, never a loop of comparisons. Grouping keys, PARTITION BY and ORDER BY
+columns become dense order codes (equal codes for values SQL does not distinguish, codes ascending along the sort
+order), so grouping, sorting and partitioning are one stable sort of integers; GROUP BY aggregates and window
+functions are prefix sums, searches and range minima over the sorted runs (see Aggregates and Window functions
+below); and arithmetic, comparisons, `AND` / `OR` / `NOT`, `IS NULL` and casts between integer types and DOUBLE run on
+whole columns of integers and doubles, with the results of the row-by-row definitions (exact integers, IEEE doubles,
+three-valued logic). Other functions run on each tuple the engine returns (a distinct tuple, or a row of a block
+without aggregates).
 
 **Other blocks** (outer and cross joins between arbitrary items, derived tables, CTEs, VALUES, table functions) give each
 FROM item as a multiset: a stored table is an engine GROUP BY of the columns the block needs, with counts; a derived
@@ -94,7 +103,7 @@ value is used by a row that is output.
 | SMALLINT, INTEGER, BIGINT, HUGEINT, unsigned types | int (arithmetic never wraps; overflow is an error where DuckDB's is) | yes |
 | DECIMAL(p, s), NUMERIC | Decimal, exact | yes |
 | DECFLOAT(p) (T076; p defaults to 34) | Decimal rounded to 16 digits (p <= 16) or 34, with Infinity and NaN (NaN sorts last, equals itself and groups as one value; an invalid operation such as Infinity - Infinity is NaN, as IEEE 754 says) | no (the loaders read types through DuckDB, which has none) |
-| REAL, DOUBLE PRECISION, FLOAT | float | yes (dictionary) |
+| REAL, DOUBLE PRECISION, FLOAT | float; NaN and ±Infinity included (NaN sorts after +Infinity, equals itself and groups as one value, -0.0 = 0.0, as in DuckDB) | yes (dictionary) |
 | BOOLEAN (TRUE, FALSE, UNKNOWN) | bool (UNKNOWN is NULL) | yes |
 | CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB; a CAST to VARCHAR(n) or CHAR(n) keeps the first n characters, as ISO says; `_UTF8'...'` introducers are accepted) | yes (dictionary) |
 | BINARY, VARBINARY, BLOB, BINARY LARGE OBJECT | bytes | yes (dictionary) |
@@ -225,7 +234,7 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 | VAR_POP, VAR_SAMP, STDDEV_POP, STDDEV_SAMP, COVAR_POP, COVAR_SAMP, CORR, REGR_SLOPE, REGR_INTERCEPT, REGR_COUNT, REGR_R2, REGR_AVGX, REGR_AVGY, REGR_SXX, REGR_SYY, REGR_SXY | engine: moment sums (x, x², xy, ...), then exact rational arithmetic; the statistics are exact, not the running double sums DuckDB uses |
 | MIN, MAX of a fact column | engine: plane elimination |
 | SUM / AVG / COUNT of CASE, any aggregate with FILTER (WHERE ...) | engine: variants |
-| MIN / MAX of other expressions, DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine |
+| MIN / MAX of other expressions, DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine, aggregated as arrays (below) |
 | PERCENTILE_CONT, PERCENTILE_DISC (... WITHIN GROUP (ORDER BY ...)), MODE, MEDIAN, quantiles | values |
 | RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST (hypothetical, WITHIN GROUP) | values |
 | LISTAGG (... ON OVERFLOW ...) WITHIN GROUP, STRING_AGG, ARRAY_AGG (... ORDER BY ...) | values |
@@ -233,15 +242,32 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 | JSON_ARRAYAGG (ORDER BY, NULL / ABSENT ON NULL), JSON_OBJECTAGG (WITH UNIQUE KEYS) | values |
 | DuckDB's PRODUCT, ENTROPY, SKEWNESS, KURTOSIS, ARG_MIN / ARG_MAX, HISTOGRAM, APPROX_COUNT_DISTINCT (exact) | values |
 
+When an aggregate is computed from values (the (group, value, count) tuples), GROUP BY is array algebra too: the
+grouping keys become dense codes, one stable sort makes each group a run of rows, and COUNT, SUM, AVG, MIN, MAX,
+VAR_*, STDDEV_*, COVAR_*, CORR, REGR_*, EVERY, BOOL_OR, COUNT_IF, ANY_VALUE, ARG_MIN / ARG_MAX and their DISTINCT and
+FILTER forms are computed for every group at once, each tuple weighted by its count: exact sums of the moments
+(doubles and decimals scaled to integers exactly, so a sum of doubles is the correctly rounded exact sum) and range
+minima of (value code, position). The other aggregates (ordered ones, percentiles, LISTAGG, ...) run group by group.
+
 ### Window functions
 
 `ROW_NUMBER`, `RANK`, `DENSE_RANK`, `PERCENT_RANK`, `CUME_DIST`, `NTILE`, `LEAD`, `LAG`, `FIRST_VALUE`, `LAST_VALUE`,
 `NTH_VALUE ... FROM FIRST / FROM LAST`, `RESPECT / IGNORE NULLS` (T611-T618), every aggregate over a window (with
 DISTINCT and FILTER), frames `ROWS / RANGE / GROUPS` with numeric and interval offsets (T620), `EXCLUDE CURRENT ROW /
 GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named windows, windows over aggregates, QUALIFY
-(DuckDB). They run at the group level, after aggregation, on each ordered partition: a frame edge is found by binary
-search, COUNT, SUM and AVG over a frame come from exact prefix sums and MIN / MAX from a sparse table (O(1) per row), a
-frame equal to the previous row's is not evaluated again, and other aggregates read the frame's rows.
+(DuckDB). They run at the group level, after aggregation, as array algebra: every PARTITION BY and ORDER BY column
+becomes dense order codes (equal for peers, ascending along the sort order with its direction and NULL placement), and
+one stable lexsort of the codes orders every partition at once. Partitions and peer groups are then runs of equal
+codes, and each window function is arithmetic on positions: ROW_NUMBER, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST and
+NTILE from the positions of the row, its peer group and its partition; LAG / LEAD a shifted position (IGNORE NULLS: the
+k-th non-NULL position, by a prefix count); a frame edge a position (ROWS), a peer group's bound (GROUPS, RANGE) or,
+for RANGE with an offset, the rank of the target among the partition's keys (keys and targets ranked together, one
+search); EXCLUDE leaves at most three runs. COUNT, SUM, AVG and the statistics over a frame are differences of exact
+prefix sums of their moments, MIN, MAX, ARG_MIN and ARG_MAX range minima of (value code, position) from a sparse table
+built one level at a time, FIRST_VALUE, LAST_VALUE and NTH_VALUE positions among the eligible ones. The results are the
+row-by-row definitions' (exact sums, correctly rounded doubles, the first of tied extremes). DISTINCT and ordered window
+aggregates, nested window functions and row pattern recognition read each frame's rows, partition by partition, in the
+same order.
 
 Nested window functions (T619): in the argument or FILTER of a window aggregate, `ROW_NUMBER(<row marker>)` is the
 position in the ordered partition of `BEGIN_PARTITION`, `BEGIN_FRAME`, `CURRENT_ROW`, `FRAME_ROW` (the frame row being
@@ -288,6 +314,8 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 - The value shown for a group of strings equal under a collation is the least one (ISO leaves it to the
   implementation; DuckDB shows the first it meets).
 - `ARG_MIN` / `ARG_MAX` with ties pick any of the tied rows in both, not always the same one.
+- `PERCENTILE_CONT` (and `MEDIAN`) of a DECIMAL interpolates exactly, then truncates to the column's scale (2.50 and
+  1000.00 at 0.3 of the way: 301.75); DuckDB interpolates the scaled integers in double precision (301.74).
 
 ## Tests
 
@@ -298,8 +326,12 @@ worked out by hand, checks the Python API against its own SQL text run by DuckDB
 binary strings, arrays and multisets, LATERAL, SQL/JSON and its path language and JSON_TABLE plans, SEARCH / CYCLE,
 MATCH_RECOGNIZE (the documented examples' results) and row pattern recognition in windows, partitioned joins, nested
 window functions, row types (stored ones too), DECFLOAT, datetime precisions, the UNICODE collation, and a regression
-test for every bug an independent review found, each against DuckDB where DuckDB has the same semantics. Both run
-on the three engines (`TORBLES_SQL_ENGINE=alg | plain | gpu`), from `tests/run_all.sh`.
+test for every bug an independent review found, each against DuckDB where DuckDB has the same semantics.
+`tests/check_arrays.py` runs random window queries (every window function, partitions, directions and NULL placement,
+ROWS / RANGE / GROUPS frames with offsets, EXCLUDE, FILTER, IGNORE NULLS, FROM LAST) and random GROUP BY queries
+(grouping sets, collations, DISTINCT, FILTER) on a table with ties, NULLs, NaN and infinities twice, as arrays and row by
+row: the answers must be identical value for value, and equal to DuckDB's where the answer does not depend on how ties
+are ordered. All three run on the three engines (`TORBLES_SQL_ENGINE=alg | plain | gpu`), from `tests/run_all.sh`.
 
 `python -m torbles.sqlfuzz --minutes 10` (or `torbles-sqlfuzz --seed 7 --cases 200`) generates random typed star
 schemas (unmatched and NULL references included) and random SQL: filters, expressions of every type, every kind of aggregate,

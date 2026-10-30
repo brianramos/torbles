@@ -534,9 +534,14 @@ for _n, _f in (("sin", math.sin), ("cos", math.cos), ("tan", math.tan), ("asin",
 scalar("atan2", _dbl(2))(_flt(math.atan2))
 scalar("cot", _dbl())(_flt(lambda x: 1 / math.tan(x)))
 scalar("pi", lambda a: (T.DOUBLE, None))(lambda: math.pi)
-scalar("isnan", _dbl())(lambda x: x != x)
-scalar("isinf", _dbl())(lambda x: x in (math.inf, -math.inf))
-scalar("isfinite", _dbl())(lambda x: math.isfinite(x))
+def _dbl_test(args):
+    ty = _dbl()(args)
+    return T.BOOLEAN, ty[1]
+
+
+scalar("isnan", _dbl_test)(lambda x: x != x)
+scalar("isinf", _dbl_test)(lambda x: x in (math.inf, -math.inf))
+scalar("isfinite", _dbl_test)(lambda x: math.isfinite(x))
 
 
 def _round_typer(args):
@@ -1838,9 +1843,32 @@ def _xsum(vals):
     fl = False
     for v in vals:
         if isinstance(v, float): fl = True; break
-    if fl: return math.fsum(float(v) for v in vals)
+    if fl: return fsum(float(v) for v in vals)
     for v in vals: s = CTX.add(s, v) if isinstance(s, Decimal) or isinstance(v, Decimal) else s + v
     return s
+
+
+def fsum_w(rows):
+    """the correctly rounded sum of doubles each taken w times ([((v,), w)]): exact (each v * w is not rounded first)"""
+    vals = [(float(v), w) for (v,), w in rows]
+    if not all(math.isfinite(v) for v, _ in vals): return fsum(v * w for v, w in vals)
+    rat = [(v.as_integer_ratio(), w) for v, w in vals]
+    S = max((d.bit_length() - 1 for (_, d), _ in rat), default=0)
+    tot = sum(a * w << (S - (d.bit_length() - 1)) for (a, d), w in rat)
+    try: return tot / (1 << S)
+    except OverflowError: return math.copysign(math.inf, tot)
+
+
+def fsum(xs):
+    """the correctly rounded sum of doubles; with infinities or NaN the IEEE one (Infinity - Infinity is NaN), and
+    an exact sum past the largest double is an infinity"""
+    xs = list(xs)
+    try: return math.fsum(xs)
+    except (ValueError, OverflowError):
+        if any(x != x for x in xs): return math.nan
+        pi, ni = math.inf in xs, -math.inf in xs
+        if pi or ni: return math.nan if pi and ni else (math.inf if pi else -math.inf)
+        return math.copysign(math.inf, sum(Fraction(x) for x in xs))
 
 
 @agg("count_star", lambda ts, p=(): T.BIGINT, skip_nulls=False, nargs=0)
@@ -1852,7 +1880,7 @@ def _count(rows, p=()): return sum(w for _, w in rows)
 
 
 @agg("count_if countif", lambda ts, p=(): T.BIGINT)
-def _count_if(rows, p=()): return sum(w for (v,), w in rows if v)
+def _count_if(rows, p=()): return sum(w for (v,), w in rows if v) if rows else None     # DuckDB: NULL without input
 
 
 @agg("sum fsum sumkahan kahan_sum", _sum_t, moments="sum")
@@ -1866,6 +1894,7 @@ def _sum(rows, p=()):
         for (v,), w in rows: out = out + _iv_scale(v, w)
         return out
     if isinstance(rows[0][0][0], bool): return sum(int(v) * w for (v,), w in rows)
+    if any(isinstance(v, float) for (v,), _ in rows): return fsum_w(rows)
     return _xsum([v * w for (v,), w in rows])
 
 
@@ -1906,7 +1935,7 @@ def _avg(rows, p=()):
         with decimal.localcontext(_NOTRAP): s = sum((Decimal(v) * w for (v,), w in rows), Decimal(0)) / Decimal(n)
         return T.decfloat(s, _df_p(p))
     if any(isinstance(v, float) for (v,), _ in rows):
-        return math.fsum(float(v) * w for (v,), w in rows) / n
+        return fsum_w(rows) / n
     if isinstance(rows[0][0][0], Interval):
         s = _sum(rows); return _iv_scale(s, Fraction(1, n))
     return ffloat(sum(frac(v) * w for (v,), w in rows) / n)
@@ -2018,7 +2047,9 @@ def moments1(rows):
 
 def _var(rows, samp):
     n, s1, s2, fl, bad = moments1(rows)
-    if bad is not None: return math.nan
+    if bad is not None:                              # a NaN or an infinity: NaN, except for one value (DuckDB: 0)
+        cnt = sum(w for _, w in rows)
+        return None if samp and cnt < 2 else (0.0 if cnt == 1 else math.nan)
     if n is None or n == 0 or (samp and n < 2): return None
     m2 = s2 - s1 * s1 / n
     return ffloat(m2 / (n - 1 if samp else n))
@@ -2137,9 +2168,13 @@ def _quantile_cont_one(rows, q):
             c += w
             if k < c: return v
         return rs[-1][0][0]
-    a, b = at(lo), at(hi)
+    return qc_mix(at(lo), at(hi), pos, lo, hi)
+
+
+def qc_mix(a, b, pos, lo, hi):
+    """PERCENTILE_CONT between the values at ranks lo and hi (lo <= pos <= hi)"""
     if isinstance(a, (_dt.date, _dt.datetime)):
-        if lo == hi: return a
+        if lo == hi: return _to_dt(a)
         da, db = _to_dt(a), _to_dt(b); return da + (db - da) * float(pos - lo)
     if isinstance(a, Decimal):
         exp = min(a.as_tuple().exponent, b.as_tuple().exponent)
@@ -2170,7 +2205,7 @@ def _q_param(p):
 
 
 def _qc_t(ts, p=()):
-    t = ts[0] if (ts[0].temporal or ts[0].id == "DECIMAL") else T.DOUBLE
+    t = (T.TIMESTAMP if ts[0].id == "DATE" else ts[0]) if (ts[0].temporal or ts[0].id == "DECIMAL") else T.DOUBLE   # DuckDB: a DATE interpolates to a TIMESTAMP
     return T.LIST(t) if p and isinstance(p[0], list) else t
 
 
@@ -2188,7 +2223,7 @@ def _quantile_disc(rows, p=()):
     return _quantile_disc_one(rows, q, desc)
 
 
-@agg("median", lambda ts, p=(): ts[0] if ts[0].id == "DECIMAL" or ts[0].temporal or not ts[0].numeric else T.DOUBLE)
+@agg("median", lambda ts, p=(): T.TIMESTAMP if ts[0].id == "DATE" else ts[0] if ts[0].id == "DECIMAL" or ts[0].temporal or not ts[0].numeric else T.DOUBLE)
 def _median(rows, p=()):
     if not rows: return None
     if not isinstance(rows[0][0][0], (int, float, Decimal, bool, _dt.date, Interval)):

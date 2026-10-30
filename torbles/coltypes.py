@@ -40,6 +40,11 @@ def _frac(v):
     raise TypeError(f"expected a number, got {type(v).__name__} {v!r}")
 
 
+def _fkey(f):
+    """the sort key of a double as SQL orders them: NaN after +Infinity and equal to itself, -0.0 = 0.0"""
+    return (1, 0.0) if f != f else (0, f)
+
+
 def _int_bounds(op, x):
     """integer interval [lo, hi] (None = unbounded) of the integers i with  i <op> x  (x rational); None if empty"""
     fl, ce = math.floor(x), math.ceil(x)
@@ -222,12 +227,13 @@ class DictCodec(Codec):
         self.values = list(values); self.sql_type = sql_type
         self.numeric = sql_type not in ("VARCHAR", "BLOB", "JSON") and not sql_type.startswith("ROW")
         self.floating = sql_type.upper() in self.FLOATS
-        self._keys = self.values if not self.numeric or self.floating else [_frac(v) for v in self.values]
+        self._keys = (self.values if not self.numeric else [_fkey(v) for v in self.values] if self.floating
+                      else [_frac(v) for v in self.values])
 
     def _key(self, v):
         if self.numeric:
             if isinstance(v, str): raise TypeError(f"expected a number for a {self.sql_type} column, got {v!r}")
-            if self.floating: return float(v)
+            if self.floating: return _fkey(float(v))
             return _frac(v)
         if self.sql_type == "BLOB":
             if not isinstance(v, (bytes, bytearray)): raise TypeError(f"expected bytes for a BLOB column, got {v!r}")
@@ -256,7 +262,11 @@ class DictCodec(Codec):
         return (lo, hi - 1) if hi > lo else None
 
     def literal(self, v):
-        if self.floating: return repr(float(v))
+        if self.floating:
+            f = float(v)
+            if f != f: return "CAST('NaN' AS DOUBLE)"
+            if f in (math.inf, -math.inf): return f"CAST('{'-' if f < 0 else ''}Infinity' AS DOUBLE)"
+            return repr(f)
         if self.numeric:
             f = _frac(v)
             return str(f.numerator) if f.denominator == 1 else format(Decimal(f.numerator) / Decimal(f.denominator), "f")

@@ -42,13 +42,24 @@ TABLESAMPLE, the UNICODE collation (the Unicode Collation Algorithm, through the
 (...) AS j, COLLATION FOR, the literal UNKNOWN, character set introducers, and ordered aggregates over windows.
 `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than queries, SQL/XML,
 property graphs and the other parts of ISO/IEC 9075). In Python, every function is `F.<name>(...)` and every other
-expression form `F.expr("<SQL text>", tables...)`. Window frames are found by binary search and COUNT / SUM / AVG / MIN /
-MAX over them come from prefix sums and sparse tables, so a window over a large partition takes O(n log n), not O(n²).
+expression form `F.expr("<SQL text>", tables...)`.
+
+Window functions, and GROUP BY over the tuples the engine returns, run as array algebra (`sqlwin.py`): every PARTITION
+BY, ORDER BY and grouping column becomes dense order codes and one stable lexsort orders every partition, so ranking
+functions, LAG / LEAD, frame edges (ROWS, GROUPS, RANGE with offsets, EXCLUDE) and FIRST / LAST / NTH_VALUE are
+arithmetic on positions, COUNT / SUM / AVG and the statistics are differences of exact prefix sums of their moments
+(doubles and decimals scaled to integers exactly), and MIN / MAX / ARG_MIN / ARG_MAX are range minima from a sparse table
+built one level at a time. On 200,000 rows the window step of a ranking or running-sum query went from seconds to tenths
+of a second (17 s to 0.7 s for the two benchmark windows), and statistics of DOUBLE columns per group from 6.1 s to
+1.2 s; ORDER BY sorts by the same codes, arithmetic, comparisons and logic on integer and double columns run on
+whole columns, and a block without aggregates reads its rows from the planes instead of grouping them first. `tests/check_arrays.py` checks every answer against the row-by-row definitions
+(value for value) and against DuckDB. DOUBLE columns with NaN or infinities now load (they were left out with a note),
+compared and grouped as DuckDB does.
 
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random
-schemas and SQL and compares every answer with DuckDB's; `tests/check_sql.py` and `tests/check_iso.py` run on the three
-engines. The 13 SSB queries written in SQL give DuckDB's answers in one engine query each.
+schemas and SQL and compares every answer with DuckDB's; `tests/check_sql.py`, `tests/check_iso.py` and
+`tests/check_arrays.py` run on the three engines. The 13 SSB queries written in SQL give DuckDB's answers in one engine query each.
 
 Persistence
 - `db.save(path)` / `torbles.load(path)`: one file per torble (header hashed, planes 64-byte aligned), memory-mapped

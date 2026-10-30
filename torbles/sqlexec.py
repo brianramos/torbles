@@ -120,7 +120,11 @@ def ev(e, rel, cx):
             one = Rel(1); return [ev(e, one, cx)[0]] * n
         if e.fn == "in" and len(e.args) > 8 and all(isinstance(a, I.Lit) for a in e.args[1:]):
             return _in_set(e, ev(e.args[0], rel, cx))
-        return _apply(s, [ev(a, rel, cx) for a in e.args], n)
+        argv = [ev(a, rel, cx) for a in e.args]
+        if VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS:
+            r = _vec_func(e.fn, argv, n)
+            if r is not None: return r
+        return _apply(s, argv, n)
     if isinstance(e, I.Case):
         conds = [ev(c, rel, cx) for c, _ in e.whens]
         vals = [ev(x, rel, cx) for _, x in e.whens]
@@ -135,6 +139,9 @@ def ev(e, rel, cx):
         return out
     if isinstance(e, I.Cast):
         a = ev(e.arg, rel, cx); out = []
+        if VEC_SCALARS and n >= 64:
+            r = _vec_cast(a, e.arg.t, e.t)
+            if r is not None: return r
         for x in a:
             if isinstance(x, Err) or x is None: out.append(x); continue
             try: out.append(T.cast_value(x, e.arg.t, e.t, not e.try_))
@@ -147,6 +154,100 @@ def ev(e, rel, cx):
     if isinstance(e, (I.Agg, I.Win, I.Grouping)):
         raise SqlError(f"internal: {I.render(e)} was not computed")
     raise SqlError(f"internal: cannot evaluate {e!r}")
+
+
+# ------------------------------------------------------------------ scalar operators as arrays
+VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
+ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
+_NoneT = type(None)
+_VEC_FNS = {"+", "-", "*", "/", "neg", "=", "<>", "<", "<=", ">", ">=", "and", "or", "not", "is_null", "is_not_null"}
+_CMPF = {"=": np.equal, "<>": np.not_equal, "<": np.less, "<=": np.less_equal, ">": np.greater, ">=": np.greater_equal}
+
+
+def _numcol(vals):
+    """(kind, array, NULL mask or None, largest magnitude) for a column of ints (not booleans) below 2^62 or of doubles
+    without NaN; None for anything else (the row-by-row path)"""
+    tys = set(map(type, vals))
+    nul = _NoneT in tys; tys.discard(_NoneT)
+    if tys == {int}:
+        nn = [v for v in vals if v is not None] if nul else vals
+        mx = max(max(nn), -min(nn)) if nn else 0
+        if mx >= 1 << 62: return None
+        arr = np.array([0 if v is None else v for v in vals] if nul else vals, np.int64)
+    elif tys == {float}:
+        arr = np.array([0.0 if v is None else v for v in vals] if nul else vals, np.float64)
+        if np.isnan(arr).any(): return None
+        mx = None
+    elif not tys: return None
+    else: return None
+    return ("int" if tys == {int} else "float"), arr, (np.fromiter((v is None for v in vals), bool, len(vals)) if nul else None), mx
+
+
+def _out(arr, nul):
+    if nul is None or not nul.any(): return arr.tolist()
+    o = arr.astype(object); o[nul] = None
+    return o.tolist()
+
+
+def _vec_func(fn, argv, n):
+    """the operator on whole columns, with the row-by-row results (exact integers, IEEE doubles, three-valued logic);
+    None when a column is not plain ints / doubles / booleans"""
+    if fn in ("and", "or", "not"):
+        for col in argv:
+            if not set(map(type, col)) <= {bool, _NoneT}: return None
+        ts = [np.fromiter((v is True for v in c), bool, n) for c in argv]
+        fs = [np.fromiter((v is False for v in c), bool, n) for c in argv]
+        if fn == "not": return _out(fs[0], ~(ts[0] | fs[0]))
+        if fn == "and":
+            f = np.logical_or.reduce(fs); t = np.logical_and.reduce(ts)
+            return _out(t, ~(t | f))
+        t = np.logical_or.reduce(ts); f = np.logical_and.reduce(fs)
+        return _out(t, ~(t | f))
+    if fn in ("is_null", "is_not_null"):
+        if any(isinstance(v, Err) for v in argv[0]): return None
+        m = np.fromiter((v is None for v in argv[0]), bool, n)
+        return (m if fn == "is_null" else ~m).tolist()
+    cols = [_numcol(c) for c in argv]
+    if any(c is None for c in cols): return None
+    nul = None
+    for c in cols:
+        if c[2] is not None: nul = c[2] if nul is None else (nul | c[2])
+    kinds = {c[0] for c in cols}
+    if fn == "neg":
+        return _out(-cols[0][1], nul)
+    a, b = cols[0][1], cols[1][1]
+    if fn in _CMPF:
+        if kinds == {"int", "float"} and max(c[3] for c in cols if c[0] == "int") >= 1 << 53: return None
+        return _out(_CMPF[fn](a, b), nul)
+    if fn == "/":
+        with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+            return _out(a.astype(np.float64) / b.astype(np.float64), nul)
+    if kinds == {"int"}:
+        ma, mb = cols[0][3], cols[1][3]
+        if fn == "*" and ma * mb >= 1 << 63: return None
+        return _out(a + b if fn == "+" else a - b if fn == "-" else a * b, nul)
+    if kinds == {"int", "float"} and max(c[3] for c in cols if c[0] == "int") >= 1 << 53: return None
+    a, b = a.astype(np.float64), b.astype(np.float64)
+    with np.errstate(over="ignore", invalid="ignore"):
+        return _out(a + b if fn == "+" else a - b if fn == "-" else a * b, nul)
+
+
+_INT_T = {"TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT", "UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT"}
+
+
+def _vec_cast(vals, src, dst):
+    """CAST between integer types and DOUBLE on a whole column (None: row by row)"""
+    if src is None or not (src.integer or src.id == "DOUBLE"): return None
+    if not (dst.id == "DOUBLE" or dst.id in _INT_T): return None
+    c = _numcol(vals)
+    if c is None: return None
+    kind, arr, nul, mx = c
+    if dst.id == "DOUBLE":
+        return _out(arr.astype(np.float64), nul) if kind == "int" else None if src.id != "DOUBLE" else vals
+    if kind != "int": return None
+    lo, hi = T.INT_RANGE[dst.id]
+    if lo <= -mx and mx <= hi: return vals                  # every value fits: unchanged
+    return None
 
 
 def _in_set(e, xs):
@@ -211,6 +312,10 @@ def cmp_key(desc, nulls_first):
 
 def sort_rows(idx, keys, specs):
     """sort row indexes by key columns: specs [(desc, nulls_first)]; stable"""
+    if len(idx) > 48 and keys:                             # each key as dense order codes, one stable lexsort
+        import sqlwin
+        codes = [sqlwin.order_codes([k[i] for i in idx], d, nf) for k, (d, nf) in zip(keys, specs)]
+        return [idx[p] for p in np.lexsort(codes[::-1]).tolist()]
     cmps = [cmp_key(d, nf) for d, nf in specs]
     def c(i, j):
         for k, f in zip(keys, cmps):
@@ -221,6 +326,10 @@ def sort_rows(idx, keys, specs):
 
 
 # ================================================================== queries
+import datetime as _dt
+_AS_IS = {type(None), int, float, str, bool, bytes, _dt.date, _dt.datetime, _dt.time}     # returned unchanged
+
+
 def run(db, q, engine="alg"):
     """execute a bound statement -> Relation (values as returned to the caller)"""
     import decimal, sqlfront
@@ -232,15 +341,21 @@ def run(db, q, engine="alg"):
     cx = Cx(db, engine)
     with decimal.localcontext(T.CTX):
         r = run_query(q, cx)
-        rows = []
         dec = [t.s if t.id == "DECIMAL" else None for t in r.types]
-        for row in r.rows:
-            out = []
-            for v, s, t in zip(row, dec, r.types):
-                if isinstance(v, Err): raise SqlError(v.msg)
+        cols = list(zip(*r.rows)) if r.rows and r.types else []
+        out = []
+        for col, s, t in zip(cols, dec, r.types):          # column by column: most columns are returned as they are
+            tys = set(map(type, col))
+            for x in tys:
+                if issubclass(x, Err): raise SqlError(next(v for v in col if isinstance(v, Err)).msg)
+            if tys <= _AS_IS or (s is None and tys <= _AS_IS | {Decimal, T.DecFloat}):
+                out.append(col); continue
+            conv = []
+            for v in col:
                 if s is not None and isinstance(v, Decimal): v = T._dec_quant(v, s)
-                out.append(T.out_value(v, t))
-            rows.append(tuple(out))
+                conv.append(T.out_value(v, t))
+            out.append(conv)
+        rows = list(zip(*out)) if out else [()] * len(r.rows)
     res = Relation(r.names, r.types, rows)
     res.stats = cx.stats
     return res
@@ -599,6 +714,10 @@ def outer_refs_into(q, bset):
 
 
 def run_select(s, cx):
+    if type(s.limit) is int and s.limit == 0 and not s.percent:
+        # FETCH FIRST 0 ROWS / LIMIT 0: no row is output, so nothing is evaluated (as DuckDB: an error in a value
+        # that no output row uses does not fail the query)
+        return Relation([n for _, n in s.items], [x.t for x, _ in s.items], [])
     bindings = block_bindings(s.from_)
     bset = set(bindings)
     items = [x for x, _ in s.items]
@@ -687,9 +806,33 @@ def aggregate(s, rel, aggs, aggplan, cx):
     gkeys = [_ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
     collated = [gk is not gv for gk, gv in zip(gkeys, gvals)]
     out_groups = []                                  # (set index, key values tuple, member row indexes)
+    codes = {}
     for si, st in enumerate(sets):
         if not st:                                   # GROUP BY () or no GROUP BY: one group, even with no rows
-            out_groups.append((si, (), list(range(rel.n)))); continue
+            out_groups.append((si, (), np.arange(rel.n))); continue
+        if VEC_GROUPS and rel.n > 32:                # the groups as codes: one stable sort, members are runs
+            import sqlwin
+            for j in st:
+                if j not in codes: codes[j] = sqlwin.group_codes(gkeys[j])
+            comb = sqlwin._combine([codes[j] for j in st])
+            _, first, inv = np.unique(comb, return_index=True, return_inverse=True)
+            rank = np.empty(len(first), np.int64); rank[np.argsort(first, kind="stable")] = np.arange(len(first))
+            gid = rank[inv.reshape(-1)]                         # groups numbered in order of appearance
+            perm = np.argsort(gid, kind="stable")
+            bounds = np.concatenate(([0], np.cumsum(np.bincount(gid, minlength=len(first)))))
+            heads = perm[bounds[:-1]].tolist()                  # each group's first row
+            reps = {j: [gvals[j][i] for i in heads] for j in st}
+            for j in st:
+                if collated[j]:                                 # the least of the group's values (the first of equals)
+                    col = sqlwin.obj(gvals[j])[perm]
+                    nn = sqlwin.notnull(col)
+                    oc = np.full(len(col), np.iinfo(np.int64).max, np.int64)
+                    if nn.any(): oc[nn] = sqlwin.order_codes(col[nn].tolist()) * len(col) + np.flatnonzero(nn)
+                    best = np.minimum.reduceat(oc, bounds[:-1]) if len(col) else oc
+                    reps[j] = [col[b % len(col)] if b != np.iinfo(np.int64).max else r for b, r in zip(best.tolist(), reps[j])]
+            for g in range(len(first)):
+                out_groups.append((si, tuple(reps[j][g] for j in st), perm[bounds[g]:bounds[g + 1]]))
+            continue
         gm = {}
         order = []
         for i in range(rel.n):
@@ -726,7 +869,12 @@ def aggregate(s, rel, aggs, aggplan, cx):
             for p in pos: v = (v << 1) | (0 if p in sets[si] else 1)
             col.append(v)
         out.cols[gx.key()] = col
-    members = [m for _, _, m in out_groups]
+    members = _Members(m.tolist() if isinstance(m, np.ndarray) else m for _, _, m in out_groups)
+    if VEC_GROUPS:                                   # every group's rows, one run after another
+        sizes = np.array([len(m) for m in members], np.int64)
+        flat = [m for _, _, m in out_groups]
+        members.flat = (np.concatenate([np.asarray(m, np.int64) for m in flat]) if flat else np.zeros(0, np.int64),
+                        np.cumsum(sizes) - sizes, np.cumsum(sizes))
     for k, a in aggs.items():
         out.cols[k] = agg_values(a, rel, members, aggplan.get(k), cx)
     if s.having is not None:
@@ -740,6 +888,54 @@ def _xsum(vals):
         if isinstance(v, float) or isinstance(s, float): s = float(s) + float(v)
         else: s = s + v
     return s
+
+
+VEC_GROUPS = True           # GROUP BY and the value aggregates as array algebra (sqlwin); False: group by group (tests)
+
+
+class _Members(list):
+    """the rows of each output group (lists), with .flat = (all rows group after group, run starts, run ends)"""
+    flat = None
+
+
+def _agg_arrays(a, rel, members, args, filt, d):
+    """the aggregate over every group at once (sqlwin.aggregate on the groups' runs, each row weighted by its count);
+    None when it is computed group by group"""
+    import sqlwin
+    if a.order or a.name.startswith("__iso_h") or (a.name not in sqlwin._AGGS and a.name not in sqlwin._ORDER_AGGS): return None
+    if getattr(members, "flat", None) is not None: rows, starts, ends = members.flat
+    else:
+        sizes = np.array([len(m) for m in members], np.int64)
+        rows = np.concatenate([np.asarray(m, np.int64) for m in members]) if members else np.zeros(0, np.int64)
+        ends = np.cumsum(sizes); starts = ends - sizes
+    sizes = ends - starts
+    n = len(rows)
+    w = np.array(rel.cnt, dtype=object if any(c >= 1 << 62 for c in rel.cnt) else np.int64)[rows] if n else np.zeros(0, np.int64)
+    cols = [sqlwin.obj(c)[rows] for c in args]
+    valid = (w != 0) if n else np.zeros(0, bool)
+    if filt is not None:
+        fm = np.zeros(rel.n, bool); fm[filt] = True; valid &= fm[rows]
+    if a.distinct:                                   # one row per distinct value (tuple) in each group, weight 1
+        if d.skip_nulls and a.name != "count_star":
+            for c in cols: valid &= sqlwin.notnull(c)
+        akf = [T.coll_key(x.t) for x in a.args]
+        keyed = [c.tolist() if f is None else [f(v) if isinstance(v, str) else v for v in c.tolist()] for c, f in zip(cols, akf)]
+        vc = sqlwin._combine([sqlwin.group_codes(k) for k in keyed]) if keyed else np.zeros(n, np.int64)
+        grp = np.repeat(np.arange(len(members)), sizes)
+        o = np.lexsort((np.arange(n), vc, grp, ~valid))
+        firsts = np.zeros(n, bool)
+        if n:
+            G, V, Va = grp[o], vc[o], valid[o]
+            new = np.ones(n, bool); new[1:] = (G[1:] != G[:-1]) | (V[1:] != V[:-1]) | (Va[1:] != Va[:-1])
+            firsts[o[new]] = True
+        valid &= firsts
+        w = np.ones(n, np.int64)
+    if w.dtype == object: return None
+    try:
+        if a.name in sqlwin._ORDER_AGGS:
+            return sqlwin.order_aggregate(a.name, a.params, cols[0], valid, w, starts, ends).tolist()
+        return sqlwin.aggregate(a.name, cols, valid, [(starts, ends)], n, w).tolist()
+    except sqlwin.NoVec: return None
 
 
 def agg_values(a, rel, members, plan, cx):
@@ -773,6 +969,9 @@ def agg_values(a, rel, members, plan, cx):
     for col in args + okeys:
         for v in col:
             if isinstance(v, Err): raise SqlError(v.msg)
+    if VEC_GROUPS:
+        got = _agg_arrays(a, rel, members, args, filt, d)
+        if got is not None: return got
     out = []
     for mem in members:
         rows = []
@@ -869,8 +1068,13 @@ for _k in ("covar_pop", "covar_samp", "corr", "regr_slope", "regr_intercept", "r
 
 
 # ------------------------------------------------------------------ windows
+VEC_WINDOWS = True          # window functions as array algebra (sqlwin); False: row by row on each partition (tests)
+
+
 def compute_windows(wins, rel, cx):
+    import sqlwin
     n = rel.n
+    layouts = {}                                           # windows with the same PARTITION BY / ORDER BY share one ordering
     for w in wins:
         if w.key() in rel.cols: continue
         parts = [_ckeys(ev(p, rel, cx), p.t) for p in w.partition]
@@ -885,11 +1089,14 @@ def compute_windows(wins, rel, cx):
         for col in parts + okeys + (args or []) + inputs:
             for v in col:
                 if isinstance(v, Err): raise SqlError(v.msg)
-        groups = {}
-        for i in range(n):
-            groups.setdefault(tuple(nkey(p[i]) for p in parts), []).append(i)
-        res = [None] * n
         specs = [(o[1], o[2]) for o in w.order]
+        lk = (tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order))
+        L = layouts.get(lk)
+        if L is None: L = layouts[lk] = sqlwin.layout(parts, okeys, specs, n)
+        bound_vals = {}
+        if w.frame is not None:
+            for side, bd in (("a", w.frame[1]), ("b", w.frame[2])):
+                if bd[1] is not None: bound_vals[side] = ev(bd[1], rel, cx)
         rpr = None
         if w.rpr is not None:                              # the matches, shared by the window functions of one window
             mkey = ("rpr-match", w.rpr.spec, tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order),
@@ -897,9 +1104,28 @@ def compute_windows(wins, rel, cx):
             got = rel.cols.get(mkey)
             rpr = (inputs, got if got is not None else [None] * n, got is None)
         aorder = ([_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.agg_order], [(o[1], o[2]) for o in w.agg_order]) if w.agg_order else None
-        for idx in groups.values():
-            if w.order: idx = sort_rows(idx, okeys, specs)
-            _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr, aorder)
+        res = None
+        if VEC_WINDOWS and rpr is None and args is not None and aorder is None and n:
+            fm = None
+            if filt is not None:
+                fm = np.zeros(n, bool); fm[list(filt)] = True
+            vb = {}
+            for side, bd in (("a", w.frame[1]), ("b", w.frame[2])) if w.frame is not None else ():
+                if bd[1] is None: continue
+                if not I.cols_of(bd[1]) and not I.has(bd[1], I.Subq) and not I.has(bd[1], I.Outer):
+                    vb[side] = sqlwin.Const(bound_vals[side][0])          # a constant offset
+                else: vb[side] = bound_vals[side]
+            try:
+                out = sqlwin.evaluate(w, L, args, fm, vb, okeys[0] if len(okeys) == 1 else None,
+                                      bool(specs and specs[0][0]))
+                full = np.empty(n, object); full[L.perm] = out
+                res = full.tolist()
+            except sqlwin.NoVec:
+                res = None
+        if res is None:
+            res = [None] * n
+            for idx, peers in L.partitions():
+                _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr, aorder, peers, bound_vals)
         if rpr is not None and rpr[2]: rel.cols[mkey] = rpr[1]
         rel.cols[w.key()] = res
 
@@ -926,9 +1152,11 @@ def _same(a, b):
     return F.cmp_values(a, b) == 0
 
 
-def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, aorder=None):
+def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, aorder=None, peers=None, bound_vals=None):
+    """one ordered partition, row by row (idx: its rows in order; peers: each position's peer group (start, end))"""
     m = len(idx); name = w.name
-    pstart, pend = _peer_bounds(idx, okeys) if w.order else ([0] * m, [m] * m)
+    if peers is not None: pstart, pend = peers
+    else: pstart, pend = _peer_bounds(idx, okeys) if w.order else ([0] * m, [m] * m)
     if name == "row_number":
         for p, i in enumerate(idx): res[i] = p + 1
         return
@@ -981,9 +1209,10 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, 
     if not w.order and mode == "range":
         a = ("unbounded_preceding", None) if a[0] in ("current",) else a
         b = ("unbounded_following", None) if b[0] in ("current",) else b
-    bound_vals = {}
-    for side, bd in (("a", a), ("b", b)):
-        if bd[1] is not None: bound_vals[side] = ev(bd[1], rel, cx)
+    if bound_vals is None:
+        bound_vals = {}
+        for side, bd in (("a", a), ("b", b)):
+            if bd[1] is not None: bound_vals[side] = ev(bd[1], rel, cx)
     aux = _frame_aux(mode, a, b, idx, okeys, specs, pstart, pend, m)
     ex = w.exclude.upper().replace(" ", "_") if w.exclude else None
     if ex == "NO_OTHERS": ex = None
@@ -991,7 +1220,7 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, 
     def bounds_of(p, i):
         lo = _frame_edge(mode, a, "a", p, i, idx, okeys, specs, pstart, pend, bound_vals, m, aux)
         hi = _frame_edge(mode, b, "b", p, i, idx, okeys, specs, pstart, pend, bound_vals, m, aux)
-        lo, hi = max(lo, 0), min(hi, m)
+        lo, hi = min(max(lo, 0), m), min(hi, m)           # a frame past the partition's end is empty
         return lo, max(lo, hi)
 
     def frame_of(p, lo, hi):
@@ -1136,6 +1365,7 @@ def _fast_window_agg(w, name, idx, args, filt):
     nn = [v for v in live if v is not None]
     if any(isinstance(v, (bool, T.DecFloat, T.Interval)) or not isinstance(v, (int, float, Decimal)) for v in nn): return None
     kind = "float" if any(isinstance(v, float) for v in nn) else ("dec" if any(isinstance(v, Decimal) for v in nn) else "int")
+    if kind == "float" and not all(math.isfinite(v) for v in nn): return None        # NaN / infinities: the aggregate's own sum
     from fractions import Fraction
     ps = [0] * (m + 1); pc = [0] * (m + 1)
     for q in range(m):
@@ -2002,7 +2232,10 @@ class _Planner:
             aggregate is computed (a later pass cannot switch an aggregate an earlier one computed as a state)"""
             if not first_pass and any(modes.get(k) == "state" for k in aggs): raise _NotStarNow()
             for k in aggs: modes[k] = "value"
-        if nkeys > algq.MAXKEY or self.fact_sample is not None:
+        # a block without aggregates returns one row per fact row: read the passing rows' columns from the planes
+        # (a row bitmap) instead of grouping them by every column it reads
+        rows_block = ROWS_BLOCK and not s.aggregate and not aggs and bool(s.items)
+        if nkeys > algq.MAXKEY or self.fact_sample is not None or rows_block:
             # more columns than GROUP BY keys (or a sampled fact): the passing rows themselves (a row bitmap), their
             # columns read from the planes; every aggregate is then computed from its arguments' values
             to_values()
@@ -2541,8 +2774,10 @@ def _join_plain(j, L, R, cx):
         hit = {i for i, _ in pairs}
         idx = [i for i in range(L.n) if (i in hit) == (kind == "semi")]
         return L.take(idx)
-    extra_l = [i for i in range(L.n) if i not in {p[0] for p in pairs}] if kind in ("left", "full") else []
-    extra_r = [i for i in range(R.n) if i not in {p[1] for p in pairs}] if kind in ("right", "full") else []
+    hit_l = {p[0] for p in pairs} if kind in ("left", "full") else ()
+    hit_r = {p[1] for p in pairs} if kind in ("right", "full") else ()
+    extra_l = [i for i in range(L.n) if i not in hit_l] if kind in ("left", "full") else []
+    extra_r = [i for i in range(R.n) if i not in hit_r] if kind in ("right", "full") else []
     parts = [C]
     if extra_l: parts.append(_pad(L.take(extra_l), R))
     if extra_r: parts.append(_pad(R.take(extra_r), L))

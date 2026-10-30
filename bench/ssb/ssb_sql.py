@@ -4,7 +4,8 @@
 """SSB written in SQL: the official DuckDB database loaded with torbles.from_duckdb (keys from schema.sql, layout by the
 automatic key design), the 13 official queries and K1-K3 / M1-M3 run as SQL text by db.sql() and by DuckDB (an in-memory
 copy, same threads), every answer compared. Then a few queries that leave the engine (window functions over rows,
-string functions, row output) on a generated table, to show what runs in Python. Times: best of 3, end to end.
+GROUP BY on values, string functions, row output) on a generated table: torbles runs that part as array algebra on what
+the engine returns. Times: best of 3, end to end.
     python3 ssb_sql.py <SF> [threads, default all] [engines, default alg,gpu] [rows for the second part, default 200000]"""
 import sys, os, time
 here = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +50,7 @@ for name, q in (QUERIES | EXTRA).items():
     print(line)
 print("13 SSB queries in SQL:" + "".join(f"  {k} {v * 1e3:.1f} ms" for k, v in tot.items()))
 
-print(f"\nqueries that leave the engine, {nrows:,} rows (torbles runs these in Python):")
+print(f"\nqueries that leave the engine, {nrows:,} rows (torbles: array algebra on what the engine returns):")
 rng = np.random.default_rng(1)
 df = pd.DataFrame(dict(id=np.arange(nrows), k=rng.integers(0, 1000, nrows), v=rng.integers(0, 10000, nrows),
                        s=rng.choice([f"name{i}" for i in range(5000)], nrows)))
@@ -60,6 +61,8 @@ qs = {"filter + GROUP BY (on the engine)": "SELECT k, sum(v), count(*) FROM t WH
       "GROUP BY a string expression": "SELECT substring(s FROM 1 FOR 5), count(*) FROM t GROUP BY 1",
       "window: running SUM per partition": "SELECT id, sum(v) OVER (PARTITION BY k ORDER BY id) FROM t",
       "window: rank over all rows": "SELECT id, rank() OVER (ORDER BY v) FROM t",
+      "window: sliding AVG, 10 rows": "SELECT id, avg(v) OVER (ORDER BY id ROWS BETWEEN 5 PRECEDING AND 4 FOLLOWING) FROM t",
+      "GROUP BY: median and DISTINCT count": "SELECT k, median(v), count(DISTINCT s) FROM t GROUP BY k",
       "100 rows out": "SELECT id, v * 2, s || '!' FROM t WHERE v < 10 ORDER BY id LIMIT 100"}
 for name, q in qs.items():
     td, want = best(lambda: con.execute(q).fetchall(), 1)
