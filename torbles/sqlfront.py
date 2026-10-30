@@ -2,10 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
 """SQL text -> bound query (sqlir). DuckDB's parser reads the statement (json_serialize_sql: syntax only, no data);
-a token pre-pass first rewrites the ISO/IEC 9075 forms DuckDB's grammar lacks (BETWEEN SYMMETRIC, LIKE_REGEX,
-LISTAGG ... WITHIN GROUP, hypothetical set functions, the *_REGEX functions, OVERLAPS, UNIQUE, FETCH ... WITH TIES,
-SUBSTRING ... SIMILAR, NTH_VALUE ... FROM LAST, INTERVAL ... TO ...) into marker function calls it can parse. The
-binder resolves names against the torbles catalog, types every expression (sqlfuncs) and builds sqlir blocks."""
+a token pre-pass first rewrites the ISO/IEC 9075 forms DuckDB's grammar lacks into marker function calls it can parse:
+BETWEEN SYMMETRIC, LIKE_REGEX, SIMILAR TO, the *_REGEX functions, LISTAGG ... WITHIN GROUP, hypothetical set functions,
+OVERLAPS, UNIQUE, MATCH, IS NORMALIZED, IS JSON, PERIOD predicates, MEMBER / SUBMULTISET / IS A SET, MULTISET
+constructors and operators, extended CASE, FETCH ... WITH TIES / PERCENT, NTH_VALUE ... FROM LAST, interval literals
+and casts with qualifiers, (a - b) <qualifier>, AT LOCAL, CAST ... FORMAT, USING OCTETS, CORRESPONDING [BY], GROUP BY
+DISTINCT, the SQL/JSON functions and JSON_TABLE, MATCH_RECOGNIZE, SEARCH / CYCLE, partitioned joins, U&'' literals and
+0x / 1_000 numbers. Postfix predicates travel as  x IS [NOT] DISTINCT FROM __iso_pred_<name>(...)  so that DuckDB gives
+them a predicate's precedence. The binder resolves names against the torbles catalog, types every expression
+(sqlfuncs) and builds sqlir blocks."""
 import json, re
 from decimal import Decimal
 import sqltypes as T

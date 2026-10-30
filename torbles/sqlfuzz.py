@@ -245,7 +245,8 @@ class Gen:
             if keys and r.random() < 0.15:
                 sel.append(f"rank() OVER (ORDER BY {aggs[0][0]} NULLS LAST, {', '.join(str(i + 1) for i in range(len(sel)))})" if False else
                            f"sum(count(*)) OVER (PARTITION BY {keys[0][0]})")
-            dist = "DISTINCT " if r.random() < 0.05 else ""
+            # DISTINCT over inexact DOUBLE statistics would merge or split rows by DuckDB's rounding: not compared
+            dist = "DISTINCT " if r.random() < 0.05 and not any(t == "DOUBLE" or a.startswith("avg") for a, t in aggs) else ""
             sql = f"SELECT {dist}{', '.join(sel)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "") + gb + having
             if r.random() < 0.3:
                 sql += f" ORDER BY {', '.join(str(i + 1) + ' NULLS FIRST' for i in range(len(sel)))}"

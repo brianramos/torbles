@@ -245,8 +245,6 @@ GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named wind
 - **DECFLOAT** (T076).
 - Other parts of ISO/IEC 9075: SQL/XML (Part 14), SQL/MDA multidimensional arrays (Part 15), SQL/PGQ property graph
   queries (Part 16), SQL/MED, SQL/OLB, SQL/JRT, SQL/CLI.
-- **Engine-side:** a block whose aggregates need more GROUP BY columns than the engine can group by together (a rare
-  combination of many value aggregates) is refused with a message, never answered wrongly.
 
 ## Where torbles and DuckDB differ (on purpose)
 

@@ -12,7 +12,7 @@ export PYTHONPATH="$PWD:$PWD/torbles:$PWD/tests"
 [ -f torbles/libgpu.so ] && export TORBLES_GPU_LIB="$PWD/torbles/libgpu.so"
 missing=$(python3 -c "
 import importlib.util as u
-print(' '.join(m for m in ('numpy', 'pandas', 'duckdb') if u.find_spec(m) is None))")
+print(' '.join(m for m in ('numpy', 'pandas', 'duckdb', 'pytz') if u.find_spec(m) is None))")
 if [ -n "$missing" ]; then   # one clear message instead of a failure per test
   echo "the tests need Python packages that $(command -v python3) does not have: $missing"
   echo "install them (pip install $missing, or pip install '.[test]') or activate the environment that has them"
