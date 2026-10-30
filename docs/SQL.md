@@ -290,13 +290,16 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 grouping sets, windows and frames, subqueries, CTEs, set operations), checks the ISO forms DuckDB lacks against values
 worked out by hand, checks the Python API against its own SQL text run by DuckDB, and runs a short fuzzing session.
 `tests/check_iso.py` covers the forms above: time zones, collations, samples, MATCH, PERIOD, extended CASE, intervals,
-binary strings, arrays and multisets, LATERAL, SQL/JSON and its path language, SEARCH / CYCLE, MATCH_RECOGNIZE (the
-documented examples' results) and partitioned joins, each against DuckDB where DuckDB has the same semantics. Both run
+binary strings, arrays and multisets, LATERAL, SQL/JSON and its path language and JSON_TABLE plans, SEARCH / CYCLE,
+MATCH_RECOGNIZE (the documented examples' results) and row pattern recognition in windows, partitioned joins, nested
+window functions, row types (stored ones too), DECFLOAT, datetime precisions, the UNICODE collation, and a regression
+test for every bug an independent review found, each against DuckDB where DuckDB has the same semantics. Both run
 on the three engines (`TORBLES_SQL_ENGINE=alg | plain | gpu`), from `tests/run_all.sh`.
 
 `python -m torbles.sqlfuzz --minutes 10` (or `torbles-sqlfuzz --seed 7 --cases 200`) generates random typed star
 schemas (unmatched and NULL references included) and random SQL: filters, expressions of every type, every kind of aggregate,
-GROUP BY with grouping sets, HAVING, window functions, subqueries, CTEs, set operations, DISTINCT, ORDER BY / LIMIT; it
+GROUP BY with grouping sets, HAVING, window functions (over groups, and over rows with partitions, RANGE and GROUPS
+frames and exclusions), subqueries, CTEs, set operations, DISTINCT, ORDER BY / LIMIT; it
 runs each statement on torbles and on DuckDB and compares the results as multisets (in order when ORDER BY fixes it,
 DOUBLE values with a relative tolerance). Any difference, and any error other than a documented refusal, is a failure
 with a replay command.
