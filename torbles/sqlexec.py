@@ -891,9 +891,10 @@ def compute_windows(wins, rel, cx):
                     I.Win("", [], None, frame=w.frame).key())
             got = rel.cols.get(mkey)
             rpr = (inputs, got if got is not None else [None] * n, got is None)
+        aorder = ([_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.agg_order], [(o[1], o[2]) for o in w.agg_order]) if w.agg_order else None
         for idx in groups.values():
             if w.order: idx = sort_rows(idx, okeys, specs)
-            _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr)
+            _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr, aorder)
         if rpr is not None and rpr[2]: rel.cols[mkey] = rpr[1]
         rel.cols[w.key()] = res
 
@@ -920,7 +921,7 @@ def _same(a, b):
     return F.cmp_values(a, b) == 0
 
 
-def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None):
+def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, aorder=None):
     m = len(idx); name = w.name
     pstart, pend = _peer_bounds(idx, okeys) if w.order else ([0] * m, [m] * m)
     if name == "row_number":
@@ -1020,8 +1021,9 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None):
             continue
         d = F.AGGS[name]
         rows = []
-        for q in frame:
-            r = idx[q]
+        ids = [idx[q] for q in frame]
+        if aorder is not None: ids = sort_rows(ids, aorder[0], aorder[1])        # the aggregate's own ORDER BY
+        for r in ids:
             if filt is not None and r not in filt: continue
             vals = tuple(c[r] for c in args)
             if d.skip_nulls and name != "count_star" and any(v is None for v in vals): continue

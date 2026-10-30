@@ -2417,13 +2417,21 @@ class Binder:
                 if args[0].v.lower() not in mn: raise SqlError(f"{args[0].v} is not a measure of the window")
                 rp.measure = mn.index(args[0].v.lower())
                 return I.Win("__rpr_measure", rp.inputs, rp.mr.measures[rp.measure][0].t, part, order, frame, excl, rpr=rp)
-            w = self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last)
+            w = self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last, sc)
             w.args += rp.inputs; w.rpr = rp
             return w
-        return self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last)
+        return self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last, sc)
 
-    def window_fn(self, name, kind, e, args, part, order, frame, filt, excl, ign, from_last):
+    def window_fn(self, name, kind, e, args, part, order, frame, filt, excl, ign, from_last, sc=None):
         if name == "__iso_nth_value_last": name, kind, from_last = "nth_value", "nth_value", True
+        if e.get("arg_orders") and (kind is None or e["type"] == "WINDOW_AGGREGATE"):
+            # an ordered aggregate over a window: PERCENTILE_CONT(p) WITHIN GROUP (ORDER BY x) OVER w,
+            # ARRAY_AGG(x ORDER BY y) OVER w, LISTAGG(...) WITHIN GROUP (...) OVER w: bound as the aggregate is
+            fname = {"percentile_cont": "quantile_cont", "percentile_disc": "quantile_disc"}.get(name, name)
+            fnode = {"class": "FUNCTION", "function_name": fname, "arguments": e.get("arguments") or [],
+                     "order_bys": {"orders": e["arg_orders"]}, "distinct": e.get("distinct"), "filter": None}
+            a = self.aggregate(fname, fnode, sc, Ctx(agg=True, where="a window"))
+            return I.Win(a.name, a.args, a.t, part, order, frame, excl, ign, filt, False, a.distinct, a.params, agg_order=a.order)
         if (kind is None or e["type"] == "WINDOW_AGGREGATE") and not from_last:
             aname = _AGG_ALIAS.get(name, name)
             if aname not in F.AGGS: raise SqlError(f"unknown window function {name}")

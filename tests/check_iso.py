@@ -579,5 +579,11 @@ refuses("SELECT _ASCII'é'", ["repertoire"], "an introducer checks the character
 vs_duckdb("SELECT g.gid, m.x FROM g, TABLE(ARRAY[g.gid, 100]) AS m(x) ORDER BY 1, 2".replace("TABLE(", "UNNEST(") , "UNNEST over a lateral array")
 expect("SELECT m.x FROM TABLE(MULTISET[1, 2, 2]) AS m(x) ORDER BY x", [(1,), (2,), (2,)], "TABLE (<collection>) in FROM")
 
+vs_duckdb2("SELECT id, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY v) OVER (PARTITION BY k), LISTAGG(x, ',') WITHIN GROUP (ORDER BY x DESC) OVER (PARTITION BY k), "
+           "ARRAY_AGG(v ORDER BY v DESC, id) OVER (PARTITION BY k ORDER BY id ROWS 2 PRECEDING) FROM t WHERE id < 300 ORDER BY id",
+           "SELECT id, quantile_cont(v, 0.5) OVER (PARTITION BY k), string_agg(x, ',' ORDER BY x DESC) OVER (PARTITION BY k), "
+           "array_agg(v ORDER BY v DESC, id) OVER (PARTITION BY k ORDER BY id ROWS 2 PRECEDING) FROM t WHERE id < 300 ORDER BY id",
+           "ordered aggregates over a window: WITHIN GROUP and ORDER BY in the argument list")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
