@@ -493,5 +493,20 @@ expect("SELECT CAST(TIMESTAMP '2020-01-01 10:00:00.5' AS TIMESTAMP(0)), CAST(TIM
 vs_duckdb("SELECT id, CAST(ts + INTERVAL 500 MILLISECOND AS TIMESTAMP(0)), CAST(ts - INTERVAL 1500 MICROSECOND AS TIMESTAMP(3)) FROM t ORDER BY id LIMIT 100",
           "TIMESTAMP(0) and TIMESTAMP(3) as DuckDB rounds them (TIMESTAMP_S, TIMESTAMP_MS)")
 
+for q, what in (("SELECT count(*) FROM t WHERE x COLLATE NOCASE IN (SELECT 'A'), count(*) FROM t WHERE x COLLATE NOCASE <> ALL (SELECT 'A' UNION SELECT 'e')", None),
+                ("SELECT count(*) FILTER (WHERE x COLLATE NOCASE = ANY (SELECT 'A')), count(*) FILTER (WHERE NULLIF(x COLLATE NOCASE, 'A') IS NULL) FROM t", "ANY (subquery) and NULLIF under a collation"),
+                ("SELECT count(*) FILTER (WHERE lower(x COLLATE NOCASE) = 'A'), count(*) FILTER (WHERE x COLLATE NOACCENT || '' = 'e'), "
+                 "count(*) FILTER (WHERE trim(x COLLATE NOCASE) = 'B'), count(*) FILTER (WHERE substring(x COLLATE NOCASE FROM 1 FOR 1) = 'b') FROM t",
+                 "a string function keeps its operand's collation"),
+                ("SELECT id, max(x COLLATE NOCASE) OVER (PARTITION BY k), min(x COLLATE NOACCENT) OVER (PARTITION BY k ORDER BY id) FROM t WHERE id < 200 ORDER BY id",
+                 "window MIN / MAX under a collation"),
+                ("SELECT replace(x COLLATE NOCASE, 'z', 'y'), split_part('AxBXc' COLLATE NOCASE, 'x', 2) FROM t WHERE id < 20 ORDER BY id", "replace / split_part return the string"),
+                ("SELECT count(*) FROM (SELECT 'q' AS c UNION ALL SELECT x COLLATE NOCASE FROM t) u WHERE c = 'A'", "a set operation takes the explicit collation of either operand")):
+    if q.startswith("SELECT count(*) FROM t WHERE x COLLATE NOCASE IN"):
+        vs_duckdb("SELECT count(*) FROM t WHERE x COLLATE NOCASE IN (SELECT 'A')", "IN (subquery) under a collation")
+        vs_duckdb("SELECT count(*) FROM t WHERE x COLLATE NOCASE <> ALL (SELECT 'A' UNION SELECT 'e')", "<> ALL (subquery) under a collation")
+        continue
+    vs_duckdb(q, what)
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

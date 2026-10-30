@@ -1189,7 +1189,12 @@ def cast_to(e, t, try_=False):
 
 
 _COLLATED = {"=", "<>", "<", "<=", ">", ">=", "is_distinct", "is_not_distinct", "between", "between_sym", "in", "like",
-             "position", "starts_with", "ends_with", "contains", "replace", "split_part", "strpos"}
+             "position", "starts_with", "ends_with", "contains", "strpos"}
+# string functions whose result keeps the explicit collation of their string operands (ISO 6.31, 9.5)
+_COLL_KEEP = {"lower", "lcase", "upper", "ucase", "reverse", "initcap", "||", "concat", "concat_ws", "substring", "substr",
+              "left", "right", "ltrim", "rtrim", "trim", "btrim", "lpad", "rpad", "repeat", "translate", "overlay", "normalize",
+              "regexp_replace", "replace", "split_part", "__iso_substring_similar", "substring_regex", "__iso_translate_regex",
+              "__iso_transliterate", "__first"}
 
 
 def _collated_args(name, args):
@@ -1225,9 +1230,16 @@ def make_func(name, args, extra=None):
         return eq if name in ("=", "is_not_distinct") else make_func("not", [eq])
     if name in ("<", "<=", ">", ">=") and any(a.t.id == "MULTISET" for a in args):
         raise SqlError("multisets compare only for equality")
+    if name == "nullif" and any(getattr(a.t, "coll", None) for a in args):       # NULLIF compares under the collation
+        rt, _ = s.typer(args)
+        return I.Case([(make_func("=", list(args)), I.Lit(None, rt))], cast_to(args[0], rt), rt)
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
+    if name in _COLL_KEEP and rt.id == "VARCHAR":
+        cs = {a.t.coll for a in args if getattr(a.t, "coll", None)}
+        if len(cs) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(cs))}")
+        if cs: rt = T.SqlType("VARCHAR", coll=cs.pop())
     f = I.Func(name, args, rt, extra)
     if rt.id == "DECFLOAT" and name in ("+", "-", "*", "/", "%", "neg", "abs", "//"):     # rounded to DECFLOAT(p)
         f = I.Func("__decfloat", [f, I.Lit(rt.p, T.INTEGER)], rt)
@@ -2321,6 +2333,9 @@ class Binder:
                 o = json.loads(_const(args[nv], aname)); o["vtypes"] = [str(args[nv - 1].t)]
                 params = (json.dumps(o),); args = args[:nv]
             if aname == "count" and not args: aname = "count_star"
+            if aname in ("min", "max") and len(args) == 1 and T.coll_key(args[0].t) is not None:
+                args = [args[0], self.func("__ckey", [args[0], I.Lit(args[0].t.coll, T.VARCHAR)])]     # the value of least / greatest key
+                aname = "arg_min" if aname == "min" else "arg_max"
             rt = F.agg_typer(aname, [a.t for a in args], params) if aname != "count_star" else T.BIGINT
             return I.Win(aname, args, rt, part, order, frame, excl, ign, filt, False, bool(e.get("distinct")), params)
         rt = F.win_typer(kind, args)
@@ -2390,6 +2405,9 @@ class Binder:
             if not _is_row(child):
                 t = T.supertype(child.t, cols[0][1], getattr(child, "strlit", False))
                 child = cast_to(child, t)
+                if T.coll_key(t) is not None:              # compared under an explicit collation: both sides by key
+                    child = make_func("__ckey", [child, I.Lit(t.coll, T.VARCHAR)])
+                    q = _keyed_query(q, t.coll); corr = _correlated(q)
             return I.Subq("any", q, T.BOOLEAN, child, op, correlated=corr)
         raise SqlError(f"subquery {kind} is not supported")
 
@@ -2541,6 +2559,15 @@ def _const(e, where):
 
 
 def _is_row(x): return isinstance(x, I.Func) and x.fn == "row"
+
+
+def _keyed_query(q, coll):
+    """SELECT __ckey(c, coll) FROM (q): a one-column query's values as collation keys"""
+    (n, t), = q_columns(q)
+    b = I.Binding("__ck", [(n, t, True)], q=q)
+    s = I.Select(); s.from_ = b
+    s.items = [(make_func("__ckey", [I.Col(b, n, t, True), I.Lit(coll, T.VARCHAR)]), n)]
+    return s
 
 
 def _rowish(x):

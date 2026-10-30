@@ -323,7 +323,11 @@ def as_decimal(t):
 def supertype(a, b, literal_a=False, literal_b=False):
     """the type both a and b convert to implicitly (CASE branches, COALESCE, comparisons, set operations); a string
     literal takes the other side's type"""
-    if a == b: return a
+    if a == b:
+        if a.id == "VARCHAR" and a.coll != b.coll:        # an explicit collation wins (ISO 9.5); two differ: a conflict
+            if a.coll and b.coll: raise SqlError(f"collation conflict: {a.coll} and {b.coll}")
+            return a if a.coll else b
+        return a
     if a.id == "NULL": return b
     if b.id == "NULL": return a
     if literal_a and a.id == "VARCHAR" and b.id != "VARCHAR": return b
@@ -341,7 +345,9 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if {a.id, b.id} == {"DATE", "TIMESTAMP"}: return TIMESTAMP
     if {a.id, b.id} in ({"DATE", "TIMESTAMPTZ"}, {"TIMESTAMP", "TIMESTAMPTZ"}): return TIMESTAMPTZ
     if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
-    if a.id == "VARCHAR" or b.id == "VARCHAR": return VARCHAR
+    if a.id == "VARCHAR" or b.id == "VARCHAR":
+        c = (a.coll if a.id == "VARCHAR" else None) or (b.coll if b.id == "VARCHAR" else None)
+        return SqlType("VARCHAR", coll=c) if c else VARCHAR
     if {a.id, b.id} == {"JSON", "VARCHAR"}: return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
     if a.id == "MULTISET" and b.id == "MULTISET": return MULTISET(supertype(a.child, b.child))
