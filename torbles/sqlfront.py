@@ -852,6 +852,13 @@ def iso_prepass(sql):
                     name = (u + "TZ") if zoned else u
                     if name != u or j != i + 1:
                         t[i:j] = [Tok("id", "TIMESTAMPTZ" if name == "TIMESTAMPTZ" else name)]; changed = True; break
+            # TIMESTAMP(p) / TIME(p) [WITH | WITHOUT TIME ZONE] as a type: fractional seconds precision
+            if u in ("TIMESTAMP", "TIME") and i + 3 < len(t) and t[i + 1].s == "(" and t[i + 2].k == "num" and t[i + 3].s == ")" \
+                    and t[i + 2].s.isdigit() and (i == 0 or t[i - 1].up() not in ("CURRENT_TIMESTAMP", "CURRENT_TIME")):
+                j = i + 4; tz = False
+                if _kw(t, j, "WITH", "TIME", "ZONE"): tz = True; j += 3
+                elif _kw(t, j, "WITHOUT", "TIME", "ZONE"): j += 3
+                t[i:j] = [Tok("id", f"__{u}{'TZ' if tz else ''}_P{int(t[i + 2].s)}")]; changed = True; break
             # nested window functions (T619): ROW_NUMBER(<row marker>), VALUE_OF(<expr> AT <row marker> [+|- n] [, default])
             if u == "ROW_NUMBER" and i + 3 < len(t) and t[i + 1].s == "(" and t[i + 2].up() in _ROW_MARKERS and t[i + 3].s == ")":
                 t[i:i + 4] = tokenize(f"__iso_nrow_number('{t[i + 2].up()}')"); changed = True; break
@@ -2025,6 +2032,7 @@ class Binder:
         if name.upper().startswith("DECIMAL") or name.upper() in ("NUMERIC", "DEC"):
             return T.type_from_name("DECIMAL", args)
         if name.upper() == "DECFLOAT": return T.type_from_name("DECFLOAT", args)
+        if args and name.upper() in ("TIMESTAMPTZ", "TIMETZ", "TIMESTAMP", "TIME"): return T.type_from_name(name, args)
         if name.upper() in ("STRUCT", "ROW"):                  # ROW(a INTEGER, b VARCHAR) (T051)
             return T.ROW_T([(ch.get("alias") or "", self.type_of(ch)) for ch in te.get("children") or []])
         return T.type_from_name(name)

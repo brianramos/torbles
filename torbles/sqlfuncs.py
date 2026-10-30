@@ -1270,7 +1270,12 @@ def _frac_trunc(v, p):
     return v.replace(microsecond=v.microsecond // q * q)
 
 
-scalar("__iso_at_local", lambda a: _at_typer([None] + list(a)), deterministic=False)(lambda x: T.in_zone(x))
+def _at_local_typer(args):
+    t, casts = _at_typer([None] + list(args))
+    return t, casts[1:]                                # x is taken in the session's zone first when it has none
+
+
+scalar("__iso_at_local", _at_local_typer, deterministic=False)(lambda x: T.in_zone(x))
 
 
 # SQL-session values (ISO 6.4 <general value specification>)

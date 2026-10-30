@@ -480,5 +480,18 @@ q = db.select(tt.id, F.row(tt.k, tt.x).cast("ROW(a INTEGER, b VARCHAR)").field("
 try: check(q.run(ENGINE).rows == db.sql("SELECT id, x FROM t WHERE id < 5 ORDER BY id").rows, "Python API: F.row(...).cast(ROW type).field(name)")
 except Exception as x: check(False, "Python API rows", f"{type(x).__name__}: {x}")
 
+print("== review fixes")
+db.sql("SET TIME ZONE '+02:00'")
+expect("SELECT TIME '10:00:00' AT LOCAL, TIME '10:00:00+05' AT LOCAL", [(dt.time(10, 0, tzinfo=tz(2)), dt.time(7, 0, tzinfo=tz(2)))], "AT LOCAL on a TIME without zone")
+db.sql("SET TIME ZONE 'UTC'")
+expect("SELECT CAST(TIMESTAMP '2020-01-01 10:00:00.5' AS TIMESTAMP(0)), CAST(TIME '10:00:00.5' AS TIME(0)), "
+       "CAST(TIMESTAMP '2020-01-01 10:00:00.5+02' AS TIMESTAMP(0) WITH TIME ZONE), typeof(CAST(TIMESTAMP '2020-01-01 10:00:00' AS TIMESTAMP(3))), "
+       "CAST(TIMESTAMP '1969-12-31 23:59:59.5' AS TIMESTAMP(0)), CAST(TIMESTAMP '2020-01-01 10:00:00.0005' AS TIMESTAMP(3))",
+       [(dt.datetime(2020, 1, 1, 10, 0, 1), dt.time(10, 0, 1), dt.datetime(2020, 1, 1, 10, 0, 1, tzinfo=tz(2)), "TIMESTAMP(3)",
+         dt.datetime(1969, 12, 31, 23, 59, 59), dt.datetime(2020, 1, 1, 10, 0, 0, 1000))], "TIMESTAMP(p) / TIME(p) [WITH TIME ZONE]: fractional digits rounded")
+
+vs_duckdb("SELECT id, CAST(ts + INTERVAL 500 MILLISECOND AS TIMESTAMP(0)), CAST(ts - INTERVAL 1500 MICROSECOND AS TIMESTAMP(3)) FROM t ORDER BY id LIMIT 100",
+          "TIMESTAMP(0) and TIMESTAMP(3) as DuckDB rounds them (TIMESTAMP_S, TIMESTAMP_MS)")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

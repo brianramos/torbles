@@ -35,6 +35,9 @@ class SqlType:
         if self.id == "MULTISET": return f"{self.child!r} MULTISET"
         if self.id == "ROW" and self.child is not None:
             return "ROW(" + ", ".join(f"{_field_name(n)} {t!r}" if n else repr(t) for n, t in self.child) + ")"
+        if self.id in ("TIMESTAMP", "TIME", "TIMESTAMPTZ", "TIMETZ") and self.p is not None:   # fractional seconds precision
+            base = "TIME" if self.id.startswith("TIME") and not self.id.startswith("TIMESTAMP") else "TIMESTAMP"
+            return f"{base}({self.p})" + (" WITH TIME ZONE" if self.id.endswith("TZ") else "")
         if self.id in _DISPLAY: return _DISPLAY[self.id]
         if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
@@ -93,6 +96,25 @@ def decfloat(v, p=34):
         raise SqlError(f"data exception: numeric value out of range for DECFLOAT({p})")
     return DecFloat(r)
 def LIST(t, maxcard=None): return SqlType("LIST", p=maxcard, child=t)
+def datetime_type(tid, p):
+    """TIMESTAMP / TIME [WITH TIME ZONE] with p fractional digits of seconds (6, microseconds, is the default)"""
+    if not 0 <= p <= 9: raise SqlError(f"invalid fractional seconds precision {p}")
+    return SqlType(tid, p=p if p < 6 else None)
+
+
+def round_frac(v, p):
+    """a datetime rounded to p fractional digits of seconds, halves away from zero (DuckDB's TIMESTAMP_S / _MS)"""
+    if p is None or v is None: return v
+    q = 10 ** (6 - p)
+    if isinstance(v, _dt.time):
+        us = ((v.hour * 60 + v.minute) * 60 + v.second) * 1_000_000 + v.microsecond
+        us = (us + q // 2) // q * q % 86_400_000_000
+        return _dt.time(us // 3_600_000_000, us // 60_000_000 % 60, us // 1_000_000 % 60, us % 1_000_000, tzinfo=v.tzinfo)
+    base = _dt.datetime(1970, 1, 1, tzinfo=v.tzinfo)
+    d = v - base
+    us = (d.days * 86_400 + d.seconds) * 1_000_000 + d.microseconds
+    r = (abs(us) + q // 2) // q * q
+    return base + _dt.timedelta(microseconds=r if us >= 0 else -r)
 def ROW_T(fields):
     """a row type (T051): fields [(name, type)]; a field of a row value constructor has the name ''"""
     return SqlType("ROW", child=tuple((str(n), t) for n, t in fields))
@@ -157,6 +179,14 @@ def type_from_name(name, args=()):
     if rt is not None: return rt
     u = re.sub(r"\s+", " ", raw.upper())
     u = re.sub(r"\s+COLLATE\s+\S+$", "", u)
+    m = re.fullmatch(r"__(TIMESTAMP|TIMESTAMPTZ|TIME|TIMETZ)_P(\d+)", u) or \
+        re.fullmatch(r"(TIMESTAMP|TIME|TIMESTAMPTZ|TIMETZ) ?\( ?(\d+) ?\)( WITH TIME ZONE| WITHOUT TIME ZONE)?", u)
+    if m:                                                  # TIMESTAMP(p), TIME(p) [WITH TIME ZONE]: fractional digits kept
+        tid = m.group(1) + ("TZ" if m.lastindex == 3 and m.group(3) == " WITH TIME ZONE" and not m.group(1).endswith("TZ") else "")
+        return datetime_type(tid, int(m.group(2)))
+    if args and u in ("TIMESTAMP", "TIME", "TIMESTAMPTZ", "TIMETZ", "TIMESTAMP WITH TIME ZONE", "TIME WITH TIME ZONE"):
+        return datetime_type(_NAMES[u], int(args[0]))
+    if u in ("TIMESTAMP_S", "TIMESTAMP_MS"): return datetime_type("TIMESTAMP", 0 if u == "TIMESTAMP_S" else 3)
     if u.endswith("[]"): return LIST(type_from_name(u[:-2]))
     if u.endswith(" MULTISET"): return MULTISET(type_from_name(u[:-9]))
     m = re.fullmatch(r"DECFLOAT\s*(?:\(\s*(\d+)\s*\))?", u)
@@ -306,6 +336,8 @@ def supertype(a, b, literal_a=False, literal_b=False):
         da, db = as_decimal(a), as_decimal(b)
         s = max(da.s, db.s); w = max(da.p - da.s, db.p - db.s)
         return DECIMAL(min(38, w + s), s)
+    if a.id == b.id and a.temporal:                        # the same datetime type, two precisions: the finer one
+        return SqlType(a.id, p=None if a.p is None or b.p is None else max(a.p, b.p))
     if {a.id, b.id} == {"DATE", "TIMESTAMP"}: return TIMESTAMP
     if {a.id, b.id} in ({"DATE", "TIMESTAMPTZ"}, {"TIMESTAMP", "TIMESTAMPTZ"}): return TIMESTAMPTZ
     if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
@@ -614,6 +646,8 @@ def cast_value(v, src, dst, err=True):
 def _cast(v, src, dst, err):
     d = dst.id
     if src is not None and src == dst: return v
+    if dst.temporal and dst.p is not None:
+        return round_frac(_cast(v, src, SqlType(d), err), dst.p)
     if d == "ROW":                                         # a row: field by field, same degree (ISO 6.13)
         if not isinstance(v, (list, tuple)) or (src is not None and src.id not in ("ROW", "NULL")): raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
         if dst.child is None: return tuple(v)
