@@ -1994,7 +1994,9 @@ class _Planner:
             cx.stats["engine_queries"] += 1
             try: return q.run(cx.engine)
             except (TypeError, OverflowError, ValueError) as ex:
-                if "group domain too large" in str(ex): raise _TooManyGroups()
+                m = str(ex)
+                if "group domain too large" in m or "hidden GROUP BY columns" in m or "exceed 128 bits" in m:
+                    raise _TooManyGroups()                 # the passing rows themselves, aggregated exactly in Python
                 raise SqlError(f"the engine cannot run this block: {ex}")
         def first_poly(vid):
             return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
