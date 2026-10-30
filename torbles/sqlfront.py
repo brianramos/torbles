@@ -351,11 +351,12 @@ class _JParse:
         x = self.t[self.i] if self.i < self.b else None
         if x is None or x.k != "str": self.err("the path must be a character string literal")
         self.opts["path"] = x.s[1:-1].replace("''", "'"); self.i += 1
-        if self.at("AS"): self.i += 2                   # a path name (JSON_TABLE)
+        if self.at("AS"): self.opts["pname"] = self.t[self.i + 1].s.strip('"').upper(); self.i += 2      # a path name (JSON_TABLE)
         if self.at("PASSING"):
             self.i += 1
             while True:
-                self.passing.append(self.expr_until([("AS",)]))
+                self.passing.append(self.expr_until([("FORMAT", "JSON"), ("AS",)]))
+                self.opts.setdefault("pfmt", []).append(self.format_json())
                 if not self.at("AS"): self.err("PASSING <value> AS <name>")
                 self.i += 1; self.names.append(self.t[self.i].s.strip('"')); self.i += 1
                 if self.i < self.b and self.t[self.i].s == ",": self.i += 1; continue
@@ -526,18 +527,19 @@ def _json_table(t, i):
                 if Q.at("PATH"): Q.i += 1
                 x = t[Q.i]
                 if x.k != "str": Q.err("NESTED [PATH] '<path>'")
-                Q.i += 1
-                if Q.at("AS"): Q.i += 2
-                cols.append(dict(kind="nested", path=x.s[1:-1].replace("''", "'"), cols=columns(Q)))
+                Q.i += 1; pname = None
+                if Q.at("AS"): pname = t[Q.i + 1].s.strip('"').upper(); Q.i += 2
+                cols.append(dict(kind="nested", path=x.s[1:-1].replace("''", "'"), pname=pname, cols=columns(Q)))
             else:
                 name = t[Q.i].s.strip('"'); Q.i += 1
                 if Q.at("FOR", "ORDINALITY"): Q.i += 2; cols.append(dict(name=name, kind="ordinality"))
                 else:
                     typ = Q.type_until(); kind = "value"
-                    o = dict(empty=["NULL"], error=["NULL"], wrapper="WITHOUT", quotes="KEEP", names=[])
+                    o = dict(empty=["NULL"], error=None, wrapper="WITHOUT", quotes="KEEP", names=[])
                     Q.opts = o
+                    if typ.strip().upper() == "JSON": kind = "query"          # a JSON column reads like JSON_QUERY
                     if Q.at("FORMAT", "JSON"): Q.format_json(); kind = "query"
-                    if Q.at("EXISTS"): Q.i += 1; kind = "exists"; o["error"] = ["FALSE"]
+                    if Q.at("EXISTS"): Q.i += 1; kind = "exists"
                     path = "lax $." + json.dumps(name)
                     if Q.at("PATH"):
                         Q.i += 1; x = t[Q.i]
@@ -550,14 +552,60 @@ def _json_table(t, i):
         P.i = e + 1
         return cols
     cols = columns(P)
-    err = "EMPTY"
+    err = "EMPTY"; plan = None; pdef = ["OUTER", "UNION"]
     while not P.done():
-        if P.at("PLAN"): P.i = _match_paren(t, P.i + 1) + 1 if P.i + 1 < b and t[P.i + 1].s == "(" else P.i + 2; continue
+        if P.at("PLAN", "DEFAULT") and P.i + 2 < b and t[P.i + 2].s == "(":       # PLAN DEFAULT (OUTER | INNER [, UNION | CROSS])
+            e = _match_paren(t, P.i + 2)
+            for x in t[P.i + 3:e]:
+                if x.up() in ("OUTER", "INNER"): pdef[0] = x.up()
+                elif x.up() in ("UNION", "CROSS"): pdef[1] = x.up()
+                elif x.s != ",": P.err("PLAN DEFAULT (OUTER | INNER, UNION | CROSS)")
+            P.i = e + 1; continue
+        if P.at("PLAN") and P.i + 1 < b and t[P.i + 1].s == "(":
+            e = _match_paren(t, P.i + 1); plan = _jt_plan([x.s for x in t[P.i + 2:e]]); P.i = e + 1; continue
         if P.at("ERROR", "ON", "ERROR"): err = "ERROR"; P.i += 3; continue
         if P.at("EMPTY", "ON", "ERROR"): err = "EMPTY"; P.i += 3; continue
         P.err(f"unexpected {t[P.i].s!r}")
-    spec = dict(path=P.opts["path"], names=P.names, cols=cols, error=err, np=len(P.passing))
+    def col_errors(cs):                     # a column without ON ERROR: the table's ERROR ON ERROR, else its default
+        for c in cs:
+            if c["kind"] == "nested": col_errors(c["cols"])
+            elif c["kind"] != "ordinality" and c["opts"]["error"] is None:
+                c["opts"]["error"] = ["ERROR"] if err == "ERROR" else (["FALSE"] if c["kind"] == "exists" else ["NULL"])
+    col_errors(cols)
+    spec = dict(path=P.opts["path"], names=P.names, cols=cols, error=err, np=len(P.passing), pfmt=P.opts.get("pfmt", []),
+                plan=plan, plan_default=pdef, pname=P.opts.get("pname"))
     return tokenize(f"__json_table({', '.join([ctx, _jstr(spec)] + P.passing + defaults)})"), c
+
+
+def _jt_plan(toks):
+    """a JSON_TABLE plan (ISO 7.11): p OUTER | INNER <primary>; <primary> UNION | CROSS <primary> ...; a primary is a
+    path name or a parenthesized plan -> ('pc', name, join, child) | ('sib', op, [plans]) | ('name', name)"""
+    toks = [x.strip('"').upper() if x not in ("(", ")") else x for x in toks]
+    pos = [0]
+    def peek(): return toks[pos[0]] if pos[0] < len(toks) else None
+    def primary():
+        x = peek()
+        if x == "(":
+            pos[0] += 1; n = plan()
+            if peek() != ")": raise SqlError("JSON_TABLE PLAN: ')' expected")
+            pos[0] += 1; return n
+        if x is None or x in (")", "OUTER", "INNER", "UNION", "CROSS"): raise SqlError(f"JSON_TABLE PLAN: a path name expected, not {x!r}")
+        pos[0] += 1; return ("name", x)
+    def plan():
+        first = primary()
+        if peek() in ("OUTER", "INNER"):
+            if first[0] != "name": raise SqlError("JSON_TABLE PLAN: OUTER / INNER follows a path name")
+            j = peek(); pos[0] += 1
+            return ("pc", first[1], j, primary())
+        if peek() in ("UNION", "CROSS"):
+            op = peek(); items = [first]
+            while peek() == op: pos[0] += 1; items.append(primary())
+            if peek() in ("UNION", "CROSS"): raise SqlError("JSON_TABLE PLAN: UNION and CROSS mixed without parentheses")
+            return ("sib", op, items)
+        return first
+    n = plan()
+    if pos[0] != len(toks): raise SqlError(f"JSON_TABLE PLAN: unexpected {toks[pos[0]]!r}")
+    return n
 
 
 def _mr_expr(t, a, b):
@@ -1644,14 +1692,14 @@ class Binder:
         def level(cols):
             for c in cols:
                 if c["kind"] == "nested":
-                    sqljson.compile_path(c["path"]); level(c["cols"]); continue
+                    sqljson.check_vars(c["path"], spec["names"]); level(c["cols"]); continue
                 c["pos"] = len(names); names.append(c["name"])
                 if c["kind"] == "ordinality": types.append(T.BIGINT); continue
                 t = T.type_from_name(c["type"]) if c.get("type") else (T.JSON if c["kind"] == "query" else T.VARCHAR)
                 if c["kind"] == "exists" and t.id not in ("BOOLEAN", "VARCHAR") and not t.integer: raise SqlError(f"EXISTS column {c['name']}: BOOLEAN, an integer or a string type")
                 types.append(t); c["rtype"] = str(t)
-                sqljson.compile_path(c["opts"]["path"])
-        sqljson.compile_path(spec["path"])
+                sqljson.check_vars(c["opts"]["path"], spec["names"])
+        sqljson.check_vars(spec["path"], spec["names"])
         level(spec["cols"])
         if len(set(n.lower() for n in names)) != len(names): raise SqlError("JSON_TABLE: column names must be distinct")
         names = alias + names[len(alias):]
@@ -1938,7 +1986,7 @@ class Binder:
             return x
         if name in ("__json_value", "__json_query", "__json_exists"):
             o = json.loads(args[1].v)
-            sqljson.compile_path(o["path"])                     # a syntax error in the path fails the query now
+            sqljson.check_vars(o["path"], o.get("names", []))   # a syntax error or an unbound variable fails the query now
             np_ = o.get("np", 0); passing, defaults = args[2:2 + np_], args[2 + np_:]
             o["ptypes"] = [str(a.t) for a in passing]
             what = name[2:].upper()

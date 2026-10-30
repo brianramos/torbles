@@ -508,5 +508,27 @@ for q, what in (("SELECT count(*) FROM t WHERE x COLLATE NOCASE IN (SELECT 'A'),
         continue
     vs_duckdb(q, what)
 
+expect("""SELECT JSON_VALUE('{}', '$x.type()' PASSING DATE '2020-01-02' AS x),
+       JSON_EXISTS('{"d":"2020-06-01"}', '$.d ? (@.datetime() > $since)' PASSING DATE '2020-01-01' AS since),
+       JSON_VALUE('{}', '$x.a' PASSING '{"a":5}' FORMAT JSON AS x), JSON_QUERY('{"a":1,"b":{"c":2}}', '$.b.keyvalue()'),
+       JSON_OBJECT('a' VALUE 1, 'a' VALUE 2)""",
+       [("date", True, "5", '{"name":"c","value":2,"id":1}', '{"a":1,"a":2}')],
+       "SQL/JSON: datetime PASSING items, PASSING ... FORMAT JSON, deterministic keyvalue() ids, repeated keys kept")
+refuses("SELECT JSON_VALUE('{}', '$x')", ["no PASSING value", "$x"], "an unbound path variable is an error of the query")
+refuses("SELECT JSON_OBJECT('a' VALUE 1, 'a' VALUE 2 WITH UNIQUE KEYS)", ["duplicate"], "WITH UNIQUE KEYS refuses a repeated key")
+expect("""SELECT * FROM JSON_TABLE('[{"c":[1,2]},{"c":{"d":1}},{"c":3}]', '$[*]' COLUMNS (c JSON PATH '$.c'))""",
+       [("[1,2]",), ('{"d":1}',), ("3",)], "JSON_TABLE: a JSON column reads like JSON_QUERY")
+refuses("""SELECT * FROM JSON_TABLE('[{"b":1}]', '$[*]' COLUMNS (a INTEGER PATH '$.a' ERROR ON EMPTY))""", ["no SQL/JSON item"], "JSON_TABLE: a column's ERROR ON EMPTY")
+refuses("""SELECT * FROM JSON_TABLE('[{"a":"abc"}]', '$[*]' COLUMNS (a INTEGER PATH '$.a') ERROR ON ERROR)""", ["abc"], "JSON_TABLE: the table's ERROR ON ERROR reaches the columns")
+expect("""SELECT * FROM JSON_TABLE('[{"a":"abc"}]', '$[*]' COLUMNS (a INTEGER PATH '$.a' NULL ON ERROR) ERROR ON ERROR)""", [(None,)], "a column's own ON ERROR wins")
+J = """'[{"id":1,"a":[1,2],"b":["x","y"]},{"id":2,"a":[],"b":["z"]},{"id":3,"a":[3],"b":[]}]'"""
+C = """'$[*]' AS p COLUMNS (id INTEGER PATH '$.id', NESTED PATH '$.a[*]' AS pa COLUMNS (a INTEGER PATH '$'), NESTED PATH '$.b[*]' AS pb COLUMNS (b VARCHAR PATH '$'))"""
+union = [(1, 1, None), (1, 2, None), (1, None, "x"), (1, None, "y"), (2, None, "z"), (3, 3, None)]
+cross = [(1, 1, "x"), (1, 1, "y"), (1, 2, "x"), (1, 2, "y")]
+for plan, want in (("", union), ("PLAN DEFAULT (CROSS)", cross + [(2, None, None), (3, None, None)]), ("PLAN DEFAULT (INNER, CROSS)", cross),
+                   ("PLAN (p OUTER (pa CROSS pb))", cross + [(2, None, None), (3, None, None)]), ("PLAN (p INNER (pa UNION pb))", union)):
+    expect(f"SELECT * FROM JSON_TABLE({J}, {C} {plan})", want, f"JSON_TABLE {plan or 'default plan (OUTER, UNION)'}")
+refuses(f"SELECT * FROM JSON_TABLE({J}, {C} PLAN (p OUTER pa))", ["PLAN"], "a plan names every NESTED PATH")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

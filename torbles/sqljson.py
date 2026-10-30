@@ -77,11 +77,13 @@ def dumps(v):
     raise JErr(f"no JSON form for {v!r}")
 
 
-def from_sql(v, t, fmt_json=False):
+def from_sql(v, t, fmt_json=False, items=False):
     """an SQL value -> an SQL/JSON item: JSON-typed values (and FORMAT JSON) are parsed; strings are strings;
-    numbers, booleans; datetimes as their ISO text; NULL as the JSON null"""
+    numbers, booleans; datetimes as their ISO text in a constructor, as datetime items in PASSING (items=True); NULL
+    as the JSON null"""
     if v is None: return None
-    if fmt_json or (t is not None and t.id == "JSON"): return parse(v)
+    if fmt_json or (t is not None and t.id == "JSON"): return parse(v.decode("utf-8") if isinstance(v, (bytes, bytearray)) else v)
+    if items and isinstance(v, (_dt.date, _dt.time)): return v
     if isinstance(v, bool) or isinstance(v, (int, Decimal, str)): return v
     if isinstance(v, float):
         if not math.isfinite(v): raise JErr(f"{v} has no JSON form")
@@ -280,7 +282,23 @@ def _type_name(x):
 
 class _Ctx:
     def __init__(self, mode, root, vars_):
-        self.lax = mode == "lax"; self.root = root; self.vars = vars_
+        self.lax = mode == "lax"; self.root = root; self.vars = vars_; self.ids = None
+
+    def object_id(self, x):
+        """.keyvalue()'s id of an object: its position in a preorder walk of the context item (then of each PASSING
+        value, 10^10 apart), so equal queries give equal ids; objects made during the evaluation come after"""
+        if self.ids is None:
+            self.ids = {}
+            def walk(v, base, n):
+                if isinstance(v, (dict, list)):
+                    if isinstance(v, dict): self.ids.setdefault(id(v), base + n[0])
+                    n[0] += 1
+                    for c in (v.values() if isinstance(v, dict) else v): walk(c, base, n)
+            walk(self.root, 0, [0])
+            for k, v in enumerate(self.vars.values(), 1): walk(v, k * 10_000_000_000, [0])
+            self.next = 10_000_000_000 * (len(self.vars) + 1)
+        if id(x) not in self.ids: self.ids[id(x)] = self.next; self.next += 1
+        return self.ids[id(x)]
 
 
 def evaluate(path, item, vars_=None):
@@ -538,8 +556,8 @@ def _method(e, cx, cur, last):
             out.append(v)
         elif name == "keyvalue":
             if not isinstance(x, dict): raise JErr(f".keyvalue() of a {_type_name(x)}")
-            base = id(x) % 1_000_000_007
-            for i, (kk, vv) in enumerate(x.items()): out.append({"name": kk, "value": vv, "id": base * 1000 + i})
+            oid = cx.object_id(x)
+            for kk, vv in x.items(): out.append({"name": kk, "value": vv, "id": oid})
         else: raise JErr(f"unknown item method .{name}()")
     return out
 
@@ -641,14 +659,38 @@ def _context(text, t):
     return parse(text)
 
 
-def _vars(names, vals, types):
-    return {n: from_sql(v, t) for n, v, t in zip(names, vals, types)}
+def _vars(names, vals, types, fmts=None):
+    fmts = fmts or [False] * len(names)
+    return {n: from_sql(v, t, f, items=True) for n, v, t, f in zip(names, vals, types, fmts)}
+
+
+def path_vars(path):
+    """the names of the variables a compiled path reads"""
+    out = set()
+    def walk(e):
+        if isinstance(e, tuple):
+            if len(e) == 2 and e[0] == "var" and isinstance(e[1], str): out.add(e[1])
+            for x in e: walk(x)
+        elif isinstance(e, list):
+            for x in e: walk(x)
+    walk(path[1])
+    return out
+
+
+def check_vars(path_text, names):
+    """a path variable without a PASSING value is an error of the query, not of the data"""
+    miss = sorted(path_vars(compile_path(path_text)) - set(names))
+    if miss: raise SqlError(f"SQL/JSON path {path_text!r}: no PASSING value named {', '.join('$' + m for m in miss)}")
+
+
+class BehaviorError(SqlError):
+    """ERROR ON EMPTY / ERROR ON ERROR asked for"""
 
 
 def _behavior(spec, err, defaults):
     """ON EMPTY / ON ERROR: ('ERROR',) raises; ('NULL',); ('DEFAULT', value)"""
     kind = spec[0]
-    if kind == "ERROR": raise SqlError(f"SQL/JSON: {err}")
+    if kind == "ERROR": raise BehaviorError(f"SQL/JSON: {err}")
     if kind == "DEFAULT": return ("value", defaults[spec[1]])
     if kind == "EMPTY ARRAY": return ("value", "[]")
     if kind == "EMPTY OBJECT": return ("value", "{}")
@@ -659,7 +701,7 @@ def _behavior(spec, err, defaults):
 
 def json_value(o, ctx, pvals, ptypes, defaults, rt):
     """JSON_VALUE: the one scalar the path selects, as the RETURNING type; NULL ON EMPTY / ON ERROR by default"""
-    try: item = _context(ctx, None); vars_ = _vars(o["names"], pvals, ptypes)
+    try: item = _context(ctx, None); vars_ = _vars(o["names"], pvals, ptypes, o.get("pfmt"))
     except JErr as ex: return _err_or(o, ex, defaults, rt)
     return _value_item(o, item, vars_, defaults, rt)
 
@@ -709,7 +751,7 @@ def _to_sql(x, rt):
 
 def json_query(o, ctx, pvals, ptypes):
     """JSON_QUERY: the selected items as JSON text, with or without an array wrapper"""
-    try: item = _context(ctx, None); vars_ = _vars(o["names"], pvals, ptypes)
+    try: item = _context(ctx, None); vars_ = _vars(o["names"], pvals, ptypes, o.get("pfmt"))
     except JErr as ex: return _behavior(o["error"], ex, [])[1]
     return _query_item(o, item, vars_)
 
@@ -736,7 +778,7 @@ def json_exists(o, ctx, pvals, ptypes):
     """JSON_EXISTS: does the path select anything? FALSE ON ERROR by default"""
     try:
         item = _context(ctx, None)
-        return len(evaluate(o["cpath"], item, _vars(o["names"], pvals, ptypes))) > 0
+        return len(evaluate(o["cpath"], item, _vars(o["names"], pvals, ptypes, o.get("pfmt")))) > 0
     except JErr as ex: return _behavior(o["error"], ex, [])[1]
 
 
@@ -755,15 +797,16 @@ def is_json(text, kind="VALUE", unique=False):
 
 def json_object(keys, vals, types, fmts, absent_on_null=False, unique=False):
     """JSON_OBJECT(k VALUE v, ...): NULL ON NULL by default"""
-    out = {}
+    out, seen = [], set()                  # members in order; a repeated key stays unless WITH UNIQUE KEYS (ISO 6.39)
     for k, v, t, f in zip(keys, vals, types, fmts):
         if k is None: raise SqlError("data exception: null value not allowed (a JSON object key)")
         if v is None and absent_on_null: continue
         k = k if isinstance(k, str) else T.to_text(k, None)
-        if unique and k in out: raise SqlError(f"data exception: duplicate JSON object key value {k!r}")
-        try: out[k] = from_sql(v, t, f)
+        if unique and k in seen: raise SqlError(f"data exception: duplicate JSON object key value {k!r}")
+        seen.add(k)
+        try: out.append(json.dumps(k, ensure_ascii=False) + ":" + dumps(from_sql(v, t, f)))
         except JErr as ex: raise SqlError(f"JSON_OBJECT: {ex}")
-    return dumps(out)
+    return "{" + ",".join(out) + "}"
 
 
 def json_array(vals, types, fmts, null_on_null=False):
@@ -792,33 +835,62 @@ def json_table_rows(spec, ctx, pvals, ptypes):
     plan)"""
     try:
         item = parse(ctx) if not isinstance(ctx, (bytes, bytearray)) else parse(ctx.decode("utf-8"))
-        vars_ = _vars(spec["names"], pvals, ptypes)
+        vars_ = _vars(spec["names"], pvals, ptypes, spec.get("pfmt"))
         items = evaluate(spec["cpath"], item, vars_)
     except JErr as ex:
         if spec["error"] == "ERROR": raise SqlError(f"JSON_TABLE: {ex}")
         return []
-    return _jt_level(spec["cols"], items, vars_, spec["error"], spec["defaults"])
-
-
-def _jt_level(cols, items, vars_, on_error, defaults):
+    J = _JT(spec, vars_)
+    plan = spec.get("plan")
+    if plan is not None:
+        if plan[0] == "pc" and plan[1] != spec.get("pname"): raise SqlError(f"JSON_TABLE PLAN: {plan[1]} is not the row path's name")
+        if plan[0] not in ("pc", "name"): raise SqlError("JSON_TABLE PLAN: starts with the row path's name")
+    top = (plan[2], plan[3]) if plan is not None and plan[0] == "pc" else None
     out = []
-    for ordn, it in enumerate(items, 1):
-        base, nested = {}, []
-        for c in cols:
-            if c["kind"] == "nested": nested.append(c); continue
-            base[c["pos"]] = _jt_col(c, it, vars_, ordn, on_error, defaults)
-        if not nested:
-            out.append(base); continue
-        any_row = False
-        for nl in nested:
-            try: sub = evaluate(nl["cpath"], it, vars_)
-            except JErr as ex:
-                if on_error == "ERROR": raise SqlError(f"JSON_TABLE: {ex}")
-                sub = []
-            for r in _jt_level(nl["cols"], sub, vars_, on_error, defaults):
-                row = dict(base); row.update(r); out.append(row); any_row = True
-        if not any_row: out.append(base)                 # OUTER: the parent row, its nested columns NULL
+    for ordn, it in enumerate(items, 1): out += J.item_rows(spec["cols"], it, ordn, top)
     return out
+
+
+class _JT:
+    """JSON_TABLE's rows: a path's items, each with its columns, joined with its NESTED PATHs' rows as the plan says
+    (ISO 7.11: by default OUTER, and sibling paths as a UNION; PLAN DEFAULT (INNER | OUTER, CROSS | UNION) changes
+    both, PLAN (p OUTER (a CROSS b)) sets them per path)"""
+    def __init__(self, spec, vars_):
+        self.spec, self.vars, self.on_error, self.defaults = spec, vars_, spec["error"], spec["defaults"]
+        self.pdef = spec.get("plan_default") or ["OUTER", "UNION"]
+
+    def item_rows(self, cols, it, ordn, plan):
+        base = {c["pos"]: _jt_col(c, it, self.vars, ordn, self.on_error, self.defaults) for c in cols if c["kind"] != "nested"}
+        nested = {(c.get("pname") or f"#{i}"): c for i, c in enumerate(cols) if c["kind"] == "nested"}
+        if not nested: return [base]
+        if plan is None: plan = (self.pdef[0], ("sib", self.pdef[1], [("name", n) for n in nested]))
+        else:
+            def names(x): return [x[1]] if x[0] in ("name", "pc") else [n for y in x[2] for n in names(y)]
+            got = names(plan[1])
+            if sorted(got) != sorted(nested): raise SqlError(f"JSON_TABLE PLAN: the plan names {', '.join(got)}; the NESTED PATHs here are {', '.join(nested)} (each once)")
+        join, tree = plan
+        sub = self.plan_rows(tree, nested, it)
+        if not sub: return [base] if join == "OUTER" else []
+        return [{**base, **r} for r in sub]
+
+    def plan_rows(self, tree, nested, it):
+        kind = tree[0]
+        if kind in ("name", "pc"):
+            nl = nested.get(tree[1])
+            if nl is None: raise SqlError(f"JSON_TABLE PLAN: {tree[1]} is not a NESTED PATH here")
+            try: sub = evaluate(nl["cpath"], it, self.vars)
+            except JErr as ex:
+                if self.on_error == "ERROR": raise SqlError(f"JSON_TABLE: {ex}")
+                sub = []
+            plan = (tree[2], tree[3]) if kind == "pc" else None
+            out = []
+            for ordn, s in enumerate(sub, 1): out += self.item_rows(nl["cols"], s, ordn, plan)
+            return out
+        parts = [self.plan_rows(x, nested, it) for x in tree[2]]
+        if tree[1] == "UNION": return [r for p in parts for r in p]
+        out = [{}]
+        for p in parts: out = [{**a, **b} for a in out for b in p]
+        return out
 
 
 def _jt_col(c, it, vars_, ordn, on_error, defaults):
@@ -831,6 +903,7 @@ def _jt_col(c, it, vars_, ordn, on_error, defaults):
             except JErr as ex: return _behavior(o["error"], ex, defaults)[1]
         if kind == "query": return _query_item(o, it, vars_)
         return _value_item(o, it, vars_, defaults, c["rt"])
+    except BehaviorError: raise
     except SqlError:
         if on_error == "ERROR" or o["error"][0] == "ERROR": raise
         return None

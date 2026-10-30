@@ -127,7 +127,7 @@ one table is always evaluated on that table's distinct values (row mask or code 
 | OFFSET, FETCH FIRST n [PERCENT] ROWS ONLY / WITH TIES, computed counts (F860-F867) | values |
 | TABLESAMPLE BERNOULLI / SYSTEM (p) REPEATABLE (s) (T613) | engine: a sample row mask (BERNOULLI per row, SYSTEM per 64-row word), ANDed with the passing rows; a sampled dimension is a row mask |
 | MATCH_RECOGNIZE (R010) | values: PARTITION BY, ORDER BY, MEASURES, ONE / ALL ROWS PER MATCH, SHOW / OMIT EMPTY MATCHES, WITH UNMATCHED ROWS, AFTER MATCH SKIP (all forms), PATTERN (concatenation, alternation, greedy and reluctant `* + ? {n,m}`, PERMUTE, `^ $`, `{- -}`), SUBSET, DEFINE, PREV / NEXT / FIRST / LAST, RUNNING / FINAL, CLASSIFIER(), MATCH_NUMBER(), aggregates |
-| JSON_TABLE (T821-T828) | values: PASSING, COLUMNS (PATH, FOR ORDINALITY, EXISTS, FORMAT JSON with wrappers and quotes, ON EMPTY / ON ERROR), NESTED PATH (outer join to the parent, union of siblings), ERROR / EMPTY ON ERROR; the PLAN clause is accepted and the default plan is used |
+| JSON_TABLE (T821-T828) | values: PASSING, COLUMNS (PATH, FOR ORDINALITY, EXISTS, FORMAT JSON with wrappers and quotes, ON EMPTY / ON ERROR), NESTED PATH, PLAN DEFAULT (OUTER / INNER, UNION / CROSS) and explicit plans `PLAN (p OUTER (a CROSS b))` (the default: outer join to the parent, union of siblings), ERROR / EMPTY ON ERROR (the table's ERROR ON ERROR is the columns' default) |
 | scalar subqueries, EXISTS, IN / ANY / SOME / ALL (subquery), UNIQUE, row subqueries | uncorrelated: once, folded to constants; correlated: once per distinct outer tuple |
 
 Row types (T051): `ROW(a, b)` and `(a, b)` build a row value, `CAST(x AS ROW(f INTEGER, g VARCHAR))` gives its fields
