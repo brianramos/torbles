@@ -364,6 +364,10 @@ def expr_sql(e):
         if fn == "__iso_similar": return f"({a[0]} SIMILAR TO {a[1]}" + (f" ESCAPE {a[2]}" if len(a) > 2 else "") + ")"
         if fn == "__iso_like_regex": return f"({a[0]} LIKE_REGEX {a[1]}" + (f" FLAG {a[2]}" if len(a) > 2 else "") + ")"
         if fn == "__iso_overlaps": return f"(({a[0]}, {a[1]}) OVERLAPS ({a[2]}, {a[3]}))"
+        if fn == "__collate": return f"({a[0]} COLLATE {e.args[1].v if isinstance(e.args[1], Lit) else a[1]})"
+        if fn == "__ckey":                                 # a comparison key under a collation: the value under it
+            x = e.args[0]
+            return a[0] if isinstance(x, Func) and x.fn == "__collate" else f"({a[0]} COLLATE {e.args[1].v})"
         if fn == "__nwf_row_number": return f"ROW_NUMBER({e.extra[0]})"
         if fn == "__nwf_value_of":
             d = e.args[1].v or 0

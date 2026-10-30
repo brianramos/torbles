@@ -604,5 +604,9 @@ vs_duckdb(f"SELECT id, sum(v) OVER (ORDER BY y NULLS FIRST RANGE BETWEEN 3 PRECE
           f"avg(y) OVER (ORDER BY id ROWS BETWEEN 5 PRECEDING AND 2 FOLLOWING EXCLUDE CURRENT ROW) FROM {nq} ORDER BY id",
           "RANGE frames with NULL keys first or last, GROUPS frames, exclusions (frame edges by binary search, prefix sums)")
 
+q = db.select(F.count().alias("n")).where(tt.x.collate("nocase") == "A")
+try: check(q.run(ENGINE).rows == db.sql("SELECT count(*) FROM t WHERE x COLLATE NOCASE = 'A'").rows and q.verify(ENGINE)[0], "Python API: x.collate(name), and its SQL text")
+except Exception as x: check(False, "Python API collate", f"{type(x).__name__}: {x}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
