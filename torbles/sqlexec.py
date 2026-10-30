@@ -31,12 +31,21 @@ from sqlfuncs import Err
 
 
 class Relation:
-    """a query result: column names, SQL types, rows (tuples)"""
-    def __init__(self, names, types, rows):
-        self.names, self.types, self.rows = list(names), list(types), rows
+    """a query result: column names, SQL types, rows (tuples; built from the columns when first read)"""
+    def __init__(self, names, types, rows, cols=None):
+        self.names, self.types, self._rows, self._cols = list(names), list(types), rows, cols
+    @classmethod
+    def of_columns(cls, names, types, cols, n):
+        return cls(names, types, None if cols else [()] * n, cols if cols else None)
+    @property
+    def rows(self):
+        if self._rows is None: self._rows = list(zip(*self._cols))
+        return self._rows
+    @rows.setter
+    def rows(self, v): self._rows, self._cols = v, None
     @property
     def columns(self): return self.names
-    def __len__(self): return len(self.rows)
+    def __len__(self): return len(self._rows) if self._rows is not None else (len(self._cols[0]) if self._cols else 0)
     def __iter__(self): return iter(self.rows)
     def __repr__(self): return f"Relation({self.names}, {len(self.rows)} rows)"
     def fetchall(self): return list(self.rows)
@@ -597,7 +606,7 @@ def run(db, q, engine="alg"):
     with decimal.localcontext(T.CTX):
         r = run_query(q, cx)
         dec = [t.s if t.id == "DECIMAL" else None for t in r.types]
-        cols = list(zip(*r.rows)) if r.rows and r.types else []
+        cols = r._cols if r._cols is not None else (list(zip(*r.rows)) if r.rows and r.types else [])
         out = []
         for col, s, t in zip(cols, dec, r.types):          # column by column: most columns are returned as they are
             tys = set(map(type, col))
@@ -610,7 +619,7 @@ def run(db, q, engine="alg"):
                 if s is not None and isinstance(v, Decimal): v = T._dec_quant(v, s)
                 conv.append(T.out_value(v, t))
             out.append(conv)
-        rows = list(zip(*out)) if out else [()] * len(r.rows)
+        rows = list(zip(*out)) if out else [()] * len(r)
     res = Relation(r.names, r.types, rows)
     res.stats = cx.stats
     return res
@@ -1101,7 +1110,7 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
         out = aggregate(s, rel, aggs, aggplan, cx)
     else:
         # one output row per underlying row: expand the groups' multiplicities
-        if any(c != 1 for c in rel.cnt):
+        if rel.cnt.count(1) != len(rel.cnt):
             idx = [i for i in range(rel.n) for _ in range(rel.cnt[i])]
             rel = rel.take(idx)
         out = rel
@@ -1117,14 +1126,16 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
             keep = sqlwin.first_rows(sqlwin._combine([sqlwin.code_groups(a) for a in src])).tolist()
             out = out.take(keep)
             cols = [ev(x, out, cx) for x, _ in s.items]
-            return Relation(names, types, list(zip(*cols)))
+            return Relation.of_columns(names, types, cols, out.n)
     if COLUMNAR and s.order and not s.distinct and not s.with_ties and not s.percent and out.n > 32:
         idx = _order_codes_idx(out, s, cx)              # ORDER BY / OFFSET / LIMIT on codes: only the rows output are decoded
         if idx is not None:
             out = out.take(idx)
             cols = [ev(x, out, cx) for x, _ in s.items]
-            return Relation(names, types, list(zip(*cols)) if cols else [()] * out.n)
+            return Relation.of_columns(names, types, cols, out.n)
     cols = [ev(x, out, cx) for x, _ in s.items]
+    if not s.distinct and not s.order and s.limit is None and s.offset is None:
+        return Relation.of_columns(names, types, cols, out.n)        # rows built once, by the caller
     rows = list(zip(*cols)) if cols else [()] * out.n
     for i in range(len(s.items)): out.cols[("pos", i)] = cols[i]
     if s.distinct:
@@ -1509,8 +1520,8 @@ def compute_windows(wins, rel, cx):
                 else: vb[side] = bound_vals[side]
             ranged = w.frame is not None and w.frame[0] == "range" and any(bd[1] is not None for bd in w.frame[1:])
             try:
-                out = sqlwin.evaluate(w, L, args, fm, vb, okv()[0] if len(okeys) == 1 and ranged else None,
-                                      bool(specs and specs[0][0]))
+                rk = (okeys[0] if isinstance(okeys[0], ColArr) else okv()[0]) if len(okeys) == 1 and ranged else None
+                out = sqlwin.evaluate(w, L, args, fm, vb, rk, bool(specs and specs[0][0]))
                 full = np.empty(n, object); full[L.perm] = out
                 res = full.tolist()
             except sqlwin.NoVec:

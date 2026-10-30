@@ -377,20 +377,48 @@ def _targets(xs, offs, sgn):
     return None, tg
 
 
+def _code_offset(key, v):
+    """a RANGE offset in the key column's code units (codes are values shifted, scaled for decimals), or None"""
+    cd, c = key.codec, key.codes
+    if c.dtype == object or v is None: return None
+    k = getattr(cd, "kind", None)
+    o = None
+    if k == "int" and type(v) is int: o = v
+    elif k == "decimal":
+        if type(v) is int: o = v * 10 ** cd.scale
+        elif type(v) is Decimal and v.is_finite():
+            q = v.scaleb(cd.scale)
+            if q == q.to_integral_value(): o = int(q)
+    elif k == "date":
+        if type(v) is int: o = v
+        elif isinstance(v, F.Interval) and v.months == 0 and v.micros == 0: o = v.days
+    elif k == "timestamp" and isinstance(v, F.Interval) and v.months == 0:
+        o = v.days * 86_400_000_000 + v.micros
+    if o is None or (len(c) and abs(o) + int(np.abs(c).max()) >= 1 << 62): return None
+    return o
+
+
 def _range_edge(kind, side, L, offs, key, desc):
     """RANGE <offset> PRECEDING / FOLLOWING: the rows whose key lies within the offset of the current row's key; NULL keys
     frame their peers"""
     out = (L.gs if side == "a" else L.ge).copy()
-    nnidx = np.flatnonzero(notnull(key))
+    nnidx = np.flatnonzero(nn_mask(key))
     if not len(nnidx): return out
-    if not isinstance(offs, Const):
-        offs = offs[nnidx]
-        if any(v is None for v in offs): raise SqlError("frame offset must not be NULL")
     sgn = -1 if kind == "preceding" else 1
     if desc: sgn = -sgn
-    xs = key[nnidx].tolist()
-    arr, tg = _targets(xs, offs, sgn)
-    m = len(xs)
+    oc = _code_offset(key, offs.v) if is_codes(key) and isinstance(offs, Const) else None
+    if oc is not None:                                   # the offset in code units: keys and targets stay codes
+        x = key.codes[nnidx]
+        arr, tg = x, (x + oc if sgn > 0 else x - oc)
+        xs = None
+    else:
+        if is_codes(key): key = values_of(key)
+        if not isinstance(offs, Const):
+            offs = offs[nnidx]
+            if any(v is None for v in offs): raise SqlError("frame offset must not be NULL")
+        xs = key[nnidx].tolist()
+        arr, tg = _targets(xs, offs, sgn)
+    m = len(nnidx)
     if arr is not None:                                  # keys and targets ranked together, as numbers
         both = np.concatenate((arr, tg))
         u, codes = np.unique(both, return_inverse=True, equal_nan=True)
