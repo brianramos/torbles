@@ -307,6 +307,9 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 - A row comparison with a NULL field is UNKNOWN; DuckDB answers FALSE (or, for STRUCT values, compares NULL fields as
   equal), and DuckDB's `r IS NULL` is FALSE for a STRUCT whose fields are all NULL.
 - `CORR` and the `REGR_*` functions are NULL when a variance is zero (DuckDB: NaN); every statistic is exact.
+- `SUM` and `AVG` of DOUBLE values are the correctly rounded exact sum (and its quotient); DuckDB adds in double
+  precision, so with large values of both signs the two can differ completely (1e301, 7 and -1e301: torbles 7, a
+  double sum in that order 0).
 - `FETCH FIRST p PERCENT` keeps the ceiling of p% of the rows; DuckDB's `LIMIT p%` the floor.
 - `a[i]` outside 1 .. CARDINALITY(a) is an error (ISO); DuckDB returns NULL (its `list_extract` keeps that behavior).
 - `0x1F` is the number 31 (SQL:2023); DuckDB reads `0` with the alias `x1F`.

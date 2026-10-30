@@ -243,8 +243,9 @@ for qi in range(NQ // 2):
     sql = f"SELECT {e1}, s, dd FROM w WHERE {spred()} ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST"
     compare(qi, sql, True, "ROWS_BLOCK")                    # rows read from the planes, or grouped first
     if os.environ.get("VERBOSE") and qi < 3: print(sql)
-    sql = f"SELECT p, count(*), sum({sexpr(1)}) FROM w WHERE {spred()} GROUP BY p"
-    compare(qi, sql, True, "VEC_SCALARS")
+    se = sexpr(1)
+    sql = f"SELECT p, count(*), sum({se}) FROM w WHERE {spred()} GROUP BY p"
+    compare(qi, sql, "y" not in se, "VEC_SCALARS")       # y holds 1e300 of both signs: DuckDB's double sum cancels
 
 print("== joins, set operations, DISTINCT (against DuckDB)")
 JK = ["p", "o", "q", "s", "dd", "b"]

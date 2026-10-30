@@ -54,7 +54,7 @@ class ColArr:
     __slots__ = ("codes", "valid", "codec")
     def __init__(self, codes, valid=None, codec=None):
         c = np.asarray(codes)
-        if c.dtype != np.int64 and c.dtype != object:      # one dtype for every column: int64, or Python ints past 2^63
+        if c.dtype != np.int64 and c.dtype != object and c.dtype != np.float64:   # int64 (Python ints past 2^63); float64: computed doubles
             c = c.astype(np.int64) if c.dtype != np.uint64 or not len(c) or int(c.max()) < 1 << 63 else c.astype(object)
         self.codes, self.valid, self.codec = c, (None if valid is None else np.asarray(valid, bool)), codec
     def __len__(self): return len(self.codes)
@@ -178,6 +178,8 @@ def ev(e, rel, cx):
             one = Rel(1); return [ev(e, one, cx)[0]] * n
         if e.fn == "in" and len(e.args) > 8 and all(isinstance(a, I.Lit) for a in e.args[1:]):
             return _in_set(e, ev(e.args[0], rel, cx))
+        if COLUMNAR and VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS and codes_of(e, rel, cx) is not None:
+            return rel.cols[e.key()]                      # computed on codes, decoded once
         argv = [ev(a, rel, cx) for a in e.args]
         if VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS:
             r = _vec_func(e.fn, argv, n)
@@ -196,6 +198,7 @@ def ev(e, rel, cx):
             out.append(r)
         return out
     if isinstance(e, I.Cast):
+        if COLUMNAR and VEC_SCALARS and n >= 64 and codes_of(e, rel, cx) is not None: return rel.cols[e.key()]
         a = ev(e.arg, rel, cx); out = []
         if VEC_SCALARS and n >= 64:
             r = _vec_cast(a, e.arg.t, e.t)
@@ -315,6 +318,183 @@ def _vec_cast(vals, src, dst):
     lo, hi = T.INT_RANGE[dst.id]
     if lo <= -mx and mx <= hi: return vals                  # every value fits: unchanged
     return None
+
+
+# ------------------------------------------------------------------ expressions on codes
+import coltypes as _ct
+_BOOL = _ct.BoolCodec()
+_INTC = _ct.IntCodec(0, "BIGINT")
+
+
+def _num(a):
+    """a code column as numbers: ("int", int64 values) | ("dec", int64 scaled values, scale) | ("float", float64) | None"""
+    cd, c = a.codec, a.codes
+    if c.dtype == object: return None
+    if cd is None: return ("float", c, 0) if c.dtype == np.float64 else ("int", c, 0)
+    k = getattr(cd, "kind", None)
+    if k in ("int", "bool", "decimal"):
+        off = int(getattr(cd, "offset", 0))
+        if len(c) and abs(off) + int(np.abs(c).max()) >= 1 << 62: return None
+        return ("dec", c + off, cd.scale) if k == "decimal" else ("int", c + off, 0)
+    if k == "dict" and getattr(cd, "floating", False):
+        fv = np.array(cd.values, np.float64)
+        return ("float", fv[np.clip(c, 0, max(len(fv) - 1, 0))] if len(fv) else np.zeros(len(c)), 0)
+    return None
+
+
+def _mk(kind, v, sc, valid):
+    """a computed column of numbers as a code column"""
+    if kind == "float": return ColArr(v, valid, None)
+    if kind == "dec": return ColArr(v, valid, _ct.DecimalCodec(sc, 0))
+    if kind == "bool": return ColArr(v.astype(np.int64), valid, _BOOL)
+    return ColArr(v, valid, _INTC)
+
+
+def _andv(a, b):
+    if a is None: return b
+    if b is None: return a
+    return a & b
+
+
+def _to_scale(v, s_from, s_to):
+    """exact rescaling of scaled integers up (None when it could overflow int64)"""
+    if s_to == s_from: return v
+    f = 10 ** (s_to - s_from)
+    if len(v) and int(np.abs(v).max()) * f >= 1 << 62: return None
+    return v * f
+
+
+def codes_of(e, rel, cx):
+    """e on every row of rel as a code column (ColArr), computed on the codes of the engine's columns without
+    decoding them; None when e is not computed that way (row by row instead)"""
+    if not (COLUMNAR and VEC_SCALARS): return None
+    a = rel.cols.array(e.key())
+    if a is not None: return a
+    if rel.n < 64: return None
+    r = _ev_codes(e, rel, cx)
+    if r is not None and len(r) == rel.n: rel.cols.put(e.key(), r); return r
+    return None
+
+
+def _operand(e, rel, cx):
+    """(kind, values, scale, valid) of an operand: a code column or a constant"""
+    if isinstance(e, I.Lit):
+        v = e.v; n = rel.n
+        if v is None: return ("null", None, 0, np.zeros(n, bool))
+        if isinstance(v, bool): return ("bool", np.full(n, int(v), np.int64), 0, None)
+        if isinstance(v, int) and abs(v) < 1 << 62: return ("int", np.full(n, v, np.int64), 0, None)
+        if isinstance(v, float): return ("float", np.full(n, v, np.float64), 0, None)
+        if isinstance(v, Decimal) and v.is_finite():
+            sg, dg, ex = v.as_tuple(); sc = max(0, -ex)
+            iv = int(v.scaleb(sc)) if sc <= 18 else None
+            if iv is not None and abs(iv) < 1 << 62: return ("dec", np.full(n, iv, np.int64), sc, None)
+        return None
+    a = codes_of(e, rel, cx)
+    if a is None: return None
+    if a.codec is _BOOL or getattr(a.codec, "kind", None) == "bool":
+        if a.codes.dtype == object: return None
+        return ("bool", a.codes, 0, a.valid)
+    x = _num(a)
+    if x is None: return None
+    return (x[0], x[1], x[2], a.valid)
+
+
+def _as_float(o):
+    k, v, sc, valid = o
+    if k == "float": return v
+    if k in ("int", "bool"):
+        if len(v) and int(np.abs(v).max()) >= 1 << 53: return None
+        return v.astype(np.float64)
+    if k == "dec":
+        if len(v) and int(np.abs(v).max()) >= 1 << 53: return None
+        return v.astype(np.float64) / float(10 ** sc)
+    return None
+
+
+def _ev_codes(e, rel, cx):
+    """arithmetic, comparisons, AND / OR / NOT, IS NULL and numeric casts on code columns (exact integers, exact
+    scaled decimals, IEEE doubles with SQL's NaN order, three-valued logic); None for anything else"""
+    if isinstance(e, I.Cast):
+        o = _operand(e.arg, rel, cx)
+        if o is None or o[0] == "null": return None
+        k, v, sc, valid = o
+        t = e.t
+        if t.id == "DOUBLE":
+            f = _as_float(o)
+            return None if f is None else _mk("float", f, 0, valid)
+        if t.id == "DECIMAL" and k in ("int", "dec") and t.s >= sc:
+            w = _to_scale(v, sc, t.s)
+            if w is None or (len(w) and int(np.abs(w).max()) >= 10 ** t.p): return None
+            return _mk("dec", w, t.s, valid)
+        if t.integer and k == "int":
+            lo, hi = T.INT_RANGE.get(t.id, (None, None))
+            if lo is None or (len(v) and (int(v.min()) < lo or int(v.max()) > hi)): return None
+            return _mk("int", v, 0, valid)
+        return None
+    if not isinstance(e, I.Func): return None
+    fn = e.fn
+    if fn in ("and", "or", "not"):
+        ops = [_operand(a, rel, cx) for a in e.args]
+        if any(o is None or o[0] not in ("bool", "null") for o in ops): return None
+        n = rel.n
+        ts = [np.zeros(n, bool) if o[0] == "null" else ((o[1] != 0) if o[3] is None else (o[1] != 0) & o[3]) for o in ops]
+        fs = [np.zeros(n, bool) if o[0] == "null" else ((o[1] == 0) if o[3] is None else (o[1] == 0) & o[3]) for o in ops]
+        if fn == "not": t, f = fs[0], ts[0]
+        elif fn == "and": f = np.logical_or.reduce(fs); t = np.logical_and.reduce(ts)
+        else: t = np.logical_or.reduce(ts); f = np.logical_and.reduce(fs)
+        return _mk("bool", t, 0, t | f)
+    if fn in ("is_null", "is_not_null"):
+        a = codes_of(e.args[0], rel, cx)
+        if a is None: return None
+        m = a.valid if a.valid is not None else np.ones(rel.n, bool)
+        return _mk("bool", ~m if fn == "is_null" else m, 0, None)
+    if fn not in ("+", "-", "*", "/", "=", "<>", "<", "<=", ">", ">=", "neg"): return None
+    ops = [_operand(a, rel, cx) for a in e.args]
+    if any(o is None for o in ops): return None
+    if any(o[0] == "null" for o in ops): return None
+    valid = None
+    for o in ops: valid = _andv(valid, o[3])
+    kinds = {o[0] for o in ops}
+    if fn == "neg":
+        k, v, sc, _ = ops[0]
+        return None if k == "bool" else _mk(k, -v, sc, valid)
+    if "bool" in kinds and kinds != {"bool"}: return None
+    (ka, va, sa, _), (kb, vb, sb, _) = ops
+    if fn == "/" or "float" in kinds:                     # double arithmetic (DuckDB: / on numbers is a double division)
+        fa, fb = _as_float(ops[0]), _as_float(ops[1])
+        if fa is None or fb is None: return None
+        if fn in ("+", "-", "*", "/"):
+            with np.errstate(all="ignore"):
+                r = fa + fb if fn == "+" else fa - fb if fn == "-" else fa * fb if fn == "*" else fa / fb
+            return _mk("float", r, 0, valid)
+        an, bn = np.isnan(fa), np.isnan(fb)                 # NaN is the largest value and equals itself
+        with np.errstate(invalid="ignore"):
+            lt = (fa < fb) | (~an & bn); eq = (fa == fb) | (an & bn)
+    else:                                                  # exact: integers and scaled decimals
+        S = max(sa, sb)
+        xa, xb = _to_scale(va, sa, S), _to_scale(vb, sb, S)
+        if xa is None or xb is None: return None
+        if fn in ("+", "-"):
+            r = xa + xb if fn == "+" else xa - xb
+            if e.t.id == "DECIMAL" and e.t.s != S: return None
+            return _mk("dec" if S else "int", r, S, valid)
+        if fn == "*":
+            if len(va) and int(np.abs(va).max()) * int(np.abs(vb).max() if len(vb) else 0) >= 1 << 62: return None
+            if e.t.id == "DECIMAL" and e.t.s != sa + sb: return None
+            return _mk("dec" if sa + sb else "int", va * vb, sa + sb, valid)
+        lt, eq = xa < xb, xa == xb
+    r = {"=": eq, "<>": ~eq, "<": lt, "<=": lt | eq, ">": ~(lt | eq), ">=": ~lt}[fn]
+    return _mk("bool", r, 0, valid)
+
+
+def rows_where(e, rel, cx):
+    """the rows where condition e is TRUE (on codes when it can be computed there)"""
+    a = codes_of(e, rel, cx) if e is not None else None
+    if a is not None and (a.codec is _BOOL or getattr(a.codec, "kind", None) == "bool") and a.codes.dtype != object:
+        m = a.codes != 0
+        if a.valid is not None: m &= a.valid
+        return np.flatnonzero(m).tolist()
+    return truth(ev(e, rel, cx))
 
 
 def _in_set(e, xs):
@@ -873,7 +1053,7 @@ def finish_select(s, rel, aggs, wins, aggplan, cx):
 def aggregate(s, rel, aggs, aggplan, cx):
     """GROUP BY (with grouping sets) and every aggregate, from the rows of rel (each standing for cnt rows)"""
     vec = VEC_GROUPS and rel.n > 32
-    garr = [rel.cols.array(g.key()) if COLUMNAR and vec and T.coll_key(g.t) is None else None for g in s.group]
+    garr = [codes_of(g, rel, cx) if vec and T.coll_key(g.t) is None else None for g in s.group]
     gvals = [None if a is not None else ev(g, rel, cx) for g, a in zip(s.group, garr)]      # engine columns stay codes
     for col in gvals:
         for v in col or ():
@@ -955,7 +1135,7 @@ def aggregate(s, rel, aggs, aggplan, cx):
     for k, a in aggs.items():
         out.cols[k] = agg_values(a, rel, members, aggplan.get(k), cx)
     if s.having is not None:
-        out = out.take(truth(ev(s.having, out, cx)))
+        out = out.take(rows_where(s.having, out, cx))
     return out
 
 
@@ -1054,10 +1234,10 @@ def agg_values(a, rel, members, plan, cx):
             out.append(_moment_final(a.name, n, sums))
         return out
     d = F.AGGS[a.name]
-    filt = truth(ev(a.filter, rel, cx)) if a.filter is not None else None
+    filt = rows_where(a.filter, rel, cx) if a.filter is not None else None
     fset = set(filt) if filt is not None else None
     if VEC_GROUPS:                                   # engine columns as codes, others as values
-        src = [(rel.cols.array(x.key()) if COLUMNAR else None) for x in a.args]
+        src = [codes_of(x, rel, cx) for x in a.args]
         src = [c if c is not None else ev(x, rel, cx) for c, x in zip(src, a.args)]
         for col in src:
             if not isinstance(col, ColArr):
@@ -1177,7 +1357,7 @@ def compute_windows(wins, rel, cx):
         if w.key() in rel.cols: continue
         def codes_or(e, keyed=True):
             """an engine column as its codes (ordered like its values, no collation), else its values (collation keys)"""
-            a = rel.cols.array(e.key()) if COLUMNAR and VEC_WINDOWS else None
+            a = codes_of(e, rel, cx) if VEC_WINDOWS else None
             if a is not None and (not keyed or T.coll_key(e.t) is None): return a
             v = ev(e, rel, cx)
             return _ckeys(v, e.t) if keyed else v
@@ -1189,7 +1369,7 @@ def compute_windows(wins, rel, cx):
             args, filt = None, None
         else:
             args = [codes_or(a, False) for a in main]
-            filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
+            filt = set(rows_where(w.filter, rel, cx)) if w.filter is not None else None
         for col in parts + okeys + (args or []) + inputs:
             if isinstance(col, ColArr): continue
             for v in col:
@@ -2403,7 +2583,7 @@ class _Planner:
             if plan.get("rowfilter_expr") is not None:
                 plan["rowfilter"] = set(truth(ev(plan["rowfilter_expr"], rel, cx)))
         if residual:
-            keep = truth(ev(_and(residual), rel, cx))
+            keep = rows_where(_and(residual), rel, cx)
             rel = rel.take(keep)
             for plan in aggplan.values():
                 if plan.get("rowfilter") is not None:
@@ -2676,7 +2856,11 @@ class _Planner:
             return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
         def rowkey(g):
             """the key columns of a run, comparable across runs: codes (NULL as -1)"""
-            return [np.where(valid, codes, -1) if valid is not None and codes.dtype != object else codes for codes, valid, _ in g.keys]
+            out = []
+            for codes, valid, _ in g.keys:
+                c = ColArr(codes).codes                           # int64 (object past 2^63)
+                out.append(np.where(valid, c, -1) if valid is not None and c.dtype != object else c)
+            return out
         def rowvals(g):
             """the key tuples of a run as hashable values (a run that gave values, not codes)"""
             cols = [[nkey(v) for v in vals] if codes is None else codes.tolist() for codes, _, vals in g.keys]
@@ -2869,7 +3053,7 @@ def run_general(s, bindings, need, aggs, cx):
     rel = _materialize(s.from_, per, pushed, cx)
     if s.sample is not None: rel = sample_rel(rel, s.sample, cx)
     if rest:
-        rel = rel.take(truth(ev(_and(rest), rel, cx)))
+        rel = rel.take(rows_where(_and(rest), rel, cx))
     return rel, {}
 
 
