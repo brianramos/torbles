@@ -198,5 +198,11 @@ here = os.path.dirname(os.path.abspath(__file__))
 p = subprocess.run([sys.executable, "-m", "torbles.sqlfuzz", "--seed", "3", "--cases", "12", "--queries", "25"], cwd=os.path.join(here, ".."),
                    capture_output=True, text=True)
 check(p.returncode == 0 and "NO MISMATCHES" in p.stdout, "sqlfuzz", p.stdout[-1500:] + p.stderr[-1500:])
+# statements fuzzing once got wrong (seed, case, statement): a ROLLUP over an expression and its own column; group sums
+# of a 128-bit plan merged across lookup-key codes (they wrapped at 2^64)
+for seed, case, query in ((101, 273, 15), (202, 219, 18), (303, 112, 29)):
+    p = subprocess.run([sys.executable, "-m", "torbles.sqlfuzz", "--seed", str(seed), "--case", str(case), "--query", str(query)],
+                       cwd=os.path.join(here, ".."), capture_output=True, text=True)
+    check(p.returncode == 0 and "NO MISMATCHES" in p.stdout, f"sqlfuzz replay {seed}/{case}/{query}", p.stdout[-1500:] + p.stderr[-1500:])
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

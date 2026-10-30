@@ -428,7 +428,8 @@ def codes_of(e, rel, cx):
     if not (COLUMNAR and VEC_SCALARS): return None
     a = rel.cols.array(e.key())
     if a is not None: return a
-    if rel.n < 64: return None
+    if e.key() in rel.cols: return None              # held as values: that is the column (not recomputed from its parts,
+    if rel.n < 64: return None                       # which grouping sets may have set to NULL)
     r = _ev_codes(e, rel, cx)
     if r is not None and len(r) == rel.n: rel.cols.put(e.key(), r); return r
     return None

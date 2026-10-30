@@ -2034,7 +2034,7 @@ class Query:
                         a = np.full(g, np.iinfo(np.int64).max, np.int64); np.minimum.at(a, inv, mn)
                         b = np.full(g, np.iinfo(np.int64).min, np.int64); np.maximum.at(b, inv, mx); mn, mx = a, b
                     elif self.measure is None: va = c2
-                    elif va.dtype == object:
+                    elif va.dtype == object or wide:         # 128-bit plans: the merged sums may pass 64 bits
                         v2 = [0] * g
                         for i, v in zip(inv.tolist(), va.tolist()): v2[i] += v
                         va = np.array(v2, object)

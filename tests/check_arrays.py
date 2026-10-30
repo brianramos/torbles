@@ -190,7 +190,7 @@ for qi in range(NQ):
 wins = (fails, duck_ok)
 
 print("== GROUP BY")
-GKEYS = ["p", "q", "o", "dd", "s", "b", "od", '"of"']
+GKEYS = ["p", "q", "o", "dd", "s", "b", "od", '"of"', "(o + 1)", "id", "(id * 1)"]     # expressions next to their columns
 GAGG = ["count(*)", "count({A})", "sum({N})", "avg({N})", "min({A})", "max({A})", "var_pop({N})", "var_samp({N})", "stddev_samp({N})",
         "covar_pop({N}, {N})", "corr({N}, {N})", "regr_slope({N}, {N})", "regr_count({N}, {N})", "bool_and(b)", "bool_or(b)", "count_if(b)",
         "count(DISTINCT {A})", "sum(DISTINCT {N})", "avg(DISTINCT {N})", "min(DISTINCT {A})", "arg_min({A}, {N})", "arg_max({A}, {N})",
@@ -210,7 +210,7 @@ for qi in range(NQ):
         if r.random() < 0.2 and "DISTINCT" not in g and "ORDER BY" not in g:
             g += f" FILTER (WHERE {r.choice(['x > 1', 'b', 'o IS NULL', 'y < 1'])})"
         aggs.append(g)
-    where = r.choice(["", "", " WHERE x > 0", " WHERE p IS NOT NULL", " WHERE s <> 'x'"])
+    where = r.choice(["", "", " WHERE x > 0", " WHERE p IS NOT NULL", " WHERE s <> 'x'", " WHERE id < 50"])
     if keys:
         form = r.choice(["plain", "plain", "rollup", "cube", "sets"])
         gb = {"plain": ", ".join(kx), "rollup": f"ROLLUP ({', '.join(kx)})", "cube": f"CUBE ({', '.join(kx)})",
@@ -224,6 +224,13 @@ for qi in range(NQ):
     duck = not coll and not cont_dec and "yn" not in sql and "any_value" not in sql and "arg_m" not in sql and "mode(" not in sql and \
         not any(g.startswith(stat) and any(c in g for c in ("x", "y")) for g in aggs)
     compare(qi, sql, duck, "VEC_GROUPS")
+# grouping sets over an expression and its own column, on fewer than 64 input groups but more output groups: the
+# expression's values are its column (it is not recomputed from the column, which a set has made NULL)
+for qi, sql in enumerate([
+        "SELECT (id * 1), id, count(*) FROM w WHERE id < 50 GROUP BY ROLLUP ((id * 1), id) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST",
+        "SELECT (id + 1), id, sum(o) FROM w WHERE id < 40 GROUP BY CUBE ((id + 1), id) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST",
+        "SELECT (id * 2), id, count(*) FROM w WHERE id < 60 GROUP BY GROUPING SETS (((id * 2)), (id), ()) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST"]):
+    compare(NQ + qi, sql, True, "VEC_GROUPS")
 
 print("== scalar operators")
 def sexpr(d=0):
