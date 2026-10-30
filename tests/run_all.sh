@@ -70,6 +70,10 @@ run "0.2 adaptive matrix integration"              python3 -m unittest discover 
 run "physical cache and GPU profile elision"       python3 -m unittest discover -s tests -p test_physical_cache.py
 run "hybrid native regions and shared DAGs"         python3 -m unittest discover -s tests -p test_relationship_dag.py
 run "native whole-stage algebra and finalization"  python3 -m unittest discover -s tests -p test_relationship_stages.py
+run "native mathematical functions and moments"   python3 -m unittest discover -s tests -p test_mathematics.py
+run "typed mathematical domain contracts"        python3 -m unittest discover -s tests -p test_math_domains.py
+run "native mathematical module dispatch"        python3 -m unittest discover -s tests -p test_math_modules.py
+run "native compatible moment-state reuse"       python3 -m unittest discover -s tests -p test_math_state.py
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py
 run "no row kernel for many groups"               env TORBLES_ROWPATH_GROUPS=0 python3 tests/check_small.py

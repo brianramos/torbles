@@ -145,6 +145,19 @@ scans and a native finalizer. With no catalog attached it costs nothing measurab
 going both ways. Six test modules and a 2,000-program random DAG check cover it; `examples/relationship_demo.py` and
 `examples/system_planner_demo.py` show it at work.
 
+Exact mathematical functions of query results, an opt-in module (`torbles.mathematics`, `torbles.math_domains`) and the
+first slice of a larger inventory of mathematical query families kept with the prototype it comes from. Checked rational
+polynomials of up to eight formal variables (degree eight, 128 terms, int64 numerators and denominators) are added,
+multiplied, differentiated, integrated, substituted and evaluated in native code, refusing rather than wrapping or
+rounding. A moment snapshot of one to four non-NULL integer fact columns of a query (its count, sums, squares and cross
+products, built by the existing aggregate queries, on the GPU too) turns a function of the data such as SUM((y - theta
+x)^2) into a polynomial in its parameters, which is then evaluated, differentiated or integrated without another scan.
+Typed domain descriptors and a native module registry dispatch the operators, and a bounded LRU cache reuses a snapshot
+for an equivalent scope (the same predicate, columns, codecs, source revision and row membership) with no aggregate
+query on a hit: in the prototype's synthetic benchmark, five constructions over a million rows took 0.82 ms instead of
+15.6. DECIMAL, NULL-able, 64-bit and grouped moments, and the other families, are not implemented yet. Code that does
+not import the module is unaffected; `docs/MATHEMATICS.md` describes the API and its exact scope.
+
 Correctness
 - `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
   planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:

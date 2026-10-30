@@ -18,8 +18,8 @@ export PYTHONPATH := $(CURDIR):$(CURDIR)/torbles:$(CURDIR)/tests
 
 all: $(T)/libalg.so $(T)/libgpu_emu.so
 
-$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h
-	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c -o $@ -lpthread
+$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h $(T)/mathematics.c $(T)/mathematics.h $(T)/math_domain.c $(T)/math_domain.h $(T)/math_modules.c $(T)/math_modules.h $(T)/math_state.c $(T)/math_state.h
+	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/mathematics.c $(T)/math_domain.c $(T)/math_modules.c $(T)/math_state.c -o $@ -lpthread
 
 $(T)/libgpu_emu.so: $(T)/gpu.cu $(T)/torble.h
 	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(T)/gpu.cu -o $@
