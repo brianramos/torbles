@@ -249,8 +249,11 @@ class Gen:
             dist = "DISTINCT " if r.random() < 0.05 and not any(t == "DOUBLE" or a.startswith("avg") for a, t in aggs) else ""
             sql = f"SELECT {dist}{', '.join(sel)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "") + gb + having
             if r.random() < 0.3:
-                sql += f" ORDER BY {', '.join(str(i + 1) + ' NULLS FIRST' for i in range(len(sel)))}"
-                if r.random() < 0.5: sql += f" LIMIT {r.randint(0, 5)}"
+                sql += f" ORDER BY {', '.join(str(i + 1) + ' NULLS FIRST' for i in range(len(sel)))}"; self.feats.add("ORDER BY")
+                if r.random() < 0.5: sql += f" LIMIT {r.randint(0, 5)}"; self.feats.add("LIMIT")
+            self.kind = ("aggregate, no GROUP BY" if not keys else "aggregate, ROLLUP / CUBE / GROUPING SETS" if gb and "(" in gb
+                         else "aggregate, GROUP BY")
+            self.feats |= {f for f, on in (("HAVING", having), ("window over groups", win), ("DISTINCT", dist)) if on}
             return sql
         if kind < 0.75:                                    # window functions over the rows (deterministic frames only)
             p, _ = self.scalar(cols); o, _ = self.scalar(cols)
@@ -265,28 +268,35 @@ class Gen:
                 elif z < 0.7: items.append(f"{a} OVER ({part}ORDER BY {o} NULLS FIRST RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE GROUP)")
                 else: items.append(f"{r.choice(['rank', 'dense_rank', 'percent_rank', 'cume_dist'])}() OVER ({part}ORDER BY {o} NULLS FIRST)")
             sql = f"SELECT {p}, {o}, {', '.join(items)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
+            self.kind = "window functions over rows"
             return sql
         if kind < 0.9:                                     # row query
             exprs = [self.scalar(cols)[0] for _ in range(r.randint(1, 4))]
             sql = f"SELECT {'DISTINCT ' if r.random() < 0.3 else ''}{', '.join(exprs)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
             sql += f" ORDER BY {', '.join(str(i + 1) + ' NULLS FIRST' for i in range(len(exprs)))} LIMIT {r.choice([1, 5, 20, 100])}"
+            self.kind = "rows, ORDER BY + LIMIT"
             return sql
         # subquery forms
         c = self.col(cols, lambda t: t in ("INTEGER", "VARCHAR", "DATE", "BIGINT", "SMALLINT"))
-        if c is None: return f"SELECT count(*) FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
+        if c is None:
+            self.kind = "aggregate, no GROUP BY"
+            return f"SELECT count(*) FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
         z = r.random()
         if z < 0.4:
             sub = f"SELECT {self.ref(c).replace(c[0] + '.', 's.')} FROM {self._table_of(c)} s WHERE {self.pred([('s',) + c[1:]], 1)}"
             w = where + [f"{self.ref(c)} {'NOT ' if r.random() < 0.3 else ''}IN ({sub})"]
+            self.kind = "IN (subquery)"
             return f"SELECT count(*), {self.agg(cols)[0]} FROM {frm} WHERE {' AND '.join(w)}"
         if z < 0.7:
             sub = f"(SELECT max({q(c[1])}) FROM {self._table_of(c)})"
             w = where + [f"{self.ref(c)} {r.choice(['<', '>=', '='])} {sub}"]
+            self.kind = "scalar subquery"
             return f"SELECT count(*) FROM {frm} WHERE {' AND '.join(w)}"
         k, _ = self.scalar(cols)
         a, _ = self.agg(cols)
         inner = f"SELECT {k} AS k, {a} AS v FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "") + " GROUP BY 1"
         cond = "WHERE v IS NOT NULL " if not a.startswith(("corr", "regr")) else ""
+        self.kind = "CTE + window"
         return f"WITH t AS ({inner}) SELECT k, v, count(*) OVER () FROM t {cond}ORDER BY 1 NULLS FIRST, 2 NULLS FIRST"
 
     def _table_of(self, c):
@@ -296,9 +306,12 @@ class Gen:
         return "fact"
 
     def statement(self):
+        """a random statement; self.kind names its form and self.feats lists what else it has (for the timings)"""
         r = self.r
+        self.kind, self.feats = None, set()
         if r.random() < 0.06:
             a, b = self.set_side(), self.set_side()
+            self.kind = "set operation"
             return f"({a}) {r.choice(['UNION', 'UNION ALL', 'INTERSECT', 'EXCEPT', 'INTERSECT ALL', 'EXCEPT ALL'])} ({b})"
         return self.select()
 
@@ -364,10 +377,16 @@ def same(got, want, ordered, tol=1e-6):
     return False
 
 
-def run_one(db, con, sql):
+def run_one(db, con, sql, times=None):
+    """compare one statement; times (a dict) receives the seconds each side took, end to end with its result rows"""
+    t0 = time.perf_counter()
     try: want = con.execute(sql).fetchall()
     except Exception as e: return "duckdb-error", f"{type(e).__name__}: {str(e).splitlines()[0][:150]}"
-    try: got = db.sql(sql).rows
+    if times is not None: times["duckdb"] = time.perf_counter() - t0; times["rows"] = len(want)
+    t0 = time.perf_counter()
+    try:
+        got = db.sql(sql).rows
+        if times is not None: times["torbles"] = time.perf_counter() - t0
     except SqlError as e:
         msg = str(e)
         if any(t in msg for t in REFUSAL_TEXT): return "refused", msg[:200]
@@ -394,7 +413,7 @@ def _wrapped(got, want):
     return same(a, b, True) and not same(got, want, False)
 
 
-def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None, stop_on_fail=True, log=print):
+def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None, stop_on_fail=True, log=print, records=None):
     import duckdb
     t_end = time.time() + 60 * minutes if minutes else None
     tot = dict(ok=0, refused=0, **{"duckdb-error": 0}, MISMATCH=0, ERROR=0)
@@ -416,11 +435,18 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
                 case += 1; continue
             r = random.Random(cs + 7)
             g = Gen(r, tables)
+            nfact = len(tables["fact"][0][0].values)
             for qi in range(queries):
                 sql = g.statement()
                 if only_query is not None and qi != only_query: continue
-                st, detail = run_one(db, con, sql)
+                tm = {}
+                st, detail = run_one(db, con, sql, tm)
                 tot[st] += 1
+                if records is not None:
+                    feats = set(g.feats)
+                    if "LEFT JOIN" in sql: feats.add("LEFT JOIN")
+                    records.append(dict(seed=seed, case=case, query=qi, kind=g.kind, feats=sorted(feats), status=st,
+                                        torbles=tm.get("torbles"), duckdb=tm.get("duckdb"), rows=tm.get("rows"), fact_rows=nfact))
                 if st in ("refused", "duckdb-error"):
                     k = ("(duckdb) " if st == "duckdb-error" else "") + detail[:80]
                     reasons[k] = reasons.get(k, 0) + 1
@@ -440,6 +466,28 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
     return tot, reasons, failures, case
 
 
+def _pct(xs, p):
+    xs = sorted(xs)
+    return xs[min(len(xs) - 1, int(p * len(xs)))] if xs else float("nan")
+
+
+def timing_table(records):
+    """statements by kind, and the time each side took on the ones both answered (ms: mean, median, 95th percentile)"""
+    kinds = {}
+    for rec in records: kinds.setdefault(rec["kind"], []).append(rec)
+    n = len(records)
+    head = f"{'statements by kind':42s} {'count':>6s} {'share':>6s}   {'torbles ms mean / median / p95':>32s}   {'DuckDB ms mean / median / p95':>31s}"
+    lines = [head]
+    def row(name, recs):
+        ok = [x for x in recs if x["torbles"] is not None and x["duckdb"] is not None]
+        tt = [x["torbles"] * 1e3 for x in ok]; td = [x["duckdb"] * 1e3 for x in ok]
+        f = lambda v: f"{sum(v) / len(v):8.1f} {_pct(v, 0.5):8.1f} {_pct(v, 0.95):8.1f}" if v else f"{'':26s}"
+        return f"  {name:40s} {len(recs):6d} {100 * len(recs) / n:5.1f}%   {f(tt):>32s}   {f(td):>31s}"
+    for k, recs in sorted(kinds.items(), key=lambda x: -len(x[1])): lines.append(row(str(k), recs))
+    lines.append(row("all", records))
+    return "\n".join(lines)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m torbles.sqlfuzz", description=__doc__.split("\n\n")[0])
     ap.add_argument("--seed", type=int, default=None)
@@ -449,14 +497,22 @@ def main(argv=None):
     ap.add_argument("--case", type=int, default=None); ap.add_argument("--query", type=int, default=None)
     ap.add_argument("--keep-going", action="store_true")
     ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--stats", default=None, help="write one JSON line per statement (kind, outcome, seconds) to this file")
     a = ap.parse_args(argv)
     seed = a.seed if a.seed is not None else random.randrange(1, 10**6)
     if a.cases is None and a.minutes is None and a.case is None: a.cases = 30
     print(f"torbles {algq.__version__} SQL differential fuzzing against DuckDB, seed {seed}", flush=True)
     t0 = time.time()
+    records = []
     tot, reasons, failures, ncase = run(seed, a.cases, a.minutes, a.queries, a.verbose, a.case, a.query,
-                                        stop_on_fail=not a.keep_going, log=lambda s: print(s, flush=True))
+                                        stop_on_fail=not a.keep_going, log=lambda s: print(s, flush=True), records=records)
     print(f"\n{sum(tot.values())} statements in {time.time() - t0:.0f} s: {tot}")
+    if records:
+        print(timing_table(records))
+        if a.stats:
+            import json
+            with open(a.stats, "w") as f:
+                for rec in records: f.write(json.dumps(rec) + "\n")
     if reasons:
         print("refusals (and statements DuckDB rejected):")
         for k, v in sorted(reasons.items(), key=lambda x: -x[1])[:25]: print(f"  {v:5d}  {k}")
