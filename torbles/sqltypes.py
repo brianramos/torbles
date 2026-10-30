@@ -33,6 +33,8 @@ class SqlType:
         if self.id == "DECFLOAT": return f"DECFLOAT({self.p})"
         if self.id == "LIST": return f"{self.child!r}[]"
         if self.id == "MULTISET": return f"{self.child!r} MULTISET"
+        if self.id == "ROW" and self.child is not None:
+            return "ROW(" + ", ".join(f"{_field_name(n)} {t!r}" if n else repr(t) for n, t in self.child) + ")"
         if self.id in _DISPLAY: return _DISPLAY[self.id]
         if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
@@ -91,6 +93,41 @@ def decfloat(v, p=34):
         raise SqlError(f"data exception: numeric value out of range for DECFLOAT({p})")
     return DecFloat(r)
 def LIST(t, maxcard=None): return SqlType("LIST", p=maxcard, child=t)
+def ROW_T(fields):
+    """a row type (T051): fields [(name, type)]; a field of a row value constructor has the name ''"""
+    return SqlType("ROW", child=tuple((str(n), t) for n, t in fields))
+
+
+_TYPE_WORD = re.compile(r"(?i)(DOUBLE|CHARACTER|CHAR|NATIONAL|BINARY|TIMESTAMP|TIME|BIT|NCHAR|INTERVAL)")
+
+
+def _field_name(n): return n if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", n) and not _TYPE_WORD.fullmatch(n) else '"' + n.replace('"', '""') + '"'
+
+
+def _split_top(text):
+    parts, d, cur, q = [], 0, "", False
+    for ch in text:
+        if ch == '"': q = not q
+        if not q and ch in "([": d += 1
+        if not q and ch in ")]": d -= 1
+        if ch == "," and d == 0 and not q: parts.append(cur.strip()); cur = ""
+        else: cur += ch
+    if cur.strip(): parts.append(cur.strip())
+    return parts
+
+
+def _row_type(text):
+    """ROW(a INTEGER, b VARCHAR) / STRUCT(...) / TUPLE(INTEGER, ...) as written by DuckDB or in SQL"""
+    m = re.fullmatch(r"\s*(ROW|STRUCT|TUPLE)\s*\((.*)\)\s*", text, re.S | re.I)
+    if not m: return None
+    fields = []
+    for part in _split_top(m.group(2)):
+        fq = re.fullmatch(r'"((?:[^"]|"")*)"\s+(.+)', part, re.S)
+        fm = re.fullmatch(r"([A-Za-z_][A-Za-z0-9_$]*)\s+(.+)", part, re.S)
+        if fq: fields.append((fq.group(1).replace('""', '"'), type_from_name(fq.group(2))))
+        elif fm and not _TYPE_WORD.fullmatch(fm.group(1)): fields.append((fm.group(1), type_from_name(fm.group(2))))
+        else: fields.append(("", type_from_name(part)))
+    return ROW_T(fields)
 def MULTISET(t): return SqlType("MULTISET", child=t)
 
 _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYINT": "TINYINT", "INT1": "TINYINT",
@@ -114,7 +151,11 @@ _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYIN
 
 def type_from_name(name, args=()):
     """a type from its SQL name and parameters: DECIMAL(10, 2), NUMERIC, VARCHAR(20), DOUBLE PRECISION, ..."""
-    u = re.sub(r"\s+", " ", str(name).strip().upper())
+    raw = str(name).strip()
+    if raw.endswith("[]"): return LIST(type_from_name(raw[:-2]))
+    rt = _row_type(raw)
+    if rt is not None: return rt
+    u = re.sub(r"\s+", " ", raw.upper())
     u = re.sub(r"\s+COLLATE\s+\S+$", "", u)
     if u.endswith("[]"): return LIST(type_from_name(u[:-2]))
     if u.endswith(" MULTISET"): return MULTISET(type_from_name(u[:-9]))
@@ -272,6 +313,9 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if {a.id, b.id} == {"JSON", "VARCHAR"}: return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
     if a.id == "MULTISET" and b.id == "MULTISET": return MULTISET(supertype(a.child, b.child))
+    if a.id == "ROW" and b.id == "ROW" and a.child is not None and b.child is not None:
+        if len(a.child) != len(b.child): raise SqlError(f"cannot combine row types of degrees {len(a.child)} and {len(b.child)}")
+        return ROW_T([(na or nb, supertype(ta, tb)) for (na, ta), (nb, tb) in zip(a.child, b.child)])
     if a.id == "BOOLEAN" and b.numeric: return b
     if b.id == "BOOLEAN" and a.numeric: return a
     raise SqlError(f"cannot combine types {a} and {b}")
@@ -528,7 +572,12 @@ def to_text(v, t):
         if v.tzinfo is not None: s += fmt_offset(v.utcoffset())
         return s
     if isinstance(v, Interval): return str(v)
-    if isinstance(v, list): return "[" + ", ".join("NULL" if x is None else to_text(x, t.child if t is not None and t.id == "LIST" else None) for x in v) + "]"
+    if isinstance(v, tuple) or (isinstance(v, list) and t is not None and t.id == "ROW"):
+        fs = t.child if t is not None and t.id == "ROW" and t.child is not None else [("", None)] * len(v)
+        txt = ["NULL" if x is None else to_text(x, ft) for x, (_, ft) in zip(v, fs)]
+        if all(n for n, _ in fs): return "{" + ", ".join(f"'{n}': {x}" for (n, _), x in zip(fs, txt)) + "}"
+        return "(" + ", ".join(txt) + ")"
+    if isinstance(v, list): return "[" + ", ".join("NULL" if x is None else to_text(x, t.child if t is not None and t.id in ("LIST", "MULTISET") else None) for x in v) + "]"
     if isinstance(v, (bytes, bytearray)): return blob_text(v)
     return str(v)
 
@@ -565,6 +614,12 @@ def cast_value(v, src, dst, err=True):
 def _cast(v, src, dst, err):
     d = dst.id
     if src is not None and src == dst: return v
+    if d == "ROW":                                         # a row: field by field, same degree (ISO 6.13)
+        if not isinstance(v, (list, tuple)) or (src is not None and src.id not in ("ROW", "NULL")): raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
+        if dst.child is None: return tuple(v)
+        if len(v) != len(dst.child): raise SqlError(f"Conversion Error: cannot cast a row of degree {len(v)} to {dst}")
+        st = src.child if src is not None and src.id == "ROW" and src.child is not None else [("", None)] * len(v)
+        return tuple(None if x is None else _cast(x, s_, t_, err) for x, (_, s_), (_, t_) in zip(v, st, dst.child))
     if d == "VARCHAR": return to_text(v, src)
     if dst.integer:
         if isinstance(v, bool): x = int(v)
@@ -700,15 +755,26 @@ def py_type(v):
     raise SqlError(f"no SQL type for {type(v).__name__}")
 
 
-def out_value(v):
-    """a value as returned to the caller (intervals as datetime.timedelta, like DuckDB's Python API)"""
+def out_value(v, t=None):
+    """a value as returned to the caller (intervals as datetime.timedelta, rows with named fields as dicts and other
+    rows as tuples, like DuckDB's Python API)"""
     if isinstance(v, Interval): return v.to_timedelta()
-    if isinstance(v, list): return [out_value(x) for x in v]
+    if isinstance(v, tuple):
+        fs = t.child if t is not None and t.id == "ROW" and t.child is not None else [("", None)] * len(v)
+        vals = [out_value(x, ft) for x, (_, ft) in zip(v, fs)]
+        return dict(zip([n for n, _ in fs], vals)) if fs and all(n for n, _ in fs) else tuple(vals)
+    if isinstance(v, list):
+        if t is not None and t.id == "ROW":
+            fs = t.child or [("", None)] * len(v)
+            vals = [out_value(x, ft) for x, (_, ft) in zip(v, fs)]
+            return dict(zip([n for n, _ in fs], vals)) if fs and all(n for n, _ in fs) else tuple(vals)
+        ch = t.child if t is not None and t.id in ("LIST", "MULTISET") else None
+        return [out_value(x, ch) for x in v]
     return v
 
 
 def sort_key(v):
     """a total order key for values of one type (NULLs are handled by the caller)"""
     if isinstance(v, float) and v != v: return (1, 0)                # NaN sorts after every number (DuckDB)
-    if isinstance(v, list): return (0, tuple(((1, 0) if x is None else (0, sort_key(x))) for x in v))
+    if isinstance(v, (list, tuple)): return (0, tuple(((1, 0) if x is None else (0, sort_key(x))) for x in v))
     return (0, v)

@@ -1828,13 +1828,13 @@ class Binder:
     def func(self, name, args, extra=None): return make_func(name, args, extra)
 
     def cmp(self, op, a, b):
-        if _is_row(a) or _is_row(b): return self.row_cmp(op, a, b)
+        if _rowish(a) or _rowish(b): return self.row_cmp(op, a, b)
         return make_func(op, [a, b])
 
     def row_cmp(self, op, a, b):
-        la = a.args if _is_row(a) else [a]; lb = b.args if _is_row(b) else [b]
+        la = _row_parts(a) if _rowish(a) else [a]; lb = _row_parts(b) if _rowish(b) else [b]
         if len(la) != len(lb): raise SqlError("row values of different sizes")
-        if op in ("=", "is_not_distinct"): return make_and([make_func(op, [x, y]) for x, y in zip(la, lb)])
+        if op in ("=", "is_not_distinct"): return make_and([self.cmp(op, x, y) for x, y in zip(la, lb)])
         if op in ("<>", "is_distinct"):
             return make_func("not", [self.row_cmp("=" if op == "<>" else "is_not_distinct", a, b)]) if op == "<>" else \
                 make_func("not", [self.row_cmp("is_not_distinct", a, b)])
@@ -1843,9 +1843,9 @@ class Binder:
         out = None
         for k in range(len(la) - 1, -1, -1):
             last = k == len(la) - 1
-            here = make_func(base if (strict or not last) else base + "=", [la[k], lb[k]])
+            here = self.cmp(base if (strict or not last) else base + "=", la[k], lb[k])
             if out is None: out = here
-            else: out = make_func("or", [make_func(base, [la[k], lb[k]]), make_and([make_func("=", [la[k], lb[k]]), out])])
+            else: out = make_func("or", [self.cmp(base, la[k], lb[k]), make_and([self.cmp("=", la[k], lb[k]), out])])
         return out
 
     def expr(self, e, sc, ctx):
@@ -1880,6 +1880,8 @@ class Binder:
             return I.Case(whens, cast_to(el, t) if el is not None else None, t)
         if c == "CAST":
             x = self.expr(e["child"], sc, ctx); t = self.type_of(e["type_expr"])
+            if t.id == "ROW" and t.child is not None and _rowish(x) and len(_row_parts(x)) != len(t.child):
+                raise SqlError(f"CAST of a row of degree {len(_row_parts(x))} to {t}: the degrees differ")
             if isinstance(x, I.Lit):
                 if x.v is None or isinstance(x.v, F.Err): return I.Lit(x.v, t)
                 try: return I.Lit(T.cast_value(x.v, x.t, t, not e.get("try_cast")), t)
@@ -2023,6 +2025,8 @@ class Binder:
         if name.upper().startswith("DECIMAL") or name.upper() in ("NUMERIC", "DEC"):
             return T.type_from_name("DECIMAL", args)
         if name.upper() == "DECFLOAT": return T.type_from_name("DECFLOAT", args)
+        if name.upper() in ("STRUCT", "ROW"):                  # ROW(a INTEGER, b VARCHAR) (T051)
+            return T.ROW_T([(ch.get("alias") or "", self.type_of(ch)) for ch in te.get("children") or []])
         return T.type_from_name(name)
 
     def constant(self, lit):
@@ -2070,6 +2074,9 @@ class Binder:
                 except SqlError: continue
                 if base.t.id == "JSON":
                     return _json_accessor(base, "".join("." + json.dumps(n) for n in names[k:]))
+                if base.t.id == "ROW":                # r.a, t.r.a.b: field references (ISO 6.15, T051)
+                    for n in names[k:]: base = field_ref(base, n)
+                    return base
         raise SqlError(f'Referenced column "{".".join(names)}" not found in FROM clause')
 
     def operator(self, e, sc, ctx):
@@ -2078,19 +2085,25 @@ class Binder:
             return self.func("not", [self.boolean(self.expr(kids[0], sc, ctx), "NOT")])
         if t in ("OPERATOR_IS_NULL", "OPERATOR_IS_NOT_NULL"):
             x = self.expr(kids[0], sc, ctx); fn = "is_null" if t == "OPERATOR_IS_NULL" else "is_not_null"
-            if _is_row(x): return make_and([self.func(fn, [a]) for a in x.args])     # every field NULL / not NULL (ISO 8.8)
+            if _rowish(x): return _row_null(x, fn)                                  # every field NULL / not NULL (ISO 8.8)
             return self.func(fn, [x])
         if t in ("COMPARE_IN", "COMPARE_NOT_IN"):
             x = self.expr(kids[0], sc, ctx)
             vals = [self.expr(k, sc, ctx) for k in kids[1:]]
-            if _is_row(x):
+            if _rowish(x):
                 r = make_func("or", [self.row_cmp("=", x, v) for v in vals]) if len(vals) > 1 else self.row_cmp("=", x, vals[0])
             else: r = self.func("in", [x] + vals)
             return self.func("not", [r]) if t == "COMPARE_NOT_IN" else r
         if t == "OPERATOR_COALESCE": return self.func("coalesce", [self.expr(k, sc, ctx) for k in kids])
         if t == "OPERATOR_NULLIF": return self.func("nullif", [self.expr(k, sc, ctx) for k in kids])
+        if t == "STRUCT_EXTRACT":                          # (x).field
+            x = self.expr(kids[0], sc, ctx); f = self.expr(kids[1], sc, ctx)
+            if not isinstance(f, I.Lit) or not isinstance(f.v, str): raise SqlError("a field reference needs a field name")
+            if x.t.id == "JSON": return _json_accessor(x, "." + json.dumps(f.v))
+            return field_ref(x, f.v)
         if t == "ARRAY_EXTRACT":
             a, i = (self.expr(k, sc, ctx) for k in kids)
+            if a.t.id == "ROW" and isinstance(i, I.Lit) and isinstance(i.v, str): return field_ref(a, i.v)
             if a.t.id == "JSON":                         # j[i] on JSON (ISO 2023 simplified accessor)
                 if isinstance(i, I.Lit) and isinstance(i.v, int): return _json_accessor(a, f"[{i.v}]")
                 if isinstance(i, I.Lit) and isinstance(i.v, str): return _json_accessor(a, "." + json.dumps(i.v))
@@ -2162,7 +2175,7 @@ class Binder:
         if name == "+" and len(args) == 1: return args[0]
         if name == "~" and len(args) == 1: return self.func("__bitnot", args)
         if name == "~" and len(args) == 2: return self.func("regexp_matches", args)
-        if name == "row": return I.Func("row", args, T.NULL)
+        if name == "row": return I.Func("row", args, T.ROW_T([("", a.t) for a in args]))
         if name == "regexp_full_match" and len(args) == 2 and isinstance(args[1], I.Func) and args[1].fn == "__iso_similar_pat":
             return self.func("__iso_similar", [args[0]] + args[1].args)
         if name == "__iso_similar_pat": return I.Func("__iso_similar_pat", args, T.VARCHAR)
@@ -2520,6 +2533,39 @@ def _const(e, where):
 
 
 def _is_row(x): return isinstance(x, I.Func) and x.fn == "row"
+
+
+def _rowish(x):
+    """a row value: a row value constructor, or an expression of a row type with known fields"""
+    return _is_row(x) or (x.t.id == "ROW" and x.t.child is not None)
+
+
+def _row_parts(x):
+    """the fields of a row value as expressions"""
+    if _is_row(x): return list(x.args)
+    return [_field_at(x, i) for i in range(len(x.t.child))]
+
+
+def _field_at(x, i):
+    ft = x.t.child[i][1]
+    if _is_row(x): return x.args[i]
+    if isinstance(x, I.Lit): return I.Lit(None if x.v is None or isinstance(x.v, F.Err) else x.v[i], ft)
+    if isinstance(x, I.Cast) and _is_row(x.arg): return cast_to(x.arg.args[i], ft)
+    return I.Func("__row_field", [x, I.Lit(i, T.INTEGER)], ft)
+
+
+def field_ref(x, name):
+    """x.name on a value of a row type (ISO 6.15)"""
+    t = x.t
+    if t.id != "ROW" or t.child is None: raise SqlError(f"{I.render(x)} is not a row value: no field {name}")
+    hits = [i for i, (n, _) in enumerate(t.child) if n == name] or [i for i, (n, _) in enumerate(t.child) if n.lower() == name.lower()]
+    if not hits: raise SqlError(f"the row type {t} has no field {name}")
+    return _field_at(x, hits[0])
+
+
+def _row_null(x, fn):
+    """x IS [NOT] NULL on a row value: every field (ISO 8.8; a field that is a row: its fields)"""
+    return make_and([_row_null(p, fn) if _rowish(p) else make_func(fn, [p]) for p in _row_parts(x)])
 
 
 def _is_plain_col(x, n): return isinstance(x, I.Col) and x.name.lower() == n.lower()

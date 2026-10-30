@@ -445,5 +445,40 @@ try:
        FROM t WHERE id < 300 ORDER BY id""").rows, "Python API: F.value_of, F.row_number(<row marker>), and their SQL text")
 except Exception as x: check(False, "Python API: nested window functions", f"{type(x).__name__}: {x}")
 
+print("== row types (T051)")
+rw = "SELECT id, CAST(ROW(k, x, v) AS ROW(a INTEGER, b VARCHAR, c INTEGER)) AS r FROM t"
+vs_duckdb("SELECT ROW(1, 'x'), (2, 'y'), CAST(ROW(1, 'x') AS ROW(a INTEGER, b VARCHAR)), CAST(ROW(1, ROW(2, 'z')) AS ROW(a INT, b ROW(c INT, d VARCHAR))).b.d",
+          "row value constructors, CAST to a row type with named fields, a nested field reference")
+vs_duckdb(f"SELECT id, r, r.a, (r).b, s.r.c FROM ({rw}) s WHERE id < 50 ORDER BY id", "a row-typed derived column: the row, r.a, (r).b, s.r.c")
+vs_duckdb(f"SELECT r, count(*) FROM ({rw}) s WHERE r.b IS NOT NULL GROUP BY r ORDER BY r", "GROUP BY and ORDER BY a row")
+vs_duckdb(f"SELECT count(DISTINCT r), count(*) FILTER (WHERE r < ROW(5, 'B', 50)), count(*) FILTER (WHERE r = ROW(3, 'a', r.c)) FROM ({rw}) s WHERE r.b IS NOT NULL",
+          "DISTINCT rows, row comparisons (fields without NULLs)")
+vs_duckdb("SELECT count(*) FROM t WHERE (k, x) IN ((1, 'a'), (2, 'b'), (3, 'B'))", "a row IN a list of rows")
+vs_duckdb("SELECT CAST(CAST(ROW(1, 'x') AS ROW(a INT, b VARCHAR)) AS VARCHAR), CAST(ROW(1, 'x') AS VARCHAR), typeof(ROW(1, 'x')) = 'ROW(INTEGER, VARCHAR)'"
+          .replace(", typeof(ROW(1, 'x')) = 'ROW(INTEGER, VARCHAR)'", ""), "a row as text")
+expect("SELECT typeof(CAST(ROW(1, 'x') AS ROW(a INT, \"b c\" VARCHAR))), ROW(1, NULL) IS NULL, ROW(NULL, NULL) IS NULL, ROW(1, NULL) = ROW(1, NULL), "
+       "CAST(NULL AS ROW(a INT, b INT)) IS NULL",
+       [('ROW(a INTEGER, "b c" VARCHAR)', False, True, None, True)], "ISO NULL semantics of rows: IS NULL when every field is NULL, = with a NULL field UNKNOWN")
+refuses("SELECT CAST(ROW(1, 'x') AS ROW(a INT)).a", ["degree"], "CAST between rows of different degrees")
+refuses(f"SELECT r.z FROM ({rw}) s", ["no field z"], "a missing field")
+scon = duckdb.connect()
+scon.execute("CREATE TABLE s AS SELECT i, CASE WHEN i % 17 = 5 THEN NULL ELSE CAST(ROW(i % 3, 'v' || (i % 2), DATE '2020-01-01' + (i % 4)::INT, "
+             "CAST(i / 7 AS DECIMAL(10,2)), ROW(i * 1.5, i % 2 = 0)) AS ROW(a INT, b VARCHAR, d DATE, x DECIMAL(10,2), l ROW(f DOUBLE, g BOOLEAN))) END AS r FROM range(300) t(i)")
+sdb = torbles.from_duckdb(scon, keep_plain=ENGINE == "plain")
+import tempfile
+sdir = tempfile.mkdtemp(); sdb.save(sdir); sdb2 = torbles.load(sdir)
+for q in ("SELECT i, r FROM s WHERE i < 40 ORDER BY i", "SELECT r.a, r.l.g, count(*), sum(r.x), max(r.d) FROM s GROUP BY r.a, r.l.g ORDER BY 1 NULLS FIRST, 2 NULLS FIRST",
+          "SELECT count(*), count(r), count(DISTINCT r) FROM s WHERE r.b = 'v1' OR (r).a = 2 OR r IS NULL",
+          "SELECT i FROM s WHERE r = ROW(1, 'v0', DATE '2020-01-03', 1.43, ROW(15.0, TRUE)) ORDER BY i"):
+    want = scon.execute(q).fetchall()
+    for name, d in (("", sdb), (", saved and loaded", sdb2)):
+        try: got = d.sql(q, ENGINE if d is sdb else ENGINE.replace("plain", "alg")).rows     # a loaded database has no plain columns
+        except Exception as x: check(False, q[:80], f"{type(x).__name__}: {x}"); continue
+        check(sqlfuzz.same(got, want, True, 1e-9), f"a stored ROW column{name}: {q[:70]}", f"torbles {got[:3]}\n        duckdb  {want[:3]}")
+tt = db.table("t")
+q = db.select(tt.id, F.row(tt.k, tt.x).cast("ROW(a INTEGER, b VARCHAR)").field("b").alias("b")).where(tt.id < 5).order_by(tt.id)
+try: check(q.run(ENGINE).rows == db.sql("SELECT id, x FROM t WHERE id < 5 ORDER BY id").rows, "Python API: F.row(...).cast(ROW type).field(name)")
+except Exception as x: check(False, "Python API rows", f"{type(x).__name__}: {x}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

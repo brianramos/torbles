@@ -176,6 +176,7 @@ def nkey(v):
         if v != v: return ("\0nan",)
         return v + 0.0
     if isinstance(v, list): return ("\0list",) + tuple(nkey(x) for x in v)
+    if isinstance(v, tuple): return ("\0row",) + tuple(nkey(x) for x in v)
     return v
 
 
@@ -231,10 +232,10 @@ def run(db, q, engine="alg"):
         dec = [t.s if t.id == "DECIMAL" else None for t in r.types]
         for row in r.rows:
             out = []
-            for v, s in zip(row, dec):
+            for v, s, t in zip(row, dec, r.types):
                 if isinstance(v, Err): raise SqlError(v.msg)
                 if s is not None and isinstance(v, Decimal): v = T._dec_quant(v, s)
-                out.append(T.out_value(v))
+                out.append(T.out_value(v, t))
             rows.append(tuple(out))
     res = Relation(r.names, r.types, rows)
     res.stats = cx.stats
@@ -1245,7 +1246,7 @@ def _subq_apply(e, r, x):
     for v in r:
         if isinstance(v, list):                      # row value IN (subquery)
             parts = []
-            for a, b in zip(xs if isinstance(xs, list) else [xs], v):
+            for a, b in zip(xs if isinstance(xs, (list, tuple)) else [xs], v):
                 parts.append(None if a is None or b is None else F.cmp_values(a, b) == 0)
             res = F._and(*parts)
         elif x is None or v is None: res = None

@@ -56,7 +56,7 @@ def nullable(f):
         return False
     if f.fn in ("coalesce",): return all(a.nullable for a in f.args)
     if f.fn in ("nullif", "try_cast", "/", "sqrt", "ln", "log", "split_part", "regexp_extract", "__iso_substring_similar",
-                "substring_regex", "nth_list", "list_extract", "greatest", "least", "chr"):
+                "substring_regex", "nth_list", "list_extract", "greatest", "least", "chr", "__row_field"):
         return True
     if s is not None and s.nulls == "propagate": return any(a.nullable for a in f.args)
     return True
@@ -309,7 +309,7 @@ def cmp_values(a, b):
         an = a != a if not isinstance(a, Decimal) else a.is_nan()
         bn = b != b if not isinstance(b, Decimal) else b.is_nan()
         if an or bn: return 0 if an and bn else (1 if an else -1)
-    if isinstance(a, list):
+    if isinstance(a, (list, tuple)):
         for x, y in zip(a, b):
             if x is None or y is None:
                 if x is None and y is None: continue
@@ -1418,8 +1418,14 @@ def _transliterate(x, name):
     return x
 
 
-@scalar("row", lambda a: (T.SqlType("ROW"), None), nulls="custom")
-def _row(*xs): return list(xs)
+@scalar("row", lambda a: (T.ROW_T([("", x) for x in a]), None), nulls="custom")
+def _row(*xs): return tuple(xs)
+
+
+@scalar("__row_field", lambda a: (T.NULL, None))
+def _row_field(x, i):
+    """a field of a row value (ISO 6.15 <field reference>), by position"""
+    return x[i]
 
 
 # ------------------------------------------------------------------ CAST ... FORMAT '<datetime template>' (ISO T839)

@@ -100,6 +100,9 @@ class E:
         t = typ if isinstance(typ, T.SqlType) else T.type_from_name(typ)
         return E(FR.cast_to(self.n, t, try_) if isinstance(self.n, I.Lit) else I.Cast(self.n, t, try_))
     def try_cast(self, typ): return self.cast(typ, True)
+    def field(self, name):
+        """a field of a row value: x.field("a") is SQL's x.a (T051)"""
+        return E(FR.field_ref(self.n, name), name)
     def asc(self, nulls_first=False): return Order(self, False, nulls_first)
     def desc(self, nulls_first=False): return Order(self, True, nulls_first)
 

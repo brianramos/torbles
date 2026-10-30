@@ -220,7 +220,7 @@ class DictCodec(Codec):
 
     def __init__(self, values, sql_type="VARCHAR"):
         self.values = list(values); self.sql_type = sql_type
-        self.numeric = sql_type not in ("VARCHAR", "BLOB", "JSON")
+        self.numeric = sql_type not in ("VARCHAR", "BLOB", "JSON") and not sql_type.startswith("ROW")
         self.floating = sql_type.upper() in self.FLOATS
         self._keys = self.values if not self.numeric or self.floating else [_frac(v) for v in self.values]
 
@@ -232,6 +232,7 @@ class DictCodec(Codec):
         if self.sql_type == "BLOB":
             if not isinstance(v, (bytes, bytearray)): raise TypeError(f"expected bytes for a BLOB column, got {v!r}")
             return bytes(v)
+        if self.sql_type.startswith("ROW"): raise TypeError(f"a {self.sql_type} column is compared through its fields (SQL)")
         if not isinstance(v, str): raise TypeError(f"expected a string for a {self.sql_type} column, got {v!r}")
         return v
 

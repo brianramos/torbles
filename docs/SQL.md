@@ -99,6 +99,7 @@ value is used by a row that is output.
 | INTERVAL (year-month and day-time) | months, days, microseconds (returned as timedelta) | no |
 | JSON | its text | yes (dictionary) |
 | ARRAY, MULTISET | list (values, not stored) | no |
+| ROW (a INTEGER, b VARCHAR, ...) (T051) | a tuple of the fields' values; returned as a dict when the fields have names, else as a tuple (as DuckDB returns STRUCTs) | yes (dictionary; DuckDB STRUCT columns whose fields are scalars or rows) |
 
 NULL is stored as a validity plane next to the column (code 0 in the data planes), so `IS NULL` is a plane and every
 comparison is three-valued on the engine.
@@ -128,6 +129,11 @@ one table is always evaluated on that table's distinct values (row mask or code 
 | MATCH_RECOGNIZE (R010) | values: PARTITION BY, ORDER BY, MEASURES, ONE / ALL ROWS PER MATCH, SHOW / OMIT EMPTY MATCHES, WITH UNMATCHED ROWS, AFTER MATCH SKIP (all forms), PATTERN (concatenation, alternation, greedy and reluctant `* + ? {n,m}`, PERMUTE, `^ $`, `{- -}`), SUBSET, DEFINE, PREV / NEXT / FIRST / LAST, RUNNING / FINAL, CLASSIFIER(), MATCH_NUMBER(), aggregates |
 | JSON_TABLE (T821-T828) | values: PASSING, COLUMNS (PATH, FOR ORDINALITY, EXISTS, FORMAT JSON with wrappers and quotes, ON EMPTY / ON ERROR), NESTED PATH (outer join to the parent, union of siblings), ERROR / EMPTY ON ERROR; the PLAN clause is accepted and the default plan is used |
 | scalar subqueries, EXISTS, IN / ANY / SOME / ALL (subquery), UNIQUE, row subqueries | uncorrelated: once, folded to constants; correlated: once per distinct outer tuple |
+
+Row types (T051): `ROW(a, b)` and `(a, b)` build a row value, `CAST(x AS ROW(f INTEGER, g VARCHAR))` gives its fields
+names, `r.f`, `(r).f` and `t.r.f` are field references (on a stored row column too), and rows compare, group, sort and
+take DISTINCT field by field. A comparison of rows is the ISO one: a NULL field makes `=` UNKNOWN, and `r IS NULL` is
+TRUE when every field is NULL. In Python: `F.row(a, b)`, `x.cast("ROW(f INTEGER, g VARCHAR)")`, `x.field("f")`.
 
 ### Predicates
 
@@ -251,8 +257,6 @@ outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
   (`NEXT VALUE FOR`), identity and default values, triggers, routines (`CREATE FUNCTION`, SQL/PSM), user-defined types,
   reference types, typed tables and `ONLY`, system-versioned tables (`FOR SYSTEM_TIME AS OF`) and periods declared on
   tables belong to those statements. PERIOD predicates on value pairs are supported.
-- **Row types with named fields** (`ROW (a INT, b INT)` as a type, field references; T051): row values exist as
-  comparison operands and in MATCH and IN, not as a column type.
 - **The UNICODE collation** (the Unicode Collation Algorithm) needs a collation library; the code point collations and
   NOCASE / NOACCENT / NFC are supported.
 - Other parts of ISO/IEC 9075: SQL/XML (Part 14), SQL/MDA multidimensional arrays (Part 15), SQL/PGQ property graph
@@ -264,7 +268,8 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 
 - `SIMILAR TO` uses ISO's regular expressions (`%`, `_`, `|`, `*`, `+`, `?`, `{}`, `()`, `[]` over the whole string),
   DuckDB's is a POSIX regular expression.
-- A row comparison with a NULL field is UNKNOWN; DuckDB answers FALSE.
+- A row comparison with a NULL field is UNKNOWN; DuckDB answers FALSE (or, for STRUCT values, compares NULL fields as
+  equal), and DuckDB's `r IS NULL` is FALSE for a STRUCT whose fields are all NULL.
 - `CORR` and the `REGR_*` functions are NULL when a variance is zero (DuckDB: NaN); every statistic is exact.
 - `FETCH FIRST p PERCENT` keeps the ceiling of p% of the rows; DuckDB's `LIMIT p%` the floor.
 - `a[i]` outside 1 .. CARDINALITY(a) is an error (ISO); DuckDB returns NULL (its `list_extract` keeps that behavior).

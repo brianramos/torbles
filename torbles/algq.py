@@ -903,6 +903,11 @@ class Table:
     def fks_to(self, dim):
         """the declared foreign keys of this table that reference dim"""
         return [fk for fk in getattr(self, "refbit", {}) if getattr(self, "_refdim", {}).get(fk) is dim]
+    def plain_handle(self):
+        """the plain columnar engine's table (a test baseline): only kept when the database was built with keep_plain"""
+        if getattr(self, "pt", None) is None:
+            raise RuntimeError(f"engine 'plain' is not available for {self.name}: build the database with keep_plain=True")
+        return self.pt
     def drop_plain(self):
         """free the plain uint32 columns once the torble is built (the bit planes are the data; the plain columnar
         engine, a test baseline, is unavailable afterwards). Keeps per-column maxima and the clustering column."""
@@ -1213,7 +1218,7 @@ class Query:
                     return False
                 self.device, self.kernel_ms = "gpu", ms.value
             else:
-                rc = (lib.pt_query if dev == "plain" else lib.at_query)(table.pt if dev == "plain" else table.at, ctypes.byref(plan))
+                rc = (lib.pt_query if dev == "plain" else lib.at_query)(table.plain_handle() if dev == "plain" else table.at, ctypes.byref(plan))
                 if rc == -2: raise OverflowError("SUM needs 128 bits, which this engine evaluates for polynomials of degree <= 2 in fact columns")
                 if rc != 0: raise RuntimeError(f"plan not supported by the engine (agg {plan.agg}, keys {plan.nkey}, rc {rc}, dev {dev})")
             if not plan.out_key or plan.out_n <= plan.out_cap: return True
@@ -1577,7 +1582,7 @@ class Query:
             arr = (PInstr * len(dp))(*dp)
             bm = np.zeros((dim.n + 63) // 64 + 1, dtype=np.uint64); keep.append(bm)
             if engine == "alg": cnt = lib.at_filter_bitmap_masked(dim.at, arr, len(dp), bm.ctypes.data, dim.used_bm.ctypes.data)
-            else: cnt = lib.pt_filter_bitmap(dim.pt, arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
+            else: cnt = lib.pt_filter_bitmap(dim.plain_handle(), arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
             rms = [c for c in preds if isinstance(c, RowMask)]
             if rms:                                    # rows given by mask: AND them in
                 for rm in rms: bm &= rm.bm[:len(bm)]
@@ -1918,7 +1923,7 @@ class Query:
         if dp:
             arr = (PInstr * len(dp))(*dp); bm = np.zeros((dim.n + 63) // 64 + 1, dtype=np.uint64)
             if engine in ("alg", "gpu"): lib.at_filter_bitmap_masked(dim.at, arr, len(dp), bm.ctypes.data, dim.used_bm.ctypes.data)
-            else: lib.pt_filter_bitmap(dim.pt, arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
+            else: lib.pt_filter_bitmap(dim.plain_handle(), arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
             ids = np.nonzero(np.unpackbits(bm.view(np.uint8), bitorder="little")[:dim.n])[0]
         else: ids = dim.used_ids
         col = (lambda c: dim.decoded(c)) if engine in ("alg", "gpu") else (lambda c: dim.data[c])

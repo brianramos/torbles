@@ -318,7 +318,7 @@ class Database:
         fv = fill.get(f"{name}.{c}", fill.get(c))
         if fv is not None:
             lit = _fill_literal(typ, fv); col = f"coalesce({col}, {lit})"
-        if base in ("str", "float", "blob", "json"):
+        if base in ("str", "float", "blob", "json", "row"):
             if base == "float":
                 nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
                 if nan: return None, None, f"{nan} NaN / infinite value(s)"
@@ -328,6 +328,10 @@ class Database:
             codes = self.con.execute(f"SELECT CAST(CASE WHEN {col} IS NULL THEN 0 ELSE dense_rank() OVER (ORDER BY {col} NULLS LAST) - 1 END AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
             if base == "blob": vals = [bytes(v) for v in vals]
+            if base == "row":                              # a row type (T051): values are lists of the fields' values
+                import sqltypes as T
+                rt = T.type_from_name(typ)
+                return np.asarray(codes), ct.DictCodec([_row_value(v, rt) for v in vals], str(rt)), None
             return np.asarray(codes), ct.DictCodec(vals, {"str": "VARCHAR", "blob": "BLOB", "json": "JSON"}.get(base, "DOUBLE")), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
         lo, hi = st["min"].get(c), st["max"].get(c)
@@ -487,12 +491,21 @@ def _base_type(t):
     if u in ("VARCHAR", "TEXT", "STRING") or u.startswith("VARCHAR"): return "str"
     if u in ("BLOB", "BYTEA", "VARBINARY", "BINARY"): return "blob"
     if u == "JSON": return "json"
+    if u.startswith(("STRUCT(", "ROW(")): return "row"
     if u in _FLOAT_TYPES: return "float"
     return "other"
 
 
 def _supported(t):
     b = _base_type(t)
+    if b == "row":
+        import sqltypes as T
+        try: rt = T.type_from_name(t)
+        except T.SqlError as e: return False, str(e)
+        def ok(x):
+            if x.id == "ROW": return x.child is not None and all(ok(ft) for _, ft in x.child)
+            return x.id not in ("LIST", "MULTISET", "INTERVAL", "NULL")
+        return (True, None) if ok(rt) else (False, f"type {t}: a row's fields are stored when they are scalars or rows")
     if b != "other": return True, None
     u = t.upper()
     if u.startswith("TIMESTAMP"): return False, f"type {t}: use TIMESTAMP or TIMESTAMP WITH TIME ZONE (microseconds)"
@@ -545,6 +558,38 @@ def _int_values(vals, typ):
         import datetime as _d
         return [(ct.EPOCH_TS + _d.timedelta(microseconds=v)).replace(tzinfo=_d.timezone.utc) for v in vals]
     return vals
+
+
+def _row_value(v, t):
+    """a DuckDB value of a STRUCT / LIST type as torbles holds it: a row as the list of its fields' values"""
+    if v is None: return None
+    if t.id == "ROW" and t.child is not None:
+        if isinstance(v, dict): v = [v.get(n) for n, _ in t.child] if all(n for n, _ in t.child) else list(v.values())
+        return tuple(_row_value(x, ft) for x, (_, ft) in zip(v, t.child))
+    if t.id in ("LIST", "MULTISET"): return [_row_value(x, t.child) for x in v]
+    if isinstance(v, (bytes, bytearray, memoryview)): return bytes(v)
+    return v
+
+
+def _enc_value(v, t):
+    """a row value as JSON (saved dictionaries): scalars as text in their SQL form"""
+    if v is None: return None
+    if t.id == "ROW": return [_enc_value(x, ft) for x, (_, ft) in zip(v, t.child)]
+    if t.id in ("LIST", "MULTISET"): return [_enc_value(x, t.child) for x in v]
+    if isinstance(v, bool) or (isinstance(v, int) and t.integer): return v
+    if t.id == "BLOB": return bytes(v).hex()
+    import sqltypes as T
+    return T.to_text(v, t)
+
+
+def _dec_value(x, t):
+    if x is None: return None
+    if t.id == "ROW": return tuple(_dec_value(a, ft) for a, (_, ft) in zip(x, t.child))
+    if t.id in ("LIST", "MULTISET"): return [_dec_value(a, t.child) for a in x]
+    if isinstance(x, (bool, int)): return x
+    if t.id == "BLOB": return bytes.fromhex(x)
+    import sqltypes as T
+    return T.cast_value(x, T.VARCHAR, t)
 
 
 def _fill_literal(typ, v):
@@ -733,6 +778,9 @@ def save(db, path):
                 if cd.numeric: arrays[f"dict:{c}"] = np.asarray([float(v) if not isinstance(v, int) else v for v in cd.values], object if any(isinstance(v, int) for v in cd.values) else np.float64)
                 else:
                     vs = [v.decode("latin-1") for v in cd.values] if cd.sql_type == "BLOB" else cd.values
+                    if cd.sql_type.startswith("ROW"):
+                        import sqltypes as T
+                        rt = T.type_from_name(cd.sql_type); vs = [json.dumps(_enc_value(v, rt)) for v in cd.values]
                     blob, offs = ct.pack_strings(vs); arrays[f"dictblob:{c}"] = blob; arrays[f"dictoffs:{c}"] = offs
         refs = {}
         for fk, bit in t.refbit.items():
@@ -814,6 +862,9 @@ def load(path, validate=True, con=None):
                 if os.path.exists(fb):
                     vals = ct.unpack_strings(np.load(fb), np.load(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
                     if j.get("sql_type") == "BLOB": vals = [v.encode("latin-1") for v in vals]
+                    if (j.get("sql_type") or "").startswith("ROW"):
+                        import sqltypes as T
+                        rt = T.type_from_name(j["sql_type"]); vals = [_dec_value(json.loads(v), rt) for v in vals]
                 elif f"dict:{c}" in man.get("intdicts", {}).get(name, {}):
                     vals = [int(x) for x in man["intdicts"][name][f"dict:{c}"]]
                     vals = _int_values(vals, j.get("sql_type", "BIGINT"))
