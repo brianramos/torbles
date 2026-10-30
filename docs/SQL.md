@@ -209,8 +209,8 @@ with `== != < <= > >= && || !`, `exists (...)`, `(...) is unknown`, `like_regex 
 Others: `CASE` (simple, searched, and extended: `WHEN 1, 2`, `WHEN > 5`, `WHEN IS NULL`, F262 / F263), `NULLIF`,
 `COALESCE`, `CAST`, `TRY_CAST`, row values `ROW (a, b)` and `(a, b)`, `COLLATE` (UNICODE: the Unicode Collation Algorithm with its default table, through the optional pyuca package; UCS_BASIC, BINARY, C, POSIX, NOCASE,
 NOACCENT, NFC and their combinations: comparisons, ORDER BY, GROUP BY, DISTINCT, set operations, MIN / MAX, windows; in
-a filter the collation key is evaluated on the column's distinct values), `CURRENT_USER`, `SESSION_USER`, `SYSTEM_USER`,
-`USER`, `CURRENT_ROLE`, `CURRENT_CATALOG`, `CURRENT_SCHEMA`, `CURRENT_PATH`, `typeof`.
+a filter the collation key is evaluated on the column's distinct values), `COLLATION FOR (x)`, `CURRENT_USER`, `SESSION_USER`, `SYSTEM_USER`,
+`USER`, `CURRENT_ROLE`, `CURRENT_CATALOG`, `CURRENT_SCHEMA`, `CURRENT_PATH`, `CURRENT_DEFAULT_TRANSFORM_GROUP` (empty: there are no user-defined types), `typeof`.
 
 ### Aggregates
 

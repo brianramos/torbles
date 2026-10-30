@@ -568,5 +568,8 @@ try:
                   [(2, 12, "Äpfel", "Zebra")], [(2,)]], "COLLATE UNICODE: the Unicode Collation Algorithm (canonical equivalents equal, accents after letters)", str(got))
 except Exception as x: check(False, "COLLATE UNICODE", f"{type(x).__name__}: {x}")
 
+expect("SELECT COLLATION FOR (x COLLATE NOCASE), COLLATION FOR (x), COLLATION FOR (lower(x COLLATE NOACCENT)), CURRENT_DEFAULT_TRANSFORM_GROUP FROM t WHERE id = 0",
+       [("NOCASE", "UCS_BASIC", "NOACCENT", "")], "COLLATION FOR (x), CURRENT_DEFAULT_TRANSFORM_GROUP")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

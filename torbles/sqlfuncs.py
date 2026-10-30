@@ -1289,6 +1289,7 @@ scalar("current_user user session_user system_user", fixed(T.VARCHAR), determini
 scalar("current_role", fixed(T.VARCHAR), nulls="custom", deterministic=False)(lambda: None)
 scalar("current_catalog current_database", fixed(T.VARCHAR), deterministic=False)(lambda: "memory")
 scalar("current_schema", fixed(T.VARCHAR), deterministic=False)(lambda: "main")
+scalar("current_default_transform_group", fixed(T.VARCHAR), deterministic=False)(lambda: "")   # no user-defined types: no transform group
 scalar("current_path", fixed(T.VARCHAR), deterministic=False)(lambda: '"main"')
 
 

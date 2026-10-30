@@ -930,6 +930,9 @@ def iso_prepass(sql):
                 if _kw(t, j, "WITH", "TIME", "ZONE"): tz = True; j += 3
                 elif _kw(t, j, "WITHOUT", "TIME", "ZONE"): j += 3
                 t[i:j] = [Tok("id", f"__{u}{'TZ' if tz else ''}_P{int(t[i + 2].s)}")]; changed = True; break
+            # COLLATION FOR (<string>) (ISO 6.33): the name of its collation
+            if u == "COLLATION" and _kw(t, i + 1, "FOR") and i + 2 < len(t) and t[i + 2].s == "(":
+                t[i:i + 2] = [Tok("id", "__iso_collation_for")]; changed = True; break
             # nested window functions (T619): ROW_NUMBER(<row marker>), VALUE_OF(<expr> AT <row marker> [+|- n] [, default])
             if u == "ROW_NUMBER" and i + 3 < len(t) and t[i + 1].s == "(" and t[i + 2].up() in _ROW_MARKERS and t[i + 3].s == ")":
                 t[i:i + 4] = tokenize(f"__iso_nrow_number('{t[i + 2].up()}')"); changed = True; break
@@ -1239,7 +1242,8 @@ _WIN_KIND = {"WINDOW_ROW_NUMBER": "row_number", "WINDOW_RANK": "rank", "WINDOW_R
 
 _ROW_MARKERS = {"BEGIN_PARTITION", "BEGIN_FRAME", "CURRENT_ROW", "FRAME_ROW", "END_FRAME", "END_PARTITION"}
 _NILADIC = {"CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP", "CURRENT_USER", "USER",
-            "SESSION_USER", "SYSTEM_USER", "CURRENT_ROLE", "CURRENT_CATALOG", "CURRENT_SCHEMA", "CURRENT_PATH"}
+            "SESSION_USER", "SYSTEM_USER", "CURRENT_ROLE", "CURRENT_CATALOG", "CURRENT_SCHEMA", "CURRENT_PATH",
+            "CURRENT_DEFAULT_TRANSFORM_GROUP"}
 
 
 def lit_of(v, strlit=False):
@@ -2254,6 +2258,10 @@ class Binder:
             if a.t.p is None and isinstance(a, I.Func) and a.fn == "list_value": return I.Lit(len(a.args), T.BIGINT)
             if a.t.p is None and isinstance(a, I.Lit) and isinstance(a.v, list): return I.Lit(len(a.v), T.BIGINT)  # ARRAY[...]: its elements
             return I.Lit(a.t.p, T.BIGINT)
+        if name == "__iso_collation_for":
+            x = self.expr(raw[0]["expression"], sc, ctx)
+            if x.t.id not in ("VARCHAR", "NULL") and not getattr(x, "strlit", False): raise SqlError(f"COLLATION FOR needs a character string, not {x.t}")
+            return I.Lit(x.t.coll.upper() if x.t.coll else "UCS_BASIC", T.VARCHAR)
         if name in ("__iso_nrow_number", "__iso_value_of"):
             return self.nested_window_function(name, raw, sc, ctx)
         if name == "__iso_sym": raise SqlError("BETWEEN SYMMETRIC misplaced")
