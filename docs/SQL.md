@@ -93,14 +93,14 @@ value is used by a row that is output.
 |---|---|---|
 | SMALLINT, INTEGER, BIGINT, HUGEINT, unsigned types | int (arithmetic never wraps; overflow is an error where DuckDB's is) | yes |
 | DECIMAL(p, s), NUMERIC | Decimal, exact | yes |
-| DECFLOAT(p) (T076; p defaults to 34) | Decimal rounded to p digits, with Infinity and NaN (NaN sorts last and equals itself) | no (the loaders read types through DuckDB, which has none) |
+| DECFLOAT(p) (T076; p defaults to 34) | Decimal rounded to 16 digits (p <= 16) or 34, with Infinity and NaN (NaN sorts last, equals itself and groups as one value; an invalid operation such as Infinity - Infinity is NaN, as IEEE 754 says) | no (the loaders read types through DuckDB, which has none) |
 | REAL, DOUBLE PRECISION, FLOAT | float | yes (dictionary) |
 | BOOLEAN (TRUE, FALSE, UNKNOWN) | bool (UNKNOWN is NULL) | yes |
 | CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB; a CAST to VARCHAR(n) or CHAR(n) keeps the first n characters, as ISO says; `_UTF8'...'` introducers are accepted) | yes (dictionary) |
 | BINARY, VARBINARY, BLOB, BINARY LARGE OBJECT | bytes | yes (dictionary) |
 | DATE, TIME, TIMESTAMP, TIME(p), TIMESTAMP(p) | date, time, datetime; with p < 6 fractional digits, a cast rounds half away from zero (as DuckDB's TIMESTAMP_S / _MS) | DATE, TIMESTAMP |
 | TIME / TIMESTAMP [(p)] WITH TIME ZONE | an instant with its displacement (aware datetime) | TIMESTAMP WITH TIME ZONE |
-| INTERVAL, INTERVAL <qualifier> (year-month and day-time) | months, days, microseconds (returned as timedelta); a literal or CAST with a qualifier is typed `INTERVAL DAY`, ..., and a single-field one casts to a number | no |
+| INTERVAL, INTERVAL <qualifier> (year-month and day-time) | months, days, microseconds (returned as timedelta); a literal or CAST with a qualifier is typed `INTERVAL DAY`, ..., arithmetic keeps the qualifier, a CAST to another qualifier cuts the fields past its last one, and a single-field interval casts to a number | no |
 | JSON | its text | yes (dictionary) |
 | ARRAY, MULTISET | list (values, not stored) | no |
 | ROW (a INTEGER, b VARCHAR, ...) (T051) | a tuple of the fields' values; returned as a dict when the fields have names, else as a tuple (as DuckDB returns STRUCTs) | yes (dictionary; DuckDB STRUCT columns whose fields are scalars or rows) |
@@ -136,8 +136,9 @@ one table is always evaluated on that table's distinct values (row mask or code 
 
 Row types (T051): `ROW(a, b)` and `(a, b)` build a row value, `CAST(x AS ROW(f INTEGER, g VARCHAR))` gives its fields
 names, `r.f`, `(r).f` and `t.r.f` are field references (on a stored row column too), and rows compare, group, sort and
-take DISTINCT field by field. A comparison of rows is the ISO one: a NULL field makes `=` UNKNOWN, and `r IS NULL` is
-TRUE when every field is NULL. In Python: `F.row(a, b)`, `x.cast("ROW(f INTEGER, g VARCHAR)")`, `x.field("f")`.
+take DISTINCT field by field. A comparison of rows is the ISO one: a NULL field makes `=` UNKNOWN, `BETWEEN` is two row
+comparisons, `r IS NULL` is TRUE when every field is NULL (a field that is a row is NULL only when it is NULL itself),
+COALESCE and NULLIF are their CASE definitions, and a row of NULLs groups with the NULL row. In Python: `F.row(a, b)`, `x.cast("ROW(f INTEGER, g VARCHAR)")`, `x.field("f")`.
 
 ### Predicates
 
@@ -211,7 +212,7 @@ with `== != < <= > >= && || !`, `exists (...)`, `(...) is unknown`, `like_regex 
 `string()`, `time()`, `time_tz()`, `timestamp()`, `timestamp_tz()`.
 
 Others: `CASE` (simple, searched, and extended: `WHEN 1, 2`, `WHEN > 5`, `WHEN IS NULL`, F262 / F263), `NULLIF`,
-`COALESCE`, `CAST`, `TRY_CAST`, row values `ROW (a, b)` and `(a, b)`, `COLLATE` (UNICODE: the Unicode Collation Algorithm with its default table, through the optional pyuca package; UCS_BASIC, BINARY, C, POSIX, NOCASE,
+`COALESCE`, `CAST`, `TRY_CAST`, row values `ROW (a, b)` and `(a, b)`, `COLLATE` (an explicit COLLATE wins over a column's implicit collation, two different explicit ones conflict; UNICODE: the Unicode Collation Algorithm with its default table, through the optional pyuca package; UCS_BASIC, BINARY, C, POSIX, NOCASE,
 NOACCENT, NFC and their combinations: comparisons, ORDER BY, GROUP BY, DISTINCT, set operations, MIN / MAX, windows; in
 a filter the collation key is evaluated on the column's distinct values), `COLLATION FOR (x)`, `CURRENT_USER`, `SESSION_USER`, `SYSTEM_USER`,
 `USER`, `CURRENT_ROLE`, `CURRENT_CATALOG`, `CURRENT_SCHEMA`, `CURRENT_PATH`, `CURRENT_DEFAULT_TRANSFORM_GROUP` (empty: there are no user-defined types), `typeof`.

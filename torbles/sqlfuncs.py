@@ -7,7 +7,7 @@ types and their values. ISO/IEC 9075 functions and the common DuckDB ones (DuckD
 Scalar functions run on group-level values: the distinct values of a dimension's columns, the distinct codes of a
 fact column, or the rows of an aggregated result, never on fact rows one by one (the engine filters and aggregates
 those on the bit planes). A function raising an error yields an Err value that only fails the query if it is used."""
-import calendar, datetime as _dt, math, re, unicodedata
+import calendar, datetime as _dt, decimal, math, re, unicodedata
 from decimal import Decimal, ROUND_HALF_UP, ROUND_FLOOR, ROUND_CEILING, ROUND_DOWN
 from fractions import Fraction
 import sqltypes as T
@@ -191,6 +191,7 @@ def _iv_scale(iv, k):
 
 
 def _add(a, b):
+    if isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat): return _df(lambda x, y: x + y, a, b)
     if isinstance(a, (int, Decimal, float)) and isinstance(b, (int, Decimal, float)) and not isinstance(a, bool):
         return a + b
     if isinstance(a, Interval) and isinstance(b, Interval): return a + b
@@ -211,7 +212,16 @@ def _time_add(t, iv, sign):
     return _dt.time(us // 3_600_000_000, us // 60_000_000 % 60, us // 1_000_000 % 60, us % 1_000_000, tzinfo=t.tzinfo)
 
 
+_NOTRAP = decimal.Context(prec=40, traps=[])
+
+
+def _df(op, a, b):
+    """DECFLOAT arithmetic as IEEE 754 defines it: an invalid operation (Infinity - Infinity, 0 * Infinity) is NaN"""
+    with decimal.localcontext(_NOTRAP): return op(Decimal(a), Decimal(b))
+
+
 def _sub(a, b):
+    if isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat): return _df(lambda x, y: x - y, a, b)
     if isinstance(a, (int, Decimal, float)) and isinstance(b, (int, Decimal, float)): return a - b
     if isinstance(a, Interval) and isinstance(b, Interval): return a - b
     if isinstance(b, Interval) and isinstance(a, (_dt.date, _dt.datetime)): return T.add_interval(a, b, -1)
@@ -229,6 +239,7 @@ def _sub(a, b):
 
 
 def _mul(a, b):
+    if isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat): return _df(lambda x, y: x * y, a, b)
     if isinstance(a, Interval): return _iv_scale(a, b)
     if isinstance(b, Interval): return _iv_scale(b, a)
     return a * b
@@ -237,7 +248,7 @@ def _mul(a, b):
 def _div(a, b):
     if isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat):
         if b == 0: return Err("Division by zero")
-        return CTX.divide(Decimal(a), Decimal(b))
+        return _df(lambda x, y: x / y, a, b)
     if isinstance(a, Interval):
         if b == 0: return Err("Division by zero")
         return _iv_scale(a, 1 / Fraction(str(b)) if isinstance(b, (float, Decimal)) else Fraction(1, b))
@@ -1192,8 +1203,21 @@ def _iso_interval(text, qual):
 
 @scalar("__iso_interval_cast", fixed(T.INTERVAL))
 def _iso_interval_cast(x, qual):
-    """CAST(x AS INTERVAL <qualifier>): a string in that form, or an exact number of the single field"""
-    if isinstance(x, Interval): return x
+    """CAST(x AS INTERVAL <qualifier>): a string in that form, an exact number of the single field, or an interval of
+    the same class with the fields past the qualifier's last one cut off (ISO 6.13)"""
+    if isinstance(x, Interval):
+        fields = [w.split("(")[0] for w in qual.upper().replace(" TO ", " ").split()]
+        lead, trail = fields[0], fields[-1]
+        if lead in ("YEAR", "MONTH"):
+            if x.days or x.micros: return Err(f"CAST of a day-time interval to INTERVAL {qual}: a year-month interval is needed")
+            m = x.months
+            return Interval(int(m / 12) * 12 if trail == "YEAR" else m)
+        if x.months: return Err(f"CAST of a year-month interval to INTERVAL {qual}: a day-time interval is needed")
+        us = x.days * 86_400_000_000 + x.micros
+        unit = {"DAY": 86_400_000_000, "HOUR": 3_600_000_000, "MINUTE": 60_000_000, "SECOND": 1}[trail]
+        us = int(us / unit) * unit if unit > 1 else us                    # toward zero
+        if lead == "DAY": return Interval(0, int(us / 86_400_000_000), us - int(us / 86_400_000_000) * 86_400_000_000)
+        return Interval(0, 0, us)
     if isinstance(x, (int, Decimal, float)) and not isinstance(x, bool):
         q = qual.upper().split()
         if len(q) != 1: return Err(f"CAST of a number to INTERVAL {qual}: a single field is needed")
@@ -1438,7 +1462,7 @@ def _transliterate(x, name):
     return x
 
 
-@scalar("row", lambda a: (T.ROW_T([("", x) for x in a]), None), nulls="custom")
+@scalar("row", lambda a: (T.ROW_T([("", x.t) for x in a]), None), nulls="custom")
 def _row(*xs): return tuple(xs)
 
 
@@ -1834,6 +1858,9 @@ def _count_if(rows, p=()): return sum(w for (v,), w in rows if v)
 @agg("sum fsum sumkahan kahan_sum", _sum_t, moments="sum")
 def _sum(rows, p=()):
     if not rows: return None
+    if any(isinstance(v, T.DecFloat) for (v,), _ in rows):          # DECFLOAT: IEEE sums, rounded to the result type
+        with decimal.localcontext(_NOTRAP): s = sum((Decimal(v) * w for (v,), w in rows), Decimal(0))
+        return T.decfloat(s, _df_p(p))
     if isinstance(rows[0][0][0], Interval):
         out = Interval()
         for (v,), w in rows: out = out + _iv_scale(v, w)
@@ -1876,12 +1903,18 @@ def _avg(rows, p=()):
     n = sum(w for _, w in rows)
     if not n: return None
     if any(isinstance(v, T.DecFloat) for (v,), _ in rows):
-        return T.decfloat(CTX.divide(sum((Decimal(v) * w for (v,), w in rows), Decimal(0)), Decimal(n)))
+        with decimal.localcontext(_NOTRAP): s = sum((Decimal(v) * w for (v,), w in rows), Decimal(0)) / Decimal(n)
+        return T.decfloat(s, _df_p(p))
     if any(isinstance(v, float) for (v,), _ in rows):
         return math.fsum(float(v) * w for (v,), w in rows) / n
     if isinstance(rows[0][0][0], Interval):
         s = _sum(rows); return _iv_scale(s, Fraction(1, n))
     return ffloat(sum(frac(v) * w for (v,), w in rows) / n)
+
+
+def _df_p(p):
+    """the DECFLOAT precision an aggregate rounds to (its result type, passed as a parameter)"""
+    return next((x[1] for x in p if isinstance(x, tuple) and x and x[0] == "decfloat"), 34)
 
 
 def _minmax_t(ts, p=()): return ts[0]

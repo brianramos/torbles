@@ -883,6 +883,8 @@ class _JT:
                 if self.on_error == "ERROR": raise SqlError(f"JSON_TABLE: {ex}")
                 sub = []
             plan = (tree[2], tree[3]) if kind == "pc" else None
+            if plan is None and self.spec.get("plan") is not None and any(c["kind"] == "nested" for c in nl["cols"]):
+                raise SqlError(f"JSON_TABLE PLAN: {tree[1]} has NESTED PATHs, so the plan names them ({tree[1]} OUTER | INNER (...))")
             out = []
             for ordn, s in enumerate(sub, 1): out += self.item_rows(nl["cols"], s, ordn, plan)
             return out

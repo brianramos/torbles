@@ -51,6 +51,8 @@ class E:
     def _f(self, fn, *others, rev=False):
         args = [self.n] + [_node(o) for o in others]
         if rev: args = args[::-1]
+        if fn in ("=", "<>", "<", "<=", ">", ">=", "is_distinct", "is_not_distinct") and any(FR._rowish(a) for a in args):
+            return E(FR.Binder(None).cmp(fn, args[0], args[1]))          # rows compare field by field (ISO 8.2)
         return E(FR.make_func(fn, args))
     def __add__(self, o): return self._f("+", o)
     def __radd__(self, o): return self._f("+", o, rev=True)
@@ -77,7 +79,12 @@ class E:
     def __invert__(self): return E(FR.make_func("not", [self.n]))
     __hash__ = object.__hash__
     def concat(self, o): return self._f("||", o)
-    def between(self, a, b, symmetric=False): return E(FR.make_func("between_sym" if symmetric else "between", [self.n, _node(a), _node(b)]))
+    def between(self, a, b, symmetric=False):
+        x, lo, hi = self.n, _node(a), _node(b)
+        if any(FR._rowish(v) for v in (x, lo, hi)):
+            B = FR.Binder(None); fwd = FR.make_and([B.cmp(">=", x, lo), B.cmp("<=", x, hi)])
+            return E(FR.make_func("or", [fwd, FR.make_and([B.cmp(">=", x, hi), B.cmp("<=", x, lo)])]) if symmetric else fwd)
+        return E(FR.make_func("between_sym" if symmetric else "between", [x, lo, hi]))
     def isin(self, *vals):
         if len(vals) == 1 and isinstance(vals[0], Query):
             q = vals[0]._bind(); t = FR.q_columns(q)[0][1]
@@ -89,8 +96,8 @@ class E:
     def ilike(self, p): return E(FR.make_func("ilike", [self.n, _node(p)]))
     def similar_to(self, p, escape=None): return E(FR.make_func("__iso_similar", [self.n, _node(p)] + ([_node(escape)] if escape else [])))
     def like_regex(self, p, flags=None): return E(FR.make_func("__iso_like_regex", [self.n, _node(p)] + ([_node(flags)] if flags else [])))
-    def is_null(self): return E(FR.make_func("is_null", [self.n]))
-    def is_not_null(self): return E(FR.make_func("is_not_null", [self.n]))
+    def is_null(self): return E(FR._row_null(self.n, "is_null") if FR._rowish(self.n) else FR.make_func("is_null", [self.n]))
+    def is_not_null(self): return E(FR._row_null(self.n, "is_not_null") if FR._rowish(self.n) else FR.make_func("is_not_null", [self.n]))
     def is_distinct_from(self, o): return self._f("is_distinct", o)
     def is_not_distinct_from(self, o): return self._f("is_not_distinct", o)
     def is_true(self): return E(FR.make_func("is_true", [self.n]))
@@ -204,6 +211,8 @@ class _Functions:
             if args[0].upper() not in FR._ROW_MARKERS: raise SqlError(f"ROW_NUMBER({args[0]}): a row marker is one of {sorted(FR._ROW_MARKERS)}")
             return E(I.Func("__nwf_row_number", [], T.BIGINT, extra=(args[0].upper(),)))
         nodes = [_node(a) for a in args]
+        if lname == "typeof" and len(nodes) == 1:            # the declared type, as db.sql() gives it
+            return E(I.Lit(str(nodes[0].t) if nodes[0].t.id != "NULL" else '"NULL"', T.VARCHAR))
         if lname in SF.WINDOW_ONLY or lname in ("row_number", "ntile", "lag", "lead", "first_value", "last_value", "nth_value"):
             if lname in ("rank", "dense_rank", "percent_rank", "cume_dist") and args:
                 return E(_Ordered(lname, [a.v if isinstance(a, I.Lit) else a for a in nodes]))

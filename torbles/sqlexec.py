@@ -78,9 +78,10 @@ class Cx:
 
 # ================================================================== expressions
 def eval_const(e):
-    """the value of a constant expression"""
+    """the value of a constant expression (in the context queries run in: exact decimals to 38 digits and past)"""
+    import decimal
     r = Rel(1)
-    v = ev(e, r, None)[0]
+    with decimal.localcontext(T.CTX): v = ev(e, r, None)[0]
     if isinstance(v, Err): raise SqlError(v.msg)
     return v
 
@@ -175,8 +176,11 @@ def nkey(v):
     if isinstance(v, float):
         if v != v: return ("\0nan",)
         return v + 0.0
+    if isinstance(v, Decimal) and v.is_nan(): return ("\0nan",)       # DECFLOAT NaN: one group, as NaN = NaN
     if isinstance(v, list): return ("\0list",) + tuple(nkey(x) for x in v)
-    if isinstance(v, tuple): return ("\0row",) + tuple(nkey(x) for x in v)
+    if isinstance(v, tuple):                   # a row whose fields are all NULL is not distinct from the NULL row (ISO 8.15)
+        if all(x is None for x in v): return ("\0null",)
+        return ("\0row",) + tuple(nkey(x) for x in v)
     return v
 
 
@@ -873,7 +877,8 @@ def compute_windows(wins, rel, cx):
         okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]
         main = _win_args(w)
         inputs = [ev(a, rel, cx) for a in w.args[len(main):]]          # the columns its row pattern recognition reads
-        if any(_has_nwf(a) for a in main) or (w.filter is not None and _has_nwf(w.filter)): args, filt = None, None
+        if any(_has_nwf(a) for a in main) or (w.filter is not None and _has_nwf(w.filter)) or any(_has_nwf(o[0]) for o in w.agg_order):
+            args, filt = None, None
         else:
             args = [ev(a, rel, cx) for a in main]
             filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
@@ -1152,7 +1157,8 @@ def _fast_window_agg(w, name, idx, args, filt):
 
 def _has_nwf(e):
     if isinstance(e, I.Func) and e.fn in ("__nwf_row_number", "__nwf_value_of"): return True
-    return not isinstance(e, I.Subq) and any(_has_nwf(c) for c in e.children())
+    if isinstance(e, I.Subq): return e.child is not None and _has_nwf(e.child)     # x IN (subquery): its operand
+    return any(_has_nwf(c) for c in e.children())
 
 
 def _marker_row(marker, p, q, frame, m):
@@ -1193,6 +1199,9 @@ def _nested_aggregate(w, idx, frames, res, rel, cx, m):
     main = _win_args(w)
     for a in main: fill(a)
     if w.filter is not None: fill(w.filter)
+    for o in w.agg_order: fill(o[0])
+    okeys = [_ckeys(ev(o[0], prel, cx), o[0].t) for o in w.agg_order]
+    ospecs = [(o[1], o[2]) for o in w.agg_order]
     argv = [ev(a, prel, cx) for a in main]
     fv = ev(w.filter, prel, cx) if w.filter is not None else None
     for col in argv + ([fv] if fv is not None else []):
@@ -1202,11 +1211,12 @@ def _nested_aggregate(w, idx, frames, res, rel, cx, m):
     j = 0
     for p, i in enumerate(idx):
         rows = []
-        for _ in frames[p]:
-            if fv is None or fv[j] is True:
-                vals = tuple(c[j] for c in argv)
+        js = list(range(j, j + len(frames[p]))); j += len(frames[p])
+        if okeys: js = sort_rows(js, okeys, ospecs)              # the aggregate's own ORDER BY, per frame
+        for jj in js:
+            if fv is None or fv[jj] is True:
+                vals = tuple(c[jj] for c in argv)
                 if not (d.skip_nulls and w.name != "count_star" and any(v is None for v in vals)): rows.append((vals, 1))
-            j += 1
         if w.distinct:
             seen, dd = set(), []
             for r in rows:

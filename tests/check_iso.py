@@ -616,5 +616,34 @@ try:
           "Python API: F.expr(<any SQL value expression>, tables)")
 except Exception as x: check(False, "Python API F.expr", f"{type(x).__name__}: {x}")
 
+print("== second review fixes")
+vs_duckdb("SELECT CAST('12345678901234567890123456789012' AS DECIMAL(38,0)) + 1", "constant folding in the 38-digit context")
+D3 = "(VALUES (CAST('NaN' AS DECFLOAT)), (CAST('NaN' AS DECFLOAT)), (CAST(1 AS DECFLOAT))) v(d)"
+expect(f"SELECT count(DISTINCT d), (SELECT count(*) FROM (SELECT d FROM {D3} GROUP BY d) g) FROM {D3}", [(2, 2)], "DECFLOAT NaNs are one group")
+expect("SELECT avg(d), typeof(avg(d)), CAST('1234567890123456789012345678901234' AS DECFLOAT) + 0 FROM (VALUES (CAST(1 AS DECFLOAT(16))), (CAST(1 AS DECFLOAT(16))), (CAST(2 AS DECFLOAT(16)))) v(d)",
+       [(Decimal("1.333333333333333"), "DECFLOAT(16)", Decimal("1234567890123456789012345678901234"))], "DECFLOAT aggregates rounded to their type")
+expect("SELECT CAST('Infinity' AS DECFLOAT) - CAST('Infinity' AS DECFLOAT) = CAST('NaN' AS DECFLOAT), CAST('sNaN' AS DECFLOAT) = CAST('NaN' AS DECFLOAT)",
+       [(True, True)], "DECFLOAT invalid operations give NaN (IEEE 754)")
+expect("SELECT (1, NULL) BETWEEN (1, 5) AND (2, 3), (1, 6) BETWEEN SYMMETRIC (2, 3) AND (1, 5), ROW(1, ROW(2, NULL)) IS NOT NULL, ROW(ROW(NULL, NULL), NULL) IS NULL, "
+       "COALESCE(ROW(1, NULL), ROW(3, 4)), NULLIF(ROW(1, NULL), ROW(1, NULL)), TRY_CAST(ROW(300, 2) AS ROW(a TINYINT, b INT))",
+       [(None, True, True, False, (3, 4), (1, None), {"a": None, "b": 2})], "rows: BETWEEN, IS NULL of nested rows, COALESCE / NULLIF, TRY_CAST")
+expect("SELECT count(*) FROM (SELECT DISTINCT x FROM (SELECT CAST(NULL AS ROW(a INT, b INT)) AS x UNION ALL SELECT CAST(ROW(NULL, NULL) AS ROW(a INT, b INT))) u) d",
+       [(1,)], "a NULL row and a row of NULLs are not distinct (as IS NOT DISTINCT FROM says)")
+vs_duckdb2("SELECT id, SUM(CASE WHEN VALUE_OF(k AT CURRENT_ROW) IN (SELECT 1 UNION SELECT 2) THEN v END) OVER (PARTITION BY k), "
+           "array_agg(VALUE_OF(v AT FRAME_ROW) ORDER BY id DESC) OVER (PARTITION BY k ORDER BY id) FROM t WHERE id < 200 ORDER BY id",
+           "SELECT id, SUM(CASE WHEN k IN (1, 2) THEN v END) OVER (PARTITION BY k), array_agg(v ORDER BY id DESC) OVER (PARTITION BY k ORDER BY id) FROM t WHERE id < 200 ORDER BY id",
+           "nested window functions inside IN (subquery) and ordered window aggregates")
+expect("WITH c AS (SELECT x COLLATE NOCASE AS y FROM t) SELECT count(*) = (SELECT count(*) FROM t WHERE x COLLATE NOACCENT = 'e') FROM c WHERE y = 'e' COLLATE NOACCENT",
+       [(True,)], "an explicit COLLATE overrides a column's implicit collation")
+expect("SELECT typeof(INTERVAL '3' DAY * 2), CAST(-INTERVAL '3' DAY AS INTEGER), CAST(CAST(INTERVAL '36' HOUR AS INTERVAL DAY) AS INTEGER), "
+       "CAST(INTERVAL '1 12:30' DAY TO MINUTE AS INTERVAL HOUR) = INTERVAL '36' HOUR", [("INTERVAL DAY", -3, 1, True)],
+       "interval qualifiers through arithmetic and casts between qualifiers")
+refuses("SELECT CAST(INTERVAL '30' DAY AS INTERVAL MONTH)", ["year-month"], "a day-time interval does not cast to a year-month one")
+tt2 = db.table("t")
+try:
+    q = db.select(tt2.id, (F.row(tt2.k, tt2.v) == F.row(1, 5)).alias("e"), F.typeof(F.row(tt2.k, tt2.v)).alias("ty")).where(tt2.id < 20).order_by(tt2.id)
+    check(q.run(ENGINE).rows == db.sql(q.to_sql()).rows, "Python API: rows compare field by field, typeof(F.row(...))")
+except Exception as x: check(False, "Python API rows", f"{type(x).__name__}: {x}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

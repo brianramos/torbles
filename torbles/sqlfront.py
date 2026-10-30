@@ -1295,11 +1295,10 @@ _COLL_KEEP = {"lower", "lcase", "upper", "ucase", "reverse", "initcap", "||", "c
 
 
 def _collated_args(name, args):
-    """comparisons of strings under an explicit collation (ISO 9.15): every string argument compared by its key"""
-    colls = {a.t.coll for a in args if getattr(a.t, "coll", None)}
-    if not colls: return args
-    if len(colls) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(colls))}")
-    c = colls.pop()
+    """comparisons of strings under a collation (ISO 9.13, 9.15): every string argument compared by its key"""
+    if not any(getattr(a.t, "coll", None) for a in args): return args
+    c, _ = T.coll_merge([a.t for a in args])
+    if c is None: return args
     if T.collation(c) is None: return [I.Lit(a.v, T.VARCHAR, getattr(a, "strlit", False)) if isinstance(a, I.Lit) else a for a in args]
     out = []
     for a in args:
@@ -1327,6 +1326,12 @@ def make_func(name, args, extra=None):
         return eq if name in ("=", "is_not_distinct") else make_func("not", [eq])
     if name in ("<", "<=", ">", ">=") and any(a.t.id == "MULTISET" for a in args):
         raise SqlError("multisets compare only for equality")
+    if name in ("coalesce", "nullif") and any(_rowish(a) for a in args):     # rows: the CASE expressions of ISO 6.12
+        t = T.supertype_all([a.t for a in args])
+        if name == "nullif":
+            return I.Case([(Binder(None).cmp("=", args[0], args[1]), I.Lit(None, t))], cast_to(args[0], t), t)
+        return I.Case([(_row_null(a, "is_not_null") if _rowish(a) else make_func("is_not_null", [a]), cast_to(a, t)) for a in args[:-1]],
+                      cast_to(args[-1], t), t)
     if name == "nullif" and any(getattr(a.t, "coll", None) for a in args):       # NULLIF compares under the collation
         rt, _ = s.typer(args)
         return I.Case([(make_func("=", list(args)), I.Lit(None, rt))], cast_to(args[0], rt), rt)
@@ -1337,10 +1342,12 @@ def make_func(name, args, extra=None):
         rt = T.SqlType("INTERVAL", s=args[1].v)                 # INTERVAL DAY, INTERVAL YEAR TO MONTH, ...
     if name == "__iso_dt_diff" and isinstance(args[2], I.Lit) and isinstance(args[2].v, str):
         rt = T.SqlType("INTERVAL", s=args[2].v)
-    if name in _COLL_KEEP and rt.id == "VARCHAR":
-        cs = {a.t.coll for a in args if getattr(a.t, "coll", None)}
-        if len(cs) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(cs))}")
-        if cs: rt = T.SqlType("VARCHAR", coll=cs.pop())
+    if rt.id == "INTERVAL" and rt.s is None and name in ("*", "/", "neg", "abs", "+", "-"):
+        qs = {a.t.s for a in args if a.t.id == "INTERVAL"}               # INTERVAL '3' DAY * 2: still an INTERVAL DAY (ISO 6.33)
+        if len(qs) == 1 and None not in qs: rt = T.SqlType("INTERVAL", s=qs.pop())
+    if name in _COLL_KEEP and rt.id == "VARCHAR" and any(getattr(a.t, "coll", None) for a in args):
+        c, impl = T.coll_merge([a.t for a in args])
+        if c: rt = T.SqlType("VARCHAR", p=rt.p, coll=c, cimpl=impl)
     f = I.Func(name, args, rt, extra)
     if rt.id == "DECFLOAT" and name in ("+", "-", "*", "/", "%", "neg", "abs", "//"):     # rounded to DECFLOAT(p)
         f = I.Func("__decfloat", [f, I.Lit(rt.p, T.INTEGER)], rt)
@@ -1414,17 +1421,22 @@ def _shown(b, c):
     return d.get(c, c) if d else c
 
 
+def _implicit(t):
+    """a column's type: its collation, if any, has implicit derivation (ISO 4.2.2): an explicit COLLATE overrides it"""
+    return T.with_coll(t, t.coll, True) if getattr(t, "coll", None) and not t.cimpl else t
+
+
 def _find_col(b, name):
     if getattr(b, "display", None):
         for c, t, nl in b.cols:
-            if _shown(b, c) == name: return I.Col(b, c, t, nl)
+            if _shown(b, c) == name: return I.Col(b, c, _implicit(t), nl)
         for c, t, nl in b.cols:
-            if _shown(b, c).lower() == name.lower(): return I.Col(b, c, t, nl)
+            if _shown(b, c).lower() == name.lower(): return I.Col(b, c, _implicit(t), nl)
         return None
     for c, t, nl in b.cols:
-        if c == name: return I.Col(b, c, t, nl)
+        if c == name: return I.Col(b, c, _implicit(t), nl)
     for c, t, nl in b.cols:
-        if c.lower() == name.lower(): return I.Col(b, c, t, nl)
+        if c.lower() == name.lower(): return I.Col(b, c, _implicit(t), nl)
     return None
 
 
@@ -1998,9 +2010,12 @@ class Binder:
         if c == "OPERATOR": return self.operator(e, sc, ctx)
         if c == "BETWEEN":
             x = self.expr(e["input"], sc, ctx); lo = e["lower"]
-            if lo["class"] == "FUNCTION" and lo["function_name"] == "__iso_sym":
-                return self.func("between_sym", [x, self.expr(lo["arguments"][0]["expression"], sc, ctx), self.expr(e["upper"], sc, ctx)])
-            return self.func("between", [x, self.expr(lo, sc, ctx), self.expr(e["upper"], sc, ctx)])
+            sym = lo["class"] == "FUNCTION" and lo["function_name"] == "__iso_sym"
+            a = self.expr(lo["arguments"][0]["expression"] if sym else lo, sc, ctx); b = self.expr(e["upper"], sc, ctx)
+            if _rowish(x) or _rowish(a) or _rowish(b):          # rows: X >= Y AND X <= Z (ISO 8.3), in row comparisons
+                fwd = make_and([self.row_cmp(">=", x, a), self.row_cmp("<=", x, b)])
+                return make_func("or", [fwd, make_and([self.row_cmp(">=", x, b), self.row_cmp("<=", x, a)])]) if sym else fwd
+            return self.func("between_sym" if sym else "between", [x, a, b])
         if c == "CASE":
             whens = [(self.boolean(self.expr(k["when_expr"], sc, ctx), "WHEN"), self.expr(k["then_expr"], sc, ctx)) for k in e["case_checks"]]
             el = self.expr(e["else_expr"], sc, ctx) if e.get("else_expr") is not None else None
@@ -2343,6 +2358,7 @@ class Binder:
         if ctx.in_agg: raise SqlError("aggregate function calls cannot be nested")
         name = _AGG_ALIAS.get(name, name)
         ictx = Ctx(where="an aggregate"); ictx.in_agg = True; ictx.agg = False
+        ictx.nested = ctx.nested                         # over a window: nested window functions (T619) allowed
         ictx2 = Ctx(agg=False, where="an aggregate"); ictx2.in_agg = True
         raw = e.get("arguments") or []
         args = [self.expr(a["expression"] if "expression" in a else a, sc, ictx) for a in raw]
@@ -2383,6 +2399,8 @@ class Binder:
             params = tuple(_const(a, name[7:]) for a in args)
             if len(params) != len(orders): raise SqlError("hypothetical set function: one argument per ORDER BY column")
             args = [o[0] for o in orders]
+        if name in ("sum", "avg") and len(args) == 1 and args[0].t.id == "DECFLOAT":
+            params = (("decfloat", args[0].t.p),)                 # rounded to DECFLOAT(p), the result type
         if name in ("min", "max") and len(args) == 1 and T.coll_key(args[0].t) is not None:
             # MIN / MAX under a collation: the value of least / greatest key
             args = [args[0], self.func("__ckey", [args[0], I.Lit(args[0].t.coll, T.VARCHAR)])]
@@ -2448,7 +2466,8 @@ class Binder:
             fname = {"percentile_cont": "quantile_cont", "percentile_disc": "quantile_disc"}.get(name, name)
             fnode = {"class": "FUNCTION", "function_name": fname, "arguments": e.get("arguments") or [],
                      "order_bys": {"orders": e["arg_orders"]}, "distinct": e.get("distinct"), "filter": None}
-            a = self.aggregate(fname, fnode, sc, Ctx(agg=True, where="a window"))
+            actx = Ctx(agg=True, where="a window"); actx.nested = True
+            a = self.aggregate(fname, fnode, sc, actx)
             return I.Win(a.name, a.args, a.t, part, order, frame, excl, ign, filt, False, a.distinct, a.params, agg_order=a.order)
         if (kind is None or e["type"] == "WINDOW_AGGREGATE") and not from_last:
             aname = _AGG_ALIAS.get(name, name)
@@ -2462,6 +2481,7 @@ class Binder:
                 o = json.loads(_const(args[nv], aname)); o["vtypes"] = [str(args[nv - 1].t)]
                 params = (json.dumps(o),); args = args[:nv]
             if aname == "count" and not args: aname = "count_star"
+            if aname in ("sum", "avg") and len(args) == 1 and args[0].t.id == "DECFLOAT": params = (("decfloat", args[0].t.p),)
             if aname in ("min", "max") and len(args) == 1 and T.coll_key(args[0].t) is not None:
                 args = [args[0], self.func("__ckey", [args[0], I.Lit(args[0].t.coll, T.VARCHAR)])]     # the value of least / greatest key
                 aname = "arg_min" if aname == "min" else "arg_max"
@@ -2739,8 +2759,13 @@ def field_ref(x, name):
 
 
 def _row_null(x, fn):
-    """x IS [NOT] NULL on a row value: every field (ISO 8.8; a field that is a row: its fields)"""
-    return make_and([_row_null(p, fn) if _rowish(p) else make_func(fn, [p]) for p in _row_parts(x)])
+    """x IS [NOT] NULL on a row value: every field is (not) the null value (ISO 8.8); a field that is a row value is
+    the null value only when it is NULL itself, so ROW(1, ROW(2, NULL)) IS NOT NULL"""
+    out = []
+    for p in _row_parts(x):
+        if _is_row(p): out.append(I.Lit(fn == "is_not_null", T.BOOLEAN))      # a row value constructor is never NULL
+        else: out.append(make_func(fn, [p]))
+    return make_and(out)
 
 
 def _is_plain_col(x, n): return isinstance(x, I.Col) and x.name.lower() == n.lower()

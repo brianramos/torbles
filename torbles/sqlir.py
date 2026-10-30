@@ -28,11 +28,15 @@ class Lit(Node):
     def _key(self): return ("lit", type(self.v).__name__, _vkey(self.v), str(self.t))
 
 
+from decimal import Decimal
+
+
 def _vkey(v):
     """a hashable key of a value (arrays and rows nest; 1, 1.0 and TRUE stay apart; NaN equals NaN)"""
     if isinstance(v, list): return ("\0list",) + tuple(_vkey(x) for x in v)
     if isinstance(v, tuple): return ("\0row",) + tuple(_vkey(x) for x in v)
     if isinstance(v, float) and v != v: return ("\0nan",)
+    if isinstance(v, Decimal) and v.is_nan(): return ("\0nan",)
     if isinstance(v, dict): return ("\0dict",) + tuple(sorted((str(k), _vkey(x)) for k, x in v.items()))
     return (type(v).__name__, v)
 

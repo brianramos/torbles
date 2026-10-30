@@ -21,10 +21,11 @@ class SqlError(Exception):
 
 class SqlType:
     """a data type; coll: the explicit collation of a character string (COLLATE), not part of the type's identity"""
-    __slots__ = ("id", "p", "s", "child", "coll")
+    __slots__ = ("id", "p", "s", "child", "coll", "cimpl")
 
-    def __init__(self, id, p=None, s=None, child=None, coll=None):
+    def __init__(self, id, p=None, s=None, child=None, coll=None, cimpl=False):
         self.id, self.p, self.s, self.child, self.coll = id, p, s, child, coll
+        self.cimpl = cimpl          # the collation's derivation is implicit (a column), not explicit (COLLATE) (ISO 4.2.2)
 
     def __eq__(self, o): return isinstance(o, SqlType) and (self.id, self.p, self.s, self.child) == (o.id, o.p, o.s, o.child)
     def __hash__(self): return hash((self.id, self.p, self.s, self.child))
@@ -76,7 +77,10 @@ FLOAT, DOUBLE, VARCHAR, DATE, TIME, TIMESTAMP, INTERVAL, NULL, BLOB = (SqlType(x
 TIMESTAMPTZ, TIMETZ = SqlType("TIMESTAMPTZ"), SqlType("TIMETZ")
 JSON = SqlType("JSON")
 def DECIMAL(p=18, s=3): return SqlType("DECIMAL", min(int(p), 38), int(s))
-def DECFLOAT(p=34): return SqlType("DECFLOAT", 16 if int(p) <= 16 else 34)
+def DECFLOAT(p=34):
+    """DECFLOAT(p): IEEE 754 decimal64 for p <= 16, decimal128 up to 34 (ISO: at least p digits)"""
+    if not 1 <= int(p) <= 34: raise SqlError(f"DECFLOAT({p}): the precision is 1 to 34")
+    return SqlType("DECFLOAT", 16 if int(p) <= 16 else 34)
 
 
 class DecFloat(Decimal):
@@ -279,8 +283,19 @@ def coll_key(t):
     return collation(c) if c else None
 
 
-def with_coll(t, name):
-    return SqlType(t.id, t.p, t.s, t.child, name.upper())
+def with_coll(t, name, implicit=False):
+    return SqlType(t.id, t.p, t.s, t.child, name.upper() if name else None, implicit)
+
+
+def coll_merge(types):
+    """the collation of an expression over operands of these types (ISO 9.13): an explicit one wins, two different
+    explicit ones conflict, two different implicit ones leave none -> (name or None, implicit)"""
+    ex = {t.coll for t in types if getattr(t, "coll", None) and not t.cimpl}
+    im = {t.coll for t in types if getattr(t, "coll", None) and t.cimpl}
+    if len(ex) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(ex))}")
+    if ex: return ex.pop(), False
+    if len(im) == 1: return im.pop(), True
+    return None, False
 
 
 # ------------------------------------------------------------------ intervals
@@ -352,9 +367,9 @@ def supertype(a, b, literal_a=False, literal_b=False):
     """the type both a and b convert to implicitly (CASE branches, COALESCE, comparisons, set operations); a string
     literal takes the other side's type"""
     if a == b:
-        if a.id == "VARCHAR" and a.coll != b.coll:        # an explicit collation wins (ISO 9.5); two differ: a conflict
-            if a.coll and b.coll: raise SqlError(f"collation conflict: {a.coll} and {b.coll}")
-            return a if a.coll else b
+        if a.id == "VARCHAR" and (a.coll, a.cimpl) != (b.coll, b.cimpl):     # ISO 9.5: the collation by 9.13
+            c, impl = coll_merge([a, b])
+            return with_coll(a, c, impl)
         return a
     if a.id == "NULL": return b
     if b.id == "NULL": return a
@@ -375,8 +390,8 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if {a.id, b.id} in ({"DATE", "TIMESTAMPTZ"}, {"TIMESTAMP", "TIMESTAMPTZ"}): return TIMESTAMPTZ
     if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
     if a.id == "VARCHAR" or b.id == "VARCHAR":
-        c = (a.coll if a.id == "VARCHAR" else None) or (b.coll if b.id == "VARCHAR" else None)
-        return SqlType("VARCHAR", coll=c) if c else VARCHAR
+        c, impl = coll_merge([x for x in (a, b) if x.id == "VARCHAR"])
+        return SqlType("VARCHAR", coll=c, cimpl=impl) if c else VARCHAR
     if {a.id, b.id} == {"JSON", "VARCHAR"}: return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
     if a.id == "MULTISET" and b.id == "MULTISET": return MULTISET(supertype(a.child, b.child))
@@ -688,7 +703,8 @@ def _cast(v, src, dst, err):
         if dst.child is None: return tuple(v)
         if len(v) != len(dst.child): raise SqlError(f"Conversion Error: cannot cast a row of degree {len(v)} to {dst}")
         st = src.child if src is not None and src.id == "ROW" and src.child is not None else [("", None)] * len(v)
-        return tuple(None if x is None else _cast(x, s_, t_, err) for x, (_, s_), (_, t_) in zip(v, st, dst.child))
+        if err: return tuple(None if x is None else _cast(x, s_, t_, err) for x, (_, s_), (_, t_) in zip(v, st, dst.child))
+        return tuple(None if x is None else cast_value(x, s_, t_, False) for x, (_, s_), (_, t_) in zip(v, st, dst.child))   # TRY_CAST: field by field
     if d == "VARCHAR":
         r = to_text(v, src)                            # to VARCHAR(n): the first n characters (ISO 6.13; a warning, not an error)
         return r[:dst.p] if dst.p is not None and r is not None and len(r) > dst.p else r
@@ -724,7 +740,8 @@ def _cast(v, src, dst, err):
         if isinstance(v, (int, Decimal, float)): return decfloat(v, dst.p)
         if isinstance(v, str):
             t = v.strip()
-            if re.fullmatch(r"[+-]?(inf|infinity|nan|snan)", t, re.I): return DecFloat(t.replace("inf", "Infinity").replace("INF", "Infinity") if t.lower() in ("inf", "+inf", "-inf") else t)
+            if re.fullmatch(r"[+-]?s?nan", t, re.I): return DecFloat("NaN")               # a signaling NaN is read as NaN
+            if re.fullmatch(r"[+-]?(inf|infinity)", t, re.I): return DecFloat("-Infinity" if t.startswith("-") else "Infinity")
             try: return decfloat(Decimal(t), dst.p)
             except decimal.InvalidOperation: raise SqlError(f"Conversion Error: could not convert string '{v}' to {dst}")
         raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
