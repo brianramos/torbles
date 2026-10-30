@@ -48,15 +48,73 @@ class Relation:
         return self.rows[0][0] if self.rows else None
 
 
+class ColArr:
+    """a column as the engine holds it: codes (an integer array whose order and equality are the values'), a validity
+    mask (None: no NULL), and the codec that decodes codes into values (None: the codes are the values)"""
+    __slots__ = ("codes", "valid", "codec")
+    def __init__(self, codes, valid=None, codec=None):
+        c = np.asarray(codes)
+        if c.dtype != np.int64 and c.dtype != object:      # one dtype for every column: int64, or Python ints past 2^63
+            c = c.astype(np.int64) if c.dtype != np.uint64 or not len(c) or int(c.max()) < 1 << 63 else c.astype(object)
+        self.codes, self.valid, self.codec = c, (None if valid is None else np.asarray(valid, bool)), codec
+    def __len__(self): return len(self.codes)
+    def decode(self):
+        c = self.codes
+        vals = self.codec.decode(c) if self.codec is not None else c.tolist()
+        if self.valid is not None and not self.valid.all():
+            vals = [v if ok else None for v, ok in zip(vals, self.valid.tolist())]
+        return vals
+    def take(self, idx):
+        idx = np.asarray(idx, np.int64)
+        return ColArr(self.codes[idx], None if self.valid is None else self.valid[idx], self.codec)
+
+
+class Cols(dict):
+    """a block's columns {expression key: [value per row]}; a column kept as engine codes (arr) is decoded when it is
+    first read as values"""
+    __slots__ = ("arr",)
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k); self.arr = {}
+    def __missing__(self, k):
+        a = self.arr.get(k)
+        if a is None: raise KeyError(k)
+        v = a.decode(); dict.__setitem__(self, k, v)
+        return v
+    def __contains__(self, k): return dict.__contains__(self, k) or k in self.arr
+    def get(self, k, default=None):
+        if dict.__contains__(self, k): return dict.__getitem__(self, k)
+        if k in self.arr: return self[k]
+        return default
+    def __setitem__(self, k, v):
+        self.arr.pop(k, None); dict.__setitem__(self, k, v)
+    def keys(self): return list(dict.keys(self)) + [k for k in self.arr if not dict.__contains__(self, k)]
+    def __iter__(self): return iter(self.keys())
+    def __len__(self): return len(self.keys())
+    def items(self): return [(k, self[k]) for k in self.keys()]
+    def values(self): return [self[k] for k in self.keys()]
+    def array(self, k):
+        """the column as codes (ColArr), or None when it only exists as values"""
+        return self.arr.get(k)
+    def put(self, k, a):
+        dict.pop(self, k, None); self.arr[k] = a
+    def take(self, idx):
+        out = Cols()
+        for k, a in self.arr.items(): out.arr[k] = a.take(idx)
+        for k, v in dict.items(self):
+            if k not in self.arr: dict.__setitem__(out, k, [v[i] for i in idx])
+        return out
+
+
 class Rel:
-    """rows of a block while it is evaluated: cols {expression key: [value per row]}, cnt [rows each row stands for],
-    mom {(variant, moment): [sum per row]}, vcnt {variant: [count per row]}"""
+    """rows of a block while it is evaluated: cols {expression key: [value per row]} (Cols: engine columns stay codes
+    until read as values), cnt [rows each row stands for], mom {(variant, moment): [sum per row]}, vcnt {variant: [count
+    per row]}"""
     __slots__ = ("n", "cols", "cnt", "mom", "vcnt")
     def __init__(self, n):
-        self.n, self.cols, self.cnt, self.mom, self.vcnt = n, {}, [1] * n, {}, {}
+        self.n, self.cols, self.cnt, self.mom, self.vcnt = n, Cols(), [1] * n, {}, {}
     def take(self, idx):
         r = Rel(len(idx))
-        r.cols = {k: [v[i] for i in idx] for k, v in self.cols.items()}
+        r.cols = self.cols.take(idx)
         r.cnt = [self.cnt[i] for i in idx]
         r.mom = {k: [v[i] for i in idx] for k, v in self.mom.items()}
         r.vcnt = {k: [v[i] for i in idx] for k, v in self.vcnt.items()}
@@ -158,6 +216,7 @@ def ev(e, rel, cx):
 
 # ------------------------------------------------------------------ scalar operators as arrays
 VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
+COLUMNAR = True             # the engine's GROUP BY results and row bitmaps stay codes (ColArr) until read as values
 ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
 _NoneT = type(None)
 _VEC_FNS = {"+", "-", "*", "/", "%", "mod", "//", "divide", "neg", "=", "<>", "<", "<=", ">", ">=", "and", "or", "not", "is_null", "is_not_null"}
@@ -813,22 +872,24 @@ def finish_select(s, rel, aggs, wins, aggplan, cx):
 
 def aggregate(s, rel, aggs, aggplan, cx):
     """GROUP BY (with grouping sets) and every aggregate, from the rows of rel (each standing for cnt rows)"""
-    gvals = [ev(g, rel, cx) for g in s.group]
+    vec = VEC_GROUPS and rel.n > 32
+    garr = [rel.cols.array(g.key()) if COLUMNAR and vec and T.coll_key(g.t) is None else None for g in s.group]
+    gvals = [None if a is not None else ev(g, rel, cx) for g, a in zip(s.group, garr)]      # engine columns stay codes
     for col in gvals:
-        for v in col:
+        for v in col or ():
             if isinstance(v, Err): raise SqlError(v.msg)
     sets = s.sets if s.sets is not None else [list(range(len(s.group)))]
-    gkeys = [_ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
-    collated = [gk is not gv for gk, gv in zip(gkeys, gvals)]
+    gkeys = [None if v is None else _ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
+    collated = [gv is not None and gk is not gv for gk, gv in zip(gkeys, gvals)]
     out_groups = []                                  # (set index, key values tuple, member row indexes)
     codes = {}
     for si, st in enumerate(sets):
         if not st:                                   # GROUP BY () or no GROUP BY: one group, even with no rows
             out_groups.append((si, (), np.arange(rel.n))); continue
-        if VEC_GROUPS and rel.n > 32:                # the groups as codes: one stable sort, members are runs
+        if vec:                                      # the groups as codes: one stable sort, members are runs
             import sqlwin
             for j in st:
-                if j not in codes: codes[j] = sqlwin.group_codes(gkeys[j])
+                if j not in codes: codes[j] = sqlwin.code_groups(garr[j]) if garr[j] is not None else sqlwin.group_codes(gkeys[j])
             comb = sqlwin._combine([codes[j] for j in st])
             _, first, inv = np.unique(comb, return_index=True, return_inverse=True)
             rank = np.empty(len(first), np.int64); rank[np.argsort(first, kind="stable")] = np.arange(len(first))
@@ -836,7 +897,7 @@ def aggregate(s, rel, aggs, aggplan, cx):
             perm = np.argsort(gid, kind="stable")
             bounds = np.concatenate(([0], np.cumsum(np.bincount(gid, minlength=len(first)))))
             heads = perm[bounds[:-1]].tolist()                  # each group's first row
-            reps = {j: [gvals[j][i] for i in heads] for j in st}
+            reps = {j: (garr[j].take(heads).decode() if garr[j] is not None else [gvals[j][i] for i in heads]) for j in st}
             for j in st:
                 if collated[j]:                                 # the least of the group's values (the first of equals)
                     col = sqlwin.obj(gvals[j])[perm]
@@ -890,6 +951,7 @@ def aggregate(s, rel, aggs, aggplan, cx):
         flat = [m for _, _, m in out_groups]
         members.flat = (np.concatenate([np.asarray(m, np.int64) for m in flat]) if flat else np.zeros(0, np.int64),
                         np.cumsum(sizes) - sizes, np.cumsum(sizes))
+        members.w = _counts(rel.cnt)
     for k, a in aggs.items():
         out.cols[k] = agg_values(a, rel, members, aggplan.get(k), cx)
     if s.having is not None:
@@ -909,8 +971,17 @@ VEC_GROUPS = True           # GROUP BY and the value aggregates as array algebra
 
 
 class _Members(list):
-    """the rows of each output group (lists), with .flat = (all rows group after group, run starts, run ends)"""
-    flat = None
+    """the rows of each output group (lists), with .flat = (all rows group after group, run starts, run ends) and .w the
+    rows' counts as an array"""
+    flat = None; w = None
+
+
+def _counts(cnt):
+    """row counts as an int64 array (object past 2^62)"""
+    try:
+        a = np.asarray(cnt, np.int64)
+        return a if not len(a) or int(a.max()) < 1 << 62 else np.asarray(cnt, object)
+    except OverflowError: return np.asarray(cnt, object)
 
 
 def _agg_arrays(a, rel, members, args, filt, d):
@@ -925,17 +996,23 @@ def _agg_arrays(a, rel, members, args, filt, d):
         ends = np.cumsum(sizes); starts = ends - sizes
     sizes = ends - starts
     n = len(rows)
-    w = np.array(rel.cnt, dtype=object if any(c >= 1 << 62 for c in rel.cnt) else np.int64)[rows] if n else np.zeros(0, np.int64)
-    cols = [sqlwin.obj(c)[rows] for c in args]
+    wall = getattr(members, "w", None)
+    if wall is None: wall = _counts(rel.cnt)
+    w = wall[rows] if n else np.zeros(0, np.int64)
+    cols = [c.take(rows) if isinstance(c, ColArr) else sqlwin.obj(c)[rows] for c in args]
     valid = (w != 0) if n else np.zeros(0, bool)
     if filt is not None:
         fm = np.zeros(rel.n, bool); fm[filt] = True; valid &= fm[rows]
     if a.distinct:                                   # one row per distinct value (tuple) in each group, weight 1
         if d.skip_nulls and a.name != "count_star":
-            for c in cols: valid &= sqlwin.notnull(c)
+            for c in cols: valid &= sqlwin.nn_mask(c)
         akf = [T.coll_key(x.t) for x in a.args]
-        keyed = [c.tolist() if f is None else [f(v) if isinstance(v, str) else v for v in c.tolist()] for c, f in zip(cols, akf)]
-        vc = sqlwin._combine([sqlwin.group_codes(k) for k in keyed]) if keyed else np.zeros(n, np.int64)
+        gc = []
+        for c, f in zip(cols, akf):
+            if isinstance(c, ColArr) and f is None: gc.append(sqlwin.code_groups(c)); continue
+            v = sqlwin.values_of(c).tolist()
+            gc.append(sqlwin.group_codes(v if f is None else [f(x) if isinstance(x, str) else x for x in v]))
+        vc = sqlwin._combine(gc) if gc else np.zeros(n, np.int64)
         grp = np.repeat(np.arange(len(members)), sizes)
         o = np.lexsort((np.arange(n), vc, grp, ~valid))
         firsts = np.zeros(n, bool)
@@ -977,16 +1054,22 @@ def agg_values(a, rel, members, plan, cx):
             out.append(_moment_final(a.name, n, sums))
         return out
     d = F.AGGS[a.name]
-    args = [ev(x, rel, cx) for x in a.args]
     filt = truth(ev(a.filter, rel, cx)) if a.filter is not None else None
     fset = set(filt) if filt is not None else None
+    if VEC_GROUPS:                                   # engine columns as codes, others as values
+        src = [(rel.cols.array(x.key()) if COLUMNAR else None) for x in a.args]
+        src = [c if c is not None else ev(x, rel, cx) for c, x in zip(src, a.args)]
+        for col in src:
+            if not isinstance(col, ColArr):
+                for v in col:
+                    if isinstance(v, Err): raise SqlError(v.msg)
+        got = _agg_arrays(a, rel, members, src, filt, d)
+        if got is not None: return got
+    args = [ev(x, rel, cx) for x in a.args]
     okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in a.order]
     for col in args + okeys:
         for v in col:
             if isinstance(v, Err): raise SqlError(v.msg)
-    if VEC_GROUPS:
-        got = _agg_arrays(a, rel, members, args, filt, d)
-        if got is not None: return got
     out = []
     for mem in members:
         rows = []
@@ -1092,18 +1175,26 @@ def compute_windows(wins, rel, cx):
     layouts = {}                                           # windows with the same PARTITION BY / ORDER BY share one ordering
     for w in wins:
         if w.key() in rel.cols: continue
-        parts = [_ckeys(ev(p, rel, cx), p.t) for p in w.partition]
-        okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]
+        def codes_or(e, keyed=True):
+            """an engine column as its codes (ordered like its values, no collation), else its values (collation keys)"""
+            a = rel.cols.array(e.key()) if COLUMNAR and VEC_WINDOWS else None
+            if a is not None and (not keyed or T.coll_key(e.t) is None): return a
+            v = ev(e, rel, cx)
+            return _ckeys(v, e.t) if keyed else v
+        parts = [codes_or(p) for p in w.partition]
+        okeys = [codes_or(o[0]) for o in w.order]
         main = _win_args(w)
         inputs = [ev(a, rel, cx) for a in w.args[len(main):]]          # the columns its row pattern recognition reads
         if any(_has_nwf(a) for a in main) or (w.filter is not None and _has_nwf(w.filter)) or any(_has_nwf(o[0]) for o in w.agg_order):
             args, filt = None, None
         else:
-            args = [ev(a, rel, cx) for a in main]
+            args = [codes_or(a, False) for a in main]
             filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
         for col in parts + okeys + (args or []) + inputs:
+            if isinstance(col, ColArr): continue
             for v in col:
                 if isinstance(v, Err): raise SqlError(v.msg)
+        okv = lambda: [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]       # the ORDER BY values (row by row)
         specs = [(o[1], o[2]) for o in w.order]
         lk = (tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order))
         L = layouts.get(lk)
@@ -1130,15 +1221,18 @@ def compute_windows(wins, rel, cx):
                 if not I.cols_of(bd[1]) and not I.has(bd[1], I.Subq) and not I.has(bd[1], I.Outer):
                     vb[side] = sqlwin.Const(bound_vals[side][0])          # a constant offset
                 else: vb[side] = bound_vals[side]
+            ranged = w.frame is not None and w.frame[0] == "range" and any(bd[1] is not None for bd in w.frame[1:])
             try:
-                out = sqlwin.evaluate(w, L, args, fm, vb, okeys[0] if len(okeys) == 1 else None,
+                out = sqlwin.evaluate(w, L, args, fm, vb, okv()[0] if len(okeys) == 1 and ranged else None,
                                       bool(specs and specs[0][0]))
                 full = np.empty(n, object); full[L.perm] = out
                 res = full.tolist()
             except sqlwin.NoVec:
                 res = None
-        if res is None:
+        if res is None:                                    # row by row on each partition: values
             res = [None] * n
+            okeys = okv()
+            if args is not None: args = [ev(a, rel, cx) for a in main]
             for idx, peers in L.partitions():
                 _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr, aorder, peers, bound_vals)
         if rpr is not None and rpr[2]: rel.cols[mkey] = rpr[1]
@@ -2058,17 +2152,48 @@ class _Planner:
         if isinstance(at_null, Err): at_null = None
         if mx < 0 or t.n == 0:                         # no values stored: only NULLs (or no rows)
             return [algq.Not(v)] if (at_null is True and v is not None) else [algq.Cmp(c, "LT", 0)]
-        if mx >= 1 << 22: return None
-        codes = np.arange(mx + 1, dtype=np.int64)
-        vals = cd.decode(codes) if cd is not None else codes.tolist()
-        r = Rel(len(vals))
-        for x in I.cols_of(e): r.cols[x.key()] = vals
-        res = ev(e, r, self.cx)
-        for x in res:
-            if isinstance(x, Err): raise SqlError(x.msg)
-        ok = np.array([x is True for x in res], bool)
-        edges = np.diff(np.concatenate([[0], ok.astype(np.int8), [0]]))
-        starts, ends = np.nonzero(edges == 1)[0], np.nonzero(edges == -1)[0] - 1
+        def present():
+            """the codes the column stores (cached): the values the predicate is ever applied to"""
+            pc = t.__dict__.setdefault("_present_codes", {})
+            if name not in pc:
+                cs_ = np.asarray(t.decoded(name), np.int64)
+                vc_ = getattr(t, "nullable", {}).get(name)            # NULL rows store code 0: not a value
+                if vc_ is not None: cs_ = cs_[np.asarray(t.decoded(vc_)) != 0]
+                pc[name] = np.unique(cs_)
+            return pc[name]
+        def run(codes):
+            vals = cd.decode(codes) if cd is not None else codes.tolist()
+            r = Rel(len(vals))
+            for x in I.cols_of(e): r.cols[x.key()] = vals
+            return ev(e, r, self.cx)
+        if mx + 1 > 4 * t.n + 1024:
+            # a code domain much wider than the rows (a timestamp range, a sparse key): the codes present, each
+            # run of them that passes an interval up to the next present code
+            pcs = present()
+            res = run(pcs)
+            for x in res:
+                if isinstance(x, Err): raise SqlError(x.msg)
+            okp = np.array([x is True for x in res], bool)
+            chg = np.flatnonzero(np.diff(okp.astype(np.int8)) != 0) + 1
+            bounds = np.concatenate(([0], chg, [len(pcs)]))
+            lo_c = np.where(bounds[:-1] == 0, 0, pcs[np.minimum(bounds[:-1], len(pcs) - 1)])
+            hi_c = np.where(bounds[1:] == len(pcs), mx, pcs[np.minimum(bounds[1:], len(pcs) - 1)] - 1)
+            sel = okp[bounds[:-1]] if len(pcs) else np.zeros(0, bool)
+            starts, ends = lo_c[sel], hi_c[sel]
+            if len(starts) > 8:
+                if mx >= 1 << 22: return None
+                ok = np.zeros(mx + 1, bool)
+                for a_, b_ in zip(starts.tolist(), ends.tolist()): ok[a_:b_ + 1] = True
+        else:
+            codes = np.arange(mx + 1, dtype=np.int64)
+            res = run(codes)
+            bad = [i for i, x in enumerate(res) if isinstance(x, Err)]
+            if bad:                                    # an error matters only for a code the column holds
+                hit = np.intersect1d(np.array(bad, np.int64), present())
+                if len(hit): raise SqlError(res[int(hit[0])].msg)
+            ok = np.array([x is True for x in res], bool)
+            edges = np.diff(np.concatenate([[0], ok.astype(np.int8), [0]]))
+            starts, ends = np.nonzero(edges == 1)[0], np.nonzero(edges == -1)[0] - 1
         p = None
         if len(starts) <= 8:
             for a_, b_ in zip(starts.tolist(), ends.tolist()):
@@ -2453,17 +2578,19 @@ class _Planner:
                 rows = (f & sg.mask) if sg is not None else f
                 codes = t.decoded(name)[rows]
             cd = getattr(t, "codecs", {}).get(name)
+            vc = getattr(t, "nullable", {}).get(name)
+            ok = None
+            if vc is not None: ok = np.asarray(fact_codes(vc) if b is self.fact else t.decoded(vc)[rows]) != 0
+            if COLUMNAR: rel.cols.put(k, ColArr(codes, ok, cd)); continue      # decoded when read as values
             codes = codes.tolist()                       # Python integers: 64-bit codes past 2^63 stay exact
             vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
-            vc = getattr(t, "nullable", {}).get(name)
-            if vc is not None:
-                ok = fact_codes(vc) if b is self.fact else t.decoded(vc)[rows]
-                vals = [x if o else None for x, o in zip(vals, ok.tolist())]
+            if ok is not None: vals = [x if o else None for x, o in zip(vals, ok.tolist())]
             rel.cols[k] = vals
         return rel
 
     def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist):
         """the engine queries: per variant, COUNT and the sum of each moment polynomial, grouped by the atoms"""
+        if COLUMNAR and keys and not empty: return self.engine_columns(keys, atom_list, preds, variants, vpreds, mlist)
         cx = self.cx
         def query(extra):
             q = algq.Query(self.tab[self.fact])
@@ -2524,6 +2651,95 @@ class _Planner:
                 mk = (vid, m) if ext else (vid, mi)
                 if keys: rel.mom[mk] = [sums.get(g) for g in groups]
                 else: rel.mom[mk] = [sums] if groups else []
+        return rel
+
+
+    def engine_columns(self, keys, atom_list, preds, variants, vpreds, mlist):
+        """engine() with the groups as columns (Query.run_columns): the atoms stay codes, every further engine run is
+        aligned with the first by its key codes"""
+        cx = self.cx
+        def query(extra):
+            q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
+            for b, fk in self.joins.items(): q.join(self.tab[b], fk)
+            for p in preds + extra: q.where(p)
+            q.group_by(*keys)
+            return q
+        def run(q):
+            cx.stats["engine_queries"] += 1
+            try: return q.run_columns(cx.engine)
+            except (TypeError, OverflowError, ValueError) as ex:
+                m = str(ex)
+                if "group domain too large" in m or "hidden GROUP BY columns" in m or "exceed 128 bits" in m:
+                    raise _TooManyGroups()
+                raise SqlError(f"the engine cannot run this block: {ex}")
+        def first_poly(vid):
+            return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
+        def rowkey(g):
+            """the key columns of a run, comparable across runs: codes (NULL as -1)"""
+            return [np.where(valid, codes, -1) if valid is not None and codes.dtype != object else codes for codes, valid, _ in g.keys]
+        def rowvals(g):
+            """the key tuples of a run as hashable values (a run that gave values, not codes)"""
+            cols = [[nkey(v) for v in vals] if codes is None else codes.tolist() for codes, _, vals in g.keys]
+            return list(zip(*cols)) if cols else [()] * len(g)
+        pre = {}
+        m0 = first_poly(0)
+        if m0 is not None:
+            q = query([]).sum(m0); q._both = True
+            g = run(q); base_cnt = [v[1] for v in g.vals]; pre[0] = [v[0] for v in g.vals]
+        else:
+            g = run(query([]).count()); base_cnt = list(g.vals)
+        G = len(base_cnt)
+        rel = Rel(G); rel.cnt = base_cnt
+        coded = all(c is not None for c, _, _ in g.keys)
+        base_keys = rowkey(g) if coded else None
+        for k, pos, vp in atom_list:
+            codes, valid, cd = g.keys[pos]
+            if codes is None:                            # values (a bridge result): as before
+                vals = cd
+                if vp is not None: vals = [x if ok else None for x, ok in zip(vals, g.keys[vp][2])]
+                rel.cols[k] = vals; continue
+            if vp is not None:
+                vv = g.keys[vp][0] != 0
+                valid = vv if valid is None else (valid & vv)
+            rel.cols.put(k, ColArr(codes, valid, cd))
+        lookup = {}
+        def align(h):
+            """the base group of each group of a later run (every later run's groups are among the base's)"""
+            if coded and all(c is not None for c, _, _ in h.keys):
+                import sqlwin
+                both = [np.concatenate([a, b]) for a, b in zip(base_keys, rowkey(h))]
+                rc = sqlwin._combine([np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64) for c in both]) if both \
+                    else np.zeros(G + len(h), np.int64)
+                rb, rh = rc[:G], rc[G:]
+                o = np.argsort(rb, kind="stable")
+                pos = o[np.searchsorted(rb[o], rh)]
+                return pos
+            if "d" not in lookup: lookup["d"] = {t: i for i, t in enumerate(rowvals(g))}
+            return np.array([lookup["d"][t] for t in rowvals(h)], np.int64)
+        def spread(h, vals, default):
+            out = [default] * G
+            for p, v in zip(align(h).tolist(), vals): out[p] = v
+            return out
+        for vid in sorted(set(variants.values())):
+            extra = vpreds[vid]
+            if vid != 0:
+                m1 = first_poly(vid)
+                if not G: rel.vcnt[vid] = []
+                elif m1 is not None:
+                    q = query(extra).sum(m1); q._both = True
+                    h = run(q)
+                    rel.vcnt[vid] = spread(h, [v[1] for v in h.vals], 0); pre[vid] = (h, [v[0] for v in h.vals])
+                else:
+                    h = run(query(extra).count()); rel.vcnt[vid] = spread(h, h.vals, 0)
+            for mi, m in enumerate(mlist[vid]):
+                ext = isinstance(m, tuple) and m[0] == "ext"
+                mk = (vid, m) if ext else (vid, mi)
+                if not G: rel.mom[mk] = []; continue
+                if ext: h = run(query(extra).minmax(algq.Col(self.tab[self.fact], m[1]))); sums = spread(h, h.vals, None)
+                elif vid in pre and m is first_poly(vid):
+                    sums = pre[0] if vid == 0 else spread(pre[vid][0], pre[vid][1], None)
+                else: h = run(query(extra).sum(m)); sums = spread(h, h.vals, None)
+                rel.mom[mk] = sums
         return rel
 
 
@@ -2807,11 +3023,13 @@ def _join_plain(j, L, R, cx):
 
 
 def _combine(L, R, li, ri):
-    """the pairs (li[k], ri[k]) of rows of L and R as one relation"""
+    """the pairs (li[k], ri[k]) of rows of L and R as one relation (engine columns stay codes)"""
     import sqlwin
     C = Rel(len(li))
-    for k, v in L.cols.items(): C.cols[k] = sqlwin.obj(v)[li].tolist() if len(li) else []
-    for k, v in R.cols.items(): C.cols[k] = sqlwin.obj(v)[ri].tolist() if len(ri) else []
+    for side, idx in ((L, li), (R, ri)):
+        for k, a in side.cols.arr.items(): C.cols.put(k, a.take(idx))
+        for k, v in dict.items(side.cols):
+            if k not in side.cols.arr: dict.__setitem__(C.cols, k, sqlwin.obj(v)[idx].tolist() if len(idx) else [])
     a, b = sqlwin.obj(L.cnt)[li], sqlwin.obj(R.cnt)[ri]
     C.cnt = (a * b).tolist() if len(li) else []
     return C
@@ -2826,11 +3044,18 @@ def _pad(A, other):
 def _concat(parts):
     n = sum(p.n for p in parts)
     C = Rel(n)
-    keys = set()
-    for p in parts: keys |= set(p.cols)
+    keys = []
+    for p in parts:
+        for k in p.cols:
+            if k not in keys: keys.append(k)
     for k in keys:
+        arrs = [p.cols.arr.get(k) for p in parts]
+        if all(a is not None for a in arrs) and len({id(a.codec) for a in arrs}) == 1:   # codes of one codec: stay codes
+            valid = None if all(a.valid is None for a in arrs) else \
+                np.concatenate([a.valid if a.valid is not None else np.ones(len(a), bool) for a in arrs])
+            C.cols.put(k, ColArr(np.concatenate([a.codes for a in arrs]), valid, arrs[0].codec)); continue
         out = []
-        for p in parts: out += p.cols.get(k, [None] * p.n)
+        for p in parts: out += p.cols[k] if k in p.cols else [None] * p.n
         C.cols[k] = out
     C.cnt = [c for p in parts for c in p.cnt]
     return C

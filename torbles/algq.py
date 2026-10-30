@@ -1040,6 +1040,21 @@ def _dec_scale_of(e):
     a, b = _dec_scale_of(e.l), _dec_scale_of(e.r)
     return a + b if e.op == "*" else max(a, b)
 
+class CodeGroups:
+    """a GROUP BY result as columns, in the keys' code space: cols (one code array per key), vals (one value per group:
+    an int64 / object array of sums or counts, or a list of MinMax), cnt (the row counts, for (sum, count) results)"""
+    __slots__ = ("cols", "vals", "cnt")
+    def __init__(self, cols, vals, cnt=None): self.cols, self.vals, self.cnt = cols, vals, cnt
+
+
+class Groups:
+    """a typed GROUP BY result as columns (Query.run_columns): keys [(codes, valid mask or None, codec or None)] (the codes
+    order and compare like the values; codec.decode gives the values), vals [one value per group, as run() gives them]"""
+    __slots__ = ("keys", "vals")
+    def __init__(self, keys, vals): self.keys, self.vals = keys, vals
+    def __len__(self): return len(self.vals)
+
+
 def _codes_array(c):
     """key codes as an array for a codec's decode: int64, or Python integers past it (64-bit unsigned codes)"""
     try: return np.asarray(c, np.int64)
@@ -1463,7 +1478,19 @@ class Query:
         if any(getattr(t, "codecs", None) for t in tabs): return True
         return self.measure is not None and _has_fraction(self.measure)
 
-    def _run_typed(self, engine):
+    def run_columns(self, engine="alg"):
+        """run() with GROUP BY keys, the groups as columns: a Groups of the keys' codes, validity and codecs (decode them
+        only for the rows needed) and one value per group, as run() gives it"""
+        ids = [(id(k.table), k.name) if isinstance(k, Col) else id(k) for k in self.keys]
+        if self.keys and len(set(ids)) == len(ids) and not getattr(self, "_codes", False) and self._typed():
+            try: return self._run_typed(engine, columns=True)
+            except (TypeError, OverflowError): pass          # the bridges: through run()
+        r = self.run(engine)
+        keys = list(r.keys())
+        cols = list(zip(*keys)) if keys else [[] for _ in self.keys]
+        return Groups([(None, None, list(c)) for c in cols], [r[k] for k in keys])
+
+    def _run_typed(self, engine, columns=False):
         import copy
         lm = getattr(self, "_lowered_measure", None)
         if lm is None or lm[0] is not self.measure:
@@ -1480,7 +1507,9 @@ class Query:
         q.measure, q.pred, q.keys, q.joins, q.join_mode = lm[1], self.pred, list(self.keys) + nkeys, self.joins, self.join_mode
         q._ext = getattr(self, "_ext", None); q._both = getattr(self, "_both", False)
         q.range_mode = getattr(self, "range_mode", "auto")
-        r = q._run_codes(engine)
+        q._cols_owner = q if columns else None
+        try: r = q._run_codes(engine)
+        finally: q._cols_owner = None
         for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         scale = lm[2]
@@ -1496,12 +1525,31 @@ class Query:
         for k in self.keys:
             cd = k.codec() if isinstance(k, Col) else None
             decs.append(cd)
+        if columns: return self._groups(r, decs, vpos, val, scale, ext)
         if not r: return {}
         keys = list(r.keys()); cols = list(zip(*keys))
         valid = cols[len(self.keys):]; cols = cols[:len(self.keys)]
         cols = [list(c) if cd is None else cd.decode(_codes_array(c)) for c, cd in zip(cols, decs)]
         for i, vcol in zip(vpos, valid): cols[i] = [x if ok else None for x, ok in zip(cols[i], vcol)]
         return {tuple(kk): val(r[k0]) for k0, kk in zip(keys, zip(*cols))}
+
+    def _groups(self, r, decs, vpos, val, scale, ext):
+        """the typed result as columns (Groups): codes kept, values as run() gives them"""
+        nk = len(self.keys)
+        if isinstance(r, CodeGroups):
+            cols, vals = r.cols, r.vals
+            both = r.cnt is not None
+        else:                                          # a dict from another path (wide, delta, factored ...)
+            keys = list(r.keys())
+            cols = [_codes_array(c) for c in zip(*keys)] if keys else [np.zeros(0, np.int64) for _ in range(nk + len(vpos))]
+            vals = [r[k] for k in keys]
+            both = False
+        if both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
+        elif isinstance(vals, np.ndarray) and not scale and not ext and vals.dtype != object: vl = vals.tolist()
+        else: vl = [val(v) for v in (vals.tolist() if isinstance(vals, np.ndarray) else vals)]
+        valid = {i: np.asarray(cols[nk + j]) != 0 for j, i in enumerate(vpos)}
+        keys = [(np.asarray(cols[i]), valid.get(i), decs[i]) for i in range(nk)]
+        return Groups(keys, vl)
 
     def _run_codes(self, engine="alg"):
         if getattr(self.fact, "wide", None) and not getattr(self, "_lowered", False): return self._run_wide(engine)
@@ -1884,6 +1932,13 @@ class Query:
                 kk = np.fromiter(m.keys(), np.int64, len(m)); vv = np.fromiter(m.values(), np.int64, len(m))
                 lut = np.full(int(kk.max()) + 1 if len(kk) else 1, -1, np.int64); lut[kk] = vv; luts[i] = lut
             cols[i] = luts[i][cols[i]]
+        if self is getattr(self, "_cols_owner", None) and not any(m is not None for m in kmaps):
+            # columns, not a dict (Query.run_columns): one row per group code, so no two rows share a key
+            cna = np.asarray(gc, np.int64)
+            if ext: va = [MinMax(p) for p in zip(np.asarray(gs, np.int64).tolist(), np.asarray(gh, np.int64).tolist())]
+            elif self.measure is None: va = cna
+            else: va = gs if wide else np.asarray(gs, np.int64)
+            return CodeGroups(list(cols), va, cna if getattr(self, "_both", False) else None)
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)
         cn = np.asarray(gc, np.int64).tolist()
         vs = (gs.tolist() if wide else np.asarray(gs, np.int64).tolist()) if self.measure is not None else cn

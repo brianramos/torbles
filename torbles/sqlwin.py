@@ -49,6 +49,55 @@ def notnull(a):
     return np.fromiter((v is not None for v in a), bool, len(a))
 
 
+def is_codes(c):
+    """a column given as engine codes (sqlexec.ColArr: codes, valid, codec) rather than values"""
+    return hasattr(c, "codec") and hasattr(c, "codes")
+
+
+def code_groups(a):
+    """group codes of a code column: equal codes are equal values; NULL is a group of its own"""
+    c = a.codes
+    g = np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64) if c.dtype != object else group_codes(c.tolist())
+    if a.valid is not None and len(g): g = np.where(a.valid, g, g.max() + 1)
+    return g
+
+
+def code_order(a, desc=False, nulls_first=False, mask=None):
+    """order codes of a code column (codes order like the values); with mask: of those rows only, without NULLs"""
+    c = a.codes
+    if mask is not None:
+        sel = c[mask]
+        g = np.unique(sel, return_inverse=True)[1].reshape(-1).astype(np.int64) if sel.dtype != object else order_codes(sel.tolist())
+        return ((g.max() if len(g) else 0) - g) if desc else g
+    valid = a.valid if a.valid is not None else np.ones(len(c), bool)
+    sel = c[valid]
+    if sel.dtype == object: g = order_codes(sel.tolist()); k = int(g.max()) + 1 if len(g) else 0
+    else:
+        u, g = np.unique(sel, return_inverse=True); g = g.reshape(-1).astype(np.int64); k = len(u)
+    if desc: g = (k - 1) - g
+    out = np.full(len(c), -1 if nulls_first else k, np.int64); out[valid] = g
+    return out
+
+
+def nn_mask(c):
+    """the rows that are not NULL (values or a code column)"""
+    if is_codes(c): return c.valid.copy() if c.valid is not None else np.ones(len(c.codes), bool)
+    return notnull(c)
+
+
+def values_of(c):
+    """the column as an object array of values (a code column is decoded)"""
+    return obj(c.decode()) if is_codes(c) else c
+
+
+def values_at(c, pos):
+    """the values at positions pos (-1: NULL); a code column decodes only those"""
+    if not is_codes(c): return _take(c, pos)
+    out = np.empty(len(pos), object); ok = pos >= 0
+    if ok.any(): out[ok] = obj(c.take(pos[ok]).decode())
+    return out
+
+
 def _prefix(x):
     """[0, x0, x0 + x1, ...] (an int64 count, or exact Python integers for an object array)"""
     if x.dtype == object:
@@ -188,8 +237,8 @@ def layout(parts, okeys, specs, n):
     """order the rows of a window: parts / okeys are the PARTITION BY / ORDER BY value columns (collation keys applied),
     specs [(desc, nulls_first)]"""
     L = Layout(); L.n = n
-    pc = _combine([group_codes(p) for p in parts]) if parts else None
-    oc = [order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
+    pc = _combine([code_groups(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
+    oc = [code_order(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
     keys = list(reversed(oc)) + ([pc] if pc is not None else [])
     L.perm = np.lexsort(keys) if keys else np.arange(n)
     L.ar = np.arange(n)
@@ -430,6 +479,20 @@ def _range_reduce(key, segs, fn, ident):
 def _scaled(vals, valid):
     """the valid values as exact integers over one scale: (kind, X object array (0 where invalid), scale, specials)
     with value = X / scale; specials (pinf, ninf, nan) masks for non-finite floats"""
+    if is_codes(vals):
+        cd, c = vals.codec, vals.codes
+        kind = getattr(cd, "kind", None)
+        if kind in ("int", "decimal", "bool") and c.dtype != object:      # affine: value = (code + offset) / 10^scale
+            off = int(getattr(cd, "offset", 0))
+            if c.size and abs(off) + int(np.abs(c).max()) >= 1 << 62: return _scaled(values_of(vals), valid)
+            X = np.zeros(len(c), np.int64); X[valid] = c[valid] + off
+            sc = 10 ** int(getattr(cd, "scale", 0)) if kind == "decimal" else 1
+            return ("dec" if kind == "decimal" else "int"), X.astype(object), sc, None
+        if kind == "dict" and getattr(cd, "floating", False) and c.dtype != object:   # a DOUBLE dictionary: its values
+            fv = np.array(cd.values, np.float64)
+            a = np.zeros(len(c), np.float64); a[valid] = fv[c[valid]]
+            return _scaled_doubles(a, valid)
+        return _scaled(values_of(vals), valid)
     n = len(vals)
     sel = vals[valid].tolist()
     tys = set(map(type, sel))
@@ -438,18 +501,8 @@ def _scaled(vals, valid):
         X[valid] = [int(v) for v in sel] if bool in tys else sel
         return "int", X, 1, None
     if tys <= {int, bool, float} and all(-(1 << 53) <= v <= (1 << 53) for v in sel if type(v) is not float):
-        a = np.array(sel, np.float64)                  # exact: doubles, and integers below 2^53
-        pos = np.flatnonzero(valid)
-        pinf, ninf, nan = np.zeros(n, bool), np.zeros(n, bool), np.zeros(n, bool)
-        pinf[pos[a == np.inf]] = True; ninf[pos[a == -np.inf]] = True; nan[pos[np.isnan(a)]] = True
-        mant, ex = np.frexp(np.where(np.isfinite(a), a, 0.0))
-        M = (mant * 9007199254740992.0).astype(np.int64)      # 2^53 times the mantissa: an exact integer
-        ex = ex.astype(np.int64) - 53
-        nz = M != 0
-        E = min(0, int(ex[nz].min())) if nz.any() else 0
-        sh = np.where(nz, ex - E, 0)
-        X[valid] = M.astype(object) << sh.astype(object)
-        return "float", X, 1 << -E, (pinf, ninf, nan) if (pinf.any() or ninf.any() or nan.any()) else None
+        a = np.zeros(n, np.float64); a[valid] = np.array(sel, np.float64)     # exact: doubles, and integers below 2^53
+        return _scaled_doubles(a, valid)
     if tys <= {int, bool, float}:
         fin, pinf, ninf, nan = [], np.zeros(n, bool), np.zeros(n, bool), np.zeros(n, bool)
         pos = np.flatnonzero(valid)
@@ -485,6 +538,21 @@ def _scaled(vals, valid):
     raise NoVec
 
 
+def _scaled_doubles(a, valid):
+    """doubles (a float64 array; the valid rows count) as exact integers over one power of two"""
+    n = len(a)
+    X = np.zeros(n, object)
+    pinf, ninf, nan = valid & (a == np.inf), valid & (a == -np.inf), valid & np.isnan(a)
+    mant, ex = np.frexp(np.where(valid & np.isfinite(a), a, 0.0))
+    M = (mant * 9007199254740992.0).astype(np.int64)      # 2^53 times the mantissa: an exact integer
+    ex = ex.astype(np.int64) - 53
+    nz = M != 0
+    E = min(0, int(ex[nz].min())) if nz.any() else 0
+    sh = np.where(nz, ex - E, 0)
+    X[:] = M.astype(object) << sh.astype(object)
+    return "float", X, 1 << -E, (pinf, ninf, nan) if (pinf.any() or ninf.any() or nan.any()) else None
+
+
 def _div(num, den):
     """num / den correctly rounded (integers), past the double range as the Fraction path does"""
     try: return num / den
@@ -517,14 +585,15 @@ def evaluate(w, L, args, filt, bvals, key, desc):
     column (row order) or None"""
     n = L.n; name = w.name; perm = L.perm
     p = L.ar - L.ps; m = L.pe - L.ps
-    S = lambda col: obj(col)[perm]
+    S = lambda col: col.take(perm) if is_codes(col) else obj(col)[perm]
+    V = lambda col: values_of(S(col))
     if name == "row_number": return p + 1
     if name == "rank": return L.gs - L.ps + 1
     if name == "dense_rank": return L.gid - L.gid[L.ps] + 1
     if name == "percent_rank": return np.where(m <= 1, 0.0, (L.gs - L.ps) / np.maximum(m - 1, 1))
     if name == "cume_dist": return (L.ge - L.ps) / m
     if name == "ntile":
-        ks = S(args[0]).tolist()
+        ks = V(args[0]).tolist()
         if not all(type(k) is int for k in ks if k is not None): raise NoVec
         if any(k <= 0 for k in ks if k is not None): raise SqlError("Argument for ntile must be greater than zero")
         kk = np.array([1 if k is None else min(k, n + 1) for k in ks], np.int64)
@@ -535,10 +604,10 @@ def evaluate(w, L, args, filt, bvals, key, desc):
         out[[k is None for k in ks]] = None
         return out
     if name in ("lag", "lead"):
-        vals = S(args[0])
-        dflt = S(args[2]) if len(args) > 2 else None
+        vals = V(args[0])
+        dflt = V(args[2]) if len(args) > 2 else None
         if len(args) > 1:
-            offs = S(args[1]).tolist()
+            offs = V(args[1]).tolist()
             if not all(type(o) is int for o in offs if o is not None): raise NoVec
             offnull = np.array([o is None for o in offs], bool)
             off = np.array([0 if o is None else max(min(o, n + 1), -(n + 1)) for o in offs], np.int64)
@@ -562,25 +631,119 @@ def evaluate(w, L, args, filt, bvals, key, desc):
         if offnull is not None: out[offnull] = None
         return out
     # framed functions
-    if w.distinct: raise NoVec
+    if w.distinct and name not in ("count", "sum", "avg", "mean", "min", "max"): raise NoVec
     if name not in ("first_value", "last_value", "nth_value") and name not in _AGGS: raise NoVec
     bv = {s: v if isinstance(v, Const) else S(v) for s, v in bvals.items()}
     lo, hi = frame_bounds(w, L, bv, S(key) if key is not None else None, desc)
     segs = segments(w, L, lo, hi)
     if name in ("first_value", "last_value", "nth_value"):
         vals = S(args[0])
-        E = notnull(vals) if w.ignore_nulls else np.ones(n, bool)
-        if name == "first_value": return _take(vals, _first(E, segs, n))
-        if name == "last_value": return _take(vals, _last(E, segs, n))
-        ks = S(args[1]).tolist()
+        E = nn_mask(vals) if w.ignore_nulls else np.ones(n, bool)
+        if name == "first_value": return values_at(vals, _first(E, segs, n))
+        if name == "last_value": return values_at(vals, _last(E, segs, n))
+        ks = V(args[1]).tolist()
         if not all(type(k) is int for k in ks if k is not None): raise NoVec
         if any(k <= 0 for k in ks if k is not None): raise SqlError("NTH_VALUE: the position must be positive")
         kk = np.array([1 if k is None else min(k, n + 1) for k in ks], np.int64)
-        out = _take(vals, _nth(E, segs, kk, w.from_last, n))
+        out = values_at(vals, _nth(E, segs, kk, w.from_last, n))
         out[[k is None for k in ks]] = None
         return out
     valid = np.ones(n, bool) if filt is None else filt[perm]
-    return aggregate(name, [S(a) for a in args], valid, segs, n)
+    if w.distinct and name in ("count", "sum", "avg", "mean"):
+        return distinct_frames(name, S(args[0]), valid, segs, n)
+    return aggregate(name, [S(a) for a in args], valid, segs, n)      # MIN / MAX (DISTINCT): the same
+
+
+# ------------------------------------------------------------------ DISTINCT over frames: dominance counts
+def _dominance(prev, wts, n):
+    """a merge-sort tree over positions: query(e, s) -> for each query, how many positions j < e have prev[j] < s
+    (and the sum of their weights). Each level k sorts every aligned block of 2^k positions by prev once."""
+    levels = []
+    nb = max(1, (n - 1).bit_length())
+    big = n + 2
+    for k in range(nb + 1):
+        key = (np.arange(n) >> k) * big + (prev + 1)
+        o = np.argsort(key, kind="stable")
+        cw = None
+        if wts is not None:
+            cw = np.empty(n + 1, object); cw[0] = 0
+            if n: cw[1:] = np.cumsum(wts[o])
+        levels.append((key[o], cw))
+    def query(e, s):
+        cnt = np.zeros(len(e), np.int64)
+        tot = np.zeros(len(e), object) if wts is not None else None
+        for k in range(nb + 1):
+            hit = np.flatnonzero((e >> k) & 1)
+            if not len(hit): continue
+            blk = (e[hit] >> (k + 1)) << 1                  # the aligned block of 2^k positions below e at level k
+            start = blk << k
+            keys, cw = levels[k]
+            idx = np.searchsorted(keys, blk * big + (s[hit] + 1), "left")
+            cnt[hit] += idx - start
+            if tot is not None: tot[hit] = tot[hit] + (cw[idx] - cw[start])
+        return cnt, tot
+    return query
+
+
+def distinct_frames(name, col, valid, segs, n):
+    """COUNT / SUM / AVG (DISTINCT x) over each frame: a value counts once, at its first occurrence in the frame, that is
+    where its previous occurrence lies before the frame's start. Over one run [s, e): the positions j < e whose
+    previous occurrence is before s, less the positions before s (a dominance count); frames of several runs (EXCLUDE
+    in the middle of the frame) are counted row by row."""
+    valid = valid & nn_mask(col)
+    vc = code_groups(col) if is_codes(col) else group_codes(col.tolist())
+    pos = np.flatnonzero(valid)
+    prev = np.full(n, n, np.int64)                       # invalid rows: never counted
+    if len(pos):
+        o = pos[np.lexsort((pos, vc[pos]))]
+        same = np.zeros(len(o), bool); same[1:] = vc[o[1:]] == vc[o[:-1]]
+        pv = np.full(len(o), -1, np.int64); pv[same] = o[:-1][same[1:]]
+        prev[o] = pv
+    nq = len(segs[0][0])
+    ne = sum((e > s).astype(np.int64) for s, e in segs)
+    s1 = np.zeros(nq, np.int64); e1 = np.zeros(nq, np.int64)
+    for s_, e_ in segs:
+        one = e_ > s_
+        s1 = np.where(one, s_, s1); e1 = np.where(one, e_, e1)
+    want_sum = name != "count"
+    if want_sum:
+        kind, X, scale, sp = _scaled(col, valid)
+        wts = X
+    else: wts = None
+    q = _dominance(prev, wts, n)
+    cnt_e, sum_e = q(e1, s1)
+    cv = _prefix(valid.astype(np.int64))
+    cnt = cnt_e - cv[s1]
+    if want_sum:
+        pw = _prefix(X)
+        tot = sum_e - pw[s1]
+    multi = np.flatnonzero(ne >= 2)
+    if len(multi):                                     # several runs: the frame's distinct values, row by row
+        for i in multi.tolist():
+            seen = {}
+            for s_, e_ in segs:
+                for j in range(int(s_[i]), int(e_[i])):
+                    if valid[j] and vc[j] not in seen: seen[vc[j]] = j
+            cnt[i] = len(seen)
+            if want_sum: tot[i] = sum(X[j] for j in seen.values())
+    if name == "count": return cnt
+    out = np.full(nq, None, object)
+    has = cnt > 0
+    avg = name in ("avg", "mean")
+    if kind == "int": out[has] = (tot[has] / cnt[has].astype(object)) if avg else tot[has]
+    elif kind == "float":
+        try: sv = (tot[has] / scale).astype(np.float64)
+        except OverflowError: sv = np.array([_div(t, scale) for t in tot[has].tolist()], np.float64)
+        out[has] = sv / cnt[has] if avg else sv
+    elif avg: out[has] = tot[has] / (scale * cnt[has].astype(object))
+    else:
+        D = Decimal(scale)
+        out[has] = [T.CTX.divide(Decimal(t), D) for t in tot[has].tolist()]
+    spv = _special(sp, segs)
+    if spv is not None:
+        hit = has & np.array([v is not None for v in spv], bool)
+        out[hit] = spv[hit]
+    return out
 
 
 def aggregate(name, cols, valid, segs, n, w=None):
@@ -592,15 +755,16 @@ def aggregate(name, cols, valid, segs, n, w=None):
     nq = len(segs[0][0])
     valid = valid.copy()
     if name in _BIV:                                       # rows where both are non-NULL (moments2)
-        for c in cols: valid &= notnull(c)
+        for c in cols: valid &= nn_mask(c)
     elif name != "count_star" and d.skip_nulls:
-        for c in cols: valid &= notnull(c)
+        for c in cols: valid &= nn_mask(c)
     wv = valid.astype(np.int64) if w is None else np.where(valid, w, 0)
     cnt = _over(_prefix(wv), segs)
     if name in ("count_star", "count"): return cnt
     if name in ("count_if", "countif", "every", "bool_and", "bool_or", "any", "some"):
         vals = cols[0]
-        tru = np.fromiter((bool(v) for v in vals[valid]), bool, int(valid.sum()))
+        if is_codes(vals) and getattr(vals.codec, "kind", None) == "bool": tru = vals.codes[valid] != 0
+        else: tru = np.fromiter((bool(v) for v in values_of(vals)[valid]), bool, int(valid.sum()))
         tm = np.zeros(n, bool); tm[np.flatnonzero(valid)[tru]] = True
         t = _over(_prefix(np.where(tm, wv, 0)), segs)
         out = np.full(nq, None, object)
@@ -608,10 +772,10 @@ def aggregate(name, cols, valid, segs, n, w=None):
         if name in ("count_if", "countif"): out[has] = t[has]
         else: out[has] = (t == cnt)[has] if name in ("every", "bool_and") else (t > 0)[has]
         return out
-    if name in ("any_value", "arbitrary", "first"): return _take(cols[0], _first(valid, segs, n))
-    if name == "last": return _take(cols[0], _last(valid, segs, n))
+    if name in ("any_value", "arbitrary", "first"): return values_at(cols[0], _first(valid, segs, n))
+    if name == "last": return values_at(cols[0], _last(valid, segs, n))
     if name in ("bit_and", "bit_or", "bit_xor"):           # 64-bit integers: XOR by prefixes, AND / OR as range reductions
-        sel = cols[0][valid].tolist()
+        sel = values_of(cols[0])[valid].tolist()
         if not all(type(v) is int for v in sel) or (sel and (max(sel) >= 1 << 63 or min(sel) < -(1 << 63))): raise NoVec
         X = np.zeros(n, np.int64); X[valid] = sel
         if name == "bit_xor":
@@ -629,10 +793,12 @@ def aggregate(name, cols, valid, segs, n, w=None):
     ar = np.arange(n)
     if name in ("min", "max", "arg_min", "min_by", "argmin", "arg_max", "max_by", "argmax"):
         cv = cols[-1]
-        sel = cv[valid].tolist()
-        if any(isinstance(v, dict) for v in sel): raise NoVec
         code = np.zeros(n, np.int64)
-        code[valid] = order_codes(sel)
+        if is_codes(cv): code[valid] = code_order(cv, mask=valid)     # codes order like the values: nothing decoded
+        else:
+            sel = cv[valid].tolist()
+            if any(isinstance(v, dict) for v in sel): raise NoVec
+            code[valid] = order_codes(sel)
         big = np.iinfo(np.int64).max
         if name in ("min", "arg_min", "min_by", "argmin"):           # the first of the least values
             k = np.where(valid, code * n + ar, big)
@@ -642,7 +808,7 @@ def aggregate(name, cols, valid, segs, n, w=None):
             k = np.where(valid, code * n + (n - 1 - ar), -1)
             r = _range_reduce(k, segs, np.maximum, -1)
             pos = np.where(r < 0, -1, n - 1 - r % max(n, 1))
-        return _take(cols[0], pos)
+        return values_at(cols[0], pos)
     W = None if w is None else w.astype(object)
     def wsum(X):                                           # sums of X (weighted) over the runs
         return _over(_prefix(X if W is None else X * W), segs)
@@ -726,7 +892,9 @@ def group_order(vals, valid, w, starts, ends, desc=False):
     G = len(starts)
     grp = np.repeat(np.arange(G), ends - starts)
     pos = np.flatnonzero(valid)
-    code = order_codes(vals[pos].tolist(), desc) if len(pos) else np.zeros(0, np.int64)
+    if not len(pos): code = np.zeros(0, np.int64)
+    elif is_codes(vals): code = code_order(vals, desc, mask=valid)
+    else: code = order_codes(vals[pos].tolist(), desc)
     o = pos[np.lexsort((pos, code, grp[pos]))] if len(pos) else pos
     C = np.cumsum(w[o]) if len(o) else np.zeros(0, np.int64)
     go = grp[o]
@@ -752,14 +920,14 @@ def order_aggregate(name, params, vals, valid, w, starts, ends):
     by value codes once, each rank found by a search of the cumulative counts"""
     import math
     G = len(starts)
-    valid = valid & notnull(vals)
+    valid = valid & nn_mask(vals)
     if name == "mode":
         import sqlexec
         pos = np.flatnonzero(valid)
         out = np.full(G, None, object)
         if not len(pos): return out
         grp = np.repeat(np.arange(G), ends - starts)[pos]
-        kc = group_codes([sqlexec.nkey(v) for v in vals[pos].tolist()])
+        kc = code_groups(vals.take(pos)) if is_codes(vals) else group_codes([sqlexec.nkey(v) for v in vals[pos].tolist()])
         o = np.lexsort((pos, kc, grp))                         # (group, value, first row)
         g2, k2 = grp[o], kc[o]
         new = np.ones(len(o), bool); new[1:] = (g2[1:] != g2[:-1]) | (k2[1:] != k2[:-1])
@@ -767,18 +935,19 @@ def order_aggregate(name, params, vals, valid, w, starts, ends):
         tot = np.add.reduceat(w[pos][o], heads)                # weight of each (group, value)
         hg, hrow = g2[heads], pos[o[heads]]                    # its group, its first row
         desc = bool(params) and params[0] == "desc"
-        oc = order_codes(vals[hrow].tolist(), desc)
+        oc = code_order(vals.take(hrow), desc) if is_codes(vals) else order_codes(vals[hrow].tolist(), desc)
         best = np.lexsort((oc, -tot, hg))                      # per group: most frequent, then first in the order
         gfirst = np.ones(len(best), bool); gfirst[1:] = hg[best][1:] != hg[best][:-1]
         sel = best[gfirst]
-        out[hg[sel]] = vals[hrow[sel]]
+        out[hg[sel]] = values_at(vals, hrow[sel])
         return out
     desc = name in ("quantile_disc", "percentile_disc", "quantile") and len(params) > 1 and params[1] == "desc"
     order = group_order(vals, valid, w, starts, ends, desc)
     N = order[3].tolist()
     if name == "median":
         qs, single = [Fraction(1, 2)], True
-        num = [v for v in vals[valid].tolist()[:1]]
+        fv = np.flatnonzero(valid)[:1]
+        num = values_at(vals, fv).tolist() if len(fv) else []
         disc = bool(num) and not isinstance(num[0], (int, float, Decimal, bool, _dt.date, F.Interval))
         cont = not disc
     else:
@@ -792,11 +961,11 @@ def order_aggregate(name, params, vals, valid, w, starts, ends):
             for n in N:
                 p = Fraction(q) * (n - 1) if n else Fraction(0)
                 lo_r.append(math.floor(p)); hi_r.append(math.ceil(p)); pos_r.append(p)
-            a = _take(vals, pick(order, np.array(lo_r, np.int64))); b = _take(vals, pick(order, np.array(hi_r, np.int64)))
+            a = values_at(vals, pick(order, np.array(lo_r, np.int64))); b = values_at(vals, pick(order, np.array(hi_r, np.int64)))
             res.append([None if n == 0 else F.qc_mix(x, y, p, l, h) for x, y, p, l, h, n in zip(a, b, pos_r, lo_r, hi_r, N)])
         else:
             k = [max(0, math.ceil(Fraction(q) * n) - 1) if n else 0 for n in N]
-            res.append(_take(vals, pick(order, np.array(k, np.int64))).tolist())
+            res.append(values_at(vals, pick(order, np.array(k, np.int64))).tolist())
     out = np.full(G, None, object)
     for g in range(G):
         if N[g] == 0: continue
