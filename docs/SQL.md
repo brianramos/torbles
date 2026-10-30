@@ -81,8 +81,12 @@ order), so grouping, sorting and partitioning are one stable sort of integers; G
 functions are prefix sums, searches and range minima over the sorted runs (see Aggregates and Window functions
 below); and arithmetic, comparisons, `AND` / `OR` / `NOT`, `IS NULL` and casts between integer types and DOUBLE run on
 whole columns of integers and doubles, with the results of the row-by-row definitions (exact integers, IEEE doubles,
-three-valued logic). Other functions run on each tuple the engine returns (a distinct tuple, or a row of a block
-without aggregates).
+three-valued logic). The engine's results stay codes through all of this: each column it returns is an integer code
+array with a validity mask and the codec that decodes it (codes order and compare like the values), so grouping,
+joins, DISTINCT, set operations, ORDER BY and LIMIT work on codes, and values are decoded once, for the rows that are
+output. Any other function of such columns runs once per distinct combination of the codes it reads and is gathered
+back: a function of a 65-value column costs 65 calls however many groups the engine returned. Only a function of
+columns that are not codes (an aggregate's result, a value computed row by row) runs on each tuple.
 
 **Other blocks** (outer and cross joins between arbitrary items, derived tables, CTEs, VALUES, table functions) give each
 FROM item as a multiset: a stored table is an engine GROUP BY of the columns the block needs, with counts; a derived
@@ -233,7 +237,7 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 | Aggregate | How |
 |---|---|
 | COUNT(*), COUNT(x), SUM, AVG of a polynomial in exact columns | engine: moment sums (popcount algebra), exact at any width |
-| VAR_POP, VAR_SAMP, STDDEV_POP, STDDEV_SAMP, COVAR_POP, COVAR_SAMP, CORR, REGR_SLOPE, REGR_INTERCEPT, REGR_COUNT, REGR_R2, REGR_AVGX, REGR_AVGY, REGR_SXX, REGR_SYY, REGR_SXY | engine: moment sums (x, x², xy, ...), then exact rational arithmetic; the statistics are exact, not the running double sums DuckDB uses |
+| VAR_POP, VAR_SAMP, STDDEV_POP, STDDEV_SAMP, COVAR_POP, COVAR_SAMP, CORR, REGR_SLOPE, REGR_INTERCEPT, REGR_COUNT, REGR_R2, REGR_AVGX, REGR_AVGY, REGR_SXX, REGR_SYY, REGR_SXY | engine: moment sums (x, x², xy, ...), then exact integer arithmetic on the sums of every group at once (each statistic is a ratio of integer polynomials in the sums, rounded once to the nearest double); not the running double sums DuckDB uses |
 | MIN, MAX of a fact column | engine: plane elimination |
 | SUM / AVG / COUNT of CASE, any aggregate with FILTER (WHERE ...) | engine: variants |
 | MIN / MAX of other expressions, DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine, aggregated as arrays (below) |
@@ -270,7 +274,11 @@ for RANGE with an offset, the rank of the target among the partition's keys (key
 search); EXCLUDE leaves at most three runs. COUNT, SUM, AVG and the statistics over a frame are differences of exact
 prefix sums of their moments (BIT_XOR of prefix XORs), MIN, MAX, ARG_MIN and ARG_MAX range minima of (value code,
 position) from a sparse table built one level at a time (BIT_AND and BIT_OR the same reductions), FIRST_VALUE, LAST_VALUE and NTH_VALUE positions among the eligible ones. The results are the
-row-by-row definitions' (exact sums, correctly rounded doubles, the first of tied extremes). DISTINCT and ordered window
+row-by-row definitions' (exact sums, correctly rounded doubles, the first of tied extremes). COUNT, SUM and AVG
+(DISTINCT) count a value at its first occurrence in the frame: the rows whose previous occurrence lies before the
+frame's start, a dominance count answered by a merge-sort tree over positions. MEDIAN, PERCENTILE_CONT and
+PERCENTILE_DISC over a frame rank the rows by (value, position) and find each frame's k-th row by a parallel binary
+search on that rank, every round one dominance count for all frames. Other DISTINCT aggregates, MODE, ordered window
 aggregates, nested window functions and row pattern recognition read each frame's rows, partition by partition, in the
 same order.
 
