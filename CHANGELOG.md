@@ -106,6 +106,18 @@ Engine
   M1-M3 from 505 to 179 ms on one thread (DuckDB 414), the 13 queries unchanged.
 - Queries use every core by default (`set_threads(n)` changes it).
 
+Relationship catalogs, a prototype that is off unless a catalog is attached to a table (`discover()`): native modules
+propose affine, sum and product relations between columns, prove each over every row (a proof is bound to the table's
+mutation revision), and a bounded search composes them to rewrite a query's measure into a cheaper polynomial; per plan
+the engine chooses between the original chain of operations, a combined system on the word planes and the adaptive
+matrix or packed-row executor, shares intermediate values through two new measure bytecodes (`M_SAVE`, `M_LOAD`), and,
+with `stage_strategy="auto"` or `"compose"`, splits a measure of degree up to four into at most two existing reduction
+scans and a native finalizer. With no catalog attached it costs nothing measurable: on SSB SF10
+(`wsl/ab_enhancements.sh`, three interleaved rounds on a 24-core laptop with an RTX 5090) the 13 queries changed by
++0.2% on one thread, +0.7% on 24 and +1.1% on the GPU, each inside its own round-to-round noise, with the paired rounds
+going both ways. Six test modules and a 2,000-program random DAG check cover it; `examples/relationship_demo.py` and
+`examples/system_planner_demo.py` show it at work.
+
 Correctness
 - `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
   planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
