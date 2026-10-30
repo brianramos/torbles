@@ -867,9 +867,13 @@ def compute_windows(wins, rel, cx):
         if w.key() in rel.cols: continue
         parts = [_ckeys(ev(p, rel, cx), p.t) for p in w.partition]
         okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]
-        args = [ev(a, rel, cx) for a in w.args]
-        filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
-        for col in parts + okeys + args:
+        main = _win_args(w)
+        inputs = [ev(a, rel, cx) for a in w.args[len(main):]]          # the columns its row pattern recognition reads
+        if any(_has_nwf(a) for a in main) or (w.filter is not None and _has_nwf(w.filter)): args, filt = None, None
+        else:
+            args = [ev(a, rel, cx) for a in main]
+            filt = set(truth(ev(w.filter, rel, cx))) if w.filter is not None else None
+        for col in parts + okeys + (args or []) + inputs:
             for v in col:
                 if isinstance(v, Err): raise SqlError(v.msg)
         groups = {}
@@ -877,10 +881,22 @@ def compute_windows(wins, rel, cx):
             groups.setdefault(tuple(nkey(p[i]) for p in parts), []).append(i)
         res = [None] * n
         specs = [(o[1], o[2]) for o in w.order]
+        rpr = None
+        if w.rpr is not None:                              # the matches, shared by the window functions of one window
+            mkey = ("rpr-match", w.rpr.spec, tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order),
+                    I.Win("", [], None, frame=w.frame).key())
+            got = rel.cols.get(mkey)
+            rpr = (inputs, got if got is not None else [None] * n, got is None)
         for idx in groups.values():
             if w.order: idx = sort_rows(idx, okeys, specs)
-            _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx)
+            _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr)
+        if rpr is not None and rpr[2]: rel.cols[mkey] = rpr[1]
         rel.cols[w.key()] = res
+
+
+def _win_args(w):
+    """a window function's own arguments (without the inputs of its row pattern recognition)"""
+    return w.args[:len(w.args) - len(w.rpr.names)] if w.rpr is not None else w.args
 
 
 def _peer_bounds(idx, okeys):
@@ -900,7 +916,7 @@ def _same(a, b):
     return F.cmp_values(a, b) == 0
 
 
-def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx):
+def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None):
     m = len(idx); name = w.name
     pstart, pend = _peer_bounds(idx, okeys) if w.order else ([0] * m, [m] * m)
     if name == "row_number":
@@ -958,6 +974,7 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx):
     bound_vals = {}
     for side, bd in (("a", a), ("b", b)):
         if bd[1] is not None: bound_vals[side] = ev(bd[1], rel, cx)
+    frames = []
     for p, i in enumerate(idx):
         lo = _frame_edge(mode, a, "a", p, i, idx, okeys, specs, pstart, pend, bound_vals, m)
         hi = _frame_edge(mode, b, "b", p, i, idx, okeys, specs, pstart, pend, bound_vals, m)
@@ -967,6 +984,23 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx):
             if ex == "CURRENT_ROW": frame = [q for q in frame if q != p]
             elif ex == "GROUP": frame = [q for q in frame if not (pstart[p] <= q < pend[p])]
             elif ex == "TIES": frame = [q for q in frame if q == p or not (pstart[p] <= q < pend[p])]
+        frames.append(frame)
+    if rpr is not None:                                    # row pattern recognition (R020): the frame reduced to the match
+        inputs, cache, fill = rpr
+        if fill:
+            import sqlmr
+            got = sqlmr.window_matches(w.rpr, [tuple(c[i] for c in inputs) for i in idx], frames, cx)
+            for p, i in enumerate(idx): cache[i] = got[p]
+        mt = [cache[i] for i in idx]
+        if name == "__rpr_measure":
+            for p, i in enumerate(idx): res[i] = None if mt[p] is None else mt[p][2][w.rpr.measure]
+            return
+        frames = [[] if x is None else list(range(x[0], x[1])) for x in mt]
+    if args is None:                                       # nested window functions (T619) in the arguments
+        _nested_aggregate(w, idx, frames, res, rel, cx, m)
+        return
+    for p, i in enumerate(idx):
+        frame = frames[p]
         if name in ("first_value", "last_value", "nth_value"):
             vals = args[0]
             cand = [idx[q] for q in frame]
@@ -995,6 +1029,72 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx):
                 if k not in seen: seen.add(k); dd.append(r)
             rows = dd
         res[i] = len(rows) if name == "count_star" else d.final(rows, w.params)
+
+
+def _has_nwf(e):
+    if isinstance(e, I.Func) and e.fn in ("__nwf_row_number", "__nwf_value_of"): return True
+    return not isinstance(e, I.Subq) and any(_has_nwf(c) for c in e.children())
+
+
+def _marker_row(marker, p, q, frame, m):
+    """the position in the ordered partition a row marker denotes, for current row p and frame row q"""
+    if marker == "CURRENT_ROW": return p
+    if marker == "FRAME_ROW": return q
+    if marker == "BEGIN_PARTITION": return 0
+    if marker == "END_PARTITION": return m - 1
+    if marker == "BEGIN_FRAME": return frame[0] if frame else None
+    return frame[-1] if frame else None                    # END_FRAME
+
+
+def _nested_aggregate(w, idx, frames, res, rel, cx, m):
+    """a window aggregate whose argument or FILTER holds ROW_NUMBER(<row marker>) or VALUE_OF(... AT <row marker>)
+    (ISO 6.10, T619): the argument is evaluated once per (current row, frame row) pair; a column outside the nested
+    functions reads the frame row, VALUE_OF reads its expression at the marked row of the partition (the default
+    outside it)"""
+    pairs = [(p, q) for p, fr in enumerate(frames) for q in fr]
+    prel = Rel(len(pairs))
+    def fill(e):
+        k = e.key()
+        if k in prel.cols: return
+        if isinstance(e, I.Func) and e.fn in ("__nwf_row_number", "__nwf_value_of"):
+            rows = [_marker_row(e.extra[0], p, q, frames[p], m) for p, q in pairs]
+            if e.fn == "__nwf_row_number":
+                prel.cols[k] = [None if r is None else r + 1 for r in rows]; return
+            vals = ev(e.args[0], rel, cx); d = e.args[1].v
+            fill(e.args[2]); dflt = prel.cols[e.args[2].key()]
+            out = []
+            for j, r in enumerate(rows):
+                r = None if r is None or d is None else r + d
+                out.append(vals[idx[r]] if r is not None and 0 <= r < m else dflt[j])
+            prel.cols[k] = out; return
+        if not _has_nwf(e):
+            col = ev(e, rel, cx)
+            prel.cols[k] = [col[idx[q]] for _, q in pairs]; return
+        for c in e.children(): fill(c)
+    main = _win_args(w)
+    for a in main: fill(a)
+    if w.filter is not None: fill(w.filter)
+    argv = [ev(a, prel, cx) for a in main]
+    fv = ev(w.filter, prel, cx) if w.filter is not None else None
+    for col in argv + ([fv] if fv is not None else []):
+        for v in col:
+            if isinstance(v, Err): raise SqlError(v.msg)
+    d = F.AGGS[w.name]
+    j = 0
+    for p, i in enumerate(idx):
+        rows = []
+        for _ in frames[p]:
+            if fv is None or fv[j] is True:
+                vals = tuple(c[j] for c in argv)
+                if not (d.skip_nulls and w.name != "count_star" and any(v is None for v in vals)): rows.append((vals, 1))
+            j += 1
+        if w.distinct:
+            seen, dd = set(), []
+            for r in rows:
+                k = tuple(nkey(v) for v in r[0])
+                if k not in seen: seen.add(k); dd.append(r)
+            rows = dd
+        res[i] = len(rows) if w.name == "count_star" else d.final(rows, w.params)
 
 
 def _frame_edge(mode, bd, side, p, i, idx, okeys, specs, pstart, pend, bound_vals, m):

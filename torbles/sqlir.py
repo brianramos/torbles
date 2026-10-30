@@ -91,12 +91,13 @@ class Agg(Node):
 class Win(Node):
     """a window function: name, args, PARTITION BY, ORDER BY, frame (mode ROWS/RANGE/GROUPS, start, end: (kind, expr)),
     exclude, ignore_nulls, filter, from_last (NTH_VALUE FROM LAST), distinct"""
-    __slots__ = ("name", "args", "partition", "order", "frame", "exclude", "ignore_nulls", "filter", "from_last", "distinct", "params")
+    __slots__ = ("name", "args", "partition", "order", "frame", "exclude", "ignore_nulls", "filter", "from_last", "distinct", "params", "rpr")
     def __init__(self, name, args, t, partition=(), order=(), frame=None, exclude=None, ignore_nulls=False, filter=None,
-                 from_last=False, distinct=False, params=()):
+                 from_last=False, distinct=False, params=(), rpr=None):
         self.name, self.args, self.t = name, list(args), t
         self.partition, self.order, self.frame, self.exclude = list(partition), list(order), frame, exclude
         self.ignore_nulls, self.filter, self.from_last, self.distinct, self.params = ignore_nulls, filter, from_last, distinct, tuple(params)
+        self.rpr = rpr                      # row pattern recognition in the window (R020): sqlexec runs it
     def children(self):
         out = self.args + self.partition + [o[0] for o in self.order] + ([self.filter] if self.filter is not None else [])
         if self.frame:
@@ -108,7 +109,8 @@ class Win(Node):
                                                (self.frame[2][0], None if self.frame[2][1] is None else self.frame[2][1].key()))
         return ("win", self.name, tuple(a.key() for a in self.args), tuple(p.key() for p in self.partition),
                 tuple((o[0].key(), o[1], o[2]) for o in self.order), fr, self.exclude, self.ignore_nulls,
-                None if self.filter is None else self.filter.key(), self.from_last, self.distinct, _hk(self.params))
+                None if self.filter is None else self.filter.key(), self.from_last, self.distinct, _hk(self.params),
+                None if self.rpr is None else self.rpr.key())
 
 
 class Subq(Node):
@@ -186,7 +188,7 @@ def subst(e, fn):
             fr = (fr[0], (fr[1][0], None if fr[1][1] is None else subst(fr[1][1], fn)), (fr[2][0], None if fr[2][1] is None else subst(fr[2][1], fn)))
         return Win(e.name, [subst(a, fn) for a in e.args], e.t, [subst(p, fn) for p in e.partition],
                    [(subst(o[0], fn), o[1], o[2]) for o in e.order], fr, e.exclude, e.ignore_nulls,
-                   None if e.filter is None else subst(e.filter, fn), e.from_last, e.distinct, e.params)
+                   None if e.filter is None else subst(e.filter, fn), e.from_last, e.distinct, e.params, e.rpr)
     if isinstance(e, Subq): return Subq(e.kind, e.q, e.t, None if e.child is None else subst(e.child, fn), e.op, e.correlated)
     if isinstance(e, Grouping): return Grouping([subst(a, fn) for a in e.args])
     return e
@@ -349,6 +351,10 @@ def expr_sql(e):
         if fn == "__iso_similar": return f"({a[0]} SIMILAR TO {a[1]}" + (f" ESCAPE {a[2]}" if len(a) > 2 else "") + ")"
         if fn == "__iso_like_regex": return f"({a[0]} LIKE_REGEX {a[1]}" + (f" FLAG {a[2]}" if len(a) > 2 else "") + ")"
         if fn == "__iso_overlaps": return f"(({a[0]}, {a[1]}) OVERLAPS ({a[2]}, {a[3]}))"
+        if fn == "__nwf_row_number": return f"ROW_NUMBER({e.extra[0]})"
+        if fn == "__nwf_value_of":
+            d = e.args[1].v or 0
+            return f"VALUE_OF({a[0]} AT {e.extra[0]}{f' + {d}' if d > 0 else f' - {-d}' if d < 0 else ''}, {a[2]})"
         if fn in ("__first", "__grp"): return a[0]
         if fn == "list_value": return "[" + ", ".join(a) + "]"
         if fn == "row": return "(" + ", ".join(a) + ")"

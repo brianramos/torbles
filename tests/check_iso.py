@@ -55,6 +55,14 @@ def vs_duckdb(sql, what=None, ordered=None, tol=1e-9):
           f"torbles {got[:5]}\n        duckdb  {want[:5]}")
 
 
+def vs_duckdb2(ours, theirs, what):
+    """our ISO form against DuckDB's answer to an equivalent query"""
+    want = con.execute(theirs).fetchall()
+    try: got = db.sql(ours).rows
+    except Exception as x: check(False, what, f"torbles: {type(x).__name__}: {x}"); return
+    check(sqlfuzz.same(got, want, True, 1e-9), what, f"torbles {got[:5]}\n        duckdb  {want[:5]}")
+
+
 def expect(sql, want, what=None):
     try: got = db.sql(sql).rows
     except Exception as x: check(False, what or sql[:110], f"{type(x).__name__}: {x}"); return
@@ -326,6 +334,48 @@ expect_g("""SELECT s, n FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER B
 expect_g("""SELECT s, e FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(tstamp) AS s, LAST(tstamp) AS e
         PATTERN (PERMUTE(A, B) | ^ C) DEFINE A AS price = 5, B AS price = 4, C AS price > 100) WHERE symbol = 'XYZ'""",
          [(1, 2)], "PERMUTE and anchors")
+W = """WINDOW w AS (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(tstamp) AS s, LAST(DOWN.tstamp) AS bottom, LAST(UP.tstamp) AS e, CLASSIFIER() AS cls
+        ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING {skip} PATTERN (STRT DOWN+ UP+)
+        DEFINE DOWN AS DOWN.price < PREV(DOWN.price), UP AS UP.price > PREV(UP.price))"""
+rq = "SELECT symbol, tstamp, s OVER w, bottom OVER w, e OVER w, cls OVER w, count(*) OVER w, sum(price) OVER w, last_value(price) OVER w FROM ticker "
+for skip, starts in (("AFTER MATCH SKIP TO LAST UP", [5, 10, 14, 1, 3]), ("", [5, 11, 14, 1]), ("AFTER MATCH SKIP TO NEXT ROW", [5, 10, 11, 14, 15, 1, 3])):
+    try:
+        got = dbg.sql(rq + W.format(skip=skip) + " ORDER BY symbol, tstamp").rows
+        hit = [r for r in got if r[2] is not None]
+        ok = [r[1] for r in hit] == starts and all(r[6] == 0 and r[7] is None for r in got if r[2] is None) \
+            and all(r[6] == r[4] - r[2] + 1 and r[5] == "UP" for r in hit)
+        check(ok, f"row pattern recognition in a window (R020), {skip or 'AFTER MATCH SKIP PAST LAST ROW'}: matches, measures, the reduced frame", str(hit))
+    except Exception as x: check(False, f"R020 {skip}", f"{type(x).__name__}: {x}")
+expect_g(rq + W.format(skip="") + " ORDER BY symbol, tstamp LIMIT 5",
+         [("ACME", 1, None, None, None, None, 0, None, None), ("ACME", 2, None, None, None, None, 0, None, None), ("ACME", 3, None, None, None, None, 0, None, None),
+          ("ACME", 4, None, None, None, None, 0, None, None), ("ACME", 5, 5, 6, 10, "UP", 6, 121, 25)], "R020: a match, and rows without one")
+expect_g(rq.replace("FROM ticker", "FROM ticker WHERE tstamp < 6") + W.format(skip="SEEK") + " ORDER BY symbol, tstamp",
+         [("ACME", 1, None, None, None, None, 0, None, None), ("ACME", 2, None, None, None, None, 0, None, None), ("ACME", 3, None, None, None, None, 0, None, None),
+          ("ACME", 4, None, None, None, None, 0, None, None), ("ACME", 5, None, None, None, None, 0, None, None),
+          ("XYZ", 1, 1, 2, 3, "UP", 3, 15, 6), ("XYZ", 2, None, None, None, None, 0, None, None), ("XYZ", 3, None, None, None, None, 0, None, None),
+          ("XYZ", 4, None, None, None, None, 0, None, None), ("XYZ", 5, None, None, None, None, 0, None, None)],
+         "R020: SEEK finds nothing in a frame without a match; rows 2 and 3 are skipped by the match of row 1")
+expect_g("""SELECT tstamp, s OVER w, count(*) OVER w FROM ticker WHERE symbol = 'ACME' AND tstamp > 15 WINDOW w AS (ORDER BY tstamp MEASURES FIRST(tstamp) AS s
+        ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING SEEK PATTERN (A B) DEFINE B AS B.price > A.price + 5) ORDER BY tstamp""",
+         [(16, 17, 2), (17, None, 0), (18, None, 0), (19, None, 0), (20, None, 0)], "R020: SEEK finds a match that starts after the current row")
+expect_g("""SELECT tstamp, n OVER w, av OVER w, ups OVER w, sum(price) OVER w FROM ticker WHERE symbol = 'ACME' AND tstamp < 6 WINDOW w AS (ORDER BY tstamp
+        MEASURES COUNT(*) AS n, AVG(UP.price) AS av, COUNT(UP.*) AS ups ROWS BETWEEN CURRENT ROW AND 3 FOLLOWING AFTER MATCH SKIP TO NEXT ROW
+        PATTERN (S UP+) DEFINE UP AS UP.price > PREV(UP.price)) ORDER BY tstamp""",
+         [(1, 4, 19.0, 3, 69), (2, 4, 65 / 3, 3, 82), (3, 3, 23.0, 2, 65), (4, 2, 25.0, 1, 46), (5, None, None, None, None)],
+         "R020: aggregates in MEASURES, a match confined to its frame (n FOLLOWING)")
+expect_g("""SELECT tstamp, m OVER w, c OVER w, count(*) OVER w FROM ticker WHERE symbol = 'XYZ' WINDOW w AS (ORDER BY tstamp MEASURES 'm' AS m, CLASSIFIER() AS c
+        ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING PATTERN (A*) DEFINE A AS price > 100) ORDER BY tstamp""",
+         [(1, "m", None, 0), (2, "m", None, 0), (3, "m", None, 0), (4, "m", None, 0), (5, "m", None, 0)], "R020: empty matches (an empty frame, the measures of no rows)")
+expect_g("""SELECT tstamp, count(*) OVER (PARTITION BY symbol ORDER BY tstamp ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING PATTERN (A B) DEFINE B AS B.price < A.price)
+        FROM ticker WHERE symbol = 'XYZ' ORDER BY tstamp""", [(1, 2), (2, 0), (3, 2), (4, 0), (5, 0)], "R020 in an inline window")
+expect_g("""SELECT symbol, tstamp, "gain" OVER w AS g FROM ticker WINDOW w AS (PARTITION BY symbol ORDER BY tstamp MEASURES LAST(UP.price) - FIRST(price) AS "gain"
+        ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING PATTERN (S UP+) DEFINE UP AS price > PREV(price)) ORDER BY g DESC NULLS LAST, symbol, tstamp LIMIT 3""",
+         [("ACME", 1, 13), ("ACME", 6, 13), ("ACME", 16, 12)], "R020: a quoted measure name, ordered by a measure")
+for q, words in (("MEASURES MATCH_NUMBER() AS x ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING PATTERN (A) DEFINE A AS true", ["MATCH_NUMBER"]),
+                 ("MEASURES 1 AS x ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW PATTERN (A) DEFINE A AS true", ["CURRENT ROW AND"]),
+                 ("MEASURES 1 AS x ROWS BETWEEN CURRENT ROW AND CURRENT ROW PATTERN (^ A) DEFINE A AS true", ["anchors"])):
+    try: dbg.sql(f"SELECT x OVER w FROM ticker WINDOW w AS (ORDER BY tstamp {q})"); check(False, q[:60], "no error")
+    except Exception as x: check(all(w in str(x) for w in words), "R020 refuses: " + words[0], str(x))
 expect_g("SELECT s.product, d.day, s.qty FROM sales s PARTITION BY (s.product) RIGHT JOIN days d ON s.day = d.day ORDER BY 1, 2",
          [("a", 1, 10), ("a", 2, None), ("a", 3, 30), ("b", 1, None), ("b", 2, 20), ("b", 3, None)], "a partitioned outer join (F403) densifies each partition")
 
@@ -352,6 +402,48 @@ expect("SELECT CAST('NaN' AS DECFLOAT) = CAST('NaN' AS DECFLOAT), CAST('-Infinit
 expect("SELECT sum(CAST(v AS DECFLOAT(16))) = sum(v), max(CAST(v AS DECFLOAT)) = max(v) FROM t", [(True, True)], "aggregates")
 refuses("SELECT CAST('1E+400' AS DECFLOAT(16))", ["out of range", "DECFLOAT"], "exponent overflow is a data exception")
 refuses("SELECT CAST('1E+300' AS DECFLOAT(16)) * CAST('1E+300' AS DECFLOAT(16))", ["out of range"], "overflow in arithmetic")
+
+print("== nested window functions (T619)")
+vs_duckdb2("""SELECT id, AVG(CASE WHEN ROW_NUMBER(FRAME_ROW) NOT IN (ROW_NUMBER(BEGIN_PARTITION), ROW_NUMBER(END_PARTITION)) THEN v END)
+        OVER (PARTITION BY k ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t WHERE id < 400 ORDER BY id""",
+     """SELECT id, AVG(CASE WHEN rn NOT IN (1, cnt) THEN v END) OVER (PARTITION BY k) FROM
+        (SELECT *, row_number() OVER (PARTITION BY k ORDER BY id) rn, count(*) OVER (PARTITION BY k) cnt FROM t WHERE id < 400) ORDER BY id""",
+     "ROW_NUMBER(FRAME_ROW / BEGIN_PARTITION / END_PARTITION): the average without the first and last rows")
+vs_duckdb2("""SELECT id, AVG(CASE WHEN x IS DISTINCT FROM VALUE_OF(x AT CURRENT_ROW) THEN v END) OVER (PARTITION BY k) FROM t WHERE id < 500 ORDER BY id""",
+     """SELECT id, (SELECT avg(t2.v) FROM t t2 WHERE t2.id < 500 AND t2.k = t.k AND t2.x IS DISTINCT FROM t.x) FROM t WHERE id < 500 ORDER BY id""",
+     "VALUE_OF(x AT CURRENT_ROW): a correlation inside the window")
+vs_duckdb2("""SELECT id, SUM(CASE WHEN VALUE_OF(id AT CURRENT_ROW) - id BETWEEN 0 AND 130 THEN v END) OVER (PARTITION BY k ORDER BY id ROWS UNBOUNDED PRECEDING) FROM t ORDER BY id""",
+     """SELECT id, SUM(v) OVER (PARTITION BY k ORDER BY id RANGE BETWEEN 130 PRECEDING AND CURRENT ROW) FROM t ORDER BY id""",
+     "VALUE_OF emulating a RANGE frame")
+vs_duckdb2("""SELECT id, SUM(VALUE_OF(v AT FRAME_ROW - 1, 0)) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),
+        SUM(VALUE OF (v AT CURRENT_ROW + 2)) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t ORDER BY id""",
+     """SELECT id, SUM(lv) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), ld FROM
+        (SELECT *, lag(v, 1, 0) OVER (PARTITION BY k ORDER BY id) lv, lead(v, 2) OVER (PARTITION BY k ORDER BY id) ld FROM t) ORDER BY id""",
+     "VALUE_OF with a row marker offset and a default")
+vs_duckdb2("""SELECT id, MAX(ROW_NUMBER(END_FRAME) - ROW_NUMBER(BEGIN_FRAME) + 1) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING),
+        COUNT(*) FILTER (WHERE ROW_NUMBER(FRAME_ROW) < ROW_NUMBER(CURRENT_ROW)) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM t ORDER BY id""",
+     """SELECT id, COUNT(*) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING),
+        COUNT(*) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING) FROM t ORDER BY id""",
+     "BEGIN_FRAME / END_FRAME, and a nested function in FILTER")
+vs_duckdb2("""SELECT k, SUM(SUM(v) * VALUE_OF(k AT CURRENT_ROW)) OVER (ORDER BY k ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t GROUP BY k ORDER BY k""",
+     """SELECT k, SUM(s) OVER (ORDER BY k ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) * k FROM (SELECT k, SUM(v) s FROM t GROUP BY k) ORDER BY k""",
+     "VALUE_OF in a grouped query")
+refuses("SELECT VALUE_OF(v AT CURRENT_ROW) FROM t", ["only allowed"], "outside a window aggregate")
+refuses("SELECT first_value(ROW_NUMBER(FRAME_ROW)) OVER (ORDER BY id) FROM t", ["only allowed"], "in a non-aggregate window function")
+
+from torbles import F
+tt = db.table("t")
+q = db.select(tt.id, F.avg(F.case((F.value_of(tt.x) != tt.x, tt.v))).over(partition_by=[tt.k]).alias("a"),
+              F.sum(F.value_of(tt.v, at="FRAME_ROW", offset=-1, default=0)).over(partition_by=[tt.k], order_by=[tt.id], rows=(-2, 0)).alias("b"),
+              F.count(filter=F.row_number("FRAME_ROW") < F.row_number("CURRENT_ROW")).over(partition_by=[tt.k], order_by=[tt.id], rows=(-2, 1)).alias("c")
+              ).where(tt.id < 300).order_by(tt.id)
+try:
+    got = q.run(ENGINE).rows
+    check(got == db.sql(q.to_sql()).rows and got == db.sql("""SELECT id, avg(CASE WHEN VALUE_OF(x AT CURRENT_ROW) <> x THEN v END) OVER (PARTITION BY k),
+       sum(VALUE_OF(v AT FRAME_ROW - 1, 0)) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),
+       count(*) FILTER (WHERE ROW_NUMBER(FRAME_ROW) < ROW_NUMBER(CURRENT_ROW)) OVER (PARTITION BY k ORDER BY id ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING)
+       FROM t WHERE id < 300 ORDER BY id""").rows, "Python API: F.value_of, F.row_number(<row marker>), and their SQL text")
+except Exception as x: check(False, "Python API: nested window functions", f"{type(x).__name__}: {x}")
 
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

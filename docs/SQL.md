@@ -230,6 +230,20 @@ DISTINCT and FILTER), frames `ROWS / RANGE / GROUPS` with numeric and interval o
 GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named windows, windows over aggregates, QUALIFY
 (DuckDB). They run at the group level, after aggregation.
 
+Nested window functions (T619): in the argument or FILTER of a window aggregate, `ROW_NUMBER(<row marker>)` is the
+position in the ordered partition of `BEGIN_PARTITION`, `BEGIN_FRAME`, `CURRENT_ROW`, `FRAME_ROW` (the frame row being
+aggregated), `END_FRAME` or `END_PARTITION`, and `VALUE_OF(x AT <row marker> [+ | - n] [, default])` is x at that row
+(the default outside the partition), so `AVG(CASE WHEN d <> VALUE_OF(d AT CURRENT_ROW) THEN v END) OVER (PARTITION BY
+c)` correlates each frame row with the current row. The argument is evaluated once per (current row, frame row) pair.
+In Python: `F.value_of(x, at="CURRENT_ROW", offset=0, default=None)` and `F.row_number("FRAME_ROW")`.
+
+Row pattern recognition in a window (R020): a window with `MEASURES`, `ROWS BETWEEN CURRENT ROW AND ...`, `AFTER MATCH
+SKIP`, `INITIAL` / `SEEK`, `PATTERN`, `SUBSET` and `DEFINE` reduces each row's frame to the match that starts at the
+row (INITIAL) or at the first row after it in its frame where one starts (SEEK); a row skipped by an earlier match, or
+without a match, has an empty frame and NULL measures. `<measure> OVER w` reads a measure, and every window function
+over `w` runs on the reduced frame. The matcher is MATCH_RECOGNIZE's; a match can neither take rows nor read values
+outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
+
 ### Not supported, and why
 
 - **Statements other than queries.** The database is built by the loaders and is read-only once saved, so there is no
@@ -239,8 +253,6 @@ GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named wind
   tables belong to those statements. PERIOD predicates on value pairs are supported.
 - **Row types with named fields** (`ROW (a INT, b INT)` as a type, field references; T051): row values exist as
   comparison operands and in MATCH and IN, not as a column type.
-- **Nested window functions** (T619: `VALUE_OF`, `ROW_NUMBER(<row marker>)` inside window aggregates) and **row pattern
-  recognition in a window** (R020: MEASURES / PATTERN in a window definition); MATCH_RECOGNIZE in FROM is supported.
 - **The UNICODE collation** (the Unicode Collation Algorithm) needs a collation library; the code point collations and
   NOCASE / NOACCENT / NFC are supported.
 - Other parts of ISO/IEC 9075: SQL/XML (Part 14), SQL/MDA multidimensional arrays (Part 15), SQL/PGQ property graph

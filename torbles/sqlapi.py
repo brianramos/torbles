@@ -122,8 +122,10 @@ class E:
                     return ("preceding" if x < 0 else "following", FR.lit_of(abs(x)))
                 frame = (mode, b(fr[0], True), b(fr[1], False))
         if frame is None and order: frame = ("range", ("unbounded_preceding", None), ("current", None))
+        for x in part + [o[0] for o in order]: FR.check_nested(x)
         if isinstance(n, I.Agg):
             return E(I.Win(n.name, n.args, n.t, part, order, frame, exclude, False, n.filter, False, n.distinct, n.params), self.name)
+        for x in n.args: FR.check_nested(x)
         if isinstance(n, _WinCall):
             return E(I.Win(n.kind, n.args, SF.win_typer(n.kind, n.args), part, order, frame, exclude, n.ignore_nulls, None, n.from_last), self.name)
         raise SqlError("over() applies to an aggregate or a window function")
@@ -192,6 +194,9 @@ class _Functions:
 
     def call(self, name, *args, distinct=False, filter=None, order_by=(), ignore_nulls=False, from_last=False):
         lname = name.lower().rstrip("_")
+        if lname == "row_number" and len(args) == 1 and isinstance(args[0], str):        # ROW_NUMBER(<row marker>) (T619)
+            if args[0].upper() not in FR._ROW_MARKERS: raise SqlError(f"ROW_NUMBER({args[0]}): a row marker is one of {sorted(FR._ROW_MARKERS)}")
+            return E(I.Func("__nwf_row_number", [], T.BIGINT, extra=(args[0].upper(),)))
         nodes = [_node(a) for a in args]
         if lname in SF.WINDOW_ONLY or lname in ("row_number", "ntile", "lag", "lead", "first_value", "last_value", "nth_value"):
             if lname in ("rank", "dense_rank", "percent_rank", "cume_dist") and args:
@@ -245,6 +250,15 @@ class _Functions:
     def interval(self, n, unit):
         return E(I.Lit(T.parse_interval(f"{n} {unit}"), T.INTERVAL))
     def grouping(self, *xs): return E(I.Grouping([_node(x) for x in xs]))
+    def value_of(self, x, at="CURRENT_ROW", offset=0, default=None):
+        """VALUE_OF(x AT <row marker> [+ | - offset] [, default]) in the argument of a window aggregate (T619); with
+        F.row_number("FRAME_ROW") etc.: F.sum(F.case((F.value_of(t.x) <> t.x, t.v))).over(partition_by=[t.k])"""
+        m = at.upper()
+        if m not in FR._ROW_MARKERS: raise SqlError(f"VALUE_OF ... AT {at}: a row marker is one of {sorted(FR._ROW_MARKERS)}")
+        v = _node(x); d = _node(default) if default is not None else I.Lit(None, T.NULL)
+        t = T.supertype(v.t, d.t, getattr(v, "strlit", False), getattr(d, "strlit", False))
+        if t.id == "NULL": t = v.t
+        return E(I.Func("__nwf_value_of", [FR.cast_to(v, t), I.Lit(int(offset), T.BIGINT), FR.cast_to(d, t)], t, extra=(m,)))
     def asc(self, x, nulls_first=False): return Order(x if not isinstance(x, str) else x, False, nulls_first)
     def desc(self, x, nulls_first=False): return Order(x if not isinstance(x, str) else x, True, nulls_first)
     def overlaps(self, s1, e1, s2, e2): return E(FR.make_func("__iso_overlaps", [_node(s1), _node(e1), _node(s2), _node(e2)]))
@@ -332,6 +346,8 @@ class Query:
                 pos = next((i for i, (x, _) in enumerate(s.items) if x.key() == k), None)
                 s.order.append((("pos", pos) if pos is not None else ("expr", e), desc, nf))
         s.limit, s.offset = self._limit, self._offset
+        for x in [x for x, _ in s.items] + [c for c in (s.where, s.having, s.qualify) if c is not None] + [o[0][1] for o in s.order if o[0][0] == "expr"] + s.group:
+            FR.check_nested(x)
         if s.aggregate: FR._check_grouped(s)
         q = s
         for op, all_, other in self._setops:

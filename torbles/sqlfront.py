@@ -642,6 +642,63 @@ def _match_recognize(t, i):
     return a, c, tokenize(f"__match_recognize({src}, {_jstr(spec)})")
 
 
+def _window_rpr(t, o, c):
+    """row pattern recognition in a window (R020): the window specification t[o] .. t[c] with MEASURES, AFTER MATCH
+    SKIP, INITIAL / SEEK, PATTERN, SUBSET and DEFINE -> the same specification without them, PARTITION BY
+    __iso_rpr('<clauses>') first in its partitioning"""
+    heads = ("PARTITION", "ORDER", "MEASURES", "ROWS", "RANGE", "GROUPS", "EXCLUDE", "AFTER", "INITIAL", "SEEK", "PATTERN", "SUBSET", "DEFINE")
+    segs, s0, d = [], o + 1, 0
+    for j in range(o + 1, c):
+        if t[j].s in ("(", "["): d += 1
+        elif t[j].s in (")", "]"): d -= 1
+        elif d == 0 and t[j].up() in heads and j > s0 and not (t[j].up() == "ROWS" and t[j - 1].up() == "ALL"):
+            if t[j].up() in ("PARTITION", "ORDER") and not _kw(t, j + 1, "BY"): continue
+            if t[j].up() == "AFTER" and not _kw(t, j + 1, "MATCH"): continue
+            segs.append((s0, j)); s0 = j
+    segs.append((s0, c))
+    spec = dict(measures=[], skip=["past", None], seek=False, pattern=None, subsets={}, define={})
+    keep = []
+    for a, b in segs:
+        u = t[a].up() if a < b else None
+        if u == "MEASURES":
+            for x, y in _split_commas(t, a + 1, b):
+                k = _top_kw(t, x, y, "AS")
+                if k < 0: raise SqlError("MEASURES <expression> AS <name>")
+                spec["measures"].append([_mr_expr(t, x, k), t[k + 1].s.strip('"')])
+        elif u == "AFTER":
+            j = a + 3
+            if _kw(t, j, "PAST", "LAST", "ROW"): spec["skip"] = ["past", None]
+            elif _kw(t, j, "TO", "NEXT", "ROW"): spec["skip"] = ["next", None]
+            elif _kw(t, j, "TO", "FIRST"): spec["skip"] = ["first", t[j + 2].s.upper()]
+            elif _kw(t, j, "TO", "LAST"): spec["skip"] = ["last", t[j + 2].s.upper()]
+            elif _kw(t, j, "TO"): spec["skip"] = ["last", t[j + 1].s.upper()]
+            else: raise SqlError("AFTER MATCH SKIP PAST LAST ROW | TO NEXT ROW | TO [FIRST | LAST] <variable>")
+        elif u in ("INITIAL", "SEEK"): spec["seek"] = u == "SEEK"
+        elif u == "PATTERN":
+            e = _match_paren(t, a + 1); spec["pattern"] = [x.s for x in t[a + 2:e]]
+        elif u == "SUBSET":
+            for x, y in _split_commas(t, a + 1, b):
+                q = [k for k in range(x, y) if t[k].s == "("][0]; e = _match_paren(t, q)
+                spec["subsets"][t[x].s.upper()] = [t[k].s.upper() for k in range(q + 1, e) if t[k].s != ","]
+        elif u == "DEFINE":
+            for x, y in _split_commas(t, a + 1, b):
+                if not _kw(t, x + 1, "AS"): raise SqlError("DEFINE <variable> AS <condition>")
+                spec["define"][t[x].s.upper()] = _mr_expr(t, x + 2, y)
+        else: keep.append((a, b))
+    if not spec["define"]: raise SqlError("row pattern recognition in a window needs DEFINE")
+    marker = tokenize(f"__iso_rpr({_jstr(spec)})")
+    out, done = [], False
+    for a, b in keep:
+        if a < b and t[a].up() == "PARTITION":
+            out += t[a:a + 2] + marker + [Tok("op", ",")] + t[a + 2:b]; done = True
+        else:
+            if not done and a < b and t[a].up() in ("ORDER", "ROWS", "RANGE", "GROUPS", "EXCLUDE"):
+                out += tokenize("PARTITION BY") + marker; done = True
+            out += t[a:b]
+    if not done: out += tokenize("PARTITION BY") + marker
+    return out
+
+
 def _multiset_ops(t):
     """a MULTISET INTERSECT b binds tighter than MULTISET UNION / EXCEPT (ISO 6.48); each becomes __ms_<op>(a, b, mode)"""
     for ops in (("INTERSECT",), ("UNION", "EXCEPT")):
@@ -795,10 +852,43 @@ def iso_prepass(sql):
                     name = (u + "TZ") if zoned else u
                     if name != u or j != i + 1:
                         t[i:j] = [Tok("id", "TIMESTAMPTZ" if name == "TIMESTAMPTZ" else name)]; changed = True; break
+            # nested window functions (T619): ROW_NUMBER(<row marker>), VALUE_OF(<expr> AT <row marker> [+|- n] [, default])
+            if u == "ROW_NUMBER" and i + 3 < len(t) and t[i + 1].s == "(" and t[i + 2].up() in _ROW_MARKERS and t[i + 3].s == ")":
+                t[i:i + 4] = tokenize(f"__iso_nrow_number('{t[i + 2].up()}')"); changed = True; break
+            if (u == "VALUE_OF" and i + 1 < len(t) and t[i + 1].s == "(") or (u == "VALUE" and _kw(t, i + 1, "OF") and i + 2 < len(t) and t[i + 2].s == "("):
+                o = i + 1 if u == "VALUE_OF" else i + 2
+                c = _match_paren(t, o)
+                at = next((k for k in range(c - 1, o, -1) if t[k].up() == "AT" and _depth0(t, o + 1, k)
+                           and k + 1 < c and t[k + 1].up() in _ROW_MARKERS), -1)
+                if at < 0: raise SqlError("VALUE_OF(<expression> AT <row marker> [+ | - <offset>] [, <default>])")
+                parts = _split_commas(t, at + 2, c)
+                delta = "0"
+                if parts[0][1] > parts[0][0]:
+                    if t[parts[0][0]].s not in ("+", "-"): raise SqlError("VALUE_OF: the row marker offset is + n or - n")
+                    delta = ("-" if t[parts[0][0]].s == "-" else "") + "(" + _text(t, parts[0][0] + 1, parts[0][1]) + ")"
+                dflt = _text(t, *parts[1]) if len(parts) > 1 else "NULL"
+                if len(parts) > 2: raise SqlError("VALUE_OF: too many arguments")
+                t[i:c + 1] = tokenize(f"__iso_value_of({_text(t, o + 1, at)}, '{t[at + 1].up()}', {delta}, {dflt})"); changed = True; break
             # <datetime primary> AT LOCAL  ->  __iso_at_local(...)
             if u == "AT" and i + 1 < len(t) and t[i + 1].up() == "LOCAL" and i > 0:
                 a = _operand_back(t, i - 1)
                 t[a:i + 2] = [Tok("id", "__iso_at_local"), Tok("op", "(")] + t[a:i] + [Tok("op", ")")]; changed = True; break
+            # a window with row pattern recognition (R020): its PATTERN clause
+            if u == "PATTERN" and i + 1 < len(t) and t[i + 1].s == "(" and i > 0:
+                o, d = i - 1, 0
+                while o >= 0:
+                    if t[o].s in (")", "]"): d += 1
+                    elif t[o].s in ("(", "["):
+                        if d == 0: break
+                        d -= 1
+                    o -= 1
+                if o > 0 and t[o - 1].up() != "MATCH_RECOGNIZE":
+                    c = _match_paren(t, o)
+                    t[o + 1:c] = _window_rpr(t, o, c); changed = True; break
+            # <measure name> OVER <window>: a measure of a window with row pattern recognition (R020)
+            if u == "OVER" and prev is not None and (prev.k == "id" or prev.s.startswith('"')) and i > 1 \
+                    and prev.up() not in ("NULLS", "FIRST", "LAST", "RESPECT", "IGNORE") and t[i - 2].s != ".":
+                t[i - 1:i] = tokenize(f"__iso_measure('{prev.s.strip(chr(34))}')"); changed = True; break
             # TABLESAMPLE BERNOULLI | SYSTEM (p) [REPEATABLE (s)]: p is a percentage (ISO 7.6)
             if u == "TABLESAMPLE" and i + 2 < len(t) and t[i + 1].up() in ("BERNOULLI", "SYSTEM") and t[i + 2].s == "(":
                 c = _match_paren(t, i + 2)
@@ -1069,6 +1159,7 @@ _WIN_KIND = {"WINDOW_ROW_NUMBER": "row_number", "WINDOW_RANK": "rank", "WINDOW_R
              "WINDOW_LEAD": "lead", "WINDOW_FIRST_VALUE": "first_value", "WINDOW_LAST_VALUE": "last_value", "WINDOW_NTH_VALUE": "nth_value"}
 
 
+_ROW_MARKERS = {"BEGIN_PARTITION", "BEGIN_FRAME", "CURRENT_ROW", "FRAME_ROW", "END_FRAME", "END_PARTITION"}
 _NILADIC = {"CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP", "CURRENT_USER", "USER",
             "SESSION_USER", "SYSTEM_USER", "CURRENT_ROLE", "CURRENT_CATALOG", "CURRENT_SCHEMA", "CURRENT_PATH"}
 
@@ -1235,6 +1326,7 @@ class Ctx:
     def __init__(self, agg=False, win=False, aliases=None, where="expression"):
         self.agg, self.win, self.aliases, self.where = agg, win, aliases or {}, where
         self.in_agg = False
+        self.nested = False                  # in the argument of a window aggregate: nested window functions (T619)
 
 
 class Binder:
@@ -1854,6 +1946,21 @@ class Binder:
             return I.Func(name, args[:1] + [args[1] if len(args) > 1 else I.Lit(False, T.BOOLEAN)], T.JSON)
         raise SqlError(f"internal: {name}")
 
+    def nested_window_function(self, name, raw, sc, ctx):
+        """ROW_NUMBER(<row marker>) and VALUE_OF(<expression> AT <row marker> [+|- n] [, <default>]) (ISO 6.10, T619)"""
+        if not ctx.nested:
+            raise SqlError("ROW_NUMBER(<row marker>) and VALUE_OF(... AT <row marker>) are only allowed in the argument of a window aggregate")
+        marker = raw[0]["expression"]["literal"]["text"] if name == "__iso_nrow_number" else raw[1]["expression"]["literal"]["text"]
+        if name == "__iso_nrow_number": return I.Func("__nwf_row_number", [], T.BIGINT, extra=(marker,))
+        vctx = Ctx(agg=ctx.agg, aliases=ctx.aliases, where="VALUE_OF")
+        v = self.expr(raw[0]["expression"], sc, vctx)
+        d = self.expr(raw[2]["expression"], sc, vctx)
+        if not isinstance(d, I.Lit) or not (d.t.integer or d.t.id == "NULL"): raise SqlError("VALUE_OF: the row marker offset must be an integer constant")
+        dflt = self.expr(raw[3]["expression"], sc, vctx)
+        t = T.supertype(v.t, dflt.t, getattr(v, "strlit", False), getattr(dflt, "strlit", False))
+        if t.id == "NULL": t = v.t
+        return I.Func("__nwf_value_of", [cast_to(v, t), I.Lit(d.v, T.BIGINT), cast_to(dflt, t)], t, extra=(marker,))
+
     def mr_function(self, name, e, sc, ctx):
         """PREV / NEXT / FIRST / LAST, RUNNING / FINAL, CLASSIFIER(), MATCH_NUMBER(), COUNT(A.*) in MATCH_RECOGNIZE"""
         raw = e.get("arguments") or []
@@ -2036,6 +2143,8 @@ class Binder:
             a = self.expr(raw[0]["expression"], sc, ctx)
             if a.t.id != "LIST": raise SqlError(f"ARRAY_MAX_CARDINALITY needs an array, not {a.t}")
             return I.Lit(a.t.p, T.BIGINT)
+        if name in ("__iso_nrow_number", "__iso_value_of"):
+            return self.nested_window_function(name, raw, sc, ctx)
         if name == "__iso_sym": raise SqlError("BETWEEN SYMMETRIC misplaced")
         if name in ("__iso_ties", "__iso_pct"): return I.Func(name, self.args_of(e, sc, ctx), T.BIGINT)
         if name == "grouping" or name == "grouping_id":
@@ -2141,22 +2250,43 @@ class Binder:
         name = e.get("function_name", "").lower()
         kind = _WIN_KIND.get(e["type"])
         ictx = Ctx(agg=ctx.agg, aliases=ctx.aliases, where="a window")
-        args = [self.expr(a["expression"] if "expression" in a else a, sc, ictx) for a in (e.get("arguments") or e.get("children") or [])]
+        actx = Ctx(agg=ctx.agg, aliases=ctx.aliases, where="a window")
+        actx.nested = kind is None or e["type"] == "WINDOW_AGGREGATE"
+        args = [self.expr(a["expression"] if "expression" in a else a, sc, actx) for a in (e.get("arguments") or e.get("children") or [])]
         if e.get("offset_expr") is not None and len(args) < 2: args.append(self.expr(e["offset_expr"], sc, ictx))
         if e.get("default_expr") is not None and len(args) < 3:
             if len(args) < 2: args.append(I.Lit(1, T.BIGINT))
             args.append(self.expr(e["default_expr"], sc, ictx))
-        part = [self.expr(p, sc, ictx) for p in e.get("partitions") or []]
+        rpr, praw = None, []
+        for p in e.get("partitions") or []:
+            if p.get("class") == "FUNCTION" and p.get("function_name", "").lower() == "__iso_rpr":
+                rpr = self.expr(p["children"][0] if p.get("children") else (p["arguments"][0].get("expression") or p["arguments"][0]), Scope([]), Ctx()).v
+            else: praw.append(p)
+        part = [self.expr(p, sc, ictx) for p in praw]
         order = []
         for o in e.get("orders") or []:
             nf = {"NULLS_FIRST": True, "NULLS FIRST": True}.get(o.get("null_order"), False)
             order.append((self.expr(o["expression"], sc, ictx), o["type"] == "DESCENDING", nf))
         frame = _frame(e, lambda x: self.expr(x, sc, ictx))
-        filt = self.boolean(self.expr(e["filter_expr"], sc, ictx), "FILTER") if e.get("filter_expr") is not None else None
+        filt = self.boolean(self.expr(e["filter_expr"], sc, actx), "FILTER") if e.get("filter_expr") is not None else None
         excl = e.get("exclude_clause") or None
         if excl in ("NO_OTHER", "NO OTHERS", "NONE"): excl = None
         ign = bool(e.get("ignore_nulls"))
         from_last = False
+        if rpr is not None or name == "__iso_measure":
+            if rpr is None: raise SqlError(f"{args[0].v} OVER ...: the window has no MEASURES (row pattern recognition)")
+            rp = self.bind_rpr(rpr, sc, ictx, frame, excl)
+            if name == "__iso_measure":
+                mn = [n.lower() for _, n in rp.mr.measures]
+                if args[0].v.lower() not in mn: raise SqlError(f"{args[0].v} is not a measure of the window")
+                rp.measure = mn.index(args[0].v.lower())
+                return I.Win("__rpr_measure", rp.inputs, rp.mr.measures[rp.measure][0].t, part, order, frame, excl, rpr=rp)
+            w = self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last)
+            w.args += rp.inputs; w.rpr = rp
+            return w
+        return self.window_fn(name, kind, e, args, part, order, frame, filt, excl, ign, from_last)
+
+    def window_fn(self, name, kind, e, args, part, order, frame, filt, excl, ign, from_last):
         if name == "__iso_nth_value_last": name, kind, from_last = "nth_value", "nth_value", True
         if (kind is None or e["type"] == "WINDOW_AGGREGATE") and not from_last:
             aname = _AGG_ALIAS.get(name, name)
@@ -2175,6 +2305,52 @@ class Binder:
         rt = F.win_typer(kind, args)
         if kind in ("lag", "lead") and len(args) > 2: args[2] = cast_to(args[2], rt)
         return I.Win(kind, args, rt, part, order, frame, excl, ign, filt, from_last)
+
+    def bind_rpr(self, spec_text, sc, ictx, frame, excl):
+        """row pattern recognition in a window (R020): DEFINE and MEASURES bound over the columns of the window's
+        rows (unqualified, or qualified by a pattern variable); the columns they read become extra inputs"""
+        import sqlmr
+        spec = json.loads(spec_text)
+        if frame is None or frame[0] != "rows" or frame[1][0] != "current" or frame[2][0] not in ("current", "following", "unbounded_following"):
+            raise SqlError("row pattern recognition in a window needs ROWS BETWEEN CURRENT ROW AND CURRENT ROW | <n> FOLLOWING | UNBOUNDED FOLLOWING")
+        if excl is not None: raise SqlError("row pattern recognition in a window allows only EXCLUDE NO OTHERS")
+        if not spec["pattern"]: raise SqlError("row pattern recognition in a window needs a PATTERN")
+        pattern = sqlmr.parse_pattern(spec["pattern"])
+        if any(x in ("^", "$") for x in spec["pattern"]): raise SqlError("the anchors ^ and $ are not allowed in the PATTERN of a window")
+        pvars = sqlmr.pattern_vars(pattern)
+        subsets = dict(spec["subsets"])
+        for k, vs in subsets.items():
+            if k in pvars: raise SqlError(f"SUBSET {k}: the name of a pattern variable")
+            for v in vs:
+                if v not in pvars: raise SqlError(f"SUBSET {k}: {v} is not a pattern variable")
+        for v in spec["define"]:
+            if v not in pvars: raise SqlError(f"DEFINE {v}: not a variable of the PATTERN")
+        seen = {}
+        for b in sc.bindings:
+            for c, ty, nl in b.cols:
+                nm = _shown(b, c); seen.setdefault(nm.lower(), []).append((nm, ty, nl))
+        cols = [v[0] for v in seen.values() if len(v) == 1]
+        univ = I.Binding("__mr", cols)
+        varb = {v: I.Binding(v, cols) for v in pvars + list(subsets)}
+        msc = _MRScope(univ, varb, sc.parent)
+        prev, self.mr_ctx = getattr(self, "mr_ctx", False), True
+        try:
+            bind = lambda text: self.expr(_parse_expr(text), msc, Ctx(agg=True, where="row pattern recognition"))
+            define = {v: self.boolean(bind(x), "DEFINE") for v, x in spec["define"].items()}
+            measures = [(bind(x), n) for x, n in spec["measures"]]
+        finally: self.mr_ctx = prev
+        if len({n.lower() for _, n in measures}) != len(measures): raise SqlError("MEASURES: two measures have the same name")
+        mine = {id(univ)} | {id(b) for b in varb.values()}
+        names = []
+        def walk(x):
+            if isinstance(x, I.Func) and x.fn == "__mr_match_number": raise SqlError("MATCH_NUMBER() is not allowed in a window")
+            if isinstance(x, I.Col) and id(x.b) in mine and x.name not in names: names.append(x.name)
+            if not isinstance(x, I.Subq):
+                for c in x.children(): walk(c)
+        for x in list(define.values()) + [m for m, _ in measures]: walk(x)
+        inputs = [self.column([n], sc, ictx) for n in names]
+        mr = sqlmr.MR(pattern, univ, varb, subsets, define, measures, [], [], "one", "show", tuple(spec["skip"]), None, names)
+        return sqlmr.WindowRPR(spec_text, mr, names, inputs, bool(spec["seek"]))
 
     def subquery(self, e, sc, ctx):
         kind = e["subquery_type"]
@@ -2278,6 +2454,17 @@ def _search_cycle_step(rec, names, sc, binder):
         step.where = make_and([step.where, stop])
     step.items = items + extra
     return step
+
+
+def check_nested(e):
+    """nested window functions (T619) only in the arguments and FILTER of a window aggregate (Python API)"""
+    if isinstance(e, I.Func) and e.fn in ("__nwf_row_number", "__nwf_value_of"):
+        raise SqlError("ROW_NUMBER(<row marker>) and VALUE_OF(... AT <row marker>) are only allowed in the argument of a window aggregate")
+    if isinstance(e, I.Win) and e.name in F.AGGS or isinstance(e, I.Win) and e.name == "count_star":
+        for x in e.partition + [o[0] for o in e.order]: check_nested(x)
+        return
+    if isinstance(e, I.Subq): return
+    for c in e.children(): check_nested(c)
 
 
 def _parse_expr(text):

@@ -1,7 +1,8 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""Row pattern recognition in FROM (ISO/IEC 9075-2:2016 7.6, feature R010): MATCH_RECOGNIZE.
+"""Row pattern recognition in FROM (ISO/IEC 9075-2:2016 7.6, feature R010): MATCH_RECOGNIZE, and in a window
+(7.11, feature R020).
 
     FROM t MATCH_RECOGNIZE (
         PARTITION BY ... ORDER BY ...
@@ -369,3 +370,51 @@ def _row_all(mr, part, pos, assign, number, cx, matched=True, empty=False):
     elif matched: meas = [mr.eval(m, part, assign, pos, number, cx, final=False) for m, _ in mr.measures]
     else: meas = [None] * len(mr.measures)
     return tuple(meas[x] if k == "m" else part.value(x, pos) for k, x in mr.out)
+
+
+# ================================================================== in a window (R020)
+class WindowRPR:
+    """a window's row pattern recognition: the bound MR, the names of the columns it reads and their expressions
+    (extra arguments of the window function), SEEK, and for <measure> OVER w the measure's index"""
+    def __init__(self, spec, mr, names, inputs, seek):
+        self.spec, self.mr, self.names, self.inputs, self.seek, self.measure = spec, mr, names, inputs, seek, None
+    def key(self): return ("rpr", self.spec, self.measure)
+
+
+def window_matches(rp, rows, frames, cx):
+    """for each row of an ordered partition: None (no match, or a row an earlier match skipped) or (first, last + 1
+    of the reduced frame, the measures). The match of a row is sought from that row (INITIAL), or from it and the rows
+    after it in its frame (SEEK); it can neither take rows nor read values outside the frame. The measures are
+    evaluated at the last row of the match."""
+    m = len(rows)
+    out = [None] * m
+    skip_until, number = 0, 0
+    mr = rp.mr
+    for p in range(m):
+        if p < skip_until: continue
+        fr = frames[p]
+        hi = fr[-1] + 1 if fr else p + 1
+        part = Part(rp.names, rows[p:hi])
+        M = Matcher(mr, part, cx)
+        found = None
+        for s0 in (range(part.n) if rp.seek else range(1)):
+            assign, end = M.match(s0, number + 1)
+            if assign is not None: found = (s0, assign, end); break
+        if found is None: continue
+        s0, assign, end = found
+        number += 1
+        if end == s0:                                          # an empty match: an empty frame, the measures of no rows
+            out[p] = (p + s0, p + s0, tuple(mr.eval(x, part, (), s0, number, cx, final=True) for x, _ in mr.measures))
+            skip_until = p + 1; continue
+        out[p] = (p + s0, p + end, tuple(mr.eval(x, part, assign, end - 1, number, cx, final=True) for x, _ in mr.measures))
+        kind, var = mr.skip
+        if kind == "past": skip_until = p + end
+        elif kind == "next": skip_until = p + s0 + 1
+        else:
+            vs = mr.subsets.get(var, [var])
+            rs = [q for q, v, _ in assign if v in vs]
+            if not rs: raise SqlError(f"AFTER MATCH SKIP TO {var}: the variable has no row in the match")
+            r = rs[0] if kind == "first" else rs[-1]
+            if r == s0: raise SqlError(f"AFTER MATCH SKIP TO {kind.upper()} {var}: the first row of the match again")
+            skip_until = p + r
+    return out
