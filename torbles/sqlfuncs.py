@@ -1517,18 +1517,24 @@ def _first(x, *rest): return x           # typeof(an aggregate): the type name, 
 
 @scalar("__iso_overlaps", lambda a: (T.BOOLEAN, None), nulls="custom")
 def _overlaps(s1, e1, s2, e2):
-    """ISO (s1, e1) OVERLAPS (s2, e2); an interval second argument is a duration"""
-    if isinstance(e1, Interval): e1 = _add(s1, e1)
-    if isinstance(e2, Interval): e2 = _add(s2, e2)
-    if s1 is None or s2 is None: return None
-    if e1 is not None and cmp_values(s1, e1) > 0: s1, e1 = e1, s1
-    if e2 is not None and cmp_values(s2, e2) > 0: s2, e2 = e2, s2
-    if e1 is None: e1 = s1
-    if e2 is None: e2 = s2
-    a = cmp_values(s1, s2) > 0 and (cmp_values(s1, e2) < 0 or cmp_values(e1, e2) <= 0)
-    b = cmp_values(s2, s1) > 0 and (cmp_values(s2, e1) < 0 or cmp_values(e2, e1) <= 0)
-    c = cmp_values(s1, s2) == 0
-    return a or b or c
+    """(s1, e1) OVERLAPS (s2, e2) by ISO 8.14: an interval second field is a duration; each pair is ordered (a NULL
+    start takes the end's place), then (S1 > S2 AND NOT (S1 >= T2 AND T1 >= T2)) OR (S2 > S1 AND NOT (S2 >= T1 AND
+    T2 >= T1)) OR (S1 = S2 AND (T1 <> T2 OR T1 = T2)) in three-valued logic"""
+    if isinstance(e1, Interval): e1 = None if s1 is None else _add(s1, e1)
+    if isinstance(e2, Interval): e2 = None if s2 is None else _add(s2, e2)
+    def order(d, e):
+        if d is None or (e is not None and cmp_values(e, d) < 0): return e, d
+        return d, e
+    S1, T1 = order(s1, e1); S2, T2 = order(s2, e2)
+    def c(a, b, f): return None if a is None or b is None else f(cmp_values(a, b))
+    gt = lambda a, b: c(a, b, lambda x: x > 0)
+    ge = lambda a, b: c(a, b, lambda x: x >= 0)
+    eq = lambda a, b: c(a, b, lambda x: x == 0)
+    ne = lambda a, b: c(a, b, lambda x: x != 0)
+    n = lambda x: None if x is None else not x
+    return _or(_and(gt(S1, S2), n(_and(ge(S1, T2), ge(T1, T2)))),
+               _and(gt(S2, S1), n(_and(ge(S2, T1), ge(T2, T1)))),
+               _and(eq(S1, S2), _or(ne(T1, T2), eq(T1, T2))))
 
 
 @scalar("list_value list_pack", lambda a: (T.LIST(T.supertype_all([x.t for x in a]) if a else T.INTEGER), None), nulls="custom")
@@ -1638,8 +1644,9 @@ def _ms_submultiset(a, b):
 def _ms_op(op):
     def f(a, b, mode="ALL"):
         import sqlexec
+        if op == "UNION":                                  # DISTINCT: SET(a UNION ALL b)
+            return _ms_set(list(a) + list(b)) if mode.upper() == "DISTINCT" else list(a) + list(b)
         if mode.upper() == "DISTINCT": a, b = _ms_set(a), _ms_set(b)
-        if op == "UNION": return list(a) + list(b)
         kb = _mkeys(b)
         out = []
         for v in a:

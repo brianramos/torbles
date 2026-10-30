@@ -219,7 +219,7 @@ expect("SELECT 2 MEMBER OF MULTISET[1, 2], 3 NOT MEMBER MULTISET[1, 2], MULTISET
 expect("SELECT MULTISET[1, 1, 2] MULTISET UNION MULTISET[2, 3], MULTISET[1, 1, 2] MULTISET UNION DISTINCT MULTISET[2, 3], "
        "MULTISET[1, 1, 2] MULTISET EXCEPT MULTISET[1], MULTISET[1, 1, 2] MULTISET EXCEPT DISTINCT MULTISET[1], "
        "MULTISET[1, 1, 2] MULTISET INTERSECT ALL MULTISET[1, 1, 1], MULTISET[1] MULTISET UNION MULTISET[1, 1, 2] MULTISET INTERSECT MULTISET[1]",
-       [([1, 1, 2, 2, 3], [1, 2, 2, 3], [1, 2], [2], [1, 1], [1, 1])], "MULTISET UNION / EXCEPT / INTERSECT (INTERSECT binds tighter)")
+       [([1, 1, 2, 2, 3], [1, 2, 3], [1, 2], [2], [1, 1], [1, 1])], "MULTISET UNION / EXCEPT / INTERSECT (INTERSECT binds tighter; UNION DISTINCT is SET(a UNION ALL b))")
 cnt = tdf[tdf.v < 3].groupby("k").size()
 got = db.sql("SELECT k, CARDINALITY(COLLECT(v)), CARDINALITY(SET(COLLECT(v))), CARDINALITY(FUSION(MULTISET[v, v])), INTERSECTION(MULTISET[1, v]) "
              "FROM t WHERE v < 3 GROUP BY k ORDER BY k").rows
@@ -545,6 +545,18 @@ expect_g("SELECT * FROM (SELECT * FROM ticker WHERE symbol = 'XYZ') q MATCH_RECO
 expect_g("SELECT tstamp, mn, c FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES MATCH_NUMBER() AS mn, CLASSIFIER() AS c "
          "ALL ROWS PER MATCH WITH UNMATCHED ROWS AFTER MATCH SKIP TO LAST B PATTERN (A B+) DEFINE B AS price > PREV(price)) WHERE symbol = 'XYZ' ORDER BY tstamp",
          [(1, None, None), (2, 1, "A"), (3, 1, "B"), (4, 2, "A"), (5, 2, "B")], "WITH UNMATCHED ROWS: a row of an earlier match is not repeated")
+
+expect("SELECT PERIOD (DATE '2020-01-01', DATE '2020-01-10') CONTAINS DATE '2020-01-05', "
+       "(DATE '2020-01-01', CAST(NULL AS DATE)) OVERLAPS (DATE '2020-01-02', DATE '2020-01-03'), "
+       "(DATE '2020-01-05', CAST(NULL AS DATE)) OVERLAPS (DATE '2020-01-02', DATE '2020-01-03'), "
+       "(CAST(NULL AS DATE), DATE '2020-01-02') OVERLAPS (DATE '2020-01-02', DATE '2020-01-03'), "
+       "(DATE '2020-01-03', DATE '2020-01-01') OVERLAPS (DATE '2020-01-02', INTERVAL '1' DAY)",
+       [(True, None, None, None, True)], "PERIOD CONTAINS a typed literal; OVERLAPS with a NULL bound is the ISO 8.14 formula in three-valued logic")
+expect("SELECT CAST(INTERVAL '3' DAY AS INTEGER), CAST(INTERVAL '2' YEAR AS INTEGER), CAST(INTERVAL '1.5' SECOND AS DECIMAL(5, 1)), typeof(INTERVAL '3' DAY), "
+       "ARRAY_MAX_CARDINALITY(ARRAY[1, 2]), X'01 02', X'01' 'ff'",
+       [(3, 2, Decimal("1.5"), "INTERVAL DAY", 2, b"\x01\x02", b"\x01\xff")], "a single-field interval as a number, typed qualifiers, ARRAY_MAX_CARDINALITY, X'..' with spaces and continued")
+refuses("SELECT 1__0", ["underscore"], "1__0 is not a numeric literal")
+refuses("SELECT CAST(INTERVAL '1-2' YEAR TO MONTH AS INTEGER)", ["one field"], "an interval of two fields does not cast to a number")
 
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

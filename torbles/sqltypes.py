@@ -38,6 +38,7 @@ class SqlType:
         if self.id in ("TIMESTAMP", "TIME", "TIMESTAMPTZ", "TIMETZ") and self.p is not None:   # fractional seconds precision
             base = "TIME" if self.id.startswith("TIME") and not self.id.startswith("TIMESTAMP") else "TIMESTAMP"
             return f"{base}({self.p})" + (" WITH TIME ZONE" if self.id.endswith("TZ") else "")
+        if self.id == "INTERVAL" and self.s: return f"INTERVAL {self.s}"
         if self.id in _DISPLAY: return _DISPLAY[self.id]
         if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
@@ -100,6 +101,18 @@ def datetime_type(tid, p):
     """TIMESTAMP / TIME [WITH TIME ZONE] with p fractional digits of seconds (6, microseconds, is the default)"""
     if not 0 <= p <= 9: raise SqlError(f"invalid fractional seconds precision {p}")
     return SqlType(tid, p=p if p < 6 else None)
+
+
+def _interval_number(v, t):
+    """CAST(<interval of one field> AS <number>) (ISO 6.13): the value in that field"""
+    q = (t.s or "").split("(")[0].strip().upper() if t is not None and t.id == "INTERVAL" else ""
+    if q not in ("YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND"):
+        raise SqlError(f"Conversion Error: cannot cast {t} to a number (an interval of one field only)")
+    if q == "YEAR": return v.months // 12 if v.months % 12 == 0 else Decimal(v.months) / 12
+    if q == "MONTH": return v.months
+    us = v.days * 86_400_000_000 + v.micros
+    per = {"DAY": 86_400_000_000, "HOUR": 3_600_000_000, "MINUTE": 60_000_000, "SECOND": 1_000_000}[q]
+    return us // per if us % per == 0 else Decimal(us) / per
 
 
 def round_frac(v, p):
@@ -340,6 +353,7 @@ def supertype(a, b, literal_a=False, literal_b=False):
         da, db = as_decimal(a), as_decimal(b)
         s = max(da.s, db.s); w = max(da.p - da.s, db.p - db.s)
         return DECIMAL(min(38, w + s), s)
+    if a.id == b.id == "INTERVAL": return INTERVAL         # two qualifiers: an interval of any fields
     if a.id == b.id and a.temporal:                        # the same datetime type, two precisions: the finer one
         return SqlType(a.id, p=None if a.p is None or b.p is None else max(a.p, b.p))
     if {a.id, b.id} == {"DATE", "TIMESTAMP"}: return TIMESTAMP
@@ -661,6 +675,10 @@ def _cast(v, src, dst, err):
         st = src.child if src is not None and src.id == "ROW" and src.child is not None else [("", None)] * len(v)
         return tuple(None if x is None else _cast(x, s_, t_, err) for x, (_, s_), (_, t_) in zip(v, st, dst.child))
     if d == "VARCHAR": return to_text(v, src)
+    if isinstance(v, Interval) and (dst.integer or d in ("DECIMAL", "DOUBLE", "FLOAT", "DECFLOAT")):
+        v = _interval_number(v, src)                       # a single-field interval: the value of its field
+        src = DECIMAL(38, 6) if isinstance(v, Decimal) else BIGINT
+        return _cast(v, src, dst, err)
     if dst.integer:
         if isinstance(v, bool): x = int(v)
         elif isinstance(v, int): x = v

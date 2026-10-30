@@ -69,7 +69,12 @@ def tokenize(sql):
         k, x = m.lastgroup, m.group(0)
         i = m.end()
         if k in ("ws", "lc", "bc"): continue
-        if k == "num": x = _num_text(x)
+        if k == "num":
+            if sql[i:i + 1] == "_": raise SqlError(f"invalid numeric literal {x + sql[i:i + 3]!r}: an underscore stands between two digits")
+            x = _num_text(x)
+        if k == "bstr": x = x[:2] + re.sub(r"\s+", "", x[2:-1]) + "'"         # X'01 02': spaces between hex digits (ISO 5.3)
+        if k == "str" and x[0] == "'" and out and out[-1].k == "bstr":            # X'01' 'ff': a continued binary literal
+            out[-1] = Tok("bstr", out[-1].s[:-1] + re.sub(r"\s+", "", x[1:])); continue
         elif k in ("ustr", "uqid"):
             q = x[2]; body = x[3:-1].replace(q + q, q)
             esc = "\\"
@@ -129,10 +134,19 @@ def _operand_back(t, j):
     return i
 
 
+_TYPED_LIT = {"DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ", "TIMETZ", "INTERVAL", "JSON"}
+_IV_WORDS = {"YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND", "TO", "YEARS", "MONTHS", "DAYS", "HOURS", "MINUTES", "SECONDS"}
+
+
 def _operand_fwd(t, i):
     """end index (exclusive) of the primary expression starting at token i"""
     j = i
     if t[j].s in _OPEN: j = _match_paren(t, j) + 1
+    elif t[j].k == "id" and j + 1 < len(t) and t[j + 1].k == "str" and t[j].up() in _TYPED_LIT:
+        j += 2                                             # DATE '...', TIMESTAMP '...', INTERVAL '...' <qualifier>
+        while j < len(t) and t[j].k == "str": j += 1
+        if t[i].up() == "INTERVAL":
+            while j < len(t) and t[j].up() in _IV_WORDS: j += 1
     elif t[j].k in ("id", "qid"):
         j += 1
         while j + 1 < len(t) and t[j].s == "." : j += 2
@@ -1103,7 +1117,7 @@ def iso_prepass(sql):
                 if t[j].s in ("+", "-") and j + 1 < len(t) and t[j + 1].k == "str": sign = t[j].s; j += 1
                 if t[j].k == "str":
                     q = _qualifier(t, j + 1)
-                    if q is not None and (sign or "(" in [x.s for x in t[j + 1:q[1]]]):
+                    if q is not None:                      # every qualified literal: its type keeps the qualifier
                         body = t[j].s[1:-1]
                         if sign == "-": body = body[1:] if body.startswith("-") else "-" + body
                         t[i:q[1]] = tokenize(f"__iso_interval('{body}', '{q[0]}')"); changed = True; break
@@ -1293,6 +1307,10 @@ def make_func(name, args, extra=None):
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
+    if name in ("__iso_interval", "__iso_interval_cast") and isinstance(args[1], I.Lit) and isinstance(args[1].v, str):
+        rt = T.SqlType("INTERVAL", s=args[1].v)                 # INTERVAL DAY, INTERVAL YEAR TO MONTH, ...
+    if name == "__iso_dt_diff" and isinstance(args[2], I.Lit) and isinstance(args[2].v, str):
+        rt = T.SqlType("INTERVAL", s=args[2].v)
     if name in _COLL_KEEP and rt.id == "VARCHAR":
         cs = {a.t.coll for a in args if getattr(a.t, "coll", None)}
         if len(cs) > 1: raise SqlError(f"collation conflict: {' and '.join(sorted(cs))}")
@@ -2233,6 +2251,8 @@ class Binder:
         if name == "array_max_cardinality":
             a = self.expr(raw[0]["expression"], sc, ctx)
             if a.t.id != "LIST": raise SqlError(f"ARRAY_MAX_CARDINALITY needs an array, not {a.t}")
+            if a.t.p is None and isinstance(a, I.Func) and a.fn == "list_value": return I.Lit(len(a.args), T.BIGINT)
+            if a.t.p is None and isinstance(a, I.Lit) and isinstance(a.v, list): return I.Lit(len(a.v), T.BIGINT)  # ARRAY[...]: its elements
             return I.Lit(a.t.p, T.BIGINT)
         if name in ("__iso_nrow_number", "__iso_value_of"):
             return self.nested_window_function(name, raw, sc, ctx)
