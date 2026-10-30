@@ -86,6 +86,7 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   | DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE | days / microseconds (UTC for zoned values) - minimum | compare (`date`, `datetime` or ISO strings), group |
   | BOOLEAN | 0 / 1 | compare, group |
   | VARCHAR, BLOB, JSON | rank in the sorted dictionary | `=`, `<`, `between`, `isin`, `startswith`, group |
+  | ROW (a DuckDB STRUCT of scalars or rows) | rank in the sorted dictionary | group; fields and comparisons in SQL |
   | DOUBLE, FLOAT | rank in the sorted values | compare, group (to sum one exactly, load it as DECIMAL: `types=`) |
 
   A referenced table's integer or decimal column whose values span more than 32 bits is stored as its rank; it can
@@ -116,10 +117,11 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
 ### SQL
 
 `db.sql(text)` takes queries in ISO SQL: joins of every kind (LATERAL and partitioned outer joins included), subqueries,
-WITH and WITH RECURSIVE (with SEARCH and CYCLE), set operations, grouping sets, window functions with every frame,
-FETCH FIRST ... WITH TIES, the ISO predicates (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE, OVERLAPS, PERIOD predicates, IS
+WITH and WITH RECURSIVE (with SEARCH and CYCLE), set operations, grouping sets, window functions with every frame
+(nested window functions and row pattern recognition in windows included), FETCH FIRST ... WITH TIES, the ISO predicates (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE, OVERLAPS, PERIOD predicates, IS
 NORMALIZED, IS JSON, MEMBER OF ...), the standard's scalar functions and aggregates (statistics, regressions,
-percentiles, hypothetical set functions, LISTAGG, ARRAY_AGG, COLLECT), time zones, collations, arrays and multisets,
+percentiles, hypothetical set functions, LISTAGG, ARRAY_AGG, COLLECT), time zones, collations, arrays, multisets and
+row types, DECFLOAT,
 SQL/JSON with its path language and JSON_TABLE, MATCH_RECOGNIZE and TABLESAMPLE. DuckDB's syntax and functions are
 accepted too, and where ISO leaves a choice to the implementation, torbles makes DuckDB's, so the two can be compared
 value for value. The same queries can be built in Python (`db.select(...)`, with `from torbles import F`).

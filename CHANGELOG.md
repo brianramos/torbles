@@ -35,9 +35,11 @@ nearly complete for queries: every predicate (SIMILAR TO, LIKE_REGEX, MATCH, UNI
 NORMALIZED, IS JSON, MEMBER OF, SUBMULTISET, IS A SET), the scalar functions, the aggregates (percentiles, hypothetical
 set functions, LISTAGG, COLLECT, FUSION, INTERSECTION, JSON_ARRAYAGG), window functions with every frame and
 exclusion, time zones, collations, intervals with qualifiers, binary strings, arrays, multisets, SQL/JSON with its
-path language and JSON_TABLE, LATERAL, partitioned outer joins, WITH RECURSIVE with SEARCH and CYCLE, MATCH_RECOGNIZE
-and TABLESAMPLE. `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than
-queries, SQL/XML, property graphs, row types with named fields, nested window functions).
+path language and JSON_TABLE (with its PLAN clauses), LATERAL, partitioned outer joins, WITH RECURSIVE with SEARCH and
+CYCLE, MATCH_RECOGNIZE and row pattern recognition in windows, nested window functions (VALUE_OF, ROW_NUMBER of a row
+marker), row types with named fields (also as stored STRUCT columns), DECFLOAT, TIMESTAMP(p) / TIME(p), and
+TABLESAMPLE. `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than
+queries, the UNICODE collation, SQL/XML, property graphs and the other parts of ISO/IEC 9075).
 
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random

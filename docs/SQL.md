@@ -94,9 +94,9 @@ value is used by a row that is output.
 | BOOLEAN | bool | yes |
 | CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB) | yes (dictionary) |
 | BINARY, VARBINARY, BLOB, BINARY LARGE OBJECT | bytes | yes (dictionary) |
-| DATE, TIME, TIMESTAMP | date, time, datetime | DATE, TIMESTAMP |
-| TIME / TIMESTAMP WITH TIME ZONE | an instant with its displacement (aware datetime) | TIMESTAMP WITH TIME ZONE |
-| INTERVAL (year-month and day-time) | months, days, microseconds (returned as timedelta) | no |
+| DATE, TIME, TIMESTAMP, TIME(p), TIMESTAMP(p) | date, time, datetime; with p < 6 fractional digits, a cast rounds half away from zero (as DuckDB's TIMESTAMP_S / _MS) | DATE, TIMESTAMP |
+| TIME / TIMESTAMP [(p)] WITH TIME ZONE | an instant with its displacement (aware datetime) | TIMESTAMP WITH TIME ZONE |
+| INTERVAL, INTERVAL <qualifier> (year-month and day-time) | months, days, microseconds (returned as timedelta); a literal or CAST with a qualifier is typed `INTERVAL DAY`, ..., and a single-field one casts to a number | no |
 | JSON | its text | yes (dictionary) |
 | ARRAY, MULTISET | list (values, not stored) | no |
 | ROW (a INTEGER, b VARCHAR, ...) (T051) | a tuple of the fields' values; returned as a dict when the fields have names, else as a tuple (as DuckDB returns STRUCTs) | yes (dictionary; DuckDB STRUCT columns whose fields are scalars or rows) |
