@@ -30,6 +30,7 @@ class SqlType:
     def __hash__(self): return hash((self.id, self.p, self.s, self.child))
     def __repr__(self):
         if self.id == "DECIMAL": return f"DECIMAL({self.p},{self.s})"
+        if self.id == "DECFLOAT": return f"DECFLOAT({self.p})"
         if self.id == "LIST": return f"{self.child!r}[]"
         if self.id == "MULTISET": return f"{self.child!r} MULTISET"
         if self.id in _DISPLAY: return _DISPLAY[self.id]
@@ -41,7 +42,7 @@ class SqlType:
     @property
     def integer(self): return self.id in INT_RANGE
     @property
-    def numeric(self): return self.id in INT_RANGE or self.id in ("DECIMAL", "FLOAT", "DOUBLE")
+    def numeric(self): return self.id in INT_RANGE or self.id in ("DECIMAL", "FLOAT", "DOUBLE", "DECFLOAT")
     @property
     def exact(self): return self.id in INT_RANGE or self.id == "DECIMAL"
     @property
@@ -68,6 +69,27 @@ FLOAT, DOUBLE, VARCHAR, DATE, TIME, TIMESTAMP, INTERVAL, NULL, BLOB = (SqlType(x
 TIMESTAMPTZ, TIMETZ = SqlType("TIMESTAMPTZ"), SqlType("TIMETZ")
 JSON = SqlType("JSON")
 def DECIMAL(p=18, s=3): return SqlType("DECIMAL", min(int(p), 38), int(s))
+def DECFLOAT(p=34): return SqlType("DECFLOAT", 16 if int(p) <= 16 else 34)
+
+
+class DecFloat(Decimal):
+    """a DECFLOAT value (ISO T076, IEEE 754 decimal floating point): a Decimal that knows it is one"""
+    __slots__ = ()
+
+
+_DF_CTX = {16: decimal.Context(prec=16, rounding=decimal.ROUND_HALF_EVEN, Emax=384, Emin=-383, capitals=1, traps=[decimal.InvalidOperation, decimal.Overflow]),
+           34: decimal.Context(prec=34, rounding=decimal.ROUND_HALF_EVEN, Emax=6144, Emin=-6143, capitals=1, traps=[decimal.InvalidOperation, decimal.Overflow])}
+
+
+def decfloat(v, p=34):
+    """v rounded to DECFLOAT(p); past the exponent range, an error (ISO: numeric value out of range)"""
+    ctx = _DF_CTX[16 if p <= 16 else 34]
+    d = v if isinstance(v, Decimal) else Decimal(repr(v)) if isinstance(v, float) else Decimal(v)
+    try: r = ctx.plus(d) if d.is_finite() else d
+    except decimal.Overflow: raise SqlError(f"data exception: numeric value out of range for DECFLOAT({p})")
+    if r.is_finite() and r != 0 and (r.adjusted() > ctx.Emax or r.adjusted() < ctx.Emin - ctx.prec + 1):
+        raise SqlError(f"data exception: numeric value out of range for DECFLOAT({p})")
+    return DecFloat(r)
 def LIST(t, maxcard=None): return SqlType("LIST", p=maxcard, child=t)
 def MULTISET(t): return SqlType("MULTISET", child=t)
 
@@ -96,6 +118,8 @@ def type_from_name(name, args=()):
     u = re.sub(r"\s+COLLATE\s+\S+$", "", u)
     if u.endswith("[]"): return LIST(type_from_name(u[:-2]))
     if u.endswith(" MULTISET"): return MULTISET(type_from_name(u[:-9]))
+    m = re.fullmatch(r"DECFLOAT\s*(?:\(\s*(\d+)\s*\))?", u)
+    if m: return DECFLOAT(int(args[0]) if args else int(m.group(1) or 34))
     m = re.fullmatch(r"(DECIMAL|NUMERIC|DEC)\s*(?:\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?", u)
     if m or u in ("DECIMAL", "NUMERIC", "DEC"):
         a = [int(x) for x in args] if args else [int(x) for x in (m.group(2), m.group(3)) if x is not None] if m else []
@@ -234,6 +258,8 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if literal_a and a.id == "VARCHAR" and b.id != "VARCHAR": return b
     if literal_b and b.id == "VARCHAR" and a.id != "VARCHAR": return a
     if a.integer and b.integer: return _int_supertype(a, b)
+    if a.numeric and b.numeric and "DECFLOAT" in (a.id, b.id):
+        return DECFLOAT(max(x.p for x in (a, b) if x.id == "DECFLOAT") if not (a.floating or b.floating) else 34)
     if a.numeric and b.numeric:
         if a.floating or b.floating: return DOUBLE
         da, db = as_decimal(a), as_decimal(b)
@@ -484,6 +510,8 @@ def to_text(v, t):
     if v is None: return None
     if isinstance(v, bool): return "true" if v else "false"
     if isinstance(v, int): return str(v)
+    if isinstance(v, DecFloat) or (t is not None and t.id == "DECFLOAT" and isinstance(v, Decimal)):
+        return str(Decimal(v)).replace("Infinity", "Infinity")         # DECFLOAT: its own text (1.5E+20, NaN, -Infinity)
     if isinstance(v, Decimal):
         if t is not None and t.id == "DECIMAL": v = _dec_quant(v, t.s)
         return format(v, "f")
@@ -561,6 +589,15 @@ def _cast(v, src, dst, err):
         q = _dec_quant(x, dst.s)
         if abs(q) >= Decimal(10) ** (dst.p - dst.s): raise SqlError(f"Conversion Error: {v} does not fit in {dst}")
         return q
+    if d == "DECFLOAT":
+        if isinstance(v, bool): raise SqlError(f"Conversion Error: cannot cast BOOLEAN to {dst}")
+        if isinstance(v, (int, Decimal, float)): return decfloat(v, dst.p)
+        if isinstance(v, str):
+            t = v.strip()
+            if re.fullmatch(r"[+-]?(inf|infinity|nan|snan)", t, re.I): return DecFloat(t.replace("inf", "Infinity").replace("INF", "Infinity") if t.lower() in ("inf", "+inf", "-inf") else t)
+            try: return decfloat(Decimal(t), dst.p)
+            except decimal.InvalidOperation: raise SqlError(f"Conversion Error: could not convert string '{v}' to {dst}")
+        raise SqlError(f"Conversion Error: cannot cast {src} to {dst}")
     if d in ("DOUBLE", "FLOAT"):
         if isinstance(v, str):
             s = v.strip().lower()
@@ -649,6 +686,7 @@ def py_type(v):
             lo, hi = INT_RANGE[name]
             if lo <= v <= hi: return SqlType(name)
         raise SqlError(f"integer {v} is too large")
+    if isinstance(v, DecFloat): return DECFLOAT(34)
     if isinstance(v, Decimal):
         t = v.as_tuple(); s = max(0, -t.exponent); p = max(len(t.digits), s + 1)
         return DECIMAL(max(p, 1), s)

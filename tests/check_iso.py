@@ -342,5 +342,16 @@ expect("SELECT NORMALIZE('é', NFD, 10) = NORMALIZE('é', NFD), ANY_VALUE(gid) I
 vs_duckdb("SELECT k, sum(v) OVER (w ORDER BY id ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t WHERE id < 30 WINDOW w AS (PARTITION BY k) ORDER BY id",
           "a window defined from a named window")
 
+print("== DECFLOAT (T076)")
+expect("SELECT CAST(1 AS DECFLOAT(16)) / 3, CAST(1 AS DECFLOAT) / 3, CAST(id AS DECFLOAT(7)) * 1234567, CAST('1.20' AS DECFLOAT) = 1.2 FROM t WHERE id = 3",
+       [(Decimal("0.3333333333333333"), Decimal("0.3333333333333333333333333333333333"), Decimal("3703701"), True)], "rounded to p digits")
+expect("SELECT typeof(CAST(1 AS DECFLOAT(16)) / 3), typeof(CAST(1 AS DECFLOAT) + 1.5), CAST(CAST(1 AS DECFLOAT(16)) / 3 AS VARCHAR)",
+       [("DECFLOAT(16)", "DECFLOAT(34)", "0.3333333333333333")], "result types and text")
+expect("SELECT CAST('NaN' AS DECFLOAT) = CAST('NaN' AS DECFLOAT), CAST('-Infinity' AS DECFLOAT) < -1e300, CAST('Infinity' AS DECFLOAT) > 1, "
+       "CAST('NaN' AS DECFLOAT) > CAST('Infinity' AS DECFLOAT)", [(True, True, True, True)], "special values in a total order")
+expect("SELECT sum(CAST(v AS DECFLOAT(16))) = sum(v), max(CAST(v AS DECFLOAT)) = max(v) FROM t", [(True, True)], "aggregates")
+refuses("SELECT CAST('1E+400' AS DECFLOAT(16))", ["out of range", "DECFLOAT"], "exponent overflow is a data exception")
+refuses("SELECT CAST('1E+300' AS DECFLOAT(16)) * CAST('1E+300' AS DECFLOAT(16))", ["out of range"], "overflow in arithmetic")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

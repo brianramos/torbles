@@ -1131,6 +1131,13 @@ def make_func(name, args, extra=None):
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
     f = I.Func(name, args, rt, extra)
+    if rt.id == "DECFLOAT" and name in ("+", "-", "*", "/", "%", "neg", "abs", "//"):     # rounded to DECFLOAT(p)
+        f = I.Func("__decfloat", [f, I.Lit(rt.p, T.INTEGER)], rt)
+        if all(isinstance(a, I.Lit) for a in args):
+            import sqlexec
+            try: return I.Lit(sqlexec.eval_const(f), rt)
+            except SqlError: return f
+        return f
     if s.deterministic and all(isinstance(a, I.Lit) for a in args) and name not in ("typeof",):
         import sqlexec
         try: return I.Lit(sqlexec.eval_const(f), rt)            # constant folding
@@ -1908,6 +1915,7 @@ class Binder:
             if ch.get("class") == "CONSTANT": args.append(int(ch["literal"]["text"]))
         if name.upper().startswith("DECIMAL") or name.upper() in ("NUMERIC", "DEC"):
             return T.type_from_name("DECIMAL", args)
+        if name.upper() == "DECFLOAT": return T.type_from_name("DECFLOAT", args)
         return T.type_from_name(name)
 
     def constant(self, lit):

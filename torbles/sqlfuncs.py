@@ -91,6 +91,9 @@ def _num_t(args, op):
     if _strlit(args[1]) and a.numeric: b = T.DOUBLE if a.floating else a
     if not (a.numeric and b.numeric):
         raise SqlError(f"No function matches {op}({ta}, {tb})")
+    if "DECFLOAT" in (a.id, b.id):                      # DECFLOAT arithmetic: rounded to the result's precision
+        r = T.supertype(a, b)
+        return r, [r, r]
     if a.integer and b.integer:
         if lit_int(args[1]) and _fits(args[1].v, a): b = a
         if lit_int(args[0]) and _fits(args[0].v, b): a = b
@@ -232,6 +235,9 @@ def _mul(a, b):
 
 
 def _div(a, b):
+    if isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat):
+        if b == 0: return Err("Division by zero")
+        return CTX.divide(Decimal(a), Decimal(b))
     if isinstance(a, Interval):
         if b == 0: return Err("Division by zero")
         return _iv_scale(a, 1 / Fraction(str(b)) if isinstance(b, (float, Decimal)) else Fraction(1, b))
@@ -268,6 +274,10 @@ scalar("// divide", _arith_typer("//"))(_idiv)
 scalar("% mod", _arith_typer("%"))(_mod)
 
 
+@scalar("__decfloat", lambda a: (T.DECFLOAT(a[1].v), None))
+def _decfloat(x, p): return T.decfloat(x, p) if isinstance(x, Decimal) or isinstance(x, (int, float)) else x
+
+
 @scalar("neg", lambda a: (a[0].t if a[0].t.id != "NULL" else T.INTEGER, None))
 def _neg(a): return -a
 
@@ -295,8 +305,9 @@ def cmp_values(a, b):
         a = T.localize(a) if a.tzinfo is None else a; b = T.localize(b) if b.tzinfo is None else b
         if isinstance(a, _dt.time):
             a, b = T.in_zone(a, _dt.timezone.utc).replace(tzinfo=None), T.in_zone(b, _dt.timezone.utc).replace(tzinfo=None)
-    if isinstance(a, float) or isinstance(b, float):
-        an, bn = a != a, b != b
+    if isinstance(a, float) or isinstance(b, float) or isinstance(a, T.DecFloat) or isinstance(b, T.DecFloat):
+        an = a != a if not isinstance(a, Decimal) else a.is_nan()
+        bn = b != b if not isinstance(b, Decimal) else b.is_nan()
         if an or bn: return 0 if an and bn else (1 if an else -1)
     if isinstance(a, list):
         for x, y in zip(a, b):
@@ -1756,6 +1767,7 @@ def _sum_t(ts, p=()):
     t = ts[0]
     if t.integer: return T.HUGEINT if t.id != "UHUGEINT" else T.UHUGEINT
     if t.id == "DECIMAL": return T.DECIMAL(38, t.s)
+    if t.id == "DECFLOAT": return t
     if t.id == "INTERVAL": return T.INTERVAL
     if t.id == "BOOLEAN": return T.HUGEINT
     if t.id == "NULL": return T.HUGEINT
@@ -1808,6 +1820,7 @@ def _product(rows, p=()):
 def _avg_t(ts, p=()):
     t = ts[0]
     if t.id == "INTERVAL": return T.INTERVAL
+    if t.id == "DECFLOAT": return t
     if not (t.numeric or t.id == "NULL" or t.id == "BOOLEAN"): raise SqlError(f"AVG({t}) is not defined")
     return T.DOUBLE
 
@@ -1829,6 +1842,8 @@ def ffloat(fr):
 def _avg(rows, p=()):
     n = sum(w for _, w in rows)
     if not n: return None
+    if any(isinstance(v, T.DecFloat) for (v,), _ in rows):
+        return T.decfloat(CTX.divide(sum((Decimal(v) * w for (v,), w in rows), Decimal(0)), Decimal(n)))
     if any(isinstance(v, float) for (v,), _ in rows):
         return math.fsum(float(v) * w for (v,), w in rows) / n
     if isinstance(rows[0][0][0], Interval):

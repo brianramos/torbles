@@ -89,6 +89,7 @@ value is used by a row that is output.
 |---|---|---|
 | SMALLINT, INTEGER, BIGINT, HUGEINT, unsigned types | int (arithmetic never wraps; overflow is an error where DuckDB's is) | yes |
 | DECIMAL(p, s), NUMERIC | Decimal, exact | yes |
+| DECFLOAT(p) (T076; p defaults to 34) | Decimal rounded to p digits, with Infinity and NaN (NaN sorts last and equals itself) | no (the loaders read types through DuckDB, which has none) |
 | REAL, DOUBLE PRECISION, FLOAT | float | yes (dictionary) |
 | BOOLEAN | bool | yes |
 | CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB) | yes (dictionary) |
@@ -242,7 +243,6 @@ GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named wind
   recognition in a window** (R020: MEASURES / PATTERN in a window definition); MATCH_RECOGNIZE in FROM is supported.
 - **The UNICODE collation** (the Unicode Collation Algorithm) needs a collation library; the code point collations and
   NOCASE / NOACCENT / NFC are supported.
-- **DECFLOAT** (T076).
 - Other parts of ISO/IEC 9075: SQL/XML (Part 14), SQL/MDA multidimensional arrays (Part 15), SQL/PGQ property graph
   queries (Part 16), SQL/MED, SQL/OLB, SQL/JRT, SQL/CLI.
 
