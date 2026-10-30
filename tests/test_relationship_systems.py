@@ -198,6 +198,11 @@ class RelationshipSystems(unittest.TestCase):
         self.assertEqual(q.device, "gpu")
 
     def test_sparse_group_buffers_survive_strategy_and_backend_switches(self):
+        # sparse group buffers: the matrix product's output (a GROUP BY with this many groups otherwise takes
+        # the row kernel's dense arrays, algq.ROWPATH_GROUPS)
+        from torbles import algq as _algq
+        saved = _algq.ROWPATH_GROUPS; _algq.ROWPATH_GROUPS = 0
+        self.addCleanup(setattr, _algq, "ROWPATH_GROUPS", saved)
         n = 20001  # exceeds the initial sparse result capacity of 16384
         values = dict(x=[i % 8 for i in range(n)], y=[(i * 3) % 7 for i in range(n)],
                       bucket=list(range(n)))

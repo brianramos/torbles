@@ -64,8 +64,8 @@ expressions, grouping, joins, DISTINCT, the set operations, ORDER BY and LIMIT; 
 that are output. Arithmetic and comparisons of code columns run on the codes, any other function runs once per
 distinct combination of the codes it reads, and a filter on a fact column with millions of possible codes is evaluated
 on the codes present. The engine's own result handling (128-bit sums and group codes, self-extending keys, measures
-factored through the GROUP BY key, lookup keys) is array arithmetic instead of a loop over groups; COUNT(DISTINCT),
-the percentiles and MODE work on the (group, value, count) histograms; AVG, the variances, covariances, CORR and REGR_*
+factored through the GROUP BY key, lookup keys) is array arithmetic instead of a loop over groups; MODE and the
+percentiles of expressions work on the (group, value, count) histograms; AVG, the variances, covariances, CORR and REGR_*
 are computed for every group at once as exact integer arithmetic on the moment sums, rounded once; COUNT, SUM and AVG
 (DISTINCT) over window frames are merge-sort-tree dominance counts, and MEDIAN and the percentiles over frames are
 parallel binary searches on those counts. The SQL front end tokenizes a statement once and reads a statement it has
@@ -75,6 +75,33 @@ torbles none), has no mismatch; on the 27,961 statements it shares with the reco
 fell from 666 s to 230 s, its mean from 23.8 to 8.2 ms and its slowest statement from 87 s to 2.4 s, the median ratio
 to DuckDB from 1.38 to 1.27, and torbles answers first on 25% of statements instead of 19%. The median statement
 (4.6 ms against DuckDB's 3.8) is now mostly fixed cost: parsing, binding and planning in Python.
+
+Some aggregates and limits no longer form (group, value) tuples or row pairs at all. MEDIAN and PERCENTILE_CONT / _DISC
+of a fact column find the code at each wanted rank by rank selection on the column's planes, eight bits at a time, each
+step one small engine query grouped by the block's keys and the code's leading bits on the code ranges the bits found so
+far leave; only the codes at those ranks are decoded. ORDER BY ... LIMIT k of a block without aggregates uses the same
+selection: the code at rank k on the first sort column bounds the rows the block reads (and the next sort column while
+the ties are many). COUNT(DISTINCT) has the engine set one bit per (group, value) cell instead of counting it, a new
+aggregation mode of the row kernel, and counts each group's bits. An aggregate block over an inner equi-join of two FROM
+items that is not a star (two derived tables or CTEs, a table joined with itself on a column that is not its key) groups
+each side first by the columns the block reads outside its aggregates, with exact partial sums, joins the groups and
+combines each aggregate from the sides' sums: a SUM over one side counts once per row of the other, a SUM of a product
+of the two sides' factors is the product of their sums, MIN and MAX are the sides' own. And a GROUP BY with many
+possible groups (2^14, by the keys' distinct counts) runs on the row kernel, which now transposes a plane key once per
+64-row word, instead of the matrix product, whose cost grows with the groups of each tile; with a filter only while the
+dense group arrays stay small, so the 13 SSB queries keep their plans. The rank selections and the cell bits apply from
+2^16 fact rows on; on smaller tables reading the values is cheaper. The general GROUP BY path now takes its sparse
+output when dense group arrays would hold more than four entries per fact row (a domain of millions of code combinations
+on a table of thousands of rows took 0.8 s to allocate and scan). On SSB SF1 at two threads, against the code before:
+the median of revenue per year went from 8.4 s to 59 ms (DuckDB 141), two percentiles per customer nation from 11.8 s to
+0.48 s (DuckDB 0.23), the ten rows with the highest revenue from 4.4 s to 54 ms, with a filter or a join from 0.6 to 1.0
+s to 55 to 61 ms, COUNT(DISTINCT customer) per year from 252 to 80 ms (DuckDB 63), COUNT(DISTINCT part) per supplier
+nation and year from 11.2 s to 188 ms (DuckDB 548), the customers ranked by revenue from 235 to 96 ms and joined with a
+second aggregate from 217 to 122 ms, and an aggregate over a join of two CTEs with 33 million row pairs, which ran out
+of memory (6 GB) forming them, takes 41 ms (DuckDB 142); the 13 SSB queries are unchanged (113.9 ms against 113.0). The
+SQL fuzzing record, the same 36,810 statements as before, has no mismatch, no error and no refusal, with the default
+settings and with these paths on for every table. `tests/check_algebra.py` runs each path with its switch on and off
+(identical answers) and against DuckDB, on the three engines, and is part of `make test`.
 
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random

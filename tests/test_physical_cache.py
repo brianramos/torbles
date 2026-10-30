@@ -162,6 +162,11 @@ class PhysicalDecisionCache(unittest.TestCase):
         for name, value in fields.items(): self.assertEqual(getattr(live, name), value, name)
 
     def test_shared_decision_survives_independent_sparse_buffer_growth(self):
+        # sparse group buffers: the matrix product's output (a GROUP BY with this many groups otherwise takes
+        # the row kernel's dense arrays, algq.ROWPATH_GROUPS)
+        from torbles import algq as _algq
+        saved = _algq.ROWPATH_GROUPS; _algq.ROWPATH_GROUPS = 0
+        self.addCleanup(setattr, _algq, "ROWPATH_GROUPS", saved)
         db, t, _, values = self.make(17001, unique_groups=True)
         expected = self.expected(values, grouped=True)
         q1, q2 = self.query(db, t, grouped=True), self.query(db, t, grouped=True)

@@ -1415,6 +1415,13 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             transpose64(TA[c]);
             if (t->msb[c]) for (int r = 0; r < 64; r++) TA[c][r] = revb((uint32_t)TA[c][r], t->width[c]);
         }
+        uint64_t KT[MAXKEY][64];                         /* plane-mask keys of a dense word: every row's code at once */
+        if (dense) for (int i = 0; i < q->nkey; i++) if (q->key_kind[i] == 3) {
+            uint32_t mk = q->key_mask[i]; const uint64_t *x = decode_n(t, &D, q->key_arg[i], w, 32 - __builtin_clz(mk));
+            int nb = __builtin_popcount(mk), j = 0; memset(KT[i], 0, sizeof KT[i]);
+            while (mk) { int p = __builtin_ctz(mk); mk &= mk - 1; KT[i][nb - 1 - j++] = x[p]; }   /* first plane: top bit */
+            transpose64(KT[i]);
+        }
         while (G) {
             int r = __builtin_ctzll(G); G &= G - 1;
             for (int c = 0; c < t->k; c++) if (needf >> c & 1) fv[c] = dense ? (uint32_t)TA[c][r] : extract_col(t, decode(t, &D, c, w), c, r);
@@ -1425,12 +1432,18 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
             u128 key = 0;
             for (int i = 0; i < q->nkey; i++) {
                 uint64_t kv;
-                if (q->key_kind[i] == 3) {               /* coordinate projection: read the field's planes */
+                if (q->key_kind[i] == 3 && dense) kv = KT[i][r];
+                else if (q->key_kind[i] == 3) {          /* coordinate projection: read the field's planes */
                     uint32_t mk = q->key_mask[i]; const uint64_t *x = decode_n(t, &D, q->key_arg[i], w, 32 - __builtin_clz(mk)); kv = 0;
                     while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; kv = (kv << 1) | ((x[j] >> r) & 1); }
                 } else kv = q->key_kind[i] == 0 ? fv[q->key_arg[i]] : q->key_kind[i] == 1 ? av[q->key_arg[i]]
                             : extract_msb(decode_n(t, &D, q->key_arg[i], w, q->key_nbits[i]), q->key_nbits[i], r);   /* field read from the fk planes */
                 key = key * q->key_radix[i] + kv;
+            }
+            if (q->agg == A_DIST) {                      /* COUNT(DISTINCT): the bit of the row's (group, value) cell */
+                uint64_t cell = (uint64_t)key;
+                __atomic_fetch_or(&q->dist_bits[cell >> 6], 1ULL << (cell & 63), __ATOMIC_RELAXED);
+                continue;
             }
             if (q->ext_on) {                             /* MIN / MAX: the row's code */
                 uint32_t xv = fv[q->ext_col];
@@ -1760,8 +1773,22 @@ static void run_parallel(int kind, const void *t, qplan_t *q, uint64_t nunits, u
     }
     free(chunks);
 }
+static uint64_t popcount_bits(const uint64_t *b, uint64_t s, uint64_t n) {   /* bits set in [s, s + n) */
+    uint64_t c = 0, e = s + n;
+    while (s < e && (s & 63)) { c += (b[s >> 6] >> (s & 63)) & 1; s++; }
+    while (s + 64 <= e) { c += (uint64_t)__builtin_popcountll(b[s >> 6]); s += 64; }
+    while (s < e) { c += (b[s >> 6] >> (s & 63)) & 1; s++; }
+    return c;
+}
 int64_t at_query(const atable_t *t, qplan_t *q) {
     if (!q->wide && !tr_measure_valid(q, t->k)) return -1;
+    if (q->agg == A_DIST) {                              /* dense cells only: (group keys, value) with the value last */
+        if (!q->dist_bits || !q->dist_radix || q->nkey < 1 || q->widekey || q->out_key || q->wide || q->ext_on || q->nmeas) return -1;
+        run_parallel(0, t, q, t->nw, 512, 0, 1);
+        uint64_t R = q->dist_radix, G = q->ngroups / R;
+        for (uint64_t g = 0; g < G; g++) q->out_cnt[g] = popcount_bits(q->dist_bits, g * R, R);
+        return 0;
+    }
     if (q->ext_on && q->agg != A_POLYG && q->agg != A_GENERAL) return -1;
     if (q->wide && q->agg != A_MM && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2;
     if (q->agg == A_MM) { static mplane_t tmp[MAXMP]; mm_init(); if (!q->nkey || tb_mm_planes(t->width, t->msb, q, tmp) < 0) return -1; }

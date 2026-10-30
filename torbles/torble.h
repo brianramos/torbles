@@ -12,7 +12,7 @@
 enum { P_TRUE, P_EQ, P_NE, P_LT, P_LE, P_GT, P_GE, P_BETWEEN, P_AND, P_OR, P_NOT, P_PREFIX, P_BIT, P_CUBE, P_CLT, P_CGE, P_XOR };   /* P_XOR: additive (F2) correction */
 /* P_CLT / P_CGE(col, a = constant, b = plane mask): the code formed by the planes in mask (most significant id bit first)
    is < a / >= a. The factored comparator polynomial sum_j (1 + x_j) c_j E_j on any set of variables. */   /* P_CUBE(col, a = values, b = plane mask): AND of literals on any planes */   /* P_BIT(col, a = bit): value bit a is set */   /* P_PREFIX(col, a = value, b = nbits): top nbits == a */
-enum { A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS };   /* A_ROWS: the passing rows as a bitmap (out_rows) */   /* A_MM: GROUP BY as one AND-popcount matrix product, see below */   /* A_DOM: dominance sums over x < t_k, see below */   /* A_POLYG: GROUP BY with a degree-2 polynomial measure, by mask splitting */
+enum { A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS, A_DIST };   /* A_ROWS: the passing rows as a bitmap (out_rows) */   /* A_DIST: COUNT(DISTINCT), see below */   /* A_MM: GROUP BY as one AND-popcount matrix product, see below */   /* A_DOM: dominance sums over x < t_k, see below */   /* A_POLYG: GROUP BY with a degree-2 polynomial measure, by mask splitting */
 /* SAVE retains the top stack value in a row-local register; LOAD pushes it.
  * Registers share immutable DAG intermediates, without changing qplan's ABI. */
 enum { M_FCOL, M_ATTR, M_CONST, M_ADD, M_SUB, M_MUL, M_SAVE, M_LOAD };
@@ -59,6 +59,10 @@ typedef struct {
      * in out_sum / total_sum, max in out_sum_hi / total_sum_hi. */
     int32_t ext_on, ext_col;
     uint64_t *out_rows;                                 /* A_ROWS: one bit per fact row, set when the row passes */
+    /* A_DIST: COUNT(DISTINCT v) per group. The plan is the dense GROUP BY of (group keys, v), v the last key (radix
+     * dist_radix); a passing row sets the bit of its (group, v) cell in dist_bits instead of adding to it, and after
+     * the scan out_cnt[g] = the bits set among group g's dist_radix cells (g < ngroups / dist_radix) */
+    uint64_t *dist_bits; uint64_t dist_radix;
 } qplan_t;
 #define KM(m, v) ((m) ? ((v) & (m)) : (v))
 

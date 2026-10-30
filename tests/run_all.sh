@@ -59,6 +59,9 @@ run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu p
 run "array algebra vs row by row and DuckDB"     python3 tests/check_arrays.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_arrays.py 250 6
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_arrays.py 250 8
+run "rank selection, cell bits, join partial sums" python3 tests/check_algebra.py 120 7
+run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_algebra.py 50 8
+run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_algebra.py 50 9
 echo "== GROUP BY modes"
 run "native relationship discovery and composition" python3 -m unittest discover -s tests -p test_relationships.py
 run "native chains vs combined algebraic systems" python3 -m unittest discover -s tests -p test_relationship_systems.py
@@ -69,6 +72,8 @@ run "hybrid native regions and shared DAGs"         python3 -m unittest discover
 run "native whole-stage algebra and finalization"  python3 -m unittest discover -s tests -p test_relationship_stages.py
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py
+run "no row kernel for many groups"               env TORBLES_ROWPATH_GROUPS=0 python3 tests/check_small.py
+run "row kernel for every GROUP BY of 2+ groups"  env TORBLES_ROWPATH_GROUPS=2 python3 tests/check_small.py
 echo "== GPU executor vs CPU engine ($( [ -n "${TORBLES_GPU_LIB:-}" ] && echo CUDA || echo emulated ))"
 run "GPU per-word kernel (default)"               env TORBLES_GPU_MM=word python3 tests/check_gpu.py
 run "GPU tile matrix product, __popc"             env TORBLES_GPU_MM=popc python3 tests/check_gpu.py

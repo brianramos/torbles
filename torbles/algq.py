@@ -21,7 +21,7 @@ from pathlib import Path
 
 MAXCOL = 31                      # columns per torble, hidden ones included (torble.h)
 P = dict(TRUE=0, EQ=1, NE=2, LT=3, LE=4, GT=5, GE=6, BETWEEN=7, AND=8, OR=9, NOT=10, PREFIX=11, BIT=12, CUBE=13, CLT=14, CGE=15, XOR=16)
-A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS = range(8)
+A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS, A_DIST = range(9)
 M = dict(FCOL=0, ATTR=1, CONST=2, ADD=3, SUB=4, MUL=5, SAVE=6, LOAD=7)
 
 class PInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("col", ctypes.c_int32), ("a", ctypes.c_uint32), ("b", ctypes.c_uint32)]
@@ -48,7 +48,8 @@ class QPlan(ctypes.Structure):
                 ("out_cap", ctypes.c_uint64), ("out_n", ctypes.c_uint64), ("out_key", ctypes.c_void_p), ("mm_stats", ctypes.c_int64 * 4),
                 ("wide", ctypes.c_int32), ("pl_coef_hi", ctypes.c_int64 * 8), ("pb_coef_hi", ctypes.c_int64 * 8), ("p_const_hi", ctypes.c_int64),
                 ("out_sum_hi", ctypes.c_void_p), ("total_sum_hi", ctypes.c_int64), ("widekey", ctypes.c_int32), ("out_key_hi", ctypes.c_void_p),
-                ("ext_on", ctypes.c_int32), ("ext_col", ctypes.c_int32), ("out_rows", ctypes.c_void_p)]
+                ("ext_on", ctypes.c_int32), ("ext_col", ctypes.c_int32), ("out_rows", ctypes.c_void_p),
+                ("dist_bits", ctypes.c_void_p), ("dist_radix", ctypes.c_uint64)]
 KEY_MAX = (1 << 128) - 2          # group codes are 128-bit (all ones marks an empty slot): at most 2^128 - 2 groups
 
 M64 = (1 << 64) - 1
@@ -166,6 +167,10 @@ def gpu_mm(mode=None):
 # per-word mask splitting / per-row path with dense group arrays. TORBLES_GROUPBY overrides the default.
 import os as _os
 GROUPBY = _os.environ.get("TORBLES_GROUPBY", "mm")
+ROWPATH_GROUPS = int(_os.environ.get("TORBLES_ROWPATH_GROUPS", 1 << 14))        # GROUP BY with at least this many possible groups: the row kernel, not the matrix product (0: off)
+ROWPATH_DENSE = 1 << 17          # (with a filter: only while the keys' code domain is at most this)
+DIST_PER_ROW = 64                # ... and at most this many per fact row (a larger domain: the cells as groups)
+DIST_CELLS = 1 << 28              # COUNT(DISTINCT) by cell bits (A_DIST): at most this many (group, value) cells (32 MB)
 # compiled plans are reused when the same query runs again on the same data version (TORBLES_PLAN_CACHE=0: off)
 PLAN_CACHE = _os.environ.get("TORBLES_PLAN_CACHE", "1") != "0"
 # bridge "factor through the key": measure factors that are GROUP BY key columns are constant per group and are
@@ -1097,6 +1102,16 @@ def _code_groups_dict(r, q):
     if r.cnt is not None: vs = list(zip(vs, r.cnt.tolist()))
     return dict(zip(keys, vs))
 
+def _bits_key(fact, name, lo, nb, engine):
+    """a GROUP BY key on the code bits [lo, lo + nb) of a fact column -> (PlaneKey, whether its values come back
+    bit-reversed). A plane key's mask names planes, and the engines number them differently: the plain baseline counts
+    from the most significant code bit; the plane engines count physical planes (code bit j, or bit w - 1 - j for a
+    column stored most significant bit first) and read the lowest masked plane as the key's top bit."""
+    w = int(fact.width(name)); bits = range(lo, lo + nb)
+    if engine == "plain": return PlaneKey(fact, name, sum(1 << (w - 1 - b) for b in bits)), False
+    msb = name in getattr(fact, "msb_cols", ())
+    return PlaneKey(fact, name, sum(1 << ((w - 1 - b) if msb else b) for b in bits)), not msb
+
 def _codes_array(c):
     """key codes as an array for a codec's decode: int64, or Python integers past it (64-bit unsigned codes)"""
     try: return np.asarray(c, np.int64)
@@ -1198,6 +1213,67 @@ class Query:
         if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
         if col.name in getattr(self.fact, "wide", {}): raise ValueError(f"{col.name}: MIN / MAX of a self-extending column")
         self.measure = None; self._ext = col; return self
+    def rank_codes(self, col, ranks, engine="alg", bits=8):
+        """Rank selection on the planes: the codes at the given 0-based ranks (ascending) among the codes of fact column
+        col on the rows that pass the filters and joins (NULL rows left out), without reading any row. Radix selection
+        from the top plane down, `bits` planes per level: each level is one engine GROUP BY over those planes, restricted
+        to the rows whose higher planes hold the prefix chosen so far (a code interval), and the cumulative counts of its
+        2^bits buckets give the next digits of each rank's code. A negative rank counts from the top (-1: the largest).
+        -> ({rank: code}, number of passing non-NULL rows), ranks as passed; ranks past that number are left out."""
+        fact = self.fact
+        if not (isinstance(col, Col) and col.table is fact): raise ValueError("rank_codes() takes a column of the fact table")
+        if col.name in getattr(fact, "wide", {}): raise ValueError(f"{col.name}: rank selection on a self-extending column")
+        w = int(fact.width(col.name))
+        base = copy_query(self); base.keys = []; base.measure = None; base._ext = None; base._codes = True
+        for a in ("_both", "_rows", "_cols_owner", "_dom"): base.__dict__.pop(a, None)
+        vc = getattr(fact, "nullable", {}).get(col.name)
+        if vc is not None:                                   # NULL rows have no rank
+            nn = Cmp(Col(fact, vc), "EQ", 1)
+            base.pred = nn if base.pred is None else BoolOp("AND", base.pred, nn)
+        eng = "plain" if engine == "plain" else engine
+        def counts(lo_hi, nb, sh):
+            """passing rows per value of the code's bits [sh, sh + nb), on the code interval lo_hi (or all rows)"""
+            q = copy_query(base); q._raw = True
+            if sh or nb < w: key, reverse = _bits_key(fact, col.name, sh, nb, eng); q.keys = [key]
+            else: q.keys = [Col(fact, col.name)]; reverse = False
+            if lo_hi is not None:
+                extra = Between(Col(fact, col.name), lo_hi[0], lo_hi[1])
+                q.pred = extra if q.pred is None else BoolOp("AND", q.pred, extra)
+            km, _, cn = q._run_codes(eng)
+            k = np.asarray(km[:, 0], np.int64) if len(cn) else np.zeros(0, np.int64)
+            if reverse and len(k):
+                rev = np.zeros(len(k), np.int64)
+                for b in range(nb): rev |= ((k >> b) & 1) << (nb - 1 - b)
+                k = rev
+            full = np.zeros(1 << nb, np.int64); np.add.at(full, k, np.asarray(cn, np.int64))
+            return np.cumsum(full)
+        if w == 0: return {}, 0
+        nb0 = min(bits, w)
+        cum = counts(None, nb0, w - nb0); total = int(cum[-1])
+        ranks_in = list(ranks)
+        ranks = [int(r) + total if int(r) < 0 else int(r) for r in ranks]          # negative: counted from the top
+        want = sorted({r for r in ranks if 0 <= r < total})
+        if not want: return {}, total
+        ranks0 = list(ranks_in)
+        state = {}                                           # rank -> (prefix, rank within the prefix's rows)
+        for r in want:
+            d = int(np.searchsorted(cum, r, side="right")); state[r] = (d, r - (int(cum[d - 1]) if d else 0))
+        done = nb0
+        while done < w:
+            nb = min(bits, w - done); sh = w - done - nb
+            nxt = {}                                         # this level's prefixes, from the previous level's only
+            for p in sorted({pr for pr, _ in state.values()}):
+                c = counts((p << (w - done), ((p + 1) << (w - done)) - 1), nb, sh)
+                for r, (pr, rr) in state.items():
+                    if pr != p: continue
+                    d = int(np.searchsorted(c, rr, side="right")); nxt[r] = ((p << nb) | d, rr - (int(c[d - 1]) if d else 0))
+            state = nxt; done += nb
+        back = {}
+        for r0 in ranks0:
+            r = int(r0) + total if int(r0) < 0 else int(r0)
+            if r in state: back[r0] = state[r][0]
+        return back, total
+
     def rows(self, engine="alg"):
         """the ids of the fact rows that pass the filters and joins (a row bitmap from the engine)"""
         q = copy_query(self); q.keys = []; q.measure = None; q._ext = None; q._rows = True
@@ -1408,6 +1484,8 @@ class Query:
                 return {"LT": lambda: lt(v), "LE": lambda: lt(v + 1), "GT": lambda: Not(lt(v + 1)), "GE": lambda: Not(lt(v)),
                         "EQ": lambda: eq(v), "NE": lambda: Not(eq(v))}[p.op]()
             return p
+        if getattr(self, "_distinct", False) and any(isinstance(k, Col) and k.table is fact and k.name in W for k in self.keys):
+            raise ValueError("COUNT(DISTINCT) cells: not on self-extending GROUP BY columns")
         q = copy.copy(self); q._lowered = True; q._codes = True
         q.pred = lp(self.pred) if self.pred is not None else None
         q.measure = lc(self.measure) if self.measure is not None else None
@@ -1426,7 +1504,15 @@ class Query:
         self.last_plan, self.range_used = q.last_plan, q.range_used
         for a in ("delta_rows", "_lookup_keys", "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms", "stage_plan", "stage_plan_ms"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
-        if not self.keys: return r
+        if not self.keys or (getattr(self, "_distinct", False) and not any(B is not None for B in spans)): return r
+        if getattr(self, "_raw", False):             # (key matrix, sums, counts): each value = base + 2^B hi again
+            km, vs, cn = r; cols, j = [], 0
+            for B in spans:
+                if B is None: cols.append(np.asarray(km[:, j], np.int64)); j += 1; continue
+                lo_, hi_ = np.asarray(km[:, j], np.int64), np.asarray(km[:, j + 1], np.int64); j += 2
+                if len(hi_) and B + int(hi_.max()).bit_length() >= 63: raise ValueError("64-bit GROUP BY codes in a raw result")
+                cols.append(lo_ + (hi_ << B))
+            return (np.stack(cols, 1) if cols else np.zeros((len(cn), 0), np.int64)), vs, cn
         if isinstance(r, CodeGroups):                # columns: value = base + 2^B hi, by array arithmetic
             it, out_cols, ok = iter(r.cols), [], True
             for B in spans:
@@ -1681,7 +1767,9 @@ class Query:
             self.relationship_plan = {"status": "disabled"}
             self.relationship_ms = 0.0
         if getattr(self.fact, "wide", None) and not getattr(self, "_lowered", False): return self._run_wide(engine)
-        if getattr(self, "rjoin", None) is not None: return self._run_range(engine)
+        if getattr(self, "rjoin", None) is not None:
+            if getattr(self, "_distinct", False): raise ValueError("COUNT(DISTINCT) cells: not over a range join")
+            return self._run_range(engine)
         # Experimental opt-in: native modules verify equations; native search composes
         # them over this lowered code polynomial before the ordinary planner runs.
         catalog = getattr(self.fact, "_relationships", None)
@@ -1723,7 +1811,9 @@ class Query:
             if moved:                                # only dimensions this query filters or groups on need the split
                 used = {t for c in conjuncts(self.pred) for t in tables_of(c)} | {k.table for k in self.keys if not isinstance(k, PlaneKey)}
                 moved = {d: fk for d, fk in moved.items() if d in used}
-                if moved: return self._run_delta(engine, moved)
+                if moved:
+                    if getattr(self, "_distinct", False): raise ValueError("COUNT(DISTINCT) cells: not over moved dimension rows")
+                    return self._run_delta(engine, moved)
         if FACTOR and self.keys and self.measure is not None and not getattr(self, "_factored", False) \
                 and not getattr(self, "_raw", False) and getattr(self, "_dom", None) is None:
             fq = getattr(self, "_fq", None)
@@ -1947,6 +2037,18 @@ class Query:
                 p_ = 1
                 for c in cand: p_ *= (1 << c[2][1]) if c[3] else int(c[1])
                 return p_
+            # many groups (by the keys' distinct counts): the row kernel, its plane keys transposed once per 64-row
+            # word, gathers each row's group directly; the matrix product's cost grows with the groups of each tile.
+            # Only while its dense group arrays (one entry per code combination of the keys as the plan reads them)
+            # are no larger than the table, and with a filter only while they stay small: a filter may leave few rows
+            # and groups, which the matrix product's sparse output handles without arrays over the whole code domain
+            rowpath = False
+            if mm and not wide and ext is None and ROWPATH_GROUPS and self._dev != "gpu":
+                est = 1
+                for c in cand: est *= int(c[1])
+                ng_ = _dom()
+                if est >= ROWPATH_GROUPS and ng_ <= min(fact.n, 1 << 22) and (self.pred is None or ng_ <= ROWPATH_DENSE):
+                    mm, rowpath, dom_limit = False, True, 1 << 22
             while _dom() > dom_limit:
                 fields = [c for c in cand if c[3] and not isinstance(c[0], PlaneKey)]
                 if not fields and not mm and dom_limit < KEY_MAX:   # too many groups for dense arrays
@@ -1995,19 +2097,35 @@ class Query:
             # mask splitting + popcounts: dense group arrays, or sparse output for 128-bit sums (the matrix product holds at
             # most 1024 measure planes: a product of two 64-bit columns is 4096 plane pairs, folded per mask here)
             polyg_ok = (not sparse_general or wide) and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8
-            if mm or (polyg_ok and ((on_planes and steps <= 12) or self._dev == "gpu" or (wide and on_planes))):
+            if mm or (polyg_ok and ((on_planes and steps <= (12 if not rowpath else 4)) or self._dev == "gpu" or (wide and on_planes))):
                 plan.agg = A_MM if mm else A_POLYG
                 _set_poly(plan, poly, wide, fact)
             elif wide and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8:
                 _set_poly(plan, poly, wide, fact)               # the general path: row by row in 128 bits (lookup keys)
             elif wide:
                 raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
+            dist = getattr(self, "_distinct", False)
+            if dist:                                          # COUNT(DISTINCT last key): dense cells, a bit each
+                if sparse_general or self._dev == "gpu" or engine != "alg" or wide or ext is not None or self.measure is not None:
+                    raise ValueError("COUNT(DISTINCT) cells: not on this plan")
+                if any(m is not None and len(set(m.values())) != len(m) for m in kmaps):
+                    raise ValueError("COUNT(DISTINCT) cells: keys whose codes merge")
+                mm = False
             ng = 1
             for r_ in radix: ng *= int(r_)                    # exact (may pass 2^64)
             # 128-bit group codes from 2^64 groups on: a 64-bit code stays below 2^64 - 1, which the GPU executor's
             # group table (and 0.2.0's 64-bit tables) use as the empty slot
             plan.ngroups = min(ng, (1 << 64) - 1); plan.widekey = int(ng >= (1 << 64))
-            if mm or sparse_general: self._mm_alloc(plan, min(ng, 1 << 14))
+            if not dist and not mm and not sparse_general and plan.agg == A_GENERAL and ng > 4 * max(fact.n, 1 << 14):
+                sparse_general = True                         # dense arrays far larger than the table: its groups by hashing
+            if dist:
+                if ng > min(DIST_CELLS, max(1 << 16, DIST_PER_ROW * fact.n)):   # bits to clear and count: about the rows, not more
+                    raise ValueError("group domain too large: COUNT(DISTINCT) cells")
+                R = int(radix[-1]); bits = np.zeros(ng // 64 + 2, np.uint64)
+                out_sum = np.zeros(ng // R, np.int64); out_cnt = np.zeros(ng // R, np.uint64); keep += [bits, out_sum, out_cnt]
+                plan.out_sum, plan.out_cnt = out_sum.ctypes.data, out_cnt.ctypes.data
+                plan.agg = A_DIST; plan.nmeas = 0; plan.dist_bits = bits.ctypes.data; plan.dist_radix = R
+            elif mm or sparse_general: self._mm_alloc(plan, min(ng, 1 << 14))
             else:
                 if ng > 1 << 25: raise ValueError("group domain too large")
                 out_sum = np.zeros(ng, dtype=np.int64); out_cnt = np.zeros(ng, dtype=np.uint64); keep += [out_sum, out_cnt]
@@ -2025,6 +2143,7 @@ class Query:
             plan.attr_fkcol[i] = fk; plan.attr_vals[i] = vals.ctypes.data; plan.attr_n[i] = len(vals); plan.attr_kmask[i] = km; keep.append(vals)
         sparse = bool(self.keys) and bool(plan.out_key)
         ctx = dict(plan=plan, keep=keep, radix=radix if self.keys else None, kmaps=kmaps if self.keys else None,
+                   dist=(bits, R) if self.keys and plan.agg == A_DIST else None,
                    dense=((out_sum, out_cnt) + ((out_hi,) if wide or ext is not None else ())) if self.keys and not sparse else None, sparse=sparse, wide=wide, ext=ext is not None,
                    widekey=bool(self.keys) and bool(plan.widekey),
                    mm_out=getattr(self, "_mm_out", None) if sparse else None,
@@ -2043,7 +2162,8 @@ class Query:
         for a in ("_inpass", "_xrows", "_word_ranges", "_dom", "_lookup_dims", "_force_lookup"):
             if getattr(self, a, None): return None
         surr = getattr(self.fact, "surr", {})
-        key = (engine, self._dev, GROUPBY, self.join_mode, getattr(self, "_ext", None) is not None, getattr(self, "_rows", False), tuple(sorted((k, sg.version) for k, sg in surr.items() if sg is not None)),
+        key = (engine, self._dev, GROUPBY, self.join_mode, getattr(self, "_ext", None) is not None, getattr(self, "_rows", False),
+               getattr(self, "_distinct", False), ROWPATH_GROUPS, ROWPATH_DENSE, tuple(sorted((k, sg.version) for k, sg in surr.items() if sg is not None)),
                tuple((d.name, f) for d, f in self.joins.items()), len(self.keys), getattr(self, "_wide", 0), self.fact.n)
         objs = (self.pred, self.measure, getattr(self, "_ext", None), getattr(self, "_rows", False)) + tuple(self.keys) + tuple(self.joins)
         return key, objs
@@ -2055,6 +2175,7 @@ class Query:
             if ctx["dense"] is not None and ctx.get("touched") is not None:     # only the entries the last run set
                 for a in ctx["dense"]: a[ctx["touched"]] = 0
                 if ctx.get("ext"): ctx["dense"][0][ctx["touched"]] = np.iinfo(np.int64).max
+            if ctx.get("dist") is not None: ctx["dist"][0].fill(0)
             if ctx.get("sparse"):
                 self._mm_out = ctx["mm_out"]; plan.out_n = 0
                 self._mm_bind(plan); plan.out_cap = len(self._mm_out[0])
@@ -2074,6 +2195,17 @@ class Query:
             v = _join128(plan.total_sum, plan.total_sum_hi) if wide else int(plan.total_sum)
             return (v, int(plan.total_cnt)) if getattr(self, "_both", False) else v
         wkey = ctx.get("widekey", False)
+        if ctx.get("dist") is not None:     # COUNT(DISTINCT last key) per group of the other keys: (key matrix, counts, counts)
+            nz = np.nonzero(out_cnt)[0]; ctx["touched"] = nz
+            cols, rem = [], nz.astype(np.uint64)
+            for r in reversed(radix[:-1]): cols.append(rem % np.uint64(r)); rem = rem // np.uint64(r)
+            cols = [c_.astype(np.int64) for c_ in cols[::-1]]
+            for i, m in enumerate(kmaps[:-1]):
+                if m is not None:
+                    lut = np.full(radix[i], -1, np.int64); lut[np.fromiter(m.keys(), np.int64)] = np.fromiter(m.values(), np.int64)
+                    cols[i] = lut[cols[i]]
+            cn = out_cnt[nz].astype(np.int64)
+            return (np.stack(cols, 1) if cols else np.zeros((len(nz), 0), np.int64)), cn, cn
         if ctx.get("sparse"):               # sparse output: (group code, sum, count) per group present
             n = int(plan.out_n); gk, gs, gc, gh, gkh = (a[:n] for a in self._mm_out)
             o = np.lexsort((gk, gkh)) if wkey else np.argsort(gk, kind="stable")      # group codes, in order

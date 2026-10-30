@@ -75,6 +75,24 @@ count) tuples), HAVING, window functions, DISTINCT, ORDER BY, FETCH. When the at
 or a code domain past 2^128, or the block has no aggregate (its result has one row per fact row anyway), the engine
 returns the passing rows' bitmap instead and the atoms' values are read from the planes for those rows.
 
+Some aggregates and limits never form those tuples. MEDIAN, PERCENTILE_CONT and PERCENTILE_DISC of a fact column are
+found by *rank selection on its planes*: each wanted rank's code is fixed 8 bits at a time, every step one engine query
+grouped by the block's keys and the code's leading bits, restricted to the code ranges the bits found so far leave, so
+a column with millions of distinct values costs three or four small engine queries and only the codes at the wanted
+ranks are decoded (with very many groups, one query on the whole code). ORDER BY ... LIMIT k of a block without
+aggregates uses the same selection: the code at rank k on the first sort column bounds the rows that can be output,
+the block reads only those, and while the ties are many the next sort column narrows them. `COUNT(DISTINCT x)` has the
+engine set one bit per (group, value) cell where it would count it, and counts each group's bits. An aggregate block
+over an inner equi-join of two FROM items that is not a star (two derived tables or CTEs, a table joined with itself on
+a column that is not its key) groups each side first, by the columns the block reads outside its aggregates (the join
+keys, GROUP BY, ...), with partial sums; the groups are joined and each aggregate is combined from the sides' sums: a
+SUM over one side counts once per row of the other side, a SUM of a product of the two sides' factors is the product
+of their sums, MIN and MAX are the sides' own. The other aggregates keep their arguments' columns among the grouped
+ones. No pair of rows is formed: a join of 33 million pairs on SSB SF1 becomes two grouped engine queries. A derived
+table or CTE that only filters and computes columns of one stored table is grouped by the engine directly.
+Rank selection, the LIMIT bound and the cell bits apply from 2^16 fact rows on (`TORBLES_ALG_MIN_ROWS`); on a smaller
+table reading the values costs less than the extra engine queries.
+
 That group-level work is array algebra as well, never a loop of comparisons. Grouping keys, PARTITION BY and ORDER BY
 columns become dense order codes (equal codes for values SQL does not distinguish, codes ascending along the sort
 order), so grouping, sorting and partitioning are one stable sort of integers; GROUP BY aggregates and window
@@ -240,8 +258,10 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 | VAR_POP, VAR_SAMP, STDDEV_POP, STDDEV_SAMP, COVAR_POP, COVAR_SAMP, CORR, REGR_SLOPE, REGR_INTERCEPT, REGR_COUNT, REGR_R2, REGR_AVGX, REGR_AVGY, REGR_SXX, REGR_SYY, REGR_SXY | engine: moment sums (x, x², xy, ...), then exact integer arithmetic on the sums of every group at once (each statistic is a ratio of integer polynomials in the sums, rounded once to the nearest double); not the running double sums DuckDB uses |
 | MIN, MAX of a fact column | engine: plane elimination |
 | SUM / AVG / COUNT of CASE, any aggregate with FILTER (WHERE ...) | engine: variants |
-| MIN / MAX of other expressions, DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine, aggregated as arrays (below) |
-| PERCENTILE_CONT, PERCENTILE_DISC (... WITHIN GROUP (ORDER BY ...)), MODE, MEDIAN, quantiles | values, as arrays (below) |
+| COUNT(DISTINCT x) of a column without collation (not DOUBLE) | engine: one bit per (group, value) cell, a popcount per group |
+| MEDIAN, PERCENTILE_CONT, PERCENTILE_DISC, quantiles of a fact column | engine: rank selection on the column's planes, 8 bits per query |
+| MIN / MAX of other expressions, other DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine, aggregated as arrays (below) |
+| PERCENTILE_CONT, PERCENTILE_DISC, MEDIAN of other expressions, MODE | values, as arrays (below) |
 | RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST (hypothetical, WITHIN GROUP) | values |
 | LISTAGG (... ON OVERFLOW ...) WITHIN GROUP, STRING_AGG, ARRAY_AGG (... ORDER BY ...) | values |
 | COLLECT, FUSION, INTERSECTION | values |
@@ -254,8 +274,8 @@ VAR_*, STDDEV_*, COVAR_*, CORR, REGR_*, EVERY, BOOL_OR, COUNT_IF, ANY_VALUE, ARG
 their DISTINCT and
 FILTER forms are computed for every group at once, each tuple weighted by its count: exact sums of the moments
 (doubles and decimals scaled to integers exactly, so a sum of doubles is the correctly rounded exact sum) and range
-minima of (value code, position). MEDIAN, PERCENTILE_CONT, PERCENTILE_DISC and MODE sort every group's values once and
-find each rank by a search of the cumulative counts. The other aggregates (ordered ones, LISTAGG, ARRAY_AGG, ...) run
+minima of (value code, position). MEDIAN, PERCENTILE_CONT, PERCENTILE_DISC (when not by rank selection) and MODE sort
+every group's values once and find each rank by a search of the cumulative counts. The other aggregates (ordered ones, LISTAGG, ARRAY_AGG, ...) run
 group by group.
 
 ### Window functions

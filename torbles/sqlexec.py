@@ -279,6 +279,16 @@ def _dict_eval(e, rel, cx):
 VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
 COLUMNAR = True             # the engine's GROUP BY results and row bitmaps stay codes (ColArr) until read as values
 ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
+TOPK = True                 # ORDER BY ... LIMIT k on fact columns reads only the rows that can be among the first k
+TOPK_MAX = 100_000          # (rank selection on the planes; past k = this, every passing row is read)
+# rank selection, top-k bounds and COUNT(DISTINCT) cell bits from this many fact rows on (on fewer, reading the values
+# costs less than the extra engine queries)
+ALG_MIN_ROWS = int(__import__("os").environ.get("TORBLES_ALG_MIN_ROWS", 1 << 16))
+RANK_AGGS = True            # MEDIAN / PERCENTILE_CONT / _DISC of a fact column: rank selection on its planes per group
+RANK_DIRECT = 2048          # (8 bits per engine query while groups * this <= fact rows; more groups: the whole code at once)
+_RANK_AGGS = {"median", "quantile_cont", "percentile_cont", "quantile_disc", "percentile_disc", "quantile"}
+DIST_BITS = True            # COUNT(DISTINCT column): one bit per (group, value) cell in the engine, then a popcount per group
+JOIN_PREAGG = True          # aggregates over an inner join of two FROM items: each side grouped first, then the groups joined
 _NoneT = type(None)
 _VEC_FNS = {"+", "-", "*", "/", "%", "mod", "//", "divide", "neg", "=", "<>", "<", "<=", ">", ">=", "and", "or", "not", "is_null", "is_not_null"}
 _CMPF = {"=": np.equal, "<>": np.not_equal, "<": np.less, "<=": np.less_equal, ">": np.greater, ">=": np.greater_equal}
@@ -1148,6 +1158,9 @@ def run_select(s, cx, as_rel=False):
         rel, aggplan = None, {}
         if all(b.table is not None for b in bindings):
             rel, aggplan = plan_star(s, bindings, need, aggs, cx)
+        if rel is None and JOIN_PREAGG:
+            got = join_preagg(s, aggs, cx)
+            if got is not None: rel, aggplan = got
         if rel is None:
             rel, aggplan = run_general(s, bindings, need, aggs, cx)
     return finish_select(s, rel, aggs, wins, aggplan, cx, as_rel)
@@ -1437,6 +1450,7 @@ def _agg_arrays(a, rel, members, args, filt, d):
 
 def agg_values(a, rel, members, plan, cx):
     """one aggregate for every output group (members: the rel rows of each group)"""
+    if plan is not None and plan.get("kind") == "rank": return plan["fn"](members)
     if plan is not None and plan.get("kind") == "state":
         k = a.key()
         if a.name in ("min", "max"):                 # the engine's extremes per row
@@ -2843,6 +2857,12 @@ class _Planner:
         aggplan = {}
         modes = self.__dict__.setdefault("_mode", {})          # per aggregate, fixed by the first pass: state | value
         for k, a in aggs.items():
+            if modes.get(k, "rank") == "rank" and not residual and not empty:
+                rc = self.rank_col(a)
+                if rc is not None: modes[k] = "rank"; aggplan[k] = dict(kind="rank", col=rc); continue
+            if modes.get(k, "dist") == "dist" and not residual and not empty:
+                dc = self.dist_col(a)
+                if dc is not None: modes[k] = "dist"; aggplan[k] = dict(kind="dist", col=dc); continue
             if modes.get(k) != "value":
                 a2 = self.nullify_agg(a)
                 if a2 is None:                      # its arguments are NULL in this pass: nothing to aggregate here
@@ -2866,17 +2886,36 @@ class _Planner:
                 aggplan[k] = plan
                 if plan.get("rowfilter_expr") is not None:
                     for col in I.cols_of(plan["rowfilter_expr"]): atoms[col.key()] = col
-        # engine keys: one per distinct (binding, column)
-        keys, kpos, vpos, atom_list = [], {}, {}, []
-        for k, col in atoms.items():
-            cb = self.canon(col)
-            if cb not in kpos:
-                kpos[cb] = len(keys); keys.append(self.algcol(col))
-                vp = self.valid(col)
-                if vp is not None: vpos[cb] = len(keys); keys.append(vp.col)     # NULL: the validity is a key too
-            atom_list.append((k, kpos[cb], vpos.get(cb)))
-        nkeys = len(keys) + sum(1 for c in {self.canon(c): c for c in atoms.values()}.values()
-                                if self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {}))
+        def engine_keys():
+            """the engine keys: one per distinct (binding, column), and the validity of a NULL-able one"""
+            keys, kpos, vpos, atom_list = [], {}, {}, []
+            for k, col in atoms.items():
+                cb = self.canon(col)
+                if cb not in kpos:
+                    kpos[cb] = len(keys); keys.append(self.algcol(col))
+                    vp = self.valid(col)
+                    if vp is not None: vpos[cb] = len(keys); keys.append(vp.col)     # NULL: the validity is a key too
+                atom_list.append((k, kpos[cb], vpos.get(cb)))
+            nkeys = len(keys) + sum(1 for c in {self.canon(c): c for c in atoms.values()}.values()
+                                    if self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {}))
+            return keys, kpos, vpos, atom_list, nkeys
+        keys, kpos, vpos, atom_list, nkeys = engine_keys()
+        # rank selection and COUNT(DISTINCT) cells group by the block's keys and the column too: when that would pass
+        # the engine's key limits, the aggregate takes its values (and the block, if need be, its rows) as before
+        def kbits(k):
+            t = k.table; W = getattr(t, "wide", None) or {}
+            return int(t.width(k.name)) + (int(t.width(W[k.name][1])) if k.name in W else 0)
+        def nullable(k): return isinstance(k, algq.Col) and k.name in (getattr(k.table, "nullable", None) or {})
+        nn = sum(1 for x in keys if nullable(x))                 # (the typed engine call adds their validity again)
+        drop = [k for k, p in aggplan.items() if p.get("kind") in ("rank", "dist") and
+                (nkeys + nn + 1 + (p["kind"] == "dist" and nullable(p["col"][0])) > algq.MAXKEY or sum(kbits(x) for x in keys) +
+                 (int(self.tab[self.fact].width(p["col"][0])) if p["kind"] == "rank" else kbits(p["col"][0])) > 120)]
+        if drop:
+            for k in drop:
+                aggplan.pop(k); modes[k] = "value"; a = aggs[k]
+                for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
+                    for col in I.cols_of(x): atoms[col.key()] = col
+            keys, kpos, vpos, atom_list, nkeys = engine_keys()
         def to_values():
             """every aggregate from its arguments' values in every pass: the passes of a block agree on how each
             aggregate is computed (a later pass cannot switch an aggregate an earlier one computed as a state)"""
@@ -2894,6 +2933,7 @@ class _Planner:
                     for col in I.cols_of(x):
                         (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
             aggplan = {}
+            if rows_block and not residual and not empty: preds = preds + self.topk_preds(preds)
             rel = self.rows_rel(atoms, preds, empty)
         else:
             try: rel = self.engine(keys, atom_list, preds, empty, variants, vpreds, mlist)
@@ -2906,6 +2946,12 @@ class _Planner:
                             (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
                 aggplan = {}
                 rel = self.rows_rel(atoms, preds, empty)
+        align = self.__dict__.pop("_align", None)
+        for k, plan in list(aggplan.items()):                # rank selection / distinct cells, per output group
+            if plan.get("kind") in ("rank", "dist"):
+                fn = self.rank_values if plan["kind"] == "rank" else self.dist_values
+                aggplan[k] = dict(kind="rank", fn=functools.partial(fn, plan["col"], aggs[k], rel, list(keys), list(preds),
+                                                                    dict(self.joins), align))
         for k, col in nulled_atoms.items():               # the NULL side of a LEFT JOIN pass: NULL codes of the column's codec,
             t = self.tab.get(col.b)                        # so the passes concatenate as codes
             cd = getattr(t, "codecs", {}).get(col.name) if t is not None else None
@@ -2922,7 +2968,7 @@ class _Planner:
                     pos = {old: new for new, old in enumerate(keep)}
                     plan["rowfilter"] = {pos[i] for i in plan["rowfilter"] if i in pos}
         _states(rel, aggs, aggplan)
-        return rel, {k: dict(kind="state") for k in aggs if k in aggplan}
+        return rel, {k: (aggplan[k] if aggplan[k].get("kind") == "rank" else dict(kind="state")) for k in aggs if k in aggplan}
 
     def case_plan(self, a, variants, vpreds, mlist, mkeys):
         """SUM / AVG / COUNT of a CASE: each branch is a variant of the engine queries (the rows where its condition is
@@ -3074,6 +3120,225 @@ class _Planner:
             dom *= m * (2 if name in getattr(t, "nullable", {}) else 1)
             if dom * 4 >= n: return True
         return False
+
+    def topk_preds(self, preds):
+        """ORDER BY ... LIMIT k (+ OFFSET) of a block without aggregates, ordered by fact columns: rank selection on the
+        planes (algq.Query.rank_codes) gives the code of the k-th row on the first ORDER BY column; the block then
+        reads only the rows before it or tied with it, and while the ties are many, the next ORDER BY column splits
+        them the same way. The final ORDER BY / LIMIT sorts what is read as before (the same rows, in the same order).
+        -> [one engine predicate], or [] when the block reads every passing row"""
+        s, cx = self.s, self.cx
+        if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return []
+        if self.tab[self.fact].n < ALG_MIN_ROWS: return []
+        if s.distinct or s.distinct_on is not None or s.qualify is not None: return []
+        if collect([x for x, _ in s.items] + [o[0] for o in s.order if not isinstance(o[0], tuple)], I.Win): return []
+        lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+        off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
+        if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return []
+        k = lim + off
+        if not 0 < k <= TOPK_MAX: return []
+        fact = self.tab[self.fact]
+        okeys = []
+        for e, desc, nf in s.order:
+            if isinstance(e, tuple): e = s.items[e[1]][0] if e[0] == "pos" else e[1]
+            if not isinstance(e, I.Col) or T.coll_key(e.t) is not None: break
+            b, name = self.canon(e)
+            if b is not self.fact or name in getattr(fact, "wide", {}) or name not in fact.codecs: break
+            vc = getattr(fact, "nullable", {}).get(name)
+            if vc is not None and nf: break                     # NULLs first: they are among the first rows
+            okeys.append((name, bool(desc), vc))
+        if not okeys: return []
+        q0 = algq.Query(fact); q0.join_mode = "auto"
+        for b, fk in self.joins.items(): q0.join(self.tab[b], fk)
+        for p in preds: q0.where(p)
+        def count(extra):
+            q = algq.copy_query(q0); q._codes = True; q.keys = []; q.measure = None
+            q.pred = extra if q.pred is None else algq.BoolOp("AND", q.pred, extra)
+            cx.stats["engine_queries"] += 1
+            return int(q._run_codes(cx.engine))
+        def code_cmp(name, op, code, vc):
+            c = algq.Cmp(algq.Col(fact, name), op, int(code))
+            return c if vc is None else algq.BoolOp("AND", algq.Cmp(algq.Col(fact, vc), "EQ", 1), c)
+        before, tie, need = [], None, k
+        for i, (name, desc, vc) in enumerate(okeys):
+            q = algq.copy_query(q0)
+            if tie is not None: q.pred = tie if q.pred is None else algq.BoolOp("AND", q.pred, tie)
+            cx.stats["engine_queries"] += 1
+            got, m = q.rank_codes(algq.Col(fact, name), [-need if desc else need - 1], engine=cx.engine)
+            if not got:                                         # fewer rows than needed: every row of this tie group
+                if i == 0: return []
+                break
+            t = next(iter(got.values()))
+            better = code_cmp(name, "GT" if desc else "LT", t, vc)
+            eq = code_cmp(name, "EQ", t, vc)
+            if tie is not None: better, eq = algq.BoolOp("AND", tie, better), algq.BoolOp("AND", tie, eq)
+            nb = count(better); ne = count(eq)
+            before.append(better); tie = eq; need -= nb
+            if ne <= max(4 * k, 1000) or need <= 0: break
+        p = tie
+        for b in reversed(before): p = algq.BoolOp("OR", b, p)
+        return [p]
+
+    def rank_col(self, a):
+        """MEDIAN / PERCENTILE_CONT / _DISC of a fact column read from the planes by rank selection (rank_values): the
+        column is then not a GROUP BY key of the block. -> (column, its validity column or None), or None"""
+        if not RANK_AGGS or not COLUMNAR or self.left or self.fact_sample is not None or self.tab[self.fact].n < ALG_MIN_ROWS: return None
+        if a.name not in _RANK_AGGS or a.distinct or a.filter is not None or a.order or len(a.args) != 1: return None
+        e = a.args[0]
+        if not isinstance(e, I.Col) or T.coll_key(e.t) is not None or e.b in self.nulled: return None
+        try: qs = F._q_param(a.params) if a.name != "median" else Fraction(1, 2)
+        except Exception: return None
+        if not all(isinstance(q, Fraction) and 0 <= q <= 1 for q in (qs if isinstance(qs, list) else [qs])): return None
+        b, name = self.canon(e)
+        fact = self.tab[self.fact]
+        if b is not self.fact or name in getattr(fact, "wide", {}) or name not in fact.codecs: return None
+        if not 0 < int(fact.width(name)) <= 62: return None
+        return name, getattr(fact, "nullable", {}).get(name)
+
+    def rank_values(self, rc, a, rel, keys, preds, joins, align, members):
+        """the aggregate of every output group by rank selection on the column's planes: per group, the code at each
+        wanted rank, found 8 bits at a time. Each level is one engine query grouped by the block's keys and the code's
+        leading bits, on the code ranges the prefixes found so far leave, so that no (group, value) pair is formed and
+        only the codes at the wanted ranks are decoded. With many groups, one query on the whole code instead."""
+        name, vc = rc
+        cx = self.cx; fact = self.tab[self.fact]; eng = cx.engine
+        G, to_groups, _ = _out_groups(rel, members)
+        out = [None] * G
+        if to_groups is None: return out
+        w = int(fact.width(name)); nk = len(keys)
+        keyed = any(isinstance(k, algq.Col) and k.table is fact and k.name == name for k in keys)
+        nn = [algq.Cmp(algq.Col(fact, vc), "EQ", 1)] if vc is not None else []
+        def level(extra, sh):
+            """passing rows per (block group, code bits [sh, w)) -> (output group, those bits, rows) per entry"""
+            if sh or keyed: key, rev = algq._bits_key(fact, name, sh, w - sh, "plain" if eng == "plain" else eng)
+            else: key, rev = algq.Col(fact, name), False
+            q = algq.Query(fact); q.join_mode = "auto"
+            for b, fk in joins.items(): q.join(self.tab[b], fk)
+            for p in preds + nn + extra: q.where(p)
+            q.group_by(*keys, key); q.count()
+            cx.stats["engine_queries"] += 1
+            try: h = q.run_columns(eng)
+            except (TypeError, OverflowError, ValueError) as ex: raise SqlError(f"the engine cannot run this block: {ex}")
+            if not len(h): return np.zeros(0, np.int64), np.zeros(0, np.int64), np.zeros(0, np.int64)
+            pos = np.asarray(align(algq.Groups(h.keys[:nk], h.vals)), np.int64) if nk else np.zeros(len(h), np.int64)
+            c, _, vv = h.keys[nk]
+            code = np.asarray(c if c is not None else vv).astype(np.int64)
+            if rev: code = _bit_reverse(code, w - sh)
+            return to_groups(pos, code, np.asarray(h.vals, np.int64))
+        def select(eid, code, cnt, rid, rr):
+            """per request (entry id rid, rank rr among that id's rows): the entry code holding the rank, the rank left"""
+            o = np.lexsort((code, eid)); ge, ce, ne = eid[o], code[o], cnt[o]
+            if len(ge) > 1:                                   # one entry per (id, code): several block groups add up
+                new = np.ones(len(ge), bool); new[1:] = (ge[1:] != ge[:-1]) | (ce[1:] != ce[:-1])
+                heads = np.flatnonzero(new); ge, ce, ne = ge[heads], ce[heads], np.add.reduceat(ne, heads)
+            C = np.cumsum(ne); Cp = C - ne
+            base = Cp[np.searchsorted(ge, rid, side="left")]
+            i = np.searchsorted(C, base + rr, side="right")
+            return ce[i], rr - (Cp[i] - base)
+        B = w if rel.n * RANK_DIRECT > fact.n else 8
+        nb = min(B, w)
+        grp, code, cnt = level([], w - nb)
+        N = np.zeros(G, np.int64); np.add.at(N, grp, cnt)
+        # the ranks wanted: per fraction, PERCENTILE_CONT's two neighbours or PERCENTILE_DISC's one
+        if a.name == "median": qs, single, cont = [Fraction(1, 2)], True, True
+        else:
+            q = F._q_param(a.params); single = not isinstance(q, list); qs = [q] if single else q
+            cont = a.name in ("quantile_cont", "percentile_cont")
+        desc = not cont and len(a.params) > 1 and a.params[1] == "desc"
+        Nl = N.tolist(); req_g, req_r, slots = [], [], []
+        for qi, q in enumerate(qs):
+            for g, n in enumerate(Nl):
+                if not n: continue
+                if cont:
+                    p = q * (n - 1); lo, hi = math.floor(p), math.ceil(p)
+                    slots.append((qi, g, p, lo, hi, len(req_g))); req_g += [g, g]; req_r += [lo, hi]
+                else:
+                    k = max(0, math.ceil(q * n) - 1)
+                    slots.append((qi, g, None, k, k, len(req_g))); req_g.append(g); req_r.append(n - 1 - k if desc else k)
+        if not req_g: return out
+        rg = np.array(req_g, np.int64); rr = np.array(req_r, np.int64)
+        rp, rr = select(grp, code, cnt, rg, rr)
+        done = nb
+        while done < w:
+            nb = min(B, w - done); span = w - done
+            P = np.unique(rp)
+            # the prefixes' code ranges (adjacent ones merged; past 16, the narrowest gaps closed too)
+            brk = np.flatnonzero(P[1:] != P[:-1] + 1)
+            if len(brk) > 15: brk = np.sort(brk[np.argsort(P[brk + 1] - P[brk], kind="stable")[-15:]])
+            lo_p = np.concatenate([P[:1], P[brk + 1]]); hi_p = np.concatenate([P[brk], P[-1:]])
+            pred = None
+            for lo, hi in zip(lo_p.tolist(), hi_p.tolist()):
+                x = algq.Between(algq.Col(fact, name), lo << span, ((hi + 1) << span) - 1)
+                pred = x if pred is None else algq.BoolOp("OR", pred, x)
+            grp, code, cnt = level([pred], span - nb)
+            ids = np.unique(np.stack([np.concatenate([rg, grp]), np.concatenate([rp, code >> nb])], 1), axis=0,
+                            return_inverse=True)[1].reshape(-1)
+            rp, rr = select(ids[len(rg):], code, cnt, ids[:len(rg)], rr)
+            done += nb
+        vals = ColArr(rp, None, algq.Col(fact, name).codec()).decode()
+        if a.name == "median" and vals and not isinstance(vals[0], (int, float, Decimal, bool, _dt.date, F.Interval)):
+            cont = False                                           # MEDIAN of a type without a midpoint: the lower one
+        res = [[None] * G for _ in qs]
+        for qi, g, p, lo, hi, j in slots:
+            if cont and p is not None: res[qi][g] = F.qc_mix(vals[j], vals[j + 1], p, lo, hi)
+            else: res[qi][g] = vals[j]
+        for g in range(G):
+            if Nl[g]: out[g] = res[0][g] if single else [r[g] for r in res]
+        return out
+
+    def dist_col(self, a):
+        """COUNT(DISTINCT column) of a column the engine reads as a key (dist_values): the column is then not a GROUP BY
+        key of the block. Codes are one per value for these types (no collation, no doubles' -0 / NaN codes).
+        -> (its engine key, its validity predicate or None), or None"""
+        if not DIST_BITS or not COLUMNAR or self.left or self.fact_sample is not None or self.tab[self.fact].n < ALG_MIN_ROWS: return None
+        if a.name != "count" or not a.distinct or a.filter is not None or a.order or len(a.args) != 1: return None
+        e = a.args[0]
+        if not isinstance(e, I.Col) or T.coll_key(e.t) is not None or e.b in self.nulled: return None
+        if not (e.t.integer or e.t.id in ("DECIMAL", "DATE", "TIMESTAMP", "TIME", "VARCHAR", "BOOLEAN")): return None
+        b, name = self.canon(e)
+        if b is self.fact and name in getattr(self.fact.table, "wide", {}): return None
+        return self.algcol(e), self.valid(e)
+
+    def dist_values(self, dc, a, rel, keys, preds, joins, align, members):
+        """COUNT(DISTINCT) of every output group. When each output group is one block group: one engine query grouped
+        by the block's keys and the column, a bit per (group, value) cell set by the passing rows, each group's bits
+        counted (algq A_DIST); else the cells themselves, each output group's distinct values counted"""
+        key, vp = dc
+        cx = self.cx; fact = self.tab[self.fact]
+        G, to_groups, one = _out_groups(rel, members)
+        if to_groups is None: return [0] * G
+        nk = len(keys)
+        def query():
+            q = algq.Query(fact); q.join_mode = "auto"
+            for b, fk in joins.items(): q.join(self.tab[b], fk)
+            for p in preds + ([vp] if vp is not None else []): q.where(p)
+            q.group_by(*keys, key); q.count()
+            cx.stats["engine_queries"] += 1
+            return q
+        if one is not None and cx.engine in ("alg", "gpu") and (not nk or getattr(align, "coded", False)):
+            q = query(); q._codes = True; q._raw = True; q._distinct = True
+            try: km, _, cn = q._run_codes("alg")
+            except ValueError: pass
+            else:
+                pos = np.asarray(align(_raw_groups(keys, km)), np.int64) if nk else np.zeros(len(cn), np.int64)
+                per = np.zeros(rel.n, np.int64); per[pos] = cn
+                return per[one].tolist()
+        try: h = query().run_columns(cx.engine)          # the cells, as the block's own groups came back
+        except (TypeError, OverflowError, ValueError) as ex: raise SqlError(f"the engine cannot run this block: {ex}")
+        out = np.zeros(G, np.int64)
+        if len(h):
+            import sqlwin
+            pos = np.asarray(align(algq.Groups(h.keys[:nk], h.vals)), np.int64) if nk else np.zeros(len(h), np.int64)
+            if one is not None:                          # one block group per output group: each cell is one value
+                per = np.bincount(pos, minlength=rel.n).astype(np.int64)
+                return per[one].tolist()
+            c, _, vv = h.keys[nk]
+            code = np.asarray(c, np.int64) if c is not None else np.asarray(sqlwin.group_codes([nkey(v) for v in vv]), np.int64)
+            grp, code, _ = to_groups(pos, code, np.ones(len(h), np.int64))
+            if len(grp):
+                u = np.unique(np.stack([grp, code], 1), axis=0)
+                out = np.bincount(u[:, 0], minlength=G).astype(np.int64)
+        return out.tolist()
 
     def rows_rel(self, atoms, preds, empty):
         """the passing fact rows (engine row bitmap) with the atoms' values read from the planes"""
@@ -3281,6 +3546,8 @@ class _Planner:
                     sums = pre[0] if vid == 0 else spread(pre[vid][0], pre[vid][1], None)
                 else: h = run(query(extra).sum(m)); sums = spread(h, h.vals, None)
                 rel.mom[mk] = sums
+        align.coded = coded                              # (raw key matrices align only with a coded base run)
+        self._align = align                              # later runs of the same groups (rank_values, dist_values)
         return rel
 
 
@@ -3291,11 +3558,59 @@ class _TooManyGroups(Exception):
     pass
 
 
+def _out_groups(rel, members):
+    """the output groups of the block's rows (members: each group's rows; a row is in one group, or several under
+    GROUPING SETS) -> (number of groups, to_groups(pos, code, cnt) carrying per-row entries to their groups (None when
+    no group has a row), each group's only row when every group has exactly one (else None))"""
+    flat = getattr(members, "flat", None)
+    if flat is None:
+        sizes = np.array([len(m) for m in members], np.int64)
+        rows = np.concatenate([np.asarray(m, np.int64) for m in members]) if len(members) else np.zeros(0, np.int64)
+        ends = np.cumsum(sizes); starts = ends - sizes
+    else: rows, starts, ends = flat
+    rows = np.asarray(rows, np.int64)
+    G = len(starts)
+    if not G or not rel.n or not len(rows): return G, None, None
+    sizes = np.asarray(ends) - np.asarray(starts)
+    one = rows[np.asarray(starts)] if bool((sizes == 1).all()) and len(np.unique(rows)) == len(rows) else None
+    pgrp = np.repeat(np.arange(G, dtype=np.int64), sizes)[np.argsort(rows, kind="stable")]
+    per = np.bincount(rows, minlength=rel.n).astype(np.int64); first = np.cumsum(per) - per
+    def to_groups(pos, code, cnt):
+        reps = per[pos]
+        idx = np.repeat(np.arange(len(pos)), reps)
+        off = np.arange(len(idx)) - np.repeat(np.cumsum(reps) - reps, reps)
+        return pgrp[np.repeat(first[pos], reps) + off], code[idx], cnt[idx]
+    return G, to_groups, one
+
+
+def _raw_groups(keys, km):
+    """an engine run's raw key matrix as Groups for engine_columns' align (a NULL-able key's validity from its
+    validity key among the keys, as the base run has it)"""
+    at = {(id(k.table), k.name): j for j, k in enumerate(keys) if isinstance(k, algq.Col)}
+    cols = []
+    for i, k in enumerate(keys):
+        valid = None
+        if isinstance(k, algq.Col):
+            vc = getattr(k.table, "nullable", {}).get(k.name)
+            j = at.get((id(k.table), vc)) if vc is not None else None
+            if j is not None: valid = np.asarray(km[:, j]) != 0
+        cols.append((np.asarray(km[:, i], np.int64), valid, None))
+    return algq.Groups(cols, [0] * len(km))
+
+
+def _bit_reverse(k, n):
+    """the n-bit codes k with their bits in reverse order (a PlaneKey's lowest plane is its key's top bit)"""
+    out = np.zeros(len(k), np.int64)
+    for b in range(n): out |= ((k >> b) & 1) << (n - 1 - b)
+    return out
+
+
 def _states(rel, aggs, aggplan):
     """each engine-computed aggregate's state per row: ("n", k) count, ("m", k, j) moment sums, ("x", k) extremes"""
     for k, plan in aggplan.items():
         kind = plan.get("kind")
         filt = plan.get("rowfilter")
+        if kind == "rank": continue                  # computed per output group (_Planner.rank_values)
         if kind == "zero":
             rel.cols[("n", k)] = [0] * rel.n; rel.cols[("x", k)] = [None] * rel.n
             for j in range(8): rel.cols[("m", k, j)] = [None] * rel.n
@@ -3379,6 +3694,209 @@ def _deterministic(e):
 
 
 # ================================================================== the general executor (multisets and joins)
+import decimal as _decimal
+_XCTX = _decimal.Context(prec=_decimal.MAX_PREC)
+
+
+def _xmul(a, b):
+    """the exact product of two partial sums or counts (int or Decimal; None counts as 0)"""
+    if a is None or b is None: return 0
+    if type(a) is int and type(b) is int: return a * b
+    return _XCTX.multiply(Decimal(a), Decimal(b))
+
+
+def _exact_num(t): return t.integer or t.id == "DECIMAL"
+
+
+def join_preagg(s, aggs, cx):
+    """an aggregate block over an inner equi-join of two FROM items (stored tables, derived tables, CTEs), without
+    forming the pairs of rows: each side is grouped first, by the columns the block reads outside its aggregates (the
+    join keys, GROUP BY, ...), with its partial sums; the groups are joined, and each aggregate is combined from the
+    two sides' partial sums: a sum over one side counts once per row of the other side (its sum times the other
+    group's count), a sum of a product of the two sides' factors is the product of the sides' sums, MIN / MAX are the
+    sides' own. Any other aggregate keeps its arguments' columns among the grouped ones and counts each pair of groups
+    as the product of their counts. -> (rel of the joined groups, their aggregate states), or None"""
+    import sqlfront
+    if not s.aggregate: return None
+    f = s.from_
+    if not isinstance(f, I.Join) or f.kind not in ("inner", "cross"): return None
+    L, R = f.left, f.right
+    if not isinstance(L, I.Binding) or not isinstance(R, I.Binding) or L is R: return None
+    if s.sample is not None or L.sample is not None or R.sample is not None: return None
+    order_x = [o[0][1] for o in s.order if o[0][0] == "expr"]
+    don = [d[1] for d in (s.distinct_on or []) if d[0] == "expr"]
+    top = [x for x in [x for x, _ in s.items] + [s.having, s.qualify] + order_x + don if x is not None]
+    allx = top + list(s.group) + [x for x in (s.where, f.cond) if x is not None]
+    for x in allx:
+        if I.has(x, I.Subq) or I.has(x, I.Outer) or not _deterministic(x): return None
+    for b in (L, R):
+        if b.q is not None and not hasattr(b, "shared") and outer_refs_into(b.q, {L, R}): return None
+    def sides(e): return {c.b for c in I.cols_of(e)}
+    pl, pr, eqs, cross = [], [], [], []
+    for c in _conjuncts(s.where) + _conjuncts(f.cond):
+        bs = sides(c)
+        if bs <= {L}: pl.append(c)
+        elif bs <= {R}: pr.append(c)
+        elif isinstance(c, I.Func) and c.fn == "=" and len(c.args) == 2 and sides(c.args[0]) | sides(c.args[1]) == {L, R} \
+                and len(sides(c.args[0])) == 1 and len(sides(c.args[1])) == 1:
+            a, b = c.args if sides(c.args[0]) == {L} else c.args[::-1]
+            if a.t.id != b.t.id or T.coll_key(a.t) is not None or T.coll_key(b.t) is not None: cross.append(c)
+            else: eqs.append((a, b))
+        else: cross.append(c)
+    if not eqs: return None
+    for X, i in ((L, 0), (R, 1)):                      # a side joined on its primary key: at most one pair per row of
+        pk = getattr(X.table, "pk", None) if X.table is not None else None      # the other side, as cheap as it is
+        if pk is not None and any(isinstance(ab[i], I.Col) and ab[i].name == pk for ab in eqs): return None
+    keep = {L: {}, R: {}}
+    def keep_cols(cols):
+        for c in cols:
+            if c.b not in keep or T.coll_key(c.t) is not None: return False
+            keep[c.b][c.key()] = c
+        return True
+    for x in top:
+        if not keep_cols(I.find(x, I.Col, stop=(I.Agg,))): return None
+    for x in list(s.group) + [e for ab in eqs for e in ab] + cross:
+        if not keep_cols(I.cols_of(x)): return None
+    # each aggregate: from the sides' partial sums (moments), the sides' extremes, or the values of kept columns
+    def factors(e):
+        """e as a product of factors that each read one side (constants: either), or None"""
+        if isinstance(e, I.Func) and e.fn == "*" and len(e.args) == 2:
+            a, b = factors(e.args[0]), factors(e.args[1])
+            return None if a is None or b is None else a + b
+        return [e] if len(sides(e)) <= 1 else None
+    def mfactors(m):
+        if isinstance(m, tuple): return mfactors(m[1]) + mfactors(m[2])
+        return factors(m)
+    parts = {L: {}, R: {}}
+    def part(X, agg): parts[X].setdefault(agg.key(), agg); return agg.key()
+    nkeys = {X: part(X, I.Agg("count_star", [], T.BIGINT)) for X in (L, R)}
+    def side_of(e): bs = sides(e); return R if bs == {R} else L
+    plans = {}
+    for k, a in aggs.items():
+        plan = None
+        if a.filter is None and not a.order and not a.name.startswith("__iso_h"):
+            if a.name == "count_star" and not a.distinct: plan = ("count",)
+            elif a.name in ("min", "max") and len(a.args) == 1 and len(sides(a.args[0])) == 1:
+                X = side_of(a.args[0])
+                plan = ("ext", X, part(X, I.Agg("min", [a.args[0]], a.args[0].t)), part(X, I.Agg("max", [a.args[0]], a.args[0].t)))
+            elif a.name in MOMENTS and not a.distinct and a.args:
+                fs = [factors(x) for x in a.args]
+                ok = all(x is not None and not any(isinstance(y, I.Lit) and y.v is None for y in x) for x in fs)
+                if ok and a.name != "count":
+                    ok = all(_exact_num(x.t) for x in a.args) and all(_exact_num(y.t) for x in fs for y in x)
+                if ok:
+                    val = {L: {}, R: {}}
+                    for y in (y for x in fs for y in x if not isinstance(y, I.Lit)): val[side_of(y)][y.key()] = y
+                    # each side's rows with every factor of the arguments valid: its count, and the sums of the
+                    # moments' factors over them (no FILTER when the sum's own factors are those: SUM skips NULLs)
+                    cond = {X: (_and([sqlfront.make_func("is_not_null", [y]) for y in val[X].values()]) if len(val[X]) > 1 else None) for X in (L, R)}
+                    cnt = {}
+                    for X in (L, R):
+                        if not val[X]: cnt[X] = nkeys[X]
+                        elif len(val[X]) == 1: cnt[X] = part(X, I.Agg("count", list(val[X].values()), T.BIGINT))
+                        else: cnt[X] = part(X, I.Agg("count_star", [], T.BIGINT, filter=cond[X]))
+                    ms = []
+                    y = a.args[0]; x = a.args[1] if len(a.args) > 1 else None
+                    for m in (MOMENTS[a.name](y, x) if a.name != "count" else []):
+                        fl = {L: [], R: []}
+                        for z in mfactors(m): fl[side_of(z) if not isinstance(z, I.Lit) else L].append(z)
+                        mk = []
+                        for X in (L, R):
+                            if not fl[X]: mk.append(cnt[X]); continue
+                            prod = None
+                            own = {z.key() for z in fl[X] if not isinstance(z, I.Lit)}
+                            for z in fl[X]:
+                                if z.t.integer: z = sqlfront.cast_to(z, T.HUGEINT)
+                                prod = z if prod is None else sqlfront.make_func("*", [prod, z])
+                            mk.append(part(X, I.Agg("sum", [prod], F.AGGS["sum"].typer([prod.t]),
+                                                    filter=None if own == set(val[X]) else cond[X])))
+                        ms.append(tuple(mk))
+                    plan = ("moment", cnt[L], cnt[R], ms)
+        if plan is None:
+            for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
+                if not keep_cols(I.cols_of(x)): return None
+        plans[k] = plan
+    cx.stats["join_preagg"] = cx.stats.get("join_preagg", 0) + 1
+    def side_rel(X, preds):
+        """the side's groups: the kept columns, the partial aggregates. A derived table or CTE that only filters and
+        computes columns of one stored table is read from that table (the engine groups its rows)"""
+        src, m, q0 = X, None, X.q
+        if isinstance(q0, I.Select) and isinstance(q0.from_, I.Binding) and q0.from_.table is not None and not q0.aggregate \
+                and not q0.group and q0.having is None and q0.qualify is None and not q0.distinct and q0.distinct_on is None \
+                and not q0.order and q0.limit is None and q0.offset is None and q0.sample is None and q0.from_.sample is None:
+            inner = [x for x, _ in q0.items] + ([q0.where] if q0.where is not None else [])
+            names = [n for _, n in q0.items]
+            if len(set(names)) == len(names) and not any(I.has(x, I.Subq) or I.has(x, I.Outer) or I.has(x, I.Win) or I.has(x, I.Agg)
+                                                         or not _deterministic(x) for x in inner):
+                m = {n: x for x, n in q0.items}; src = q0.from_
+        sub = (lambda e: I.subst(e, lambda n: m[n.name] if isinstance(n, I.Col) and n.b is X else None)) if m is not None else (lambda e: e)
+        kc, pa = list(keep[X].values()), list(parts[X].values())
+        g = [sub(c) for c in kc]; ps = [sub(a) for a in pa]
+        w = [sub(p) for p in preds] + ([q0.where] if m is not None and q0.where is not None else [])
+        q = I.Select(); q.from_ = src; q.where = _and(w) if w else None
+        q.group = list({e.key(): e for e in g}.values()); q.aggregate = True
+        q.items = [(e, f"__key{i}") for i, e in enumerate(q.group)] + [(a, f"__part{i}") for i, a in enumerate(ps)]
+        out = run_select(q, cx, as_rel=True)
+        if m is not None:                                    # under the derived table's own columns
+            for old, new in list(zip(kc, g)) + list(zip(pa, ps)):
+                if old.key() == new.key(): continue
+                arr = out.cols.array(new.key())
+                if arr is not None: out.cols.put(old.key(), arr)
+                else: out.cols[old.key()] = out.cols[new.key()]
+        return out
+    A = side_rel(L, pl); B = side_rel(R, pr)
+    # the pairs of groups with equal join keys (NULL keys pair with nothing)
+    import sqlwin
+    ka, kb = [], []
+    for a, b in eqs:
+        for e, rel_, out in ((a, A, ka), (b, B, kb)):
+            vals = ev(e, rel_, cx)
+            for v in vals:
+                if isinstance(v, Err): raise SqlError(v.msg)
+            out.append(vals)
+    kc, ok = [], np.ones(A.n + B.n, bool)
+    for va, vb in (zip(ka, kb) if A.n and B.n else ()):
+        allv = list(va) + list(vb)
+        ok &= np.fromiter((v is not None for v in allv), bool, len(allv))
+        kc.append(np.asarray(sqlwin.group_codes(allv), np.int64))
+    cc = sqlwin._combine(kc) if len(kc) > 1 else kc[0] if kc else np.zeros(A.n + B.n, np.int64)
+    if not (A.n and B.n): ok[:] = False
+    ca, cb, oka = cc[:A.n], np.where(ok[A.n:], cc[A.n:], -1), ok[:A.n]
+    ob = np.argsort(cb, kind="stable"); sb = cb[ob]
+    lo = np.searchsorted(sb, ca, "left"); hi = np.searchsorted(sb, ca, "right")
+    m = np.where(oka, hi - lo, 0)
+    ia = np.repeat(np.arange(A.n), m)
+    ib = ob[np.repeat(lo, m) + (np.arange(len(ia)) - np.repeat(np.cumsum(m) - m, m))] if len(ia) else np.zeros(0, np.int64)
+    P = Rel(len(ia))
+    for X, rel_, idx in ((L, A, ia), (R, B, ib)):
+        for key in keep[X]:
+            arr = rel_.cols.array(key)
+            if arr is not None: P.cols.put(key, arr.take(idx))
+            else: col = rel_.cols[key]; P.cols[key] = [col[i] for i in idx.tolist()]
+    def pcol(rel_, key, idx):
+        col = rel_.cols[key]; return [col[i] for i in idx.tolist()]
+    nA, nB = pcol(A, nkeys[L], ia), pcol(B, nkeys[R], ib)
+    P.cnt = [x * y for x, y in zip(nA, nB)]
+    aggplan = {}
+    for k, plan in plans.items():
+        if plan is None: continue
+        if plan[0] == "count": aggplan[k] = dict(kind="moment", variant=0, moments=[]); continue
+        vid = len(aggplan) + 1
+        if plan[0] == "ext":
+            mn, mx = pcol(A if plan[1] is L else B, plan[2], ia if plan[1] is L else ib), pcol(A if plan[1] is L else B, plan[3], ia if plan[1] is L else ib)
+            P.mom[(vid, "x")] = [None if x is None else (x, y) for x, y in zip(mn, mx)]
+            aggplan[k] = dict(kind="ext", variant=vid, key="x"); continue
+        _, cl, cr, ms = plan
+        P.vcnt[vid] = [x * y for x, y in zip(pcol(A, cl, ia), pcol(B, cr, ib))]
+        for j, (ml, mr) in enumerate(ms):
+            P.mom[(vid, j)] = [_xmul(x, y) for x, y in zip(pcol(A, ml, ia), pcol(B, mr, ib))]
+        aggplan[k] = dict(kind="moment", variant=vid, moments=list(range(len(ms))))
+    if cross:
+        P = P.take(rows_where(_and(cross), P, cx))
+    _states(P, aggs, aggplan)
+    return P, {k: dict(kind="state") for k in aggplan}
+
+
 def run_general(s, bindings, need, aggs, cx):
     """FROM items materialized as multisets (engine GROUP BY with counts, or query results), joined, filtered"""
     cx.stats["general_blocks"] += 1
