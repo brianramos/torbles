@@ -1926,6 +1926,7 @@ class _Planner:
 
     def run_pass(self, rest, need, aggs, extra):
         s, cx = self.s, self.cx
+        first_pass = not getattr(self, "_ran_pass", False); self._ran_pass = True
         preds = list(extra)            # engine predicates (algq), conjunction
         residual = []                  # IR conjuncts evaluated per group
         empty = False
@@ -1986,9 +1987,15 @@ class _Planner:
             atom_list.append((k, kpos[cb], vpos.get(cb)))
         nkeys = len(keys) + sum(1 for c in {self.canon(c): c for c in atoms.values()}.values()
                                 if self.canon(c)[0] is self.fact and self.canon(c)[1] in getattr(self.fact.table, "wide", {}))
+        def to_values():
+            """every aggregate from its arguments' values in every pass: the passes of a block agree on how each
+            aggregate is computed (a later pass cannot switch an aggregate an earlier one computed as a state)"""
+            if not first_pass and any(modes.get(k) == "state" for k in aggs): raise _NotStarNow()
+            for k in aggs: modes[k] = "value"
         if nkeys > algq.MAXKEY or self.fact_sample is not None:
             # more columns than GROUP BY keys (or a sampled fact): the passing rows themselves (a row bitmap), their
             # columns read from the planes; every aggregate is then computed from its arguments' values
+            to_values()
             for k, a in aggs.items():
                 for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
                     for col in I.cols_of(x):
@@ -1999,6 +2006,7 @@ class _Planner:
             try: rel = self.engine(keys, atom_list, preds, empty, variants, vpreds, mlist)
             except _TooManyGroups:
                 # the atoms' code domain passes 2^128: the passing rows themselves
+                to_values()
                 for k, a in aggs.items():
                     for x in a.args + [o[0] for o in a.order] + ([a.filter] if a.filter is not None else []):
                         for col in I.cols_of(x):
