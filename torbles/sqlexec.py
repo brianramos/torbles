@@ -259,6 +259,10 @@ def run_tablefn(q, cx):
         v = ev(a, one, cx)[0]
         if isinstance(v, Err): raise SqlError(v.msg)
         vals.append(v)
+    if q.name == "match_recognize":
+        import sqlmr
+        inp = run_query(q.input, cx)
+        return Relation(q.names, q.types, sqlmr.run(q.mr, inp.rows, cx))
     if q.name == "json_table":
         import sqljson
         sp = q.spec
@@ -581,6 +585,7 @@ def outer_refs_into(q, bset):
         elif isinstance(q, I.Recursive): vq(q.base); vq(q.step)
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, vx)
+            if getattr(q, 'input', None) is not None: vq(q.input)
     vq(q)
     return list(found.values())
 
@@ -1089,6 +1094,7 @@ def _outer_cols(e):
         elif isinstance(q, I.Recursive): vq(q.base); vq(q.step)
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, vx)
+            if getattr(q, 'input', None) is not None: vq(q.input)
     vq(e.q)
     return list(found.values())
 
@@ -1265,6 +1271,7 @@ def plan_star(s, bindings, need, aggs, cx):
     joins = join_conds(s.from_)
     left = {}                                         # LEFT JOIN dim: binding -> its ON conjuncts
     for j in joins:
+        if getattr(j, "partition", None) is not None: return None, None
         if j.kind in ("inner", "cross"): continue
         if j.kind == "left" and isinstance(j.right, I.Binding) and j.right.table is not None:
             left[j.right] = _conjuncts(j.cond); continue
@@ -2245,6 +2252,28 @@ def _mat_binding(b, cols, conds, cx):
 
 
 def _join(j, L, R, cx):
+    part = getattr(j, "partition", None)
+    if part is not None:                               # a partitioned outer join: each partition joined on its own
+        side, exprs = part
+        P = L if side == "left" else R
+        keys = [ev(x, P, cx) for x in exprs]
+        groups = {}
+        for i in range(P.n): groups.setdefault(tuple(nkey(k[i]) for k in keys), []).append(i)
+        parts = []
+        for idx in groups.values():
+            Pi = P.take(idx)
+            C = _join_plain(j, Pi, R, cx) if side == "left" else _join_plain(j, L, Pi, cx)
+            vals = {x.key(): Pi.cols[x.key()][0] for x in exprs}
+            for k, v in vals.items():                    # the padded rows keep their partition's values
+                col = C.cols[k]
+                C.cols[k] = [v if c is None else c for c in col]
+            parts.append(C)
+        if not parts: return _join_plain(j, L, R, cx)
+        return _concat(parts)
+    return _join_plain(j, L, R, cx)
+
+
+def _join_plain(j, L, R, cx):
     kind = j.kind
     conds = _conjuncts(j.cond)
     lkeys, rkeys, other = [], [], []

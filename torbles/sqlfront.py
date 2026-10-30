@@ -553,6 +553,88 @@ def _json_table(t, i):
     return tokenize(f"__json_table({', '.join([ctx, _jstr(spec)] + P.passing + defaults)})"), c
 
 
+def _mr_expr(t, a, b):
+    """an expression of MATCH_RECOGNIZE as text: RUNNING / FINAL <navigation or aggregate>(...) -> __mr_running(...)"""
+    out, j = [], a
+    while j < b:
+        if t[j].up() in ("RUNNING", "FINAL") and j + 2 < b and t[j + 1].k == "id" and t[j + 2].s == "(":
+            c = _match_paren(t, j + 2)
+            out.append(f"__mr_{t[j].up().lower()}({_mr_expr(t, j + 1, c + 1)})"); j = c + 1; continue
+        out.append(t[j].s); j += 1
+    return " ".join(out)
+
+
+def _match_recognize(t, i):
+    """<table primary> MATCH_RECOGNIZE (...) -> __match_recognize((SELECT * FROM <table primary>), '<clauses>')"""
+    a = _operand_back(t, i - 1)
+    src = _text(t, a, i)
+    if t[a].s != "(": src = f"(SELECT * FROM {src})"
+    c = _match_paren(t, i + 1)
+    j, b = i + 2, c
+    spec = dict(partition=[], order=[], measures=[], rows="one", empty="show", skip=["past", None], pattern=[], subsets={}, define={})
+    heads = ("PARTITION", "ORDER", "MEASURES", "ONE", "ALL", "AFTER", "PATTERN", "SUBSET", "DEFINE", "INITIAL", "SEEK")
+    def items(j):
+        """comma-separated items up to the next clause"""
+        out, s0, d = [], j, 0
+        while j < b:
+            if t[j].s in ("(", "["): d += 1
+            elif t[j].s in (")", "]"): d -= 1
+            elif d == 0 and t[j].s == ",": out.append((s0, j)); s0 = j + 1
+            elif d == 0 and t[j].up() in heads and j > s0: break
+            j += 1
+        out.append((s0, j))
+        return out, j
+    while j < b:
+        u = t[j].up()
+        if _kw(t, j, "PARTITION", "BY"):
+            its, j = items(j + 2); spec["partition"] = [_mr_expr(t, x, y) for x, y in its]
+        elif _kw(t, j, "ORDER", "BY"):
+            its, j = items(j + 2)
+            for x, y in its:
+                desc, nf = False, None
+                if y - x >= 2 and _kw(t, y - 2, "NULLS"): nf = t[y - 1].up() == "FIRST"; y -= 2
+                if t[y - 1].up() in ("ASC", "DESC"): desc = t[y - 1].up() == "DESC"; y -= 1
+                spec["order"].append([_mr_expr(t, x, y), desc, nf if nf is not None else False])
+        elif u == "MEASURES":
+            its, j = items(j + 1)
+            for x, y in its:
+                k = _top_kw(t, x, y, "AS")
+                if k < 0: raise SqlError("MEASURES <expression> AS <name>")
+                spec["measures"].append([_mr_expr(t, x, k), t[k + 1].s.strip('"')])
+        elif _kw(t, j, "ONE", "ROW", "PER", "MATCH"): spec["rows"] = "one"; j += 4
+        elif _kw(t, j, "ALL", "ROWS", "PER", "MATCH"):
+            spec["rows"] = "all"; j += 4
+            if _kw(t, j, "SHOW", "EMPTY", "MATCHES"): j += 3
+            elif _kw(t, j, "OMIT", "EMPTY", "MATCHES"): spec["empty"] = "omit"; j += 3
+            elif _kw(t, j, "WITH", "UNMATCHED", "ROWS"): spec["empty"] = "unmatched"; j += 3
+        elif _kw(t, j, "AFTER", "MATCH", "SKIP"):
+            j += 3
+            if _kw(t, j, "PAST", "LAST", "ROW"): spec["skip"] = ["past", None]; j += 3
+            elif _kw(t, j, "TO", "NEXT", "ROW"): spec["skip"] = ["next", None]; j += 3
+            elif _kw(t, j, "TO", "FIRST"): spec["skip"] = ["first", t[j + 2].s.upper()]; j += 3
+            elif _kw(t, j, "TO", "LAST"): spec["skip"] = ["last", t[j + 2].s.upper()]; j += 3
+            elif _kw(t, j, "TO"): spec["skip"] = ["last", t[j + 1].s.upper()]; j += 2
+            else: raise SqlError("AFTER MATCH SKIP PAST LAST ROW | TO NEXT ROW | TO [FIRST | LAST] <variable>")
+        elif u in ("INITIAL", "SEEK"):
+            if u == "SEEK": raise SqlError("SEEK is not supported in MATCH_RECOGNIZE (INITIAL is the default)")
+            j += 1
+        elif u == "PATTERN":
+            e = _match_paren(t, j + 1); spec["pattern"] = [x.s for x in t[j + 2:e]]; j = e + 1
+        elif u == "SUBSET":
+            its, j = items(j + 1)
+            for x, y in its:
+                o = [k for k in range(x, y) if t[k].s == "("][0]; e = _match_paren(t, o)
+                spec["subsets"][t[x].s.upper()] = [t[k].s.upper() for k in range(o + 1, e) if t[k].s != ","]
+        elif u == "DEFINE":
+            its, j = items(j + 1)
+            for x, y in its:
+                if not _kw(t, x + 1, "AS"): raise SqlError("DEFINE <variable> AS <condition>")
+                spec["define"][t[x].s.upper()] = _mr_expr(t, x + 2, y)
+        else: raise SqlError(f"MATCH_RECOGNIZE: unexpected {t[j].s!r}")
+    if not spec["pattern"]: raise SqlError("MATCH_RECOGNIZE needs a PATTERN")
+    return a, c, tokenize(f"__match_recognize({src}, {_jstr(spec)})")
+
+
 def _multiset_ops(t):
     """a MULTISET INTERSECT b binds tighter than MULTISET UNION / EXCEPT (ISO 6.48); each becomes __ms_<op>(a, b, mode)"""
     for ops in (("INTERSECT",), ("UNION", "EXCEPT")):
@@ -725,6 +807,17 @@ def iso_prepass(sql):
                     if _kw(t, i, *words):
                         t[i:i + len(words)] = [Tok("id", name)]; changed = True; break
                 if changed: break
+            # <table primary> PARTITION BY (<columns>) <outer join> (ISO 7.10, F403): kept for the binder by alias
+            if u == "PARTITION" and _kw(t, i + 1, "BY") and i + 2 < len(t) and t[i + 2].s == "(" and i > 0 and t[i - 1].k in ("id", "qid"):
+                c = _match_paren(t, i + 2)
+                nxt = t[c + 1].up() if c + 1 < len(t) else None
+                if nxt in ("LEFT", "RIGHT", "FULL", "JOIN", "INNER", "ON", "USING", "NATURAL", "CROSS"):
+                    FLAGS.setdefault("pjoin", {})[t[i - 1].s.strip('"').lower()] = [_text(t, a, b) for a, b in _split_commas(t, i + 3, c)]
+                    del t[i:c + 1]; changed = True; break
+            # <table primary> MATCH_RECOGNIZE (...)
+            if u == "MATCH_RECOGNIZE" and i + 1 < len(t) and t[i + 1].s == "(":
+                a, c, rep = _match_recognize(t, i)
+                t[a:c + 1] = rep; changed = True; break
             # SQL/JSON functions
             if u in ("JSON_VALUE", "JSON_QUERY", "JSON_EXISTS", "JSON_OBJECT", "JSON_ARRAY", "JSON_OBJECTAGG", "JSON_ARRAYAGG",
                      "JSON_SERIALIZE", "JSON_SCALAR", "JSON_TABLE") and i + 1 < len(t) and t[i + 1].s == "(" and not t[i].done:
@@ -884,6 +977,36 @@ def iso_prepass(sql):
                 k = _top_kw(t, i + 2, c, "USING")
                 if k >= 0 and k + 2 == c:
                     t[i:c + 1] = tokenize(f"__iso_transliterate({_text(t, i + 2, k)}, '{t[k + 1].s}')"); changed = True; break
+            # <with list element> ... AS (<query>) SEARCH ... / CYCLE ... (ISO 7.17, T133): removed and kept for the binder
+            if u in ("SEARCH", "CYCLE") and prev is not None and prev.s == ")":
+                o = _match_open(t, i - 1)
+                if o > 0 and t[o - 1].up() == "AS":
+                    k = o - 2
+                    if t[k].s == ")": k = _match_open(t, k) - 1
+                    name = t[k].s.strip('"').lower()
+                    spec = FLAGS.setdefault("search_cycle", {}).setdefault(name, {})
+                    j = i + 1
+                    def cols_until(j, stop):
+                        out = []
+                        while j < len(t) and t[j].up() != stop:
+                            if t[j].s != ",": out.append(t[j].s.strip('"'))
+                            j += 1
+                        return out, j
+                    if u == "SEARCH":
+                        if not (j + 2 < len(t) and t[j].up() in ("DEPTH", "BREADTH") and _kw(t, j + 1, "FIRST", "BY")):
+                            raise SqlError("SEARCH DEPTH | BREADTH FIRST BY <columns> SET <column>")
+                        kind = t[j].up(); cs, j = cols_until(j + 3, "SET")
+                        spec["search"] = dict(kind=kind, cols=cs, set=t[j + 1].s.strip('"')); j += 2
+                    else:
+                        cs, j = cols_until(j, "SET")
+                        mark = t[j + 1].s.strip('"'); j += 2; v1, v0 = "TRUE", "FALSE"
+                        if _kw(t, j, "TO"):
+                            d = _top_kw(t, j + 1, len(t), "DEFAULT")
+                            v1 = _text(t, j + 1, d); u2 = _top_kw(t, d + 1, len(t), "USING")
+                            v0 = _text(t, d + 1, u2); j = u2
+                        if not _kw(t, j, "USING"): raise SqlError("CYCLE <columns> SET <mark> [TO <value> DEFAULT <value>] USING <path>")
+                        spec["cycle"] = dict(cols=cs, mark=mark, v1=v1, v0=v0, path=t[j + 1].s.strip('"')); j += 2
+                    del t[i:j]; changed = True; break
             # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME (the binder keeps the common columns only)
             if u == "CORRESPONDING":
                 t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True; changed = True; break
@@ -1065,6 +1188,23 @@ def _find_col(b, name):
     return None
 
 
+class _MRScope(Scope):
+    """the names of MATCH_RECOGNIZE: <variable>.<column> (a pattern variable or a SUBSET name), and unqualified
+    columns (the universal row pattern variable)"""
+    def __init__(self, univ, varb, parent):
+        super().__init__([], parent); self.univ, self.varb = univ, varb
+
+    def lookup(self, names):
+        if len(names) == 2:
+            b = next((b for v, b in self.varb.items() if v.lower() == names[0].lower()), None)
+            if b is None: return None
+            c = _find_col(b, names[1])
+            if c is None: raise SqlError(f"pattern variable {names[0]} has no column {names[1]}")
+            return c
+        if len(names) == 1: return _find_col(self.univ, names[0])
+        return None
+
+
 class Ctx:
     """what an expression may contain where it is bound"""
     def __init__(self, agg=False, win=False, aliases=None, where="expression"):
@@ -1112,7 +1252,8 @@ class Binder:
             cte["q"] = q
             cte["binding_in_progress"] = False
         q = cte["q"]
-        names = cte["aliases"] or [n for n, _ in q_columns(q)]
+        qc = [n for n, _ in q_columns(q)]
+        names = list(cte["aliases"] or []) + qc[len(cte["aliases"] or []):]        # SEARCH / CYCLE add columns
         cols = [(n, t, True) for n, (_, t) in zip(names, q_columns(q))]
         b = I.Binding(alias, cols, q=q)
         b.shared = cte                     # materialized once per query
@@ -1123,13 +1264,17 @@ class Binder:
         if node["type"] == "RECURSIVE_CTE_NODE":
             base = self.bind_query(node["left"], None)
             names = cte["aliases"] or [n for n, _ in q_columns(base)]
-            b = I.Binding(cte["name"], [(n, t, True) for n, (_, t) in zip(names, q_columns(base))])
+            sc = (self.flags.get("search_cycle") or {}).get(cte["name"].lower())
+            cols = [(n, t, True) for n, (_, t) in zip(names, q_columns(base))]
+            if sc: base, cols = _search_cycle_base(base, names, cols, sc, self)
+            b = I.Binding(cte["name"], cols)
             rec = I.Recursive(b, base, None, bool(node.get("union_all")))
             b.rec = rec; b.q = rec
             cte["recursive_binding"] = b
             rec.step = self.bind_query(node["right"], None)
             st = q_columns(rec.step)
             if len(st) != len(names): raise SqlError("the recursive part of a CTE must have as many columns as its base")
+            if sc: rec.step = _search_cycle_step(rec, names, sc, self)
             return rec
         return self.bind_query(node, None)
 
@@ -1241,6 +1386,14 @@ class Binder:
                 if not using: kind = "cross" if kind == "inner" else kind
             j = I.Join(kind, left, right)
             sc = Scope(out, parent)
+            pj = self.flags.get("pjoin") or {}
+            for side, part in (("left", left), ("right", right)):
+                if isinstance(part, I.Binding) and part.alias.lower() in pj:
+                    if kind not in ("left", "right", "full"): raise SqlError("PARTITION BY in a join goes with an outer join")
+                    exprs = [self.expr(_parse_expr(x), Scope([part], parent), Ctx(where="PARTITION BY")) for x in pj[part.alias.lower()]]
+                    for x in exprs:
+                        if not isinstance(x, I.Col): raise SqlError("the PARTITION BY of a partitioned join takes columns")
+                    j.partition = (side, exprs)
             if using:
                 conds = []
                 j.using = []
@@ -1263,6 +1416,7 @@ class Binder:
     def table_function(self, ft, parent, out):
         fn = ft["function"]
         name = fn["function_name"].lower()
+        if name == "__match_recognize": return self.match_recognize(ft, fn["arguments"], parent, out)
         args = [self.expr(a["expression"], Scope([], parent), Ctx()) for a in fn["arguments"]]
         alias = list(ft.get("column_name_alias") or [])
         ordinality = ft.get("with_ordinality") in ("WITH_ORDINALITY", True)
@@ -1285,6 +1439,58 @@ class Binder:
         if len(names) != len(types): raise SqlError(f"{name}: {len(types)} column(s), {len(alias)} name(s) given")
         q = I.TableFn(name, args, names, types, ordinality)
         b = I.Binding(ft.get("alias") or name, [(nm, t, True) for nm, t in zip(names, types)], q=q)
+        out.append(b); return b
+
+    def match_recognize(self, ft, raw, parent, out):
+        import sqlmr
+        q = self.bind_query(raw[0]["expression"]["subquery"]["node"], parent)
+        spec = json.loads(raw[1]["expression"]["literal"]["text"])
+        cols = q_columns(q)
+        names = [n for n, _ in cols]
+        pattern = sqlmr.parse_pattern(spec["pattern"])
+        pvars = sqlmr.pattern_vars(pattern)
+        subsets = {k: v for k, v in spec["subsets"].items()}
+        for k, vs in subsets.items():
+            if k in pvars: raise SqlError(f"SUBSET {k}: the name of a pattern variable")
+            for v in vs:
+                if v not in pvars: raise SqlError(f"SUBSET {k}: {v} is not a pattern variable")
+        for v in spec["define"]:
+            if v not in pvars: raise SqlError(f"DEFINE {v}: not a variable of the PATTERN")
+        univ = I.Binding("__mr", [(n, t, True) for n, t in cols])
+        varb = {v: I.Binding(v, [(n, t, True) for n, t in cols]) for v in pvars + list(subsets)}
+        sc = _MRScope(univ, varb, parent)
+        prev, self.mr_ctx = getattr(self, "mr_ctx", False), True
+        try:
+            bind = lambda text, agg=True: self.expr(_parse_expr(text), sc, Ctx(agg=agg, where="MATCH_RECOGNIZE"))
+            partition = [bind(x, False) for x in spec["partition"]]
+            order = [(bind(x, False), d, nf) for x, d, nf in spec["order"]]
+            define = {v: self.boolean(bind(x), "DEFINE") for v, x in spec["define"].items()}
+            measures = [(bind(x), n) for x, n in spec["measures"]]
+        finally: self.mr_ctx = prev
+        pnames = []
+        for p in partition:
+            if not (isinstance(p, I.Col) and p.b is univ): raise SqlError("PARTITION BY in MATCH_RECOGNIZE takes columns")
+            pnames.append(p.name)
+        mnames = [n for _, n in measures]
+        if spec["rows"] == "one":
+            onames = pnames + mnames
+            otypes = [p.t for p in partition] + [m.t for m, _ in measures]
+            outs = None
+        else:
+            onames, otypes, outs = [], [], []
+            for p in partition: onames.append(p.name); otypes.append(p.t); outs.append(("in", p.name))
+            for o in order:
+                if isinstance(o[0], I.Col) and o[0].b is univ and o[0].name not in onames:
+                    onames.append(o[0].name); otypes.append(o[0].t); outs.append(("in", o[0].name))
+            for k, (m, n) in enumerate(measures): onames.append(n); otypes.append(m.t); outs.append(("m", k))
+            for n, t in cols:
+                if n not in onames: onames.append(n); otypes.append(t); outs.append(("in", n))
+        if len({n.lower() for n in onames}) != len(onames): raise SqlError("MATCH_RECOGNIZE: a measure has the name of a column")
+        mr = sqlmr.MR(pattern, univ, varb, subsets, define, measures, partition, order, spec["rows"], spec["empty"], tuple(spec["skip"]), outs, names)
+        alias = list(ft.get("column_name_alias") or [])
+        onames = alias + onames[len(alias):]
+        tq = I.TableFn("match_recognize", [], onames, otypes); tq.mr = mr; tq.input = q
+        b = I.Binding(ft.get("alias") or "match_recognize", [(n, t, True) for n, t in zip(onames, otypes)], q=tq)
         out.append(b); return b
 
     def json_table(self, ft, args, alias, out):
@@ -1617,6 +1823,25 @@ class Binder:
             return I.Func(name, args[:1] + [args[1] if len(args) > 1 else I.Lit(False, T.BOOLEAN)], T.JSON)
         raise SqlError(f"internal: {name}")
 
+    def mr_function(self, name, e, sc, ctx):
+        """PREV / NEXT / FIRST / LAST, RUNNING / FINAL, CLASSIFIER(), MATCH_NUMBER(), COUNT(A.*) in MATCH_RECOGNIZE"""
+        raw = e.get("arguments") or []
+        if name in ("prev", "next", "first", "last"):
+            if not 1 <= len(raw) <= 2: raise SqlError(f"{name.upper()}(<expression> [, <offset>])")
+            x = self.expr(raw[0]["expression"], sc, ctx)
+            args = [x] + ([self.expr(raw[1]["expression"], sc, ctx)] if len(raw) > 1 else [])
+            if len(args) > 1 and not isinstance(args[1], I.Lit): raise SqlError(f"{name.upper()}: the offset must be a constant")
+            return I.Func("__mr_nav", args, x.t, extra=(name,))
+        if name in ("__mr_running", "__mr_final"):
+            x = self.expr(raw[0]["expression"], sc, ctx)
+            return I.Func("__mr_sem", [x], x.t, extra=(name[5:],))
+        if name == "classifier": return I.Func("__mr_classifier", [], T.VARCHAR)
+        if name == "match_number": return I.Func("__mr_match_number", [], T.BIGINT)
+        if name == "count" and len(raw) == 1 and raw[0]["expression"].get("class") == "STAR":
+            rn = (raw[0]["expression"].get("relation_name") or "").upper()
+            return I.Agg("count_star", [], T.BIGINT, params=("mrvar", rn) if rn else ())
+        return None
+
     def iso_pred(self, name, left, args, sc, ctx):
         """the postfix predicates the pre-pass wrote as  x IS NOT DISTINCT FROM __iso_pred_<name>(...)"""
         arg = lambda k: args[k]["expression"] if "expression" in args[k] else args[k]
@@ -1745,6 +1970,9 @@ class Binder:
 
     def function(self, e, sc, ctx):
         name = e["function_name"].lower()
+        if getattr(self, "mr_ctx", False):
+            r = self.mr_function(name, e, sc, ctx)
+            if r is not None: return r
         if name in F.AGGS or name in _AGG_ALIAS or name == "count_star" or name.startswith("__iso_h") or name == "__iso_listagg":
             if not (name in F.SCALARS and name not in F.AGGS and name not in _AGG_ALIAS):
                 return self.aggregate(name, e, sc, ctx)
@@ -1946,6 +2174,76 @@ def _frame(e, bind):
     return (mode, a, b)
 
 
+def _rowf(args): return I.Func("row", list(args), T.SqlType("ROW"))
+
+
+def _search_cycle_base(base, names, cols, sc, binder):
+    """the base of a recursive CTE with SEARCH / CYCLE: its rows with the sequence column (DEPTH: the path of the
+    search columns; BREADTH: depth 0 and the search columns), the cycle mark (not a cycle) and the cycle path"""
+    lower = [n.lower() for n in names]
+    def pos(c, what):
+        if c.lower() not in lower: raise SqlError(f"{what} column {c} is not a column of the query")
+        return lower.index(c.lower())
+    bb = I.Binding("__base", list(cols), q=base)
+    s = I.Select(); s.from_ = bb
+    vals = [I.Col(bb, n, t, True) for n, t, _ in cols]
+    s.items = [(v, n) for v, (n, _, _) in zip(vals, cols)]
+    extra = []
+    if "search" in sc:
+        p = sc["search"]; sv = [vals[pos(c, "SEARCH")] for c in p["cols"]]
+        e = make_func("list_value", [_rowf(sv)]) if p["kind"] == "DEPTH" else make_func("list_value", [I.Lit(0, T.BIGINT)] + sv) \
+            if False else (I.Func("list_value", [_rowf(sv)], T.LIST(T.SqlType("ROW"))) if p["kind"] == "DEPTH" else _rowf([I.Lit(0, T.BIGINT)] + sv))
+        extra.append((e, p["set"]))
+    if "cycle" in sc:
+        p = sc["cycle"]; cv = [vals[pos(c, "CYCLE")] for c in p["cols"]]
+        v1 = binder.expr(_parse_expr(p["v1"]), Scope([]), Ctx()); v0 = binder.expr(_parse_expr(p["v0"]), Scope([]), Ctx())
+        mt = T.supertype(v1.t, v0.t, getattr(v1, "strlit", False), getattr(v0, "strlit", False))
+        p["v1x"], p["v0x"], p["mt"] = cast_to(v1, mt), cast_to(v0, mt), mt
+        extra.append((p["v0x"], p["mark"]))
+        extra.append((I.Func("list_value", [_rowf(cv)], T.LIST(T.SqlType("ROW"))), p["path"]))
+    s.items += extra
+    return s, list(cols) + [(n, x.t, True) for x, n in extra]
+
+
+def _search_cycle_step(rec, names, sc, binder):
+    """the recursive part with SEARCH / CYCLE: the new rows extend their parent's sequence value and cycle path; a
+    row whose cycle columns are already on its path is marked and not expanded"""
+    step = rec.step
+    if not isinstance(step, I.Select): raise SqlError("SEARCH / CYCLE: the recursive part must be one query specification")
+    import sqlexec
+    refs = [b for b in sqlexec.block_bindings(step.from_) if getattr(b, "rec", None) is rec]
+    if len(refs) != 1: raise SqlError("SEARCH / CYCLE: the recursive part must read the CTE exactly once")
+    rb = refs[0]
+    col = lambda n: next(I.Col(rb, c, t, nl) for c, t, nl in rb.cols if c == n)
+    lower = [n.lower() for n in names]
+    items = list(step.items[:len(names)])
+    new = lambda c: items[lower.index(c.lower())][0]
+    extra = []
+    if "search" in sc:
+        p = sc["search"]; sv = [new(c) for c in p["cols"]]
+        if p["kind"] == "DEPTH":
+            e = I.Func("__list_concat", [col(p["set"]), I.Func("list_value", [_rowf(sv)], T.LIST(T.SqlType("ROW")))], T.LIST(T.SqlType("ROW")))
+        else:
+            depth = make_func("+", [I.Func("__iso_array_elem", [col(p["set"]), I.Lit(1, T.BIGINT)], T.BIGINT), I.Lit(1, T.BIGINT)])
+            e = _rowf([depth] + sv)
+        extra.append((e, p["set"]))
+    if "cycle" in sc:
+        p = sc["cycle"]; cv = _rowf([new(c) for c in p["cols"]])
+        seen = I.Func("__ms_member", [cv, col(p["path"])], T.BOOLEAN)
+        extra.append((I.Case([(seen, p["v1x"])], p["v0x"], p["mt"]), p["mark"]))
+        extra.append((I.Func("__list_concat", [col(p["path"]), I.Func("list_value", [cv], T.LIST(T.SqlType("ROW")))], T.LIST(T.SqlType("ROW"))), p["path"]))
+        stop = make_func("<>", [col(p["mark"]), p["v1x"]])                 # marked rows are not expanded
+        step.where = make_and([step.where, stop])
+    step.items = items + extra
+    return step
+
+
+def _parse_expr(text):
+    """the parse tree of one value expression"""
+    nodes, _ = parse("SELECT " + text)
+    return nodes[0]["select_list"][0]
+
+
 def _json_accessor(base, steps):
     """JSON_QUERY(base, 'lax $<steps>' WITH CONDITIONAL ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)"""
     if isinstance(base, I.Func) and base.fn == "__json_query":          # j.a.b: one path
@@ -2055,6 +2353,7 @@ def _correlated(q):
         elif isinstance(q, I.SetOp): visit_q(q.left); visit_q(q.right)
         elif isinstance(q, I.TableFn):
             for a in q.args: I.walk(a, visit_expr)
+            if getattr(q, 'input', None) is not None: visit_q(q.input)
     visit_q(q)
     return bool(found)
 

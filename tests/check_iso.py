@@ -285,5 +285,49 @@ r = dbj.sql("SELECT id, doc.name, doc.tags, doc.o.p, doc.tags[0], doc[1], JSON_V
 check(r == [(0, '"a"', '["x","y"]', "10", '"x"', None, 1.0, "JSON"), (1, '"b"', "[]", None, None, None, 2.5, "JSON"), (2, '"c"', None, None, None, None, 3.0, "JSON"),
             (3, None, None, None, None, None, None, "JSON"), (4, None, None, None, None, "2", None, "JSON")], "a stored JSON column; the simplified accessor j.a.b, j[i]", str(r))
 
+print("== WITH RECURSIVE ... SEARCH / CYCLE, MATCH_RECOGNIZE, partitioned outer joins")
+edges = pd.DataFrame(dict(src=[1, 1, 2, 3, 4, 5], dst=[2, 3, 4, 4, 1, 6]))
+prices = [12, 17, 19, 21, 25, 12, 15, 20, 24, 25, 19, 15, 25, 25, 14, 12, 14, 24, 23, 22]
+tick = pd.DataFrame(dict(symbol=["ACME"] * 20 + ["XYZ"] * 5, tstamp=list(range(1, 21)) + list(range(1, 6)), price=prices + [5, 4, 6, 3, 9]))
+sales = pd.DataFrame(dict(product=["a", "a", "b"], day=[1, 3, 2], qty=[10, 30, 20]))
+dbg = torbles.from_ddl("CREATE TABLE e (src INTEGER, dst INTEGER); CREATE TABLE ticker (symbol VARCHAR, tstamp INTEGER, price INTEGER); "
+                       "CREATE TABLE days (day INTEGER PRIMARY KEY); CREATE TABLE sales (product VARCHAR, day INTEGER, qty INTEGER)",
+                       {"e": edges, "ticker": tick, "days": pd.DataFrame(dict(day=[1, 2, 3])), "sales": sales})
+def expect_g(sql, want, what):
+    try: got = dbg.sql(sql).rows
+    except Exception as x: check(False, what, f"{type(x).__name__}: {x}"); return
+    check(got == want, what, f"torbles {got}\n        expected {want}")
+walk = "WITH RECURSIVE r(n, d) AS (SELECT 1, 0 UNION ALL SELECT e.dst, r.d + 1 FROM r JOIN e ON e.src = r.n WHERE r.d < 3) "
+expect_g(walk + "SEARCH DEPTH FIRST BY n SET ord SELECT n, d FROM r ORDER BY ord",
+         [(1, 0), (2, 1), (4, 2), (1, 3), (3, 1), (4, 2), (1, 3)], "SEARCH DEPTH FIRST")
+expect_g(walk + "SEARCH BREADTH FIRST BY n SET ord SELECT n, d FROM r ORDER BY ord, n",
+         [(1, 0), (2, 1), (3, 1), (4, 2), (4, 2), (1, 3), (1, 3)], "SEARCH BREADTH FIRST")
+cyc = "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT e.dst FROM r JOIN e ON e.src = r.n) "
+expect_g(cyc + "CYCLE n SET is_cycle USING path SELECT n, is_cycle, CARDINALITY(path) FROM r ORDER BY path",
+         [(1, False, 1), (2, False, 2), (4, False, 3), (1, True, 4), (3, False, 2), (4, False, 3), (1, True, 4)], "CYCLE: rows on a cycle marked, not expanded")
+expect_g(cyc + "CYCLE n SET c TO 'Y' DEFAULT 'N' USING p SELECT count(*), count(*) FILTER (WHERE c = 'Y') FROM r", [(7, 2)], "CYCLE ... TO 'Y' DEFAULT 'N'")
+mr = """SELECT * FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp
+        MEASURES STRT.tstamp AS start_tstamp, LAST(DOWN.tstamp) AS bottom_tstamp, LAST(UP.tstamp) AS end_tstamp {extra}
+        {rows} AFTER MATCH SKIP TO LAST UP PATTERN (STRT DOWN+ UP+)
+        DEFINE DOWN AS DOWN.price < PREV(DOWN.price), UP AS UP.price > PREV(UP.price)) MR ORDER BY MR.symbol, MR.start_tstamp{order}"""
+expect_g(mr.format(extra="", rows="ONE ROW PER MATCH", order=""),
+         [("ACME", 5, 6, 10), ("ACME", 10, 12, 13), ("ACME", 14, 16, 18), ("XYZ", 1, 2, 3), ("XYZ", 3, 4, 5)], "MATCH_RECOGNIZE: ONE ROW PER MATCH (the V shapes)")
+got = dbg.sql(mr.format(extra=", MATCH_NUMBER() AS m, CLASSIFIER() AS v, FINAL COUNT(UP.*) AS ups, RUNNING COUNT(*) AS so_far",
+                        rows="ALL ROWS PER MATCH", order=", MR.tstamp")).rows
+check([r[:2] + r[5:9] for r in got[:6]] == [("ACME", 5, 1, "STRT", 4, 1), ("ACME", 6, 1, "DOWN", 4, 2), ("ACME", 7, 1, "UP", 4, 3),
+                                            ("ACME", 8, 1, "UP", 4, 4), ("ACME", 9, 1, "UP", 4, 5), ("ACME", 10, 1, "UP", 4, 6)] and len(got) == 21,
+      "ALL ROWS PER MATCH: CLASSIFIER, MATCH_NUMBER, FINAL and RUNNING aggregates", str(got[:6]))
+expect_g("""SELECT * FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(A.tstamp) AS s, LAST(A.tstamp) AS e,
+        COUNT(A.*) AS n, AVG(A.price) AS av, SUM(price) AS tot PATTERN (A{3,}) DEFINE A AS A.price >= 15) WHERE symbol = 'ACME' ORDER BY s""",
+         [("ACME", 2, 5, 4, 20.5, 82), ("ACME", 7, 14, 8, 21.0, 168), ("ACME", 18, 20, 3, 23.0, 69)], "quantifier {3,}, FIRST / LAST, aggregates")
+expect_g("""SELECT s, n FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(A.tstamp) AS s, COUNT(*) AS n
+        AFTER MATCH SKIP TO NEXT ROW PATTERN (A B*? C) DEFINE A AS price < 15, C AS price > 20) WHERE symbol = 'ACME' ORDER BY s""",
+         [(1, 4), (6, 4), (15, 4), (16, 3), (17, 2)], "a reluctant quantifier, SKIP TO NEXT ROW")
+expect_g("""SELECT s, e FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(tstamp) AS s, LAST(tstamp) AS e
+        PATTERN (PERMUTE(A, B) | ^ C) DEFINE A AS price = 5, B AS price = 4, C AS price > 100) WHERE symbol = 'XYZ'""",
+         [(1, 2)], "PERMUTE and anchors")
+expect_g("SELECT s.product, d.day, s.qty FROM sales s PARTITION BY (s.product) RIGHT JOIN days d ON s.day = d.day ORDER BY 1, 2",
+         [("a", 1, 10), ("a", 2, None), ("a", 3, 30), ("b", 1, None), ("b", 2, 20), ("b", 3, None)], "a partitioned outer join (F403) densifies each partition")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
