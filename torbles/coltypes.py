@@ -137,7 +137,8 @@ class DecimalCodec(Codec):
 
     def decode(self, codes):
         s = self.scale
-        return [Decimal((int(int(c) + self.offset < 0), tuple(map(int, str(abs(int(c) + self.offset)))), -s)) for c in np.asarray(codes).tolist()]
+        o = self.offset                              # read from text: exact, the exponent -s kept
+        return [Decimal(f"{int(c) + o}E-{s}") for c in np.asarray(codes).tolist()]
 
     def _state(self): return dict(scale=self.scale, offset=self.offset, sql_type=self.sql_type)
 

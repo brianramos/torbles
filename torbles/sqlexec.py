@@ -1216,45 +1216,12 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     return Relation(names, types, rows)
 
 
-def aggregate(s, rel, aggs, aggplan, cx):
-    """GROUP BY (with grouping sets) and every aggregate, from the rows of rel (each standing for cnt rows)"""
-    vec = VEC_GROUPS and rel.n > 32
-    garr = [codes_of(g, rel, cx) if vec and T.coll_key(g.t) is None else None for g in s.group]
-    gvals = [None if a is not None else ev(g, rel, cx) for g, a in zip(s.group, garr)]      # engine columns stay codes
-    for col in gvals:
-        for v in col or ():
-            if isinstance(v, Err): raise SqlError(v.msg)
-    sets = s.sets if s.sets is not None else [list(range(len(s.group)))]
-    gkeys = [None if v is None else _ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
-    collated = [gv is not None and gk is not gv for gk, gv in zip(gkeys, gvals)]
+def _group_rows(s, rel, sets, gvals, gkeys, collated):
+    """the output groups row by row: (Rel of the GROUP BY columns and GROUPING() values, members)"""
     out_groups = []                                  # (set index, key values tuple, member row indexes)
-    codes = {}
     for si, st in enumerate(sets):
         if not st:                                   # GROUP BY () or no GROUP BY: one group, even with no rows
-            out_groups.append((si, (), np.arange(rel.n))); continue
-        if vec:                                      # the groups as codes: one stable sort, members are runs
-            import sqlwin
-            for j in st:
-                if j not in codes: codes[j] = sqlwin.code_groups(garr[j]) if garr[j] is not None else sqlwin.group_codes(gkeys[j])
-            comb = sqlwin._combine([codes[j] for j in st])
-            _, first, inv = np.unique(comb, return_index=True, return_inverse=True)
-            rank = np.empty(len(first), np.int64); rank[np.argsort(first, kind="stable")] = np.arange(len(first))
-            gid = rank[inv.reshape(-1)]                         # groups numbered in order of appearance
-            perm = np.argsort(gid, kind="stable")
-            bounds = np.concatenate(([0], np.cumsum(np.bincount(gid, minlength=len(first)))))
-            heads = perm[bounds[:-1]].tolist()                  # each group's first row
-            reps = {j: (garr[j].take(heads).decode() if garr[j] is not None else [gvals[j][i] for i in heads]) for j in st}
-            for j in st:
-                if collated[j]:                                 # the least of the group's values (the first of equals)
-                    col = sqlwin.obj(gvals[j])[perm]
-                    nn = sqlwin.notnull(col)
-                    oc = np.full(len(col), np.iinfo(np.int64).max, np.int64)
-                    if nn.any(): oc[nn] = sqlwin.order_codes(col[nn].tolist()) * len(col) + np.flatnonzero(nn)
-                    best = np.minimum.reduceat(oc, bounds[:-1]) if len(col) else oc
-                    reps[j] = [col[b % len(col)] if b != np.iinfo(np.int64).max else r for b, r in zip(best.tolist(), reps[j])]
-            for g in range(len(first)):
-                out_groups.append((si, tuple(reps[j][g] for j in st), perm[bounds[g]:bounds[g + 1]]))
-            continue
+            out_groups.append((si, (), list(range(rel.n)))); continue
         gm = {}
         order = []
         for i in range(rel.n):
@@ -1266,38 +1233,129 @@ def aggregate(s, rel, aggs, aggplan, cx):
                 for p_, j in enumerate(st):
                     if collated[j] and gvals[j][i] is not None and F.cmp_values(gvals[j][i], g[0][p_]) < 0: g[0][p_] = gvals[j][i]
             g[1].append(i)
-        for k in order: gm[k] = (tuple(gm[k][0]), gm[k][1])
         for k in order:
             vals, members = gm[k]
-            out_groups.append((si, vals, members))
-    n = len(out_groups)
-    out = Rel(n)
+            out_groups.append((si, tuple(vals), members))
+    out = Rel(len(out_groups))
     for j, g in enumerate(s.group):
-        col = []
-        for si, vals, members in out_groups:
-            st = sets[si]
-            col.append(vals[st.index(j)] if j in st else None)
-        out.cols[g.key()] = col
-    # GROUPING(): bit i set when argument i is not grouped in the row's set (first argument most significant)
+        out.cols[g.key()] = [vals[sets[si].index(j)] if j in sets[si] else None for si, vals, _ in out_groups]
+    _grouping_cols(s, out, sets, [si for si, _, _ in out_groups])
+    members = _Members(m for _, _, m in out_groups)
+    if VEC_GROUPS:
+        sizes = np.array([len(m) for m in members], np.int64)
+        members.flat = (np.concatenate([np.asarray(m, np.int64) for m in members]) if len(members) else np.zeros(0, np.int64),
+                        np.cumsum(sizes) - sizes, np.cumsum(sizes))
+        members.w = _counts(rel.cnt)
+    return out, members
+
+
+def _grouping_cols(s, out, sets, gset):
+    """GROUPING(): bit i set when argument i is not grouped in the row's set (first argument most significant); gset:
+    the grouping set of each output row"""
     for gx in collect([x for x, _ in s.items] + [s.having, s.qualify] + [o[0][1] for o in s.order if o[0][0] == "expr"], I.Grouping).values():
         pos = []
         for a in gx.args:
             k = a.key(); p = next((j for j, g in enumerate(s.group) if g.key() == k), None)
             if p is None: raise SqlError("GROUPING() arguments must be GROUP BY expressions")
             pos.append(p)
-        col = []
-        for si, _, _ in out_groups:
+        per_set = []
+        for st in sets:
             v = 0
-            for p in pos: v = (v << 1) | (0 if p in sets[si] else 1)
-            col.append(v)
-        out.cols[gx.key()] = col
-    members = _Members(m.tolist() if isinstance(m, np.ndarray) else m for _, _, m in out_groups)
-    if VEC_GROUPS:                                   # every group's rows, one run after another
-        sizes = np.array([len(m) for m in members], np.int64)
-        flat = [m for _, _, m in out_groups]
-        members.flat = (np.concatenate([np.asarray(m, np.int64) for m in flat]) if flat else np.zeros(0, np.int64),
-                        np.cumsum(sizes) - sizes, np.cumsum(sizes))
-        members.w = _counts(rel.cnt)
+            for p in pos: v = (v << 1) | (0 if p in st else 1)
+            per_set.append(v)
+        out.cols[gx.key()] = [per_set[si] for si in gset]
+
+
+def _group_arrays(s, rel, sets, garr, gvals, gkeys, collated):
+    """the output groups as arrays: per grouping set one stable sort of the combined group codes (groups numbered in
+    order of appearance, members are runs of one row array); the GROUP BY columns stay codes, gathered at each group's
+    first row (NULL in the sets that do not group them) -> (Rel, _FlatMembers)"""
+    import sqlwin
+    codes, pieces, off = {}, [], 0
+    for si, st in enumerate(sets):
+        if not st:                                   # GROUP BY () or no GROUP BY: one group, even with no rows
+            pieces.append((si, st, None, np.arange(rel.n), np.array([0, rel.n]), {})); continue
+        for j in st:
+            if j not in codes: codes[j] = sqlwin.code_groups(garr[j]) if garr[j] is not None else sqlwin.group_codes(gkeys[j])
+        comb = sqlwin._combine([codes[j] for j in st])
+        _, first, inv = np.unique(comb, return_index=True, return_inverse=True)
+        rank = np.empty(len(first), np.int64); rank[np.argsort(first, kind="stable")] = np.arange(len(first))
+        gid = rank[inv.reshape(-1)]
+        perm = np.argsort(gid, kind="stable")
+        bounds = np.concatenate(([0], np.cumsum(np.bincount(gid, minlength=len(first)))))
+        heads = perm[bounds[:-1]]
+        least = {}
+        for j in st:
+            if collated[j]:                          # the least of the group's values (the first of equals)
+                col = sqlwin.obj(gvals[j])[perm]
+                nn = sqlwin.notnull(col)
+                oc = np.full(len(col), np.iinfo(np.int64).max, np.int64)
+                if nn.any(): oc[nn] = sqlwin.order_codes(col[nn].tolist()) * len(col) + np.flatnonzero(nn)
+                best = np.minimum.reduceat(oc, bounds[:-1]) if len(col) else oc
+                rep = [gvals[j][i] for i in heads.tolist()]
+                least[j] = [col[b % len(col)] if b != np.iinfo(np.int64).max else r for b, r in zip(best.tolist(), rep)]
+        pieces.append((si, st, heads, perm, bounds, least))
+    sizes = [len(b) - 1 for _, _, _, _, b, _ in pieces]
+    out = Rel(int(sum(sizes)))
+    for j, g in enumerate(s.group):
+        arr = garr[j] if garr[j] is not None and not collated[j] else None
+        if arr is not None:                          # codes: one gather per set, NULL codes where the set does not group j
+            cs, vs = [], []
+            for (si, st, heads, _, _, _), G in zip(pieces, sizes):
+                if j in st:
+                    a = arr.take(heads); cs.append(a.codes)
+                    vs.append(a.valid if a.valid is not None else np.ones(G, bool))
+                else: cs.append(np.zeros(G, arr.codes.dtype)); vs.append(np.zeros(G, bool))
+            cc = np.concatenate(cs) if cs else np.zeros(0, arr.codes.dtype); vv = np.concatenate(vs) if vs else np.zeros(0, bool)
+            out.cols.put(g.key(), ColArr(cc, None if vv.all() else vv, arr.codec))
+            continue
+        col = []
+        for (si, st, heads, _, _, least), G in zip(pieces, sizes):
+            if j not in st: col += [None] * G
+            elif j in least: col += least[j]
+            else: col += [gvals[j][i] for i in heads.tolist()]
+        out.cols[g.key()] = col
+    _grouping_cols(s, out, sets, [si for (si, *_), G in zip(pieces, sizes) for _ in range(G)])
+    rows = np.concatenate([perm for _, _, _, perm, _, _ in pieces]) if pieces else np.zeros(0, np.int64)
+    st_, en_, o = [], [], 0
+    for _, _, _, perm, b, _ in pieces:
+        st_.append(b[:-1] + o); en_.append(b[1:] + o); o += len(perm)
+    starts = np.concatenate(st_) if st_ else np.zeros(0, np.int64); ends = np.concatenate(en_) if en_ else np.zeros(0, np.int64)
+    return out, _FlatMembers(rows.astype(np.int64), starts.astype(np.int64), ends.astype(np.int64), _counts(rel.cnt))
+
+
+class _FlatMembers:
+    """the rows of each output group as runs of one array: flat = (rows group after group, run starts, run ends), w the
+    rows' counts; iterating or indexing gives each group's rows as a list (made once, on first use)"""
+    def __init__(self, rows, starts, ends, w):
+        self.flat, self.w, self._lists = (rows, starts, ends), w, None
+    def __len__(self): return len(self.flat[1])
+    def _ls(self):
+        if self._lists is None:
+            r = self.flat[0].tolist()
+            self._lists = [r[a:b] for a, b in zip(self.flat[1].tolist(), self.flat[2].tolist())]
+        return self._lists
+    def __iter__(self): return iter(self._ls())
+    def __getitem__(self, i): return self._ls()[i]
+    def singletons(self):
+        """each group's only row, when every group has exactly one (else None)"""
+        rows, st, en = self.flat
+        return rows[st] if len(st) and bool(((en - st) == 1).all()) else None
+
+
+def aggregate(s, rel, aggs, aggplan, cx):
+    """GROUP BY (with grouping sets) and every aggregate, from the rows of rel (each standing for cnt rows)"""
+    vec = VEC_GROUPS and rel.n > 32
+    garr = [codes_of(g, rel, cx) if vec and T.coll_key(g.t) is None else None for g in s.group]
+    gvals = [None if a is not None else ev(g, rel, cx) for g, a in zip(s.group, garr)]      # engine columns stay codes
+    for col in gvals:
+        for v in col or ():
+            if isinstance(v, Err): raise SqlError(v.msg)
+    sets = s.sets if s.sets is not None else [list(range(len(s.group)))]
+    gkeys = [None if v is None else _ckeys(v, g.t) for v, g in zip(gvals, s.group)]      # collated: grouped by key, the least value shown
+    collated = [gv is not None and gk is not gv for gk, gv in zip(gkeys, gvals)]
+    if vec: out, members = _group_arrays(s, rel, sets, garr, gvals, gkeys, collated)
+    else: out, members = _group_rows(s, rel, sets, gvals, gkeys, collated)
     for k, a in aggs.items():
         out.cols[k] = agg_values(a, rel, members, aggplan.get(k), cx)
     if s.having is not None:
@@ -1382,6 +1440,8 @@ def agg_values(a, rel, members, plan, cx):
         k = a.key()
         if a.name in ("min", "max"):                 # the engine's extremes per row
             col = rel.cols[("x", k)]; j = 0 if a.name == "min" else 1
+            one = members.singletons() if hasattr(members, "singletons") else None
+            if one is not None: return [None if col[i] is None else col[i][j] for i in one.tolist()]
             out = []
             for mem in members:
                 vals = [col[i][j] for i in mem if col[i] is not None]
@@ -1393,6 +1453,12 @@ def agg_values(a, rel, members, plan, cx):
             return out
         cnt = rel.cols[("n", k)]
         nm = len(MOMENTS[a.name](None, None)) if a.name in MOMENTS else 0
+        one = members.singletons() if hasattr(members, "singletons") and a.name in ("count", "count_star", "sum") else None
+        if one is not None:                          # one row per group: its count, its sum
+            idx = one.tolist()
+            if a.name != "sum": return [cnt[i] for i in idx]
+            m0 = rel.cols[("m", k, 0)]
+            return [None if cnt[i] == 0 else (0 if m0[i] is None else m0[i]) for i in idx]
         if VEC_GROUPS:
             got = _moment_arrays(a.name, cnt, [rel.cols[("m", k, j)] for j in range(nm)], members)
             if got is not None: return got
@@ -1483,13 +1549,11 @@ _MOMENT_VEC = {"avg", "var_pop", "var_samp", "stddev_pop", "stddev_samp", "covar
 
 def _exact_ints(vals):
     """exact numbers (int, Decimal, Fraction; None as 0) -> (object array of integers, their common denominator)"""
-    rs = []
-    for v in vals:
-        if v is None: rs.append((0, 1))
-        elif type(v) is int: rs.append((v, 1))
-        elif isinstance(v, (Decimal, Fraction)): rs.append(v.as_integer_ratio())
-        else: return None
-    den = math.lcm(*{d for _, d in rs}) if rs else 1
+    if not set(map(type, vals)) <= {int, Decimal, Fraction, _NoneT}: return None
+    rs = [(0, 1) if v is None else v.as_integer_ratio() for v in vals]
+    dens = {d for _, d in rs}
+    if dens == {1}: return np.array([p for p, _ in rs], object), 1
+    den = math.lcm(*dens)
     return np.array([p if d == den else p * (den // d) for p, d in rs], object), den
 
 

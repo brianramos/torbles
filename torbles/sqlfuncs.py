@@ -252,7 +252,8 @@ def _div(a, b):
     if isinstance(a, Interval):
         if b == 0: return Err("Division by zero")
         return _iv_scale(a, 1 / Fraction(str(b)) if isinstance(b, (float, Decimal)) else Fraction(1, b))
-    a, b = float(a), float(b)
+    a = 0.0 if type(a) is Decimal and a.is_zero() else float(a)       # a DECIMAL zero has no sign
+    b = 0.0 if type(b) is Decimal and b.is_zero() else float(b)
     if b == 0:
         if a == 0 or a != a: return math.nan
         return math.copysign(math.inf, a) * (math.copysign(1, b))

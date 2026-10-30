@@ -99,8 +99,10 @@ def func(order):
                   "regr_slope({N}, {N})", "regr_intercept({N}, {N})", "regr_count({N}, {N})", "regr_r2({N}, {N})",
                   "regr_avgx({N}, {N})", "regr_sxy({N}, {N})", "bool_and(b)", "bool_or(b)", "arg_min({A}, {N})",
                   "arg_max({A}, {N})", "sum(yn)", "avg(yn)", "min(yn)", "max(yn)", "count(DISTINCT {A})", "sum(DISTINCT {N})",
-                  "string_agg(s, ',')", "median({N})", "count_if(b)", "any_value({A})", "bit_and(x)", "bit_or(o)", "bit_xor(x)"])
-    duck = not ("yn" in g or "arg_" in g or "string_agg" in g or "any_value" in g)   # NaN, ties, order: not DuckDB's
+                  "string_agg(s, ',')", "median({N})", "count_if(b)", "any_value({A})", "bit_and(x)", "bit_or(o)", "bit_xor(x)",
+                  "quantile_cont({N}, 0.25)", "quantile_disc({A}, 0.75)", "median(dd)", "median(s)", "quantile_cont({N}, [0.1, 0.9])",
+                  "quantile_disc({N}, 0.4)", "median({N})"])
+    duck = not ("yn" in g or "arg_" in g or "string_agg" in g or "any_value" in g or "quantile" in g or "median(s)" in g)
     while "{N}" in g: g = g.replace("{N}", r.choice(ARGS["num"]), 1)
     if g.startswith(("var", "stddev", "covar", "corr", "regr")) and any(c in g for c in ("x", "y")):
         duck = False                     # 2^40 and 1e300 in double arithmetic: DuckDB loses the digits torbles keeps

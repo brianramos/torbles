@@ -769,7 +769,7 @@ def evaluate(w, L, args, filt, bvals, key, desc):
         return out
     # framed functions
     if w.distinct and name not in ("count", "sum", "avg", "mean", "min", "max"): raise NoVec
-    if name not in ("first_value", "last_value", "nth_value") and name not in _AGGS: raise NoVec
+    if name not in ("first_value", "last_value", "nth_value") and name not in _AGGS and name not in _FRAME_ORDER: raise NoVec
     bv = {s: v if isinstance(v, Const) else S(v) for s, v in bvals.items()}
     lo, hi = frame_bounds(w, L, bv, S(key) if key is not None else None, desc)
     segs = segments(w, L, lo, hi)
@@ -788,7 +788,70 @@ def evaluate(w, L, args, filt, bvals, key, desc):
     valid = np.ones(n, bool) if filt is None else filt[perm]
     if w.distinct and name in ("count", "sum", "avg", "mean"):
         return distinct_frames(name, S(args[0]), valid, segs, n)
+    if name in _FRAME_ORDER: return order_frames(name, w.params, S(args[0]), valid, segs, n)
     return aggregate(name, [S(a) for a in args], valid, segs, n)      # MIN / MAX (DISTINCT): the same
+
+
+_FRAME_ORDER = {"median", "quantile_cont", "percentile_cont", "quantile_disc", "percentile_disc", "quantile"}
+
+
+def order_frames(name, params, vals, valid, segs, n):
+    """MEDIAN and PERCENTILE_CONT / _DISC over every frame (runs of sorted positions, EXCLUDE included): each row gets
+    its rank in (value, position) order, the order the row-by-row path sorts a frame in; the frame's row at rank k is
+    found by a parallel binary search on that rank, every round counting each frame's rows below the midpoint with
+    merge-sort-tree dominance counts (log n rounds of O(log n) searches per frame, for all frames at once)"""
+    import math
+    valid = valid & nn_mask(vals)
+    desc = name in ("quantile_disc", "percentile_disc", "quantile") and len(params) > 1 and params[1] == "desc"
+    pos = np.flatnonzero(valid)
+    rank = np.full(n, n, np.int64)                       # invalid rows: past every rank searched
+    if len(pos):
+        code = code_order(vals, desc, mask=valid) if is_codes(vals) else order_codes(vals[pos].tolist(), desc)
+        byrank = pos[np.lexsort((pos, code))]
+        rank[byrank] = np.arange(len(byrank))
+    else: byrank = pos
+    q = _dominance(rank, None, n)
+    nq = len(segs[0][0])
+    def below(t):                                        # per frame: its valid rows of rank < t
+        c = np.zeros(nq, np.int64)
+        for s_, e_ in segs:
+            ne = e_ > s_
+            if ne.any(): c += np.where(ne, q(e_, t)[0] - q(s_, t)[0], 0)
+        return c
+    N = below(np.full(nq, n, np.int64))
+    def kth(k):                                          # per frame: the row at 0-based rank k (k < N)
+        lo = np.zeros(nq, np.int64); hi = np.full(nq, max(len(byrank) - 1, 0), np.int64)
+        while True:
+            act = lo < hi
+            if not act.any(): break
+            mid = (lo + hi) // 2
+            left = below(mid + 1) > k
+            hi = np.where(act & left, mid, hi); lo = np.where(act & ~left, mid + 1, lo)
+        return byrank[np.clip(lo, 0, max(len(byrank) - 1, 0))] if len(byrank) else np.zeros(nq, np.int64)
+    Nl = N.tolist()
+    if name == "median":
+        qs, single = [Fraction(1, 2)], True
+        num = values_at(vals, pos[:1]).tolist() if len(pos) else []
+        cont = not (bool(num) and not isinstance(num[0], (int, float, Decimal, bool, _dt.date, F.Interval)))
+    else:
+        qv = F._q_param(params)
+        single = not isinstance(qv, list); qs = [qv] if single else qv
+        cont = name in ("quantile_cont", "percentile_cont")
+    res = []
+    for qf in qs:
+        if cont:
+            pr = [Fraction(qf) * (m - 1) if m else Fraction(0) for m in Nl]
+            lo_r = [math.floor(x) for x in pr]; hi_r = [math.ceil(x) for x in pr]
+            a = values_at(vals, kth(np.array(lo_r, np.int64))); b = values_at(vals, kth(np.array(hi_r, np.int64)))
+            res.append([None if m == 0 else F.qc_mix(x, y, pp, l, h) for x, y, pp, l, h, m in zip(a, b, pr, lo_r, hi_r, Nl)])
+        else:
+            k = [max(0, math.ceil(Fraction(qf) * m) - 1) if m else 0 for m in Nl]
+            res.append(values_at(vals, kth(np.array(k, np.int64))).tolist())
+    out = np.full(nq, None, object)
+    for g in range(nq):
+        if Nl[g] == 0: continue
+        out[g] = res[0][g] if single else [r[g] for r in res]
+    return out
 
 
 # ------------------------------------------------------------------ DISTINCT over frames: dominance counts

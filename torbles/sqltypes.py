@@ -428,7 +428,8 @@ def supertype_all(types, literals=None):
 # ------------------------------------------------------------------ casts
 def _dec_quant(v, s):
     """v rounded half away from zero to s decimal places (DuckDB's rounding of decimals)"""
-    return v.quantize(Decimal(1).scaleb(-s), rounding=decimal.ROUND_HALF_UP, context=CTX)
+    q = v.quantize(Decimal(1).scaleb(-s), rounding=decimal.ROUND_HALF_UP, context=CTX)
+    return q.copy_abs() if q.is_zero() else q        # a DECIMAL zero has no sign (Python's -1.5 * 0 is -0.0)
 
 
 def _check_int(v, t, err):
@@ -767,7 +768,7 @@ def _cast(v, src, dst, err):
             try: return float(Decimal(s))
             except decimal.InvalidOperation: raise SqlError(f"Conversion Error: could not convert string '{v}' to {dst}")
         if isinstance(v, (bool, int, Decimal, float)):
-            f = float(v)
+            f = 0.0 if type(v) is Decimal and v.is_zero() else float(v)      # DECIMAL zero: unsigned
             if d == "FLOAT":
                 import struct
                 f = struct.unpack("f", struct.pack("f", f))[0]
