@@ -58,6 +58,24 @@ clause now matches NULL with NULL. `tests/check_arrays.py` checks every answer a
 (value for value) and against DuckDB. DOUBLE columns with NaN or infinities now load (they were left out with a note),
 compared and grouped as DuckDB does.
 
+The executor keeps the engine's results as codes. The GROUP BY columns an engine query returns are integer code arrays
+with their validity masks and codecs (codes order and compare like the values), and they stay codes through
+expressions, grouping, joins, DISTINCT, the set operations, ORDER BY and LIMIT; values are decoded once, for the rows
+that are output. Arithmetic and comparisons of code columns run on the codes, any other function runs once per
+distinct combination of the codes it reads, and a filter on a fact column with millions of possible codes is evaluated
+on the codes present. The engine's own result handling (128-bit sums and group codes, self-extending keys, measures
+factored through the GROUP BY key, lookup keys) is array arithmetic instead of a loop over groups; COUNT(DISTINCT),
+the percentiles and MODE work on the (group, value, count) histograms; AVG, the variances, covariances, CORR and REGR_*
+are computed for every group at once as exact integer arithmetic on the moment sums, rounded once; COUNT, SUM and AVG
+(DISTINCT) over window frames are merge-sort-tree dominance counts, and MEDIAN and the percentiles over frames are
+parallel binary searches on those counts. The SQL front end tokenizes a statement once and reads a statement it has
+parsed before from a cache. A DECIMAL zero is unsigned, as in DuckDB (Python's `Decimal('-1.5') * 0` is `-0.0`, which
+turned `-13 / ((1 - 2.5) * 0)` into `+inf` on the row-by-row path). The final SQL fuzzing record, 39,300 statements (38,888 answers compared, DuckDB rejecting 412,
+torbles none), has no mismatch; on the 27,961 statements it shares with the record before this work, torbles' total time
+fell from 666 s to 230 s, its mean from 23.8 to 8.2 ms and its slowest statement from 87 s to 2.4 s, the median ratio
+to DuckDB from 1.38 to 1.27, and torbles answers first on 25% of statements instead of 19%. The median statement
+(4.6 ms against DuckDB's 3.8) is now mostly fixed cost: parsing, binding and planning in Python.
+
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random
 schemas and SQL and compares every answer with DuckDB's; `tests/check_sql.py`, `tests/check_iso.py` and
