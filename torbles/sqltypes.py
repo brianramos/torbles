@@ -189,8 +189,21 @@ _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYIN
           "CHAR VARYING": "VARCHAR", "JSON": "JSON"}
 
 
+_TYPE_NAMED = {}                                 # (name, args) -> type: names repeat (every column of every table bound)
+
+
 def type_from_name(name, args=()):
-    """a type from its SQL name and parameters: DECIMAL(10, 2), NUMERIC, VARCHAR(20), DOUBLE PRECISION, ..."""
+    """a type from its SQL name and parameters: DECIMAL(10, 2), NUMERIC, VARCHAR(20), DOUBLE PRECISION, ... (types are
+    never changed once made, so one object serves every request of the same name)"""
+    try: key = (name, tuple(args)); t = _TYPE_NAMED.get(key)
+    except TypeError: return _type_from_name(name, args)
+    if t is None:
+        t = _type_from_name(name, args)
+        if len(_TYPE_NAMED) < 4096: _TYPE_NAMED[key] = t
+    return t
+
+
+def _type_from_name(name, args=()):
     raw = str(name).strip()
     if raw.endswith("[]"): return LIST(type_from_name(raw[:-2]))
     rt = _row_type(raw)

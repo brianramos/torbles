@@ -11,6 +11,7 @@ DISTINCT, the SQL/JSON functions and JSON_TABLE, MATCH_RECOGNIZE, SEARCH / CYCLE
 0x / 1_000 numbers. Postfix predicates travel as  x IS [NOT] DISTINCT FROM __iso_pred_<name>(...)  so that DuckDB gives
 them a predicate's precedence. The binder resolves names against the torbles catalog, types every expression
 (sqlfuncs) and builds sqlir blocks."""
+import copy
 import json, re
 from decimal import Decimal
 import sqltypes as T
@@ -1224,15 +1225,28 @@ def iso_prepass(sql):
 _parser = None
 
 
+_PARSED = {}                                    # SQL text -> (DuckDB's tree as JSON, pre-pass text, pre-pass FLAGS)
+
+
 def parse(sql):
-    """SQL text -> DuckDB's syntax tree of each statement (dicts)"""
+    """SQL text -> DuckDB's syntax tree of each statement (dicts); a text parsed before is read back from _PARSED (the
+    tree is decoded afresh, the binder may change it)"""
     global _parser
+    hit = _PARSED.get(sql)
+    if hit is not None:
+        js, text, flags = hit
+        FLAGS.clear(); FLAGS.update(copy.deepcopy(flags))
+        return [s["node"] for s in json.loads(js)["statements"]], text
     import duckdb
     if _parser is None: _parser = duckdb.connect()
     text = iso_prepass(sql)
-    r = json.loads(_parser.execute("SELECT json_serialize_sql(?)", [text]).fetchone()[0])
+    # the text inlined as a string literal: DuckDB binds a parameter on a slower path than it reads a constant
+    js = _parser.execute("SELECT json_serialize_sql('" + text.replace("'", "''") + "')").fetchone()[0]
+    r = json.loads(js)
     if r.get("error"):
         raise SqlError(r.get("error_message", "syntax error") + ("" if text == sql else f"\n(after the ISO pre-pass: {text})"))
+    if len(_PARSED) >= 1024: _PARSED.pop(next(iter(_PARSED)))
+    _PARSED[sql] = (js, text, copy.deepcopy(FLAGS))
     return [s["node"] for s in r["statements"]], text
 
 
@@ -2925,17 +2939,23 @@ class SetSession:
 
 
 def split_statements(sql):
-    """the statements of a script (top-level semicolons; strings, identifiers and comments respected)"""
-    out, start = [], 0
+    """the statements of a script (top-level semicolons; strings, identifiers and comments respected; a statement of
+    only blanks and comments is dropped, text the tokenizer does not read is kept, for the parser to report)"""
+    out, start, seen, end = [], 0, False, 0
     for m in _TOK.finditer(sql):
-        if m.lastgroup == "op" and m.group(0) == ";":
-            out.append(sql[start:m.start()]); start = m.end()
-    out.append(sql[start:])
-    return [x for x in out if tokenize(x)]
+        if m.start() > end: seen = True
+        end = m.end(); g = m.lastgroup
+        if g == "op" and m.group(0) == ";":
+            if seen: out.append(sql[start:m.start()])
+            start, seen = m.end(), False
+        elif g not in ("ws", "lc", "bc"): seen = True
+    if seen or end < len(sql): out.append(sql[start:])
+    return out
 
 
 def _set_statement(db, text):
     """SET TIME ZONE LOCAL | <interval or zone name>, SET TimeZone = 'zone' / SET timezone TO 'zone' (None: not a SET)"""
+    if "SET" not in text.upper(): return None
     t = tokenize(text)
     if not t or t[0].up() != "SET": return None
     if _kw(t, 1, "TIME", "ZONE"):

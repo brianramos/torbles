@@ -314,6 +314,15 @@ cyc = "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT e.dst FROM r JOIN e ON 
 expect_g(cyc + "CYCLE n SET is_cycle USING path SELECT n, is_cycle, CARDINALITY(path) FROM r ORDER BY path",
          [(1, False, 1), (2, False, 2), (4, False, 3), (1, True, 4), (3, False, 2), (4, False, 3), (1, True, 4)], "CYCLE: rows on a cycle marked, not expanded")
 expect_g(cyc + "CYCLE n SET c TO 'Y' DEFAULT 'N' USING p SELECT count(*), count(*) FILTER (WHERE c = 'Y') FROM r", [(7, 2)], "CYCLE ... TO 'Y' DEFAULT 'N'")
+# a statement parsed before is read back from the parse cache with the pre-pass flags it set (SEARCH / CYCLE,
+# CORRESPONDING), also after a statement that set none
+for sql in (walk + "SEARCH DEPTH FIRST BY n SET ord SELECT n, d FROM r ORDER BY ord",
+            cyc + "CYCLE n SET is_cycle USING path SELECT n, is_cycle, CARDINALITY(path) FROM r ORDER BY path",
+            "SELECT 1 AS a, 2 AS b UNION CORRESPONDING BY (b) SELECT 3 AS b, 4 AS a ORDER BY 1"):
+    what = "parse cache keeps the pre-pass flags: " + sql.split(" SELECT")[0][-40:]
+    try: first = dbg.sql(sql).rows; dbg.sql("SELECT 1"); again = dbg.sql(sql).rows
+    except Exception as x: check(False, what, f"{type(x).__name__}: {x}"); continue
+    check(first == again, what, f"{first} then {again}")
 mr = """SELECT * FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp
         MEASURES STRT.tstamp AS start_tstamp, LAST(DOWN.tstamp) AS bottom_tstamp, LAST(UP.tstamp) AS end_tstamp {extra}
         {rows} AFTER MATCH SKIP TO LAST UP PATTERN (STRT DOWN+ UP+)
