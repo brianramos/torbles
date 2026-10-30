@@ -71,6 +71,18 @@ def _join128_arr(lo, hi):
     if np.array_equal(h64, np.where(l64 < 0, -1, 0)): return l64
     return np.array([_join128(a, b) for a, b in zip(lo.tolist(), hi.tolist())], object)
 
+def _unique_rows(cols):
+    """the distinct rows of equal-length int64 columns, in sorted order, and each row's index among them -> (list of
+    columns, inverse): one lexsort (np.unique(axis=0) sorts rows as opaque byte strings, many times slower)"""
+    n = len(cols[0])
+    o = np.lexsort(cols[::-1])
+    new = np.ones(n, bool)
+    if n:
+        new[1:] = np.logical_or.reduce([c[o][1:] != c[o][:-1] for c in cols])
+    gid = np.cumsum(new) - 1
+    inv = np.empty(n, np.int64); inv[o] = gid
+    return [c[o][new] for c in cols], inv
+
 def _digits128(lo, hi, radix):
     """the mixed-radix digits (radixes below 2^32) of 128-bit codes given as (lo, hi) 64-bit words, by long division
     on 32-bit limbs: each step divides a value below r * 2^32 <= 2^64, so uint64 arithmetic is exact"""
@@ -1596,6 +1608,12 @@ class Query:
         elif both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
         elif isinstance(vals, np.ndarray) and not scale and not ext: vl = vals.tolist()
         elif isinstance(vals, np.ndarray) and not ext: vl = [_exact_dec(v, scale) for v in vals.tolist()]
+        elif ext is not None and not both and isinstance(vals, list) and all(v is not None for v in vals):
+            ecd = ext.codec()                        # MIN / MAX codes: every minimum, then every maximum, decoded at once
+            if ecd is None: vl = vals
+            else:
+                lo_ = ecd.decode(_codes_array([v[0] for v in vals])); hi_ = ecd.decode(_codes_array([v[1] for v in vals]))
+                vl = [MinMax((a, b)) for a, b in zip(lo_, hi_)]
         else: vl = [val(v) for v in (vals.tolist() if isinstance(vals, np.ndarray) else vals)]
         valid = {i: np.asarray(cols[nk + j]) != 0 for j, i in enumerate(vpos)}
         keys = [(np.asarray(cols[i]), valid.get(i), decs[i]) for i in range(nk)]
@@ -2008,10 +2026,10 @@ class Query:
             else: va = gs if wide else np.asarray(gs, np.int64)
             cols = list(cols)
             if any(m is not None for m in kmaps) and len(cna) > 1:
-                km = np.stack([np.asarray(c).astype(np.int64) for c in cols], 1)
-                uk, inv = np.unique(km, axis=0, return_inverse=True); inv = inv.reshape(-1)
-                if len(uk) < len(km):
-                    g = len(uk); c2 = np.zeros(g, np.int64); np.add.at(c2, inv, cna)
+                kc = [np.asarray(c).astype(np.int64) for c in cols]
+                uk, inv = _unique_rows(kc)
+                if len(uk[0]) < len(cna):
+                    g = len(uk[0]); c2 = np.zeros(g, np.int64); np.add.at(c2, inv, cna)
                     if ext:
                         a = np.full(g, np.iinfo(np.int64).max, np.int64); np.minimum.at(a, inv, mn)
                         b = np.full(g, np.iinfo(np.int64).min, np.int64); np.maximum.at(b, inv, mx); mn, mx = a, b
@@ -2021,7 +2039,7 @@ class Query:
                         for i, v in zip(inv.tolist(), va.tolist()): v2[i] += v
                         va = np.array(v2, object)
                     else: v2 = np.zeros(g, np.int64); np.add.at(v2, inv, va); va = v2
-                    cna = c2; cols = [uk[:, i] for i in range(uk.shape[1])]
+                    cna = c2; cols = uk
             if ext: va = [MinMax(p) for p in zip(mn.tolist(), mx.tolist())]
             return CodeGroups(cols, va, cna if getattr(self, "_both", False) else None)
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)

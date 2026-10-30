@@ -1442,6 +1442,9 @@ def agg_values(a, rel, members, plan, cx):
             col = rel.cols[("x", k)]; j = 0 if a.name == "min" else 1
             one = members.singletons() if hasattr(members, "singletons") else None
             if one is not None: return [None if col[i] is None else col[i][j] for i in one.tolist()]
+            if VEC_GROUPS and getattr(members, "flat", None) is not None:
+                got = _extreme_arrays(col, j, members.flat)
+                if got is not None: return got
             out = []
             for mem in members:
                 vals = [col[i][j] for i in mem if col[i] is not None]
@@ -1453,6 +1456,9 @@ def agg_values(a, rel, members, plan, cx):
             return out
         cnt = rel.cols[("n", k)]
         nm = len(MOMENTS[a.name](None, None)) if a.name in MOMENTS else 0
+        if VEC_GROUPS and a.name in ("count", "count_star", "sum") and getattr(members, "flat", None) is not None:
+            got = _count_sum_arrays(a.name, cnt, rel.cols[("m", k, 0)] if a.name == "sum" else None, members.flat)
+            if got is not None: return got
         one = members.singletons() if hasattr(members, "singletons") and a.name in ("count", "count_star", "sum") else None
         if one is not None:                          # one row per group: its count, its sum
             idx = one.tolist()
@@ -1589,6 +1595,40 @@ def _moment_arrays(name, cnt, cols, members):
         Syy, Sxx, Sxy = (S[j] * (L * L // K[j]) for j in (2, 3, 4))
         out = sqlwin.bivariate_arrays(name, n, Sy, Sx, Syy, Sxx, Sxy, L, L)
     return out.tolist()
+
+
+def _extreme_arrays(col, j, flat):
+    """MIN (j = 0) / MAX (j = 1) of every group from the engine's per-row extremes: the values' order codes, one sort by
+    (group, code, row), the first row of each group (the first of equal values, as the comparisons keep it)"""
+    import sqlwin
+    rows, starts, ends = flat
+    vals = [None if col[i] is None else col[i][j] for i in rows.tolist()]
+    nn = np.fromiter((v is not None for v in vals), bool, len(vals))
+    G = len(starts)
+    out = [None] * G
+    if not nn.any(): return out
+    try: code = sqlwin.order_codes([v for v in vals if v is not None])
+    except Exception: return None
+    grp = np.repeat(np.arange(G), ends - starts)[nn]
+    at = np.flatnonzero(nn)
+    o = np.lexsort((at, -code if j else code, grp))
+    first = np.ones(len(o), bool); first[1:] = grp[o][1:] != grp[o][:-1]
+    for g, p in zip(grp[o][first].tolist(), at[o][first].tolist()): out[g] = vals[p]
+    return out
+
+
+def _count_sum_arrays(name, cnt, m0, flat):
+    """COUNT / SUM of every group from the engine's per-row states: exact sums over each group's run (SUM of integers
+    only; None: group by group)"""
+    rows, starts, ends = flat
+    def gsum(arr):
+        pre = np.concatenate([np.zeros(1, object), np.cumsum(arr[rows])]) if len(rows) else np.zeros(1, object)
+        return pre[ends] - pre[starts]
+    n = gsum(np.array(cnt, object))
+    if name != "sum": return n.tolist()
+    if not set(map(type, m0)) <= {int, _NoneT}: return None
+    s = gsum(np.array([0 if v is None else v for v in m0], object))
+    return [None if c == 0 else v for c, v in zip(n.tolist(), s.tolist())]
 
 
 def moment_values(a, rel, members, plan):
@@ -3160,11 +3200,14 @@ class _Planner:
         def first_poly(vid):
             return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
         def rowkey(g):
-            """the key columns of a run, comparable across runs: codes (NULL as -1)"""
+            """the key columns of a run, comparable across runs: (codes as int64, or uint64 past 2^63; validity or None)"""
             out = []
             for codes, valid, _ in g.keys:
                 c = ColArr(codes).codes                           # int64 (object past 2^63)
-                out.append(np.where(valid, c, -1) if valid is not None and c.dtype != object else c)
+                if c.dtype == object:
+                    try: c = np.asarray(c, np.uint64)
+                    except OverflowError: pass
+                out.append((c, valid))
             return out
         def rowvals(g):
             """the key tuples of a run as hashable values (runs that gave values and runs that gave codes meet here)"""
@@ -3197,9 +3240,16 @@ class _Planner:
             """the base group of each group of a later run (every later run's groups are among the base's)"""
             if coded and all(c is not None for c, _, _ in h.keys):
                 import sqlwin
-                both = [np.concatenate([a, b]) for a, b in zip(base_keys, rowkey(h))]
-                rc = sqlwin._combine([np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64) for c in both]) if both \
-                    else np.zeros(G + len(h), np.int64)
+                cols = []
+                for (a, va), (b, vb) in zip(base_keys, rowkey(h)):
+                    c = np.concatenate([a, b]) if a.dtype == b.dtype else np.concatenate([a.astype(object), b.astype(object)])
+                    if c.dtype == np.int64 and len(c) and int(c.min()) >= 0 and int(c.max()) < 1 << 40: d = c + 1
+                    else: d = np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64) + 1    # dense, from 1
+                    if va is not None or vb is not None:                  # NULL: 0, whatever its code
+                        ok = np.concatenate([np.ones(len(a), bool) if va is None else va, np.ones(len(b), bool) if vb is None else vb])
+                        d = np.where(ok, d, 0)
+                    cols.append(d)
+                rc = sqlwin._combine(cols) if cols else np.zeros(G + len(h), np.int64)
                 rb, rh = rc[:G], rc[G:]
                 o = np.argsort(rb, kind="stable")
                 pos = o[np.searchsorted(rb[o], rh)]
