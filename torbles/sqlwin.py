@@ -79,6 +79,69 @@ def code_order(a, desc=False, nulls_first=False, mask=None):
     return out
 
 
+def _comparable(a):
+    """a code column as values comparable across columns: ("int", int64 exact values), ("dec", int64 scaled, scale),
+    ("float", float64), ("day" / "us", int64), ("dict", codes, dictionary values); None otherwise"""
+    cd, c = a.codec, a.codes
+    if c.dtype == object: return None
+    if cd is None: return ("float", c) if c.dtype == np.float64 else ("int", c)
+    k = getattr(cd, "kind", None)
+    off = int(getattr(cd, "offset", 0))
+    if k in ("int", "bool", "decimal", "date", "timestamp"):
+        if len(c) and abs(off) + int(np.abs(c).max()) >= 1 << 62: return None
+        v = c + off
+        if k == "decimal": return ("dec", v, cd.scale)
+        if k == "date": return ("day", v)
+        if k == "timestamp": return ("tz" if cd.zoned else "us", v)
+        return ("int", v)
+    if k == "dict":
+        if getattr(cd, "floating", False):
+            fv = np.array(cd.values, np.float64)
+            return ("float", fv[np.clip(c, 0, max(len(fv) - 1, 0))] if len(fv) else np.zeros(len(c)))
+        return ("dict", c, cd.values)
+    return None
+
+
+def joint_codes(a, b):
+    """codes of two columns (code columns or value lists) under which equal values are equal: (codes of a, codes of b),
+    NULLs not distinguished (mask them); the code columns' dictionaries or values are matched, not their rows"""
+    if is_codes(a) and is_codes(b):
+        if a.codec is b.codec and a.codes.dtype != object: return a.codes, b.codes
+        x, y = _comparable(a), _comparable(b)
+        if x is not None and y is not None:
+            kx, ky = x[0], y[0]
+            if kx == "dict" and ky == "dict":                # two dictionaries: one joint dictionary of their values
+                import sqlexec
+                d = {}
+                ma = np.array([d.setdefault(sqlexec.nkey(v), len(d)) for v in x[2]] or [0], np.int64)
+                mb = np.array([d.setdefault(sqlexec.nkey(v), len(d)) for v in y[2]] or [0], np.int64)
+                return ma[np.clip(x[1], 0, len(ma) - 1)], mb[np.clip(y[1], 0, len(mb) - 1)]
+            num = {"int", "dec", "float"}
+            if kx in num and ky in num:
+                if "float" in (kx, ky):
+                    def fl(z):
+                        if z[0] == "float": return z[1]
+                        if len(z[1]) and int(np.abs(z[1]).max()) >= 1 << 53: return None
+                        return z[1].astype(np.float64) / (10.0 ** z[2] if z[0] == "dec" else 1.0)
+                    fa, fb = fl(x), fl(y)
+                    if fa is not None and fb is not None:
+                        u = np.unique(np.concatenate([fa, fb]), return_inverse=True)[1].reshape(-1)
+                        return u[:len(fa)], u[len(fa):]
+                else:
+                    sa, sb = (x[2] if kx == "dec" else 0), (y[2] if ky == "dec" else 0)
+                    S = max(sa, sb)
+                    va, vb = x[1] * 10 ** (S - sa), y[1] * 10 ** (S - sb)
+                    return va, vb
+            if kx == ky and kx in ("day", "us", "tz"): return x[1], y[1]
+            if {kx, ky} == {"day", "us"}:
+                return (x[1] * 86_400_000_000 if kx == "day" else x[1]), (y[1] * 86_400_000_000 if ky == "day" else y[1])
+    import sqlexec                                        # values (decoded): codes by nkey over both
+    va = a.decode() if is_codes(a) else list(a)
+    vb = b.decode() if is_codes(b) else list(b)
+    g = group_codes(va + vb)
+    return g[:len(va)], g[len(va):]
+
+
 def nn_mask(c):
     """the rows that are not NULL (values or a code column)"""
     if is_codes(c): return c.valid.copy() if c.valid is not None else np.ones(len(c.codes), bool)
@@ -817,9 +880,12 @@ def aggregate(name, cols, valid, segs, n, w=None):
         avg = name in ("avg", "mean")
         tot = None
         if kind == "int":
-            mx = max((abs(v) for v in X[valid].tolist()), default=0) * (1 if w is None else max(int(w.max()), 1) if len(w) else 1)
+            try: Xi = X.astype(np.int64)
+            except OverflowError: Xi = None
+            mx = (int(np.abs(Xi).max()) if Xi is not None and len(Xi) else 0) if Xi is not None else 1 << 62
+            mx *= (1 if w is None else max(int(w.max()), 1) if len(w) else 1)
             if mx * (n + 1) < 1 << 62:
-                tot = _over(_prefix(X.astype(np.int64) * (1 if w is None else w)), segs)
+                tot = _over(_prefix(Xi * (1 if w is None else w)), segs)
                 if not avg: return np.where(cnt > 0, tot.astype(object), None)
                 if mx * (n + 1) < 1 << 53:
                     return np.where(cnt > 0, tot / np.maximum(cnt, 1), None).astype(object)

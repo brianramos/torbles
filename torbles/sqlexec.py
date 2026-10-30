@@ -448,7 +448,7 @@ def _ev_codes(e, rel, cx):
         if a is None: return None
         m = a.valid if a.valid is not None else np.ones(rel.n, bool)
         return _mk("bool", ~m if fn == "is_null" else m, 0, None)
-    if fn not in ("+", "-", "*", "/", "=", "<>", "<", "<=", ">", ">=", "neg"): return None
+    if fn not in ("+", "-", "*", "/", "=", "<>", "<", "<=", ">", ">=", "neg", "%", "mod", "//", "divide"): return None
     ops = [_operand(a, rel, cx) for a in e.args]
     if any(o is None for o in ops): return None
     if any(o[0] == "null" for o in ops): return None
@@ -460,6 +460,14 @@ def _ev_codes(e, rel, cx):
         return None if k == "bool" else _mk(k, -v, sc, valid)
     if "bool" in kinds and kinds != {"bool"}: return None
     (ka, va, sa, _), (kb, vb, sb, _) = ops
+    if fn in ("%", "mod", "//", "divide"):              # integers, no zero divisor: truncating, as SQL's
+        if kinds != {"int"}: return None
+        live = vb if valid is None else vb[valid]
+        if (live == 0).any(): return None
+        bb = np.where(vb == 0, 1, vb)
+        if fn in ("%", "mod"): return _mk("int", np.fmod(va, bb), 0, valid)
+        qq = np.abs(va) // np.abs(bb)
+        return _mk("int", np.where((va >= 0) == (bb >= 0), qq, -qq), 0, valid)
     if fn == "/" or "float" in kinds:                     # double arithmetic (DuckDB: / on numbers is a double division)
         fa, fb = _as_float(ops[0]), _as_float(ops[1])
         if fa is None or fb is None: return None
@@ -709,9 +717,72 @@ def run_recursive(q, cx):
     return Relation(names, types, result)
 
 
+def _setop_side(q, cx, types):
+    """one operand of a set operation as columns: code columns (ColArr) where its rows were kept as codes, else values"""
+    if isinstance(q, I.Select) and COLUMNAR and VEC_SCALARS:
+        out = run_select(q, cx, as_rel=True)
+        if isinstance(out, Rel):
+            cols = []
+            for (x, _), t in zip(q.items, types):
+                a = codes_of(x, out, cx) if x.t == t and T.coll_key(t) is None else None
+                if a is None:
+                    v = ev(x, out, cx)
+                    a = v if x.t == t else [u if u is None or isinstance(u, Err) else T.cast_value(u, x.t, t) for u in v]
+                    for u in a:
+                        if isinstance(u, Err): raise SqlError(u.msg)
+                cols.append(a)
+            return cols, out.n
+        rel = out
+    else: rel = run_query(q, cx)
+    cols = [list(c) for c in zip(*rel.rows)] if rel.rows else [[] for _ in types]
+    cols = [c if t0 == t1 else [v if v is None or isinstance(v, Err) else T.cast_value(v, t0, t1) for v in c]
+            for c, t0, t1 in zip(cols, rel.types, types)]
+    return cols, len(rel.rows)
+
+
+def _col_values(c, idx):
+    """values of a column (code column or values) at the positions idx"""
+    if isinstance(c, ColArr): return c.take(idx).decode()
+    return [c[i] for i in idx]
+
+
 def run_setop(q, cx):
-    a, b = run_query(q.left, cx), run_query(q.right, cx)
     types = [t for _, t in q.items]
+    if COLUMNAR and VEC_SCALARS and q.op in ("union", "intersect", "except") and not any(T.coll_key(t) for t in types):
+        import sqlwin                                  # the operands as histograms of their row codes
+        ca, na = _setop_side(q.left, cx, types)
+        cb, nb = _setop_side(q.right, cx, types)
+        parts = []
+        for a, b in zip(ca, cb):
+            ja, jb = sqlwin.joint_codes(a, b)
+            ma = sqlwin.nn_mask(a) if isinstance(a, ColArr) else sqlwin.notnull(sqlwin.obj(a))
+            mb = sqlwin.nn_mask(b) if isinstance(b, ColArr) else sqlwin.notnull(sqlwin.obj(b))
+            ja = np.where(ma, np.asarray(ja), -1); jb = np.where(mb, np.asarray(jb), -1)     # NULL: a value of its own
+            parts.append(np.unique(np.concatenate([ja, jb]), return_inverse=True)[1].reshape(-1).astype(np.int64))
+        codes = sqlwin._combine(parts) if parts else np.zeros(na + nb, np.int64)
+        if q.op == "union":
+            keep = np.arange(na + nb) if q.all else sqlwin.first_rows(codes)
+        else:
+            c1, c2 = codes[:na], codes[na:]
+            if q.all:                                  # the k-th copy of a row of A meets the k-th copy in B
+                nb_ = np.bincount(c2, minlength=int(codes.max()) + 1) if len(codes) else np.zeros(0, np.int64)
+                k = sqlwin.occurrence(c1)
+                inb = k < nb_[c1] if len(c1) else np.zeros(0, bool)
+                keep = np.flatnonzero(inb if q.op == "intersect" else ~inb)
+            else:
+                first = sqlwin.first_rows(c1)
+                inb = np.isin(c1[first], c2)
+                keep = first[inb if q.op == "intersect" else ~inb]
+        ka, kb = keep[keep < na], keep[keep >= na] - na
+        cols = [_col_values(a, ka) + _col_values(b, kb) for a, b in zip(ca, cb)]
+        rows = list(zip(*cols)) if cols else [()] * len(keep)
+        names = [n for n, _ in q.items]
+        rel = Rel(len(rows))
+        for i in range(len(names)): rel.cols[("pos", i)] = cols[i]
+        order = [(("pos", o[0][1]), o[1], o[2]) for o in q.order]
+        rows = _order_limit(rows, rel, order, q, cx, None)
+        return Relation(names, types, rows)
+    a, b = run_query(q.left, cx), run_query(q.right, cx)
     def conv(rel):
         cols = list(zip(*rel.rows)) if rel.rows else [()] * len(types)
         out = []
@@ -825,6 +896,25 @@ def _order_limit(rows, rel, order, q, cx, extra_rel):
             idx = idx[:k]
         else: idx = idx[:lim]
     return [rows[i] for i in idx]
+
+
+def _order_codes_idx(out, s, cx):
+    """the output rows' positions after ORDER BY, OFFSET and LIMIT, sorted on the codes of the keys; None when a key is
+    not a code column (or is collated)"""
+    import sqlwin
+    keys = []
+    for spec, desc, nf in s.order:
+        e = s.items[spec[1]][0] if spec[0] == "pos" else spec[1]
+        if T.coll_key(e.t) is not None: return None
+        a = codes_of(e, out, cx)
+        if a is None: return None
+        keys.append(sqlwin.code_order(a, desc, nf))
+    perm = np.lexsort(keys[::-1]) if keys else np.arange(out.n)
+    off = _int_param(_count_value(s.offset, cx), "OFFSET") or 0
+    lim = _count_value(s.limit, cx)
+    if lim is not None: lim = _int_param(lim, "LIMIT")
+    perm = perm[off:] if lim is None else perm[off:off + lim]
+    return perm.tolist()
 
 
 def _count_value(v, cx):
@@ -962,7 +1052,7 @@ def outer_refs_into(q, bset):
     return list(found.values())
 
 
-def run_select(s, cx):
+def run_select(s, cx, as_rel=False):
     if type(s.limit) is int and s.limit == 0 and not s.percent:
         # FETCH FIRST 0 ROWS / LIMIT 0: no row is output, so nothing is evaluated (as DuckDB: an error in a value
         # that no output row uses does not fail the query)
@@ -1001,11 +1091,11 @@ def run_select(s, cx):
             rel, aggplan = plan_star(s, bindings, need, aggs, cx)
         if rel is None:
             rel, aggplan = run_general(s, bindings, need, aggs, cx)
-    return finish_select(s, rel, aggs, wins, aggplan, cx)
+    return finish_select(s, rel, aggs, wins, aggplan, cx, as_rel)
 
 
 # ------------------------------------------------------------------ group-level evaluation
-def finish_select(s, rel, aggs, wins, aggplan, cx):
+def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     names = [n for _, n in s.items]; types = [x.t for x, _ in s.items]
     if s.aggregate:
         out = aggregate(s, rel, aggs, aggplan, cx)
@@ -1017,7 +1107,23 @@ def finish_select(s, rel, aggs, wins, aggplan, cx):
         out = rel
     if wins: compute_windows(list(wins.values()), out, cx)
     if s.qualify is not None:
-        out = out.take(truth(ev(s.qualify, out, cx)))
+        out = out.take(rows_where(s.qualify, out, cx))
+    if as_rel and not s.distinct and not s.order and s.limit is None and s.offset is None:
+        return out                                    # the rows before their values are built (a set operation's side)
+    if COLUMNAR and s.distinct and not s.distinct_on and not s.order and s.limit is None and s.offset is None and out.n > 32:
+        import sqlwin                                 # DISTINCT on codes: the first row of each code tuple, then values
+        src = [codes_of(x, out, cx) if T.coll_key(x.t) is None else None for x, _ in s.items]
+        if src and all(a is not None for a in src):
+            keep = sqlwin.first_rows(sqlwin._combine([sqlwin.code_groups(a) for a in src])).tolist()
+            out = out.take(keep)
+            cols = [ev(x, out, cx) for x, _ in s.items]
+            return Relation(names, types, list(zip(*cols)))
+    if COLUMNAR and s.order and not s.distinct and not s.with_ties and not s.percent and out.n > 32:
+        idx = _order_codes_idx(out, s, cx)              # ORDER BY / OFFSET / LIMIT on codes: only the rows output are decoded
+        if idx is not None:
+            out = out.take(idx)
+            cols = [ev(x, out, cx) for x, _ in s.items]
+            return Relation(names, types, list(zip(*cols)) if cols else [()] * out.n)
     cols = [ev(x, out, cx) for x, _ in s.items]
     rows = list(zip(*cols)) if cols else [()] * out.n
     for i in range(len(s.items)): out.cols[("pos", i)] = cols[i]
@@ -2556,7 +2662,7 @@ class _Planner:
             for k in aggs: modes[k] = "value"
         # a block without aggregates returns one row per fact row: read the passing rows' columns from the planes
         # (a row bitmap) instead of grouping them by every column it reads
-        rows_block = ROWS_BLOCK and not s.aggregate and not aggs and bool(s.items)
+        rows_block = ROWS_BLOCK and not s.aggregate and not aggs and (bool(s.items) or self.dense_atoms(atoms))
         if nkeys > algq.MAXKEY or self.fact_sample is not None or rows_block:
             # more columns than GROUP BY keys (or a sampled fact): the passing rows themselves (a row bitmap), their
             # columns read from the planes; every aggregate is then computed from its arguments' values
@@ -2728,6 +2834,20 @@ class _Planner:
                 mkeys[v][k] = len(mlist[v]); mlist[v].append(self.poly_of_tuple(m))
             ms.append(mkeys[v][k])
         return dict(kind="moment", variant=v, moments=ms, rowfilter_expr=rowfilter)
+
+    def dense_atoms(self, atoms):
+        """would grouping by the atoms leave about as many groups as rows? (their code domains multiplied: the bound
+        on the groups; then reading the rows is cheaper than grouping them)"""
+        n = max(self.tab[self.fact].n, 1)
+        dom = 1
+        for col in atoms.values():
+            b, name = self.canon(col)
+            t = self.tab[b]
+            try: m = t.maxcode(name) + 1
+            except Exception: return False
+            dom *= m * (2 if name in getattr(t, "nullable", {}) else 1)
+            if dom * 4 >= n: return True
+        return False
 
     def rows_rel(self, atoms, preds, empty):
         """the passing fact rows (engine row bitmap) with the atoms' values read from the planes"""
@@ -3171,14 +3291,22 @@ def _join_plain(j, L, R, cx):
         other.append(c)
     import sqlwin
     if lkeys:                                        # equal keys: the rows' codes, matched by a sort and two searches
-        lv = [ev(x, L, cx) for x in lkeys]; rv = [ev(x, R, cx) for x in rkeys]
-        codes = sqlwin.row_codes([list(a) + list(b) for a, b in zip(lv, rv)], L.n + R.n)
-        cl, cr = codes[:L.n], codes[L.n:]
+        lv = [codes_of(x, L, cx) for x in lkeys]; rv = [codes_of(x, R, cx) for x in rkeys]
+        lv = [c if c is not None else ev(x, L, cx) for c, x in zip(lv, lkeys)]
+        rv = [c if c is not None else ev(x, R, cx) for c, x in zip(rv, rkeys)]
+        lc, rc = [], []
         lok = np.ones(L.n, bool); rok = np.ones(R.n, bool)
-        for c, ne in zip(lv, nulleq):                 # = never matches NULL; IS NOT DISTINCT FROM matches NULL with NULL
-            if not ne: lok &= sqlwin.notnull(c)
-        for c, ne in zip(rv, nulleq):
-            if not ne: rok &= sqlwin.notnull(c)
+        for a, b, ne in zip(lv, rv, nulleq):
+            ja, jb = sqlwin.joint_codes(a, b)          # the two sides' values matched on their dictionaries
+            ma, mb = sqlwin.nn_mask(a) if isinstance(a, ColArr) else sqlwin.notnull(sqlwin.obj(a)), \
+                sqlwin.nn_mask(b) if isinstance(b, ColArr) else sqlwin.notnull(sqlwin.obj(b))
+            if ne:                                     # IS NOT DISTINCT FROM: NULL matches NULL (a code of its own)
+                ja = np.where(ma, ja, -1); jb = np.where(mb, jb, -1)
+            else: lok &= ma; rok &= mb                 # = never matches NULL
+            lc.append(np.asarray(ja)); rc.append(np.asarray(jb))
+        both = [np.unique(np.concatenate([x, y]), return_inverse=True)[1].reshape(-1).astype(np.int64) for x, y in zip(lc, rc)]
+        codes = sqlwin._combine(both)
+        cl, cr = codes[:L.n], codes[L.n:]
         rr = np.flatnonzero(rok); o = rr[np.argsort(cr[rr], kind="stable")]; cs = cr[o]
         lr = np.flatnonzero(lok)
         lo = np.searchsorted(cs, cl[lr], "left"); cnt = np.searchsorted(cs, cl[lr], "right") - lo
