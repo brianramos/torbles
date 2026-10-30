@@ -63,6 +63,29 @@ def _join128(lo, hi):
     """(lo, hi) words of a 128-bit sum -> a Python int"""
     return (int(hi) << 64) + (int(lo) & M64)
 
+def _join128_arr(lo, hi):
+    """_join128 of arrays: an int64 array when every sum fits 64 bits (hi is the sign extension of lo), else Python ints"""
+    lo, hi = np.asarray(lo), np.asarray(hi)
+    l64 = lo.astype(np.int64, copy=False) if lo.dtype != np.uint64 else lo.view(np.int64)
+    h64 = hi.astype(np.int64, copy=False) if hi.dtype != np.uint64 else hi.view(np.int64)
+    if np.array_equal(h64, np.where(l64 < 0, -1, 0)): return l64
+    return np.array([_join128(a, b) for a, b in zip(lo.tolist(), hi.tolist())], object)
+
+def _digits128(lo, hi, radix):
+    """the mixed-radix digits (radixes below 2^32) of 128-bit codes given as (lo, hi) 64-bit words, by long division
+    on 32-bit limbs: each step divides a value below r * 2^32 <= 2^64, so uint64 arithmetic is exact"""
+    lo = np.asarray(lo).astype(np.uint64); hi = np.asarray(hi).astype(np.uint64)
+    m32, s32 = np.uint64(0xFFFFFFFF), np.uint64(32)
+    limbs = [hi >> s32, hi & m32, lo >> s32, lo & m32]          # most significant first
+    cols = []
+    for r in reversed(radix):
+        r = np.uint64(int(r)); rem = np.zeros(len(lo), np.uint64)
+        for j in range(4):
+            cur = (rem << s32) | limbs[j]
+            limbs[j] = cur // r; rem = cur % r
+        cols.append(rem)
+    return cols[::-1]
+
 def interval(e, fact):
     """the range [lo, hi] of an integer expression over stored codes on one row: codes are in [0, colmax]"""
     if isinstance(e, Const): return int(e.v), int(e.v)
@@ -1055,6 +1078,13 @@ class Groups:
     def __len__(self): return len(self.vals)
 
 
+def _code_groups_dict(r, q):
+    """a CodeGroups result as the dict _finish gives otherwise: {key code tuple: value} ((sum, count) for _both)"""
+    keys = list(zip(*[np.asarray(c).tolist() for c in r.cols])) if r.cols else [()] * len(r.vals)
+    vs = r.vals if isinstance(r.vals, list) else r.vals.tolist()
+    if r.cnt is not None: vs = list(zip(vs, r.cnt.tolist()))
+    return dict(zip(keys, vs))
+
 def _codes_array(c):
     """key codes as an array for a codec's decode: int64, or Python integers past it (64-bit unsigned codes)"""
     try: return np.asarray(c, np.int64)
@@ -1063,8 +1093,7 @@ def _codes_array(c):
 def _exact_dec(v, scale):
     """the integer v / 10^scale as a Decimal, every digit kept (128-bit sums have up to 39; the default context
     rounds to 28)"""
-    v = int(v)
-    return Decimal((int(v < 0), tuple(int(d) for d in str(abs(v))), -scale))
+    return Decimal(f"{int(v)}E-{scale}")          # read from text: exact, no context rounding
 
 def copy_query(q):
     import copy
@@ -1320,12 +1349,30 @@ class Query:
                 B, hi, _ = W[k.name]; keys += [Col(fact, k.name), Col(fact, hi)]; spans.append(B)
             else: keys.append(k); spans.append(None)
         q.keys = keys
-        r = q._run_codes(engine)
+        cols_wanted = self is getattr(self, "_cols_owner", None)
+        if cols_wanted: q._cols_owner = q
+        try: r = q._run_codes(engine)
+        finally:
+            if cols_wanted: q._cols_owner = None
         self.device, self.kernel_ms = getattr(q, "device", None), getattr(q, "kernel_ms", None)
         self.last_plan, self.range_used = q.last_plan, q.range_used
         for a in ("delta_rows", "_lookup_keys"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         if not self.keys: return r
+        if isinstance(r, CodeGroups):                # columns: value = base + 2^B hi, by array arithmetic
+            it, out_cols, ok = iter(r.cols), [], True
+            for B in spans:
+                c = np.asarray(next(it))
+                if B is None: out_cols.append(c); continue
+                h = np.asarray(next(it))
+                lo_, hi_ = c.astype(np.int64), h.astype(np.int64)
+                if len(lo_) and (int(lo_.min()) < 0 or int(lo_.max()) >> B): ok = False; break   # not one value per (base, hi)
+                if B + (int(hi_.max()).bit_length() if len(hi_) else 0) < 63: out_cols.append(lo_ + (hi_ << B))
+                else: out_cols.append(np.array([a + (b << B) for a, b in zip(lo_.tolist(), hi_.tolist())], object))
+            if ok:
+                out_cols += list(it)                 # the validity keys of nullable GROUP BY columns
+                return CodeGroups(out_cols, r.vals, r.cnt)
+            r = _code_groups_dict(r, q)
         out = {}
         for key, v in r.items():
             it, nk = iter(key), []
@@ -1544,8 +1591,11 @@ class Query:
             cols = [_codes_array(c) for c in zip(*keys)] if keys else [np.zeros(0, np.int64) for _ in range(nk + len(vpos))]
             vals = [r[k] for k in keys]
             both = False
-        if both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
-        elif isinstance(vals, np.ndarray) and not scale and not ext and vals.dtype != object: vl = vals.tolist()
+        if both and not scale and ext is None: vl = list(zip(vals.tolist(), r.cnt.tolist()))
+        elif both and ext is None: vl = [(_exact_dec(v, scale), c) for v, c in zip(vals.tolist(), r.cnt.tolist())]
+        elif both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
+        elif isinstance(vals, np.ndarray) and not scale and not ext: vl = vals.tolist()
+        elif isinstance(vals, np.ndarray) and not ext: vl = [_exact_dec(v, scale) for v in vals.tolist()]
         else: vl = [val(v) for v in (vals.tolist() if isinstance(vals, np.ndarray) else vals)]
         valid = {i: np.asarray(cols[nk + j]) != 0 for j, i in enumerate(vpos)}
         keys = [(np.asarray(cols[i]), valid.get(i), decs[i]) for i in range(nk)]
@@ -1578,9 +1628,25 @@ class Query:
                 q2.pred, q2.joins, q2.join_mode = self.pred, self.joins, self.join_mode
                 for a_ in ("_xrows", "_word_ranges", "_lookup_dims", "_force_lookup", "_inpass"):
                     if hasattr(self, a_): setattr(q2, a_, getattr(self, a_))
-                r = q2._run_codes(engine)
+                cols_wanted = self is getattr(self, "_cols_owner", None)
+                if cols_wanted: q2._cols_owner = q2
+                try: r = q2._run_codes(engine)
+                finally:
+                    if cols_wanted: q2._cols_owner = None
                 for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned"):
                     if hasattr(q2, a_): setattr(self, a_, getattr(q2, a_))
+                if isinstance(r, CodeGroups):        # columns: the key polynomials on the key code arrays (exact integers)
+                    n = np.asarray(r.cnt if r.cnt is not None else r.vals)
+                    def pol(P):
+                        acc = np.zeros(len(n), object)
+                        for K, c in P.items():
+                            t = np.full(len(n), c, object)
+                            for x in K: t = t * np.asarray(r.cols[keycols[x]]).astype(object)
+                            acc = acc + t
+                        return acc
+                    v = pol(P1) * n.astype(object)
+                    if R: v = v + pol(PR) * np.asarray(r.vals).astype(object)
+                    return CodeGroups(r.cols, v, n if getattr(self, "_both", False) else None)
                 out = {}
                 for key, (sm, n) in r.items():
                     v = (_poly_at(PR, keycols, key) * sm if R else 0) + _poly_at(P1, keycols, key) * n
@@ -1902,13 +1968,14 @@ class Query:
         else:
             nz = np.nonzero(out_cnt)[0]; gk, gs, gc = nz, out_sum[nz], out_cnt[nz]; ctx["touched"] = nz
             gh = ctx["dense"][2][nz] if wide or ext else None
-        if wide: gs = np.array([_join128(a, b) for a, b in zip(gs.tolist(), gh.tolist())], object)   # exact 128-bit sums
+        if wide: gs = _join128_arr(gs, gh)                                     # exact 128-bit sums
         def digits():
             """the mixed-radix digits of the group codes, one array per key (128-bit codes: Python integers)"""
             if not wkey:
                 cols, rem = [], np.asarray(gk, np.uint64)
                 for r in reversed(radix): cols.append(rem % np.uint64(r)); rem = rem // np.uint64(r)
                 return cols[::-1]
+            if all(int(r_) < 1 << 32 for r_ in radix): return _digits128(gk, gkh, radix)
             cols = [[] for _ in radix]
             for lo_, hi_ in zip(gk.tolist(), gkh.tolist()):
                 c = (int(hi_) << 64) | int(lo_)
@@ -1932,13 +1999,31 @@ class Query:
                 kk = np.fromiter(m.keys(), np.int64, len(m)); vv = np.fromiter(m.values(), np.int64, len(m))
                 lut = np.full(int(kk.max()) + 1 if len(kk) else 1, -1, np.int64); lut[kk] = vv; luts[i] = lut
             cols[i] = luts[i][cols[i]]
-        if self is getattr(self, "_cols_owner", None) and not any(m is not None for m in kmaps):
-            # columns, not a dict (Query.run_columns): one row per group code, so no two rows share a key
+        if self is getattr(self, "_cols_owner", None):
+            # columns, not a dict (Query.run_columns): one row per group code; with lookup keys (several codes of one
+            # value) the rows that share a key are merged: counts and sums add, extremes take the min / max
             cna = np.asarray(gc, np.int64)
-            if ext: va = [MinMax(p) for p in zip(np.asarray(gs, np.int64).tolist(), np.asarray(gh, np.int64).tolist())]
+            if ext: va = None; mn, mx = np.asarray(gs, np.int64), np.asarray(gh, np.int64)
             elif self.measure is None: va = cna
             else: va = gs if wide else np.asarray(gs, np.int64)
-            return CodeGroups(list(cols), va, cna if getattr(self, "_both", False) else None)
+            cols = list(cols)
+            if any(m is not None for m in kmaps) and len(cna) > 1:
+                km = np.stack([np.asarray(c).astype(np.int64) for c in cols], 1)
+                uk, inv = np.unique(km, axis=0, return_inverse=True); inv = inv.reshape(-1)
+                if len(uk) < len(km):
+                    g = len(uk); c2 = np.zeros(g, np.int64); np.add.at(c2, inv, cna)
+                    if ext:
+                        a = np.full(g, np.iinfo(np.int64).max, np.int64); np.minimum.at(a, inv, mn)
+                        b = np.full(g, np.iinfo(np.int64).min, np.int64); np.maximum.at(b, inv, mx); mn, mx = a, b
+                    elif self.measure is None: va = c2
+                    elif va.dtype == object:
+                        v2 = [0] * g
+                        for i, v in zip(inv.tolist(), va.tolist()): v2[i] += v
+                        va = np.array(v2, object)
+                    else: v2 = np.zeros(g, np.int64); np.add.at(v2, inv, va); va = v2
+                    cna = c2; cols = [uk[:, i] for i in range(uk.shape[1])]
+            if ext: va = [MinMax(p) for p in zip(mn.tolist(), mx.tolist())]
+            return CodeGroups(cols, va, cna if getattr(self, "_both", False) else None)
         keys = list(zip(*[c.tolist() for c in cols])) if cols else [()] * len(gk)
         cn = np.asarray(gc, np.int64).tolist()
         vs = (gs.tolist() if wide else np.asarray(gs, np.int64).tolist()) if self.measure is not None else cn

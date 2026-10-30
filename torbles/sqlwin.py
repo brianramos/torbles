@@ -650,6 +650,52 @@ def _div(num, den):
     except OverflowError: return float(Decimal(num) / Decimal(den))
 
 
+def fdiv(num, den):
+    """num / den of integer arrays (object or int64), each the double nearest the exact quotient (F.ffloat)"""
+    num, den = np.asarray(num, object), np.asarray(den, object)
+    if not len(num): return np.zeros(0, np.float64)
+    try: return (num / den).astype(np.float64)
+    except OverflowError: return np.array([_div(a, b) for a, b in zip(num.tolist(), den.tolist())], np.float64)
+
+
+def bivariate_arrays(name, n, Sy, Sx, Syy, Sxx, Sxy, ky, kx):
+    """covariance, correlation and regression statistics of every group at once (F.bivariate's definitions, each the
+    double nearest the exact value) from exact integer moment sums: the values are y = Y / ky and x = X / kx, so
+    sum y = Sy / ky, sum yy = Syy / ky^2, sum xy = Sxy / (kx ky), ... With
+        Cxy = n Sxy - Sx Sy,  Cxx = n Sxx - Sx^2,  Cyy = n Syy - Sy^2      (exact integers)
+    covar_pop = Cxy / (n^2 kx ky), regr_slope = Cxy kx / (Cxx ky), regr_intercept = (Sy Cxx - Cxy Sx) / (Cxx ky n),
+    regr_r2 = Cxy^2 / (Cxx Cyy), ... -> object array (None where ISO gives NULL)"""
+    n = np.asarray(n).astype(object)
+    out = np.full(len(n), None, object)
+    if name == "regr_count": out[:] = n; return out
+    idx = np.nonzero(np.asarray(n != 0, bool))[0]
+    if not len(idx): return out
+    N = n[idx]; Y, X = (np.asarray(a, object)[idx] for a in (Sy, Sx))
+    YY, XX, XY = (np.asarray(a, object)[idx] for a in (Syy, Sxx, Sxy))
+    Cxy = N * XY - X * Y
+    if name == "regr_avgx": out[idx] = fdiv(X, N * kx); return out
+    if name == "regr_avgy": out[idx] = fdiv(Y, N * ky); return out
+    if name == "covar_pop": out[idx] = fdiv(Cxy, N * N * (kx * ky)); return out
+    if name == "covar_samp":
+        m = np.asarray(N >= 2, bool); out[idx[m]] = fdiv(Cxy[m], N[m] * (N[m] - 1) * (kx * ky)); return out
+    if name == "regr_sxy": out[idx] = fdiv(Cxy, N * (kx * ky)); return out
+    Cxx = N * XX - X * X
+    if name == "regr_sxx": out[idx] = fdiv(Cxx, N * (kx * kx)); return out
+    Cyy = N * YY - Y * Y
+    if name == "regr_syy": out[idx] = fdiv(Cyy, N * (ky * ky)); return out
+    nx = np.asarray(Cxx != 0, bool)
+    if name == "corr":
+        m = nx & np.asarray(Cyy != 0, bool)
+        a = fdiv(Cxy[m], N[m] * (kx * ky)); b = fdiv(Cxx[m], N[m] * (kx * kx)); c = fdiv(Cyy[m], N[m] * (ky * ky))
+        out[idx[m]] = a / np.sqrt(b * c); return out
+    if name == "regr_slope": out[idx[nx]] = fdiv(Cxy[nx] * kx, Cxx[nx] * ky); return out
+    if name == "regr_intercept": out[idx[nx]] = fdiv(Y[nx] * Cxx[nx] - Cxy[nx] * X[nx], Cxx[nx] * ky * N[nx]); return out
+    if name == "regr_r2":
+        one = nx & ~np.asarray(Cyy != 0, bool); m = nx & np.asarray(Cyy != 0, bool)
+        out[idx[one]] = 1.0; out[idx[m]] = fdiv(Cxy[m] * Cxy[m], Cxx[m] * Cyy[m]); return out
+    raise NoVec(name)
+
+
 def _special(sp, segs):
     """per frame: NaN, +inf or -inf when the frame holds non-finite values (IEEE: inf - inf is NaN), else None"""
     if sp is None: return None
@@ -966,16 +1012,8 @@ def aggregate(name, cols, valid, segs, n, w=None):
         for sp in (spy, spx):
             if sp is not None: anyb |= sp[0] | sp[1] | sp[2]
         bad = _over(_prefix(anyb.astype(np.int64)), segs)
-    cl = cnt.tolist()
-    out = np.full(nq, None, object)
-    last_k = last_v = None
-    for i in range(nq):
-        if bad is not None and bad[i] > 0: out[i] = F.bivariate(name, None); continue
-        mo = (cl[i], Fraction(pre[0][i], sy), Fraction(pre[1][i], sx), Fraction(pre[2][i], sy * sy),
-              Fraction(pre[3][i], sx * sx), Fraction(pre[4][i], sx * sy))
-        if mo == last_k: out[i] = last_v; continue
-        last_k, last_v = mo, F.bivariate(name, mo)
-        out[i] = last_v
+    out = bivariate_arrays(name, cnt, *[np.array(p, object) for p in pre], sy, sx)
+    if bad is not None: out[np.asarray(bad > 0, bool)] = F.bivariate(name, None)
     return out
 
 

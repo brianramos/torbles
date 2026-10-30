@@ -247,6 +247,19 @@ for qi in range(NQ // 2):
     sql = f"SELECT p, count(*), sum({se}) FROM w WHERE {spred()} GROUP BY p"
     compare(qi, sql, "y" not in se, "VEC_SCALARS")       # y holds 1e300 of both signs: DuckDB's double sum cancels
 
+print("== expressions evaluated once per distinct code combination")
+DEXPR = ["CASE WHEN p > 1 THEN upper(q) ELSE lower(s) END", "replace(q, 'a', 'X') <> 'a'", "coalesce(s, 'n') || q", "length(s) + p",
+         "p IN (1, 3, 5)", "CASE WHEN b THEN o ELSE -o END", "substring(s, 1, 1) = 'y'", "round(CAST(od AS DOUBLE) / 3, 2)",
+         "CAST(dd AS VARCHAR)", "dd + INTERVAL 1 DAY", "abs(o - p)", "upper(s) LIKE 'Y%'", "CASE q WHEN 'a' THEN 1 WHEN 'b' THEN 2 END",
+         "nullif(p, 2)", "concat(q, s, CAST(b AS VARCHAR))", "CAST(o AS DOUBLE) / NULLIF(p, 0)", "x % 7", "CAST(\"of\" AS VARCHAR)",
+         "CASE WHEN dd > DATE '2020-01-02' THEN s END"]
+DPRED = ["replace(q, 'a', 'X') <> 'a'", "p IN (1, 3, 5)", "substring(s, 1, 1) = 'y'", "upper(s) LIKE 'Y%'", "length(s) + p > 2",
+         "CASE WHEN b THEN o > 1 ELSE p = 2 END"]
+for qi in range(NQ // 4):
+    e = r.sample(DEXPR, 2)
+    compare(qi, f"SELECT id, {e[0]}, {e[1]} FROM w ORDER BY id", False, "DICT_EVAL")
+    compare(qi, f"SELECT {e[0]} AS k, count(*), sum(o) FROM w WHERE {r.choice(DPRED)} GROUP BY 1 ORDER BY 1 NULLS FIRST", False, "DICT_EVAL")
+
 print("== joins, set operations, DISTINCT (against DuckDB)")
 JK = ["p", "o", "q", "s", "dd", "b"]
 for qi in range(NQ // 2):

@@ -80,10 +80,10 @@ class ColArr:
 
 class Cols(dict):
     """a block's columns {expression key: [value per row]}; a column kept as engine codes (arr) is decoded when it is
-    first read as values"""
-    __slots__ = ("arr",)
+    first read as values; distinct: the rows are distinct combinations of the codes (_dict_eval's own rows)"""
+    __slots__ = ("arr", "distinct")
     def __init__(self, *a, **k):
-        super().__init__(*a, **k); self.arr = {}
+        super().__init__(*a, **k); self.arr = {}; self.distinct = False
     def __missing__(self, k):
         a = self.arr.get(k)
         if a is None: raise KeyError(k)
@@ -189,12 +189,18 @@ def ev(e, rel, cx):
             return _in_set(e, ev(e.args[0], rel, cx))
         if COLUMNAR and VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS and codes_of(e, rel, cx) is not None:
             return rel.cols[e.key()]                      # computed on codes, decoded once
+        if COLUMNAR and DICT_EVAL and n >= 64:
+            r = _dict_eval(e, rel, cx)
+            if r is not None: return r
         argv = [ev(a, rel, cx) for a in e.args]
         if VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS:
             r = _vec_func(e.fn, argv, n)
             if r is not None: return r
         return _apply(s, argv, n)
     if isinstance(e, I.Case):
+        if COLUMNAR and DICT_EVAL and n >= 64:
+            r = _dict_eval(e, rel, cx)
+            if r is not None: return r
         conds = [ev(c, rel, cx) for c, _ in e.whens]
         vals = [ev(x, rel, cx) for _, x in e.whens]
         el = ev(e.else_, rel, cx) if e.else_ is not None else [None] * n
@@ -208,6 +214,9 @@ def ev(e, rel, cx):
         return out
     if isinstance(e, I.Cast):
         if COLUMNAR and VEC_SCALARS and n >= 64 and codes_of(e, rel, cx) is not None: return rel.cols[e.key()]
+        if COLUMNAR and DICT_EVAL and n >= 64:
+            r = _dict_eval(e, rel, cx)
+            if r is not None: return r
         a = ev(e.arg, rel, cx); out = []
         if VEC_SCALARS and n >= 64:
             r = _vec_cast(a, e.arg.t, e.t)
@@ -224,6 +233,46 @@ def ev(e, rel, cx):
     if isinstance(e, (I.Agg, I.Win, I.Grouping)):
         raise SqlError(f"internal: {I.render(e)} was not computed")
     raise SqlError(f"internal: cannot evaluate {e!r}")
+
+
+# ------------------------------------------------------------------ expressions on the distinct codes
+DICT_EVAL = True            # an expression of code columns is evaluated once per distinct combination of their codes
+
+
+def _code_leaves(e, rel, out):
+    """the code columns of rel that e reads, into out {key: ColArr}; False when a part of e is not a deterministic
+    function of rel's code columns (a column held as values, an aggregate, a subquery, a non-deterministic function)"""
+    k = e.key()
+    if k in rel.cols:
+        a = rel.cols.array(k)
+        if a is None: return False
+        out[k] = a; return True
+    if isinstance(e, I.Lit): return True
+    if isinstance(e, I.Func):
+        s = F.SCALARS.get(e.fn)
+        return s is not None and s.deterministic and all(_code_leaves(a, rel, out) for a in e.args)
+    if isinstance(e, (I.Case, I.Cast)): return all(_code_leaves(x, rel, out) for x in e.children())
+    return False
+
+
+def _dict_eval(e, rel, cx):
+    """e on every row of rel, evaluated once per distinct combination of the codes it reads: a scalar expression is a
+    function of its inputs' values, so on a column of G distinct values it costs G evaluations and a gather, not n
+    (None: e reads something else, or the rows are mostly distinct)"""
+    if getattr(rel.cols, "distinct", False): return None
+    leaves = {}
+    if not _code_leaves(e, rel, leaves) or not leaves: return None
+    import sqlwin
+    dense = []
+    for a in leaves.values():
+        d = np.unique(a.codes, return_inverse=True)[1].reshape(-1).astype(np.int64)
+        dense.append(d if a.valid is None else np.where(a.valid, d + 1, 0))
+    _, first, inv = np.unique(sqlwin._combine(dense), return_index=True, return_inverse=True)
+    if len(first) > rel.n // 2: return None
+    small = Rel(len(first)); small.cols.distinct = True
+    for k, a in leaves.items(): small.cols.put(k, a.take(first))
+    vals = ev(e, small, cx)
+    return [vals[i] for i in inv.reshape(-1).tolist()]
 
 
 # ------------------------------------------------------------------ scalar operators as arrays
@@ -1344,6 +1393,9 @@ def agg_values(a, rel, members, plan, cx):
             return out
         cnt = rel.cols[("n", k)]
         nm = len(MOMENTS[a.name](None, None)) if a.name in MOMENTS else 0
+        if VEC_GROUPS:
+            got = _moment_arrays(a.name, cnt, [rel.cols[("m", k, j)] for j in range(nm)], members)
+            if got is not None: return got
         out = []
         for mem in members:
             n = sum(cnt[i] for i in mem)
@@ -1425,11 +1477,65 @@ def _sum_exact(vals):
     return s
 
 
+_MOMENT_VEC = {"avg", "var_pop", "var_samp", "stddev_pop", "stddev_samp", "covar_pop", "covar_samp", "corr", "regr_slope",
+               "regr_intercept", "regr_r2", "regr_avgx", "regr_avgy", "regr_sxx", "regr_syy", "regr_sxy"}
+
+
+def _exact_ints(vals):
+    """exact numbers (int, Decimal, Fraction; None as 0) -> (object array of integers, their common denominator)"""
+    rs = []
+    for v in vals:
+        if v is None: rs.append((0, 1))
+        elif type(v) is int: rs.append((v, 1))
+        elif isinstance(v, (Decimal, Fraction)): rs.append(v.as_integer_ratio())
+        else: return None
+    den = math.lcm(*{d for _, d in rs}) if rs else 1
+    return np.array([p if d == den else p * (den // d) for p, d in rs], object), den
+
+
+def _moment_arrays(name, cnt, cols, members):
+    """_moment_final for every group at once: the groups' sums of the engine's exact per-row moments, then the statistic
+    as exact integer arithmetic on arrays (the doubles _moment_final gives); None: computed group by group"""
+    if name not in _MOMENT_VEC or len(members) < 16: return None
+    ex = [_exact_ints(c) for c in cols]
+    if any(x is None for x in ex): return None
+    if getattr(members, "flat", None) is not None: rows, starts, ends = members.flat
+    else:
+        sizes = np.array([len(m) for m in members], np.int64)
+        rows = np.concatenate([np.asarray(m, np.int64) for m in members]) if len(sizes) and sizes.sum() else np.zeros(0, np.int64)
+        ends = np.cumsum(sizes); starts = ends - sizes
+    def gsum(arr):                                   # per group: the sum over its member rows (exact)
+        pre = np.concatenate([np.zeros(1, object), np.cumsum(arr[rows])]) if len(rows) else np.zeros(1, object)
+        return pre[ends] - pre[starts]
+    n = gsum(np.array(cnt, object))
+    S = [gsum(a) for a, _ in ex]; K = [k for _, k in ex]
+    out = np.full(len(members), None, object)
+    import sqlwin
+    if name == "avg":
+        h = np.nonzero(np.asarray(n != 0, bool))[0]; out[h] = sqlwin.fdiv(S[0][h], n[h] * K[0])
+    elif name in ("var_pop", "var_samp", "stddev_pop", "stddev_samp"):
+        samp = name.endswith("samp")
+        h = np.nonzero(np.asarray(n >= (2 if samp else 1), bool))[0]
+        N, S1, S2, k1, k2 = n[h], S[0][h], S[1][h], K[0], K[1]
+        v = sqlwin.fdiv(N * S2 * (k1 * k1) - S1 * S1 * k2, (k2 * k1 * k1) * N * ((N - 1) if samp else N))
+        out[h] = np.sqrt(v) if name.startswith("stddev") else v
+    else:                                            # moments y, x, yy, xx, xy over one common denominator L
+        L = math.lcm(*K)
+        Sy, Sx = S[0] * (L // K[0]), S[1] * (L // K[1])
+        Syy, Sxx, Sxy = (S[j] * (L * L // K[j]) for j in (2, 3, 4))
+        out = sqlwin.bivariate_arrays(name, n, Sy, Sx, Syy, Sxx, Sxy, L, L)
+    return out.tolist()
+
+
 def moment_values(a, rel, members, plan):
     """an aggregate from the engine's per-group moments (exact sums of polynomials) and counts"""
     v = plan["variant"]; ms = plan["moments"]
     cnt = rel.vcnt.get(v, rel.cnt) if v != 0 else rel.cnt
     filt = plan.get("rowfilter")
+    if VEC_GROUPS:
+        mem = members if filt is None else [[i for i in m if i in filt] for m in members]
+        got = _moment_arrays(a.name, cnt, [rel.mom[(v, m)] for m in ms], mem)
+        if got is not None: return got
     out = []
     for mem in members:
         if filt is not None: mem = [i for i in mem if i in filt]
