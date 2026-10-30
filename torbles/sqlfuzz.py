@@ -10,7 +10,7 @@ results compared: as multisets, or in order when ORDER BY fixes it; DOUBLE value
     python -m torbles.sqlfuzz --seed 7 --case 3 --query 12 -v        # replay one statement
 
 Only syntax both engines accept is generated (ISO forms DuckDB lacks are tested in tests/check_sql.py)."""
-import argparse, datetime as dt, math, os, random, sys, time, traceback
+import argparse, re, datetime as dt, math, os, random, sys, time, traceback
 from decimal import Decimal
 
 _here = os.path.dirname(os.path.abspath(__file__))
@@ -363,7 +363,21 @@ def run_one(db, con, sql):
     low = sql.lower()
     ordered = " order by " in low and " limit " in low and "over" not in low
     if same(got, want, ordered): return "ok", ""
+    m = re.search(r"\blimit (\d+)$", low.strip())
+    if m and len(want) > int(m.group(1)) and len(got) <= int(m.group(1)):
+        return "duckdb-error", f"DuckDB returned {len(want)} rows past its LIMIT {m.group(1)} (a DuckDB bug)"
+    if _wrapped(got, want):
+        return "duckdb-error", "DuckDB's 64-bit integer sum wrapped around (a DuckDB bug; torbles' exact sum differs by k * 2^64)"
     return "MISMATCH", f"torbles ({len(got)} rows) {got[:6]}\nduckdb  ({len(want)} rows) {want[:6]}"
+
+
+def _wrapped(got, want):
+    """do the results differ only by integers that are equal modulo 2^64 (DuckDB wrapping a sum)?"""
+    if len(got) != len(want) or not got: return False
+    norm = lambda r: tuple((x % (1 << 64)) if isinstance(x, int) and not isinstance(x, bool) else x for x in r)
+    a = sorted((norm(r) for r in got), key=lambda r: [_sk(x) for x in r])
+    b = sorted((norm(r) for r in want), key=lambda r: [_sk(x) for x in r])
+    return same(a, b, True) and not same(got, want, False)
 
 
 def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None, stop_on_fail=True, log=print):
