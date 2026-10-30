@@ -11,13 +11,38 @@ Loading
 - Keys from standard declarations: PRIMARY KEY / FOREIGN KEY constraints read through INFORMATION_SCHEMA, a DDL
   script (`schema=`), or Frictionless Table Schema keys; key inference is opt-in and reported.
 - Typed columns (`coltypes.py`): signed and 64-bit integers, DECIMAL (exact sums, returned as `Decimal`), DATE,
-  TIMESTAMP, BOOLEAN, VARCHAR (dictionary; `startswith`), DOUBLE (dictionary). Comparisons with constants become exact
+  TIMESTAMP, TIMESTAMP WITH TIME ZONE, BOOLEAN, VARCHAR, BLOB and JSON (dictionaries; `startswith`), DOUBLE (dictionary). Comparisons with constants become exact
   code intervals, as SQL compares them. `types=` loads a column as another type (a DOUBLE amount as DECIMAL).
-- NULLs refused outside foreign keys (`fill_nulls=`); unsupported types skipped with a note; `columns=` subsets.
+- NULLs stored as a validity plane per column (`fill_nulls=` replaces them at load instead); unsupported types
+  skipped with a note; `columns=` subsets.
 - Automatic key design (`keydesign.py`): functional-dependency chains found on the full data become derived
   surrogates `cell << w | row`, dense-ranked or shortened when they do not fit 32 bits; the planner is told which
   bits each attribute occupies (coordinate hints), so filters are cubes or comparators from the first query.
 - `db.describe()`, `db.verify(q)` (the query's SQL on the source, compared), `q.sql()` in the source's schema.
+
+SQL
+
+`db.sql(text)` runs queries written in ISO/IEC 9075 SQL (DuckDB's dialect is accepted too), and `db.select(...)`
+builds the same bound queries in Python. DuckDB's parser reads the text; a pre-pass rewrites the ISO forms its grammar
+lacks, and the binder types every expression with DuckDB's rules wherever the standard leaves the choice open, so
+answers compare value for value. A star block runs as engine queries: each filter on one table becomes a plane
+predicate, a dimension row mask or a fact code set (so any function in it runs on distinct values); COUNT, SUM, AVG,
+the variances, covariances, CORR and the nine REGR functions are exact moment sums; MIN and MAX are computed on the
+planes by plane elimination (a new engine pass, `Query.minmax()`, also on the plain and GPU engines); SUM of CASE and
+FILTER clauses run as engine variants; LEFT JOINs to dimensions run as disjoint passes. Everything else runs on the
+distinct tuples the engine returns, and other joins as hash joins of the engine's multisets. The ISO coverage is
+nearly complete for queries: every predicate (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE, OVERLAPS, PERIOD predicates, IS
+NORMALIZED, IS JSON, MEMBER OF, SUBMULTISET, IS A SET), the scalar functions, the aggregates (percentiles, hypothetical
+set functions, LISTAGG, COLLECT, FUSION, INTERSECTION, JSON_ARRAYAGG), window functions with every frame and
+exclusion, time zones, collations, intervals with qualifiers, binary strings, arrays, multisets, SQL/JSON with its
+path language and JSON_TABLE, LATERAL, partitioned outer joins, WITH RECURSIVE with SEARCH and CYCLE, MATCH_RECOGNIZE
+and TABLESAMPLE. `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than
+queries, SQL/XML, property graphs, row types with named fields, nested window functions).
+
+NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
+engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random
+schemas and SQL and compares every answer with DuckDB's; `tests/check_sql.py` and `tests/check_iso.py` run on the three
+engines. The 13 SSB queries written in SQL give DuckDB's answers in one engine query each.
 
 Persistence
 - `db.save(path)` / `torbles.load(path)`: one file per torble (header hashed, planes 64-byte aligned), memory-mapped

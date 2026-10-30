@@ -22,8 +22,12 @@ repaired. Queries are not executed row by row. They are compiled into algebra ov
   tensor-core b1 MMA kernels. On an RTX 5090 Laptop GPU, the 13 official SSB queries on 300 million rows ran in
   29.5 ms end to end (0.1.0), against 896 ms for DuckDB on 24 threads (in memory).
 
-Every result is checked against DuckDB: by the test suite, and by a differential fuzzer that generates random typed
-schemas and queries and compares every answer (`python -m torbles.fuzz`).
+Queries are written in SQL (`db.sql(...)`, ISO/IEC 9075 with DuckDB's dialect accepted too) or built in Python; the
+planner turns filters, joins and aggregates into the algebra above and evaluates the rest on the distinct values the
+engine returns ([docs/SQL.md](docs/SQL.md)).
+
+Every result is checked against DuckDB: by the test suite, and by differential fuzzers that generate random typed
+schemas and queries and compare every answer (`python -m torbles.fuzz`, `python -m torbles.sqlfuzz`).
 
 ## Quick start
 
@@ -42,7 +46,14 @@ db = torbles.from_ddl("""
     CREATE TABLE sales (s_cust INTEGER REFERENCES customer (c_id), day DATE, amount DECIMAL(12, 2), qty INTEGER);
 """, {"customer": "customer.csv", "sales": "sales.parquet"})
 
-s, c = db["sales"], db["customer"]
+r = db.sql("""
+    SELECT nation, SUM(amount * qty) AS revenue, COUNT(*) AS n
+    FROM sales JOIN customer ON s_cust = c_id
+    WHERE region = 'EUROPE' AND day BETWEEN DATE '2024-01-01' AND DATE '2024-03-31'
+    GROUP BY nation ORDER BY revenue DESC""")
+r.rows               # [('FRANCE', Decimal('81234.50'), 1200), ...];  r.df() for a data frame
+
+s, c = db["sales"], db["customer"]          # the engine-level API, below SQL
 q = (db.query(s).join(c)
        .where((c.region == "EUROPE") & s.day.between("2024-01-01", "2024-03-31"))
        .group_by(c.nation)
@@ -72,9 +83,9 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   |---|---|---|
   | TINYINT ... BIGINT, UBIGINT, HUGEINT | value - minimum (64-bit ranges in self-extending columns) | compare, group, sum |
   | DECIMAL(p, s) | value x 10^s - minimum | compare, group, sum (exact: sums come back as `Decimal`) |
-  | DATE, TIMESTAMP | days / microseconds - minimum | compare (`date`, `datetime` or ISO strings), group |
+  | DATE, TIMESTAMP, TIMESTAMP WITH TIME ZONE | days / microseconds (UTC for zoned values) - minimum | compare (`date`, `datetime` or ISO strings), group |
   | BOOLEAN | 0 / 1 | compare, group |
-  | VARCHAR | rank in the sorted dictionary | `=`, `<`, `between`, `isin`, `startswith`, group |
+  | VARCHAR, BLOB, JSON | rank in the sorted dictionary | `=`, `<`, `between`, `isin`, `startswith`, group |
   | DOUBLE, FLOAT | rank in the sorted values | compare, group (to sum one exactly, load it as DECIMAL: `types=`) |
 
   A referenced table's integer or decimal column whose values span more than 32 bits is stored as its rank; it can
@@ -83,8 +94,10 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   Constants are compared exactly, as SQL does: `price > 10.005` on a DECIMAL(10, 2) column, a 64-bit integer against
   a 64-bit key, a timestamp against a DATE. Sums are exact at any width: 64-bit when they fit, 128-bit past that,
   and past 128 bits through the histogram bridge (below).
-- **NULLs** are refused at load, except in foreign keys (they never join); `fill_nulls={"t.col": value}` replaces
-  them. Unsupported column types (BLOB, LIST, INTERVAL, ...) are skipped with a note.
+- **NULLs** are stored as a validity plane next to the column, so `IS NULL` is a plane and SQL's three-valued logic
+  runs on the engine; a NULL or unmatched foreign key never joins. `fill_nulls={"t.col": value}` replaces NULLs at
+  load instead. In the engine-level API a comparison with a NULL is FALSE and a NULL groups under `None`.
+  Unsupported column types (LIST, STRUCT, MAP, INTERVAL, ...) are skipped with a note.
 - **Key design.** For every referenced table, torbles finds the longest chain of functional dependencies among its
   low-cardinality columns (on the full data), ranks each level within its parent and stores
   `hierarchy cell << w | row` in the foreign keys (`row` = the rank of the primary key, so the key itself stays a
@@ -99,6 +112,26 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   hashed; truncated files are refused. Saving writes new files and renames them, so open databases are unaffected.
   SSB SF1 (6M rows): saved in 0.5 s (312 MiB), loaded with every face validated in 0.1 s from the page cache,
   against 2.4 s to build it from DuckDB.
+
+### SQL
+
+`db.sql(text)` takes queries in ISO SQL: joins of every kind (LATERAL and partitioned outer joins included), subqueries,
+WITH and WITH RECURSIVE (with SEARCH and CYCLE), set operations, grouping sets, window functions with every frame,
+FETCH FIRST ... WITH TIES, the ISO predicates (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE, OVERLAPS, PERIOD predicates, IS
+NORMALIZED, IS JSON, MEMBER OF ...), the standard's scalar functions and aggregates (statistics, regressions,
+percentiles, hypothetical set functions, LISTAGG, ARRAY_AGG, COLLECT), time zones, collations, arrays and multisets,
+SQL/JSON with its path language and JSON_TABLE, MATCH_RECOGNIZE and TABLESAMPLE. DuckDB's syntax and functions are
+accepted too, and where ISO leaves a choice to the implementation, torbles makes DuckDB's, so the two can be compared
+value for value. The same queries can be built in Python (`db.select(...)`, with `from torbles import F`).
+
+A filter on one table becomes a plane predicate, a row mask of the dimension or a set of codes of the fact column (every
+function in it runs on distinct values, not rows); joins to dimensions are substitutions; COUNT, SUM, AVG, the
+variances, covariances and regressions are exact popcount sums of polynomials; MIN and MAX are computed on the planes by
+eliminating rows plane by plane; CASE inside SUM and FILTER clauses become variants of the engine query. Everything else
+runs on the distinct tuples the engine's GROUP BY returns. [docs/SQL.md](docs/SQL.md) lists every ISO construct with
+where it runs, what is not supported (statements other than queries, SQL/XML, property graphs, ...) and the few places
+where torbles follows ISO and DuckDB does not. All 13 SSB queries written in SQL give DuckDB's answers, each in one
+engine query.
 
 ### Engine-level API
 
@@ -257,27 +290,31 @@ dimensions, deltas, and self-extension.
 ## Layout
 
     torbles/     the engine: torble.h, alg.c (CPU), gpu.cu (CUDA / emulation), algq.py (planner, engine API);
-                 coltypes.py (column types), database.py (loaders, persistence), keydesign.py, fuzz.py, blobcol.py
+                 coltypes.py (column types), database.py (loaders, persistence), keydesign.py, fuzz.py, blobcol.py;
+                 SQL: sqlfront.py (parser, ISO pre-pass, binder), sqlir.py, sqltypes.py, sqlfuncs.py, sqlexec.py
+                 (planner on the engine, executor), sqlapi.py (Python API), sqljson.py, sqlmr.py, sqlfuzz.py
     tests/       correctness tests (run_all.sh runs them all) and their data generators
     bench/       benchmarks: ssb/ (official SSB, schema.sql), blob_bench.py, ineq_bench.py, scale_tables.py
     results/     measured results (JSON, logs, reports)
-    docs/        ENGINE.md (design and every feature), SSB.md (benchmark method and results)
+    docs/        ENGINE.md (design and every feature), SQL.md (SQL, ISO coverage), SSB.md (benchmark method and results)
     wsl/         run_validation.sh (build, test, benchmark) and run_scaling.sh (SF1-SF50 and threads), WSL2 + NVIDIA GPU
     .github/     CI (tests and fuzzing on every push) and release (wheels to PyPI on a version tag)
 
 ## Known limitations (0.2.0)
 
-- **No NULLs** outside foreign keys (refused at load; `fill_nulls=` replaces them).
-- **Joins:** star joins, one hop from the queried table to each dimension; single-column keys (composite keys are
-  noted and skipped); one foreign key per dimension in a query (role-playing joins, two foreign keys to one dimension
-  in the same query, are not supported yet).
-- **Aggregates:** COUNT and SUM of polynomials in the columns. No AVG, MIN, MAX, COUNT DISTINCT or HAVING yet, and no
-  SQL: queries are built in Python (`q.sql()` renders them for checking).
+- **Joins on the planes:** star joins, one hop from the fact table to each dimension, on single-column keys
+  (composite keys are noted and skipped). In SQL a dimension may be joined through several foreign keys (role-playing
+  joins), and every other join (snowflakes, outer joins between arbitrary tables, joins on non-key columns) runs as a
+  hash join of the multisets the engine returns for each table; the engine-level API takes one foreign key per
+  dimension in a query.
+- **SQL:** queries only (the database is read-only once built); see [docs/SQL.md](docs/SQL.md) for the ISO features
+  not supported. The engine-level API has COUNT, SUM, MIN and MAX; the other aggregates are in SQL.
 - **Sums are exact at any width:** 64-bit sums when they fit, 128-bit sums from the same popcounts past 2^63 (a
   product of two 64-bit values is the 64 x 64 matrix of plane pairs), and past 2^127 the histogram bridge (some columns
-  summed per value, the parts put together in exact arithmetic). Refused, with the reason: arithmetic on DOUBLE columns
-  (load them as DECIMAL), strings, dates and booleans; GROUP BY keys that need more than 128 bits together, or more than
-  12 key columns (a 64-bit fact column takes two). In the fuzzer, torbles refuses fewer queries than DuckDB rejects.
+  summed per value, the parts put together in exact arithmetic). The engine-level API refuses, with the reason,
+  arithmetic on DOUBLE columns (load them as DECIMAL), strings, dates and booleans, and GROUP BY keys that need more
+  than 128 bits together or more than 12 key columns (a 64-bit fact column takes two); SQL evaluates those on the
+  engine's distinct values or on the passing rows. In the fuzzers, torbles refuses fewer queries than DuckDB rejects.
 - **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).

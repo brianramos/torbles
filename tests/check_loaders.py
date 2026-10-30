@@ -70,6 +70,9 @@ try:
     check("units" in dbn["sales"].nullable, "a column with NULLs gets a validity plane")
     check(dbn.sql("SELECT count(units), sum(units), count(*) FROM sales").rows[0] ==
           (len(sales) - 1, int(sales.units.sum()) - int(sales.units[5]), len(sales)), "NULLs skipped by COUNT(x) and SUM(x) (SQL)")
+    sn = dbn["sales"]; u5 = int(sales.units[5])
+    check(dbn.query(sn).where(sn.units <= u5).count().run() == int((sales.units <= u5).sum()) - 1
+          and (None,) in dbn.query(sn).group_by(sn.units).count().run(), "engine API: a NULL compares FALSE and groups under None")
     db7 = torbles.from_frames({"store": store, "sales": nul}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"}, fill_nulls={"sales.units": 0},
                               types={"sales.units": "INTEGER", "sales.amount": "DECIMAL(8,2)"})
     q7 = db7.query(db7["sales"]).sum(db7["sales"].units)

@@ -203,7 +203,16 @@ def _qc(col): return f"{_ident(col.table.name)}.{_ident(col.name)}"
 class Col(Expr):
     def __init__(self, table, name): self.table, self.name = table, name
     def codec(self): return getattr(self.table, "codecs", {}).get(self.name)
-    def _cmp(self, op, v):
+    def _valid(self, p):
+        """a comparison on a column with NULLs: FALSE for its NULL rows (the engine API is two-valued; db.sql applies
+        SQL's three-valued logic)"""
+        vc = getattr(self.table, "nullable", {}).get(self.name)
+        if vc is None: return p
+        q = BoolOp("AND", Cmp(Col(self.table, vc), "EQ", 1), p)
+        q.sql = getattr(p, "sql", None)
+        return q
+    def _cmp(self, op, v): return self._valid(self._cmp0(op, v))
+    def _cmp0(self, op, v):
         cd = self.codec()
         if cd is None:
             if isinstance(v, (int, np.integer)) and not isinstance(v, bool) and 0 <= int(v) <= 0xFFFFFFFF:
@@ -227,7 +236,7 @@ class Col(Expr):
         iv = None if lo is None or hi is None else (lo[0], hi[1])
         p = _code_pred(self, iv)
         p.sql = f"{_qc(self)} BETWEEN {cd.literal(a)} AND {cd.literal(b)}"
-        return p
+        return self._valid(p)
     def isin(self, vals):
         vals = list(vals)
         if not vals: raise ValueError("isin() needs at least one value")
@@ -243,7 +252,7 @@ class Col(Expr):
         if cd is None or not hasattr(cd, "prefix_interval"): raise TypeError(f"{self.table.name}.{self.name} is not a string column")
         p = _code_pred(self, cd.prefix_interval(prefix))
         p.sql = f"starts_with({_qc(self)}, {cd.literal(prefix)})"
-        return p
+        return self._valid(p)
 class Pred:
     sql = None                                         # the predicate in the source's terms (typed columns)
     def __and__(self, o): return BoolOp("AND", self, o)
@@ -1459,7 +1468,11 @@ class Query:
         if q is None or q._src_measure is not self.measure:
             q = self._codeq = copy.copy(self); q._codes = True; q._src_measure = self.measure
             q._plan_cache = {}
-        q.measure, q.pred, q.keys, q.joins, q.join_mode = lm[1], self.pred, self.keys, self.joins, self.join_mode
+        # a GROUP BY column with NULLs: its validity is grouped too, and its NULL rows get the key None
+        nkeys = [Col(k.table, k.table.nullable[k.name]) for k in self.keys
+                 if isinstance(k, Col) and k.name in getattr(k.table, "nullable", {})]
+        vpos = [i for i, k in enumerate(self.keys) if isinstance(k, Col) and k.name in getattr(k.table, "nullable", {})]
+        q.measure, q.pred, q.keys, q.joins, q.join_mode = lm[1], self.pred, list(self.keys) + nkeys, self.joins, self.join_mode
         q._ext = getattr(self, "_ext", None); q._both = getattr(self, "_both", False)
         q.range_mode = getattr(self, "range_mode", "auto")
         r = q._run_codes(engine)
@@ -1480,7 +1493,9 @@ class Query:
             decs.append(cd)
         if not r: return {}
         keys = list(r.keys()); cols = list(zip(*keys))
+        valid = cols[len(self.keys):]; cols = cols[:len(self.keys)]
         cols = [list(c) if cd is None else cd.decode(_codes_array(c)) for c, cd in zip(cols, decs)]
+        for i, vcol in zip(vpos, valid): cols[i] = [x if ok else None for x, ok in zip(cols[i], vcol)]
         return {tuple(kk): val(r[k0]) for k0, kk in zip(keys, zip(*cols))}
 
     def _run_codes(self, engine="alg"):
