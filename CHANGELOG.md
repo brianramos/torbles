@@ -38,8 +38,12 @@ exclusion, time zones, collations, intervals with qualifiers, binary strings, ar
 path language and JSON_TABLE (with its PLAN clauses), LATERAL, partitioned outer joins, WITH RECURSIVE with SEARCH and
 CYCLE, MATCH_RECOGNIZE and row pattern recognition in windows, nested window functions (VALUE_OF, ROW_NUMBER of a row
 marker), row types with named fields (also as stored STRUCT columns), DECFLOAT, TIMESTAMP(p) / TIME(p), and
-TABLESAMPLE. `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than
-queries, the UNICODE collation, SQL/XML, property graphs and the other parts of ISO/IEC 9075).
+TABLESAMPLE, the UNICODE collation (the Unicode Collation Algorithm, through the optional pyuca package), JOIN ... USING
+(...) AS j, COLLATION FOR, the literal UNKNOWN, character set introducers, and ordered aggregates over windows.
+`docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than queries, SQL/XML,
+property graphs and the other parts of ISO/IEC 9075). In Python, every function is `F.<name>(...)` and every other
+expression form `F.expr("<SQL text>", tables...)`. Window frames are found by binary search and COUNT / SUM / AVG / MIN /
+MAX over them come from prefix sums and sparse tables, so a window over a large partition takes O(n log n), not O(n²).
 
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random
