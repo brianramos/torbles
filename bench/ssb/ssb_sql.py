@@ -1,0 +1,68 @@
+# Copyright 2026 Brian Richard RAMOS
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
+"""SSB written in SQL: the official DuckDB database loaded with torbles.from_duckdb (keys from schema.sql, layout by the
+automatic key design), the 13 official queries and K1-K3 / M1-M3 run as SQL text by db.sql() and by DuckDB (an in-memory
+copy, same threads), every answer compared. Then a few queries that leave the engine (window functions over rows,
+string functions, row output) on a generated table, to show what runs in Python. Times: best of 3, end to end.
+    python3 ssb_sql.py <SF> [threads, default all] [engines, default alg,gpu] [rows for the second part, default 200000]"""
+import sys, os, time
+here = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [os.path.join(here, "..", ".."), os.path.join(here, "..", "..", "torbles")]
+import duckdb, numpy as np, pandas as pd, torbles, sqlfuzz
+from ssb_common import QUERIES, EXTRA, FACT_COLS, dbfile
+
+sf = int(sys.argv[1]); threads = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] else (os.cpu_count() or 1)
+engines = (sys.argv[3] if len(sys.argv) > 3 else "alg,gpu").split(","); nrows = int(sys.argv[4]) if len(sys.argv) > 4 else 200_000
+src = dbfile(sf)
+t0 = time.perf_counter()
+db = torbles.from_duckdb(src, schema=os.path.join(here, "schema.sql"), columns={"lineorder": FACT_COLS})
+print(f"SF{sf}: {db['lineorder'].n:,} fact rows, loaded in {time.perf_counter() - t0:.1f} s; {threads} threads")
+torbles.set_threads(threads)
+con = duckdb.connect(); con.execute(f"SET threads = {threads}"); con.execute(f"ATTACH '{src}' AS s (READ_ONLY)")
+for t in ("lineorder", "date", "customer", "supplier", "part"): con.execute(f"CREATE TABLE {t} AS SELECT * FROM s.{t}")
+con.execute("DETACH s")
+if "gpu" in engines:
+    try: torbles.gpu_name()
+    except Exception as e: print("no GPU:", e); engines = [e_ for e_ in engines if e_ != "gpu"]
+
+def best(f, k=3):
+    b, out = None, None
+    for _ in range(k):
+        t1 = time.perf_counter(); out = f(); dt = time.perf_counter() - t1
+        b = dt if b is None else min(b, dt)
+    return b, out
+
+tot = {e: 0.0 for e in engines + ["duckdb"]}
+print(f"{'':6s}" + "".join(f"{e:>14s}" for e in ["DuckDB"] + [f"torbles {e}" for e in engines]))
+for name, q in (QUERIES | EXTRA).items():
+    td, want = best(lambda: con.execute(q).fetchall())
+    line = f"{name:6s}{td * 1e3:11.1f} ms"
+    if name.startswith("Q"): tot["duckdb"] += td
+    for e in engines:
+        try:
+            tt, got = best(lambda: db.sql(q, e).rows)
+            ok = sqlfuzz.same(got, want, "order by" in q.lower(), 1e-9)
+            line += f"{tt * 1e3:11.1f} ms" + ("" if ok else " DIFFERENT")
+            if name.startswith("Q"): tot[e] += tt
+        except Exception as x: line += f"   failed: {type(x).__name__}"
+    print(line)
+print("13 SSB queries in SQL:" + "".join(f"  {k} {v * 1e3:.1f} ms" for k, v in tot.items()))
+
+print(f"\nqueries that leave the engine, {nrows:,} rows (torbles runs these in Python):")
+rng = np.random.default_rng(1)
+df = pd.DataFrame(dict(id=np.arange(nrows), k=rng.integers(0, 1000, nrows), v=rng.integers(0, 10000, nrows),
+                       s=rng.choice([f"name{i}" for i in range(5000)], nrows)))
+gdb = torbles.from_ddl("CREATE TABLE t (id INTEGER, k INTEGER, v INTEGER, s VARCHAR)", {"t": df})
+con.register("df", df); con.execute("CREATE TABLE t AS SELECT * FROM df")
+qs = {"filter + GROUP BY (on the engine)": "SELECT k, sum(v), count(*) FROM t WHERE v < 5000 AND s LIKE 'name1%' GROUP BY k",
+      "a string function in WHERE (distinct values)": "SELECT count(*) FROM t WHERE upper(s) = 'NAME42'",
+      "GROUP BY a string expression": "SELECT substring(s FROM 1 FOR 5), count(*) FROM t GROUP BY 1",
+      "window: running SUM per partition": "SELECT id, sum(v) OVER (PARTITION BY k ORDER BY id) FROM t",
+      "window: rank over all rows": "SELECT id, rank() OVER (ORDER BY v) FROM t",
+      "100 rows out": "SELECT id, v * 2, s || '!' FROM t WHERE v < 10 ORDER BY id LIMIT 100"}
+for name, q in qs.items():
+    td, want = best(lambda: con.execute(q).fetchall(), 1)
+    tt, got = best(lambda: gdb.sql(q).rows, 1)
+    ok = sqlfuzz.same(got, want, "LIMIT" in q, 1e-9)
+    print(f"  {name:46s} DuckDB {td:8.3f} s   torbles {tt:8.3f} s   {'same answer' if ok else 'DIFFERENT'}")
