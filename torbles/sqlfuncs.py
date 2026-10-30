@@ -877,22 +877,40 @@ def _xq_flags(f): return f or ""
 def _iso_like_regex(s, p, f=""): return _rx(p, _xq_flags(f)).search(s) is not None
 
 
-@scalar("occurrences_regex __iso_occurrences_regex", _str((2, 3, 4), T.BIGINT, argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT]))
-def _occ_regex(p, s, f="", start=1):
-    return sum(1 for _ in _rx(p, _xq_flags(f)).finditer(s, max(0, start - 1)))
+@scalar("occurrences_regex __iso_occurrences_regex", _str((2, 3, 4, 5), T.BIGINT, argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT, T.BOOLEAN]))
+def _occ_regex(p, s, f="", start=1, octets=False):
+    return sum(1 for _ in _rx(p, _xq_flags(f)).finditer(s, _char_start(s, start, octets)))
 
 
-@scalar("position_regex __iso_position_regex", _str((2, 3, 4, 5), T.BIGINT, argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT, T.BIGINT]))
-def _pos_regex(p, s, f="", start=1, occ=1):
-    for i, m in enumerate(_rx(p, _xq_flags(f)).finditer(s, max(0, start - 1)), 1):
-        if i == occ: return m.start() + 1
+def _char_start(s, start, octets):
+    """a FROM position in characters (USING OCTETS: in octets of the UTF-8 text)"""
+    if not octets: return max(0, start - 1)
+    b = s.encode("utf-8")[:max(0, start - 1)]
+    return len(b.decode("utf-8", "ignore"))
+
+
+def _out_pos(s, i, octets):
+    return (len(s[:i].encode("utf-8")) if octets else i) + 1
+
+
+@scalar("position_regex __iso_position_regex", _str((2, 3, 4, 5, 6, 7, 8), T.BIGINT, argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT, T.BIGINT, T.BIGINT, T.BOOLEAN, T.BOOLEAN]))
+def _pos_regex(p, s, f="", start=1, occ=1, group=0, after=False, octets=False):
+    """POSITION_REGEX([START | AFTER] p IN s [FROM n] [USING OCTETS] [OCCURRENCE k] [GROUP g]): 0 when not found"""
+    rx = _rx(p, _xq_flags(f))
+    if group > rx.groups: return Err(f"POSITION_REGEX: the pattern has no group {group}")
+    for i, m in enumerate(rx.finditer(s, _char_start(s, start, octets)), 1):
+        if i == occ:
+            if m.start(group) < 0: return 0
+            return _out_pos(s, m.end(group) if after else m.start(group), octets)
     return 0
 
 
-@scalar("substring_regex __iso_substring_regex", _str((2, 3, 4, 5), argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT, T.BIGINT]))
-def _sub_regex(p, s, f="", start=1, occ=1):
-    for i, m in enumerate(_rx(p, _xq_flags(f)).finditer(s, max(0, start - 1)), 1):
-        if i == occ: return m.group(0)
+@scalar("substring_regex __iso_substring_regex", _str((2, 3, 4, 5, 6, 7), argt=[T.VARCHAR, T.VARCHAR, T.VARCHAR, T.BIGINT, T.BIGINT, T.BIGINT, T.BOOLEAN]))
+def _sub_regex(p, s, f="", start=1, occ=1, group=0, octets=False):
+    rx = _rx(p, _xq_flags(f))
+    if group > rx.groups: return Err(f"SUBSTRING_REGEX: the pattern has no group {group}")
+    for i, m in enumerate(rx.finditer(s, _char_start(s, start, octets)), 1):
+        if i == occ: return m.group(group)
     return None
 
 
@@ -1391,6 +1409,57 @@ def _transliterate(x, name):
 
 @scalar("row", lambda a: (T.SqlType("ROW"), None), nulls="custom")
 def _row(*xs): return list(xs)
+
+
+# ------------------------------------------------------------------ CAST ... FORMAT '<datetime template>' (ISO T839)
+def _fmt_template(v, tpl):
+    """a datetime as text by an ISO datetime template (YYYY, MM, DD, HH24, HH12, MI, SS, FFn, A.M., TZH, TZM, ...)"""
+    import re as _re
+    out, i, T_ = [], 0, tpl.upper()
+    d = v if not isinstance(v, _dt.time) else None
+    tm = v if isinstance(v, (_dt.datetime, _dt.time)) else None
+    toks = ["YYYY", "RRRR", "YYY", "YY", "RR", "Y", "MM", "DDD", "DD", "HH24", "HH12", "HH", "MI", "SSSSS", "SS",
+            "FF1", "FF2", "FF3", "FF4", "FF5", "FF6", "FF7", "FF8", "FF9", "A.M.", "P.M.", "TZH", "TZM"]
+    while i < len(tpl):
+        for k in toks:
+            if T_.startswith(k, i):
+                if k in ("YYYY", "RRRR"): out.append(f"{d.year:04d}")
+                elif k == "YYY": out.append(f"{d.year % 1000:03d}")
+                elif k in ("YY", "RR"): out.append(f"{d.year % 100:02d}")
+                elif k == "Y": out.append(f"{d.year % 10}")
+                elif k == "MM": out.append(f"{d.month:02d}")
+                elif k == "DDD": out.append(f"{d.timetuple().tm_yday:03d}")
+                elif k == "DD": out.append(f"{d.day:02d}")
+                elif k in ("HH24",): out.append(f"{tm.hour:02d}")
+                elif k in ("HH12", "HH"): out.append(f"{(tm.hour % 12) or 12:02d}")
+                elif k == "MI": out.append(f"{tm.minute:02d}")
+                elif k == "SSSSS": out.append(f"{tm.hour * 3600 + tm.minute * 60 + tm.second}")
+                elif k == "SS": out.append(f"{tm.second:02d}")
+                elif k.startswith("FF"): out.append(f"{tm.microsecond:06d}".ljust(9, "0")[:int(k[2])])
+                elif k in ("A.M.", "P.M."): out.append("P.M." if tm.hour >= 12 else "A.M.")
+                elif k in ("TZH", "TZM"):
+                    off = v.utcoffset() if getattr(v, "tzinfo", None) is not None else _dt.timedelta(0)
+                    us = off // _dt.timedelta(microseconds=1)
+                    out.append(("-" if us < 0 else "+") + f"{abs(us) // 3_600_000_000:02d}" if k == "TZH" else f"{abs(us) // 60_000_000 % 60:02d}")
+                i += len(k); break
+        else:
+            if tpl[i] == '"':
+                j = tpl.index('"', i + 1); out.append(tpl[i + 1:j]); i = j + 1
+            else: out.append(tpl[i]); i += 1
+    return "".join(out)
+
+
+@scalar("__iso_cast_format", lambda a: (T.type_from_name(a[1].v), None))
+def _cast_format(x, typ, tpl):
+    import sqljson
+    t = T.type_from_name(typ)
+    if t.id == "VARCHAR":
+        try: return _fmt_template(x, tpl)
+        except (AttributeError, ValueError) as e: return Err(f"CAST ... FORMAT {tpl!r}: {e}")
+    try: v = sqljson._template(tpl, x)
+    except sqljson.JErr as e: return Err(f"Conversion Error: {e}")
+    try: return T.cast_value(v, T.py_type(v), t)
+    except SqlError as e: return Err(str(e))
 
 
 # ------------------------------------------------------------------ collations

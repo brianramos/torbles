@@ -329,5 +329,18 @@ expect_g("""SELECT s, e FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER B
 expect_g("SELECT s.product, d.day, s.qty FROM sales s PARTITION BY (s.product) RIGHT JOIN days d ON s.day = d.day ORDER BY 1, 2",
          [("a", 1, 10), ("a", 2, None), ("a", 3, 30), ("b", 1, None), ("b", 2, 20), ("b", 3, None)], "a partitioned outer join (F403) densifies each partition")
 
+print("== more ISO forms")
+expect("SELECT 1 AS a, 2 AS b UNION CORRESPONDING BY (b) SELECT 3 AS b, 4 AS a ORDER BY 1", [(2,), (3,)], "CORRESPONDING BY (columns)")
+expect("SELECT POSITION_REGEX('(a)(n)' IN 'banana' GROUP 2), SUBSTRING_REGEX('(a)(n)' IN 'banana' GROUP 2), OCCURRENCES_REGEX('an' IN 'banana' FROM 3), "
+       "POSITION_REGEX(AFTER 'an' IN 'banana'), POSITION_REGEX('l' IN 'héllo' USING OCTETS), POSITION_REGEX('n' IN 'banana' OCCURRENCE 2)",
+       [(3, "n", 1, 4, 4, 5)], "the *_REGEX functions: GROUP, AFTER, FROM, USING OCTETS, OCCURRENCE")
+expect("SELECT CAST('2020/03/04' AS DATE FORMAT 'YYYY/MM/DD'), CAST('04.03.2020 13:05' AS TIMESTAMP FORMAT 'DD.MM.YYYY HH24:MI'), "
+       "CAST(DATE '2020-03-04' AS VARCHAR(20) FORMAT 'DD/MM/YYYY'), CAST(TIMESTAMP '2020-03-04 15:06:07.123' AS VARCHAR FORMAT 'YYYY-MM-DD HH12:MI:SS.FF3 A.M.'), "
+       "CAST('10:20 +02:00' AS TIME WITH TIME ZONE FORMAT 'HH24:MI TZH:TZM')",
+       [(dt.date(2020, 3, 4), dt.datetime(2020, 3, 4, 13, 5), "04/03/2020", "2020-03-04 03:06:07.123 P.M.", dt.time(10, 20, tzinfo=tz(2)))], "CAST ... FORMAT (T839)")
+expect("SELECT NORMALIZE('é', NFD, 10) = NORMALIZE('é', NFD), ANY_VALUE(gid) IS NOT NULL FROM g", [(True, True)])
+vs_duckdb("SELECT k, sum(v) OVER (w ORDER BY id ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t WHERE id < 30 WINDOW w AS (PARTITION BY k) ORDER BY id",
+          "a window defined from a named window")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

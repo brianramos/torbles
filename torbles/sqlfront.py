@@ -198,20 +198,22 @@ def _rx_args(t, a, b, name):
             parts[key] = _text(t, cur[0], cur[-1] + 1) if cur else ""
             key, cur = x.up(), []
             if key == "USING":
-                j += 2; continue                         # USING CHARACTERS | OCTETS: characters either way
+                parts["OCTETS"] = t[j + 1].up() == "OCTETS"; j += 2; continue
             j += 1; continue
         cur.append(j); j += 1
     parts[key] = _text(t, cur[0], cur[-1] + 1) if cur else ""
     occ = parts.get("OCCURRENCE", "")
     if occ.upper() == "ALL": occ = "0"
     def a_(k, default): return parts.get(k) or default
+    oct_ = "TRUE" if parts.get("OCTETS") else "FALSE"
     if name == "TRANSLATE_REGEX":
         return f"__iso_translate_regex({parts['PAT']}, {parts['IN']}, {a_('WITH', chr(39) * 2)}, {a_('FLAG', chr(39) * 2)}, {occ or '0'})"
     if name == "OCCURRENCES_REGEX":
-        return f"__iso_occurrences_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')})"
+        return f"__iso_occurrences_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {oct_})"
     if name == "POSITION_REGEX":
-        return f"__iso_position_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {occ or '1'})"
-    return f"__iso_substring_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {occ or '1'})"
+        after = "TRUE" if parts.get("MODE") == "AFTER" else "FALSE"
+        return f"__iso_position_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {occ or '1'}, {a_('GROUP', '0')}, {after}, {oct_})"
+    return f"__iso_substring_regex({parts['PAT']}, {parts['IN']}, {a_('FLAG', chr(39) * 2)}, {a_('FROM', '1')}, {occ or '1'}, {a_('GROUP', '0')}, {oct_})"
 
 
 FLAGS = {}
@@ -922,6 +924,12 @@ def iso_prepass(sql):
                 if nxt is not None and nxt.s not in (";", ")") and nxt.up() not in ("HAVING", "ORDER", "LIMIT", "OFFSET", "QUALIFY",
                                                                                   "WINDOW", "UNION", "EXCEPT", "INTERSECT", "FETCH"):
                     del t[i + 2]; changed = True; break               # ISO ALL: the default (DuckDB's GROUP BY ALL has no list)
+            # CAST(x AS <datetime or character type> FORMAT '<template>') (ISO T839)
+            if u == "CAST" and i + 1 < len(t) and t[i + 1].s == "(":
+                c = _match_paren(t, i + 1)
+                a = _top_kw(t, i + 2, c, "AS"); f = _top_kw(t, i + 2, c, "FORMAT")
+                if a >= 0 and f > a and f + 2 == c and t[f + 1].k == "str":
+                    t[i:c + 1] = tokenize(f"__iso_cast_format({_text(t, i + 2, a)}, '{_text(t, a + 1, f)}', {t[f + 1].s})"); changed = True; break
             # CAST(x AS INTERVAL <qualifier>)
             if u == "CAST" and i + 1 < len(t) and t[i + 1].s == "(":
                 c = _match_paren(t, i + 1)
@@ -1009,7 +1017,12 @@ def iso_prepass(sql):
                     del t[i:j]; changed = True; break
             # UNION / EXCEPT / INTERSECT [ALL] CORRESPONDING -> BY NAME (the binder keeps the common columns only)
             if u == "CORRESPONDING":
-                t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True; changed = True; break
+                by = None
+                if _kw(t, i + 1, "BY") and i + 2 < len(t) and t[i + 2].s == "(":
+                    c = _match_paren(t, i + 2); by = [t[k].s.strip('"') for k in range(i + 3, c) if t[k].s != ","]
+                    del t[i + 1:c + 1]
+                t[i:i + 1] = [Tok("id", "BY"), Tok("id", "NAME")]; FLAGS["corresponding"] = True
+                FLAGS.setdefault("corresponding_by", []).append(by); changed = True; break
     return " ".join(x.s for x in t)
 
 
@@ -1323,6 +1336,12 @@ class Binder:
             if self.flags.get("corresponding"):            # ISO: the columns every operand has, in the first's order
                 names = [n for n in names if all(n.lower() in [m.lower() for m, _ in q_columns(q)] for q in qs)]
                 if not names: raise SqlError("CORRESPONDING: the operands have no column name in common")
+                byl = self.flags.get("corresponding_by") or []
+                by = byl.pop(0) if byl else None
+                if by:                                     # CORRESPONDING BY (columns): those, in that order
+                    for c in by:
+                        if c.lower() not in [n.lower() for n in names]: raise SqlError(f"CORRESPONDING BY: {c} is not a column of every operand")
+                    names = [next(n for n in names if n.lower() == c.lower()) for c in by]
             qs = [_project_by_name(q, names) for q in qs]
             op = "UNION"
         else:
@@ -1984,6 +2003,16 @@ class Binder:
             return I.Subq("unique", q, T.BOOLEAN, correlated=_correlated(q))
         if name.startswith("__json_") and name not in ("__json_objectagg", "__json_arrayagg"):
             return self.sql_json(name, raw, sc, ctx)
+        if name == "__iso_cast_format":
+            args = self.args_of(e, sc, ctx)
+            dt_ = T.type_from_name(args[1].v)
+            src = args[0]
+            if dt_.temporal:
+                if src.t.id not in ("VARCHAR", "NULL") and not getattr(src, "strlit", False): raise SqlError(f"CAST ... FORMAT: a string to {dt_}, not {src.t}")
+            elif dt_.id == "VARCHAR":
+                if not src.t.temporal: raise SqlError(f"CAST ... FORMAT: a datetime to a string, not {src.t}")
+            else: raise SqlError(f"CAST ... FORMAT: to a datetime or a character string, not {dt_}")
+            return I.Func("__iso_cast_format", [src, I.Lit(str(dt_), T.VARCHAR), args[2]], dt_)
         if name in ("__iso_array_q", "__iso_ms_q"):                    # ARRAY (<query>) / MULTISET (<query>)
             q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
             cols = q_columns(q)
@@ -2000,8 +2029,8 @@ class Binder:
             if not ctx.agg: raise SqlError("GROUPING() is only allowed in the SELECT list, HAVING and ORDER BY of a grouped query")
             return I.Grouping(self.args_of(e, sc, ctx))
         if name == "grouping_function": return I.Grouping(self.args_of(e, sc, ctx))
-        if name == "normalize" and len(raw) == 2 and raw[1]["expression"]["class"] == "COLUMN_REF" \
-                and raw[1]["expression"]["column_names"][-1].upper() in ("NFC", "NFD", "NFKC", "NFKD"):
+        if name == "normalize" and len(raw) in (2, 3) and raw[1]["expression"]["class"] == "COLUMN_REF" \
+                and raw[1]["expression"]["column_names"][-1].upper() in ("NFC", "NFD", "NFKC", "NFKD"):    # (, length): a type bound
             return self.func("normalize", [self.expr(raw[0]["expression"], sc, ctx), I.Lit(raw[1]["expression"]["column_names"][-1].upper(), T.VARCHAR, True)])
         args = self.args_of(e, sc, ctx)
         if name == "typeof":
