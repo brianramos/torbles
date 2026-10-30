@@ -21,6 +21,7 @@
 #include <stdatomic.h>
 
 #include "torble.h"
+#include "relationships.h"
 #include <unistd.h>
 
 const char *at_version(void) { return TORBLES_VERSION; }
@@ -288,6 +289,7 @@ void at_free(atable_t *t) {
 }
 /* make column c virtual: its values are in sidecar `side` for the rows flagged in column flagcol (rank directory) */
 void at_set_virtual(atable_t *t, int c, int flagcol, const atable_t *side, const uint32_t *rank) {
+    t->revision++;
     t->vflag[c] = flagcol + 1; t->vside[c] = side; t->vrank[c] = rank;
     t->width[c] = side->width[0]; t->msb[c] = side->msb[0];
 }
@@ -314,6 +316,7 @@ int at_nplanes(const atable_t *t) { return (int)(t->bytes / (t->nw * 8)); }
 
 /* fault injection: flip row r in the p-th stored plane */
 void at_flip(atable_t *t, int p, uint64_t r) {
+    t->revision++;
     int q = 0;
     for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) if (t->V[c][j]) { if (q++ == p) { t->V[c][j][r >> 6] ^= 1ULL << (r & 63); return; } }
     for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) if (t->H[i][j]) { if (q++ == p) { t->H[i][j][r >> 6] ^= 1ULL << (r & 63); return; } }
@@ -514,6 +517,99 @@ static inline uint32_t extract_msb(const uint64_t *x, int nb, int r) {  /* first
 static inline uint32_t extract_col(const atable_t *t, const uint64_t *x, int c, int r) {
     return t->msb[c] ? extract_msb(x, t->width[c], r) : extract(x, t->width[c], r);
 }
+/* Bounded native profiling for relationship-system physical alternatives. The
+ * sampled masks have exactly the ordinary fact executor's filter/semijoin/delta
+ * semantics. No result rows or column-sized intermediate arrays are materialized. */
+int32_t at_relationship_sample(const atable_t *t, const qplan_t *q, tr_system_sample *out) {
+    if (!t || !q || !out || q->nprog < 0 || q->nprog > 1024 || q->nsemi < 0 || q->nsemi > 8 ||
+        q->nkey < 0 || q->nkey > MAXKEY || q->nattr || q->nranges > 4096 ||
+        (q->nranges && !q->ranges) || q->xmode < 0 || q->xmode > 2 || (q->xmode && !q->xrows)) return TR_INVALID;
+    memset(out, 0, sizeof *out);
+    int sp = 0;
+    for (int i = 0; i < q->nprog; ++i) {
+        const pinstr_t *p = &q->prog[i];
+        if (p->op == P_AND || p->op == P_OR || p->op == P_XOR) { if (sp < 2) return TR_INVALID; --sp; }
+        else if (p->op == P_NOT) { if (sp < 1) return TR_INVALID; }
+        else {
+            if (p->op < P_TRUE || p->op > P_XOR || (p->op != P_TRUE && (p->col < 0 || p->col >= t->k))) return TR_INVALID;
+            if (p->op != P_TRUE && (t->width[p->col] < 1 || t->width[p->col] > 32)) return TR_INVALID;
+            if ((p->op == P_CUBE || p->op == P_CLT || p->op == P_CGE) && !p->b) return TR_INVALID;
+            if ((p->op == P_CUBE || p->op == P_CLT || p->op == P_CGE) && t->width[p->col] < 32 &&
+                (p->b >> t->width[p->col])) return TR_INVALID;
+            if (p->op == P_PREFIX && p->b > (uint32_t)t->width[p->col]) return TR_INVALID;
+            if (p->op == P_BIT && p->a > 31) return TR_INVALID;
+            if (++sp > 48) return TR_INVALID;
+        }
+    }
+    if (q->nprog && sp != 1) return TR_INVALID;
+    for (int i = 0; i < q->nsemi; ++i)
+        if (q->semi_col[i] < 0 || q->semi_col[i] >= t->k || !q->semi_bm[i]) return TR_INVALID;
+    for (int i = 0; i < q->nkey; ++i) {
+        int k = q->key_kind[i], c = q->key_arg[i];
+        if ((k != 0 && k != 2 && k != 3) || c < 0 || c >= t->k ||
+            t->width[c] < 1 || t->width[c] > 32 ||
+            (k == 2 && (q->key_nbits[i] < 1 || q->key_nbits[i] > t->width[c])) ||
+            (k == 3 && (!q->key_mask[i] || (t->width[c] < 32 && (q->key_mask[i] >> t->width[c]))))) return TR_INVALID;
+    }
+    uint64_t eligible = 0, nr = q->nranges ? q->nranges : 1, last = 0;
+    for (uint64_t k = 0; k < nr; ++k) {
+        uint64_t a = q->nranges ? q->ranges[2*k] : 0, b = q->nranges ? q->ranges[2*k+1] : t->nw;
+        if (b > t->nw) b = t->nw;
+        if (a < last) a = last;
+        if (a >= b) continue;
+        last = b; eligible += b-a;
+    }
+    if (!eligible) return TR_OK;
+    uint64_t ns = eligible < 32 ? eligible : 32, targets[32], words[32];
+    for (uint64_t i = 0; i < ns; ++i)
+        targets[i] = ns == 1 ? 0 : (uint64_t)(((__uint128_t)i * (eligible-1)) / (ns-1));
+    uint64_t base = 0, next = 0; last = 0;
+    for (uint64_t k = 0; k < nr && next < ns; ++k) {
+        uint64_t a = q->nranges ? q->ranges[2*k] : 0, b = q->nranges ? q->ranges[2*k+1] : t->nw;
+        if (b > t->nw) b = t->nw;
+        if (a < last) a = last;
+        if (a >= b) continue;
+        last = b;
+        while (next < ns && targets[next] < base+b-a) { words[next] = a+targets[next]-base; ++next; }
+        base += b-a;
+    }
+    for (uint64_t si = 0; si < ns; ++si) {
+        uint64_t w = words[si]; dec_t D; DEC_RESET(D);
+        uint64_t F = eval_prog(t, q->prog, q->nprog, &D, w) & rowmask(t, w);
+        out->rows += (uint64_t)__builtin_popcountll(rowmask(t, w)); out->words++;
+        if (q->xmode) F &= q->xmode == 1 ? q->xrows[w] : ~q->xrows[w];
+        for (int s = 0; s < q->nsemi && F; ++s) {
+            const uint64_t *x = decode(t, &D, q->semi_col[s], w); uint64_t G = F;
+            while (G) {
+                int r = __builtin_ctzll(G); G &= G-1;
+                uint32_t fk = KM(q->semi_kmask[s], extract_col(t, x, q->semi_col[s], r));
+                if (fk >= q->semi_n[s] || !(q->semi_bm[s][fk>>6] >> (fk&63) & 1)) F &= ~(UINT64_C(1)<<r);
+            }
+        }
+        if (!F) continue;
+        out->passing += (uint64_t)__builtin_popcountll(F); out->nonempty++;
+        uint32_t keys[64][MAXKEY]; int ng = 0; uint64_t G = F;
+        while (G) {
+            int r = __builtin_ctzll(G); G &= G-1; uint32_t key[MAXKEY];
+            for (int i = 0; i < q->nkey; ++i) {
+                int c = q->key_arg[i], kind = q->key_kind[i];
+                if (kind == 0) key[i] = extract_col(t, decode(t, &D, c, w), c, r);
+                else if (kind == 2) key[i] = extract_msb(decode_n(t, &D, c, w, q->key_nbits[i]), q->key_nbits[i], r);
+                else {
+                    uint32_t mk = q->key_mask[i], v = 0;
+                    const uint64_t *x = decode_n(t, &D, c, w, 32-__builtin_clz(mk));
+                    while (mk) { int j = __builtin_ctz(mk); mk &= mk-1; v = (v<<1) | (uint32_t)(x[j]>>r&1); }
+                    key[i] = v;
+                }
+            }
+            int seen = 0;
+            for (int j = 0; j < ng; ++j) if (!memcmp(keys[j], key, (size_t)q->nkey*sizeof(uint32_t))) { seen = 1; break; }
+            if (!seen) { memcpy(keys[ng++], key, (size_t)q->nkey*sizeof(uint32_t)); }
+        }
+        out->groups += ng;
+    }
+    return TR_OK;
+}
 /* filter a (dimension) torble into a row bitmap */
 typedef struct { const atable_t *t; const pinstr_t *prog; int n; uint64_t *out; const uint64_t *mask; _Atomic uint64_t *next; uint64_t cnt; } fjob_t;
 static void *fworker(void *arg) {
@@ -586,7 +682,7 @@ void at_tail_offsets(const atable_t *t, int lc, uint32_t H, const uint64_t *dir,
     }
 }
 static inline uint64_t eval_meas(const qplan_t *q, const uint32_t *fv, const uint32_t *av) {   /* modular: exact mod 2^64 */
-    uint64_t st[24]; int sp = 0;
+    uint64_t st[24], registers[48]; int sp = 0;
     for (int i = 0; i < q->nmeas; i++) {
         const minstr_t *I = &q->meas[i];
         switch (I->op) {
@@ -595,7 +691,9 @@ static inline uint64_t eval_meas(const qplan_t *q, const uint32_t *fv, const uin
         case M_CONST: st[sp++] = (uint64_t)I->c; break;
         case M_ADD: sp--; st[sp - 1] += st[sp]; break;
         case M_SUB: sp--; st[sp - 1] -= st[sp]; break;
-        default: sp--; st[sp - 1] *= st[sp]; break;
+        case M_MUL: sp--; st[sp - 1] *= st[sp]; break;
+        case M_SAVE: registers[I->arg] = st[sp - 1]; break;
+        case M_LOAD: st[sp++] = registers[I->arg]; break;
         }
     }
     return sp ? st[0] : 0;
@@ -1663,11 +1761,12 @@ static void run_parallel(int kind, const void *t, qplan_t *q, uint64_t nunits, u
     free(chunks);
 }
 int64_t at_query(const atable_t *t, qplan_t *q) {
+    if (!q->wide && !tr_measure_valid(q, t->k)) return -1;
     if (q->ext_on && q->agg != A_POLYG && q->agg != A_GENERAL) return -1;
     if (q->wide && q->agg != A_MM && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2;
     if (q->agg == A_MM) { static mplane_t tmp[MAXMP]; mm_init(); if (!q->nkey || tb_mm_planes(t->width, t->msb, q, tmp) < 0) return -1; }
     run_parallel(0, t, q, t->nw, 512, 0, 1); return 0; }      /* ranges in words */      /* ranges in words */
-int64_t pt_query(const ptable_t *t, qplan_t *q) { if (q->wide && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2; run_parallel(1, t, q, (t->n + CH - 1) / CH, 16, t->n, CH / 64); return 0; }   /* same word ranges, in CH-row chunks */
+int64_t pt_query(const ptable_t *t, qplan_t *q) { if (!q->wide && !tr_measure_valid(q, t->k)) return -1; if (q->wide && q->agg != A_POLYG && q->agg != A_DOM && q->agg != A_COUNT && q->agg != A_GENERAL) return -2; run_parallel(1, t, q, (t->n + CH - 1) / CH, 16, t->n, CH / 64); return 0; }   /* same word ranges, in CH-row chunks */
 
 /* repair single-bit faults: for each corrupted row, find the stored plane whose flip clears all its faces */
 static int row_ok(const atable_t *t, uint64_t r) {
@@ -1681,6 +1780,7 @@ static int row_ok(const atable_t *t, uint64_t r) {
 uint64_t at_repair(atable_t *t) {
     uint64_t nbad = at_validate(t, NULL, 0), fixed = 0;
     if (!nbad) return 0;
+    t->revision++;
     uint64_t *bad = malloc(nbad * 8); at_validate(t, bad, nbad);
     uint64_t *planes[(2 * MAXCOL + 2) * NB]; int np = 0;
     for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) if (t->V[c][j]) planes[np++] = t->V[c][j];

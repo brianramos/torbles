@@ -22,7 +22,7 @@ from pathlib import Path
 MAXCOL = 31                      # columns per torble, hidden ones included (torble.h)
 P = dict(TRUE=0, EQ=1, NE=2, LT=3, LE=4, GT=5, GE=6, BETWEEN=7, AND=8, OR=9, NOT=10, PREFIX=11, BIT=12, CUBE=13, CLT=14, CGE=15, XOR=16)
 A_COUNT, A_LIN, A_BIL, A_GENERAL, A_POLYG, A_DOM, A_MM, A_ROWS = range(8)
-M = dict(FCOL=0, ATTR=1, CONST=2, ADD=3, SUB=4, MUL=5)
+M = dict(FCOL=0, ATTR=1, CONST=2, ADD=3, SUB=4, MUL=5, SAVE=6, LOAD=7)
 
 class PInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("col", ctypes.c_int32), ("a", ctypes.c_uint32), ("b", ctypes.c_uint32)]
 class MInstr(ctypes.Structure): _fields_ = [("op", ctypes.c_int32), ("arg", ctypes.c_int32), ("c", ctypes.c_int64)]
@@ -1260,6 +1260,17 @@ class Query:
         CPU engine"""
         self.device, self.kernel_ms = ("plain" if dev == "plain" else "cpu"), None
         import time as _time
+        catalog = getattr(table, "_relationships", None)
+        self.system_plan_ms = 0.0
+        if catalog is None:
+            self.system_plan = {"choice": "preserve", "reason": "disabled"}
+        else:
+            t_system = _time.perf_counter()
+            source = getattr(plan, "_system_source", None)
+            if source is None:
+                source = plan._system_source = catalog._capture_system_source(plan)
+            self.system_plan = catalog._plan_system(plan, dev, source=source)
+            self.system_plan_ms = (_time.perf_counter() - t_system) * 1e3
         t0 = _time.perf_counter()
         try: return self._exec_loop(dev, table, plan)
         finally: self.exec_ms = (_time.perf_counter() - t0) * 1e3     # the engine call alone (no planning)
@@ -1310,6 +1321,7 @@ class Query:
         rB = B._run_codes(engine)
         self.device, self.kernel_ms = A.device, getattr(A, "kernel_ms", None)
         self.last_plan, self.range_used, self.delta_rows = A.last_plan, A.range_used, int(sum(bin(int(x)).count("1") for x in D[words.astype(np.int64)])) if len(words) else 0
+        self.system_plan = {"choice": "partitioned", "passes": [getattr(A, "system_plan", {}), getattr(B, "system_plan", {})]}
         if getattr(self, "_rows", False): return np.union1d(rA, rB)
         if self.keys:
             out = dict(rA)
@@ -1368,7 +1380,7 @@ class Query:
             if cols_wanted: q._cols_owner = None
         self.device, self.kernel_ms = getattr(q, "device", None), getattr(q, "kernel_ms", None)
         self.last_plan, self.range_used = q.last_plan, q.range_used
-        for a in ("delta_rows", "_lookup_keys"):
+        for a in ("delta_rows", "_lookup_keys", "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         if not self.keys: return r
         if isinstance(r, CodeGroups):                # columns: value = base + 2^B hi, by array arithmetic
@@ -1408,7 +1420,7 @@ class Query:
                 if a in q.__dict__: del q.__dict__[a]
             q.keys = [k for i, k in enumerate(self.keys) if ids.index(ids[i]) == i]
             r = q.run(engine)
-            for a in ("device", "kernel_ms", "last_plan", "range_used"):
+            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan"):
                 if hasattr(q, a): setattr(self, a, getattr(q, a))
             pos = [first[x] for x in ids]
             return {tuple(k[p] for p in pos): v for k, v in r.items()}
@@ -1480,7 +1492,7 @@ class Query:
                 if a in q.__dict__: del q.__dict__[a]
             q.keys = list(self.keys) + [cols[h] for h in H]; q.measure = meas
             out = q.run(engine)
-            for a in ("device", "kernel_ms", "last_plan", "range_used"):
+            for a in ("device", "kernel_ms", "last_plan", "range_used", "system_plan"):
                 if hasattr(q, a): setattr(self, a, getattr(q, a))
             if not q.keys: return {} if out is None or out == 0 and meas is None else {(): out}   # one group: ()
             return out
@@ -1569,7 +1581,8 @@ class Query:
         q._cols_owner = q if columns else None
         try: r = q._run_codes(engine)
         finally: q._cols_owner = None
-        for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows"):
+        for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows",
+                  "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms"):
             if hasattr(q, a): setattr(self, a, getattr(q, a))
         scale = lm[2]
         val = (lambda v: v if v is None or not scale else _exact_dec(v, scale)) if self.measure is not None else (lambda v: v)
@@ -1620,8 +1633,46 @@ class Query:
         return Groups(keys, vl)
 
     def _run_codes(self, engine="alg"):
+        if not getattr(self, "_relationship_done", False):
+            self.relationship_plan = {"status": "disabled"}
+            self.relationship_ms = 0.0
         if getattr(self.fact, "wide", None) and not getattr(self, "_lowered", False): return self._run_wide(engine)
         if getattr(self, "rjoin", None) is not None: return self._run_range(engine)
+        # Experimental opt-in: native modules verify equations; native search composes
+        # them over this lowered code polynomial before the ordinary planner runs.
+        catalog = getattr(self.fact, "_relationships", None)
+        if catalog is not None and self.measure is not None and not getattr(self, "_relationship_done", False) \
+                and getattr(self, "_ext", None) is None:
+            import time as _time
+            t_relationship = _time.perf_counter()
+            replacement, info = catalog._rewrite_codes(self.measure)
+            self.relationship_ms = (_time.perf_counter() - t_relationship) * 1e3
+            self.relationship_plan = info
+            if replacement is not None:
+                cached = getattr(self, "_relationship_query", None)
+                if cached is not None and cached[0] is catalog and cached[1] is replacement:
+                    q = cached[2]
+                else:
+                    q = copy_query(self)
+                    q.__dict__.pop("_relationship_query", None)
+                    self._relationship_query = (catalog, replacement, q)
+                # Retain 0.2.0's compiled-plan/factor cache, while refreshing the
+                # query scope. Its normal identity signature detects changes.
+                q.pred, q.keys, q.joins, q.join_mode = self.pred, self.keys, self.joins, self.join_mode
+                for name in ("_xrows", "_word_ranges", "_lookup_dims", "_force_lookup", "_inpass", "_both", "_raw", "_dom", "_ext", "range_mode"):
+                    if hasattr(self, name): setattr(q, name, getattr(self, name))
+                    else: q.__dict__.pop(name, None)
+                q.measure, q._relationship_done = replacement, True
+                cols_wanted = self is getattr(self, "_cols_owner", None)
+                q._cols_owner = q if cols_wanted else None         # columns (CodeGroups) when the original was asked for them
+                try:
+                    result = q._run_codes(engine)
+                except (ValueError, OverflowError, TypeError) as error:
+                    self.relationship_plan = dict(info, status="fallback", reason=str(error))
+                else:
+                    for name in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows", "system_plan", "system_plan_ms"):
+                        if hasattr(q, name): setattr(self, name, getattr(q, name))
+                    return result
         self._lookup_keys = set(getattr(self, "_force_lookup", ()))
         if not getattr(self, "_inpass", False):
             moved = self._moved()
@@ -1651,7 +1702,7 @@ class Query:
                 try: r = q2._run_codes(engine)
                 finally:
                     if cols_wanted: q2._cols_owner = None
-                for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned"):
+                for a_ in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "system_plan", "system_plan_ms"):
                     if hasattr(q2, a_): setattr(self, a_, getattr(q2, a_))
                 if isinstance(r, CodeGroups):        # columns: the key polynomials on the key code arrays (exact integers)
                     n = np.asarray(r.cnt if r.cnt is not None else r.vals)

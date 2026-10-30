@@ -31,7 +31,11 @@ class BuildEngine(build_py):
             sys.exit(f"torbles builds on x86-64 (this machine is {platform.machine()}): the engine uses x86 popcount kernels")
         cc = os.environ.get("CC", "gcc"); cxx = os.environ.get("CXX", "g++")
         arch = ["-march=x86-64-v2", "-mtune=generic"] if os.environ.get("TORBLES_PORTABLE") else ["-march=native"]
-        if not _run([cc, "-O2", *arch, "-shared", "-fPIC", os.path.join(src, "alg.c"), "-o", os.path.join(out, "libalg.so"), "-lpthread"], src):
+        if not _run([cc, "-O2", *arch, "-shared", "-fPIC", os.path.join(src, "alg.c"),
+                     os.path.join(src, "relationships.c"), os.path.join(src, "relationships_optimizer.c"),
+                     os.path.join(src, "relationships_system.c"),
+                     os.path.join(src, "relationships_dag.c"),
+                     "-o", os.path.join(out, "libalg.so"), "-lpthread"], src):
             sys.exit("could not compile torbles/alg.c: a C compiler (gcc or clang) is needed")
         if not _run([cxx, "-O2", "-fwrapv", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", os.path.join(src, "gpu.cu"), "-o", os.path.join(out, "libgpu_emu.so")], src):
             sys.exit("could not compile the GPU emulation (torbles/gpu.cu as C++): a C++ compiler is needed")

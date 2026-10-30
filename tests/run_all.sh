@@ -26,7 +26,7 @@ run() {   # name, command...
   local t0=$(date +%s%N) out; out=$("$@" 2>&1); local rc=$?
   local ms=$(( ($(date +%s%N) - t0) / 1000000 )); local dt="$((ms / 1000)).$(( (ms % 1000) / 100 ))"
   local last=$(printf '%s\n' "$out" | tail -1)
-  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
+  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES|^OK$"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
   else printf '  %-44s FAIL (%ss)\n' "$name" "$dt"; printf '%s\n' "$out" | tail -15 | sed 's/^/      /'; fails=$((fails + 1)); fi
 }
 echo "== CPU engine vs plain columns vs DuckDB"
@@ -60,6 +60,12 @@ run "array algebra vs row by row and DuckDB"     python3 tests/check_arrays.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_arrays.py 250 6
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_arrays.py 250 8
 echo "== GROUP BY modes"
+run "native relationship discovery and composition" python3 -m unittest discover -s tests -p test_relationships.py
+run "native chains vs combined algebraic systems" python3 -m unittest discover -s tests -p test_relationship_systems.py
+run "proof-aware compiled plan reuse"             python3 -m unittest discover -s tests -p test_relationship_cache.py
+run "0.2 adaptive matrix integration"              python3 -m unittest discover -s tests -p test_upstream_enhancements.py
+run "physical cache and GPU profile elision"       python3 -m unittest discover -s tests -p test_physical_cache.py
+run "hybrid native regions and shared DAGs"         python3 -m unittest discover -s tests -p test_relationship_dag.py
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py
 echo "== GPU executor vs CPU engine ($( [ -n "${TORBLES_GPU_LIB:-}" ] && echo CUDA || echo emulated ))"
