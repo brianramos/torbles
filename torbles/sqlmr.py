@@ -219,7 +219,7 @@ class MR:
             rel.cols[k] = rel.cols[e.args[0].key()]; return
         if isinstance(e, I.Func) and e.fn == "__mr_nav":
             r = self._nav_row(e, assign, cur, final, part)
-            rel.cols[k] = [self.value_at(self._nav_arg(e), part, r, cx)]; return
+            rel.cols[k] = [self.value_at(self._nav_arg(e), part, r, cx, assign)]; return
         if isinstance(e, I.Func) and e.fn == "__mr_classifier":     # the variable the current row is mapped to
             rel.cols[k] = [next((v for p, v, _ in assign if p == cur), None)]; return
         if isinstance(e, I.Func) and e.fn == "__mr_match_number":
@@ -257,11 +257,15 @@ class MR:
         else: r = base
         return r if 0 <= r < part.n else None
 
-    def value_at(self, e, part, r, cx):
-        """e with every column read at row r"""
+    def value_at(self, e, part, r, cx, assign=()):
+        """e with every column read at row r (and CLASSIFIER() the variable row r is mapped to)"""
         import sqlexec
         rel = sqlexec.Rel(1)
         for c in I.find(e, I.Col): rel.cols[c.key()] = [part.value(c.name, r)]
+        def cls(x):
+            if isinstance(x, I.Func) and x.fn == "__mr_classifier":
+                rel.cols[x.key()] = [next((v for p, v, _ in assign if p == r), None)]
+        I.walk(e, cls)
         v = sqlexec.ev(e, rel, cx)[0]
         if isinstance(v, sqlexec.Err): raise SqlError(v.msg)
         return v
@@ -280,7 +284,7 @@ class MR:
         d = F.AGGS[a.name]
         vals = []
         for r in rows:
-            v = tuple(self.value_at(x, part, r, cx) for x in a.args)
+            v = tuple(self.value_at(x, part, r, cx, assign) for x in a.args)
             if d.skip_nulls and any(x is None for x in v): continue
             vals.append((v, 1))
         if a.distinct:
@@ -327,8 +331,8 @@ def _partition(mr, part, cx):
     unmatched = set(range(part.n))
     while start < part.n:
         assign, end = M.match(start, number + 1)
-        if assign is None:
-            if mr.empty_mode == "unmatched": out.append(_row_all(mr, part, start, (), None, cx, matched=False))
+        if assign is None:                                 # a row of an earlier match is not an unmatched row
+            if mr.empty_mode == "unmatched" and start in unmatched: out.append(_row_all(mr, part, start, (), None, cx, matched=False))
             start += 1; continue
         number += 1
         if end == start:                                       # an empty match

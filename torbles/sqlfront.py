@@ -620,7 +620,16 @@ def _mr_expr(t, a, b):
 
 
 def _match_recognize(t, i):
-    """<table primary> MATCH_RECOGNIZE (...) -> __match_recognize((SELECT * FROM <table primary>), '<clauses>')"""
+    """<table primary> [[AS] <input name>] MATCH_RECOGNIZE (...) -> __match_recognize((SELECT * FROM <table primary>),
+    '<clauses>')"""
+    end = i - 1
+    if end >= 1 and t[end].s == ")" and _match_open(t, end) >= 1 and t[_match_open(t, end) - 1].k == "id" \
+            and t[_match_open(t, end) - 1].up() not in ("FROM", "JOIN", "LATERAL", "AS"):
+        end = _match_open(t, end) - 1                     # <input name> (<columns>): the columns are dropped
+    if end >= 1 and t[end].k == "id" and t[end].up() not in ("FROM", "JOIN", "LATERAL") and \
+            (t[end - 1].up() == "AS" or t[end - 1].s == ")" or (t[end - 1].k == "id" and t[end - 1].up() not in ("FROM", "JOIN", "LATERAL", "ON"))):
+        del t[end:i]; i = end                              # the input name (it names the rows MATCH_RECOGNIZE reads)
+        if t[i - 1].up() == "AS": del t[i - 1]; i -= 1
     a = _operand_back(t, i - 1)
     src = _text(t, a, i)
     if t[a].s != "(": src = f"(SELECT * FROM {src})"

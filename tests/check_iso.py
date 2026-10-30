@@ -537,5 +537,14 @@ vs_duckdb("SELECT g.gid, (SELECT max(x) FROM (VALUES (g.gid), (7)) v(x)), s.x FR
 vs_duckdb("SELECT g.gid, s.c, (WITH e AS (SELECT * FROM t WHERE t.k = g.gid AND t.v > 50) SELECT count(*) FROM e) FROM g, "
           "LATERAL (WITH d AS (SELECT * FROM t WHERE t.k = g.gid) SELECT count(*) AS c FROM d) s ORDER BY 1", "a WITH inside a correlated or LATERAL subquery sees the outer columns")
 
+expect_g("SELECT * FROM ticker AS x MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES FIRST(tstamp) AS f PATTERN (A B+) "
+         "DEFINE B AS price > PREV(price)) WHERE symbol = 'XYZ' ORDER BY f", [("XYZ", 2), ("XYZ", 4)], "MATCH_RECOGNIZE after an input name (AS x)")
+expect_g("SELECT * FROM (SELECT * FROM ticker WHERE symbol = 'XYZ') q MATCH_RECOGNIZE (MEASURES FIRST(tstamp) AS f, LAST(CLASSIFIER()) AS c ORDER BY tstamp "
+         "PATTERN (A B+) DEFINE B AS PREV(CLASSIFIER()) IN ('A', 'B'))".replace("MEASURES FIRST(tstamp) AS f, LAST(CLASSIFIER()) AS c ORDER BY tstamp", "ORDER BY tstamp MEASURES FIRST(tstamp) AS f, LAST(CLASSIFIER()) AS c"),
+         [(1, "B")], "CLASSIFIER() inside PREV / LAST")
+expect_g("SELECT tstamp, mn, c FROM ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY tstamp MEASURES MATCH_NUMBER() AS mn, CLASSIFIER() AS c "
+         "ALL ROWS PER MATCH WITH UNMATCHED ROWS AFTER MATCH SKIP TO LAST B PATTERN (A B+) DEFINE B AS price > PREV(price)) WHERE symbol = 'XYZ' ORDER BY tstamp",
+         [(1, None, None), (2, 1, "A"), (3, 1, "B"), (4, 2, "A"), (5, 2, "B")], "WITH UNMATCHED ROWS: a row of an earlier match is not repeated")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
