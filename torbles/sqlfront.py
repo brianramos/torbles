@@ -299,6 +299,260 @@ def _extended_case(t, i):
     return out, e
 
 
+# ------------------------------------------------------------------ SQL/JSON syntax
+_JCLAUSE = {"PASSING", "RETURNING", "ERROR", "NULL", "DEFAULT", "EMPTY", "WITH", "WITHOUT", "KEEP", "OMIT", "TRUE", "FALSE",
+            "UNKNOWN", "COLUMNS", "FORMAT", "ABSENT", "ON", "PLAN", "AS"}
+
+
+def _jstr(x): return "'" + json.dumps(x).replace("'", "''") + "'"
+
+
+class _JParse:
+    """the clauses of an SQL/JSON function call, from its tokens"""
+    def __init__(self, t, a, b, what):
+        self.t, self.i, self.b, self.what = t, a, b, what
+        self.passing, self.names, self.defaults = [], [], []
+        self.opts = dict(empty=["NULL"], error=["NULL"], wrapper="WITHOUT", quotes="KEEP", returning=None, names=[])
+
+    def at(self, *words): return _kw(self.t, self.i, *words) and self.i + len(words) <= self.b
+    def done(self): return self.i >= self.b
+    def err(self, msg): raise SqlError(f"{self.what}: {msg}")
+
+    def expr_until(self, stop):
+        """tokens of an expression up to a top-level stop (a word, or a tuple of words that must follow each other),
+        a comma, or the end"""
+        stops = [(w,) if isinstance(w, str) else tuple(w) for w in stop]
+        j, d = self.i, 0
+        while j < self.b:
+            x = self.t[j]
+            if x.s in ("(", "["): d += 1
+            elif x.s in (")", "]"): d -= 1
+            elif d == 0 and (x.s == "," or (j > self.i and any(_kw(self.t, j, *w) for w in stops))): break
+            j += 1
+        out = _text(self.t, self.i, j); self.i = j
+        if not out: self.err("an expression is missing")
+        return out
+
+    def format_json(self):
+        if self.at("FORMAT", "JSON"):
+            self.i += 2
+            if self.at("ENCODING"): self.i += 2
+            return True
+        return False
+
+    def path_and_passing(self):
+        x = self.t[self.i] if self.i < self.b else None
+        if x is None or x.k != "str": self.err("the path must be a character string literal")
+        self.opts["path"] = x.s[1:-1].replace("''", "'"); self.i += 1
+        if self.at("AS"): self.i += 2                   # a path name (JSON_TABLE)
+        if self.at("PASSING"):
+            self.i += 1
+            while True:
+                self.passing.append(self.expr_until([("AS",)]))
+                if not self.at("AS"): self.err("PASSING <value> AS <name>")
+                self.i += 1; self.names.append(self.t[self.i].s.strip('"')); self.i += 1
+                if self.i < self.b and self.t[self.i].s == ",": self.i += 1; continue
+                break
+        self.opts["names"] = self.names
+
+    def type_until(self):
+        j, d = self.i, 0
+        while j < self.b:
+            u = self.t[j].up()
+            if self.t[j].s == "(": d += 1
+            elif self.t[j].s == ")": d -= 1
+            elif d == 0:
+                if u in ("ERROR", "NULL", "DEFAULT", "EMPTY", "KEEP", "OMIT", "TRUE", "FALSE", "UNKNOWN", "FORMAT", "PATH", "EXISTS"): break
+                if u in ("WITH", "WITHOUT") and not _kw(self.t, j + 1, "TIME", "ZONE"): break
+                if self.t[j].s == ",": break
+            j += 1
+        out = _text(self.t, self.i, j); self.i = j
+        return out
+
+    def clauses(self, allow):
+        while not self.done():
+            if self.t[self.i].s == ",": return                # the end of a JSON_TABLE column definition
+            if self.at("RETURNING") and "returning" in allow:
+                self.i += 1; self.opts["returning"] = self.type_until(); self.format_json(); continue
+            if (self.at("WITHOUT", "ARRAY", "WRAPPER") or self.at("WITHOUT", "WRAPPER")) and "wrapper" in allow:
+                self.i += 3 if self.at("WITHOUT", "ARRAY") else 2; self.opts["wrapper"] = "WITHOUT"; continue
+            if self.at("WITH") and "wrapper" in allow and not self.at("WITH", "UNIQUE"):
+                self.i += 1; kind = "UNCONDITIONAL"
+                if self.at("CONDITIONAL"): kind = "CONDITIONAL"; self.i += 1
+                elif self.at("UNCONDITIONAL"): self.i += 1
+                if self.at("ARRAY"): self.i += 1
+                if not self.at("WRAPPER"): self.err("WITH [CONDITIONAL | UNCONDITIONAL] [ARRAY] WRAPPER")
+                self.i += 1; self.opts["wrapper"] = kind; continue
+            if (self.at("KEEP") or self.at("OMIT")) and "quotes" in allow:
+                self.opts["quotes"] = self.t[self.i].up(); self.i += 1
+                if self.at("QUOTES"): self.i += 1
+                if self.at("ON", "SCALAR", "STRING"): self.i += 3
+                continue
+            beh = None
+            for words in (("ERROR",), ("NULL",), ("EMPTY", "ARRAY"), ("EMPTY", "OBJECT"), ("EMPTY",), ("TRUE",), ("FALSE",), ("UNKNOWN",)):
+                if self.at(*words) and (_kw(self.t, self.i + len(words), "ON") or words == ("EMPTY",)):
+                    beh = [" ".join(words) if words != ("EMPTY",) else "EMPTY ARRAY"]; self.i += len(words); break
+            if beh is None and self.at("DEFAULT"):
+                self.i += 1
+                j, d = self.i, 0
+                while j < self.b and not (d == 0 and _kw(self.t, j, "ON") and self.t[j + 1].up() in ("EMPTY", "ERROR")):
+                    if self.t[j].s == "(": d += 1
+                    elif self.t[j].s == ")": d -= 1
+                    j += 1
+                self.defaults.append(_text(self.t, self.i, j)); self.i = j
+                beh = ["DEFAULT", len(self.defaults) - 1]
+            if beh is not None:
+                if not (self.at("ON", "EMPTY") or self.at("ON", "ERROR")): self.err("<behavior> ON EMPTY | ON ERROR")
+                which = self.t[self.i + 1].up().lower(); self.i += 2
+                if which not in allow: self.err(f"ON {which.upper()} is not allowed here")
+                self.opts[which] = beh; continue
+            self.err(f"unexpected {self.t[self.i].s!r}")
+
+
+def _json_call(t, i):
+    """JSON_VALUE / JSON_QUERY / JSON_EXISTS / JSON_OBJECT / JSON_ARRAY / JSON_OBJECTAGG / JSON_ARRAYAGG /
+    JSON_SERIALIZE (...) -> a call of a marker function with the clauses as a JSON string; None when the call is
+    already plain"""
+    u = t[i].up(); c = _match_paren(t, i + 1); a, b = i + 2, c
+    P = _JParse(t, a, b, u)
+    if u in ("JSON_VALUE", "JSON_QUERY", "JSON_EXISTS"):
+        P.i = a
+        ctx = P.expr_until([("FORMAT", "JSON")]); P.format_json()
+        if P.done() or t[P.i].s != ",": P.err("JSON context item, path")
+        P.i += 1
+        P.path_and_passing()
+        if u == "JSON_EXISTS": P.opts["error"] = ["FALSE"]
+        allow = {"JSON_VALUE": ("returning", "empty", "error"), "JSON_QUERY": ("returning", "wrapper", "quotes", "empty", "error"),
+                 "JSON_EXISTS": ("error",)}[u]
+        P.clauses(allow)
+        args = [ctx, _jstr(P.opts)] + P.passing + P.defaults
+        P.opts["np"] = len(P.passing)
+        args[1] = _jstr(P.opts)
+        return tokenize(f"__{u.lower()}({', '.join(args)})"), c
+    if u in ("JSON_OBJECT", "JSON_OBJECTAGG"):
+        P.i = a; keys, vals, fmts = [], [], []
+        absent, unique = (False, False)
+        stops = [("VALUE",), ("NULL", "ON", "NULL"), ("ABSENT", "ON", "NULL"), ("WITH", "UNIQUE"), ("WITHOUT", "UNIQUE"), ("RETURNING",), ("FORMAT", "JSON")]
+        while not P.done():
+            if P.at("NULL", "ON", "NULL"): P.i += 3; absent = False; continue
+            if P.at("ABSENT", "ON", "NULL"): P.i += 3; absent = True; continue
+            if P.at("WITH", "UNIQUE") or P.at("WITHOUT", "UNIQUE"):
+                unique = P.at("WITH"); P.i += 2
+                if P.at("KEYS"): P.i += 1
+                continue
+            if P.at("RETURNING"): P.i += 1; P.opts["returning"] = P.type_until(); P.format_json(); continue
+            if P.at("KEY"): P.i += 1
+            j, d = P.i, 0
+            while j < b:                                   # the key: up to VALUE or ':' (or ',' in DuckDB's json_object(k, v))
+                x = t[j]
+                if x.s in ("(", "["): d += 1
+                elif x.s in (")", "]"): d -= 1
+                elif d == 0 and (x.up() == "VALUE" or x.s in (":", ",")): break
+                j += 1
+            k = _text(t, P.i, j); P.i = j
+            if j >= b: P.err("KEY <name> VALUE <value>")
+            P.i += 1
+            v = P.expr_until(stops); f = P.format_json()
+            keys.append(k); vals.append(v); fmts.append(f)
+            if not P.done() and t[P.i].s == ",": P.i += 1
+        opts = dict(absent=absent, unique=unique, fmts=fmts, returning=P.opts["returning"])
+        if u == "JSON_OBJECTAGG":
+            if len(keys) != 1: P.err("one KEY ... VALUE ... pair")
+            return tokenize(f"__json_objectagg({keys[0]}, {vals[0]}, {_jstr(opts)})"), c
+        return tokenize(f"__json_object({', '.join([_jstr(opts)] + [x for kv in zip(keys, vals) for x in kv])})"), c
+    if u in ("JSON_ARRAY", "JSON_ARRAYAGG"):
+        P.i = a
+        if u == "JSON_ARRAY" and P.i < b and t[P.i].up() in ("SELECT", "WITH", "VALUES", "TABLE"):     # JSON_ARRAY(<query>)
+            q_end = P.i
+            while q_end < b and not (t[q_end].up() in ("RETURNING", "FORMAT") and _depth0(t, P.i, q_end)): q_end += 1
+            qtxt = "(" + _text(t, P.i, q_end) + ")"
+            P.i = q_end; P.format_json(); P.clauses(("returning",))
+            return tokenize(f"__json_array_q({qtxt}, {_jstr(dict(returning=P.opts['returning']))})"), c
+        vals, fmts, null_on_null, order = [], [], False, ""
+        stops = [("NULL", "ON", "NULL"), ("ABSENT", "ON", "NULL"), ("RETURNING",), ("ORDER", "BY"), ("FORMAT", "JSON")]
+        while not P.done():
+            if P.at("NULL", "ON", "NULL"): P.i += 3; null_on_null = True; continue
+            if P.at("ABSENT", "ON", "NULL"): P.i += 3; null_on_null = False; continue
+            if P.at("RETURNING"): P.i += 1; P.opts["returning"] = P.type_until(); P.format_json(); continue
+            if P.at("ORDER", "BY") and u == "JSON_ARRAYAGG":
+                j = P.i
+                while j < b and not (_depth0(t, P.i, j) and (_kw(t, j, "NULL", "ON") or _kw(t, j, "ABSENT", "ON") or t[j].up() == "RETURNING")): j += 1
+                order = " " + _text(t, P.i, j); P.i = j; continue
+            vals.append(P.expr_until(stops)); fmts.append(P.format_json())
+            if not P.done() and t[P.i].s == ",": P.i += 1
+        opts = dict(null_on_null=null_on_null, fmts=fmts, returning=P.opts["returning"])
+        if u == "JSON_ARRAYAGG":
+            if len(vals) != 1: P.err("one value")
+            return tokenize(f"__json_arrayagg({vals[0]}, {_jstr(opts)}{order})"), c
+        return tokenize(f"__json_array({', '.join([_jstr(opts)] + vals)})"), c
+    if u == "JSON_SERIALIZE":
+        P.i = a; x = P.expr_until([("FORMAT", "JSON"), ("RETURNING",)]); P.format_json(); P.clauses(("returning",))
+        return tokenize(f"__json_serialize({x}, {_jstr(P.opts)})"), c
+    if u in ("JSON", "JSON_SCALAR"):
+        P.i = a; x = P.expr_until([("FORMAT", "JSON"), ("WITH", "UNIQUE"), ("WITHOUT", "UNIQUE")]); P.format_json(); unique = False
+        if P.at("WITH", "UNIQUE") or P.at("WITHOUT", "UNIQUE"):
+            unique = P.at("WITH"); P.i += 2
+            if P.at("KEYS"): P.i += 1
+        if not P.done(): P.err(f"unexpected {t[P.i].s!r}")
+        return tokenize(f"__{'json_scalar' if u == 'JSON_SCALAR' else 'json_parse'}({x}, {'TRUE' if unique else 'FALSE'})"), c
+    return None
+
+
+def _json_table(t, i):
+    """JSON_TABLE(ctx, 'path' [AS n] [PASSING ...] COLUMNS (...) [PLAN ...] [ERROR | EMPTY ON ERROR]) -> a table
+    function call with the column definitions as a JSON string"""
+    c = _match_paren(t, i + 1); a, b = i + 2, c
+    P = _JParse(t, a, b, "JSON_TABLE")
+    ctx = P.expr_until([("FORMAT", "JSON")]); P.format_json()
+    if P.done() or t[P.i].s != ",": P.err("JSON context item, path")
+    P.i += 1
+    P.path_and_passing()
+    defaults = P.defaults
+
+    def columns(P):
+        if not P.at("COLUMNS") or t[P.i + 1].s != "(": P.err("COLUMNS (...)")
+        e = _match_paren(t, P.i + 1); cols = []
+        Q = _JParse(t, P.i + 2, e, "JSON_TABLE"); Q.defaults = defaults
+        while not Q.done():
+            if Q.at("NESTED"):
+                Q.i += 1
+                if Q.at("PATH"): Q.i += 1
+                x = t[Q.i]
+                if x.k != "str": Q.err("NESTED [PATH] '<path>'")
+                Q.i += 1
+                if Q.at("AS"): Q.i += 2
+                cols.append(dict(kind="nested", path=x.s[1:-1].replace("''", "'"), cols=columns(Q)))
+            else:
+                name = t[Q.i].s.strip('"'); Q.i += 1
+                if Q.at("FOR", "ORDINALITY"): Q.i += 2; cols.append(dict(name=name, kind="ordinality"))
+                else:
+                    typ = Q.type_until(); kind = "value"
+                    o = dict(empty=["NULL"], error=["NULL"], wrapper="WITHOUT", quotes="KEEP", names=[])
+                    Q.opts = o
+                    if Q.at("FORMAT", "JSON"): Q.format_json(); kind = "query"
+                    if Q.at("EXISTS"): Q.i += 1; kind = "exists"; o["error"] = ["FALSE"]
+                    path = "lax $." + json.dumps(name)
+                    if Q.at("PATH"):
+                        Q.i += 1; x = t[Q.i]
+                        if x.k != "str": Q.err("PATH '<path>'")
+                        path = x.s[1:-1].replace("''", "'"); Q.i += 1
+                    o["path"] = path
+                    Q.clauses({"value": ("empty", "error"), "query": ("wrapper", "quotes", "empty", "error"), "exists": ("error",)}[kind])
+                    cols.append(dict(name=name, kind=kind, type=typ, opts=o))
+            if not Q.done() and t[Q.i].s == ",": Q.i += 1
+        P.i = e + 1
+        return cols
+    cols = columns(P)
+    err = "EMPTY"
+    while not P.done():
+        if P.at("PLAN"): P.i = _match_paren(t, P.i + 1) + 1 if P.i + 1 < b and t[P.i + 1].s == "(" else P.i + 2; continue
+        if P.at("ERROR", "ON", "ERROR"): err = "ERROR"; P.i += 3; continue
+        if P.at("EMPTY", "ON", "ERROR"): err = "EMPTY"; P.i += 3; continue
+        P.err(f"unexpected {t[P.i].s!r}")
+    spec = dict(path=P.opts["path"], names=P.names, cols=cols, error=err, np=len(P.passing))
+    return tokenize(f"__json_table({', '.join([ctx, _jstr(spec)] + P.passing + defaults)})"), c
+
+
 def _multiset_ops(t):
     """a MULTISET INTERSECT b binds tighter than MULTISET UNION / EXCEPT (ISO 6.48); each becomes __ms_<op>(a, b, mode)"""
     for ops in (("INTERSECT",), ("UNION", "EXCEPT")):
@@ -471,6 +725,24 @@ def iso_prepass(sql):
                     if _kw(t, i, *words):
                         t[i:i + len(words)] = [Tok("id", name)]; changed = True; break
                 if changed: break
+            # SQL/JSON functions
+            if u in ("JSON_VALUE", "JSON_QUERY", "JSON_EXISTS", "JSON_OBJECT", "JSON_ARRAY", "JSON_OBJECTAGG", "JSON_ARRAYAGG",
+                     "JSON_SERIALIZE", "JSON_SCALAR", "JSON_TABLE") and i + 1 < len(t) and t[i + 1].s == "(" and not t[i].done:
+                r = _json_table(t, i) if u == "JSON_TABLE" else _json_call(t, i)
+                if r is None: t[i].done = True
+                else:
+                    t[i:r[1] + 1] = r[0]; changed = True; break
+            if u == "JSON" and i + 1 < len(t) and t[i + 1].s == "(" and not (prev is not None and prev.s in (".", "AS")) and not t[i].done:
+                r = _json_call(t, i)
+                t[i:r[1] + 1] = r[0]; changed = True; break
+            # x IS [NOT] JSON [VALUE | ARRAY | OBJECT | SCALAR] [WITH | WITHOUT UNIQUE [KEYS]]
+            if u == "IS" and (_kw(t, i + 1, "JSON") or _kw(t, i + 1, "NOT", "JSON")):
+                neg = t[i + 1].up() == "NOT"; j = i + (3 if neg else 2); kind = "VALUE"; uniq = False
+                if j < len(t) and t[j].up() in ("VALUE", "ARRAY", "OBJECT", "SCALAR"): kind = t[j].up(); j += 1
+                if _kw(t, j, "WITH", "UNIQUE") or _kw(t, j, "WITHOUT", "UNIQUE"):
+                    uniq = t[j].up() == "WITH"; j += 2
+                    if _kw(t, j, "KEYS"): j += 1
+                t[i:j] = _marker(neg, "json", [f"'{kind}'", "TRUE" if uniq else "FALSE"]); changed = True; break
             # MULTISET [...] / MULTISET (<query>) / ARRAY (<query>)
             if u == "MULTISET" and i + 1 < len(t) and t[i + 1].s == "[":
                 d = 0
@@ -999,6 +1271,8 @@ class Binder:
             args = [cast_to(a, T.BIGINT) if a.t.integer or a.t.id == "NULL" else a for a in args]
             if any(not a.t.integer for a in args): raise SqlError(f"{name} of {', '.join(str(a.t) for a in args)} is not supported")
             names, types = [name], [T.BIGINT]
+        elif name == "__json_table":                 # JSON_TABLE (ISO 7.11)
+            return self.json_table(ft, args, alias, out)
         elif name == "unnest":                       # UNNEST(collection, ...) [WITH ORDINALITY] (ISO 7.6)
             if not args: raise SqlError("UNNEST needs a collection")
             for a in args:
@@ -1011,6 +1285,34 @@ class Binder:
         if len(names) != len(types): raise SqlError(f"{name}: {len(types)} column(s), {len(alias)} name(s) given")
         q = I.TableFn(name, args, names, types, ordinality)
         b = I.Binding(ft.get("alias") or name, [(nm, t, True) for nm, t in zip(names, types)], q=q)
+        out.append(b); return b
+
+    def json_table(self, ft, args, alias, out):
+        import sqljson
+        spec = json.loads(args[1].v)
+        np_ = spec["np"]; passing, defaults = args[2:2 + np_], args[2 + np_:]
+        spec["ptypes"] = [str(a.t) for a in passing]
+        names, types = [], []
+        def level(cols):
+            for c in cols:
+                if c["kind"] == "nested":
+                    sqljson.compile_path(c["path"]); level(c["cols"]); continue
+                c["pos"] = len(names); names.append(c["name"])
+                if c["kind"] == "ordinality": types.append(T.BIGINT); continue
+                t = T.type_from_name(c["type"]) if c.get("type") else (T.JSON if c["kind"] == "query" else T.VARCHAR)
+                if c["kind"] == "exists" and t.id not in ("BOOLEAN", "VARCHAR") and not t.integer: raise SqlError(f"EXISTS column {c['name']}: BOOLEAN, an integer or a string type")
+                types.append(t); c["rtype"] = str(t)
+                sqljson.compile_path(c["opts"]["path"])
+        sqljson.compile_path(spec["path"])
+        level(spec["cols"])
+        if len(set(n.lower() for n in names)) != len(names): raise SqlError("JSON_TABLE: column names must be distinct")
+        names = alias + names[len(alias):]
+        x = args[0]
+        if x.t.id not in ("VARCHAR", "JSON", "NULL", "BLOB") and not getattr(x, "strlit", False):
+            raise SqlError(f"JSON_TABLE needs JSON text, not {x.t}")
+        q = I.TableFn("json_table", [x] + passing + defaults, names, types)
+        q.spec = spec
+        b = I.Binding(ft.get("alias") or "json_table", [(nm, t, True) for nm, t in zip(names, types)], q=q)
         out.append(b); return b
 
     # ------------------------------------------------------------ SELECT
@@ -1267,6 +1569,54 @@ class Binder:
         if c == "STAR": raise SqlError("* is only allowed in the SELECT list or COUNT(*)")
         raise SqlError(f"expression {c} is not supported")
 
+    def sql_json(self, name, raw, sc, ctx):
+        """the SQL/JSON functions the pre-pass wrote as __json_*(...): typed calls whose clauses travel as a constant"""
+        import sqljson
+        if name == "__json_array_q":                              # JSON_ARRAY(<query>)
+            q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
+            cols = q_columns(q)
+            if len(cols) != 1: raise SqlError("JSON_ARRAY(<query>): the query must have one column")
+            o = json.loads(self.expr(raw[1]["expression"], sc, ctx).v); o["vtypes"] = [str(cols[0][1])]
+            sub = I.Subq("array", q, T.LIST(cols[0][1]), correlated=_correlated(q))
+            rt = T.type_from_name(o["returning"]) if o.get("returning") else T.JSON
+            return I.Func("__json_array_list", [sub, I.Lit(json.dumps(o), T.VARCHAR)], rt)
+        args = self.args_of({"arguments": raw}, sc, ctx)
+        lit = lambda o: I.Lit(json.dumps(o), T.VARCHAR)
+        def text_arg(x, what):
+            if x.t.id not in ("VARCHAR", "JSON", "NULL", "BLOB") and not getattr(x, "strlit", False):
+                raise SqlError(f"{what} needs JSON text, not {x.t}")
+            return x
+        if name in ("__json_value", "__json_query", "__json_exists"):
+            o = json.loads(args[1].v)
+            sqljson.compile_path(o["path"])                     # a syntax error in the path fails the query now
+            np_ = o.get("np", 0); passing, defaults = args[2:2 + np_], args[2 + np_:]
+            o["ptypes"] = [str(a.t) for a in passing]
+            what = name[2:].upper()
+            if name == "__json_value":
+                rt = T.type_from_name(o["returning"]) if o.get("returning") else T.VARCHAR
+                defaults = [cast_to(d, rt) for d in defaults]
+            elif name == "__json_query": rt = T.type_from_name(o["returning"]) if o.get("returning") else T.JSON
+            else: rt = T.BOOLEAN
+            return I.Func(name, [text_arg(args[0], what), lit(o)] + passing + defaults, rt)
+        if name in ("__json_object", "__json_array"):
+            o = json.loads(args[0].v); rest = args[1:]
+            if name == "__json_object":
+                keys = [cast_to(k, T.VARCHAR) if k.t.id != "VARCHAR" else k for k in rest[0::2]]
+                vals = rest[1::2]; rest = [x for kv in zip(keys, vals) for x in kv]
+            else: vals = rest
+            o["vtypes"] = [str(v.t) for v in vals]
+            rt = T.type_from_name(o["returning"]) if o.get("returning") else T.JSON
+            return I.Func(name, [lit(o)] + rest, rt)
+        if name == "__json_serialize":
+            o = json.loads(args[1].v)
+            rt = T.type_from_name(o["returning"]) if o.get("returning") else T.VARCHAR
+            if rt.id not in ("VARCHAR", "BLOB", "JSON"): raise SqlError(f"JSON_SERIALIZE RETURNING {rt}: a character or binary string type")
+            return I.Func(name, [text_arg(args[0], "JSON_SERIALIZE"), args[1]], rt)
+        if name in ("__json_parse", "__json_scalar"):
+            if name == "__json_parse": text_arg(args[0], "JSON")
+            return I.Func(name, args[:1] + [args[1] if len(args) > 1 else I.Lit(False, T.BOOLEAN)], T.JSON)
+        raise SqlError(f"internal: {name}")
+
     def iso_pred(self, name, left, args, sc, ctx):
         """the postfix predicates the pre-pass wrote as  x IS NOT DISTINCT FROM __iso_pred_<name>(...)"""
         arg = lambda k: args[k]["expression"] if "expression" in args[k] else args[k]
@@ -1289,6 +1639,11 @@ class Binder:
             return self.func("__ms_submultiset", [self.expr(left, sc, ctx), self.expr(arg(0), sc, ctx)])
         if name == "aset":
             return self.func("__ms_is_a_set", [self.expr(left, sc, ctx)])
+        if name == "json":
+            x = self.expr(left, sc, ctx)
+            if x.t.id not in ("VARCHAR", "JSON", "NULL", "BLOB") and not getattr(x, "strlit", False):
+                raise SqlError(f"IS JSON applies to character and binary strings, not {x.t}")
+            return self.func("__iso_is_json", [x, self.expr(arg(0), sc, ctx), self.expr(arg(1), sc, ctx)])
         raise SqlError(f"internal: unknown ISO predicate {name}")
 
     def type_of(self, te):
@@ -1345,6 +1700,12 @@ class Binder:
             return ctx.aliases[names[0].lower()]
         if len(names) == 1 and names[0].upper() in _NILADIC:                       # CURRENT_DATE, CURRENT_USER, ...
             return self.func(names[0].lower(), [])
+        for k in (2, 1):                              # j.a.b on a JSON column: the simplified accessor (ISO 2023, T860)
+            if len(names) > k:
+                try: base = self.column(names[:k], sc, ctx)
+                except SqlError: continue
+                if base.t.id == "JSON":
+                    return _json_accessor(base, "".join("." + json.dumps(n) for n in names[k:]))
         raise SqlError(f'Referenced column "{".".join(names)}" not found in FROM clause')
 
     def operator(self, e, sc, ctx):
@@ -1366,6 +1727,10 @@ class Binder:
         if t == "OPERATOR_NULLIF": return self.func("nullif", [self.expr(k, sc, ctx) for k in kids])
         if t == "ARRAY_EXTRACT":
             a, i = (self.expr(k, sc, ctx) for k in kids)
+            if a.t.id == "JSON":                         # j[i] on JSON (ISO 2023 simplified accessor)
+                if isinstance(i, I.Lit) and isinstance(i.v, int): return _json_accessor(a, f"[{i.v}]")
+                if isinstance(i, I.Lit) and isinstance(i.v, str): return _json_accessor(a, "." + json.dumps(i.v))
+                raise SqlError("a JSON subscript must be a constant")
             if a.t.id in ("LIST", "MULTISET"): return self.func("__iso_array_elem", [a, i])     # ISO: an index past the end is an error
             return self.func("list_extract", [a, i])
         if t == "ARRAY_CONSTRUCTOR": return self.func("list_value", [self.expr(k, sc, ctx) for k in kids])
@@ -1389,6 +1754,8 @@ class Binder:
         if name == "__iso_unique":
             q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
             return I.Subq("unique", q, T.BOOLEAN, correlated=_correlated(q))
+        if name.startswith("__json_") and name not in ("__json_objectagg", "__json_arrayagg"):
+            return self.sql_json(name, raw, sc, ctx)
         if name in ("__iso_array_q", "__iso_ms_q"):                    # ARRAY (<query>) / MULTISET (<query>)
             q = self.bind_query(raw[0]["expression"]["subquery"]["node"], sc)
             cols = q_columns(q)
@@ -1473,6 +1840,12 @@ class Binder:
             else: params = (",",)
         elif name == "__iso_listagg":
             params = tuple(_const(a, "LISTAGG") for a in args[1:]); args = args[:1]
+        elif name in ("__json_objectagg", "__json_arrayagg"):
+            nv = 2 if name == "__json_objectagg" else 1
+            o = json.loads(_const(args[nv], name)); vals = args[:nv]
+            if name == "__json_objectagg": vals[0] = cast_to(vals[0], T.VARCHAR)
+            o["vtypes"] = [str(vals[-1].t)]
+            params = (json.dumps(o),); args = vals
         elif name.startswith("__iso_h"):
             params = tuple(_const(a, name[7:]) for a in args)
             if len(params) != len(orders): raise SqlError("hypothetical set function: one argument per ORDER BY column")
@@ -1522,6 +1895,10 @@ class Binder:
             if aname in ("quantile_cont", "quantile_disc") and len(args) == 2: params = (_const(args[1], name),); args = args[:1]
             if aname == "string_agg":
                 params = (_const(args[1], "separator"),) if len(args) > 1 else (",",); args = [cast_to(args[0], T.VARCHAR)]
+            if aname in ("__json_objectagg", "__json_arrayagg"):
+                nv = 2 if aname == "__json_objectagg" else 1
+                o = json.loads(_const(args[nv], aname)); o["vtypes"] = [str(args[nv - 1].t)]
+                params = (json.dumps(o),); args = args[:nv]
             if aname == "count" and not args: aname = "count_star"
             rt = F.agg_typer(aname, [a.t for a in args], params) if aname != "count_star" else T.BIGINT
             return I.Win(aname, args, rt, part, order, frame, excl, ign, filt, False, bool(e.get("distinct")), params)
@@ -1567,6 +1944,18 @@ def _frame(e, bind):
     if a[0] in ("preceding", "following") and e.get("start_expr") is not None: a = (a[0], bind(e["start_expr"]))
     if b[0] in ("preceding", "following") and e.get("end_expr") is not None: b = (b[0], bind(e["end_expr"]))
     return (mode, a, b)
+
+
+def _json_accessor(base, steps):
+    """JSON_QUERY(base, 'lax $<steps>' WITH CONDITIONAL ARRAY WRAPPER NULL ON EMPTY NULL ON ERROR)"""
+    if isinstance(base, I.Func) and base.fn == "__json_query":          # j.a.b: one path
+        o = json.loads(base.args[1].v)
+        if o.get("accessor"):
+            o["path"] += steps
+            return I.Func("__json_query", [base.args[0], I.Lit(json.dumps(o), T.VARCHAR)], T.JSON)
+    o = dict(path="lax $" + steps, names=[], ptypes=[], np=0, empty=["NULL"], error=["NULL"], wrapper="CONDITIONAL", quotes="KEEP",
+             returning=None, accessor=True)
+    return I.Func("__json_query", [base, I.Lit(json.dumps(o), T.VARCHAR)], T.JSON)
 
 
 def _sample_spec(sm):

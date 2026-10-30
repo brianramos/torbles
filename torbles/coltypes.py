@@ -220,7 +220,7 @@ class DictCodec(Codec):
 
     def __init__(self, values, sql_type="VARCHAR"):
         self.values = list(values); self.sql_type = sql_type
-        self.numeric = sql_type not in ("VARCHAR", "BLOB")
+        self.numeric = sql_type not in ("VARCHAR", "BLOB", "JSON")
         self.floating = sql_type.upper() in self.FLOATS
         self._keys = self.values if not self.numeric or self.floating else [_frac(v) for v in self.values]
 

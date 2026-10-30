@@ -1574,6 +1574,95 @@ def _ms_eq(a, b):
     return _mkeys(a) == _mkeys(b)
 
 
+# ------------------------------------------------------------------ SQL/JSON (sqljson)
+_JOPTS = {}
+
+
+def jopts(text):
+    """the clauses of an SQL/JSON call (a JSON string made by the pre-pass and completed by the binder), compiled once"""
+    o = _JOPTS.get(text)
+    if o is None:
+        import json as _json, sqljson
+        o = _json.loads(text)
+        if o.get("path") is not None: o["cpath"] = sqljson.compile_path(o["path"])
+        o["rt"] = T.type_from_name(o["returning"]) if o.get("returning") else None
+        o["ptypes_t"] = [T.type_from_name(x) for x in o.get("ptypes", [])]
+        o["vtypes_t"] = [T.type_from_name(x) for x in o.get("vtypes", [])]
+        _JOPTS[text] = o
+    return o
+
+
+def _jv(ctx, opts, *rest):
+    import sqljson
+    if ctx is None: return None
+    o = jopts(opts); np_ = o.get("np", 0)
+    return sqljson.json_value(o, ctx, list(rest[:np_]), o["ptypes_t"], list(rest[np_:]), o["rt"] or T.VARCHAR)
+
+
+def _jq(ctx, opts, *rest):
+    import sqljson
+    if ctx is None: return None
+    o = jopts(opts)
+    return sqljson.json_query(o, ctx, list(rest), o["ptypes_t"])
+
+
+def _je(ctx, opts, *rest):
+    import sqljson
+    if ctx is None: return None
+    o = jopts(opts)
+    return sqljson.json_exists(o, ctx, list(rest), o["ptypes_t"])
+
+
+def _jobj(opts, *kv):
+    import sqljson
+    o = jopts(opts)
+    return sqljson.json_object(kv[0::2], kv[1::2], o["vtypes_t"], o["fmts"], o.get("absent", False), o.get("unique", False))
+
+
+def _jarr(opts, *vals):
+    import sqljson
+    o = jopts(opts)
+    return sqljson.json_array(vals, o["vtypes_t"], o["fmts"], o.get("null_on_null", False))
+
+
+def _jarr_list(vals, opts):
+    import sqljson
+    if vals is None: return None
+    o = jopts(opts)
+    return sqljson.json_array(vals, o["vtypes_t"] * len(vals), [False] * len(vals), False)
+
+
+def _jparse(x, unique=False):
+    import sqljson
+    if isinstance(x, (bytes, bytearray)): x = x.decode("utf-8")
+    try: return sqljson.dumps(sqljson.parse(x, bool(unique)))
+    except sqljson.JErr as e: return Err(f"JSON: {e}")
+
+
+def _jscalar(x, unique=False):
+    import sqljson
+    try: return sqljson.json_scalar(x, None)
+    except SqlError as e: return Err(str(e))
+
+
+def _jserialize(x, opts):
+    o = jopts(opts)
+    rt = o["rt"] or T.VARCHAR
+    return x.encode("utf-8") if rt.id == "BLOB" else x
+
+
+for _n, _f in (("__json_value", _jv), ("__json_query", _jq), ("__json_exists", _je), ("__json_object", _jobj),
+               ("__json_array", _jarr), ("__json_array_list", _jarr_list), ("__json_parse json", _jparse),
+               ("__json_scalar", _jscalar), ("__json_serialize", _jserialize)):
+    scalar(_n, lambda a: (T.JSON, None), nulls="custom")(_f)
+
+
+@scalar("__iso_is_json", fixed(T.BOOLEAN))
+def _is_json(x, kind, unique):
+    import sqljson
+    return sqljson.is_json(x, kind, bool(unique))
+
+
 # ================================================================== aggregates
 class AggDef:
     """an aggregate function. typer(arg types, params) -> result type. final(rows, params) computes it from the
@@ -2000,6 +2089,35 @@ def _intersection(rows, p=()):
     for (v,), w in rows:
         for _ in range(w): acc = list(v) if acc is None else _ms_op("INTERSECT")(acc, v)
     return acc
+
+
+def _jagg_t(ts, p=()):
+    o = jopts(p[0]) if p else {}
+    return o.get("rt") or T.JSON
+
+
+@agg("__json_objectagg", _jagg_t, skip_nulls=False, nargs=2)
+def _json_objectagg(rows, p=()):
+    """JSON_OBJECTAGG(k VALUE v): NULL ON NULL by default; an empty group gives NULL"""
+    import sqljson
+    if not rows: return None
+    o = jopts(p[0])
+    keys, vals = [], []
+    for (k, v), w in rows:
+        for _ in range(w): keys.append(k); vals.append(v)
+    return sqljson.json_object(keys, vals, o["vtypes_t"] * len(vals), [o["fmts"][0] if o.get("fmts") else False] * len(vals),
+                               o.get("absent", False), o.get("unique", False))
+
+
+@agg("__json_arrayagg", _jagg_t, skip_nulls=False, ordered=True)
+def _json_arrayagg(rows, p=()):
+    """JSON_ARRAYAGG(v [ORDER BY ...]): ABSENT ON NULL by default; an empty group gives NULL"""
+    import sqljson
+    if not rows: return None
+    o = jopts(p[0])
+    vals = [v for (v,), w in rows for _ in range(w)]
+    return sqljson.json_array(vals, o["vtypes_t"] * len(vals), [o["fmts"][0] if o.get("fmts") else False] * len(vals),
+                              o.get("null_on_null", False))
 
 
 @agg("array_agg list", lambda ts, p=(): T.LIST(ts[0]), skip_nulls=False, ordered=True)

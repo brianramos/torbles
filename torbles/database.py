@@ -318,7 +318,7 @@ class Database:
         fv = fill.get(f"{name}.{c}", fill.get(c))
         if fv is not None:
             lit = _fill_literal(typ, fv); col = f"coalesce({col}, {lit})"
-        if base in ("str", "float", "blob"):
+        if base in ("str", "float", "blob", "json"):
             if base == "float":
                 nan = self.con.execute(f"SELECT count(*) FROM {self._t(name)} WHERE isnan({_q(c)}) OR isinf({_q(c)})").fetchone()[0]
                 if nan: return None, None, f"{nan} NaN / infinite value(s)"
@@ -328,7 +328,7 @@ class Database:
             codes = self.con.execute(f"SELECT CAST(CASE WHEN {col} IS NULL THEN 0 ELSE dense_rank() OVER (ORDER BY {col} NULLS LAST) - 1 END AS UINTEGER) AS c FROM {self._t(name)}"
                                      + (order_by if order_by else " ORDER BY rowid")).fetchnumpy()["c"]
             if base == "blob": vals = [bytes(v) for v in vals]
-            return np.asarray(codes), ct.DictCodec(vals, {"str": "VARCHAR", "blob": "BLOB"}.get(base, "DOUBLE")), None
+            return np.asarray(codes), ct.DictCodec(vals, {"str": "VARCHAR", "blob": "BLOB", "json": "JSON"}.get(base, "DOUBLE")), None
         raw = _raw(c, typ) if fv is None else _raw_expr(col, typ)
         lo, hi = st["min"].get(c), st["max"].get(c)
         if fv is not None:
@@ -486,6 +486,7 @@ def _base_type(t):
     if u == "BOOLEAN": return "bool"
     if u in ("VARCHAR", "TEXT", "STRING") or u.startswith("VARCHAR"): return "str"
     if u in ("BLOB", "BYTEA", "VARBINARY", "BINARY"): return "blob"
+    if u == "JSON": return "json"
     if u in _FLOAT_TYPES: return "float"
     return "other"
 
@@ -548,7 +549,7 @@ def _int_values(vals, typ):
 
 def _fill_literal(typ, v):
     b = _base_type(typ)
-    if b == "str": return "'" + str(v).replace("'", "''") + "'"
+    if b in ("str", "json"): return "'" + str(v).replace("'", "''") + "'"
     if b == "blob": return f"X'{bytes(v).hex()}'" if isinstance(v, (bytes, bytearray)) else "'" + str(v).replace("'", "''") + "'::BLOB"
     if b == "date": return f"DATE '{v}'"
     if b == "ts": return f"TIMESTAMP '{v}'"

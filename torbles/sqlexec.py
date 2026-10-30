@@ -259,6 +259,30 @@ def run_tablefn(q, cx):
         v = ev(a, one, cx)[0]
         if isinstance(v, Err): raise SqlError(v.msg)
         vals.append(v)
+    if q.name == "json_table":
+        import sqljson
+        sp = q.spec
+        if "cpath" not in sp:                         # compile the paths and the column options once
+            def prep(cols):
+                for c in cols:
+                    if c["kind"] == "nested": c["cpath"] = sqljson.compile_path(c["path"]); prep(c["cols"]); continue
+                    if c["kind"] == "ordinality": continue
+                    c["opts"]["cpath"] = sqljson.compile_path(c["opts"]["path"]); c["rt"] = T.type_from_name(c["rtype"])
+            sp["cpath"] = sqljson.compile_path(sp["path"]); prep(sp["cols"])
+        if vals[0] is None: return Relation(q.names, q.types, [])
+        np_ = sp["np"]
+        sp["defaults"] = vals[1 + np_:]
+        rows = sqljson.json_table_rows(sp, vals[0], vals[1:1 + np_], [T.type_from_name(x) for x in sp["ptypes"]])
+        out = []
+        for r in rows:
+            row = []
+            for i, t in enumerate(q.types):
+                v = r.get(i)
+                if v is not None and t.id in ("VARCHAR",) and not isinstance(v, str): v = T.to_text(v, None)
+                if isinstance(v, bool) and t.integer: v = int(v)
+                row.append(v)
+            out.append(tuple(row))
+        return Relation(q.names, q.types, out)
     if q.name == "unnest":
         cols = [v if v is not None else [] for v in vals]
         n = max((len(c) for c in cols), default=0)

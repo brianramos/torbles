@@ -233,5 +233,57 @@ for q in ["SELECT * FROM unnest([10, 20]) WITH ORDINALITY AS u(x, n)",
     vs_duckdb(q)
 expect("SELECT * FROM UNNEST(ARRAY[1, 2, 3], ARRAY['a']) AS u(x, y)", [(1, "a"), (2, None), (3, None)], "UNNEST of several collections (ISO: padded)")
 
+print("== SQL/JSON")
+J = '{"a": 1, "b": [1, 2, {"c": "x"}], "d": {"e": null, "f": 2.5}, "s": "str", "t": "2020-03-04"}'
+jq = lambda q: q.replace("$J", "'" + J + "'")
+expect(jq("SELECT JSON_VALUE($J, '$.a'), JSON_VALUE($J, '$.a' RETURNING INTEGER), JSON_VALUE($J, '$.d.f' RETURNING DECIMAL(5,2)), "
+          "JSON_VALUE($J, 'lax $.b.c'), JSON_VALUE($J, '$.zz' DEFAULT 'none' ON EMPTY), JSON_VALUE($J, '$.b'), "
+          "JSON_VALUE($J, 'strict $.zz' DEFAULT -1 ON ERROR), JSON_VALUE($J, '$.d.e'), JSON_VALUE($J, '$.t' RETURNING DATE)"),
+       [("1", 1, Decimal("2.50"), "x", "none", None, "-1", None, dt.date(2020, 3, 4))], "JSON_VALUE: RETURNING, ON EMPTY, ON ERROR, lax unwrapping")
+refuses(jq("SELECT JSON_VALUE($J, '$.b' ERROR ON ERROR)"), ["not a scalar"])
+refuses(jq("SELECT JSON_EXISTS($J, 'strict $.b[9]' ERROR ON ERROR)"), ["strict"])
+refuses("SELECT JSON_VALUE('{}', '$.a ? (')", ["path"], "a path syntax error fails when the query is bound")
+expect(jq("SELECT JSON_QUERY($J, '$.b'), JSON_QUERY($J, '$.b[*]' WITH WRAPPER), JSON_QUERY($J, '$.b[0 to 1]' WITH CONDITIONAL WRAPPER), "
+          "JSON_QUERY($J, '$.a' WITH CONDITIONAL WRAPPER), JSON_QUERY($J, '$.a' WITH UNCONDITIONAL ARRAY WRAPPER), JSON_QUERY($J, '$.s' OMIT QUOTES), "
+          "JSON_QUERY($J, '$.zz' EMPTY ARRAY ON EMPTY), JSON_QUERY($J, '$.zz' EMPTY OBJECT ON EMPTY), JSON_QUERY($J, '$.b[*]' NULL ON ERROR)"),
+       [('[1,2,{"c":"x"}]', '[1,2,{"c":"x"}]', "[1,2]", "1", "[1]", "str", "[]", "{}", None)], "JSON_QUERY: wrappers, quotes, ON EMPTY")
+expect(jq("SELECT JSON_EXISTS($J, '$.b[1]'), JSON_EXISTS($J, '$.b[9]'), JSON_EXISTS($J, 'strict $.b[9]'), JSON_EXISTS($J, 'strict $.b[9]' UNKNOWN ON ERROR), "
+          "JSON_EXISTS($J, '$.b[*] ? (@ > 1)'), JSON_EXISTS($J, '$ ? (exists (@.d.e))'), JSON_EXISTS(CAST(NULL AS VARCHAR), '$')"),
+       [(True, False, False, None, True, True, None)])
+expect(jq("SELECT JSON_QUERY($J, '$.b[*] ? (@.type() == \"number\" && @ >= 1)' WITH WRAPPER), JSON_VALUE($J, '$.b.size()'), JSON_VALUE($J, '$.d.f.ceiling()'), "
+          "JSON_QUERY($J, '$.d.keyvalue().name' WITH WRAPPER), JSON_VALUE($J, '$.a + $x * 2' PASSING 10 AS x RETURNING INTEGER), "
+          "JSON_EXISTS($J, '$.s ? (@ starts with \"st\")'), JSON_EXISTS($J, '$.s ? (@ like_regex \"^S\" flag \"i\")'), "
+          "JSON_VALUE($J, '$.t.datetime().type()'), JSON_VALUE($J, '$.t.datetime(\"YYYY-MM-DD\") ? (@ > \"2020-01-01\".datetime())' RETURNING DATE), "
+          "JSON_QUERY($J, '$.b[last]'), JSON_QUERY($J, '$.b[last - 1 to last]' WITH WRAPPER), JSON_QUERY($J, '$.* ? (@.type() == \"string\")' WITH WRAPPER), "
+          "JSON_QUERY($J, '$.b[*] ? (@ == \"1\")' WITH WRAPPER), JSON_QUERY($J, '$.b[*] ? ((@ == \"1\") is unknown)' WITH WRAPPER)"),
+       [("[1,2]", "3", "3", '["e","f"]', 21, True, True, "date", dt.date(2020, 3, 4), '{"c":"x"}', '[2,{"c":"x"}]', '["str","2020-03-04"]', None, '[1,2,{"c":"x"}]')],
+       "the SQL/JSON path language: filters, methods, variables, last, comparisons that are unknown")
+expect("SELECT JSON_OBJECT('a' VALUE 1, 'b' : 'x', KEY 'c' VALUE NULL), JSON_OBJECT('a' VALUE NULL ABSENT ON NULL), JSON_OBJECT('j' VALUE '[1,2]' FORMAT JSON), "
+       "JSON_ARRAY(1, 'a', NULL, TRUE), JSON_ARRAY(1, NULL NULL ON NULL), JSON_ARRAY(SELECT gid FROM g WHERE gid < 3 ORDER BY gid), "
+       "JSON_OBJECT('d' VALUE DATE '2020-01-02', 'n' VALUE 1.50, 'o' VALUE JSON_OBJECT('x' VALUE 1))",
+       [('{"a":1,"b":"x","c":null}', "{}", '{"j":[1,2]}', '[1,"a",true]', "[1,null]", "[0,1,2]", '{"d":"2020-01-02","n":1.50,"o":{"x":1}}')])
+refuses("SELECT JSON_OBJECT('a' VALUE 1, 'a' VALUE 2 WITH UNIQUE KEYS)", ["duplicate"])
+expect("SELECT JSON_OBJECTAGG(KEY CAST(gid AS VARCHAR) VALUE gname), JSON_ARRAYAGG(gid ORDER BY gid DESC), JSON_ARRAYAGG(CASE WHEN gid < 2 THEN gid END ORDER BY gid NULL ON NULL) FROM g WHERE gid < 3",
+       [('{"0":"g0","1":"G1","2":"G2"}', "[2,1,0]", "[0,1,null]")])
+expect("SELECT '{\"a\":1}' IS JSON, '[1' IS JSON, '[1]' IS JSON OBJECT, '{\"a\":1,\"a\":2}' IS JSON WITH UNIQUE KEYS, '{\"a\":1,\"a\":2}' IS JSON, "
+       "'1' IS JSON SCALAR, 'x' IS NOT JSON, CAST(NULL AS VARCHAR) IS JSON",
+       [(True, False, False, False, True, True, True, None)])
+expect("SELECT JSON('{\"a\" : 1}'), JSON_SCALAR(1.5), JSON_SCALAR('x'), JSON_SCALAR(DATE '2020-01-02'), JSON_SERIALIZE(JSON('[1, 2]')), typeof(JSON('1')), "
+       "JSON('[1]') IS JSON ARRAY", [('{"a":1}', "1.5", '"x"', '"2020-01-02"', "[1,2]", "JSON", True)])
+refuses("SELECT JSON('{\"a\":1,\"a\":2}' WITH UNIQUE KEYS)", ["duplicate"])
+expect(jq("SELECT * FROM JSON_TABLE($J, '$.b[*]' COLUMNS (n FOR ORDINALITY, v INTEGER PATH '$', c VARCHAR PATH '$.c', x BOOLEAN EXISTS PATH '$.c', "
+          "j JSON FORMAT JSON PATH '$', w VARCHAR PATH '$.c' DEFAULT 'none' ON EMPTY))"),
+       [(1, 1, None, False, "1", "none"), (2, 2, None, False, "2", "none"), (3, None, "x", True, '{"c":"x"}', "x")], "JSON_TABLE columns")
+expect("SELECT jt.* FROM JSON_TABLE('[{\"a\":1,\"xs\":[10,20],\"ys\":[\"p\"]},{\"a\":2,\"xs\":[]}]', '$[*]' COLUMNS (a INTEGER PATH '$.a', "
+       "NESTED PATH '$.xs[*]' COLUMNS (x INTEGER PATH '$'), NESTED PATH '$.ys[*]' COLUMNS (y VARCHAR PATH '$'))) AS jt",
+       [(1, 10, None), (1, 20, None), (1, None, "p"), (2, None, None)], "NESTED PATH: outer join to the parent, union of siblings")
+expect("SELECT g.gid, jt.v FROM g, JSON_TABLE(JSON_ARRAY(g.gid, g.gid * 10), '$[*]' COLUMNS (v INTEGER PATH '$')) jt WHERE g.gid < 3 ORDER BY 1, 2",
+       [(0, 0), (0, 0), (1, 1), (1, 10), (2, 2), (2, 20)], "JSON_TABLE reading an earlier FROM item (lateral)")
+docs = pd.DataFrame(dict(id=range(5), doc=['{"name":"a","tags":["x","y"],"n":1,"o":{"p":10}}', '{"name":"b","tags":[],"n":2.5}', '{"name":"c","n":"3"}', None, "[1,2]"]))
+dbj = torbles.from_ddl("CREATE TABLE d (id INTEGER, doc JSON)", {"d": docs})
+r = dbj.sql("SELECT id, doc.name, doc.tags, doc.o.p, doc.tags[0], doc[1], JSON_VALUE(doc, '$.n' RETURNING DOUBLE), typeof(doc) FROM d ORDER BY id").rows
+check(r == [(0, '"a"', '["x","y"]', "10", '"x"', None, 1.0, "JSON"), (1, '"b"', "[]", None, None, None, 2.5, "JSON"), (2, '"c"', None, None, None, None, 3.0, "JSON"),
+            (3, None, None, None, None, None, None, "JSON"), (4, None, None, None, None, "2", None, "JSON")], "a stored JSON column; the simplified accessor j.a.b, j[i]", str(r))
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

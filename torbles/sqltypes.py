@@ -66,6 +66,7 @@ BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, HUGEINT = (SqlType(x) for x in ("BO
 UTINYINT, USMALLINT, UINTEGER, UBIGINT, UHUGEINT = (SqlType(x) for x in ("UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT"))
 FLOAT, DOUBLE, VARCHAR, DATE, TIME, TIMESTAMP, INTERVAL, NULL, BLOB = (SqlType(x) for x in ("FLOAT", "DOUBLE", "VARCHAR", "DATE", "TIME", "TIMESTAMP", "INTERVAL", "NULL", "BLOB"))
 TIMESTAMPTZ, TIMETZ = SqlType("TIMESTAMPTZ"), SqlType("TIMETZ")
+JSON = SqlType("JSON")
 def DECIMAL(p=18, s=3): return SqlType("DECIMAL", min(int(p), 38), int(s))
 def LIST(t, maxcard=None): return SqlType("LIST", p=maxcard, child=t)
 def MULTISET(t): return SqlType("MULTISET", child=t)
@@ -86,13 +87,15 @@ _NAMES = {"BOOL": "BOOLEAN", "BOOLEAN": "BOOLEAN", "LOGICAL": "BOOLEAN", "TINYIN
           "CHARACTER LARGE OBJECT": "VARCHAR", "CHAR LARGE OBJECT": "VARCHAR", "NATIONAL CHARACTER": "VARCHAR",
           "NATIONAL CHAR": "VARCHAR", "NATIONAL CHARACTER VARYING": "VARCHAR", "NATIONAL CHAR VARYING": "VARCHAR",
           "NCHAR VARYING": "VARCHAR", "NATIONAL CHARACTER LARGE OBJECT": "VARCHAR", "NCHAR LARGE OBJECT": "VARCHAR",
-          "CHAR VARYING": "VARCHAR"}
+          "CHAR VARYING": "VARCHAR", "JSON": "JSON"}
 
 
 def type_from_name(name, args=()):
     """a type from its SQL name and parameters: DECIMAL(10, 2), NUMERIC, VARCHAR(20), DOUBLE PRECISION, ..."""
     u = re.sub(r"\s+", " ", str(name).strip().upper())
+    u = re.sub(r"\s+COLLATE\s+\S+$", "", u)
     if u.endswith("[]"): return LIST(type_from_name(u[:-2]))
+    if u.endswith(" MULTISET"): return MULTISET(type_from_name(u[:-9]))
     m = re.fullmatch(r"(DECIMAL|NUMERIC|DEC)\s*(?:\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\))?", u)
     if m or u in ("DECIMAL", "NUMERIC", "DEC"):
         a = [int(x) for x in args] if args else [int(x) for x in (m.group(2), m.group(3)) if x is not None] if m else []
@@ -240,6 +243,7 @@ def supertype(a, b, literal_a=False, literal_b=False):
     if {a.id, b.id} in ({"DATE", "TIMESTAMPTZ"}, {"TIMESTAMP", "TIMESTAMPTZ"}): return TIMESTAMPTZ
     if {a.id, b.id} == {"TIME", "TIMETZ"}: return TIMETZ
     if a.id == "VARCHAR" or b.id == "VARCHAR": return VARCHAR
+    if {a.id, b.id} == {"JSON", "VARCHAR"}: return VARCHAR
     if a.id == "LIST" and b.id == "LIST": return LIST(supertype(a.child, b.child))
     if a.id == "MULTISET" and b.id == "MULTISET": return MULTISET(supertype(a.child, b.child))
     if a.id == "BOOLEAN" and b.numeric: return b
@@ -612,6 +616,15 @@ def _cast(v, src, dst, err):
         if isinstance(v, Interval): return v
         if isinstance(v, str): return parse_interval(v)
         raise SqlError(f"Conversion Error: cannot cast {src} to INTERVAL")
+    if d == "JSON":
+        if src is not None and src.id == "JSON": return v
+        import sqljson
+        if isinstance(v, str):
+            try: sqljson.parse(v)
+            except sqljson.JErr as e: raise SqlError(f"Conversion Error: {e}")
+            return v
+        try: return sqljson.dumps(sqljson.from_sql(v, src))
+        except sqljson.JErr as e: raise SqlError(f"Conversion Error: {e}")
     if d == "BLOB":
         if isinstance(v, (bytes, bytearray)): return bytes(v)
         if isinstance(v, str): return parse_blob(v)
