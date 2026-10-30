@@ -86,7 +86,9 @@ without aggregates).
 
 **Other blocks** (outer and cross joins between arbitrary items, derived tables, CTEs, VALUES, table functions) give each
 FROM item as a multiset: a stored table is an engine GROUP BY of the columns the block needs, with counts; a derived
-table is its query's rows. The items are joined by hash joins on their distinct tuples, carrying the counts. A LATERAL
+table is its query's rows. The items are joined on their distinct tuples, carrying the counts: the join keys of both
+sides become codes, and the matching pairs come from one sort and two searches (an equi-join) or the product (other
+joins), so no row is matched in a loop; DISTINCT, UNION, INTERSECT and EXCEPT [ALL] work on the same row codes. A LATERAL
 item (or `UNNEST(t.a)`, `JSON_TABLE(t.doc, ...)`) runs once per distinct tuple of the earlier columns it reads.
 
 **Subqueries.** An uncorrelated subquery runs once: a scalar one becomes a constant, `IN` / `ANY` / `ALL` a constant

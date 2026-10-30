@@ -52,7 +52,9 @@ arithmetic on positions, COUNT / SUM / AVG and the statistics are differences of
 built one level at a time. On 200,000 rows the window step of a ranking or running-sum query went from seconds to tenths
 of a second (17 s to 0.7 s for the two benchmark windows), and statistics of DOUBLE columns per group from 6.1 s to
 1.2 s; ORDER BY sorts by the same codes, arithmetic, comparisons and logic on integer and double columns run on
-whole columns, and a block without aggregates reads its rows from the planes instead of grouping them first. `tests/check_arrays.py` checks every answer against the row-by-row definitions
+whole columns, joins of other blocks, DISTINCT and the set operations match row codes by sorting, and a block without
+aggregates reads its rows from the planes instead of grouping them first. `a IS NOT DISTINCT FROM b` in a join's ON
+clause now matches NULL with NULL. `tests/check_arrays.py` checks every answer against the row-by-row definitions
 (value for value) and against DuckDB. DOUBLE columns with NaN or infinities now load (they were left out with a note),
 compared and grouped as DuckDB does.
 

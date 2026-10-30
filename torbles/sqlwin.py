@@ -121,12 +121,44 @@ def order_codes(vals, desc=False, nulls_first=False):
 def group_codes(vals):
     """codes under which values that are not distinct (nkey) are equal"""
     tys = set(map(type, vals))
+    if tys <= {int, _NONE} and int in tys and len(vals) > 64:  # integers: numpy's unique, NULL apart
+        nn = [v for v in vals if v is not None] if _NONE in tys else vals
+        if max(nn) < 1 << 63 and min(nn) >= -(1 << 63):
+            a = np.array([0 if v is None else v for v in vals] if _NONE in tys else vals, np.int64)
+            c = np.unique(a, return_inverse=True)[1].reshape(-1).astype(np.int64)
+            if _NONE in tys: c = np.where(np.fromiter((v is None for v in vals), bool, len(vals)), c.max() + 1, c)
+            return c
     d = {}
     if tys <= {int, bool, str, bytes, _dt.date, _NONE}:
         return np.array([d.setdefault(v, len(d)) for v in vals], np.int64)
     import sqlexec
     nk = sqlexec.nkey
     return np.array([d.setdefault(nk(v), len(d)) for v in vals], np.int64)
+
+
+def row_codes(cols, n):
+    """codes of the rows of several columns, equal for rows that are not distinct (every column by nkey)"""
+    if not cols: return np.zeros(n, np.int64)
+    return _combine([group_codes(c) for c in cols])
+
+
+def first_rows(codes):
+    """the positions of each code's first row, in row order"""
+    if not len(codes): return np.zeros(0, np.int64)
+    _, first = np.unique(codes, return_index=True)
+    return np.sort(first)
+
+
+def occurrence(codes):
+    """for each row, how many earlier rows have its code"""
+    n = len(codes)
+    if not n: return np.zeros(0, np.int64)
+    o = np.argsort(codes, kind="stable")
+    c = codes[o]
+    start = np.ones(n, bool); start[1:] = c[1:] != c[:-1]
+    run0 = np.maximum.accumulate(np.where(start, np.arange(n), 0))
+    out = np.empty(n, np.int64); out[o] = np.arange(n) - run0
+    return out
 
 
 def _combine(cols):

@@ -1,7 +1,8 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""Window functions and GROUP BY as array algebra (sqlwin) against the row-by-row definitions and against DuckDB.
+"""Window functions, GROUP BY, scalar operators, joins and set operations as array algebra (sqlwin) against the
+row-by-row definitions and against DuckDB.
 
 Random window queries (every window function, PARTITION BY on zero to two columns, ORDER BY with directions and NULL
 placement, ROWS / RANGE / GROUPS frames with offsets, EXCLUDE, FILTER, IGNORE NULLS, FROM LAST) and random GROUP BY
@@ -245,7 +246,36 @@ for qi in range(NQ // 2):
     sql = f"SELECT p, count(*), sum({sexpr(1)}) FROM w WHERE {spred()} GROUP BY p"
     compare(qi, sql, True, "VEC_SCALARS")
 
-print(f"{NQ} window queries, {NQ} GROUP BY queries and {NQ} scalar expressions: arrays = rows on all{'' if not fails else ' but ' + str(fails)}, "
+print("== joins, set operations, DISTINCT (against DuckDB)")
+JK = ["p", "o", "q", "s", "dd", "b"]
+for qi in range(NQ // 2):
+    k = r.random()
+    if k < 0.5:
+        c1, c2 = r.choice(JK), r.choice(JK)
+        if (c1 in ("q", "s")) != (c2 in ("q", "s")) or (c1 == "dd") != (c2 == "dd") or (c1 == "b") != (c2 == "b"): c2 = c1
+        kind = r.choice(["JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL JOIN"])
+        cond = f"a.{c1} {r.choice(['=', '=', 'IS NOT DISTINCT FROM'])} b.{c2}"
+        if r.random() < 0.3: cond += f" AND a.id {r.choice(['<', '>', '<>'])} b.id"
+        lhs = r.choice(["w", "(SELECT * FROM w WHERE id % 3 = 0)", "(SELECT p, q, o, s, dd, b, id, x FROM w WHERE x > 0)"])
+        sql = f"SELECT a.id, b.id, a.{c1}, b.x FROM {lhs} a {kind} w b ON {cond}"
+        if r.random() < 0.4:
+            sql = f"SELECT a.{c1}, count(*), count(b.id), sum(b.x) FROM {lhs} a {kind} w b ON {cond} GROUP BY a.{c1}"
+    elif k < 0.85:
+        c = r.sample(JK, r.choice([1, 2]))
+        op = r.choice(["UNION", "UNION ALL", "INTERSECT", "INTERSECT ALL", "EXCEPT", "EXCEPT ALL"])
+        w1 = r.choice(["", " WHERE x > 1", " WHERE id % 2 = 0"]); w2 = r.choice(["", " WHERE o < 5", " WHERE id % 3 = 0"])
+        sql = f"SELECT {', '.join(c)} FROM w{w1} {op} SELECT {', '.join(c)} FROM w{w2}"
+    else:
+        c = r.sample(JK + ["o % 3", "x % 5"], r.choice([1, 2, 3]))
+        sql = f"SELECT DISTINCT {', '.join(c)} FROM w" + r.choice(["", " WHERE b", " WHERE x IS NULL"])
+    a, ea = run(sql, True, "VEC_SCALARS")
+    try: want = con.execute(sql).fetchall()
+    except Exception as x: duck_skip += 1; continue
+    if ea is not None or not sqlfuzz.same(a, want, False, 1e-9):
+        fails += 1; print(f"FAIL {qi} (vs DuckDB): {sql}\n   torbles {ea or (len(a), sorted(a, key=str)[:3])}\n   duckdb  {len(want), sorted(want, key=str)[:3]}")
+    else: duck_ok += 1
+
+print(f"{NQ} window, {NQ} GROUP BY, {NQ} scalar and {NQ // 2} join / set operation queries: arrays = rows on all{'' if not fails else ' but ' + str(fails)}, "
       f"{same_err} raised in both, {row_only} failed only row by row, {duck_ok} also equal to DuckDB, {duck_skip} DuckDB rejected")
 for k, v in sorted(errs.items(), key=lambda x: -x[1]): print(f"  {v:4d}  {k}")
 print("ALL MATCH" if not fails else f"{fails} FAILURE(S)")

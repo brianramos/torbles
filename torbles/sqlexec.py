@@ -160,7 +160,7 @@ def ev(e, rel, cx):
 VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
 ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
 _NoneT = type(None)
-_VEC_FNS = {"+", "-", "*", "/", "neg", "=", "<>", "<", "<=", ">", ">=", "and", "or", "not", "is_null", "is_not_null"}
+_VEC_FNS = {"+", "-", "*", "/", "%", "mod", "//", "divide", "neg", "=", "<>", "<", "<=", ">", ">=", "and", "or", "not", "is_null", "is_not_null"}
 _CMPF = {"=": np.equal, "<>": np.not_equal, "<": np.less, "<=": np.less_equal, ">": np.greater, ">=": np.greater_equal}
 
 
@@ -219,6 +219,14 @@ def _vec_func(fn, argv, n):
     if fn in _CMPF:
         if kinds == {"int", "float"} and max(c[3] for c in cols if c[0] == "int") >= 1 << 53: return None
         return _out(_CMPF[fn](a, b), nul)
+    if fn in ("%", "mod", "//", "divide"):            # integers, no zero divisor: truncating division, as SQL's
+        if kinds != {"int"}: return None
+        live = b if nul is None else b[~nul]
+        if (live == 0).any(): return None
+        bb = np.where(b == 0, 1, b)
+        if fn in ("%", "mod"): return _out(np.fmod(a, bb), nul)
+        q = np.abs(a) // np.abs(bb)
+        return _out(np.where((a >= 0) == (bb >= 0), q, -q), nul)
     if fn == "/":
         with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
             return _out(a.astype(np.float64) / b.astype(np.float64), nul)
@@ -466,37 +474,36 @@ def run_setop(q, cx):
     a, b = run_query(q.left, cx), run_query(q.right, cx)
     types = [t for _, t in q.items]
     def conv(rel):
+        cols = list(zip(*rel.rows)) if rel.rows else [()] * len(types)
         out = []
-        for r in rel.rows:
-            out.append(tuple(v if t0 == t1 or v is None or isinstance(v, Err) else T.cast_value(v, t0, t1) for v, t0, t1 in zip(r, rel.types, types)))
-        return out
+        for col, t0, t1 in zip(cols, rel.types, types):
+            if t0 == t1: out.append(col); continue
+            out.append([v if v is None or isinstance(v, Err) else T.cast_value(v, t0, t1) for v in col])
+        return list(zip(*out)) if out and rel.rows else [()] * len(rel.rows)
     ra, rb = conv(a), conv(b)
     op = q.op
     kf = [T.coll_key(t) for t in types]
     if any(kf):                                       # collated columns: rows equal when their keys are
         return _setop_collated(q, ra, rb, kf, names_types=(q.items, types), cx=cx)
+    import sqlwin
+    if op not in ("union", "intersect", "except"): raise SqlError(f"set operation {op} is not supported")
+    rows = ra + rb
+    na = len(ra)
+    codes = sqlwin.row_codes([list(c) for c in zip(*rows)] if rows and types else [], len(rows))
     if op == "union":
-        rows = ra + rb
-        if not q.all: rows = _distinct(rows)
+        if not q.all: rows = [rows[i] for i in sqlwin.first_rows(codes).tolist()]
     else:
-        cb = {}
-        for r in rb:
-            k = tuple(nkey(v) for v in r); cb[k] = cb.get(k, 0) + 1
-        rows = []
-        if op == "intersect":
-            if q.all:
-                for r in ra:
-                    k = tuple(nkey(v) for v in r)
-                    if cb.get(k, 0) > 0: cb[k] -= 1; rows.append(r)
-            else: rows = [r for r in _distinct(ra) if tuple(nkey(v) for v in r) in cb]
-        elif op == "except":
-            if q.all:
-                for r in ra:
-                    k = tuple(nkey(v) for v in r)
-                    if cb.get(k, 0) > 0: cb[k] -= 1
-                    else: rows.append(r)
-            else: rows = [r for r in _distinct(ra) if tuple(nkey(v) for v in r) not in cb]
-        else: raise SqlError(f"set operation {op} is not supported")
+        ca, cb = codes[:na], codes[na:]
+        if q.all:                                     # the k-th copy of a row of A meets the k-th copy in B
+            nb = np.bincount(cb, minlength=int(codes.max()) + 1 if len(codes) else 0) if len(codes) else np.zeros(0, np.int64)
+            k = sqlwin.occurrence(ca)
+            inb = k < nb[ca] if len(ca) else np.zeros(0, bool)
+            keep = np.flatnonzero(inb if op == "intersect" else ~inb)
+        else:
+            first = sqlwin.first_rows(ca)
+            inb = np.isin(ca[first], cb)
+            keep = first[inb if op == "intersect" else ~inb]
+        rows = [ra[i] for i in keep.tolist()]
     names = [n for n, _ in q.items]
     rel = Rel(len(rows))
     for i in range(len(names)): rel.cols[("pos", i)] = [r[i] for r in rows]
@@ -537,6 +544,9 @@ def _setop_collated(q, ra, rb, kf, names_types, cx):
 
 
 def _distinct(rows):
+    if len(rows) > 32 and rows and len(rows[0]):
+        import sqlwin
+        return [rows[i] for i in sqlwin.first_rows(sqlwin.row_codes([list(c) for c in zip(*rows)], len(rows))).tolist()]
     seen, out = set(), []
     for r in rows:
         k = tuple(nkey(v) for v in r)
@@ -786,11 +796,16 @@ def finish_select(s, rel, aggs, wins, aggplan, cx):
             keep.sort()
             out = out.take(keep); rows = [rows[i] for i in keep]
         else:
-            seen, keep = set(), []
             kf = [T.coll_key(t) for t in types]
-            for i, r in enumerate(rows):
-                k = tuple(nkey(f(v) if f is not None and isinstance(v, str) else v) for v, f in zip(r, kf))
-                if k not in seen: seen.add(k); keep.append(i)
+            if len(rows) > 32 and cols:                    # codes of the rows (collation keys), their first rows
+                import sqlwin
+                keyed = [c if f is None else [f(v) if isinstance(v, str) else v for v in c] for c, f in zip(cols, kf)]
+                keep = sqlwin.first_rows(sqlwin.row_codes(keyed, len(rows))).tolist()
+            else:
+                seen, keep = set(), []
+                for i, r in enumerate(rows):
+                    k = tuple(nkey(f(v) if f is not None and isinstance(v, str) else v) for v, f in zip(r, kf))
+                    if k not in seen: seen.add(k); keep.append(i)
             out = out.take(keep); rows = [rows[i] for i in keep]
     rows = _order_limit(rows, out, s.order, s, cx, None)
     return Relation(names, types, rows)
@@ -2743,53 +2758,60 @@ def _join(j, L, R, cx):
 def _join_plain(j, L, R, cx):
     kind = j.kind
     conds = _conjuncts(j.cond)
-    lkeys, rkeys, other = [], [], []
+    lkeys, rkeys, other, nulleq = [], [], [], []
     lset, rset = set(L.cols), set(R.cols)
     for c in conds:
         if isinstance(c, I.Func) and c.fn in ("=", "is_not_distinct") and len(c.args) == 2:
             a, b = c.args
             ka, kb = {x.key() for x in I.cols_of(a)}, {x.key() for x in I.cols_of(b)}
-            if ka and kb and ka <= lset and kb <= rset: lkeys.append(a); rkeys.append(b); continue
-            if ka and kb and ka <= rset and kb <= lset: lkeys.append(b); rkeys.append(a); continue
+            if ka and kb and ka <= lset and kb <= rset: lkeys.append(a); rkeys.append(b); nulleq.append(c.fn != "="); continue
+            if ka and kb and ka <= rset and kb <= lset: lkeys.append(b); rkeys.append(a); nulleq.append(c.fn != "="); continue
         other.append(c)
-    pairs = []
-    if lkeys:
+    import sqlwin
+    if lkeys:                                        # equal keys: the rows' codes, matched by a sort and two searches
         lv = [ev(x, L, cx) for x in lkeys]; rv = [ev(x, R, cx) for x in rkeys]
-        h = {}
-        for i in range(R.n):
-            k = tuple(nkey(c[i]) for c in rv)
-            if any(c[i] is None for c in rv): continue
-            h.setdefault(k, []).append(i)
-        for i in range(L.n):
-            if any(c[i] is None for c in lv): continue
-            for jx in h.get(tuple(nkey(c[i]) for c in lv), ()): pairs.append((i, jx))
+        codes = sqlwin.row_codes([list(a) + list(b) for a, b in zip(lv, rv)], L.n + R.n)
+        cl, cr = codes[:L.n], codes[L.n:]
+        lok = np.ones(L.n, bool); rok = np.ones(R.n, bool)
+        for c, ne in zip(lv, nulleq):                 # = never matches NULL; IS NOT DISTINCT FROM matches NULL with NULL
+            if not ne: lok &= sqlwin.notnull(c)
+        for c, ne in zip(rv, nulleq):
+            if not ne: rok &= sqlwin.notnull(c)
+        rr = np.flatnonzero(rok); o = rr[np.argsort(cr[rr], kind="stable")]; cs = cr[o]
+        lr = np.flatnonzero(lok)
+        lo = np.searchsorted(cs, cl[lr], "left"); cnt = np.searchsorted(cs, cl[lr], "right") - lo
+        li = np.repeat(lr, cnt)
+        ri = o[np.repeat(lo - (np.cumsum(cnt) - cnt), cnt) + np.arange(int(cnt.sum()))] if len(li) else np.zeros(0, np.int64)
     else:
-        pairs = [(i, jx) for i in range(L.n) for jx in range(R.n)]
-    C = _combine(L, R, pairs)
+        li = np.repeat(np.arange(L.n), R.n); ri = np.tile(np.arange(R.n), L.n)
+    C = _combine(L, R, li, ri)
     if other:
-        keep = truth(ev(_and(other), C, cx))
-        C = C.take(keep); pairs = [pairs[k] for k in keep]
+        keep = np.array(truth(ev(_and(other), C, cx)), np.int64)
+        C = C.take(keep.tolist()); li, ri = li[keep], ri[keep]
     if kind in ("inner", "cross"): return C
     if kind in ("semi", "anti"):
-        hit = {i for i, _ in pairs}
-        idx = [i for i in range(L.n) if (i in hit) == (kind == "semi")]
-        return L.take(idx)
-    hit_l = {p[0] for p in pairs} if kind in ("left", "full") else ()
-    hit_r = {p[1] for p in pairs} if kind in ("right", "full") else ()
-    extra_l = [i for i in range(L.n) if i not in hit_l] if kind in ("left", "full") else []
-    extra_r = [i for i in range(R.n) if i not in hit_r] if kind in ("right", "full") else []
+        hit = np.zeros(L.n, bool); hit[li] = True
+        return L.take(np.flatnonzero(hit if kind == "semi" else ~hit).tolist())
     parts = [C]
-    if extra_l: parts.append(_pad(L.take(extra_l), R))
-    if extra_r: parts.append(_pad(R.take(extra_r), L))
+    if kind in ("left", "full"):
+        hit = np.zeros(L.n, bool); hit[li] = True
+        extra = np.flatnonzero(~hit).tolist()
+        if extra: parts.append(_pad(L.take(extra), R))
+    if kind in ("right", "full"):
+        hit = np.zeros(R.n, bool); hit[ri] = True
+        extra = np.flatnonzero(~hit).tolist()
+        if extra: parts.append(_pad(R.take(extra), L))
     return _concat(parts)
 
 
-def _combine(L, R, pairs):
-    C = Rel(len(pairs))
-    li = [p[0] for p in pairs]; ri = [p[1] for p in pairs]
-    for k, v in L.cols.items(): C.cols[k] = [v[i] for i in li]
-    for k, v in R.cols.items(): C.cols[k] = [v[i] for i in ri]
-    C.cnt = [L.cnt[a] * R.cnt[b] for a, b in pairs]
+def _combine(L, R, li, ri):
+    """the pairs (li[k], ri[k]) of rows of L and R as one relation"""
+    import sqlwin
+    C = Rel(len(li))
+    for k, v in L.cols.items(): C.cols[k] = sqlwin.obj(v)[li].tolist() if len(li) else []
+    for k, v in R.cols.items(): C.cols[k] = sqlwin.obj(v)[ri].tolist() if len(ri) else []
+    a, b = sqlwin.obj(L.cnt)[li], sqlwin.obj(R.cnt)[ri]
+    C.cnt = (a * b).tolist() if len(li) else []
     return C
 
 
