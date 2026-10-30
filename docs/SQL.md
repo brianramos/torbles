@@ -91,8 +91,8 @@ value is used by a row that is output.
 | DECIMAL(p, s), NUMERIC | Decimal, exact | yes |
 | DECFLOAT(p) (T076; p defaults to 34) | Decimal rounded to p digits, with Infinity and NaN (NaN sorts last and equals itself) | no (the loaders read types through DuckDB, which has none) |
 | REAL, DOUBLE PRECISION, FLOAT | float | yes (dictionary) |
-| BOOLEAN | bool | yes |
-| CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB) | yes (dictionary) |
+| BOOLEAN (TRUE, FALSE, UNKNOWN) | bool (UNKNOWN is NULL) | yes |
+| CHARACTER, VARCHAR, CLOB, NATIONAL CHARACTER ... | str (CHAR(n) is not padded, as in DuckDB; a CAST to VARCHAR(n) or CHAR(n) keeps the first n characters, as ISO says; `_UTF8'...'` introducers are accepted) | yes (dictionary) |
 | BINARY, VARBINARY, BLOB, BINARY LARGE OBJECT | bytes | yes (dictionary) |
 | DATE, TIME, TIMESTAMP, TIME(p), TIMESTAMP(p) | date, time, datetime; with p < 6 fractional digits, a cast rounds half away from zero (as DuckDB's TIMESTAMP_S / _MS) | DATE, TIMESTAMP |
 | TIME / TIMESTAMP [(p)] WITH TIME ZONE | an instant with its displacement (aware datetime) | TIMESTAMP WITH TIME ZONE |
@@ -118,7 +118,7 @@ one table is always evaluated on that table's distinct values (row mask or code 
 | SELECT [DISTINCT], FROM, WHERE, GROUP BY, HAVING, ORDER BY [ASC/DESC] [NULLS FIRST/LAST] | engine for star blocks (above), values otherwise |
 | inner, LEFT, RIGHT, FULL, CROSS, NATURAL joins; ON, USING | star blocks with inner / LEFT joins to dimensions: engine (LEFT as passes); others: hash joins of multisets |
 | partitioned outer join `t PARTITION BY (c) RIGHT JOIN u ON ...` (F403) | values: each partition joined on its own, padded rows keep the partition's values |
-| LATERAL derived tables (T491), UNNEST [WITH ORDINALITY] | values, once per distinct tuple of the outer columns read |
+| LATERAL derived tables (T491), UNNEST [WITH ORDINALITY], TABLE (<collection>) | values, once per distinct tuple of the outer columns read |
 | derived tables with column lists `AS t(a, b)`, TABLE t, VALUES | values |
 | WITH, WITH RECURSIVE, SEARCH DEPTH / BREADTH FIRST, CYCLE ... SET ... USING (T121, T131, T133) | values; the recursion iterates the step on the new rows |
 | UNION, EXCEPT, INTERSECT [ALL / DISTINCT] [CORRESPONDING [BY (columns)]] | values |
@@ -272,6 +272,7 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 - `FETCH FIRST p PERCENT` keeps the ceiling of p% of the rows; DuckDB's `LIMIT p%` the floor.
 - `a[i]` outside 1 .. CARDINALITY(a) is an error (ISO); DuckDB returns NULL (its `list_extract` keeps that behavior).
 - `0x1F` is the number 31 (SQL:2023); DuckDB reads `0` with the alias `x1F`.
+- `CAST('abcd' AS VARCHAR(2))` is `'ab'` (ISO 6.13); DuckDB ignores the length.
 - `TIMESTAMP '2020-01-01 10:00:00+02'` is a TIMESTAMP WITH TIME ZONE literal (ISO 5.3); DuckDB drops the zone. A zoned
   value keeps its own displacement: it prints with it and EXTRACT reads its fields in it; DuckDB shows zoned values in
   the session's zone. `x AT TIME ZONE z` gives the same instant with z's displacement, also for a TIMESTAMP WITHOUT

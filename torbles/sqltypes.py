@@ -39,6 +39,7 @@ class SqlType:
             base = "TIME" if self.id.startswith("TIME") and not self.id.startswith("TIMESTAMP") else "TIMESTAMP"
             return f"{base}({self.p})" + (" WITH TIME ZONE" if self.id.endswith("TZ") else "")
         if self.id == "INTERVAL" and self.s: return f"INTERVAL {self.s}"
+        if self.id == "VARCHAR" and self.p is not None: return f"VARCHAR({self.p})" + (f" COLLATE {self.coll}" if self.coll else "")
         if self.id in _DISPLAY: return _DISPLAY[self.id]
         if self.coll: return f"{self.id} COLLATE {self.coll}"
         return self.id
@@ -688,7 +689,9 @@ def _cast(v, src, dst, err):
         if len(v) != len(dst.child): raise SqlError(f"Conversion Error: cannot cast a row of degree {len(v)} to {dst}")
         st = src.child if src is not None and src.id == "ROW" and src.child is not None else [("", None)] * len(v)
         return tuple(None if x is None else _cast(x, s_, t_, err) for x, (_, s_), (_, t_) in zip(v, st, dst.child))
-    if d == "VARCHAR": return to_text(v, src)
+    if d == "VARCHAR":
+        r = to_text(v, src)                            # to VARCHAR(n): the first n characters (ISO 6.13; a warning, not an error)
+        return r[:dst.p] if dst.p is not None and r is not None and len(r) > dst.p else r
     if isinstance(v, Interval) and (dst.integer or d in ("DECIMAL", "DOUBLE", "FLOAT", "DECFLOAT")):
         v = _interval_number(v, src)                       # a single-field interval: the value of its field
         src = DECIMAL(38, 6) if isinstance(v, Decimal) else BIGINT

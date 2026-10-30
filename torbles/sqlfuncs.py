@@ -1297,6 +1297,7 @@ scalar("current_path", fixed(T.VARCHAR), deterministic=False)(lambda: '"main"')
 BINARY = {"||": "__b_concat", "concat": "__b_concat", "octet_length": "__b_octet_length", "length": "__b_octet_length",
           "char_length": "__b_octet_length", "strlen": "__b_octet_length", "substring": "__b_substring", "position": "__b_position",
           "overlay": "__b_overlay", "trim": "__b_trim", "btrim": "__b_trim", "ltrim": "__b_ltrim", "rtrim": "__b_rtrim",
+          "lpad": "__b_lpad", "rpad": "__b_rpad",
           "like": "__b_like", "not_like": "__b_not_like", "starts_with": "__b_starts_with", "reverse": "__b_reverse"}
 
 
@@ -1339,6 +1340,19 @@ scalar("__b_trim", _bin_args((1, 2)))(lambda b, c=None: b.strip(_trim_octets(c))
 scalar("__b_ltrim", _bin_args((1, 2)))(lambda b, c=None: b.lstrip(_trim_octets(c)))
 scalar("__b_rtrim", _bin_args((1, 2)))(lambda b, c=None: b.rstrip(_trim_octets(c)))
 scalar("__b_starts_with", _bin_args(2, T.BOOLEAN))(lambda b, p: b.startswith(p))
+
+
+def _b_pad(b, n, f, left):
+    """LPAD / RPAD of a binary string (SQL:2023 T055): to n octets, the fill repeated (default X'00'), or cut"""
+    if n < 0: return Err("LPAD / RPAD: a negative length")
+    if len(b) >= n: return b[:n]
+    if not f: return b
+    fill = (f * (n - len(b)))[:n - len(b)]
+    return fill + b if left else b + fill
+
+
+scalar("__b_lpad", _bin_args((2, 3), T.BLOB, [T.BLOB, T.INTEGER, T.BLOB]))(lambda b, n, f=b"\x00": _b_pad(b, n, f, True))
+scalar("__b_rpad", _bin_args((2, 3), T.BLOB, [T.BLOB, T.INTEGER, T.BLOB]))(lambda b, n, f=b"\x00": _b_pad(b, n, f, False))
 
 
 def _b_like(b, p, e=None):

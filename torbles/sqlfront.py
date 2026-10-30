@@ -930,6 +930,19 @@ def iso_prepass(sql):
                 if _kw(t, j, "WITH", "TIME", "ZONE"): tz = True; j += 3
                 elif _kw(t, j, "WITHOUT", "TIME", "ZONE"): j += 3
                 t[i:j] = [Tok("id", f"__{u}{'TZ' if tz else ''}_P{int(t[i + 2].s)}")]; changed = True; break
+            # the boolean literal UNKNOWN (ISO 5.3), not the predicate IS [NOT] UNKNOWN
+            if u == "UNKNOWN" and not (prev is not None and (prev.up() == "IS" or (prev.up() == "NOT" and i >= 2 and t[i - 2].up() == "IS"))):
+                t[i:i + 1] = tokenize("CAST(NULL AS BOOLEAN)"); changed = True; break
+            # _UTF8'text': a character set introducer (ISO 5.3); there is one character set, so it checks and is dropped
+            if t[i].k == "id" and t[i].s.startswith("_") and t[i].s[1:].upper() in _CHARSETS and i + 1 < len(t) and t[i + 1].k == "str":
+                enc = _CHARSETS[t[i].s[1:].upper()]
+                if enc:
+                    try: t[i + 1].s[1:-1].replace("''", "'").encode(enc)
+                    except UnicodeEncodeError: raise SqlError(f"character not in repertoire: {t[i + 1].s} is not {t[i].s[1:]}")
+                del t[i]; changed = True; break
+            # TABLE (<collection>) in FROM (ISO 7.6 <table function derived table>): its elements, as UNNEST
+            if u == "TABLE" and i + 1 < len(t) and t[i + 1].s == "(" and prev is not None and (prev.up() in ("FROM", "JOIN", "LATERAL") or prev.s == ","):
+                t[i] = Tok("id", "UNNEST"); changed = True; break
             # COLLATION FOR (<string>) (ISO 6.33): the name of its collation
             if u == "COLLATION" and _kw(t, i + 1, "FOR") and i + 2 < len(t) and t[i + 2].s == "(":
                 t[i:i + 2] = [Tok("id", "__iso_collation_for")]; changed = True; break
@@ -1240,6 +1253,8 @@ _WIN_KIND = {"WINDOW_ROW_NUMBER": "row_number", "WINDOW_RANK": "rank", "WINDOW_R
              "WINDOW_LEAD": "lead", "WINDOW_FIRST_VALUE": "first_value", "WINDOW_LAST_VALUE": "last_value", "WINDOW_NTH_VALUE": "nth_value"}
 
 
+_CHARSETS = {"UTF8": None, "UTF_8": None, "UTF16": None, "UTF32": None, "UCS2": None, "SQL_TEXT": None, "SQL_CHARACTER": None,
+             "SQL_IDENTIFIER": None, "LATIN1": "latin-1", "ISO8859_1": "latin-1", "ASCII": "ascii", "GRAPHIC_IRV": "ascii"}
 _ROW_MARKERS = {"BEGIN_PARTITION", "BEGIN_FRAME", "CURRENT_ROW", "FRAME_ROW", "END_FRAME", "END_PARTITION"}
 _NILADIC = {"CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP", "LOCALTIME", "LOCALTIMESTAMP", "CURRENT_USER", "USER",
             "SESSION_USER", "SYSTEM_USER", "CURRENT_ROLE", "CURRENT_CATALOG", "CURRENT_SCHEMA", "CURRENT_PATH",
@@ -2125,6 +2140,8 @@ class Binder:
             return T.type_from_name("DECIMAL", args)
         if name.upper() == "DECFLOAT": return T.type_from_name("DECFLOAT", args)
         if args and name.upper() in ("TIMESTAMPTZ", "TIMETZ", "TIMESTAMP", "TIME"): return T.type_from_name(name, args)
+        if args and T.type_from_name(name).id == "VARCHAR" and name.upper() not in ("JSON",):
+            return T.SqlType("VARCHAR", p=int(args[0]))       # CHARACTER VARYING(n), CHARACTER(n): a CAST cuts to n characters
         if name.upper() in ("STRUCT", "ROW"):                  # ROW(a INTEGER, b VARCHAR) (T051)
             return T.ROW_T([(ch.get("alias") or "", self.type_of(ch)) for ch in te.get("children") or []])
         return T.type_from_name(name)

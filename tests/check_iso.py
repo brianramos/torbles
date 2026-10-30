@@ -571,5 +571,13 @@ except Exception as x: check(False, "COLLATE UNICODE", f"{type(x).__name__}: {x}
 expect("SELECT COLLATION FOR (x COLLATE NOCASE), COLLATION FOR (x), COLLATION FOR (lower(x COLLATE NOACCENT)), CURRENT_DEFAULT_TRANSFORM_GROUP FROM t WHERE id = 0",
        [("NOCASE", "UCS_BASIC", "NOACCENT", "")], "COLLATION FOR (x), CURRENT_DEFAULT_TRANSFORM_GROUP")
 
+expect("SELECT UNKNOWN IS NULL, TRUE AND UNKNOWN, NOT UNKNOWN, (1 > 2) IS NOT UNKNOWN, _UTF8'abc', _LATIN1'é', "
+       "LPAD(X'01', 3, X'00'), RPAD(X'01', 2, X'FF'), CAST('abcd' AS VARCHAR(2)), CAST(12345 AS CHARACTER VARYING(3)), typeof(CAST('a' AS VARCHAR(5)))",
+       [(True, None, None, True, "abc", "é", b"\x00\x00\x01", b"\x01\xff", "ab", "123", "VARCHAR(5)")],
+       "the literal UNKNOWN, character set introducers, binary LPAD / RPAD, CAST to VARCHAR(n) keeps n characters")
+refuses("SELECT _ASCII'é'", ["repertoire"], "an introducer checks the character set")
+vs_duckdb("SELECT g.gid, m.x FROM g, TABLE(ARRAY[g.gid, 100]) AS m(x) ORDER BY 1, 2".replace("TABLE(", "UNNEST(") , "UNNEST over a lateral array")
+expect("SELECT m.x FROM TABLE(MULTISET[1, 2, 2]) AS m(x) ORDER BY x", [(1,), (2,), (2,)], "TABLE (<collection>) in FROM")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
