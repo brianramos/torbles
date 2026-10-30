@@ -116,7 +116,7 @@ one table is always evaluated on that table's distinct values (row mask or code 
 | Construct | Where it runs, notes |
 |---|---|
 | SELECT [DISTINCT], FROM, WHERE, GROUP BY, HAVING, ORDER BY [ASC/DESC] [NULLS FIRST/LAST] | engine for star blocks (above), values otherwise |
-| inner, LEFT, RIGHT, FULL, CROSS, NATURAL joins; ON, USING | star blocks with inner / LEFT joins to dimensions: engine (LEFT as passes); others: hash joins of multisets |
+| inner, LEFT, RIGHT, FULL, CROSS, NATURAL joins; ON, USING, USING (...) AS j (F404) | star blocks with inner / LEFT joins to dimensions: engine (LEFT as passes); others: hash joins of multisets |
 | partitioned outer join `t PARTITION BY (c) RIGHT JOIN u ON ...` (F403) | values: each partition joined on its own, padded rows keep the partition's values |
 | LATERAL derived tables (T491), UNNEST [WITH ORDINALITY], TABLE (<collection>) | values, once per distinct tuple of the outer columns read |
 | derived tables with column lists `AS t(a, b)`, TABLE t, VALUES | values |

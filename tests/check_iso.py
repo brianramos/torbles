@@ -585,5 +585,17 @@ vs_duckdb2("SELECT id, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY v) OVER (PART
            "array_agg(v ORDER BY v DESC, id) OVER (PARTITION BY k ORDER BY id ROWS 2 PRECEDING) FROM t WHERE id < 300 ORDER BY id",
            "ordered aggregates over a window: WITHIN GROUP and ORDER BY in the argument list")
 
+jdb = torbles.from_ddl("CREATE TABLE a (k INTEGER, x INTEGER); CREATE TABLE b (k INTEGER, y INTEGER); CREATE TABLE c (k INTEGER, z INTEGER)",
+                      {"a": pd.DataFrame(dict(k=[1, 2, 3], x=[10, 20, 30])), "b": pd.DataFrame(dict(k=[2, 3, 4], y=[200, 300, 400])),
+                       "c": pd.DataFrame(dict(k=[3, 4, 5], z=[3, 4, 5]))}, keep_plain=ENGINE == "plain")
+for q, want, what in (("SELECT j.k, a.k, b.k, x, y FROM a FULL JOIN b USING (k) AS j ORDER BY 1",
+                       [(1, 1, None, 10, None), (2, 2, 2, 20, 200), (3, 3, 3, 30, 300), (4, None, 4, None, 400)], "JOIN ... USING (k) AS j (F404): j.k is the merged column"),
+                      ("SELECT j.k, m.k, z FROM a JOIN b USING (k) AS j JOIN c USING (k) AS m ORDER BY 1", [(3, 3, 3)], "two USING joins on one column, each named"),
+                      ("SELECT k, x, y, z FROM a FULL JOIN b USING (k) FULL JOIN c USING (k) ORDER BY 1",
+                       [(1, 10, None, None), (2, 20, 200, None), (3, 30, 300, 3), (4, None, 400, 4), (5, None, None, 5)], "a chain of FULL JOIN ... USING on one column")):
+    try: got = jdb.sql(q, ENGINE).rows
+    except Exception as x: check(False, what, f"{type(x).__name__}: {x}"); continue
+    check(got == want, what, f"torbles {got}\n        expected {want}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

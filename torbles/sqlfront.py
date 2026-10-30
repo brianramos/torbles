@@ -943,6 +943,13 @@ def iso_prepass(sql):
             # TABLE (<collection>) in FROM (ISO 7.6 <table function derived table>): its elements, as UNNEST
             if u == "TABLE" and i + 1 < len(t) and t[i + 1].s == "(" and prev is not None and (prev.up() in ("FROM", "JOIN", "LATERAL") or prev.s == ","):
                 t[i] = Tok("id", "UNNEST"); changed = True; break
+            # JOIN ... USING (c, ...) AS j (ISO 7.10, F404): j names the common columns
+            if u == "USING" and i + 1 < len(t) and t[i + 1].s == "(" and prev is not None and prev.s != "(":
+                c = _match_paren(t, i + 1)
+                if _kw(t, c + 1, "AS") and c + 2 < len(t) and t[c + 2].k in ("id", "qid") and t[c + 2].up() not in _KW_BREAK:
+                    name = t[c + 2].s.strip('"')
+                    t[c:c + 3] = [Tok("op", ","), Tok("qid", '"__using_alias_' + name.replace('"', '""') + '"'), Tok("op", ")")]
+                    changed = True; break
             # COLLATION FOR (<string>) (ISO 6.33): the name of its collation
             if u == "COLLATION" and _kw(t, i + 1, "FOR") and i + 2 < len(t) and t[i + 2].s == "(":
                 t[i:i + 2] = [Tok("id", "__iso_collation_for")]; changed = True; break
@@ -1377,6 +1384,10 @@ class Scope:
         names = [n for n in names]
         if len(names) >= 2:
             tname, cname = names[-2], names[-1]
+            ua = getattr(self, "using_alias", {}).get(tname.lower())
+            if ua is not None:                             # JOIN ... USING (...) AS j: j.c
+                if cname.lower() not in ua: raise SqlError(f"{tname} names only the USING columns {', '.join(ua)}")
+                return ua[cname.lower()]
             hits = [b for b in self.bindings if _ieq(b.alias, tname)]
             if not hits: return None
             if len(hits) > 1: raise SqlError(f"table name {tname!r} is ambiguous")
@@ -1617,6 +1628,8 @@ class Binder:
             if ref not in ("REGULAR", "CROSS", "NATURAL"): raise SqlError(f"{ref} joins are not supported")
             lb, rb = out[:nleft], out[nleft:]
             using = list(ft.get("using_columns") or [])
+            ualias = [c[len("__using_alias_"):] for c in using if c.startswith("__using_alias_")]
+            using = [c for c in using if not c.startswith("__using_alias_")]
             if ref == "NATURAL":
                 lnames = {_shown(b, c).lower() for b in lb for c, _, _ in b.cols}
                 using = [_shown(b, c) for b in rb for c, _, _ in b.cols if _shown(b, c).lower() in lnames]
@@ -1635,10 +1648,11 @@ class Binder:
                 conds = []
                 j.using = []
                 for cname in using:
-                    lc = Scope(lb).lookup([cname]); rc = Scope(rb).lookup([cname])
+                    lc = _merged(left, cname) or Scope(lb).lookup([cname]); rc = _merged(right, cname) or Scope(rb).lookup([cname])
                     if lc is None or rc is None: raise SqlError(f"USING column {cname!r} is not in both sides")
                     conds.append(self.cmp("=", lc, rc)); j.using.append((cname, lc, rc))
                 j.cond = make_and(conds)
+                if ualias: j.using_alias = ualias[0]
             elif ft.get("condition") is not None:
                 j.cond = self.expr(ft["condition"], sc, Ctx(where="ON"))
             if kind in ("left", "full"):
@@ -1764,16 +1778,20 @@ class Binder:
         bindings = []
         s.from_ = self.bind_from(node.get("from_table") or {"type": "EMPTY"}, parent, bindings)
         s.sample = _sample_spec(node.get("sample"))
-        using = {}
+        using, ualias = {}, {}
         def collect(j):
             if isinstance(j, I.Join):
                 collect(j.left); collect(j.right)
+                cols = {}
                 for cname, lc, rc in getattr(j, "using", []):
-                    if j.kind == "right": using[cname.lower()] = rc
-                    elif j.kind == "full": using[cname.lower()] = self.func("coalesce", [lc, rc])
-                    else: using[cname.lower()] = lc
+                    if j.kind == "right": cols[cname.lower()] = rc
+                    elif j.kind == "full": cols[cname.lower()] = self.func("coalesce", [lc, rc])
+                    else: cols[cname.lower()] = lc
+                using.update(cols)
+                if getattr(j, "using_alias", None): ualias[j.using_alias.lower()] = cols
         collect(s.from_)
         sc = Scope(bindings, parent, using)
+        sc.using_alias = ualias
         s.scope = sc
         # SELECT list (stars expanded)
         items = []
@@ -2670,6 +2688,17 @@ def _const(e, where):
 
 
 def _is_row(x): return isinstance(x, I.Func) and x.fn == "row"
+
+
+def _merged(tree, cname):
+    """the one column a join USING (cname) inside tree exposes (a chain a JOIN b USING (k) JOIN c USING (k))"""
+    if not isinstance(tree, I.Join): return None
+    for c, lc, rc in getattr(tree, "using", []):
+        if c.lower() == cname.lower():
+            if tree.kind == "right": return rc
+            if tree.kind == "full": return make_func("coalesce", [lc, rc])
+            return lc
+    return _merged(tree.left, cname) or _merged(tree.right, cname)
 
 
 def _keyed_query(q, coll):
