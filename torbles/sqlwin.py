@@ -506,7 +506,7 @@ _AGGS = {"count_star", "count", "count_if", "countif", "sum", "fsum", "sumkahan"
          "arg_min", "min_by", "argmin", "arg_max", "max_by", "argmax", "every", "bool_and", "bool_or", "any", "some",
          "any_value", "arbitrary", "first", "last", "var_pop", "var_samp", "variance", "stddev_pop", "stddev_samp",
          "stddev", "covar_pop", "covar_samp", "corr", "regr_slope", "regr_intercept", "regr_count", "regr_r2", "regr_avgx",
-         "regr_avgy", "regr_sxx", "regr_syy", "regr_sxy"}
+         "regr_avgy", "regr_sxx", "regr_syy", "regr_sxy", "bit_and", "bit_or", "bit_xor"}
 _BIV = {"covar_pop", "covar_samp", "corr", "regr_slope", "regr_intercept", "regr_count", "regr_r2", "regr_avgx", "regr_avgy",
         "regr_sxx", "regr_syy", "regr_sxy"}
 
@@ -610,6 +610,22 @@ def aggregate(name, cols, valid, segs, n, w=None):
         return out
     if name in ("any_value", "arbitrary", "first"): return _take(cols[0], _first(valid, segs, n))
     if name == "last": return _take(cols[0], _last(valid, segs, n))
+    if name in ("bit_and", "bit_or", "bit_xor"):           # 64-bit integers: XOR by prefixes, AND / OR as range reductions
+        sel = cols[0][valid].tolist()
+        if not all(type(v) is int for v in sel) or (sel and (max(sel) >= 1 << 63 or min(sel) < -(1 << 63))): raise NoVec
+        X = np.zeros(n, np.int64); X[valid] = sel
+        if name == "bit_xor":
+            if w is not None: X = np.where(w % 2 == 1, X, 0)            # a value taken an even number of times cancels
+            P = np.concatenate((np.zeros(1, np.int64), np.bitwise_xor.accumulate(X))) if n else np.zeros(1, np.int64)
+            r = None
+            for s_, e_ in segs:
+                d = P[e_] ^ P[s_]; r = d if r is None else r ^ d
+        else:
+            ident = -1 if name == "bit_and" else 0
+            r = _range_reduce(np.where(valid, X, ident), segs, np.bitwise_and if name == "bit_and" else np.bitwise_or, ident)
+        out = np.full(nq, None, object); has = cnt > 0
+        out[has] = r[has]
+        return out
     ar = np.arange(n)
     if name in ("min", "max", "arg_min", "min_by", "argmin", "arg_max", "max_by", "argmax"):
         cv = cols[-1]

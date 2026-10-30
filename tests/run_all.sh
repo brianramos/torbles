@@ -56,7 +56,7 @@ run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu p
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py
-run "windows, GROUP BY as arrays vs row by row"   python3 tests/check_arrays.py
+run "array algebra vs row by row and DuckDB"     python3 tests/check_arrays.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_arrays.py 250 6
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_arrays.py 250 8
 echo "== GROUP BY modes"

@@ -99,7 +99,7 @@ def func(order):
                   "regr_slope({N}, {N})", "regr_intercept({N}, {N})", "regr_count({N}, {N})", "regr_r2({N}, {N})",
                   "regr_avgx({N}, {N})", "regr_sxy({N}, {N})", "bool_and(b)", "bool_or(b)", "arg_min({A}, {N})",
                   "arg_max({A}, {N})", "sum(yn)", "avg(yn)", "min(yn)", "max(yn)", "count(DISTINCT {A})", "sum(DISTINCT {N})",
-                  "string_agg(s, ',')", "median({N})", "count_if(b)", "any_value({A})"])
+                  "string_agg(s, ',')", "median({N})", "count_if(b)", "any_value({A})", "bit_and(x)", "bit_or(o)", "bit_xor(x)"])
     duck = not ("yn" in g or "arg_" in g or "string_agg" in g or "any_value" in g)   # NaN, ties, order: not DuckDB's
     while "{N}" in g: g = g.replace("{N}", r.choice(ARGS["num"]), 1)
     if g.startswith(("var", "stddev", "covar", "corr", "regr")) and any(c in g for c in ("x", "y")):
@@ -195,7 +195,7 @@ GAGG = ["count(*)", "count({A})", "sum({N})", "avg({N})", "min({A})", "max({A})"
         "any_value({A})", "sum(yn)", "avg(yn)", "max(yn)", "var_pop(yn)", "count(DISTINCT yn)", "string_agg(s, ',' ORDER BY s)", "median({N})",
         "count(DISTINCT s COLLATE NOCASE)", "quantile_cont({N}, 0.25)", "quantile_disc({N}, 0.75)", "median(dd)", "median(s)",
         "percentile_cont(0.3) WITHIN GROUP (ORDER BY {N})", "percentile_disc(0.6) WITHIN GROUP (ORDER BY {A} DESC)", "mode({A})",
-        "quantile_cont({N}, [0.1, 0.5, 0.9])", "median(DISTINCT {N})"]
+        "quantile_cont({N}, [0.1, 0.5, 0.9])", "median(DISTINCT {N})", "bit_and(x)", "bit_or(o)", "bit_xor(x)", "bit_xor(DISTINCT o)"]
 for qi in range(NQ):
     keys = r.sample(GKEYS, r.choice([0, 1, 1, 2, 2, 3]))
     coll = keys and "s" in keys and r.random() < 0.3

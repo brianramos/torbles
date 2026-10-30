@@ -2135,9 +2135,11 @@ class _Planner:
             tf = None
             if cf:
                 # fact-side ON terms: a foreign key read there is its own value (a hidden join, never the joined dim)
-                self.nulled = {b}
-                tfs = [self.native_tf(c) for c in cf]
-                self.nulled = set()
+                # (of every LEFT JOIN's dimension: a pass that leaves one of them unmatched still reads its key)
+                self.nulled = {b} | set(self.left)
+                try: tfs = [self.native_tf(c) for c in cf]
+                except SqlError: raise _NotStarNow()            # references without a match: no hidden join
+                finally: self.nulled = set()
                 if any(x is None for x in tfs): raise _NotStarNow()
                 T_ = tfs[0][0]
                 for x in tfs[1:]: T_ = algq.BoolOp("AND", T_, x[0])

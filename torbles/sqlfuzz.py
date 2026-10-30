@@ -19,7 +19,7 @@ import algq                                            # noqa: E402
 import fuzz                                            # noqa: E402
 from sqltypes import SqlError                          # noqa: E402
 
-REFUSAL_TEXT = ("is not supported", "references without a match", "reference(s) without a match", "the engine cannot run",
+REFUSAL_TEXT = ("is not supported", "references without a match", "reference(s) without a match",
                 "more than 12 GROUP BY", "group domain too large", "LATERAL")
 
 

@@ -237,7 +237,7 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 | MIN, MAX of a fact column | engine: plane elimination |
 | SUM / AVG / COUNT of CASE, any aggregate with FILTER (WHERE ...) | engine: variants |
 | MIN / MAX of other expressions, DISTINCT aggregates, EVERY, ANY, SOME, BOOL_AND / OR, BIT_AND / OR / XOR, ANY_VALUE (2023) | values: (group, value, count) tuples from the engine, aggregated as arrays (below) |
-| PERCENTILE_CONT, PERCENTILE_DISC (... WITHIN GROUP (ORDER BY ...)), MODE, MEDIAN, quantiles | values |
+| PERCENTILE_CONT, PERCENTILE_DISC (... WITHIN GROUP (ORDER BY ...)), MODE, MEDIAN, quantiles | values, as arrays (below) |
 | RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST (hypothetical, WITHIN GROUP) | values |
 | LISTAGG (... ON OVERFLOW ...) WITHIN GROUP, STRING_AGG, ARRAY_AGG (... ORDER BY ...) | values |
 | COLLECT, FUSION, INTERSECTION | values |
@@ -246,10 +246,13 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 
 When an aggregate is computed from values (the (group, value, count) tuples), GROUP BY is array algebra too: the
 grouping keys become dense codes, one stable sort makes each group a run of rows, and COUNT, SUM, AVG, MIN, MAX,
-VAR_*, STDDEV_*, COVAR_*, CORR, REGR_*, EVERY, BOOL_OR, COUNT_IF, ANY_VALUE, ARG_MIN / ARG_MAX and their DISTINCT and
+VAR_*, STDDEV_*, COVAR_*, CORR, REGR_*, EVERY, BOOL_OR, COUNT_IF, ANY_VALUE, ARG_MIN / ARG_MAX, BIT_AND / OR / XOR and
+their DISTINCT and
 FILTER forms are computed for every group at once, each tuple weighted by its count: exact sums of the moments
 (doubles and decimals scaled to integers exactly, so a sum of doubles is the correctly rounded exact sum) and range
-minima of (value code, position). The other aggregates (ordered ones, percentiles, LISTAGG, ...) run group by group.
+minima of (value code, position). MEDIAN, PERCENTILE_CONT, PERCENTILE_DISC and MODE sort every group's values once and
+find each rank by a search of the cumulative counts. The other aggregates (ordered ones, LISTAGG, ARRAY_AGG, ...) run
+group by group.
 
 ### Window functions
 
@@ -265,8 +268,8 @@ NTILE from the positions of the row, its peer group and its partition; LAG / LEA
 k-th non-NULL position, by a prefix count); a frame edge a position (ROWS), a peer group's bound (GROUPS, RANGE) or,
 for RANGE with an offset, the rank of the target among the partition's keys (keys and targets ranked together, one
 search); EXCLUDE leaves at most three runs. COUNT, SUM, AVG and the statistics over a frame are differences of exact
-prefix sums of their moments, MIN, MAX, ARG_MIN and ARG_MAX range minima of (value code, position) from a sparse table
-built one level at a time, FIRST_VALUE, LAST_VALUE and NTH_VALUE positions among the eligible ones. The results are the
+prefix sums of their moments (BIT_XOR of prefix XORs), MIN, MAX, ARG_MIN and ARG_MAX range minima of (value code,
+position) from a sparse table built one level at a time (BIT_AND and BIT_OR the same reductions), FIRST_VALUE, LAST_VALUE and NTH_VALUE positions among the eligible ones. The results are the
 row-by-row definitions' (exact sums, correctly rounded doubles, the first of tied extremes). DISTINCT and ordered window
 aggregates, nested window functions and row pattern recognition read each frame's rows, partition by partition, in the
 same order.
