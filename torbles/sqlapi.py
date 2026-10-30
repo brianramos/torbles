@@ -256,6 +256,15 @@ class _Functions:
     def interval(self, n, unit):
         return E(I.Lit(T.parse_interval(f"{n} {unit}"), T.INTERVAL))
     def grouping(self, *xs): return E(I.Grouping([_node(x) for x in xs]))
+    def expr(self, text, *tables):
+        """any SQL value expression, bound against the given tables: F.expr("JSON_VALUE(d.doc, '$.a' RETURNING INTEGER)", d),
+        F.expr("PERIOD (t.s, t.e) CONTAINS DATE '2020-01-05'", t), F.expr("x IS NORMALIZED", t) — every form db.sql()
+        accepts in an expression (aggregates and window functions too)"""
+        db = tables[0]._db if tables else None
+        nodes, ptext = FR.parse("SELECT " + text)
+        if len(nodes) != 1 or len(nodes[0].get("select_list") or []) != 1: raise SqlError(f"F.expr takes one value expression, not {text!r}")
+        b = FR.Binder(db, ptext, dict(FR.FLAGS))
+        return E(b.expr(nodes[0]["select_list"][0], FR.Scope([t._b for t in tables]), FR.Ctx(agg=True, win=True, where="F.expr")))
     def value_of(self, x, at="CURRENT_ROW", offset=0, default=None):
         """VALUE_OF(x AT <row marker> [+ | - offset] [, default]) in the argument of a window aggregate (T619); with
         F.row_number("FRAME_ROW") etc.: F.sum(F.case((F.value_of(t.x) <> t.x, t.v))).over(partition_by=[t.k])"""

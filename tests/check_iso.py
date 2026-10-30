@@ -608,5 +608,13 @@ q = db.select(F.count().alias("n")).where(tt.x.collate("nocase") == "A")
 try: check(q.run(ENGINE).rows == db.sql("SELECT count(*) FROM t WHERE x COLLATE NOCASE = 'A'").rows and q.verify(ENGINE)[0], "Python API: x.collate(name), and its SQL text")
 except Exception as x: check(False, "Python API collate", f"{type(x).__name__}: {x}")
 
+try:
+    q = db.select(tt.id, F.expr("PERIOD (t.id, t.id + 5) CONTAINS 3", tt).alias("c"), F.expr("t.x COLLATE NOCASE IN (SELECT 'A')", tt).alias("i"),
+                  F.expr("count(*) FILTER (WHERE t.v > 50) OVER (PARTITION BY t.k)", tt).alias("w")).where(tt.id < 50).order_by(tt.id)
+    check(q.run(ENGINE).rows == db.sql("SELECT id, PERIOD (id, id + 5) CONTAINS 3, x COLLATE NOCASE IN (SELECT 'A'), "
+                                       "count(*) FILTER (WHERE v > 50) OVER (PARTITION BY k) FROM t WHERE id < 50 ORDER BY id").rows,
+          "Python API: F.expr(<any SQL value expression>, tables)")
+except Exception as x: check(False, "Python API F.expr", f"{type(x).__name__}: {x}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

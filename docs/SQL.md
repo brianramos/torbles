@@ -26,6 +26,10 @@ q = (db.select(d.d_year, c.c_nation, F.sum(lo.lo_revenue - lo.lo_supplycost).ali
 q.run(); q.to_sql(); q.verify()                         # verify(): the SQL text run by DuckDB, compared
 ```
 
+Every function is `F.<name>(...)` in Python, and every other SQL expression form (SQL/JSON, predicates such as PERIOD
+or IS NORMALIZED, MATCH, subqueries, ordered aggregates, window clauses) is `F.expr("<SQL text>", table, ...)`, bound
+against the given tables.
+
 `db.sql(text, engine="alg")` runs on the bit planes; `"plain"` on the plain columnar baseline and `"gpu"` on the GPU
 executor (or its CPU emulation) give the same answers. A script may hold several statements; the result is the last
 one's. `SET TIME ZONE ...` sets the session's time zone; every other statement is a query.
