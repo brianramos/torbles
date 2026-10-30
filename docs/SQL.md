@@ -234,7 +234,9 @@ a filter the collation key is evaluated on the column's distinct values), `COLLA
 `NTH_VALUE ... FROM FIRST / FROM LAST`, `RESPECT / IGNORE NULLS` (T611-T618), every aggregate over a window (with
 DISTINCT and FILTER), frames `ROWS / RANGE / GROUPS` with numeric and interval offsets (T620), `EXCLUDE CURRENT ROW /
 GROUP / TIES / NO OTHERS`, the WINDOW clause and windows defined from named windows, windows over aggregates, QUALIFY
-(DuckDB). They run at the group level, after aggregation.
+(DuckDB). They run at the group level, after aggregation, on each ordered partition: a frame edge is found by binary
+search, COUNT, SUM and AVG over a frame come from exact prefix sums and MIN / MAX from a sparse table (O(1) per row), a
+frame equal to the previous row's is not evaluated again, and other aggregates read the frame's rows.
 
 Nested window functions (T619): in the argument or FILTER of a window aggregate, `ROW_NUMBER(<row marker>)` is the
 position in the ordered partition of `BEGIN_PARTITION`, `BEGIN_FRAME`, `CURRENT_ROW`, `FRAME_ROW` (the frame row being
