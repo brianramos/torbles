@@ -597,5 +597,12 @@ for q, want, what in (("SELECT j.k, a.k, b.k, x, y FROM a FULL JOIN b USING (k) 
     except Exception as x: check(False, what, f"{type(x).__name__}: {x}"); continue
     check(got == want, what, f"torbles {got}\n        expected {want}")
 
+nq = "(SELECT id, k, v, CASE WHEN v % 7 = 0 THEN NULL ELSE v END AS y FROM t) s"
+vs_duckdb(f"SELECT id, sum(v) OVER (ORDER BY y NULLS FIRST RANGE BETWEEN 3 PRECEDING AND 2 FOLLOWING), "
+          f"count(*) OVER (PARTITION BY k ORDER BY y DESC NULLS FIRST RANGE BETWEEN 1 PRECEDING AND 4 FOLLOWING), "
+          f"max(v) OVER (PARTITION BY k ORDER BY y GROUPS BETWEEN 2 PRECEDING AND 1 FOLLOWING), "
+          f"avg(y) OVER (ORDER BY id ROWS BETWEEN 5 PRECEDING AND 2 FOLLOWING EXCLUDE CURRENT ROW) FROM {nq} ORDER BY id",
+          "RANGE frames with NULL keys first or last, GROUPS frames, exclusions (frame edges by binary search, prefix sums)")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

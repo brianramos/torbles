@@ -385,7 +385,7 @@ class WindowRPR:
     def key(self): return ("rpr", self.spec, self.measure)
 
 
-def window_matches(rp, rows, frames, cx):
+def window_matches(rp, rows, bounds, cx):
     """for each row of an ordered partition: None (no match, or a row an earlier match skipped) or (first, last + 1
     of the reduced frame, the measures). The match of a row is sought from that row (INITIAL), or from it and the rows
     after it in its frame (SEEK); it can neither take rows nor read values outside the frame. The measures are
@@ -396,8 +396,7 @@ def window_matches(rp, rows, frames, cx):
     mr = rp.mr
     for p in range(m):
         if p < skip_until: continue
-        fr = frames[p]
-        hi = fr[-1] + 1 if fr else p + 1
+        hi = max(bounds[p][1], p + 1)                     # the frame: from the current row to its end
         part = Part(rp.names, rows[p:hi])
         M = Matcher(mr, part, cx)
         found = None

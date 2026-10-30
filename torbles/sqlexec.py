@@ -979,62 +979,175 @@ def _window_partition(w, idx, okeys, specs, args, filt, res, rel, cx, rpr=None, 
     bound_vals = {}
     for side, bd in (("a", a), ("b", b)):
         if bd[1] is not None: bound_vals[side] = ev(bd[1], rel, cx)
-    frames = []
-    for p, i in enumerate(idx):
-        lo = _frame_edge(mode, a, "a", p, i, idx, okeys, specs, pstart, pend, bound_vals, m)
-        hi = _frame_edge(mode, b, "b", p, i, idx, okeys, specs, pstart, pend, bound_vals, m)
-        frame = list(range(max(lo, 0), min(hi, m)))
-        if w.exclude:
-            ex = w.exclude.upper().replace(" ", "_")
-            if ex == "CURRENT_ROW": frame = [q for q in frame if q != p]
-            elif ex == "GROUP": frame = [q for q in frame if not (pstart[p] <= q < pend[p])]
-            elif ex == "TIES": frame = [q for q in frame if q == p or not (pstart[p] <= q < pend[p])]
-        frames.append(frame)
+    aux = _frame_aux(mode, a, b, idx, okeys, specs, pstart, pend, m)
+    ex = w.exclude.upper().replace(" ", "_") if w.exclude else None
+    if ex == "NO_OTHERS": ex = None
+
+    def bounds_of(p, i):
+        lo = _frame_edge(mode, a, "a", p, i, idx, okeys, specs, pstart, pend, bound_vals, m, aux)
+        hi = _frame_edge(mode, b, "b", p, i, idx, okeys, specs, pstart, pend, bound_vals, m, aux)
+        lo, hi = max(lo, 0), min(hi, m)
+        return lo, max(lo, hi)
+
+    def frame_of(p, lo, hi):
+        """the frame positions (a range unless rows are excluded): frames are never all kept, so memory stays O(m)"""
+        if ex is None: return range(lo, hi)
+        if ex == "CURRENT_ROW": return [q for q in range(lo, hi) if q != p]
+        if ex == "GROUP": return [q for q in range(lo, hi) if not (pstart[p] <= q < pend[p])]
+        if ex == "TIES": return [q for q in range(lo, hi) if q == p or not (pstart[p] <= q < pend[p])]
+        raise SqlError(f"EXCLUDE {w.exclude} is not supported")
+
+    override = None
     if rpr is not None:                                    # row pattern recognition (R020): the frame reduced to the match
         inputs, cache, fill = rpr
         if fill:
             import sqlmr
-            got = sqlmr.window_matches(w.rpr, [tuple(c[i] for c in inputs) for i in idx], frames, cx)
+            got = sqlmr.window_matches(w.rpr, [tuple(c[i] for c in inputs) for i in idx],
+                                       [bounds_of(p, i) for p, i in enumerate(idx)], cx)
             for p, i in enumerate(idx): cache[i] = got[p]
         mt = [cache[i] for i in idx]
         if name == "__rpr_measure":
             for p, i in enumerate(idx): res[i] = None if mt[p] is None else mt[p][2][w.rpr.measure]
             return
-        frames = [[] if x is None else list(range(x[0], x[1])) for x in mt]
+        override = [(0, 0) if x is None else (x[0], x[1]) for x in mt]
+        ex = None
     if args is None:                                       # nested window functions (T619) in the arguments
+        frames = []
+        for p, i in enumerate(idx):
+            lo, hi = override[p] if override else bounds_of(p, i)
+            frames.append(list(frame_of(p, lo, hi)))
         _nested_aggregate(w, idx, frames, res, rel, cx, m)
         return
+    fast = _fast_window_agg(w, name, idx, args, filt) if ex is None and not w.distinct and aorder is None else None
+    last_key = last_val = None
     for p, i in enumerate(idx):
-        frame = frames[p]
-        if name in ("first_value", "last_value", "nth_value"):
+        lo, hi = override[p] if override else bounds_of(p, i)
+        key = (lo, hi) if ex is None and name != "nth_value" else None
+        if key is not None and key == last_key: res[i] = last_val; continue     # the same frame as the row before
+        if fast is not None:
+            v = fast(lo, hi)
+        elif name in ("first_value", "last_value", "nth_value"):
             vals = args[0]
-            cand = [idx[q] for q in frame]
+            cand = [idx[q] for q in frame_of(p, lo, hi)]
             if w.ignore_nulls: cand = [c for c in cand if vals[c] is not None]
-            if name == "first_value": res[i] = vals[cand[0]] if cand else None
-            elif name == "last_value": res[i] = vals[cand[-1]] if cand else None
+            if name == "first_value": v = vals[cand[0]] if cand else None
+            elif name == "last_value": v = vals[cand[-1]] if cand else None
             else:
                 k = args[1][i]
-                if k is None: res[i] = None; continue
-                if k <= 0: raise SqlError("NTH_VALUE: the position must be positive")
-                if w.from_last: cand = cand[::-1]
-                res[i] = vals[cand[k - 1]] if k <= len(cand) else None
-            continue
-        d = F.AGGS[name]
-        rows = []
-        ids = [idx[q] for q in frame]
-        if aorder is not None: ids = sort_rows(ids, aorder[0], aorder[1])        # the aggregate's own ORDER BY
-        for r in ids:
-            if filt is not None and r not in filt: continue
-            vals = tuple(c[r] for c in args)
-            if d.skip_nulls and name != "count_star" and any(v is None for v in vals): continue
-            rows.append((vals, 1))
-        if w.distinct:
-            seen, dd = set(), []
-            for r in rows:
-                k = tuple(nkey(v) for v in r[0])
-                if k not in seen: seen.add(k); dd.append(r)
-            rows = dd
-        res[i] = len(rows) if name == "count_star" else d.final(rows, w.params)
+                if k is None: v = None
+                else:
+                    if k <= 0: raise SqlError("NTH_VALUE: the position must be positive")
+                    if w.from_last: cand = cand[::-1]
+                    v = vals[cand[k - 1]] if k <= len(cand) else None
+        else:
+            d = F.AGGS[name]
+            rows = []
+            ids = [idx[q] for q in frame_of(p, lo, hi)]
+            if aorder is not None: ids = sort_rows(ids, aorder[0], aorder[1])        # the aggregate's own ORDER BY
+            for r in ids:
+                if filt is not None and r not in filt: continue
+                vals = tuple(c[r] for c in args)
+                if d.skip_nulls and name != "count_star" and any(x is None for x in vals): continue
+                rows.append((vals, 1))
+            if w.distinct:
+                seen, dd = set(), []
+                for r in rows:
+                    k = tuple(nkey(x) for x in r[0])
+                    if k not in seen: seen.add(k); dd.append(r)
+                rows = dd
+            v = len(rows) if name == "count_star" else d.final(rows, w.params)
+        res[i] = v
+        if key is not None: last_key, last_val = key, v
+
+
+def _frame_aux(mode, a, b, idx, okeys, specs, pstart, pend, m):
+    """what the frame edges of a partition need once: the peer groups (GROUPS), the non-NULL ORDER BY keys (RANGE
+    with an offset), so that each edge is found in O(log m)"""
+    aux = {}
+    if mode == "groups" and (a[1] is not None or b[1] is not None):
+        gstarts = []
+        for q in range(m):
+            if pstart[q] == q: gstarts.append(q)
+        aux["gstarts"] = gstarts
+        aux["gindex"] = {g: k for k, g in enumerate(gstarts)}
+    if mode == "range" and (a[1] is not None or b[1] is not None) and len(okeys) == 1:
+        key = okeys[0]
+        nn = [q for q in range(m) if key[idx[q]] is not None]
+        aux["nn_lo"] = nn[0] if nn else (m if specs[0][1] else 0)
+        aux["nn_keys"] = [key[idx[q]] for q in nn]
+    return aux
+
+
+def _count_before(keys, tgt, desc, strict):
+    """how many leading keys (sorted ascending, or descending when desc) lie before tgt: strictly before (strict) or
+    up to and including it"""
+    lo, hi = 0, len(keys)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        c = F.cmp_values(keys[mid], tgt)
+        if desc: c = -c
+        if c < 0 or (c == 0 and not strict): lo = mid + 1
+        else: hi = mid
+    return lo
+
+
+def _fast_window_agg(w, name, idx, args, filt):
+    """COUNT / SUM / AVG from prefix sums and MIN / MAX from a sparse table over the ordered partition: each frame in
+    O(1), with the results the aggregate gives on the frame's rows (exact sums, correctly rounded floats)"""
+    if name not in ("count_star", "count", "sum", "avg", "min", "max"): return None
+    if name == "count_star": vals = [None] * len(idx)
+    else:
+        if len(args) != 1: return None
+        col = args[0]; vals = [col[r] for r in idx]
+    keep = [filt is None or r in filt for r in idx]
+    m = len(idx)
+    if name == "count_star":
+        pc = [0] * (m + 1)
+        for q in range(m): pc[q + 1] = pc[q] + (1 if keep[q] else 0)
+        return lambda lo, hi: pc[hi] - pc[lo]
+    live = [v if k else None for v, k in zip(vals, keep)]
+    if name == "count":
+        pc = [0] * (m + 1)
+        for q in range(m): pc[q + 1] = pc[q] + (live[q] is not None)
+        return lambda lo, hi: pc[hi] - pc[lo]
+    if name in ("min", "max"):
+        if any(isinstance(v, (list, tuple, dict)) for v in live): return None
+        better = (lambda x, y: x if F.cmp_values(x, y) <= 0 else y) if name == "min" else (lambda x, y: x if F.cmp_values(x, y) >= 0 else y)
+        def best(x, y):
+            if x is None: return y
+            if y is None: return x
+            return better(x, y)
+        st = [live]
+        k = 1
+        while 2 * k <= m:
+            prev = st[-1]
+            st.append([best(prev[j], prev[j + k]) for j in range(m - 2 * k + 1)])
+            k *= 2
+        def q(lo, hi):
+            if hi <= lo: return None
+            lv = (hi - lo).bit_length() - 1
+            return best(st[lv][lo], st[lv][hi - (1 << lv)])
+        return q
+    nn = [v for v in live if v is not None]
+    if any(isinstance(v, (bool, T.DecFloat, T.Interval)) or not isinstance(v, (int, float, Decimal)) for v in nn): return None
+    kind = "float" if any(isinstance(v, float) for v in nn) else ("dec" if any(isinstance(v, Decimal) for v in nn) else "int")
+    from fractions import Fraction
+    ps = [0] * (m + 1); pc = [0] * (m + 1)
+    for q in range(m):
+        v = live[q]
+        ps[q + 1] = ps[q] + (0 if v is None else (v if kind == "int" else Fraction(v)))
+        pc[q + 1] = pc[q] + (v is not None)
+    def out(lo, hi):
+        n = pc[hi] - pc[lo]
+        if n == 0: return None
+        tot = ps[hi] - ps[lo]
+        if name == "sum":
+            if kind == "int": return tot
+            if kind == "float": return F.ffloat(tot)
+            return T.CTX.divide(Decimal(tot.numerator), Decimal(tot.denominator))
+        if kind == "float": return F.ffloat(tot) / n
+        return F.ffloat(Fraction(tot) / n)
+    return out
 
 
 def _has_nwf(e):
@@ -1103,7 +1216,7 @@ def _nested_aggregate(w, idx, frames, res, rel, cx, m):
         res[i] = len(rows) if w.name == "count_star" else d.final(rows, w.params)
 
 
-def _frame_edge(mode, bd, side, p, i, idx, okeys, specs, pstart, pend, bound_vals, m):
+def _frame_edge(mode, bd, side, p, i, idx, okeys, specs, pstart, pend, bound_vals, m, aux=None):
     """frame start (side a, inclusive) or end (side b, exclusive) as a position in the ordered partition"""
     kind = bd[0]
     if kind == "unbounded_preceding": return 0
@@ -1118,7 +1231,8 @@ def _frame_edge(mode, bd, side, p, i, idx, okeys, specs, pstart, pend, bound_val
         q = p - off if kind == "preceding" else p + off
         return q if side == "a" else q + 1
     if mode == "groups":
-        gstarts = sorted(set(pstart)); gi = gstarts.index(pstart[p])
+        if off < 0: raise SqlError("frame offset must not be negative")
+        gstarts = aux["gstarts"]; gi = aux["gindex"][pstart[p]]
         tgt = gi - off if kind == "preceding" else gi + off
         if side == "a":
             if tgt < 0: return 0
@@ -1136,18 +1250,9 @@ def _frame_edge(mode, bd, side, p, i, idx, okeys, specs, pstart, pend, bound_val
     sgn = -1 if kind == "preceding" else 1
     if desc: sgn = -sgn
     tgt = F._add(x, off) if sgn > 0 else F._sub(x, off)
-    if side == "a":
-        q = 0
-        while q < m and (key[idx[q]] is None or (F.cmp_values(key[idx[q]], tgt) < 0 if not desc else F.cmp_values(key[idx[q]], tgt) > 0)):
-            if key[idx[q]] is None and not specs[0][1]: break
-            q += 1
-        return q
-    q = 0
-    while q < m and key[idx[q]] is not None and (F.cmp_values(key[idx[q]], tgt) <= 0 if not desc else F.cmp_values(key[idx[q]], tgt) >= 0):
-        q += 1
-    if specs[0][1]:                                  # NULLS FIRST: the NULL peers precede
-        while q < m and key[idx[q]] is None: q += 1
-    return q
+    # the rows with non-NULL keys are one block of the ordered partition, sorted: a binary search there
+    nk = aux["nn_keys"]; base = aux["nn_lo"]
+    return base + _count_before(nk, tgt, desc, strict=(side == "a"))
 
 
 # ------------------------------------------------------------------ subqueries
