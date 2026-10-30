@@ -207,7 +207,7 @@ with `== != < <= > >= && || !`, `exists (...)`, `(...) is unknown`, `like_regex 
 `string()`, `time()`, `time_tz()`, `timestamp()`, `timestamp_tz()`.
 
 Others: `CASE` (simple, searched, and extended: `WHEN 1, 2`, `WHEN > 5`, `WHEN IS NULL`, F262 / F263), `NULLIF`,
-`COALESCE`, `CAST`, `TRY_CAST`, row values `ROW (a, b)` and `(a, b)`, `COLLATE` (UCS_BASIC, BINARY, C, POSIX, NOCASE,
+`COALESCE`, `CAST`, `TRY_CAST`, row values `ROW (a, b)` and `(a, b)`, `COLLATE` (UNICODE: the Unicode Collation Algorithm with its default table, through the optional pyuca package; UCS_BASIC, BINARY, C, POSIX, NOCASE,
 NOACCENT, NFC and their combinations: comparisons, ORDER BY, GROUP BY, DISTINCT, set operations, MIN / MAX, windows; in
 a filter the collation key is evaluated on the column's distinct values), `CURRENT_USER`, `SESSION_USER`, `SYSTEM_USER`,
 `USER`, `CURRENT_ROLE`, `CURRENT_CATALOG`, `CURRENT_SCHEMA`, `CURRENT_PATH`, `typeof`.
@@ -257,8 +257,6 @@ outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
   (`NEXT VALUE FOR`), identity and default values, triggers, routines (`CREATE FUNCTION`, SQL/PSM), user-defined types,
   reference types, typed tables and `ONLY`, system-versioned tables (`FOR SYSTEM_TIME AS OF`) and periods declared on
   tables belong to those statements. PERIOD predicates on value pairs are supported.
-- **The UNICODE collation** (the Unicode Collation Algorithm) needs a collation library; the code point collations and
-  NOCASE / NOACCENT / NFC are supported.
 - Other parts of ISO/IEC 9075: SQL/XML (Part 14), SQL/MDA multidimensional arrays (Part 15), SQL/PGQ property graph
   queries (Part 16), SQL/MED, SQL/OLB, SQL/JRT, SQL/CLI.
 

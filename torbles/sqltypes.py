@@ -240,17 +240,31 @@ _COLLATIONS = {"BINARY": None, "C": None, "POSIX": None, "UCS_BASIC": None, "SQL
                "SQL_CHARACTER": None, "NOCASE": str.lower, "NOACCENT": _noaccent, "NFC": _nfc}
 
 
+_UCA = []
+
+
+def _uca_key(v):
+    """the Unicode Collation Algorithm's sort key (DUCET, all levels) as a string whose code point order is the key's"""
+    if not _UCA:
+        try: import pyuca
+        except ImportError:
+            raise SqlError("COLLATE UNICODE needs the pyuca package (pip install 'torbles[unicode]')")
+        _UCA.append(pyuca.Collator())
+    return "".join(chr(w + 1) for w in _UCA[0].sort_key(v))
+
+
 def collation(name):
     """a collation's name -> its key function on strings (None: code point order). NOCASE, NOACCENT, NFC and their
-    combinations (NOCASE.NOACCENT) as in DuckDB; UCS_BASIC (ISO), BINARY, C, POSIX: code point order."""
+    combinations (NOCASE.NOACCENT) as in DuckDB; UCS_BASIC (ISO), BINARY, C, POSIX: code point order; UNICODE (UCA):
+    the Unicode Collation Algorithm with the default table, after any of the others it is combined with"""
     parts = [x.strip().upper() for x in str(name).split(".") if x.strip()]
-    fns = []
+    fns, uca = [], False
     for x in parts:
+        if x in ("UNICODE", "UCA"): uca = True; continue
         if x not in _COLLATIONS:
-            if x in ("UNICODE", "UCA", "DEFAULT"):
-                raise SqlError(f"collation {name}: the Unicode Collation Algorithm is not available (use NOCASE, NOACCENT, NFC, BINARY)")
-            raise SqlError(f"unknown collation {name!r} (NOCASE, NOACCENT, NFC, BINARY, UCS_BASIC, C, POSIX)")
+            raise SqlError(f"unknown collation {name!r} (NOCASE, NOACCENT, NFC, UNICODE, BINARY, UCS_BASIC, C, POSIX)")
         if _COLLATIONS[x] is not None: fns.append(_COLLATIONS[x])
+    if uca: _uca_key(""); fns.append(_uca_key)
     if not fns: return None
     def key(v, fns=tuple(fns)):
         for f in fns: v = f(v)

@@ -558,5 +558,15 @@ expect("SELECT CAST(INTERVAL '3' DAY AS INTEGER), CAST(INTERVAL '2' YEAR AS INTE
 refuses("SELECT 1__0", ["underscore"], "1__0 is not a numeric literal")
 refuses("SELECT CAST(INTERVAL '1-2' YEAR TO MONTH AS INTEGER)", ["one field"], "an interval of two fields does not cast to a number")
 
+uw = ["cote", "côte", "coté", "côté", "Cote", "apple", "Äpfel", "zebra", "Zebra", "ß", "ss", "é", "e\u0301", None]
+udb = torbles.from_ddl("CREATE TABLE w (id INTEGER, s VARCHAR)", {"w": pd.DataFrame(dict(id=range(len(uw)), s=uw))}, keep_plain=ENGINE == "plain")
+try:
+    got = [udb.sql("SELECT s FROM w ORDER BY s COLLATE UNICODE NULLS LAST, id", ENGINE).rows,
+           udb.sql("SELECT count(*) FILTER (WHERE s COLLATE UNICODE = 'é'), count(DISTINCT s COLLATE UNICODE), min(s COLLATE UNICODE), max(s COLLATE UNICODE) FROM w", ENGINE).rows,
+           udb.sql("SELECT count(*) FROM w WHERE s COLLATE \"NOCASE.UNICODE\" = 'COTE'", ENGINE).rows]
+    check(got == [[(x,) for x in ["Äpfel", "apple", "cote", "Cote", "coté", "côte", "côté", "é", "e\u0301", "ss", "ß", "zebra", "Zebra", None]],
+                  [(2, 12, "Äpfel", "Zebra")], [(2,)]], "COLLATE UNICODE: the Unicode Collation Algorithm (canonical equivalents equal, accents after letters)", str(got))
+except Exception as x: check(False, "COLLATE UNICODE", f"{type(x).__name__}: {x}")
+
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)
