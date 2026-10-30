@@ -166,8 +166,8 @@ class Gen:
         if y < 0.2: return f"{e} {'NOT ' if r.random() < 0.2 else ''}IN ({', '.join(self.const(c) for _ in range(r.randint(1, 4)))})"
         if y < 0.27 and c[2] == "VARCHAR":
             vals = [v for v in c[3] if v is not None] or ["a"]
-            v = r.choice(vals).replace("'", "''")
-            pat = r.choice([v[:2] + "%", "%" + v[-1:], "_" + v[1:2] + "%", v, "%a%"])
+            v = r.choice(vals)
+            pat = r.choice([v[:2] + "%", "%" + v[-1:], "_" + v[1:2] + "%", v, "%a%"]).replace("'", "''")   # quoted after slicing
             return f"{e} {'NOT ' if r.random() < 0.2 else ''}LIKE '{pat}'"
         if y < 0.3: return f"{e} IS {'NOT ' if r.random() < 0.5 else ''}NULL"
         if y < 0.42:                                    # two columns of one type, or an expression
