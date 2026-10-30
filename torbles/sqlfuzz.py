@@ -252,6 +252,20 @@ class Gen:
                 sql += f" ORDER BY {', '.join(str(i + 1) + ' NULLS FIRST' for i in range(len(sel)))}"
                 if r.random() < 0.5: sql += f" LIMIT {r.randint(0, 5)}"
             return sql
+        if kind < 0.75:                                    # window functions over the rows (deterministic frames only)
+            p, _ = self.scalar(cols); o, _ = self.scalar(cols)
+            part = f"PARTITION BY {p} " if r.random() < 0.8 else ""
+            items = []
+            for _ in range(r.randint(1, 3)):
+                z = r.random()
+                a, _ = self.agg(cols)
+                if z < 0.3: items.append(f"{a} OVER ({part.strip()})")
+                elif z < 0.5: items.append(f"{a} OVER ({part}ORDER BY {o} NULLS FIRST)")               # RANGE: peers together
+                elif z < 0.6: items.append(f"{a} OVER ({part}ORDER BY {o} DESC NULLS LAST GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW)")
+                elif z < 0.7: items.append(f"{a} OVER ({part}ORDER BY {o} NULLS FIRST RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE GROUP)")
+                else: items.append(f"{r.choice(['rank', 'dense_rank', 'percent_rank', 'cume_dist'])}() OVER ({part}ORDER BY {o} NULLS FIRST)")
+            sql = f"SELECT {p}, {o}, {', '.join(items)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
+            return sql
         if kind < 0.9:                                     # row query
             exprs = [self.scalar(cols)[0] for _ in range(r.randint(1, 4))]
             sql = f"SELECT {'DISTINCT ' if r.random() < 0.3 else ''}{', '.join(exprs)} FROM {frm}" + (f" WHERE {' AND '.join(where)}" if where else "")
