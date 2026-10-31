@@ -1,0 +1,2103 @@
+{
+ "argv": [
+  "--capability",
+  "FND-011",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/FND-011/benchmark_cpu_math_persist_vm.json"
+ ],
+ "capability": "FND-011",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:12:37+00:00"
+ },
+ "notes": [
+  "bank at 100000 rows / 64 groups: 10648 record bytes",
+  "histogram at 100000 rows / 64 groups: 133160 record bytes",
+  "moments at 100000 rows / 64 groups: 21976 record bytes",
+  "certificate at 100000 rows / 64 groups: 13752 record bytes",
+  "bank at 100000 rows / 16384 groups: 2491288 record bytes",
+  "histogram at 100000 rows / 16384 groups: 4114704 record bytes",
+  "moments at 100000 rows / 16384 groups: 5374936 record bytes",
+  "certificate at 100000 rows / 16384 groups: 13752 record bytes",
+  "Serialization, load, validation and rehydration are timed apart from building the state and from evaluating queries on it; validation on the device (--device) computes the checksum there.",
+  "The persisted path checks the recorded source against the current scope before adopting the state; a changed source makes it a rebuild (StaleSourceError)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.003394201001356123,
+   "params": {
+    "groups": 64,
+    "rows": 100000
+   },
+   "phase": "construction",
+   "samples_seconds": [
+    0.003394201001356123,
+    0.006588203999854159,
+    0.0024790070001472486
+   ],
+   "warm_median_seconds": 0.004533605500000704,
+   "warm_min_seconds": 0.0024790070001472486
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.0031927769996400457,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.0031927769996400457,
+    0.0029650260003108997,
+    0.007038718000330846
+   ],
+   "warm_median_seconds": 0.005001872000320873,
+   "warm_min_seconds": 0.0029650260003108997
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.0006707089996780269,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.0006707089996780269,
+    0.0003560269997251453,
+    0.0002967529999295948,
+    0.00028552700132422615,
+    0.0003019320010935189
+   ],
+   "warm_median_seconds": 0.00029934250051155686,
+   "warm_min_seconds": 0.00028552700132422615
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 6.219997885636985e-07,
+   "params": {
+    "bytes": 10648,
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "bytes",
+   "result": 10648,
+   "samples_seconds": [
+    6.219997885636985e-07
+   ],
+   "warm_median_seconds": 6.219997885636985e-07,
+   "warm_min_seconds": 6.219997885636985e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 7.69319995015394e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    7.69319995015394e-05,
+    5.4499998441315256e-05,
+    4.225100019539241e-05,
+    3.568099964468274e-05,
+    3.670399928523693e-05
+   ],
+   "warm_median_seconds": 3.947749974031467e-05,
+   "warm_min_seconds": 3.568099964468274e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 2.410200067970436e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    2.410200067970436e-05,
+    1.720400177873671e-05,
+    1.293099921895191e-05,
+    1.172299926111009e-05,
+    1.2185000741737895e-05
+   ],
+   "warm_median_seconds": 1.2557999980344903e-05,
+   "warm_min_seconds": 1.172299926111009e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 5.775300087407231e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    5.775300087407231e-05,
+    4.009000076621305e-05,
+    3.0092000088188797e-05,
+    2.681600017240271e-05,
+    4.68360012746416e-05
+   ],
+   "warm_median_seconds": 3.5091000427200925e-05,
+   "warm_min_seconds": 2.681600017240271e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.0012630000001081498,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "evaluation",
+   "result": 100000,
+   "samples_seconds": [
+    0.0012630000001081498,
+    0.00038371500158973504,
+    0.0003693730013765162
+   ],
+   "warm_median_seconds": 0.0003765440014831256,
+   "warm_min_seconds": 0.0003693730013765162
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 21943,
+   "message": "state record: needs 21944 bytes, budget 21943",
+   "need": 21944,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.781200004799757e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.0009428809989913134,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.0009428809989913134,
+    0.0007412909999402473,
+    0.0007129229998099618
+   ],
+   "warm_median_seconds": 0.0007271069998751045,
+   "warm_min_seconds": 0.0007129229998099618
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.007389875001535984,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.007389875001535984,
+    0.0032429349994345102,
+    0.003369178999491851,
+    0.007406022999930428,
+    0.0035570820000430103
+   ],
+   "warm_median_seconds": 0.0034631304997674306,
+   "warm_min_seconds": 0.0032429349994345102
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 6.589998520212248e-07,
+   "params": {
+    "bytes": 133160,
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "bytes",
+   "result": 133160,
+   "samples_seconds": [
+    6.589998520212248e-07
+   ],
+   "warm_median_seconds": 6.589998520212248e-07,
+   "warm_min_seconds": 6.589998520212248e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 0.00028640399978030473,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    0.00028640399978030473,
+    0.00022985100076766685,
+    0.00018957600150315557,
+    0.00023532299928774592,
+    0.0002302430002600886
+   ],
+   "warm_median_seconds": 0.00023004700051387772,
+   "warm_min_seconds": 0.00018957600150315557
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 0.00016588200014666654,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    0.00016588200014666654,
+    0.0001315059998887591,
+    9.919900003296789e-05,
+    9.440800022275653e-05,
+    0.00010214400026598014
+   ],
+   "warm_median_seconds": 0.00010067150014947401,
+   "warm_min_seconds": 9.440800022275653e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 9.880399920803029e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    9.880399920803029e-05,
+    7.14899997547036e-05,
+    6.071800089557655e-05,
+    5.539899939321913e-05,
+    5.409699951997027e-05
+   ],
+   "warm_median_seconds": 5.805850014439784e-05,
+   "warm_min_seconds": 5.409699951997027e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.00017536300038045738,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "evaluation",
+   "result": 24,
+   "samples_seconds": [
+    0.00017536300038045738,
+    8.450899986200966e-05,
+    9.56050007516751e-05
+   ],
+   "warm_median_seconds": 9.005700030684238e-05,
+   "warm_min_seconds": 8.450899986200966e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 266967,
+   "message": "state record: needs 266968 bytes, budget 266967",
+   "need": 266968,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.00012043399874528404,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.00615701300012006,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.00615701300012006,
+    0.0018011620013567153,
+    0.0016965140002866974
+   ],
+   "warm_median_seconds": 0.0017488380008217064,
+   "warm_min_seconds": 0.0016965140002866974
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.0005991500001982786,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.0005991500001982786,
+    0.0005670050013577566,
+    0.0005133569993631681,
+    0.0005249320001894375,
+    0.0005264759984129341
+   ],
+   "warm_median_seconds": 0.0005257039993011858,
+   "warm_min_seconds": 0.0005133569993631681
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 4.1900057112798095e-07,
+   "params": {
+    "bytes": 21976,
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "bytes",
+   "result": 21976,
+   "samples_seconds": [
+    4.1900057112798095e-07
+   ],
+   "warm_median_seconds": 4.1900057112798095e-07,
+   "warm_min_seconds": 4.1900057112798095e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 6.52090002404293e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    6.52090002404293e-05,
+    4.9745000069378875e-05,
+    4.315799924370367e-05,
+    4.383899977256078e-05,
+    7.447000098181888e-05
+   ],
+   "warm_median_seconds": 4.679199992096983e-05,
+   "warm_min_seconds": 4.315799924370367e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 2.9632001314894296e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    2.9632001314894296e-05,
+    2.1111000023665838e-05,
+    1.9111999790766276e-05,
+    1.873399924079422e-05,
+    3.4591999792610295e-05
+   ],
+   "warm_median_seconds": 2.0111499907216057e-05,
+   "warm_min_seconds": 1.873399924079422e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 4.928899943479337e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    4.928899943479337e-05,
+    3.668000135803595e-05,
+    2.8918000680278055e-05,
+    2.508899888198357e-05,
+    2.3786000383552164e-05
+   ],
+   "warm_median_seconds": 2.7003499781130813e-05,
+   "warm_min_seconds": 2.3786000383552164e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.002577461000328185,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "evaluation",
+   "result": 16,
+   "samples_seconds": [
+    0.002577461000328185,
+    0.0065584250005485956,
+    0.0022738580009900033
+   ],
+   "warm_median_seconds": 0.0044161415007692995,
+   "warm_min_seconds": 0.0022738580009900033
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 44599,
+   "message": "state record: needs 44600 bytes, budget 44599",
+   "need": 44600,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 7.048599945846945e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.0009764210008142982,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.0009764210008142982,
+    0.0006318089999695076,
+    0.0006121250007709023
+   ],
+   "warm_median_seconds": 0.0006219670003702049,
+   "warm_min_seconds": 0.0006121250007709023
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.00042329399911977816,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.00042329399911977816,
+    0.0003452660002949415,
+    0.00033721200088621117,
+    0.0003383999992365716,
+    0.0003412360001675552
+   ],
+   "warm_median_seconds": 0.0003398179997020634,
+   "warm_min_seconds": 0.00033721200088621117
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 4.379999154480174e-07,
+   "params": {
+    "bytes": 13752,
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "bytes",
+   "result": 13752,
+   "samples_seconds": [
+    4.379999154480174e-07
+   ],
+   "warm_median_seconds": 4.379999154480174e-07,
+   "warm_min_seconds": 4.379999154480174e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 4.4631000491790473e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    4.4631000491790473e-05,
+    3.166500027873553e-05,
+    0.004120607000004384,
+    3.7028999940957874e-05,
+    3.5012000807910226e-05
+   ],
+   "warm_median_seconds": 3.602050037443405e-05,
+   "warm_min_seconds": 3.166500027873553e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 2.252100057376083e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    2.252100057376083e-05,
+    2.01599996216828e-05,
+    1.843799873313401e-05,
+    1.2976999641978182e-05,
+    1.2670001524384134e-05
+   ],
+   "warm_median_seconds": 1.5707499187556095e-05,
+   "warm_min_seconds": 1.2670001524384134e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 6.597599895030726e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    6.597599895030726e-05,
+    5.7537999964552e-05,
+    5.2895000408170745e-05,
+    5.150899960426614e-05,
+    5.971300015517045e-05
+   ],
+   "warm_median_seconds": 5.521650018636137e-05,
+   "warm_min_seconds": 5.150899960426614e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 3.626899888331536e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "evaluation",
+   "result": "snapshot",
+   "samples_seconds": [
+    3.626899888331536e-05,
+    1.575799979036674e-05,
+    1.1104999430244789e-05
+   ],
+   "warm_median_seconds": 1.3431499610305764e-05,
+   "warm_min_seconds": 1.1104999430244789e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 28151,
+   "message": "state record: needs 28152 bytes, budget 28151",
+   "need": 28152,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.9984999855514616e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.00013657999988936353,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.00013657999988936353,
+    8.551599967177026e-05,
+    7.756500053801574e-05,
+    7.17959992471151e-05,
+    9.109100028581452e-05
+   ],
+   "warm_median_seconds": 8.1540500104893e-05,
+   "warm_min_seconds": 7.17959992471151e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 5.279998731566593e-07,
+   "params": {
+    "bytes": 2664,
+    "state": "bigint 2^20000"
+   },
+   "phase": "bytes",
+   "result": 2664,
+   "samples_seconds": [
+    5.279998731566593e-07
+   ],
+   "warm_median_seconds": 5.279998731566593e-07,
+   "warm_min_seconds": 5.279998731566593e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 3.2126999940373935e-05,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    3.2126999940373935e-05,
+    2.2666999939247034e-05,
+    1.6829999367473647e-05,
+    1.5059998986544088e-05,
+    1.457699909224175e-05
+   ],
+   "warm_median_seconds": 1.5944999177008867e-05,
+   "warm_min_seconds": 1.457699909224175e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate the value",
+   "first_seconds": 1.3265000234241597e-05,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    1.3265000234241597e-05,
+    9.25799940887373e-06,
+    5.9710000641644e-06,
+    4.724000973510556e-06,
+    5.3989988373359665e-06
+   ],
+   "warm_median_seconds": 5.684999450750183e-06,
+   "warm_min_seconds": 4.724000973510556e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 6.036100057826843e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    6.036100057826843e-05,
+    4.346499918028712e-05,
+    3.836799987766426e-05,
+    3.557799936970696e-05,
+    3.603599907364696e-05
+   ],
+   "warm_median_seconds": 3.720199947565561e-05,
+   "warm_min_seconds": 3.557799936970696e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 4.3299951357766986e-07,
+   "params": {
+    "bytes": 1072,
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "bytes",
+   "result": 1072,
+   "samples_seconds": [
+    4.3299951357766986e-07
+   ],
+   "warm_median_seconds": 4.3299951357766986e-07,
+   "warm_min_seconds": 4.3299951357766986e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 1.807899934647139e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    1.807899934647139e-05,
+    2.48889991780743e-05,
+    1.4565999663318507e-05,
+    1.4181001461111009e-05,
+    1.4669998563476838e-05
+   ],
+   "warm_median_seconds": 1.4617999113397673e-05,
+   "warm_min_seconds": 1.4181001461111009e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate the value",
+   "first_seconds": 4.511900078796316e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    4.511900078796316e-05,
+    4.379599886306096e-05,
+    3.522299994074274e-05,
+    3.401200046937447e-05,
+    3.343400021549314e-05
+   ],
+   "warm_median_seconds": 3.4617500205058604e-05,
+   "warm_min_seconds": 3.343400021549314e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0028173610007797834,
+   "params": {
+    "groups": 16384,
+    "rows": 100000
+   },
+   "phase": "construction",
+   "samples_seconds": [
+    0.0028173610007797834,
+    0.002800104000925785,
+    0.0028126429988333257
+   ],
+   "warm_median_seconds": 0.0028063734998795553,
+   "warm_min_seconds": 0.002800104000925785
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.013349908998861792,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.013349908998861792,
+    0.010429054000269389,
+    0.0051313999992999015
+   ],
+   "warm_median_seconds": 0.007780226999784645,
+   "warm_min_seconds": 0.0051313999992999015
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.11465450600007898,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.11465450600007898,
+    0.10957097800019255,
+    0.10697423400051775,
+    0.10008556700086046,
+    0.10831552200033912
+   ],
+   "warm_median_seconds": 0.10764487800042843,
+   "warm_min_seconds": 0.10008556700086046
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 8.110000635497272e-07,
+   "params": {
+    "bytes": 2491288,
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "bytes",
+   "result": 2491288,
+   "samples_seconds": [
+    8.110000635497272e-07
+   ],
+   "warm_median_seconds": 8.110000635497272e-07,
+   "warm_min_seconds": 8.110000635497272e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 0.004784184000527603,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    0.004784184000527603,
+    0.008837301000312436,
+    0.008783604000200285,
+    0.004396950000227662,
+    0.00835332600036054
+   ],
+   "warm_median_seconds": 0.008568465000280412,
+   "warm_min_seconds": 0.004396950000227662
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 0.00223482699948363,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    0.00223482699948363,
+    0.002008983999985503,
+    0.006030743001247174,
+    0.002051253000900033,
+    0.0020408829986990895
+   ],
+   "warm_median_seconds": 0.0020460679997995612,
+   "warm_min_seconds": 0.002008983999985503
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 0.0012808449992007809,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    0.0012808449992007809,
+    0.0012739699996018317,
+    0.0052927489996363875,
+    0.001236952999533969,
+    0.0011982369996985653
+   ],
+   "warm_median_seconds": 0.0012554614995679003,
+   "warm_min_seconds": 0.0011982369996985653
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.0005182040004001465,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "evaluation",
+   "result": 383,
+   "samples_seconds": [
+    0.0005182040004001465,
+    0.0003550199999153847,
+    0.00043433199971332215
+   ],
+   "warm_median_seconds": 0.0003946759998143534,
+   "warm_min_seconds": 0.0003550199999153847
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 4983223,
+   "message": "state record: needs 4983224 bytes, budget 4983223",
+   "need": 4983224,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "bank"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.002250563999041333,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.02988161100074649,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.02988161100074649,
+    0.025178750000122818,
+    0.027544653001314146
+   ],
+   "warm_median_seconds": 0.026361701500718482,
+   "warm_min_seconds": 0.025178750000122818
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.18584767799984547,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.18584767799984547,
+    0.19096822300161875,
+    0.17770529700101179,
+    0.18084530600026483,
+    0.1857071159993211
+   ],
+   "warm_median_seconds": 0.18327621099979297,
+   "warm_min_seconds": 0.17770529700101179
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 5.679994501406327e-07,
+   "params": {
+    "bytes": 4114704,
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "bytes",
+   "result": 4114704,
+   "samples_seconds": [
+    5.679994501406327e-07
+   ],
+   "warm_median_seconds": 5.679994501406327e-07,
+   "warm_min_seconds": 5.679994501406327e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 0.011270521999904304,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    0.011270521999904304,
+    0.010932653998679598,
+    0.010929050000413554,
+    0.011542801999894436,
+    0.010875305999434204
+   ],
+   "warm_median_seconds": 0.010930851999546576,
+   "warm_min_seconds": 0.010875305999434204
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 0.0044178179996379185,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    0.0044178179996379185,
+    0.007828227000572952,
+    0.003537812999638845,
+    0.008166884999809554,
+    0.003554420000000391
+   ],
+   "warm_median_seconds": 0.005691323500286671,
+   "warm_min_seconds": 0.003537812999638845
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 0.0067114649991708575,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    0.0067114649991708575,
+    0.0022777140002290253,
+    0.0021911759995418834,
+    0.0020703869995486457,
+    0.006153258998892852
+   ],
+   "warm_median_seconds": 0.0022344449998854543,
+   "warm_min_seconds": 0.0020703869995486457
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.0017246249990421347,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "evaluation",
+   "result": 32,
+   "samples_seconds": [
+    0.0017246249990421347,
+    0.0016563090011914028,
+    0.0016842149998410605
+   ],
+   "warm_median_seconds": 0.0016702620005162316,
+   "warm_min_seconds": 0.0016563090011914028
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 8230055,
+   "message": "state record: needs 8230056 bytes, budget 8230055",
+   "need": 8230056,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "histogram"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.007525736000388861,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.005270412999379914,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.005270412999379914,
+    0.00994889999856241,
+    0.007999082999958773
+   ],
+   "warm_median_seconds": 0.008973991499260592,
+   "warm_min_seconds": 0.007999082999958773
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.2737710250003147,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.2737710250003147,
+    0.2501051399995049,
+    0.23340861499855237,
+    0.23145763899992744,
+    0.22146965600040858
+   ],
+   "warm_median_seconds": 0.2324331269992399,
+   "warm_min_seconds": 0.22146965600040858
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 5.069996404927224e-07,
+   "params": {
+    "bytes": 5374936,
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "bytes",
+   "result": 5374936,
+   "samples_seconds": [
+    5.069996404927224e-07
+   ],
+   "warm_median_seconds": 5.069996404927224e-07,
+   "warm_min_seconds": 5.069996404927224e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 0.012927353998748004,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    0.012927353998748004,
+    0.012187033000373049,
+    0.011787970999648678,
+    0.011882626000442542,
+    0.012341301000560634
+   ],
+   "warm_median_seconds": 0.012034829500407795,
+   "warm_min_seconds": 0.011787970999648678
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 0.008411642000282882,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    0.008411642000282882,
+    0.004577464000249165,
+    0.00844167200011725,
+    0.004473881999729201,
+    0.008586857999034692
+   ],
+   "warm_median_seconds": 0.006509568000183208,
+   "warm_min_seconds": 0.004473881999729201
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 0.0026828689988178667,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    0.0026828689988178667,
+    0.0024997410000651143,
+    0.006285739000304602,
+    0.0022455990001617465,
+    0.0021641519997501746
+   ],
+   "warm_median_seconds": 0.0023726700001134304,
+   "warm_min_seconds": 0.0021641519997501746
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 0.006790491999709047,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "evaluation",
+   "result": 13,
+   "samples_seconds": [
+    0.006790491999709047,
+    0.0022026429996913066,
+    0.002174702000047546
+   ],
+   "warm_median_seconds": 0.0021886724998694262,
+   "warm_min_seconds": 0.002174702000047546
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 10750519,
+   "message": "state record: needs 10750520 bytes, budget 10750519",
+   "need": 10750520,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "moments"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.008900198999981512,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: build the state",
+   "first_seconds": 0.0007747700001345947,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "evaluation",
+   "samples_seconds": [
+    0.0007747700001345947,
+    0.0006657409994659247,
+    0.0006249149992072489
+   ],
+   "warm_median_seconds": 0.0006453279993365868,
+   "warm_min_seconds": 0.0006249149992072489
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.00047880599959171377,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.00047880599959171377,
+    0.0003583609995985171,
+    0.00036383500082592946,
+    0.0003644720000011148,
+    0.0003594740010157693
+   ],
+   "warm_median_seconds": 0.0003616545009208494,
+   "warm_min_seconds": 0.0003583609995985171
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 4.270004865247756e-07,
+   "params": {
+    "bytes": 13752,
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "bytes",
+   "result": 13752,
+   "samples_seconds": [
+    4.270004865247756e-07
+   ],
+   "warm_median_seconds": 4.270004865247756e-07,
+   "warm_min_seconds": 4.270004865247756e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 5.465100002766121e-05,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    5.465100002766121e-05,
+    3.213899981346913e-05,
+    2.6125000658794306e-05,
+    2.334199962206185e-05,
+    2.3763999706716277e-05
+   ],
+   "warm_median_seconds": 2.494450018275529e-05,
+   "warm_min_seconds": 2.334199962206185e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "validate (header + checksum)",
+   "first_seconds": 2.1953999748802744e-05,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "validation",
+   "result": "ok",
+   "samples_seconds": [
+    2.1953999748802744e-05,
+    1.4467001165030524e-05,
+    1.3623999620904215e-05,
+    1.328599864791613e-05,
+    1.3191000107326545e-05
+   ],
+   "warm_median_seconds": 1.3454999134410173e-05,
+   "warm_min_seconds": 1.3191000107326545e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate into the scope",
+   "first_seconds": 6.47590004518861e-05,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    6.47590004518861e-05,
+    7.643000026291702e-05,
+    5.6290000429726206e-05,
+    5.426499956229236e-05,
+    5.5096999858506024e-05
+   ],
+   "warm_median_seconds": 5.5693500144116115e-05,
+   "warm_min_seconds": 5.426499956229236e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation: a query on the state",
+   "first_seconds": 3.014000139955897e-05,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "evaluation",
+   "result": "snapshot",
+   "samples_seconds": [
+    3.014000139955897e-05,
+    1.2418000551406294e-05,
+    9.490999218542129e-06
+   ],
+   "warm_median_seconds": 1.0954499884974211e-05,
+   "warm_min_seconds": 9.490999218542129e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "load budget",
+   "limit": 28151,
+   "message": "state record: needs 28152 bytes, budget 28151",
+   "need": 28152,
+   "params": {
+    "groups": 16384,
+    "rows": 100000,
+    "state": "certificate"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.075099994021002e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 0.00010122599996975623,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    0.00010122599996975623,
+    8.156900003086776e-05,
+    7.989600089786109e-05,
+    0.004144096999880276,
+    0.00015595200056850445
+   ],
+   "warm_median_seconds": 0.0001187605002996861,
+   "warm_min_seconds": 7.989600089786109e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 4.769990482600406e-07,
+   "params": {
+    "bytes": 2664,
+    "state": "bigint 2^20000"
+   },
+   "phase": "bytes",
+   "result": 2664,
+   "samples_seconds": [
+    4.769990482600406e-07
+   ],
+   "warm_median_seconds": 4.769990482600406e-07,
+   "warm_min_seconds": 4.769990482600406e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 4.910399911750574e-05,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    4.910399911750574e-05,
+    2.246100120828487e-05,
+    2.6448000426171347e-05,
+    1.6810001397971064e-05,
+    1.515400072094053e-05
+   ],
+   "warm_median_seconds": 1.9635501303127967e-05,
+   "warm_min_seconds": 1.515400072094053e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate the value",
+   "first_seconds": 1.4893999832565896e-05,
+   "params": {
+    "state": "bigint 2^20000"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    1.4893999832565896e-05,
+    8.537999747204594e-06,
+    4.748999344883487e-06,
+    4.636000085156411e-06,
+    4.063998858327977e-06
+   ],
+   "warm_median_seconds": 4.692499715019949e-06,
+   "warm_min_seconds": 4.063998858327977e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "dumps",
+   "first_seconds": 7.580199962831102e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "serialization",
+   "samples_seconds": [
+    7.580199962831102e-05,
+    4.693600021710154e-05,
+    5.5589998737559654e-05,
+    4.900299973087385e-05,
+    4.06339986511739e-05
+   ],
+   "warm_median_seconds": 4.7969499973987695e-05,
+   "warm_min_seconds": 4.06339986511739e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "record bytes",
+   "first_seconds": 2.659999154275283e-07,
+   "params": {
+    "bytes": 1072,
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "bytes",
+   "result": 1072,
+   "samples_seconds": [
+    2.659999154275283e-07
+   ],
+   "warm_median_seconds": 2.659999154275283e-07,
+   "warm_min_seconds": 2.659999154275283e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "loads",
+   "first_seconds": 1.8988999727298506e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "load",
+   "samples_seconds": [
+    1.8988999727298506e-05,
+    1.5596999219269492e-05,
+    2.364000101806596e-05,
+    1.4792000001762062e-05,
+    1.354000050923787e-05
+   ],
+   "warm_median_seconds": 1.5194499610515777e-05,
+   "warm_min_seconds": 1.354000050923787e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rehydrate the value",
+   "first_seconds": 4.680900019593537e-05,
+   "params": {
+    "state": "bigq (2^4000+1)/3^2000"
+   },
+   "phase": "rehydration",
+   "samples_seconds": [
+    4.680900019593537e-05,
+    4.112799979338888e-05,
+    3.4640999729163013e-05,
+    3.437200030020904e-05,
+    3.850399843940977e-05
+   ],
+   "warm_median_seconds": 3.657249908428639e-05,
+   "warm_min_seconds": 3.437200030020904e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0007098639998730505,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "persisted",
+   "result": 2496,
+   "samples_seconds": [
+    0.0007098639998730505,
+    0.0005284039998514345,
+    0.000531648998730816
+   ],
+   "warm_median_seconds": 0.0005300264992911252,
+   "warm_min_seconds": 0.0005284039998514345
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.0010710360002121888,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "rebuilt",
+   "result": 2496,
+   "samples_seconds": [
+    0.0010710360002121888,
+    0.0009812730004341574,
+    0.00514115199985099
+   ],
+   "warm_median_seconds": 0.003061212500142574,
+   "warm_min_seconds": 0.0009812730004341574
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0010706500015658094,
+   "params": {
+    "bytes": 288096,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "persisted",
+   "result": 26,
+   "samples_seconds": [
+    0.0010706500015658094,
+    0.000757926000005682,
+    0.0007260799993673572
+   ],
+   "warm_median_seconds": 0.0007420029996865196,
+   "warm_min_seconds": 0.0007260799993673572
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.0008405230000789743,
+   "params": {
+    "bytes": 288096,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "rebuilt",
+   "result": 26,
+   "samples_seconds": [
+    0.0008405230000789743,
+    0.000631793000138714,
+    0.0006431080000766087
+   ],
+   "warm_median_seconds": 0.0006374505001076614,
+   "warm_min_seconds": 0.000631793000138714
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.006849763998616254,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "persisted",
+   "result": 16,
+   "samples_seconds": [
+    0.006849763998616254,
+    0.002498249001291697,
+    0.002846031000444782
+   ],
+   "warm_median_seconds": 0.0026721400008682394,
+   "warm_min_seconds": 0.002498249001291697
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.006943210000827094,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "rebuilt",
+   "result": 16,
+   "samples_seconds": [
+    0.006943210000827094,
+    0.002813831000821665,
+    0.0029106450001563644
+   ],
+   "warm_median_seconds": 0.0028622380004890147,
+   "warm_min_seconds": 0.002813831000821665
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.00011152400111313909,
+   "params": {
+    "bytes": 2504,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "persisted",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.00011152400111313909,
+    5.383600000641309e-05,
+    4.6548999307560734e-05
+   ],
+   "warm_median_seconds": 5.019249965698691e-05,
+   "warm_min_seconds": 4.6548999307560734e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.0004535730004135985,
+   "params": {
+    "bytes": 2504,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 10000
+   },
+   "phase": "rebuilt",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.0004535730004135985,
+    0.00038976100040599704,
+    0.00035410099917498883
+   ],
+   "warm_median_seconds": 0.00037193099979049293,
+   "warm_min_seconds": 0.00035410099917498883
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0007699910001974786,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "persisted",
+   "result": 25048,
+   "samples_seconds": [
+    0.0007699910001974786,
+    0.0006257569984882139,
+    0.0005145430004631635
+   ],
+   "warm_median_seconds": 0.0005701499994756887,
+   "warm_min_seconds": 0.0005145430004631635
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.011179425999216619,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "rebuilt",
+   "result": 25048,
+   "samples_seconds": [
+    0.011179425999216619,
+    0.013376352000705083,
+    0.011317652999423444
+   ],
+   "warm_median_seconds": 0.012347002500064264,
+   "warm_min_seconds": 0.011317652999423444
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0014904879990353948,
+   "params": {
+    "bytes": 529632,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "persisted",
+   "result": 23,
+   "samples_seconds": [
+    0.0014904879990353948,
+    0.001577547998749651,
+    0.0057874060003086925
+   ],
+   "warm_median_seconds": 0.0036824769995291717,
+   "warm_min_seconds": 0.001577547998749651
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.0054220809997787,
+   "params": {
+    "bytes": 529632,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "rebuilt",
+   "result": 23,
+   "samples_seconds": [
+    0.0054220809997787,
+    0.009497585000644904,
+    0.009454496001126245
+   ],
+   "warm_median_seconds": 0.009476040500885574,
+   "warm_min_seconds": 0.009454496001126245
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.004374404999907711,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "persisted",
+   "result": 16,
+   "samples_seconds": [
+    0.004374404999907711,
+    0.0076363970001693815,
+    0.0026806149999174522
+   ],
+   "warm_median_seconds": 0.005158506000043417,
+   "warm_min_seconds": 0.0026806149999174522
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.010685552000722964,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "rebuilt",
+   "result": 16,
+   "samples_seconds": [
+    0.010685552000722964,
+    0.010808375000124215,
+    0.010926349001238123
+   ],
+   "warm_median_seconds": 0.010867362000681169,
+   "warm_min_seconds": 0.010808375000124215
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.00018954900042444933,
+   "params": {
+    "bytes": 13752,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "persisted",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.00018954900042444933,
+    0.00010644800022419076,
+    9.886000043479726e-05
+   ],
+   "warm_median_seconds": 0.00010265400032949401,
+   "warm_min_seconds": 9.886000043479726e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.002962496000691317,
+   "params": {
+    "bytes": 13752,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "rebuilt",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.002962496000691317,
+    0.0029816280002705753,
+    0.007128147000912577
+   ],
+   "warm_median_seconds": 0.005054887500591576,
+   "warm_min_seconds": 0.0029816280002705753
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0008034769998630509,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "persisted",
+   "result": 250199,
+   "samples_seconds": [
+    0.0008034769998630509,
+    0.0006237429988686927,
+    0.0005660730003000936
+   ],
+   "warm_median_seconds": 0.0005949079995843931,
+   "warm_min_seconds": 0.0005660730003000936
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.09244097100054205,
+   "params": {
+    "bytes": 39832,
+    "family": "bank",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "rebuilt",
+   "result": 250199,
+   "samples_seconds": [
+    0.09244097100054205,
+    0.11023312799989071,
+    0.09210910000001604
+   ],
+   "warm_median_seconds": 0.10117111399995338,
+   "warm_min_seconds": 0.09210910000001604
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.002343348998692818,
+   "params": {
+    "bytes": 529832,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "persisted",
+   "result": 25,
+   "samples_seconds": [
+    0.002343348998692818,
+    0.006256561999180121,
+    0.001642687000639853
+   ],
+   "warm_median_seconds": 0.003949624499909987,
+   "warm_min_seconds": 0.001642687000639853
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.05619409499922767,
+   "params": {
+    "bytes": 529832,
+    "family": "histogram",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "rebuilt",
+   "result": 25,
+   "samples_seconds": [
+    0.05619409499922767,
+    0.05223526900044817,
+    0.05607619999864255
+   ],
+   "warm_median_seconds": 0.05415573449954536,
+   "warm_min_seconds": 0.05223526900044817
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.003936343000532361,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "persisted",
+   "result": 16,
+   "samples_seconds": [
+    0.003936343000532361,
+    0.008176726998499362,
+    0.003380960000868072
+   ],
+   "warm_median_seconds": 0.005778843499683717,
+   "warm_min_seconds": 0.003380960000868072
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.06922408300124516,
+   "params": {
+    "bytes": 84952,
+    "family": "moments",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "rebuilt",
+   "result": 16,
+   "samples_seconds": [
+    0.06922408300124516,
+    0.07534706699880189,
+    0.0679058760015323
+   ],
+   "warm_median_seconds": 0.0716264715001671,
+   "warm_min_seconds": 0.0679058760015323
+  },
+  {
+   "backend": "cpu",
+   "case": "persisted (load + fresh + rehydrate + query)",
+   "first_seconds": 0.0008630609991087113,
+   "params": {
+    "bytes": 126248,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "persisted",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.0008630609991087113,
+    0.0007640690000698669,
+    0.0006875429990031989
+   ],
+   "warm_median_seconds": 0.0007258059995365329,
+   "warm_min_seconds": 0.0006875429990031989
+  },
+  {
+   "backend": "cpu",
+   "case": "rebuilt (scope + build + query)",
+   "first_seconds": 0.052582429998437874,
+   "params": {
+    "bytes": 126248,
+    "family": "certificate",
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "rebuilt",
+   "result": "snapshot",
+   "samples_seconds": [
+    0.052582429998437874,
+    0.05388057399977697,
+    0.046064750000368804
+   ],
+   "warm_median_seconds": 0.04997266200007289,
+   "warm_min_seconds": 0.046064750000368804
+  }
+ ],
+ "seconds": 6.2355992310003785,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "load bytes (bank)",
+   "largest_admitted": 21944,
+   "rows": 100000,
+   "smallest_refused": 21943
+  },
+  {
+   "grid": "load bytes (histogram)",
+   "largest_admitted": 266968,
+   "rows": 100000,
+   "smallest_refused": 266967
+  },
+  {
+   "grid": "load bytes (moments)",
+   "largest_admitted": 44600,
+   "rows": 100000,
+   "smallest_refused": 44599
+  },
+  {
+   "grid": "load bytes (certificate)",
+   "largest_admitted": 28152,
+   "rows": 100000,
+   "smallest_refused": 28151
+  },
+  {
+   "grid": "load bytes (bank)",
+   "largest_admitted": 4983224,
+   "rows": 100000,
+   "smallest_refused": 4983223
+  },
+  {
+   "grid": "load bytes (histogram)",
+   "largest_admitted": 8230056,
+   "rows": 100000,
+   "smallest_refused": 8230055
+  },
+  {
+   "grid": "load bytes (moments)",
+   "largest_admitted": 10750520,
+   "rows": 100000,
+   "smallest_refused": 10750519
+  },
+  {
+   "grid": "load bytes (certificate)",
+   "largest_admitted": 28152,
+   "rows": 100000,
+   "smallest_refused": 28151
+  }
+ ]
+}

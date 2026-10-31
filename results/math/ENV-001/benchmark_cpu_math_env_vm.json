@@ -1,0 +1,1169 @@
+{
+ "argv": [
+  "--capability",
+  "ENV-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/ENV-001/benchmark_cpu_math_env_vm.json"
+ ],
+ "capability": "ENV-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:27:00+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_env.c (single-threaded; the sweep and the lookups), cuda = math_env_gpu.cu (device runs only), numpy = float64 evaluation of every function at every value (inexact: its disagreements with the exact winners are recorded, not hidden).",
+  "A build costs one exact difference and root computation per class per sweep step (steps = regions); a lookup costs a binary search over the points, each comparison the sign of an integer polynomial at t from residues modulo the job's primes; the all-group evaluation costs one exact comparison per class.",
+  "ENV-001 is univariate: a parameter dimension of 2 is refused (UnsupportedError), not measured.",
+  "The sweep forms one difference per class per step, so an envelope with as many pieces as groups costs about groups^2 differences: 1,024 tangent lines exceed the default iteration budget (2^20) and are recorded as that refusal, then measured with an explicit budget of 4 x 2^20."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "algebraic": 2,
+   "backend": "cpu",
+   "case": "envelope build (exact sweep + INV-001 isolation)",
+   "first_seconds": 0.0024230630006059073,
+   "iterations": 279,
+   "params": {
+    "groups": 8,
+    "kind": "mixed"
+   },
+   "phase": "build",
+   "points": 4,
+   "regions": 7,
+   "samples_seconds": [
+    0.0024230630006059073,
+    0.0010797370014188346,
+    0.0011408810005377745
+   ],
+   "warm_median_seconds": 0.0011103090009783045,
+   "warm_min_seconds": 0.0010797370014188346
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 9.21199989534216e-05,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    9.21199989534216e-05,
+    4.577400068228599e-05,
+    3.3616999644436873e-05
+   ],
+   "warm_median_seconds": 3.969550016336143e-05,
+   "warm_min_seconds": 3.3616999644436873e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 3.286799983470701e-05,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.286799983470701e-05,
+    3.05539997498272e-05,
+    2.780599970719777e-05
+   ],
+   "warm_median_seconds": 2.9179999728512485e-05,
+   "warm_min_seconds": 2.780599970719777e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 7.697200089751277e-05,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.697200089751277e-05,
+    2.2832999093225226e-05,
+    1.3828001101501286e-05
+   ],
+   "warm_median_seconds": 1.8330500097363256e-05,
+   "warm_min_seconds": 1.3828001101501286e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.0011265060002187965,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0011265060002187965,
+    0.0010917750005319249
+   ],
+   "warm_median_seconds": 0.0010917750005319249,
+   "warm_min_seconds": 0.0010917750005319249
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.00024350300009245984,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.00024350300009245984,
+    0.00020698400112451054,
+    0.00019156500093231443
+   ],
+   "warm_median_seconds": 0.0001992745010284125,
+   "warm_min_seconds": 0.00019156500093231443
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.00032681999982742127,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00032681999982742127,
+    0.0004529289999481989,
+    0.0002494470008969074
+   ],
+   "warm_median_seconds": 0.00035118800042255316,
+   "warm_min_seconds": 0.0002494470008969074
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 7.305299914150964e-05,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.305299914150964e-05,
+    6.248600038816221e-05,
+    4.1739998778211884e-05
+   ],
+   "warm_median_seconds": 5.211299958318705e-05,
+   "warm_min_seconds": 4.1739998778211884e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.0013278009992063744,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0013278009992063744,
+    0.0012724759999400703
+   ],
+   "warm_median_seconds": 0.0012724759999400703,
+   "warm_min_seconds": 0.0012724759999400703
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.020699823999166256,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.020699823999166256,
+    0.02257996899970749,
+    0.03839768299985735
+   ],
+   "warm_median_seconds": 0.03048882599978242,
+   "warm_min_seconds": 0.02257996899970749
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.04790337800113775,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04790337800113775,
+    0.04478651700082992
+   ],
+   "warm_median_seconds": 0.04478651700082992,
+   "warm_min_seconds": 0.04478651700082992
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.0028696190001937794,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028696190001937794,
+    0.002131813000232796,
+    0.0018620690007082885
+   ],
+   "warm_median_seconds": 0.0019969410004705423,
+   "warm_min_seconds": 0.0018620690007082885
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.019847817000481882,
+   "params": {
+    "groups": 8,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.019847817000481882,
+    0.022541782998814597
+   ],
+   "warm_median_seconds": 0.022541782998814597,
+   "warm_min_seconds": 0.022541782998814597
+  },
+  {
+   "algebraic": 5,
+   "backend": "cpu",
+   "case": "envelope build (exact sweep + INV-001 isolation)",
+   "first_seconds": 0.006151118999696337,
+   "iterations": 1133,
+   "params": {
+    "groups": 64,
+    "kind": "mixed"
+   },
+   "phase": "build",
+   "points": 8,
+   "regions": 15,
+   "samples_seconds": [
+    0.006151118999696337,
+    0.006701928999973461,
+    0.005896107999433298
+   ],
+   "warm_median_seconds": 0.006299018499703379,
+   "warm_min_seconds": 0.005896107999433298
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 9.687700003269129e-05,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    9.687700003269129e-05,
+    3.651299994089641e-05,
+    2.7615000362857245e-05
+   ],
+   "warm_median_seconds": 3.2064000151876826e-05,
+   "warm_min_seconds": 2.7615000362857245e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.00010548400132392999,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010548400132392999,
+    5.310400047164876e-05,
+    4.65320008515846e-05
+   ],
+   "warm_median_seconds": 4.981800066161668e-05,
+   "warm_min_seconds": 4.65320008515846e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.00021663000006810762,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021663000006810762,
+    5.634300032397732e-05,
+    5.221399987931363e-05
+   ],
+   "warm_median_seconds": 5.427850010164548e-05,
+   "warm_min_seconds": 5.221399987931363e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.005851354999322211,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.005851354999322211,
+    0.005880194001292693
+   ],
+   "warm_median_seconds": 0.005880194001292693,
+   "warm_min_seconds": 0.005880194001292693
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.00024127399956341833,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.00024127399956341833,
+    0.00020036699970660266,
+    0.00018708700008573942
+   ],
+   "warm_median_seconds": 0.00019372699989617104,
+   "warm_min_seconds": 0.00018708700008573942
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.0005919780014664866,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005919780014664866,
+    0.0006037549992470304,
+    0.0005807220004498959
+   ],
+   "warm_median_seconds": 0.0005922384998484631,
+   "warm_min_seconds": 0.0005807220004498959
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.00014951299999665935,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014951299999665935,
+    9.162700007436797e-05,
+    0.00014335299965750892
+   ],
+   "warm_median_seconds": 0.00011748999986593844,
+   "warm_min_seconds": 9.162700007436797e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.005787878999399254,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.005787878999399254,
+    0.006455665999965277
+   ],
+   "warm_median_seconds": 0.006455665999965277,
+   "warm_min_seconds": 0.006455665999965277
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.033933512000658084,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.033933512000658084,
+    0.0573133340003551,
+    0.0717108359986014
+   ],
+   "warm_median_seconds": 0.06451208499947825,
+   "warm_min_seconds": 0.0573133340003551
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.12078302299960342,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.12078302299960342,
+    0.10455736900075863
+   ],
+   "warm_median_seconds": 0.10455736900075863,
+   "warm_min_seconds": 0.10455736900075863
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.017915673999596038,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017915673999596038,
+    0.004563758000585949,
+    0.0039035819991113385
+   ],
+   "warm_median_seconds": 0.004233669999848644,
+   "warm_min_seconds": 0.0039035819991113385
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.03934400300022389,
+   "params": {
+    "groups": 64,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.03934400300022389,
+    0.025843056000667275
+   ],
+   "warm_median_seconds": 0.025843056000667275,
+   "warm_min_seconds": 0.025843056000667275
+  },
+  {
+   "algebraic": 2,
+   "backend": "cpu",
+   "case": "envelope build (exact sweep + INV-001 isolation)",
+   "first_seconds": 0.12708861899955082,
+   "iterations": 5357,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed"
+   },
+   "phase": "build",
+   "points": 4,
+   "regions": 7,
+   "samples_seconds": [
+    0.12708861899955082,
+    0.11460873999931209
+   ],
+   "warm_median_seconds": 0.11460873999931209,
+   "warm_min_seconds": 0.11460873999931209
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.00029585999982373323,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.00029585999982373323,
+    7.42800002626609e-05,
+    4.708800042863004e-05
+   ],
+   "warm_median_seconds": 6.068400034564547e-05,
+   "warm_min_seconds": 4.708800042863004e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.0004438279993337346,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004438279993337346,
+    0.00026055300077132415,
+    0.00025303599977632985
+   ],
+   "warm_median_seconds": 0.000256794500273827,
+   "warm_min_seconds": 0.00025303599977632985
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.0012182659993413836,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012182659993413836,
+    0.0008210569994844263,
+    0.0008238009995693574
+   ],
+   "warm_median_seconds": 0.0008224289995268919,
+   "warm_min_seconds": 0.0008210569994844263
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.08611706099873118,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 1
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.08611706099873118,
+    0.12850206099938077
+   ],
+   "warm_median_seconds": 0.12850206099938077,
+   "warm_min_seconds": 0.12850206099938077
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.00024258499979623593,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.00024258499979623593,
+    0.0001996890005102614,
+    0.0001898460013762815
+   ],
+   "warm_median_seconds": 0.00019476750094327144,
+   "warm_min_seconds": 0.0001898460013762815
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.018397586998617044,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.018397586998617044,
+    0.005828073000884615,
+    0.006649898999967263
+   ],
+   "warm_median_seconds": 0.006238986000425939,
+   "warm_min_seconds": 0.005828073000884615
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 0.0015884889999142615,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015884889999142615,
+    0.001298279999900842,
+    0.0012388569994072895
+   ],
+   "warm_median_seconds": 0.0012685684996540658,
+   "warm_min_seconds": 0.0012388569994072895
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.066844310000306,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 100
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.066844310000306,
+    0.09719533799943747
+   ],
+   "warm_median_seconds": 0.09719533799943747,
+   "warm_min_seconds": 0.09719533799943747
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (binary search over the breakpoints)",
+   "first_seconds": 0.036798256000110996,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "primes": 1,
+   "samples_seconds": [
+    0.036798256000110996,
+    0.03353593700012425,
+    0.016867780999746174
+   ],
+   "warm_median_seconds": 0.02520185899993521,
+   "warm_min_seconds": 0.016867780999746174
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated all-group evaluation (exact, native)",
+   "first_seconds": 0.9709981180003524,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.9709981180003524,
+    0.9302632020007877
+   ],
+   "warm_median_seconds": 0.9302632020007877,
+   "warm_min_seconds": 0.9302632020007877
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated all-group evaluation (NumPy float64, inexact)",
+   "disagreements_with_exact": 0,
+   "first_seconds": 1.2567763730003207,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2567763730003207,
+    0.15650622399880376,
+    0.14983754599961685
+   ],
+   "warm_median_seconds": 0.1531718849992103,
+   "warm_min_seconds": 0.14983754599961685
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build + lookups (one-shot)",
+   "first_seconds": 0.1275273589999415,
+   "params": {
+    "groups": 1024,
+    "kind": "mixed",
+    "values": 10000
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.1275273589999415,
+    0.19174839400147903
+   ],
+   "warm_median_seconds": 0.19174839400147903,
+   "warm_min_seconds": 0.19174839400147903
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (coincident curves)",
+   "classes": 256,
+   "coincident_max": 1,
+   "first_seconds": 0.03917475399975956,
+   "params": {
+    "duplicated": 0.0,
+    "groups": 256
+   },
+   "phase": "build",
+   "points": 7,
+   "regions": 13,
+   "samples_seconds": [
+    0.03917475399975956,
+    0.0393770750015392
+   ],
+   "warm_median_seconds": 0.0393770750015392,
+   "warm_min_seconds": 0.0393770750015392
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (coincident curves)",
+   "classes": 173,
+   "coincident_max": 2,
+   "first_seconds": 0.03317525199963711,
+   "params": {
+    "duplicated": 0.5,
+    "groups": 256
+   },
+   "phase": "build",
+   "points": 8,
+   "regions": 15,
+   "samples_seconds": [
+    0.03317525199963711,
+    0.03297196499988786
+   ],
+   "warm_median_seconds": 0.03297196499988786,
+   "warm_min_seconds": 0.03297196499988786
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (coincident curves)",
+   "classes": 51,
+   "coincident_max": 11,
+   "first_seconds": 0.023617117998583126,
+   "params": {
+    "duplicated": 0.9,
+    "groups": 256
+   },
+   "phase": "build",
+   "points": 7,
+   "regions": 13,
+   "samples_seconds": [
+    0.023617117998583126,
+    0.01994453900078952
+   ],
+   "warm_median_seconds": 0.01994453900078952,
+   "warm_min_seconds": 0.01994453900078952
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (breakpoint count)",
+   "first_seconds": 0.005435774999568821,
+   "iterations": 270,
+   "params": {
+    "groups": 16,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "build",
+   "pieces": 16,
+   "points": 15,
+   "regions": 31,
+   "samples_seconds": [
+    0.005435774999568821,
+    0.0013754259998677298
+   ],
+   "warm_median_seconds": 0.0013754259998677298,
+   "warm_min_seconds": 0.0013754259998677298
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (1,000 values)",
+   "first_seconds": 0.007175037000706652,
+   "params": {
+    "groups": 16,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007175037000706652,
+    0.001812065000194707,
+    0.005858579001142061
+   ],
+   "warm_median_seconds": 0.003835322000668384,
+   "warm_min_seconds": 0.001812065000194707
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget regions (output = regions - 1)",
+   "limit": 30,
+   "message": "envelope: needs 31 output, budget 30",
+   "need": 31,
+   "params": {
+    "groups": 16,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0008951820000220323,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (breakpoint count)",
+   "first_seconds": 0.013237485998615739,
+   "iterations": 4158,
+   "params": {
+    "groups": 64,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "build",
+   "pieces": 64,
+   "points": 63,
+   "regions": 127,
+   "samples_seconds": [
+    0.013237485998615739,
+    0.018363271999987774
+   ],
+   "warm_median_seconds": 0.018363271999987774,
+   "warm_min_seconds": 0.018363271999987774
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (1,000 values)",
+   "first_seconds": 0.006036709999534651,
+   "params": {
+    "groups": 64,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006036709999534651,
+    0.0018086449999827892,
+    0.0017803689988795668
+   ],
+   "warm_median_seconds": 0.001794506999431178,
+   "warm_min_seconds": 0.0017803689988795668
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget regions (output = regions - 1)",
+   "limit": 126,
+   "message": "envelope: needs 127 output, budget 126",
+   "need": 127,
+   "params": {
+    "groups": 64,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.007453424001141684,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (breakpoint count)",
+   "first_seconds": 0.04668182100067497,
+   "iterations": 65790,
+   "params": {
+    "groups": 256,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "build",
+   "pieces": 256,
+   "points": 255,
+   "regions": 511,
+   "samples_seconds": [
+    0.04668182100067497,
+    0.046773279000262846
+   ],
+   "warm_median_seconds": 0.046773279000262846,
+   "warm_min_seconds": 0.046773279000262846
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (1,000 values)",
+   "first_seconds": 0.002061182000034023,
+   "params": {
+    "groups": 256,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002061182000034023,
+    0.002063357998849824,
+    0.006149094999273075
+   ],
+   "warm_median_seconds": 0.004106226499061449,
+   "warm_min_seconds": 0.002063357998849824
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget regions (output = regions - 1)",
+   "limit": 510,
+   "message": "envelope: needs 511 output, budget 510",
+   "need": 511,
+   "params": {
+    "groups": 256,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.07256162700105051,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget sweep (default iterations budget)",
+   "limit": 1048576,
+   "message": "envelope: needs 1048577 iterations, budget 1048576",
+   "need": 1048577,
+   "params": {
+    "groups": 1024,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.8282095750000735,
+   "refused": true,
+   "resource": "iterations"
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope build (breakpoint count)",
+   "first_seconds": 1.0442137459995138,
+   "iterations": 1049598,
+   "params": {
+    "groups": 1024,
+    "iterations_budget": 4194304,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "build",
+   "pieces": 1024,
+   "points": 1023,
+   "regions": 2047,
+   "samples_seconds": [
+    1.0442137459995138,
+    0.9068401090007683
+   ],
+   "warm_median_seconds": 0.9068401090007683,
+   "warm_min_seconds": 0.9068401090007683
+  },
+  {
+   "backend": "cpu",
+   "case": "lookups (1,000 values)",
+   "first_seconds": 0.006173174999275943,
+   "params": {
+    "groups": 1024,
+    "iterations_budget": 4194304,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006173174999275943,
+    0.0019539349996193778,
+    0.004328622000684845
+   ],
+   "warm_median_seconds": 0.0031412785001521115,
+   "warm_min_seconds": 0.0019539349996193778
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget regions (output = regions - 1)",
+   "limit": 2046,
+   "message": "envelope: needs 2047 output, budget 2046",
+   "need": 2047,
+   "params": {
+    "groups": 1024,
+    "iterations_budget": 4194304,
+    "shape": "tangent lines of t^2 (upper)"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.774384831000134,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "algebraic": 8,
+   "backend": "cpu",
+   "case": "envelope build (algebraic breakpoints)",
+   "first_seconds": 0.001655137999478029,
+   "params": {
+    "groups": 8,
+    "shape": "parabolas of distinct curvatures (irrational crossings)"
+   },
+   "phase": "build",
+   "points": 8,
+   "regions": 17,
+   "samples_seconds": [
+    0.001655137999478029,
+    0.0013909860008425312
+   ],
+   "warm_median_seconds": 0.0013909860008425312,
+   "warm_min_seconds": 0.0013909860008425312
+  },
+  {
+   "algebraic": 32,
+   "backend": "cpu",
+   "case": "envelope build (algebraic breakpoints)",
+   "first_seconds": 0.007294838998859632,
+   "params": {
+    "groups": 32,
+    "shape": "parabolas of distinct curvatures (irrational crossings)"
+   },
+   "phase": "build",
+   "points": 32,
+   "regions": 65,
+   "samples_seconds": [
+    0.007294838998859632,
+    0.0066996059995290125
+   ],
+   "warm_median_seconds": 0.0066996059995290125,
+   "warm_min_seconds": 0.0066996059995290125
+  },
+  {
+   "algebraic": 128,
+   "backend": "cpu",
+   "case": "envelope build (algebraic breakpoints)",
+   "first_seconds": 0.05943865600056597,
+   "params": {
+    "groups": 128,
+    "shape": "parabolas of distinct curvatures (irrational crossings)"
+   },
+   "phase": "build",
+   "points": 128,
+   "regions": 257,
+   "samples_seconds": [
+    0.05943865600056597,
+    0.10157661300036125
+   ],
+   "warm_median_seconds": 0.10157661300036125,
+   "warm_min_seconds": 0.10157661300036125
+  },
+  {
+   "backend": "cpu",
+   "case": "envelope of expressions (dimension 1)",
+   "first_seconds": 0.005097872000987991,
+   "params": {
+    "dimension": 1
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005097872000987991,
+    0.0010605090010358253,
+    0.0008945520003180718
+   ],
+   "warm_median_seconds": 0.0009775305006769486,
+   "warm_min_seconds": 0.0008945520003180718
+  },
+  {
+   "backend": "cpu",
+   "case": "parameter dimension 2",
+   "error": "UnsupportedError",
+   "message": "envelope of expressions: outside the capability's declared scope",
+   "params": {
+    "dimension": 2
+   },
+   "phase": "refusal",
+   "refused": true
+  }
+ ],
+ "seconds": 10.57017521600028,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "exact_regions": 31,
+   "grid": "regions (output budget)",
+   "groups": 16,
+   "largest_admitted": {
+    "output": 31
+   },
+   "smallest_refused": {
+    "output": 30
+   }
+  },
+  {
+   "exact_regions": 127,
+   "grid": "regions (output budget)",
+   "groups": 64,
+   "largest_admitted": {
+    "output": 127
+   },
+   "smallest_refused": {
+    "output": 126
+   }
+  },
+  {
+   "exact_regions": 511,
+   "grid": "regions (output budget)",
+   "groups": 256,
+   "largest_admitted": {
+    "output": 511
+   },
+   "smallest_refused": {
+    "output": 510
+   }
+  },
+  {
+   "exact_regions": 2047,
+   "grid": "regions (output budget)",
+   "groups": 1024,
+   "largest_admitted": {
+    "output": 2047
+   },
+   "smallest_refused": {
+    "output": 2046
+   }
+  }
+ ]
+}

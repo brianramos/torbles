@@ -1,0 +1,952 @@
+{
+ "argv": [
+  "--capability",
+  "FND-007",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/FND-007/benchmark_cpu_math_certificates_vm.json"
+ ],
+ "capability": "FND-007",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": false,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:10:27+00:00"
+ },
+ "notes": [
+  "fresh() rebuilds the address-free record of the current scope (selection words, NULL domains of the claim columns): its cost grows with rows / 64 and the NULL scan, not with the claim; a mutation is detected from the revision without reading the data again.",
+  "Re-verification is exhaustive (every selected row); CUDA timings exist only with --device (the emulation is never timed as CUDA)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "discovery (DISC-001 proposals + verification)",
+   "first_seconds": 0.15582802099925175,
+   "params": {
+    "rows": 200000
+   },
+   "phase": "discovery",
+   "result": {
+    "candidates": 120,
+    "rules": 3
+   },
+   "samples_seconds": [
+    0.15582802099925175,
+    0.1576669080004649,
+    0.15070900099999562
+   ],
+   "warm_median_seconds": 0.15418795450023026,
+   "warm_min_seconds": 0.15070900099999562
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.01164711799901852,
+   "params": {
+    "rows": 200000
+   },
+   "phase": "construction",
+   "samples_seconds": [
+    0.01164711799901852,
+    0.03232934399966325,
+    0.009344862000943976
+   ],
+   "warm_median_seconds": 0.020837103000303614,
+   "warm_min_seconds": 0.009344862000943976
+  },
+  {
+   "backend": "cpu",
+   "case": "certification (snapshot)",
+   "first_seconds": 0.001588947001437191,
+   "params": {
+    "claim": "affine",
+    "rows": 200000
+   },
+   "phase": "certification",
+   "samples_seconds": [
+    0.001588947001437191,
+    0.0012530129988590488,
+    0.001203075000375975
+   ],
+   "warm_median_seconds": 0.0012280439996175119,
+   "warm_min_seconds": 0.001203075000375975
+  },
+  {
+   "backend": "cpu",
+   "case": "check: fresh",
+   "first_seconds": 4.1077000787481666e-05,
+   "params": {
+    "claim": "affine",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": true,
+   "samples_seconds": [
+    4.1077000787481666e-05,
+    2.1608999304589815e-05,
+    1.6743000742280856e-05,
+    1.3340999430511147e-05,
+    1.341800088994205e-05,
+    1.3392998880590312e-05,
+    1.2800999684259295e-05
+   ],
+   "warm_median_seconds": 1.3405499885266181e-05,
+   "warm_min_seconds": 1.2800999684259295e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "check: authorize_exact",
+   "first_seconds": 2.7367001166567206e-05,
+   "params": {
+    "claim": "affine",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": "snapshot",
+   "samples_seconds": [
+    2.7367001166567206e-05,
+    1.804000021365937e-05,
+    1.4617000488215126e-05,
+    1.3606000720756128e-05,
+    1.8991000615642406e-05,
+    1.824999890231993e-05,
+    1.2868000339949504e-05
+   ],
+   "warm_median_seconds": 1.6328500350937247e-05,
+   "warm_min_seconds": 1.2868000339949504e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certification (snapshot)",
+   "first_seconds": 0.00162810899928445,
+   "params": {
+    "claim": "sum",
+    "rows": 200000
+   },
+   "phase": "certification",
+   "samples_seconds": [
+    0.00162810899928445,
+    0.00160463899919705,
+    0.0015178630001173588
+   ],
+   "warm_median_seconds": 0.0015612509996572044,
+   "warm_min_seconds": 0.0015178630001173588
+  },
+  {
+   "backend": "cpu",
+   "case": "check: fresh",
+   "first_seconds": 2.6622999939718284e-05,
+   "params": {
+    "claim": "sum",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": true,
+   "samples_seconds": [
+    2.6622999939718284e-05,
+    1.4076000297791325e-05,
+    1.2806000086129643e-05,
+    1.2963000699528493e-05,
+    1.3881000995752402e-05,
+    1.3005001164856367e-05,
+    1.2852999134338461e-05
+   ],
+   "warm_median_seconds": 1.298400093219243e-05,
+   "warm_min_seconds": 1.2806000086129643e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "check: authorize_exact",
+   "first_seconds": 1.7141999705927446e-05,
+   "params": {
+    "claim": "sum",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": "snapshot",
+   "samples_seconds": [
+    1.7141999705927446e-05,
+    1.2771999536198564e-05,
+    1.254699964192696e-05,
+    1.251499998033978e-05,
+    1.2862999938079156e-05,
+    2.010000025620684e-05,
+    1.3085000318824314e-05
+   ],
+   "warm_median_seconds": 1.281749973713886e-05,
+   "warm_min_seconds": 1.251499998033978e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certification (snapshot)",
+   "first_seconds": 0.0017426310005248524,
+   "params": {
+    "claim": "product",
+    "rows": 200000
+   },
+   "phase": "certification",
+   "samples_seconds": [
+    0.0017426310005248524,
+    0.00167054499979713,
+    0.001602043999810121
+   ],
+   "warm_median_seconds": 0.0016362944998036255,
+   "warm_min_seconds": 0.001602043999810121
+  },
+  {
+   "backend": "cpu",
+   "case": "check: fresh",
+   "first_seconds": 2.7928001145482995e-05,
+   "params": {
+    "claim": "product",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": true,
+   "samples_seconds": [
+    2.7928001145482995e-05,
+    1.4102999557508156e-05,
+    1.3625000065076165e-05,
+    1.2833999790018424e-05,
+    1.3236000086180866e-05,
+    1.312300082645379e-05,
+    1.2518999938038178e-05
+   ],
+   "warm_median_seconds": 1.3179500456317328e-05,
+   "warm_min_seconds": 1.2518999938038178e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "check: authorize_exact",
+   "first_seconds": 1.7216998458025046e-05,
+   "params": {
+    "claim": "product",
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": "snapshot",
+   "samples_seconds": [
+    1.7216998458025046e-05,
+    1.312400127062574e-05,
+    1.3005999790038913e-05,
+    1.602400152478367e-05,
+    1.2971999240107834e-05,
+    1.293099921895191e-05,
+    1.3015000149607658e-05
+   ],
+   "warm_median_seconds": 1.3010499969823286e-05,
+   "warm_min_seconds": 1.293099921895191e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "check: a hypothesis is refused",
+   "first_seconds": 6.514999768114649e-06,
+   "params": {
+    "rows": 200000
+   },
+   "phase": "check",
+   "result": "statistical",
+   "samples_seconds": [
+    6.514999768114649e-06,
+    5.2579998737201095e-06,
+    3.670000296551734e-06,
+    3.3079995773732662e-06,
+    2.2578000425710343e-05,
+    7.68000063544605e-06,
+    5.697000233340077e-06
+   ],
+   "warm_median_seconds": 5.477500053530093e-06,
+   "warm_min_seconds": 3.3079995773732662e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (current scope + 4 checks)",
+   "first_seconds": 0.0005434030008473201,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    0.0005434030008473201,
+    0.0005471189997479087,
+    0.00046755200128245633,
+    0.0004670550006267149,
+    0.0004814470012206584
+   ],
+   "warm_median_seconds": 0.0004744995012515574,
+   "warm_min_seconds": 0.0004670550006267149
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (4 checks, scope given)",
+   "first_seconds": 3.066499994019978e-05,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    3.066499994019978e-05,
+    1.9887000235030428e-05,
+    1.9543998860171996e-05,
+    1.980500019271858e-05,
+    2.0355999367893673e-05,
+    1.9573999452404678e-05,
+    2.1145000573596917e-05
+   ],
+   "warm_median_seconds": 1.9846000213874504e-05,
+   "warm_min_seconds": 1.9543998860171996e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "invalidation (current scope + 4 checks)",
+   "first_seconds": 0.0005746529986936366,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "invalidation",
+   "result": "revision",
+   "samples_seconds": [
+    0.0005746529986936366,
+    0.0004951760001858929,
+    0.0005006619994674111,
+    0.0004852289985137759,
+    0.0004980239991709823
+   ],
+   "warm_median_seconds": 0.0004965999996784376,
+   "warm_min_seconds": 0.0004852289985137759
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 9.774099999049213e-05,
+   "params": {
+    "claims": 1,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 1,
+   "samples_seconds": [
+    9.774099999049213e-05,
+    7.363999975495972e-05,
+    7.742699926893692e-05
+   ],
+   "warm_median_seconds": 7.553349951194832e-05,
+   "warm_min_seconds": 7.363999975495972e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.00013639600001624785,
+   "params": {
+    "claims": 1,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.00013639600001624785,
+    7.794799967086874e-05,
+    6.873100028315093e-05
+   ],
+   "warm_median_seconds": 7.333949997700984e-05,
+   "warm_min_seconds": 6.873100028315093e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.00036052399991604034,
+   "params": {
+    "claims": 4,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 4,
+   "samples_seconds": [
+    0.00036052399991604034,
+    0.00035020900031668134,
+    0.00035006700090889353
+   ],
+   "warm_median_seconds": 0.00035013800061278744,
+   "warm_min_seconds": 0.00035006700090889353
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.00040574100057710893,
+   "params": {
+    "claims": 4,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.00040574100057710893,
+    0.0003644230000645621,
+    0.0003871379994961899
+   ],
+   "warm_median_seconds": 0.000375780499780376,
+   "warm_min_seconds": 0.0003644230000645621
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.0030031059995963005,
+   "params": {
+    "claims": 16,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 16,
+   "samples_seconds": [
+    0.0030031059995963005,
+    0.0029665209985978436,
+    0.0029133080006431555
+   ],
+   "warm_median_seconds": 0.0029399144996204996,
+   "warm_min_seconds": 0.0029133080006431555
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.0027930609994655242,
+   "params": {
+    "claims": 16,
+    "rows": 10000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.0027930609994655242,
+    0.0027807970000139903,
+    0.002749665000010282
+   ],
+   "warm_median_seconds": 0.002765231000012136,
+   "warm_min_seconds": 0.002749665000010282
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: complete rediscovery (DISC-001)",
+   "first_seconds": 0.007874283999626641,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "baseline",
+   "result": {
+    "candidates": 120,
+    "rules": 3
+   },
+   "samples_seconds": [
+    0.007874283999626641,
+    0.0076239299996814225,
+    0.007401535000099102
+   ],
+   "warm_median_seconds": 0.007512732499890262,
+   "warm_min_seconds": 0.007401535000099102
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy recomputation (decode + 3 relations)",
+   "first_seconds": 0.0003393320002942346,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "baseline",
+   "result": true,
+   "samples_seconds": [
+    0.0003393320002942346,
+    0.00018711799930315465,
+    0.00017811600082495715
+   ],
+   "warm_median_seconds": 0.0001826170000640559,
+   "warm_min_seconds": 0.00017811600082495715
+  },
+  {
+   "backend": "cpu",
+   "case": "verification budget",
+   "limit": 159999,
+   "message": "certificate verification: needs 160000 bytes, budget 159999",
+   "need": 160000,
+   "params": {
+    "rows": 10000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.0583999584196135e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (current scope + 4 checks)",
+   "first_seconds": 0.004886729999270756,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    0.004886729999270756,
+    0.0048527839990129,
+    0.01123329000074591,
+    0.008630607999293716,
+    0.008413636000113911
+   ],
+   "warm_median_seconds": 0.008522121999703813,
+   "warm_min_seconds": 0.0048527839990129
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (4 checks, scope given)",
+   "first_seconds": 7.109599937393796e-05,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    7.109599937393796e-05,
+    3.560500044841319e-05,
+    3.5311000829096884e-05,
+    3.422400004637893e-05,
+    3.217599987692665e-05,
+    3.216699951735791e-05,
+    3.2855999961611815e-05
+   ],
+   "warm_median_seconds": 3.3540000003995374e-05,
+   "warm_min_seconds": 3.216699951735791e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "invalidation (current scope + 4 checks)",
+   "first_seconds": 0.0066273089996684575,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "invalidation",
+   "result": "revision",
+   "samples_seconds": [
+    0.0066273089996684575,
+    0.004651735000152257,
+    0.004400210000312654,
+    0.00451281499954348,
+    0.004651485000067623
+   ],
+   "warm_median_seconds": 0.0045821499998055515,
+   "warm_min_seconds": 0.004400210000312654
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.0006194340003276011,
+   "params": {
+    "claims": 1,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 1,
+   "samples_seconds": [
+    0.0006194340003276011,
+    0.0005990680001559667,
+    0.000583596998694702
+   ],
+   "warm_median_seconds": 0.0005913324994253344,
+   "warm_min_seconds": 0.000583596998694702
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.0005561849993682699,
+   "params": {
+    "claims": 1,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.0005561849993682699,
+    0.0005453020003187703,
+    0.000580963000174961
+   ],
+   "warm_median_seconds": 0.0005631325002468657,
+   "warm_min_seconds": 0.0005453020003187703
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.003172695998728159,
+   "params": {
+    "claims": 4,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 4,
+   "samples_seconds": [
+    0.003172695998728159,
+    0.0030956169994169613,
+    0.0031889009987935424
+   ],
+   "warm_median_seconds": 0.003142258999105252,
+   "warm_min_seconds": 0.0030956169994169613
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.0031698279999545775,
+   "params": {
+    "claims": 4,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.0031698279999545775,
+    0.0032565479996264912,
+    0.0031899529985821573
+   ],
+   "warm_median_seconds": 0.0032232504991043243,
+   "warm_min_seconds": 0.0031899529985821573
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.0315634320013487,
+   "params": {
+    "claims": 16,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 16,
+   "samples_seconds": [
+    0.0315634320013487,
+    0.02879275399936887,
+    0.027307299000312923
+   ],
+   "warm_median_seconds": 0.028050026499840897,
+   "warm_min_seconds": 0.027307299000312923
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.026746310000817175,
+   "params": {
+    "claims": 16,
+    "rows": 100000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.026746310000817175,
+    0.02719472299941117,
+    0.029240791000120225
+   ],
+   "warm_median_seconds": 0.028217756999765697,
+   "warm_min_seconds": 0.02719472299941117
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: complete rediscovery (DISC-001)",
+   "first_seconds": 0.08246161500028393,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "baseline",
+   "result": {
+    "candidates": 120,
+    "rules": 3
+   },
+   "samples_seconds": [
+    0.08246161500028393,
+    0.07918842300023243,
+    0.07791310799984785
+   ],
+   "warm_median_seconds": 0.07855076550004014,
+   "warm_min_seconds": 0.07791310799984785
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy recomputation (decode + 3 relations)",
+   "first_seconds": 0.003957709001042531,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "baseline",
+   "result": true,
+   "samples_seconds": [
+    0.003957709001042531,
+    0.0025497379992884817,
+    0.003716537999935099
+   ],
+   "warm_median_seconds": 0.0031331379996117903,
+   "warm_min_seconds": 0.0025497379992884817
+  },
+  {
+   "backend": "cpu",
+   "case": "verification budget",
+   "limit": 1599999,
+   "message": "certificate verification: needs 1600000 bytes, budget 1599999",
+   "need": 1600000,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 9.216499893227592e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (current scope + 4 checks)",
+   "first_seconds": 0.0630280320001475,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    0.0630280320001475,
+    0.0559279860008246,
+    0.055883404000269365,
+    0.056971521000377834,
+    0.0585504230002698
+   ],
+   "warm_median_seconds": 0.05644975350060122,
+   "warm_min_seconds": 0.055883404000269365
+  },
+  {
+   "backend": "cpu",
+   "case": "reuse (4 checks, scope given)",
+   "first_seconds": 0.0004311880002205726,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "reuse",
+   "result": true,
+   "samples_seconds": [
+    0.0004311880002205726,
+    0.00025696299962874036,
+    0.00026437999986228533,
+    0.00027064499954576604,
+    0.00027101999876322225,
+    0.00022513600015372504,
+    0.00023272899852599949
+   ],
+   "warm_median_seconds": 0.00026067149974551285,
+   "warm_min_seconds": 0.00022513600015372504
+  },
+  {
+   "backend": "cpu",
+   "case": "invalidation (current scope + 4 checks)",
+   "first_seconds": 0.10033538199968461,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "invalidation",
+   "result": "revision",
+   "samples_seconds": [
+    0.10033538199968461,
+    0.05754065700057254,
+    0.053626561999408295,
+    0.05713128200113715,
+    0.053329757998653804
+   ],
+   "warm_median_seconds": 0.05537892200027272,
+   "warm_min_seconds": 0.053329757998653804
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.006083576001401525,
+   "params": {
+    "claims": 1,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 1,
+   "samples_seconds": [
+    0.006083576001401525,
+    0.005849487999512348,
+    0.0062069870000414085
+   ],
+   "warm_median_seconds": 0.006028237499776878,
+   "warm_min_seconds": 0.005849487999512348
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.005524063999473583,
+   "params": {
+    "claims": 1,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.005524063999473583,
+    0.00549555399993551,
+    0.006095288999858894
+   ],
+   "warm_median_seconds": 0.005795421499897202,
+   "warm_min_seconds": 0.00549555399993551
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.03380172099969059,
+   "params": {
+    "claims": 4,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 4,
+   "samples_seconds": [
+    0.03380172099969059,
+    0.033473254999989877,
+    0.03384319299948402
+   ],
+   "warm_median_seconds": 0.03365822399973695,
+   "warm_min_seconds": 0.033473254999989877
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.034966191999046714,
+   "params": {
+    "claims": 4,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.034966191999046714,
+    0.0418222419993981,
+    0.03309368599911977
+   ],
+   "warm_median_seconds": 0.037457963999258936,
+   "warm_min_seconds": 0.03309368599911977
+  },
+  {
+   "backend": "cpu",
+   "case": "full re-verification",
+   "first_seconds": 0.32391017699956137,
+   "params": {
+    "claims": 16,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 16,
+   "samples_seconds": [
+    0.32391017699956137,
+    0.30661957200027246,
+    0.28531693699915195
+   ],
+   "warm_median_seconds": 0.2959682544997122,
+   "warm_min_seconds": 0.28531693699915195
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive evidence (verify)",
+   "first_seconds": 0.3075066119999974,
+   "params": {
+    "claims": 16,
+    "rows": 1000000
+   },
+   "phase": "re-verification",
+   "result": 0,
+   "samples_seconds": [
+    0.3075066119999974,
+    0.30898198900104035,
+    0.3003410969995457
+   ],
+   "warm_median_seconds": 0.304661543000293,
+   "warm_min_seconds": 0.3003410969995457
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: complete rediscovery (DISC-001)",
+   "first_seconds": 1.1206794490008178,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "baseline",
+   "result": {
+    "candidates": 120,
+    "rules": 3
+   },
+   "samples_seconds": [
+    1.1206794490008178,
+    0.8335597499990399,
+    0.8107398669999384
+   ],
+   "warm_median_seconds": 0.8221498084994892,
+   "warm_min_seconds": 0.8107398669999384
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy recomputation (decode + 3 relations)",
+   "first_seconds": 0.03381257699948037,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "baseline",
+   "result": true,
+   "samples_seconds": [
+    0.03381257699948037,
+    0.02630552099981287,
+    0.026411558999825502
+   ],
+   "warm_median_seconds": 0.026358539999819186,
+   "warm_min_seconds": 0.02630552099981287
+  },
+  {
+   "backend": "cpu",
+   "case": "verification budget",
+   "limit": 15999999,
+   "message": "certificate verification: needs 16000000 bytes, budget 15999999",
+   "need": 16000000,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.000145388999953866,
+   "refused": true,
+   "resource": "bytes"
+  }
+ ],
+ "seconds": 8.87128677200053,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "admitted_claims": 4,
+   "grid": "verification bytes (4 claims incl. UNIQUE scratch)",
+   "largest_admitted": 160000,
+   "rows": 10000,
+   "smallest_refused": 159999
+  },
+  {
+   "admitted_claims": 4,
+   "grid": "verification bytes (4 claims incl. UNIQUE scratch)",
+   "largest_admitted": 1600000,
+   "rows": 100000,
+   "smallest_refused": 1599999
+  },
+  {
+   "admitted_claims": 4,
+   "grid": "verification bytes (4 claims incl. UNIQUE scratch)",
+   "largest_admitted": 16000000,
+   "rows": 1000000,
+   "smallest_refused": 15999999
+  }
+ ]
+}

@@ -1,0 +1,2237 @@
+{
+ "argv": [
+  "--capability",
+  "COUNT-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/COUNT-001/benchmark_cpu_math_count_vm.json"
+ ],
+ "capability": "COUNT-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:34:21+00:00"
+ },
+ "notes": [
+  "structured 1000 rows: covered 1000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 900, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 1000 rows: covered 1000 rows; support 8 conditions, observed 83 of 256 assignments (unobserved, never checked: 173); violations on the snapshot [0, 420, 40, 451, 0, 423, 0, 509], over the universe [0, 128, 16, 128, 0, 128, 0, 128]",
+  "structured 100000 rows: covered 100000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 90000, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 100000 rows: covered 100000 rows; support 8 conditions, observed 84 of 256 assignments (unobserved, never checked: 172); violations on the snapshot [0, 11078, 14124, 0, 26392, 25171, 0, 40834], over the universe [0, 128, 32, 0, 96, 128, 0, 128]",
+  "structured 1000000 rows: covered 1000000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 900000, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 1000000 rows: covered 1000000 rows; support 8 conditions, observed 84 of 256 assignments (unobserved, never checked: 172); violations on the snapshot [360606, 404655, 293206, 100006, 0, 899994, 202399, 405140], over the universe [96, 64, 96, 128, 16, 128, 64, 128]",
+  "The observed snapshot covers exactly the selected rows (the FND-007 record keeps their bits); the assignment universe is a separate enumeration over 2^k points. Native CPU paths are single-threaded; the CUDA path (counts with atomics, chunked extraction) is timed only with --device."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.00012022200098726898,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012022200098726898,
+    7.128300057956949e-05,
+    5.6852000852813944e-05
+   ],
+   "warm_median_seconds": 6.406750071619172e-05,
+   "warm_min_seconds": 5.6852000852813944e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 3.8842999856569804e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.8842999856569804e-05,
+    2.953200055344496e-05,
+    2.1694000679417513e-05,
+    1.834499926189892e-05,
+    1.7794000086723827e-05
+   ],
+   "warm_median_seconds": 2.0019499970658217e-05,
+   "warm_min_seconds": 1.7794000086723827e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 2.8753998776664957e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8753998776664957e-05,
+    2.5381001250934787e-05,
+    2.067300010821782e-05
+   ],
+   "warm_median_seconds": 2.3027000679576304e-05,
+   "warm_min_seconds": 2.067300010821782e-05
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.00017562599896336906,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017562599896336906,
+    7.638999886694364e-05,
+    7.165299939515535e-05
+   ],
+   "warm_median_seconds": 7.40214991310495e-05,
+   "warm_min_seconds": 7.165299939515535e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.010875492000195663,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010875492000195663,
+    0.009482810000918107,
+    0.010813650998898083
+   ],
+   "warm_median_seconds": 0.010148230499908095,
+   "warm_min_seconds": 0.009482810000918107
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.0012468929999158718,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012468929999158718,
+    0.0012598409994097892
+   ],
+   "warm_median_seconds": 0.0012598409994097892,
+   "warm_min_seconds": 0.0012598409994097892
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 2.020600004470907e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.020600004470907e-05,
+    1.8945000192616135e-05,
+    5.027899896958843e-05
+   ],
+   "warm_median_seconds": 3.461199958110228e-05,
+   "warm_min_seconds": 1.8945000192616135e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.00015721599993412383,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015721599993412383,
+    0.0001178579987026751,
+    9.983600102714263e-05
+   ],
+   "warm_median_seconds": 0.00010884699986490887,
+   "warm_min_seconds": 9.983600102714263e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 3.8403999496949837e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.8403999496949837e-05,
+    2.6727999284048565e-05,
+    2.0075000065844506e-05,
+    1.8773000192595646e-05,
+    1.9000999600393698e-05
+   ],
+   "warm_median_seconds": 1.9537999833119102e-05,
+   "warm_min_seconds": 1.8773000192595646e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 3.956399996241089e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.956399996241089e-05,
+    3.1431000024895184e-05,
+    2.5346998882014304e-05
+   ],
+   "warm_median_seconds": 2.8388999453454744e-05,
+   "warm_min_seconds": 2.5346998882014304e-05
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.0003289870001026429,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003289870001026429,
+    0.0003742040007637115,
+    0.0001851939996413421
+   ],
+   "warm_median_seconds": 0.0002796990002025268,
+   "warm_min_seconds": 0.0001851939996413421
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.018359712999881594,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.018359712999881594,
+    0.016876956000487553,
+    0.014967327000704245
+   ],
+   "warm_median_seconds": 0.0159221415005959,
+   "warm_min_seconds": 0.014967327000704245
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.0015389140007755486,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015389140007755486,
+    0.0012698930004262365
+   ],
+   "warm_median_seconds": 0.0012698930004262365,
+   "warm_min_seconds": 0.0012698930004262365
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 2.028900053119287e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.028900053119287e-05,
+    1.748000067891553e-05,
+    1.4909999663359486e-05
+   ],
+   "warm_median_seconds": 1.6195000171137508e-05,
+   "warm_min_seconds": 1.4909999663359486e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.0027665289999276865,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0027665289999276865,
+    0.002673949000381981,
+    0.0026437050000822637
+   ],
+   "warm_median_seconds": 0.0026588270002321224,
+   "warm_min_seconds": 0.0026437050000822637
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0006101529997977195,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006101529997977195,
+    0.0006199819999892497,
+    0.0007022669997240882,
+    0.0005814919986733003,
+    0.0005884639995201724
+   ],
+   "warm_median_seconds": 0.0006042229997547111,
+   "warm_min_seconds": 0.0005814919986733003
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.002397579000898986,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002397579000898986,
+    0.0028734339994116453,
+    0.0011982420001004357
+   ],
+   "warm_median_seconds": 0.0020358379997560405,
+   "warm_min_seconds": 0.0011982420001004357
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.0011566100001800805,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011566100001800805,
+    0.0010916030005319044,
+    0.0011295669992250623
+   ],
+   "warm_median_seconds": 0.0011105849998784834,
+   "warm_min_seconds": 0.0010916030005319044
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.020650641001338954,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.020650641001338954,
+    0.020058176000020467,
+    0.017716809999910765
+   ],
+   "warm_median_seconds": 0.018887492999965616,
+   "warm_min_seconds": 0.017716809999910765
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.02243509800064203,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02243509800064203,
+    0.023062884998580557
+   ],
+   "warm_median_seconds": 0.023062884998580557,
+   "warm_min_seconds": 0.023062884998580557
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 2.2430000171880238e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2430000171880238e-05,
+    3.839899909507949e-05,
+    2.384999970672652e-05
+   ],
+   "warm_median_seconds": 3.1124499400903005e-05,
+   "warm_min_seconds": 2.384999970672652e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.008938821998526691,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008938821998526691,
+    0.009500639998805127,
+    0.009144477999143419
+   ],
+   "warm_median_seconds": 0.009322558998974273,
+   "warm_min_seconds": 0.009144477999143419
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0007910759995866101,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007910759995866101,
+    0.0008184300004359102,
+    0.0008528660000592936,
+    0.0009156510004686425,
+    0.0007693139996263199
+   ],
+   "warm_median_seconds": 0.0008356480002476019,
+   "warm_min_seconds": 0.0007693139996263199
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.0019300420008221408,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019300420008221408,
+    0.0037904630007687956,
+    0.00186611100070877
+   ],
+   "warm_median_seconds": 0.002828287000738783,
+   "warm_min_seconds": 0.00186611100070877
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.002791869999782648,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002791869999782648,
+    0.0023177820003184024,
+    0.002614138000353705
+   ],
+   "warm_median_seconds": 0.0024659600003360538,
+   "warm_min_seconds": 0.0023177820003184024
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.05781994599965401,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05781994599965401,
+    0.05916075700042711,
+    0.05872591599836596
+   ],
+   "warm_median_seconds": 0.05894333649939654,
+   "warm_min_seconds": 0.05872591599836596
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.024062827998932335,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.024062827998932335,
+    0.025506584001050214
+   ],
+   "warm_median_seconds": 0.025506584001050214,
+   "warm_min_seconds": 0.025506584001050214
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.8910999642685056e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8910999642685056e-05,
+    1.811299989640247e-05,
+    1.367900040349923e-05
+   ],
+   "warm_median_seconds": 1.589600014995085e-05,
+   "warm_min_seconds": 1.367900040349923e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.02714299299987033,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02714299299987033,
+    0.02826279199871351,
+    0.025898828000208596
+   ],
+   "warm_median_seconds": 0.027080809999461053,
+   "warm_min_seconds": 0.025898828000208596
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.006286347001150716,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006286347001150716,
+    0.006151196001155768,
+    0.0060766400001739385,
+    0.005484073000843637,
+    0.005665144000886357
+   ],
+   "warm_median_seconds": 0.005870892000530148,
+   "warm_min_seconds": 0.005484073000843637
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.027742737000153284,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.027742737000153284,
+    0.029513671999666258,
+    0.015798927001014818
+   ],
+   "warm_median_seconds": 0.022656299500340538,
+   "warm_min_seconds": 0.015798927001014818
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.012874012998508988,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012874012998508988,
+    0.012727782001093146,
+    0.012546452999231406
+   ],
+   "warm_median_seconds": 0.012637117500162276,
+   "warm_min_seconds": 0.012546452999231406
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.06469925100100227,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06469925100100227,
+    0.06275208899933205,
+    0.07601463699938904
+   ],
+   "warm_median_seconds": 0.06938336299936054,
+   "warm_min_seconds": 0.06275208899933205
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.7442000171286054e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7442000171286054e-05,
+    1.4768998880754225e-05,
+    1.2326998330536298e-05
+   ],
+   "warm_median_seconds": 1.3547998605645262e-05,
+   "warm_min_seconds": 1.2326998330536298e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.08645520499885606,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.08645520499885606,
+    0.08571246300016355,
+    0.0874312430005375
+   ],
+   "warm_median_seconds": 0.08657185300035053,
+   "warm_min_seconds": 0.08571246300016355
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0072082730002875905,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0072082730002875905,
+    0.0076779780010838294,
+    0.007321344999581925,
+    0.007357037999099703,
+    0.0072475109991501085
+   ],
+   "warm_median_seconds": 0.007339191499340814,
+   "warm_min_seconds": 0.0072475109991501085
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.018969303000631044,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.018969303000631044,
+    0.02852619599980244,
+    0.017243157999473624
+   ],
+   "warm_median_seconds": 0.02288467699963803,
+   "warm_min_seconds": 0.017243157999473624
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.03128073100015172,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03128073100015172,
+    0.026684140000725165,
+    0.02669718300057866
+   ],
+   "warm_median_seconds": 0.026690661500651913,
+   "warm_min_seconds": 0.026684140000725165
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.2944855149999057,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2944855149999057,
+    0.2819194180010527,
+    0.29868960100066033
+   ],
+   "warm_median_seconds": 0.2903045095008565,
+   "warm_min_seconds": 0.2819194180010527
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.9130000509903766e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.9130000509903766e-05,
+    1.7505000869277865e-05,
+    1.4409000868909061e-05
+   ],
+   "warm_median_seconds": 1.5957000869093463e-05,
+   "warm_min_seconds": 1.4409000868909061e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.726200025586877e-05,
+   "params": {
+    "k": 2,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.726200025586877e-05,
+    1.31070009956602e-05,
+    6.8209992605261505e-06
+   ],
+   "warm_median_seconds": 9.964000128093176e-06,
+   "warm_min_seconds": 6.8209992605261505e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.1008000001311302e-05,
+   "params": {
+    "k": 2,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1008000001311302e-05
+   ],
+   "warm_median_seconds": 1.1008000001311302e-05,
+   "warm_min_seconds": 1.1008000001311302e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 9.785999282030389e-06,
+   "params": {
+    "k": 2,
+    "nodes": 5,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.785999282030389e-06,
+    8.031000106711872e-06,
+    5.900999894947745e-06
+   ],
+   "warm_median_seconds": 6.966000000829808e-06,
+   "warm_min_seconds": 5.900999894947745e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.377500120725017e-05,
+   "params": {
+    "k": 2,
+    "nodes": 5,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.377500120725017e-05
+   ],
+   "warm_median_seconds": 1.377500120725017e-05,
+   "warm_min_seconds": 1.377500120725017e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 9.02700048754923e-06,
+   "params": {
+    "k": 2,
+    "nodes": 7,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.02700048754923e-06,
+    7.1810009103501216e-06,
+    5.851999958395027e-06
+   ],
+   "warm_median_seconds": 6.516500434372574e-06,
+   "warm_min_seconds": 5.851999958395027e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 7.571999958599918e-06,
+   "params": {
+    "k": 2,
+    "nodes": 7,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.571999958599918e-06
+   ],
+   "warm_median_seconds": 7.571999958599918e-06,
+   "warm_min_seconds": 7.571999958599918e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.699000318301842e-06,
+   "params": {
+    "k": 4,
+    "nodes": 9,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.699000318301842e-06,
+    6.923000910319388e-06,
+    5.832998795085587e-06
+   ],
+   "warm_median_seconds": 6.377999852702487e-06,
+   "warm_min_seconds": 5.832998795085587e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.8373000784777105e-05,
+   "params": {
+    "k": 4,
+    "nodes": 9,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8373000784777105e-05
+   ],
+   "warm_median_seconds": 1.8373000784777105e-05,
+   "warm_min_seconds": 1.8373000784777105e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.49699972604867e-06,
+   "params": {
+    "k": 4,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.49699972604867e-06,
+    6.382000719895586e-06,
+    0.0001786860011634417
+   ],
+   "warm_median_seconds": 9.253400094166864e-05,
+   "warm_min_seconds": 6.382000719895586e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.920000254875049e-06,
+   "params": {
+    "k": 4,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.920000254875049e-06
+   ],
+   "warm_median_seconds": 8.920000254875049e-06,
+   "warm_min_seconds": 8.920000254875049e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.90760001714807e-05,
+   "params": {
+    "k": 4,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.90760001714807e-05,
+    8.617998901172541e-06,
+    6.213000233401544e-06
+   ],
+   "warm_median_seconds": 7.415499567287043e-06,
+   "warm_min_seconds": 6.213000233401544e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 6.982001650612801e-06,
+   "params": {
+    "k": 4,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.982001650612801e-06
+   ],
+   "warm_median_seconds": 6.982001650612801e-06,
+   "warm_min_seconds": 6.982001650612801e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.2348000382189639e-05,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2348000382189639e-05,
+    7.442999049089849e-06,
+    5.865000275662169e-06
+   ],
+   "warm_median_seconds": 6.653999662376009e-06,
+   "warm_min_seconds": 5.865000275662169e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 5.759199848398566e-05,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.759199848398566e-05
+   ],
+   "warm_median_seconds": 5.759199848398566e-05,
+   "warm_min_seconds": 5.759199848398566e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 9.002000297186896e-06,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.002000297186896e-06,
+    7.22900040273089e-06,
+    5.644998964271508e-06
+   ],
+   "warm_median_seconds": 6.436999683501199e-06,
+   "warm_min_seconds": 5.644998964271508e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 2.4917000700952485e-05,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.4917000700952485e-05
+   ],
+   "warm_median_seconds": 2.4917000700952485e-05,
+   "warm_min_seconds": 2.4917000700952485e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 7.479999112547375e-06,
+   "params": {
+    "k": 6,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.479999112547375e-06,
+    5.8969999372493476e-06,
+    5.391000740928575e-06
+   ],
+   "warm_median_seconds": 5.6440003390889615e-06,
+   "warm_min_seconds": 5.391000740928575e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.3490000128513202e-05,
+   "params": {
+    "k": 6,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3490000128513202e-05
+   ],
+   "warm_median_seconds": 1.3490000128513202e-05,
+   "warm_min_seconds": 1.3490000128513202e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.081999112619087e-06,
+   "params": {
+    "k": 8,
+    "nodes": 5,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.081999112619087e-06,
+    6.4259984355885535e-06,
+    5.767000402556732e-06
+   ],
+   "warm_median_seconds": 6.096499419072643e-06,
+   "warm_min_seconds": 5.767000402556732e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.00017663700054981746,
+   "params": {
+    "k": 8,
+    "nodes": 5,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017663700054981746
+   ],
+   "warm_median_seconds": 0.00017663700054981746,
+   "warm_min_seconds": 0.00017663700054981746
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.021999747143127e-06,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.021999747143127e-06,
+    6.064999979571439e-06,
+    5.59599902771879e-06
+   ],
+   "warm_median_seconds": 5.830499503645115e-06,
+   "warm_min_seconds": 5.59599902771879e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.00010247499994875398,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010247499994875398
+   ],
+   "warm_median_seconds": 0.00010247499994875398,
+   "warm_min_seconds": 0.00010247499994875398
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 7.553000614279881e-06,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.553000614279881e-06,
+    7.345999620156363e-06,
+    5.53700010641478e-06
+   ],
+   "warm_median_seconds": 6.441499863285571e-06,
+   "warm_min_seconds": 5.53700010641478e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.00017163299889944028,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017163299889944028
+   ],
+   "warm_median_seconds": 0.00017163299889944028,
+   "warm_min_seconds": 0.00017163299889944028
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.741000783629715e-06,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.741000783629715e-06,
+    7.394999556709081e-06,
+    6.071999450796284e-06
+   ],
+   "warm_median_seconds": 6.733499503752682e-06,
+   "warm_min_seconds": 6.071999450796284e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.0003148400010104524,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003148400010104524
+   ],
+   "warm_median_seconds": 0.0003148400010104524,
+   "warm_min_seconds": 0.0003148400010104524
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 9.269000656786375e-06,
+   "params": {
+    "k": 10,
+    "nodes": 10,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.269000656786375e-06,
+    7.718001143075526e-06,
+    6.496000423794612e-06
+   ],
+   "warm_median_seconds": 7.107000783435069e-06,
+   "warm_min_seconds": 6.496000423794612e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.0011719470003299648,
+   "params": {
+    "k": 10,
+    "nodes": 10,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011719470003299648
+   ],
+   "warm_median_seconds": 0.0011719470003299648,
+   "warm_min_seconds": 0.0011719470003299648
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.141199936682824e-05,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.141199936682824e-05,
+    7.590000677737407e-06,
+    5.8749992604134604e-06
+   ],
+   "warm_median_seconds": 6.732499969075434e-06,
+   "warm_min_seconds": 5.8749992604134604e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.00034919799873023294,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00034919799873023294
+   ],
+   "warm_median_seconds": 0.00034919799873023294,
+   "warm_min_seconds": 0.00034919799873023294
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.882399919850286e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.882399919850286e-05,
+    1.4035998901817948e-05,
+    1.1985999663011171e-05
+   ],
+   "warm_median_seconds": 1.301099928241456e-05,
+   "warm_min_seconds": 1.1985999663011171e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 3.37290002789814e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.37290002789814e-05,
+    1.4825000107521191e-05,
+    1.276500006497372e-05
+   ],
+   "warm_median_seconds": 1.3795000086247455e-05,
+   "warm_min_seconds": 1.276500006497372e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.6004998542484827e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.6004998542484827e-05,
+    1.3933999071014114e-05,
+    1.2619999324670061e-05
+   ],
+   "warm_median_seconds": 1.3276999197842088e-05,
+   "warm_min_seconds": 1.2619999324670061e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 2.427199979138095e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.427199979138095e-05,
+    1.9721001081052236e-05,
+    1.7358999684802257e-05
+   ],
+   "warm_median_seconds": 1.8540000382927246e-05,
+   "warm_min_seconds": 1.7358999684802257e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.8853999790735543e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8853999790735543e-05,
+    4.586099930747878e-05,
+    2.8197999199619517e-05
+   ],
+   "warm_median_seconds": 3.702949925354915e-05,
+   "warm_min_seconds": 2.8197999199619517e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 2.1444000594783574e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.1444000594783574e-05,
+    1.789700036169961e-05,
+    1.6820000382722355e-05
+   ],
+   "warm_median_seconds": 1.7358500372210983e-05,
+   "warm_min_seconds": 1.6820000382722355e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 5.267000051389914e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.267000051389914e-05,
+    4.097599958186038e-05,
+    4.452499888429884e-05
+   ],
+   "warm_median_seconds": 4.275049923307961e-05,
+   "warm_min_seconds": 4.097599958186038e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 6.074999873817433e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.074999873817433e-05,
+    4.1065000914386474e-05,
+    3.622599979280494e-05
+   ],
+   "warm_median_seconds": 3.864550035359571e-05,
+   "warm_min_seconds": 3.622599979280494e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 4.630599869415164e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.630599869415164e-05,
+    3.9287999243242666e-05,
+    3.609099985624198e-05
+   ],
+   "warm_median_seconds": 3.768949954974232e-05,
+   "warm_min_seconds": 3.609099985624198e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00022600000011152588,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022600000011152588,
+    0.0002308530001755571,
+    0.0001971929996216204
+   ],
+   "warm_median_seconds": 0.00021402299989858875,
+   "warm_min_seconds": 0.0001971929996216204
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00022557000011147466,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022557000011147466,
+    0.0001912500010803342,
+    0.00018024000019067898
+   ],
+   "warm_median_seconds": 0.00018574500063550659,
+   "warm_min_seconds": 0.00018024000019067898
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00023058799888531212,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023058799888531212,
+    0.0002151869994122535,
+    0.00019664699902932625
+   ],
+   "warm_median_seconds": 0.00020591699922078988,
+   "warm_min_seconds": 0.00019664699902932625
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 8.248599988291971e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.248599988291971e-05,
+    8.877799882611725e-05,
+    9.375000081490725e-05
+   ],
+   "warm_median_seconds": 9.126399982051225e-05,
+   "warm_min_seconds": 8.877799882611725e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 8.329999945999589e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.329999945999589e-05,
+    8.370800060220063e-05,
+    0.00010238599861622788
+   ],
+   "warm_median_seconds": 9.304699960921425e-05,
+   "warm_min_seconds": 8.370800060220063e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 8.185499973478727e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.185499973478727e-05,
+    8.854600127961021e-05,
+    8.156100011547096e-05
+   ],
+   "warm_median_seconds": 8.505350069754058e-05,
+   "warm_min_seconds": 8.156100011547096e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00022318100127449725,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022318100127449725,
+    0.00016195499847526662,
+    0.00016420199972344562
+   ],
+   "warm_median_seconds": 0.00016307849909935612,
+   "warm_min_seconds": 0.00016195499847526662
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00016805999985081144,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016805999985081144,
+    0.00019581200103857554,
+    0.00016812900139484555
+   ],
+   "warm_median_seconds": 0.00018197050121671055,
+   "warm_min_seconds": 0.00016812900139484555
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00021973799994157162,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021973799994157162,
+    0.00017623399980948307,
+    0.00020739299907290842
+   ],
+   "warm_median_seconds": 0.00019181349944119575,
+   "warm_min_seconds": 0.00017623399980948307
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0003053399996133521,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003053399996133521,
+    0.0003120820001640823,
+    0.00034373000016785227
+   ],
+   "warm_median_seconds": 0.00032790600016596727,
+   "warm_min_seconds": 0.0003120820001640823
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0002957069991680328,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002957069991680328,
+    0.00032910099980654195,
+    0.0003035589998034993
+   ],
+   "warm_median_seconds": 0.00031632999980502063,
+   "warm_min_seconds": 0.0003035589998034993
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00033313099993392825,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00033313099993392825,
+    0.00030370100103027653,
+    0.0003229729991289787
+   ],
+   "warm_median_seconds": 0.0003133370000796276,
+   "warm_min_seconds": 0.00030370100103027653
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0011718530004145578,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011718530004145578,
+    0.0010985660010192078,
+    0.001029122999170795
+   ],
+   "warm_median_seconds": 0.0010638445000950014,
+   "warm_min_seconds": 0.001029122999170795
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0009892130001389887,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009892130001389887,
+    0.0010272890012856806,
+    0.000941710999541101
+   ],
+   "warm_median_seconds": 0.0009845000004133908,
+   "warm_min_seconds": 0.000941710999541101
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0008753429992793826,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008753429992793826,
+    0.0009519819996057777,
+    0.0009706309992907336
+   ],
+   "warm_median_seconds": 0.0009613064994482556,
+   "warm_min_seconds": 0.0009519819996057777
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0013391519987635547,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013391519987635547,
+    0.0012480810000852216,
+    0.0012527409999165684
+   ],
+   "warm_median_seconds": 0.001250411000000895,
+   "warm_min_seconds": 0.0012480810000852216
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0013391459997365018,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013391459997365018,
+    0.0014121270014584297,
+    0.0014155120006762445
+   ],
+   "warm_median_seconds": 0.0014138195010673371,
+   "warm_min_seconds": 0.0014121270014584297
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0013781369998469017,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013781369998469017,
+    0.0014452640007220907,
+    0.0014414109991776058
+   ],
+   "warm_median_seconds": 0.0014433374999498483,
+   "warm_min_seconds": 0.0014414109991776058
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0026764560006995453,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026764560006995453,
+    0.00274643400007335,
+    0.0027989999998681014
+   ],
+   "warm_median_seconds": 0.0027727169999707257,
+   "warm_min_seconds": 0.00274643400007335
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002522861999750603,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002522861999750603,
+    0.002555508999648737,
+    0.0023804619995644316
+   ],
+   "warm_median_seconds": 0.002467985499606584,
+   "warm_min_seconds": 0.0023804619995644316
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0024260970003524562,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024260970003524562,
+    0.00246844399953261,
+    0.0026182090005022474
+   ],
+   "warm_median_seconds": 0.0025433265000174288,
+   "warm_min_seconds": 0.00246844399953261
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.005451125000035972,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005451125000035972,
+    0.005359908000173164,
+    0.005565075000049546
+   ],
+   "warm_median_seconds": 0.005462491500111355,
+   "warm_min_seconds": 0.005359908000173164
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.005790272000012919,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005790272000012919,
+    0.006012874999214546,
+    0.005790975999843795
+   ],
+   "warm_median_seconds": 0.00590192549952917,
+   "warm_min_seconds": 0.005790975999843795
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.006072488000427256,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006072488000427256,
+    0.005951741999524529,
+    0.005629668999972637
+   ],
+   "warm_median_seconds": 0.005790705499748583,
+   "warm_min_seconds": 0.005629668999972637
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.016156927000338328,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016156927000338328,
+    0.015882443000009516,
+    0.01572959099939908
+   ],
+   "warm_median_seconds": 0.015806016999704298,
+   "warm_min_seconds": 0.01572959099939908
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.016413262001151452,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016413262001151452,
+    0.015990088999387808,
+    0.01760933799960185
+   ],
+   "warm_median_seconds": 0.01679971349949483,
+   "warm_min_seconds": 0.015990088999387808
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0170094010009052,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0170094010009052,
+    0.022457273998952587,
+    0.01756481300071755
+   ],
+   "warm_median_seconds": 0.02001104349983507,
+   "warm_min_seconds": 0.01756481300071755
+  },
+  {
+   "backend": "cpu",
+   "case": "universe of 21 conditions (default support 2^20)",
+   "limit": 1048576,
+   "message": "assignment universe: needs 2097152 support, budget 1048576",
+   "need": 2097152,
+   "params": {
+    "k": 21
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.416399992303923e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "constraint set one node past its circuit budget",
+   "limit": 56,
+   "message": "constraint set: needs 57 circuit, budget 56",
+   "need": 57,
+   "params": {
+    "nodes": 57
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0002643309999257326,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "every satisfying row within the output budget",
+   "first_seconds": 9.676199988462031e-05,
+   "params": {
+    "output": 25522
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.676199988462031e-05
+   ],
+   "warm_median_seconds": 9.676199988462031e-05,
+   "warm_min_seconds": 9.676199988462031e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "every satisfying row one past the output budget",
+   "limit": 25521,
+   "message": "constraint counts: needs 25522 output, budget 25521",
+   "need": 25522,
+   "params": {
+    "output": 25521
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.0430999686359428e-05,
+   "refused": true,
+   "resource": "output"
+  }
+ ],
+ "seconds": 4.962430587000199,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "assignment universe (support 2^20)",
+   "largest_admitted": {
+    "k": 20
+   },
+   "smallest_refused": {
+    "k": 21
+   }
+  },
+  {
+   "grid": "constraint set nodes (circuit budget)",
+   "largest_admitted": {
+    "budget": 57,
+    "nodes": 57
+   },
+   "smallest_refused": {
+    "budget": 56,
+    "nodes": 57
+   }
+  },
+  {
+   "grid": "satisfying rows returned (output budget)",
+   "largest_admitted": {
+    "output": 25522
+   },
+   "smallest_refused": {
+    "output": 25521
+   }
+  }
+ ]
+}

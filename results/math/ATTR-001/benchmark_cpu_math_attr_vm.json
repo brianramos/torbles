@@ -1,0 +1,5897 @@
+{
+ "argv": [
+  "--capability",
+  "ATTR-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/ATTR-001/benchmark_cpu_math_attr_vm.json"
+ ],
+ "capability": "ATTR-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:31:38+00:00"
+ },
+ "notes": [
+  "conditions: the support, exhaustive (CPU and, with --device, CUDA), NumPy and Fraction indices are equal for every grid point; DuckDB coalition values equal the native ones where run",
+  "search: incomplete cases are retained with their certified size / multiplicity bounds and explored states; every bound contains the enumerated answer, every complete answer equals it"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.0023605290007253643,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0023605290007253643,
+    0.005408409999290598
+   ],
+   "warm_median_seconds": 0.005408409999290598,
+   "warm_min_seconds": 0.005408409999290598
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 8,
+   "first_seconds": 3.578899850253947e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.578899850253947e-05,
+    1.739000072120689e-05,
+    1.9159000657964498e-05
+   ],
+   "support_degree": 2,
+   "support_terms": 7,
+   "warm_median_seconds": 1.8274500689585693e-05,
+   "warm_min_seconds": 1.739000072120689e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 0.0001373920003970852,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001373920003970852,
+    5.530700036615599e-05,
+    4.508299934968818e-05,
+    4.077499943377916e-05,
+    4.157599869358819e-05
+   ],
+   "warm_median_seconds": 4.3329499021638185e-05,
+   "warm_min_seconds": 4.077499943377916e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 6.559600114997011e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 8,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    6.559600114997011e-05,
+    3.9252001442946494e-05,
+    3.04000004689442e-05
+   ],
+   "warm_median_seconds": 3.4826000955945347e-05,
+   "warm_min_seconds": 3.04000004689442e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.009429022999029257,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009429022999029257,
+    0.014628646000346635
+   ],
+   "warm_median_seconds": 0.014628646000346635,
+   "warm_min_seconds": 0.014628646000346635
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.00014038099834579043,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014038099834579043
+   ],
+   "warm_median_seconds": 0.00014038099834579043,
+   "warm_min_seconds": 0.00014038099834579043
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 0.014671337999971001,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014671337999971001
+   ],
+   "warm_median_seconds": 0.014671337999971001,
+   "warm_min_seconds": 0.014671337999971001
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.00028944399855390657,
+   "nonzero_sets": 6,
+   "params": {
+    "conditions": 3,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 12,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.00028944399855390657,
+    7.294500028365292e-05,
+    5.8198000260745175e-05
+   ],
+   "warm_median_seconds": 6.557150027219905e-05,
+   "warm_min_seconds": 5.8198000260745175e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.0018731870004558004,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0018731870004558004,
+    0.005678837998857489
+   ],
+   "warm_median_seconds": 0.005678837998857489,
+   "warm_min_seconds": 0.005678837998857489
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 8,
+   "first_seconds": 2.3738000891171396e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.3738000891171396e-05,
+    1.4397999620996416e-05,
+    1.1713998901541345e-05
+   ],
+   "support_degree": 3,
+   "support_terms": 8,
+   "warm_median_seconds": 1.305599926126888e-05,
+   "warm_min_seconds": 1.1713998901541345e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 8.231799984059762e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.231799984059762e-05,
+    4.64530003227992e-05,
+    3.9824000850785524e-05,
+    4.027900104119908e-05,
+    3.801700040639844e-05
+   ],
+   "warm_median_seconds": 4.00515009459923e-05,
+   "warm_min_seconds": 3.801700040639844e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 5.498200152942445e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 8,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    5.498200152942445e-05,
+    3.1746001695864834e-05,
+    2.8399999791872688e-05
+   ],
+   "warm_median_seconds": 3.007300074386876e-05,
+   "warm_min_seconds": 2.8399999791872688e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.01521983600105159,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01521983600105159,
+    0.005609757999991416
+   ],
+   "warm_median_seconds": 0.005609757999991416,
+   "warm_min_seconds": 0.005609757999991416
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 9.271800081478432e-05,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.271800081478432e-05
+   ],
+   "warm_median_seconds": 9.271800081478432e-05,
+   "warm_min_seconds": 9.271800081478432e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 0.017357459000777453,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017357459000777453
+   ],
+   "warm_median_seconds": 0.017357459000777453,
+   "warm_min_seconds": 0.017357459000777453
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.0001911350009322632,
+   "nonzero_sets": 6,
+   "params": {
+    "conditions": 3,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 18,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.0001911350009322632,
+    0.00041478200000710785,
+    8.784000056039076e-05
+   ],
+   "warm_median_seconds": 0.0002513110002837493,
+   "warm_min_seconds": 8.784000056039076e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.0020866039994871244,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0020866039994871244,
+    0.005010111000956385
+   ],
+   "warm_median_seconds": 0.005010111000956385,
+   "warm_min_seconds": 0.005010111000956385
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 64,
+   "first_seconds": 2.274799953738693e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.274799953738693e-05,
+    1.4450999515247531e-05,
+    1.1277999874437228e-05
+   ],
+   "support_degree": 2,
+   "support_terms": 22,
+   "warm_median_seconds": 1.286449969484238e-05,
+   "warm_min_seconds": 1.1277999874437228e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 9.515799865766894e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.515799865766894e-05,
+    5.64459987799637e-05,
+    4.659799924411345e-05,
+    4.728599924419541e-05,
+    4.5853999836253934e-05
+   ],
+   "warm_median_seconds": 4.694199924415443e-05,
+   "warm_min_seconds": 4.5853999836253934e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 6.000400026096031e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 64,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    6.000400026096031e-05,
+    4.219800030114129e-05,
+    6.249899888643995e-05
+   ],
+   "warm_median_seconds": 5.234849959379062e-05,
+   "warm_min_seconds": 4.219800030114129e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.02077667800040217,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02077667800040217,
+    0.013661131999469944
+   ],
+   "warm_median_seconds": 0.013661131999469944,
+   "warm_min_seconds": 0.013661131999469944
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.0006653829987044446,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006653829987044446
+   ],
+   "warm_median_seconds": 0.0006653829987044446,
+   "warm_min_seconds": 0.0006653829987044446
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 0.055278855999858934,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.055278855999858934
+   ],
+   "warm_median_seconds": 0.055278855999858934,
+   "warm_min_seconds": 0.055278855999858934
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.00024691699945833534,
+   "nonzero_sets": 21,
+   "params": {
+    "conditions": 6,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 51,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.00024691699945833534,
+    0.00021259300046949647,
+    8.849100049701519e-05
+   ],
+   "warm_median_seconds": 0.00015054200048325583,
+   "warm_min_seconds": 8.849100049701519e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.0032351769987144507,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0032351769987144507,
+    0.003521930000715656
+   ],
+   "warm_median_seconds": 0.003521930000715656,
+   "warm_min_seconds": 0.003521930000715656
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 64,
+   "first_seconds": 2.4924998797359876e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.4924998797359876e-05,
+    1.2628999684238806e-05,
+    1.1238998922635801e-05
+   ],
+   "support_degree": 6,
+   "support_terms": 64,
+   "warm_median_seconds": 1.1933999303437304e-05,
+   "warm_min_seconds": 1.1238998922635801e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 9.277599929191638e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.277599929191638e-05,
+    5.7109999033855274e-05,
+    5.313200017553754e-05,
+    5.088800025987439e-05,
+    4.9371999921277165e-05
+   ],
+   "warm_median_seconds": 5.2010000217705965e-05,
+   "warm_min_seconds": 4.9371999921277165e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 6.19630009168759e-05,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 64,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    6.19630009168759e-05,
+    3.7294001231202856e-05,
+    3.201500112481881e-05
+   ],
+   "warm_median_seconds": 3.465450117801083e-05,
+   "warm_min_seconds": 3.201500112481881e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.013725108001381159,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013725108001381159,
+    0.02139841499956674
+   ],
+   "warm_median_seconds": 0.02139841499956674,
+   "warm_min_seconds": 0.02139841499956674
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.0005962960003671469,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005962960003671469
+   ],
+   "warm_median_seconds": 0.0005962960003671469,
+   "warm_min_seconds": 0.0005962960003671469
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 0.10681541799931438,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10681541799931438
+   ],
+   "warm_median_seconds": 0.10681541799931438,
+   "warm_min_seconds": 0.10681541799931438
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.00034815300023183227,
+   "nonzero_sets": 21,
+   "params": {
+    "conditions": 6,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 432,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.00034815300023183227,
+    0.00014113900033407845,
+    0.00016499100092914887
+   ],
+   "warm_median_seconds": 0.00015306500063161366,
+   "warm_min_seconds": 0.00014113900033407845
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.004014087999166804,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004014087999166804,
+    0.0036484629999904428
+   ],
+   "warm_median_seconds": 0.0036484629999904428,
+   "warm_min_seconds": 0.0036484629999904428
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 1024,
+   "first_seconds": 5.316500028129667e-05,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.316500028129667e-05,
+    3.682200076582376e-05,
+    3.4795000829035416e-05
+   ],
+   "support_degree": 2,
+   "support_terms": 56,
+   "warm_median_seconds": 3.580850079742959e-05,
+   "warm_min_seconds": 3.4795000829035416e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 0.00014963399917178322,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014963399917178322,
+    6.383700019796379e-05,
+    6.123800085333642e-05,
+    5.891500040888786e-05,
+    5.663999945682008e-05
+   ],
+   "warm_median_seconds": 6.007650063111214e-05,
+   "warm_min_seconds": 5.663999945682008e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 0.000199665000764071,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 1024,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    0.000199665000764071,
+    0.0001188040005217772,
+    0.00010239099901809823
+   ],
+   "warm_median_seconds": 0.00011059749976993771,
+   "warm_min_seconds": 0.00010239099901809823
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.04214744300043094,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04214744300043094,
+    0.016078697000921238
+   ],
+   "warm_median_seconds": 0.016078697000921238,
+   "warm_min_seconds": 0.016078697000921238
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.016992479999316856,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016992479999316856
+   ],
+   "warm_median_seconds": 0.016992479999316856,
+   "warm_min_seconds": 0.016992479999316856
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 1.9990332899997156,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.9990332899997156
+   ],
+   "warm_median_seconds": 1.9990332899997156,
+   "warm_min_seconds": 1.9990332899997156
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.0005375569999159779,
+   "nonzero_sets": 55,
+   "params": {
+    "conditions": 10,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 145,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.0005375569999159779,
+    0.00030128000071272254,
+    0.0003272970006946707
+   ],
+   "warm_median_seconds": 0.00031428850070369663,
+   "warm_min_seconds": 0.00030128000071272254
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.013344130999030313,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.013344130999030313,
+    0.01237959299942304
+   ],
+   "warm_median_seconds": 0.01237959299942304,
+   "warm_min_seconds": 0.01237959299942304
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 1024,
+   "first_seconds": 7.268599983945023e-05,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.268599983945023e-05,
+    4.9046999265556224e-05,
+    3.9884000216261484e-05
+   ],
+   "support_degree": 10,
+   "support_terms": 1024,
+   "warm_median_seconds": 4.4465499740908854e-05,
+   "warm_min_seconds": 3.9884000216261484e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 0.0004618739985744469,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004618739985744469,
+    0.0045090630010236055,
+    0.0004384580006444594,
+    0.00047085700134630315,
+    0.0004450550004548859
+   ],
+   "warm_median_seconds": 0.0004579560009005945,
+   "warm_min_seconds": 0.0004384580006444594
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 0.00015414900008181576,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 1024,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    0.00015414900008181576,
+    0.00013476700041792355,
+    0.00011439599984441884
+   ],
+   "warm_median_seconds": 0.0001245815001311712,
+   "warm_min_seconds": 0.00011439599984441884
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.020243492999725277,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.020243492999725277,
+    0.030239708999943105
+   ],
+   "warm_median_seconds": 0.030239708999943105,
+   "warm_min_seconds": 0.030239708999943105
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.028960853000171483,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.028960853000171483
+   ],
+   "warm_median_seconds": 0.028960853000171483,
+   "warm_min_seconds": 0.028960853000171483
+  },
+  {
+   "backend": "duckdb",
+   "case": "coalition values (DuckDB COUNT(*) re-run per coalition)",
+   "first_seconds": 2.2049414000011893,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2049414000011893
+   ],
+   "warm_median_seconds": 2.2049414000011893,
+   "warm_min_seconds": 2.2049414000011893
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.004354050999609171,
+   "nonzero_sets": 55,
+   "params": {
+    "conditions": 10,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 16640,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.004354050999609171,
+    0.006634981000388507,
+    0.006554696999955922
+   ],
+   "warm_median_seconds": 0.006594839000172215,
+   "warm_min_seconds": 0.006554696999955922
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.02189454400104296,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02189454400104296,
+    0.011886301999766147
+   ],
+   "warm_median_seconds": 0.011886301999766147,
+   "warm_min_seconds": 0.011886301999766147
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 4096,
+   "first_seconds": 0.0001453830009268131,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001453830009268131,
+    0.0001287180002691457,
+    0.00011729200014087837
+   ],
+   "support_degree": 2,
+   "support_terms": 79,
+   "warm_median_seconds": 0.00012300500020501204,
+   "warm_min_seconds": 0.00011729200014087837
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 0.00016336100088665262,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016336100088665262,
+    7.84820003900677e-05,
+    7.972299863467924e-05,
+    6.999800098128617e-05,
+    6.775099973310716e-05
+   ],
+   "warm_median_seconds": 7.424000068567693e-05,
+   "warm_min_seconds": 6.775099973310716e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 0.00036121899938734714,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 4096,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    0.00036121899938734714,
+    0.00032046200067270547,
+    0.0003306910002720542
+   ],
+   "warm_median_seconds": 0.00032557650047237985,
+   "warm_min_seconds": 0.00032046200067270547
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.07086685000103898,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07086685000103898,
+    0.0544124619991635
+   ],
+   "warm_median_seconds": 0.0544124619991635,
+   "warm_min_seconds": 0.0544124619991635
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.22376144899862993,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.22376144899862993
+   ],
+   "warm_median_seconds": 0.22376144899862993,
+   "warm_min_seconds": 0.22376144899862993
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.00043568999899434857,
+   "nonzero_sets": 78,
+   "params": {
+    "conditions": 12,
+    "interactions": "sparse",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 210,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.00043568999899434857,
+    0.00025102399922616314,
+    0.004385401000035927
+   ],
+   "warm_median_seconds": 0.002318212499631045,
+   "warm_min_seconds": 0.00025102399922616314
+  },
+  {
+   "backend": "cpu",
+   "case": "conjunction game (masks, histogram, coalition values)",
+   "first_seconds": 0.02232584600096743,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02232584600096743,
+    0.017185222000989597
+   ],
+   "warm_median_seconds": 0.017185222000989597,
+   "warm_min_seconds": 0.017185222000989597
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse Moebius support",
+   "coalitions": 4096,
+   "first_seconds": 0.0001672689995757537,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001672689995757537,
+    0.00019311699907120783,
+    0.00014823200035607442
+   ],
+   "support_degree": 12,
+   "support_terms": 4096,
+   "warm_median_seconds": 0.00017067449971364113,
+   "warm_min_seconds": 0.00014823200035607442
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf from the support",
+   "first_seconds": 0.005996498000968131,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005996498000968131,
+    0.001770655000655097,
+    0.0017018670005199965,
+    0.005785601000752649,
+    0.0016977180002868408
+   ],
+   "warm_median_seconds": 0.0017362610005875467,
+   "warm_min_seconds": 0.0016977180002868408
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley and Banzhaf by exhaustive enumeration",
+   "first_seconds": 0.0003440889995545149,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 4096,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    0.0003440889995545149,
+    0.0003109300014330074,
+    0.004478621000089333
+   ],
+   "warm_median_seconds": 0.0023947755007611704,
+   "warm_min_seconds": 0.0003109300014330074
+  },
+  {
+   "backend": "numpy",
+   "case": "exhaustive indices (NumPy: histogram, zeta, int64 numerators)",
+   "first_seconds": 0.04676096599905577,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04676096599905577,
+    0.053369149998616194
+   ],
+   "warm_median_seconds": 0.053369149998616194,
+   "warm_min_seconds": 0.053369149998616194
+  },
+  {
+   "backend": "python",
+   "case": "exhaustive indices (Python Fractions, subset formula)",
+   "first_seconds": 0.17576821999864478,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17576821999864478
+   ],
+   "warm_median_seconds": 0.17576821999864478,
+   "warm_min_seconds": 0.17576821999864478
+  },
+  {
+   "backend": "cpu",
+   "case": "Shapley interactions up to order 2 (support)",
+   "first_seconds": 0.041475011999864364,
+   "nonzero_sets": 78,
+   "params": {
+    "conditions": 12,
+    "interactions": "dense",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "candidates": 92160,
+    "causal": false,
+    "device": "native CPU",
+    "exact": true,
+    "index": "shapley_interaction",
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "support",
+    "min_order": 1,
+    "note": "every set not listed has index exactly 0",
+    "order": 2
+   },
+   "samples_seconds": [
+    0.041475011999864364,
+    0.030045993999010534,
+    0.029518205001295428
+   ],
+   "warm_median_seconds": 0.02978209950015298,
+   "warm_min_seconds": 0.029518205001295428
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): sparse support",
+   "first_seconds": 6.1007000113022514e-05,
+   "params": {
+    "coalitions": 32768,
+    "players": 15
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.1007000113022514e-05,
+    0.00410696899962204,
+    6.382799983839504e-05
+   ],
+   "support_terms": 20,
+   "warm_median_seconds": 0.0020853984997302177,
+   "warm_min_seconds": 6.382799983839504e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): Shapley from the support",
+   "first_seconds": 9.606400089978706e-05,
+   "params": {
+    "coalitions": 32768,
+    "players": 15
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.606400089978706e-05,
+    3.797699901042506e-05,
+    3.2283000109600835e-05,
+    2.9691000236198306e-05,
+    2.9061000532237813e-05
+   ],
+   "warm_median_seconds": 3.098700017289957e-05,
+   "warm_min_seconds": 2.9061000532237813e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): exhaustive enumeration",
+   "first_seconds": 0.017664205000983202,
+   "params": {
+    "coalitions": 32768,
+    "players": 15
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017664205000983202,
+    0.01747107200026221
+   ],
+   "warm_median_seconds": 0.01747107200026221,
+   "warm_min_seconds": 0.01747107200026221
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): bounded exploration (degree 2: 2n evaluations)",
+   "exact": true,
+   "explored": 30,
+   "first_seconds": 0.00018172599993704353,
+   "params": {
+    "coalitions": 32768,
+    "players": 15
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 30,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 32,
+    "max_coalitions": 30,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 32768
+   },
+   "samples_seconds": [
+    0.00018172599993704353,
+    0.00010704099986469373,
+    9.038099960889667e-05
+   ],
+   "warm_median_seconds": 9.87109997367952e-05,
+   "warm_min_seconds": 9.038099960889667e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): sparse support",
+   "first_seconds": 6.919899897184223e-05,
+   "params": {
+    "coalitions": 1048576,
+    "players": 20
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.919899897184223e-05,
+    4.410700057633221e-05,
+    3.835800089291297e-05
+   ],
+   "support_terms": 23,
+   "warm_median_seconds": 4.123250073462259e-05,
+   "warm_min_seconds": 3.835800089291297e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): Shapley from the support",
+   "first_seconds": 9.323999984189868e-05,
+   "params": {
+    "coalitions": 1048576,
+    "players": 20
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.323999984189868e-05,
+    3.998200008936692e-05,
+    3.6593999539036304e-05,
+    3.524200110405218e-05,
+    3.320399991935119e-05
+   ],
+   "warm_median_seconds": 3.591800032154424e-05,
+   "warm_min_seconds": 3.320399991935119e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): exhaustive enumeration",
+   "first_seconds": 0.6563966020003136,
+   "params": {
+    "coalitions": 1048576,
+    "players": 20
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.6563966020003136,
+    0.6945728410009906
+   ],
+   "warm_median_seconds": 0.6945728410009906,
+   "warm_min_seconds": 0.6945728410009906
+  },
+  {
+   "backend": "cpu",
+   "case": "join COUNT(*): bounded exploration (degree 2: 2n evaluations)",
+   "exact": true,
+   "explored": 40,
+   "first_seconds": 0.004268950999176013,
+   "params": {
+    "coalitions": 1048576,
+    "players": 20
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 40,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 42,
+    "max_coalitions": 40,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 1048576
+   },
+   "samples_seconds": [
+    0.004268950999176013,
+    0.00014659900080005173,
+    0.00010214899884886108
+   ],
+   "warm_median_seconds": 0.0001243739998244564,
+   "warm_min_seconds": 0.00010214899884886108
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive at the iteration budget",
+   "first_seconds": 0.29500777599969297,
+   "params": {
+    "iterations": 1048576,
+    "players": 20
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "coalitions": 1048576,
+    "device": "native CPU",
+    "exact": true,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "method": "exhaustive"
+   },
+   "samples_seconds": [
+    0.29500777599969297
+   ],
+   "warm_median_seconds": 0.29500777599969297,
+   "warm_min_seconds": 0.29500777599969297
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive past the iteration budget",
+   "limit": 1048576,
+   "message": "exhaustive attribution: needs 2097152 iterations, budget 1048576",
+   "need": 2097152,
+   "params": {
+    "iterations": 2097152,
+    "players": 21
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.00019086499924014788,
+   "refused": true,
+   "resource": "iterations"
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 3.234699943277519e-05,
+   "params": {
+    "arity": 2,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.234699943277519e-05
+   ],
+   "warm_median_seconds": 3.234699943277519e-05,
+   "warm_min_seconds": 3.234699943277519e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 1,
+   "first_seconds": 0.00010048500007542316,
+   "level": 1,
+   "level_explored": 1,
+   "level_total": 4,
+   "min_size": [
+    1,
+    4
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 1,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 1,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 1,
+    "level_explored": 1,
+    "level_total": 4,
+    "listed": 0,
+    "max_coalitions": 1,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.00010048500007542316,
+    3.0173001505318098e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 3.0173001505318098e-05,
+   "warm_min_seconds": 3.0173001505318098e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 5,
+   "first_seconds": 2.9632999940076843e-05,
+   "level": 2,
+   "level_explored": 1,
+   "level_total": 6,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    1,
+    6
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 5,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 5,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 1,
+    "level_total": 6,
+    "listed": 1,
+    "max_coalitions": 5,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.9632999940076843e-05,
+    2.1475001631188206e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.1475001631188206e-05,
+   "warm_min_seconds": 2.1475001631188206e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 9,
+   "first_seconds": 2.3306000002776273e-05,
+   "level": 2,
+   "level_explored": 5,
+   "level_total": 6,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    3,
+    4
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 9,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 9,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 5,
+    "level_total": 6,
+    "listed": 3,
+    "max_coalitions": 9,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.3306000002776273e-05,
+    1.981999957934022e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.981999957934022e-05,
+   "warm_min_seconds": 1.981999957934022e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 10,
+   "first_seconds": 2.0774001313839108e-05,
+   "level": 2,
+   "level_explored": 6,
+   "level_total": 6,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    4,
+    4
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 10,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 4,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 10,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 6,
+    "level_total": 6,
+    "listed": 4,
+    "max_coalitions": 10,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.0774001313839108e-05,
+    1.8202001228928566e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 1.8202001228928566e-05,
+   "warm_min_seconds": 1.8202001228928566e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 1.8202999854111113e-05,
+   "params": {
+    "arity": 2,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8202999854111113e-05
+   ],
+   "warm_median_seconds": 1.8202999854111113e-05,
+   "warm_min_seconds": 1.8202999854111113e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 2,
+   "explored": 1,
+   "first_seconds": 2.2033000277588144e-05,
+   "level": 1,
+   "level_explored": 1,
+   "level_total": 4,
+   "min_size": [
+    1,
+    4
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 1,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 1,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 1,
+    "level_explored": 1,
+    "level_total": 4,
+    "listed": 0,
+    "max_coalitions": 1,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.2033000277588144e-05,
+    1.6028001482482068e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.6028001482482068e-05,
+   "warm_min_seconds": 1.6028001482482068e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 2,
+   "explored": 5,
+   "first_seconds": 4.039500163344201e-05,
+   "level": 2,
+   "level_explored": 1,
+   "level_total": 6,
+   "min_size": [
+    2,
+    4
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 5,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 5,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 1,
+    "level_total": 6,
+    "listed": 0,
+    "max_coalitions": 5,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    4.039500163344201e-05,
+    2.4371000108658336e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.4371000108658336e-05,
+   "warm_min_seconds": 2.4371000108658336e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 2,
+   "explored": 9,
+   "first_seconds": 2.5163000827888027e-05,
+   "level": 2,
+   "level_explored": 5,
+   "level_total": 6,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    2,
+    3
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 9,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 9,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 5,
+    "level_total": 6,
+    "listed": 2,
+    "max_coalitions": 9,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.5163000827888027e-05,
+    2.4991000827867538e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.4991000827867538e-05,
+   "warm_min_seconds": 2.4991000827867538e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 2,
+   "explored": 10,
+   "first_seconds": 2.873700032068882e-05,
+   "level": 2,
+   "level_explored": 6,
+   "level_total": 6,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    2,
+    2
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 10,
+    "players": 4,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 10,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 6,
+    "level_total": 6,
+    "listed": 2,
+    "max_coalitions": 10,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.873700032068882e-05,
+    3.0821998734609224e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 3.0821998734609224e-05,
+   "warm_min_seconds": 3.0821998734609224e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 4.134899972996209e-05,
+   "params": {
+    "arity": 2,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.134899972996209e-05
+   ],
+   "warm_median_seconds": 4.134899972996209e-05,
+   "warm_min_seconds": 4.134899972996209e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 8,
+   "explored": 5,
+   "first_seconds": 2.979300006700214e-05,
+   "level": 1,
+   "level_explored": 5,
+   "level_total": 6,
+   "min_size": [
+    1,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 5,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 5,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 1,
+    "level_explored": 5,
+    "level_total": 6,
+    "listed": 0,
+    "max_coalitions": 5,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.979300006700214e-05,
+    1.8997998267877847e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.8997998267877847e-05,
+   "warm_min_seconds": 1.8997998267877847e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 8,
+   "explored": 20,
+   "first_seconds": 1.8570999600342475e-05,
+   "level": 2,
+   "level_explored": 14,
+   "level_total": 15,
+   "min_size": [
+    2,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 20,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 20,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 14,
+    "level_total": 15,
+    "listed": 0,
+    "max_coalitions": 20,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    1.8570999600342475e-05,
+    1.5996000001905486e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.5996000001905486e-05,
+   "warm_min_seconds": 1.5996000001905486e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 8,
+   "explored": 40,
+   "first_seconds": 2.646999928401783e-05,
+   "level": 3,
+   "level_explored": 19,
+   "level_total": 20,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    7,
+    8
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 40,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 40,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 19,
+    "level_total": 20,
+    "listed": 7,
+    "max_coalitions": 40,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.646999928401783e-05,
+    2.2739999621990137e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.2739999621990137e-05,
+   "warm_min_seconds": 2.2739999621990137e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 8,
+   "explored": 41,
+   "first_seconds": 2.7534999389899895e-05,
+   "level": 3,
+   "level_explored": 20,
+   "level_total": 20,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    8,
+    8
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 41,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 8,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 41,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 20,
+    "level_total": 20,
+    "listed": 8,
+    "max_coalitions": 41,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.7534999389899895e-05,
+    2.2618000002694316e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 2.2618000002694316e-05,
+   "warm_min_seconds": 2.2618000002694316e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 2.2778000129619613e-05,
+   "params": {
+    "arity": 2,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2778000129619613e-05
+   ],
+   "warm_median_seconds": 2.2778000129619613e-05,
+   "warm_min_seconds": 2.2778000129619613e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 3,
+   "explored": 2,
+   "first_seconds": 1.8369999452261254e-05,
+   "level": 1,
+   "level_explored": 2,
+   "level_total": 6,
+   "min_size": [
+    1,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 2,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 2,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 1,
+    "level_explored": 2,
+    "level_total": 6,
+    "listed": 0,
+    "max_coalitions": 2,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.8369999452261254e-05,
+    1.6508000044268556e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.6508000044268556e-05,
+   "warm_min_seconds": 1.6508000044268556e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 3,
+   "explored": 10,
+   "first_seconds": 2.3034999685478397e-05,
+   "level": 2,
+   "level_explored": 4,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    1,
+    12
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 10,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 10,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 4,
+    "level_total": 15,
+    "listed": 1,
+    "max_coalitions": 10,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.3034999685478397e-05,
+    1.896499998110812e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.896499998110812e-05,
+   "warm_min_seconds": 1.896499998110812e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 3,
+   "explored": 20,
+   "first_seconds": 1.9491000784910284e-05,
+   "level": 2,
+   "level_explored": 14,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    3,
+    4
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 20,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 20,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 14,
+    "level_total": 15,
+    "listed": 3,
+    "max_coalitions": 20,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.9491000784910284e-05,
+    1.799100027710665e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.799100027710665e-05,
+   "warm_min_seconds": 1.799100027710665e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 3,
+   "explored": 21,
+   "first_seconds": 1.906000034068711e-05,
+   "level": 2,
+   "level_explored": 15,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    3,
+    3
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 21,
+    "players": 6,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 3,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 21,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 15,
+    "level_total": 15,
+    "listed": 3,
+    "max_coalitions": 21,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.906000034068711e-05,
+    1.8015000023297034e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 1.8015000023297034e-05,
+   "warm_min_seconds": 1.8015000023297034e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 0.0001232979993801564,
+   "params": {
+    "arity": 2,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001232979993801564
+   ],
+   "warm_median_seconds": 0.0001232979993801564,
+   "warm_min_seconds": 0.0001232979993801564
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 16,
+   "explored": 20,
+   "first_seconds": 3.0081000659265555e-05,
+   "level": 2,
+   "level_explored": 12,
+   "level_total": 28,
+   "min_size": [
+    2,
+    8
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 20,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 20,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 12,
+    "level_total": 28,
+    "listed": 0,
+    "max_coalitions": 20,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.0081000659265555e-05,
+    1.9155999325448647e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.9155999325448647e-05,
+   "warm_min_seconds": 1.9155999325448647e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 16,
+   "explored": 81,
+   "first_seconds": 2.0834999304497615e-05,
+   "level": 3,
+   "level_explored": 45,
+   "level_total": 56,
+   "min_size": [
+    3,
+    8
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 81,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 81,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 45,
+    "level_total": 56,
+    "listed": 0,
+    "max_coalitions": 81,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.0834999304497615e-05,
+    2.081099955830723e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.081099955830723e-05,
+   "warm_min_seconds": 2.081099955830723e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 16,
+   "explored": 161,
+   "first_seconds": 3.46630004059989e-05,
+   "level": 4,
+   "level_explored": 69,
+   "level_total": 70,
+   "min_size": [
+    4,
+    4
+   ],
+   "multiplicity": [
+    15,
+    16
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 161,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 161,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 69,
+    "level_total": 70,
+    "listed": 8,
+    "max_coalitions": 161,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.46630004059989e-05,
+    3.237500095565338e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 3.237500095565338e-05,
+   "warm_min_seconds": 3.237500095565338e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 16,
+   "explored": 162,
+   "first_seconds": 3.092299994023051e-05,
+   "level": 4,
+   "level_explored": 70,
+   "level_total": 70,
+   "min_size": [
+    4,
+    4
+   ],
+   "multiplicity": [
+    16,
+    16
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 162,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 5,
+    "count": 16,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 162,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 70,
+    "level_total": 70,
+    "listed": 8,
+    "max_coalitions": 162,
+    "minimum": 4,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.092299994023051e-05,
+    3.004099926329218e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 3.004099926329218e-05,
+   "warm_min_seconds": 3.004099926329218e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 3.2240001019090414e-05,
+   "params": {
+    "arity": 2,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.2240001019090414e-05
+   ],
+   "warm_median_seconds": 3.2240001019090414e-05,
+   "warm_min_seconds": 3.2240001019090414e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 4,
+   "first_seconds": 2.2082000214140862e-05,
+   "level": 1,
+   "level_explored": 4,
+   "level_total": 8,
+   "min_size": [
+    1,
+    8
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 4,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 4,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 1,
+    "level_explored": 4,
+    "level_total": 8,
+    "listed": 0,
+    "max_coalitions": 4,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.2082000214140862e-05,
+    1.811299989640247e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.811299989640247e-05,
+   "warm_min_seconds": 1.811299989640247e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 18,
+   "first_seconds": 2.0956998923793435e-05,
+   "level": 2,
+   "level_explored": 10,
+   "level_total": 28,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    1,
+    19
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 18,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 18,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 10,
+    "level_total": 28,
+    "listed": 1,
+    "max_coalitions": 18,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.0956998923793435e-05,
+    2.3587001123814844e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.3587001123814844e-05,
+   "warm_min_seconds": 2.3587001123814844e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 35,
+   "first_seconds": 2.2895999791217037e-05,
+   "level": 2,
+   "level_explored": 27,
+   "level_total": 28,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    4,
+    5
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 35,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 35,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 27,
+    "level_total": 28,
+    "listed": 4,
+    "max_coalitions": 35,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.2895999791217037e-05,
+    2.049999966402538e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.049999966402538e-05,
+   "warm_min_seconds": 2.049999966402538e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 4,
+   "explored": 36,
+   "first_seconds": 2.082799983327277e-05,
+   "level": 2,
+   "level_explored": 28,
+   "level_total": 28,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    4,
+    4
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 36,
+    "players": 8,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 4,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 36,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 28,
+    "level_total": 28,
+    "listed": 4,
+    "max_coalitions": 36,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.082799983327277e-05,
+    1.9959001292590983e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 1.9959001292590983e-05,
+   "warm_min_seconds": 1.9959001292590983e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 0.0004824879997613607,
+   "params": {
+    "arity": 2,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004824879997613607
+   ],
+   "warm_median_seconds": 0.0004824879997613607,
+   "warm_min_seconds": 0.0004824879997613607
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 32,
+   "explored": 79,
+   "first_seconds": 3.587700120988302e-05,
+   "level": 3,
+   "level_explored": 24,
+   "level_total": 120,
+   "min_size": [
+    3,
+    10
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 79,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 79,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 24,
+    "level_total": 120,
+    "listed": 0,
+    "max_coalitions": 79,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.587700120988302e-05,
+    2.410100023553241e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.410100023553241e-05,
+   "warm_min_seconds": 2.410100023553241e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 32,
+   "explored": 318,
+   "first_seconds": 4.2687999666668475e-05,
+   "level": 4,
+   "level_explored": 143,
+   "level_total": 210,
+   "min_size": [
+    4,
+    10
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 318,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 318,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 143,
+    "level_total": 210,
+    "listed": 0,
+    "max_coalitions": 318,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    4.2687999666668475e-05,
+    3.702499998325948e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 3.702499998325948e-05,
+   "warm_min_seconds": 3.702499998325948e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 32,
+   "explored": 636,
+   "first_seconds": 7.100599941622932e-05,
+   "level": 5,
+   "level_explored": 251,
+   "level_total": 252,
+   "min_size": [
+    5,
+    5
+   ],
+   "multiplicity": [
+    31,
+    32
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 636,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 5,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 636,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 5,
+    "level_explored": 251,
+    "level_total": 252,
+    "listed": 8,
+    "max_coalitions": 636,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    7.100599941622932e-05,
+    6.745899918314535e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 6.745899918314535e-05,
+   "warm_min_seconds": 6.745899918314535e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 32,
+   "explored": 637,
+   "first_seconds": 6.531500002893154e-05,
+   "level": 5,
+   "level_explored": 252,
+   "level_total": 252,
+   "min_size": [
+    5,
+    5
+   ],
+   "multiplicity": [
+    32,
+    32
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 637,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 6,
+    "count": 32,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 637,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 5,
+    "level_explored": 252,
+    "level_total": 252,
+    "listed": 8,
+    "max_coalitions": 637,
+    "minimum": 5,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    6.531500002893154e-05,
+    6.460700024035759e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 6.460700024035759e-05,
+   "warm_min_seconds": 6.460700024035759e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 0.0040898240004025865,
+   "params": {
+    "arity": 2,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0040898240004025865
+   ],
+   "warm_median_seconds": 0.0040898240004025865,
+   "warm_min_seconds": 0.0040898240004025865
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 5,
+   "explored": 6,
+   "first_seconds": 6.091800059948582e-05,
+   "level": 1,
+   "level_explored": 6,
+   "level_total": 10,
+   "min_size": [
+    1,
+    10
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 2,
+    "budget": "1/8",
+    "max_coalitions": 6,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 6,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 1,
+    "level_explored": 6,
+    "level_total": 10,
+    "listed": 0,
+    "max_coalitions": 6,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    6.091800059948582e-05,
+    2.2221000108402222e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.2221000108402222e-05,
+   "warm_min_seconds": 2.2221000108402222e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 5,
+   "explored": 27,
+   "first_seconds": 2.7105001208838075e-05,
+   "level": 2,
+   "level_explored": 17,
+   "level_total": 45,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    2,
+    30
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "1/2",
+    "max_coalitions": 27,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 27,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 17,
+    "level_total": 45,
+    "listed": 2,
+    "max_coalitions": 27,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.7105001208838075e-05,
+    2.03950003196951e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.03950003196951e-05,
+   "warm_min_seconds": 2.03950003196951e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 5,
+   "explored": 54,
+   "first_seconds": 3.235300027881749e-05,
+   "level": 2,
+   "level_explored": 44,
+   "level_total": 45,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    5,
+    6
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all but one",
+    "max_coalitions": 54,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 54,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 44,
+    "level_total": 45,
+    "listed": 5,
+    "max_coalitions": 54,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    3.235300027881749e-05,
+    2.474000029906165e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.474000029906165e-05,
+   "warm_min_seconds": 2.474000029906165e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 5,
+   "explored": 55,
+   "first_seconds": 2.490900078555569e-05,
+   "level": 2,
+   "level_explored": 45,
+   "level_total": 45,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    5,
+    5
+   ],
+   "params": {
+    "arity": 2,
+    "budget": "all",
+    "max_coalitions": 55,
+    "players": 10,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 5,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 55,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 45,
+    "level_total": 45,
+    "listed": 5,
+    "max_coalitions": 55,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.490900078555569e-05,
+    2.289500116603449e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 2.289500116603449e-05,
+   "warm_min_seconds": 2.289500116603449e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 2.456099900882691e-05,
+   "params": {
+    "arity": 3,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.456099900882691e-05
+   ],
+   "warm_median_seconds": 2.456099900882691e-05,
+   "warm_min_seconds": 2.456099900882691e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 9,
+   "explored": 2,
+   "first_seconds": 2.377700002398342e-05,
+   "level": 1,
+   "level_explored": 2,
+   "level_total": 6,
+   "min_size": [
+    1,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 2,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 2,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 1,
+    "level_explored": 2,
+    "level_total": 6,
+    "listed": 0,
+    "max_coalitions": 2,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.377700002398342e-05,
+    1.636600063648075e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.636600063648075e-05,
+   "warm_min_seconds": 1.636600063648075e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 9,
+   "explored": 10,
+   "first_seconds": 1.9782999515882693e-05,
+   "level": 2,
+   "level_explored": 4,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    3,
+    14
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 10,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 10,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 4,
+    "level_total": 15,
+    "listed": 3,
+    "max_coalitions": 10,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    1.9782999515882693e-05,
+    1.8273000023327768e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.8273000023327768e-05,
+   "warm_min_seconds": 1.8273000023327768e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 9,
+   "explored": 20,
+   "first_seconds": 2.4046999897109345e-05,
+   "level": 2,
+   "level_explored": 14,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    8,
+    9
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 20,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 20,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 14,
+    "level_total": 15,
+    "listed": 8,
+    "max_coalitions": 20,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.4046999897109345e-05,
+    2.2649001039098948e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.2649001039098948e-05,
+   "warm_min_seconds": 2.2649001039098948e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 2,
+   "expected_multiplicity": 9,
+   "explored": 21,
+   "first_seconds": 2.2493999495054595e-05,
+   "level": 2,
+   "level_explored": 15,
+   "level_total": 15,
+   "min_size": [
+    2,
+    2
+   ],
+   "multiplicity": [
+    9,
+    9
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 21,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "count": 9,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 21,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 15,
+    "level_total": 15,
+    "listed": 8,
+    "max_coalitions": 21,
+    "minimum": 2,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.2493999495054595e-05,
+    2.277999919897411e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 2.277999919897411e-05,
+   "warm_min_seconds": 2.277999919897411e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 3.199800084985327e-05,
+   "params": {
+    "arity": 3,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.199800084985327e-05
+   ],
+   "warm_median_seconds": 3.199800084985327e-05,
+   "warm_min_seconds": 3.199800084985327e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 2,
+   "explored": 5,
+   "first_seconds": 1.8878999981097877e-05,
+   "level": 1,
+   "level_explored": 5,
+   "level_total": 6,
+   "min_size": [
+    1,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 5,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 1,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 5,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 1,
+    "level_explored": 5,
+    "level_total": 6,
+    "listed": 0,
+    "max_coalitions": 5,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.8878999981097877e-05,
+    1.7746999219525605e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.7746999219525605e-05,
+   "warm_min_seconds": 1.7746999219525605e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 2,
+   "explored": 20,
+   "first_seconds": 1.7544998627272435e-05,
+   "level": 2,
+   "level_explored": 14,
+   "level_total": 15,
+   "min_size": [
+    2,
+    6
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 20,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 20,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 14,
+    "level_total": 15,
+    "listed": 0,
+    "max_coalitions": 20,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.7544998627272435e-05,
+    1.609699938853737e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.609699938853737e-05,
+   "warm_min_seconds": 1.609699938853737e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 2,
+   "explored": 40,
+   "first_seconds": 1.9954999515903182e-05,
+   "level": 3,
+   "level_explored": 19,
+   "level_total": 20,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    2,
+    3
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 40,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 40,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 19,
+    "level_total": 20,
+    "listed": 2,
+    "max_coalitions": 40,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    1.9954999515903182e-05,
+    1.9209999663871713e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.9209999663871713e-05,
+   "warm_min_seconds": 1.9209999663871713e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 2,
+   "explored": 41,
+   "first_seconds": 2.029999996011611e-05,
+   "level": 3,
+   "level_explored": 20,
+   "level_total": 20,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    2,
+    2
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 41,
+    "players": 6,
+    "witnesses": 2
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 41,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 20,
+    "level_total": 20,
+    "listed": 2,
+    "max_coalitions": 41,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.029999996011611e-05,
+    1.8038999769487418e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 1.8038999769487418e-05,
+   "warm_min_seconds": 1.8038999769487418e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 9.459299872105476e-05,
+   "params": {
+    "arity": 3,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.459299872105476e-05
+   ],
+   "warm_median_seconds": 9.459299872105476e-05,
+   "warm_min_seconds": 9.459299872105476e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 27,
+   "explored": 16,
+   "first_seconds": 2.9853001251467504e-05,
+   "level": 2,
+   "level_explored": 7,
+   "level_total": 36,
+   "min_size": [
+    2,
+    9
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 16,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 16,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 2,
+    "level_explored": 7,
+    "level_total": 36,
+    "listed": 0,
+    "max_coalitions": 16,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    2.9853001251467504e-05,
+    2.0411998775671236e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.0411998775671236e-05,
+   "warm_min_seconds": 2.0411998775671236e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 27,
+   "explored": 64,
+   "first_seconds": 3.246799860789906e-05,
+   "level": 3,
+   "level_explored": 19,
+   "level_total": 84,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    7,
+    72
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 64,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 64,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 19,
+    "level_total": 84,
+    "listed": 7,
+    "max_coalitions": 64,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.246799860789906e-05,
+    2.7991000024485402e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.7991000024485402e-05,
+   "warm_min_seconds": 2.7991000024485402e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 27,
+   "explored": 128,
+   "first_seconds": 3.4300001061637886e-05,
+   "level": 3,
+   "level_explored": 83,
+   "level_total": 84,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    26,
+    27
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 128,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 128,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 83,
+    "level_total": 84,
+    "listed": 8,
+    "max_coalitions": 128,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.4300001061637886e-05,
+    3.14049993903609e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 3.14049993903609e-05,
+   "warm_min_seconds": 3.14049993903609e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 27,
+   "explored": 129,
+   "first_seconds": 3.100299909419846e-05,
+   "level": 3,
+   "level_explored": 84,
+   "level_total": 84,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    27,
+    27
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 129,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 27,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 129,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 84,
+    "level_total": 84,
+    "listed": 8,
+    "max_coalitions": 129,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.100299909419846e-05,
+    2.922200110333506e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 2.922200110333506e-05,
+   "warm_min_seconds": 2.922200110333506e-05
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 8.940599946072325e-05,
+   "params": {
+    "arity": 3,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.940599946072325e-05
+   ],
+   "warm_median_seconds": 8.940599946072325e-05,
+   "warm_min_seconds": 8.940599946072325e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 3,
+   "explored": 16,
+   "first_seconds": 2.090399902954232e-05,
+   "level": 2,
+   "level_explored": 7,
+   "level_total": 36,
+   "min_size": [
+    2,
+    9
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 16,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 16,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 7,
+    "level_total": 36,
+    "listed": 0,
+    "max_coalitions": 16,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.090399902954232e-05,
+    1.8081000234815292e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.8081000234815292e-05,
+   "warm_min_seconds": 1.8081000234815292e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 3,
+   "explored": 64,
+   "first_seconds": 2.2914999135537073e-05,
+   "level": 3,
+   "level_explored": 19,
+   "level_total": 84,
+   "min_size": [
+    3,
+    9
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 64,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 64,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 19,
+    "level_total": 84,
+    "listed": 0,
+    "max_coalitions": 64,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.2914999135537073e-05,
+    1.8933000319520943e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 1.8933000319520943e-05,
+   "warm_min_seconds": 1.8933000319520943e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 3,
+   "explored": 128,
+   "first_seconds": 3.061800089199096e-05,
+   "level": 3,
+   "level_explored": 83,
+   "level_total": 84,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    3,
+    4
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 128,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 128,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 83,
+    "level_total": 84,
+    "listed": 3,
+    "max_coalitions": 128,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    3.061800089199096e-05,
+    2.8541000574477948e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.8541000574477948e-05,
+   "warm_min_seconds": 2.8541000574477948e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 3,
+   "explored": 129,
+   "first_seconds": 2.7252999643678777e-05,
+   "level": 3,
+   "level_explored": 84,
+   "level_total": 84,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    3,
+    3
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 129,
+    "players": 9,
+    "witnesses": 3
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 3,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 129,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 84,
+    "level_total": 84,
+    "listed": 3,
+    "max_coalitions": 129,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    2.7252999643678777e-05,
+    2.5534998712828383e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 2.5534998712828383e-05,
+   "warm_min_seconds": 2.5534998712828383e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 0.0005596880000666715,
+   "params": {
+    "arity": 3,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005596880000666715
+   ],
+   "warm_median_seconds": 0.0005596880000666715,
+   "warm_min_seconds": 0.0005596880000666715
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 81,
+   "explored": 99,
+   "first_seconds": 3.993800055468455e-05,
+   "level": 3,
+   "level_explored": 21,
+   "level_total": 220,
+   "min_size": [
+    3,
+    12
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 99,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 99,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 3,
+    "level_explored": 21,
+    "level_total": 220,
+    "listed": 0,
+    "max_coalitions": 99,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    3.993800055468455e-05,
+    2.948500150523614e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 2.948500150523614e-05,
+   "warm_min_seconds": 2.948500150523614e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 81,
+   "explored": 396,
+   "first_seconds": 7.091100087563973e-05,
+   "level": 4,
+   "level_explored": 98,
+   "level_total": 495,
+   "min_size": [
+    4,
+    4
+   ],
+   "multiplicity": [
+    19,
+    416
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 396,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 396,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 98,
+    "level_total": 495,
+    "listed": 8,
+    "max_coalitions": 396,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    7.091100087563973e-05,
+    6.295099956332706e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 6.295099956332706e-05,
+   "warm_min_seconds": 6.295099956332706e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 81,
+   "explored": 792,
+   "first_seconds": 0.00012552500083984341,
+   "level": 4,
+   "level_explored": 494,
+   "level_total": 495,
+   "min_size": [
+    4,
+    4
+   ],
+   "multiplicity": [
+    80,
+    81
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 792,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 792,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 494,
+    "level_total": 495,
+    "listed": 8,
+    "max_coalitions": 792,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.00012552500083984341,
+    0.00011448800069047138
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 0.00011448800069047138,
+   "warm_min_seconds": 0.00011448800069047138
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 4,
+   "expected_multiplicity": 81,
+   "explored": 793,
+   "first_seconds": 0.00011719499889295548,
+   "level": 4,
+   "level_explored": 495,
+   "level_total": 495,
+   "min_size": [
+    4,
+    4
+   ],
+   "multiplicity": [
+    81,
+    81
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 793,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 5,
+    "count": 81,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 793,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 495,
+    "level_total": 495,
+    "listed": 8,
+    "max_coalitions": 793,
+    "minimum": 4,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.00011719499889295548,
+    0.00012434199925337452
+   ],
+   "status": "found",
+   "warm_median_seconds": 0.00012434199925337452,
+   "warm_min_seconds": 0.00012434199925337452
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 0.00037911999970674515,
+   "params": {
+    "arity": 3,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00037911999970674515
+   ],
+   "warm_median_seconds": 0.00037911999970674515,
+   "warm_min_seconds": 0.00037911999970674515
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 4,
+   "explored": 37,
+   "first_seconds": 4.7417999667231925e-05,
+   "level": 2,
+   "level_explored": 25,
+   "level_total": 66,
+   "min_size": [
+    2,
+    12
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 37,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 37,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 25,
+    "level_total": 66,
+    "listed": 0,
+    "max_coalitions": 37,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    4.7417999667231925e-05,
+    0.008135605999996187
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 0.008135605999996187,
+   "warm_min_seconds": 0.008135605999996187
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 4,
+   "explored": 149,
+   "first_seconds": 7.993600047484506e-05,
+   "level": 3,
+   "level_explored": 71,
+   "level_total": 220,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    1,
+    150
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 149,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 149,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 71,
+    "level_total": 220,
+    "listed": 1,
+    "max_coalitions": 149,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    7.993600047484506e-05,
+    5.725399932998698e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 5.725399932998698e-05,
+   "warm_min_seconds": 5.725399932998698e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 4,
+   "explored": 297,
+   "first_seconds": 5.769500057795085e-05,
+   "level": 3,
+   "level_explored": 219,
+   "level_total": 220,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    4,
+    5
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 297,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 297,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 219,
+    "level_total": 220,
+    "listed": 4,
+    "max_coalitions": 297,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    5.769500057795085e-05,
+    4.6613000449724495e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 4.6613000449724495e-05,
+   "warm_min_seconds": 4.6613000449724495e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 4,
+   "explored": 298,
+   "first_seconds": 4.662399987864774e-05,
+   "level": 3,
+   "level_explored": 220,
+   "level_total": 220,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    4,
+    4
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 298,
+    "players": 12,
+    "witnesses": 4
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 4,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 298,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 220,
+    "level_total": 220,
+    "listed": 4,
+    "max_coalitions": 298,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    4.662399987864774e-05,
+    4.305599941289984e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 4.305599941289984e-05,
+   "warm_min_seconds": 4.305599941289984e-05
+  },
+  {
+   "backend": "python",
+   "case": "repair: every coalition (Python)",
+   "first_seconds": 0.007867976999477833,
+   "params": {
+    "arity": 3,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007867976999477833
+   ],
+   "warm_median_seconds": 0.007867976999477833,
+   "warm_min_seconds": 0.007867976999477833
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 243,
+   "explored": 617,
+   "first_seconds": 0.0001684870003373362,
+   "level": 4,
+   "level_explored": 42,
+   "level_total": 1365,
+   "min_size": [
+    4,
+    15
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 617,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 617,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 4,
+    "level_explored": 42,
+    "level_total": 1365,
+    "listed": 0,
+    "max_coalitions": 617,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.0001684870003373362,
+    9.364000106870662e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 9.364000106870662e-05,
+   "warm_min_seconds": 9.364000106870662e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 243,
+   "explored": 2471,
+   "first_seconds": 0.0003484329990897095,
+   "level": 5,
+   "level_explored": 531,
+   "level_total": 3003,
+   "min_size": [
+    5,
+    5
+   ],
+   "multiplicity": [
+    52,
+    2524
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 2471,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 5,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 2471,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 5,
+    "level_explored": 531,
+    "level_total": 3003,
+    "listed": 8,
+    "max_coalitions": 2471,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.0003484329990897095,
+    0.0003197469995939173
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 0.0003197469995939173,
+   "warm_min_seconds": 0.0003197469995939173
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 243,
+   "explored": 4942,
+   "first_seconds": 0.0006643079996138113,
+   "level": 5,
+   "level_explored": 3002,
+   "level_total": 3003,
+   "min_size": [
+    5,
+    5
+   ],
+   "multiplicity": [
+    242,
+    243
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 4942,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 5,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 4942,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 5,
+    "level_explored": 3002,
+    "level_total": 3003,
+    "listed": 8,
+    "max_coalitions": 4942,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.0006643079996138113,
+    0.0006505109995487146
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 0.0006505109995487146,
+   "warm_min_seconds": 0.0006505109995487146
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum repair search",
+   "expected_minimum": 5,
+   "expected_multiplicity": 243,
+   "explored": 4943,
+   "first_seconds": 0.0006648290000157431,
+   "level": 5,
+   "level_explored": 3003,
+   "level_total": 3003,
+   "min_size": [
+    5,
+    5
+   ],
+   "multiplicity": [
+    243,
+    243
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 4943,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 6,
+    "count": 243,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 4943,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "repair",
+    "level": 5,
+    "level_explored": 3003,
+    "level_total": 3003,
+    "listed": 8,
+    "max_coalitions": 4943,
+    "minimum": 5,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": "<=",
+    "property": "v(P - C) <= 0",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 0
+   },
+   "samples_seconds": [
+    0.0006648290000157431,
+    0.004799776999789174
+   ],
+   "status": "found",
+   "warm_median_seconds": 0.004799776999789174,
+   "warm_min_seconds": 0.004799776999789174
+  },
+  {
+   "backend": "python",
+   "case": "explanation: every coalition (Python)",
+   "first_seconds": 0.0004541319995041704,
+   "params": {
+    "arity": 3,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004541319995041704
+   ],
+   "warm_median_seconds": 0.0004541319995041704,
+   "warm_min_seconds": 0.0004541319995041704
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 5,
+   "explored": 71,
+   "first_seconds": 6.764099998690654e-05,
+   "level": 2,
+   "level_explored": 56,
+   "level_total": 105,
+   "min_size": [
+    2,
+    15
+   ],
+   "multiplicity": null,
+   "params": {
+    "arity": 3,
+    "budget": "1/8",
+    "max_coalitions": 71,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 71,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 2,
+    "level_explored": 56,
+    "level_total": 105,
+    "listed": 0,
+    "max_coalitions": 71,
+    "monotone": "increasing",
+    "multiplicity": null,
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    6.764099998690654e-05,
+    3.0973998946137726e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 3.0973998946137726e-05,
+   "warm_min_seconds": 3.0973998946137726e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 5,
+   "explored": 287,
+   "first_seconds": 5.488499846251216e-05,
+   "level": 3,
+   "level_explored": 167,
+   "level_total": 455,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    1,
+    289
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "1/2",
+    "max_coalitions": 287,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 287,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 167,
+    "level_total": 455,
+    "listed": 1,
+    "max_coalitions": 287,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    5.488499846251216e-05,
+    9.160999979940243e-05
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 9.160999979940243e-05,
+   "warm_min_seconds": 9.160999979940243e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 5,
+   "explored": 574,
+   "first_seconds": 9.895299990603235e-05,
+   "level": 3,
+   "level_explored": 454,
+   "level_total": 455,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    5,
+    6
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all but one",
+    "max_coalitions": 574,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 3,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 574,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 454,
+    "level_total": 455,
+    "listed": 5,
+    "max_coalitions": 574,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "coalition budget exhausted",
+    "status": "incomplete",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    9.895299990603235e-05,
+    0.00010963500062644016
+   ],
+   "status": "incomplete",
+   "warm_median_seconds": 0.00010963500062644016,
+   "warm_min_seconds": 0.00010963500062644016
+  },
+  {
+   "backend": "cpu",
+   "case": "minimum explanation search",
+   "expected_minimum": 3,
+   "expected_multiplicity": 5,
+   "explored": 575,
+   "first_seconds": 8.59890005813213e-05,
+   "level": 3,
+   "level_explored": 455,
+   "level_total": 455,
+   "min_size": [
+    3,
+    3
+   ],
+   "multiplicity": [
+    5,
+    5
+   ],
+   "params": {
+    "arity": 3,
+    "budget": "all",
+    "max_coalitions": 575,
+    "players": 15,
+    "witnesses": 5
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "complete_levels": 4,
+    "count": 5,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 575,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "kind": "explanation",
+    "level": 3,
+    "level_explored": 455,
+    "level_total": 455,
+    "listed": 5,
+    "max_coalitions": 575,
+    "minimum": 3,
+    "monotone": "increasing",
+    "note": "C = empty and C = P are decided from the game's v(empty), v(P) (not counted in explored)",
+    "op": ">=",
+    "property": "v(C) >= 1",
+    "reason": "minimum level complete",
+    "status": "found",
+    "threshold": 1
+   },
+   "samples_seconds": [
+    8.59890005813213e-05,
+    8.498500028508715e-05
+   ],
+   "status": "found",
+   "warm_median_seconds": 8.498500028508715e-05,
+   "warm_min_seconds": 8.498500028508715e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 0,
+   "first_seconds": 0.00019529199926182628,
+   "levels": [
+    0,
+    36
+   ],
+   "max_shapley_width": "85",
+   "params": {
+    "max_coalitions": 35,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 0,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 0,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 2,
+    "max_coalitions": 35,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "bounds",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.00019529199926182628,
+    0.00016061799942690413
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 0.00016061799942690413,
+   "warm_min_seconds": 0.00016061799942690413
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 36,
+   "first_seconds": 0.00018382700000074692,
+   "levels": [
+    0,
+    35,
+    36
+   ],
+   "max_shapley_width": "5",
+   "params": {
+    "max_coalitions": 36,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 0,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 36,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 38,
+    "max_coalitions": 36,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "bounds",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.00018382700000074692,
+    0.0002109039996867068
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 0.0002109039996867068,
+   "warm_min_seconds": 0.0002109039996867068
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 72,
+   "first_seconds": 0.0002117790008924203,
+   "levels": [
+    0,
+    1,
+    35,
+    36
+   ],
+   "max_shapley_width": "0",
+   "params": {
+    "max_coalitions": 72,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 72,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 74,
+    "max_coalitions": 72,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.0002117790008924203,
+    0.00021073999960208312
+   ],
+   "status": "exact",
+   "warm_median_seconds": 0.00021073999960208312,
+   "warm_min_seconds": 0.00021073999960208312
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 72,
+   "first_seconds": 0.00020733500059577636,
+   "levels": [
+    0,
+    1,
+    35,
+    36
+   ],
+   "max_shapley_width": "0",
+   "params": {
+    "max_coalitions": 666,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 72,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 74,
+    "max_coalitions": 666,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.00020733500059577636,
+    0.00436816399997042
+   ],
+   "status": "exact",
+   "warm_median_seconds": 0.00436816399997042,
+   "warm_min_seconds": 0.00436816399997042
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 72,
+   "first_seconds": 0.00022741999964637216,
+   "levels": [
+    0,
+    1,
+    35,
+    36
+   ],
+   "max_shapley_width": "0",
+   "params": {
+    "max_coalitions": 702,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 72,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 74,
+    "max_coalitions": 702,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.00022741999964637216,
+    0.00021233100051176734
+   ],
+   "status": "exact",
+   "warm_median_seconds": 0.00021233100051176734,
+   "warm_min_seconds": 0.00021233100051176734
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 72,
+   "first_seconds": 0.0002277690000482835,
+   "levels": [
+    0,
+    1,
+    35,
+    36
+   ],
+   "max_shapley_width": "0",
+   "params": {
+    "max_coalitions": 738,
+    "players": 36,
+    "semiring": "count"
+   },
+   "phase": "run",
+   "regime": "moebius",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 2,
+    "device": "native CPU",
+    "exact": true,
+    "explored": 72,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 74,
+    "max_coalitions": 738,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "moebius",
+    "status": "exact",
+    "total": 68719476736
+   },
+   "samples_seconds": [
+    0.0002277690000482835,
+    0.0002157970011467114
+   ],
+   "status": "exact",
+   "warm_median_seconds": 0.0002157970011467114,
+   "warm_min_seconds": 0.0002157970011467114
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 0,
+   "first_seconds": 6.260599911911413e-05,
+   "levels": [
+    0,
+    7
+   ],
+   "max_shapley_width": "1",
+   "params": {
+    "max_coalitions": 6,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 0,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 0,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 2,
+    "max_coalitions": 6,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    6.260599911911413e-05,
+    5.3896999816061e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 5.3896999816061e-05,
+   "warm_min_seconds": 5.3896999816061e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 7,
+   "first_seconds": 9.247299931303132e-05,
+   "levels": [
+    0,
+    6,
+    7
+   ],
+   "max_shapley_width": "6/7",
+   "params": {
+    "max_coalitions": 7,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 0,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 7,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 9,
+    "max_coalitions": 7,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    9.247299931303132e-05,
+    8.983800034911837e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 8.983800034911837e-05,
+   "warm_min_seconds": 8.983800034911837e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 14,
+   "first_seconds": 7.596799878228921e-05,
+   "levels": [
+    0,
+    1,
+    6,
+    7
+   ],
+   "max_shapley_width": "5/7",
+   "params": {
+    "max_coalitions": 14,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 14,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 16,
+    "max_coalitions": 14,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    7.596799878228921e-05,
+    5.352500011213124e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 5.352500011213124e-05,
+   "warm_min_seconds": 5.352500011213124e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 14,
+   "first_seconds": 5.290199987939559e-05,
+   "levels": [
+    0,
+    1,
+    6,
+    7
+   ],
+   "max_shapley_width": "5/7",
+   "params": {
+    "max_coalitions": 28,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 14,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 16,
+    "max_coalitions": 28,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    5.290199987939559e-05,
+    5.054000030213501e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 5.054000030213501e-05,
+   "warm_min_seconds": 5.054000030213501e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 35,
+   "first_seconds": 5.6226999731734395e-05,
+   "levels": [
+    0,
+    1,
+    5,
+    6,
+    7
+   ],
+   "max_shapley_width": "4/7",
+   "params": {
+    "max_coalitions": 35,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 35,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 37,
+    "max_coalitions": 35,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    5.6226999731734395e-05,
+    5.438399966806173e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 5.438399966806173e-05,
+   "warm_min_seconds": 5.438399966806173e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shapley / Banzhaf",
+   "explored": 35,
+   "first_seconds": 5.528000110643916e-05,
+   "levels": [
+    0,
+    1,
+    5,
+    6,
+    7
+   ],
+   "max_shapley_width": "4/7",
+   "params": {
+    "max_coalitions": 42,
+    "players": 7,
+    "semiring": "bool"
+   },
+   "phase": "run",
+   "regime": "range",
+   "result": {
+    "backend": "cpu",
+    "bottom": 1,
+    "causal": false,
+    "degree": 7,
+    "device": "native CPU",
+    "exact": false,
+    "explored": 35,
+    "interpretation": "an algebraic decomposition of v(P) - v(empty) among the declared players (or their sets) under the declared game, baseline and weighting; it has no automatic causal interpretation: it is not the effect of an intervention on the data, and another game, baseline or weighting attributes differently",
+    "known": 37,
+    "max_coalitions": 42,
+    "note": "levels 0 and n are the game's own v(empty), v(P) (not counted in explored)",
+    "regime": "range",
+    "status": "bounds",
+    "total": 128
+   },
+   "samples_seconds": [
+    5.528000110643916e-05,
+    5.2658999265986495e-05
+   ],
+   "status": "bounds",
+   "warm_median_seconds": 5.2658999265986495e-05,
+   "warm_min_seconds": 5.2658999265986495e-05
+  }
+ ],
+ "seconds": 10.935758122001062,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "exhaustive enumeration (iterations = 2^n, default limit 2^20)",
+   "largest_admitted": {
+    "players": 20
+   },
+   "smallest_refused": {
+    "players": 21
+   }
+  }
+ ]
+}

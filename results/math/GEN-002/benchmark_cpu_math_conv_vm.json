@@ -1,0 +1,3738 @@
+{
+ "argv": [
+  "--capability",
+  "GEN-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/GEN-002/benchmark_cpu_math_conv_vm.json"
+ ],
+ "capability": "GEN-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:15:48+00:00"
+ },
+ "notes": [
+  "cpu = math_conv.c on GEN-001 (math_gen.c: products, powers and requests with exact big integers); per-key products and batches accumulate exactly in 192 bits (tr_conv_coef192); cuda = math_conv_gpu.cu (device runs only); duckdb = GROUP BY counts, the self-join on the key (the complete reconstruction of the key-conditioned join) and the per-row sums; python = dict polynomials, enumerated walks, Python-int convolutions.",
+  "A declared power checks its largest step (support growth, pairs, intermediate bytes) before the first product; refused powers record that need. A bounded series refuses a coefficient past its declared bound (OverflowError), recorded with the walk table's largest magnitude."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001)",
+   "first_seconds": 0.0006266159998631338,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006266159998631338,
+    0.00041074799992202315
+   ],
+   "warm_median_seconds": 0.00041074799992202315,
+   "warm_min_seconds": 0.00041074799992202315
+  },
+  {
+   "backend": "cpu",
+   "bytes": 592,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.0060154010006954195,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0060154010006954195,
+    0.005289198999889777,
+    0.0042817339999601245
+   ],
+   "terms": 8,
+   "warm_median_seconds": 0.004785466499924951,
+   "warm_min_seconds": 0.0042817339999601245
+  },
+  {
+   "backend": "cpu",
+   "bytes": 8336,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.007929371000500396,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007929371000500396,
+    0.005809056001453428
+   ],
+   "terms": 128,
+   "warm_median_seconds": 0.005809056001453428,
+   "warm_min_seconds": 0.005809056001453428
+  },
+  {
+   "backend": "cpu",
+   "bytes": 592,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.0053930459998809965,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0053930459998809965,
+    0.004952822000632295,
+    0.0040468929983035196
+   ],
+   "terms": 8,
+   "warm_median_seconds": 0.0044998574994679075,
+   "warm_min_seconds": 0.0040468929983035196
+  },
+  {
+   "backend": "cpu",
+   "bytes": 8336,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.004913137001494761,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004913137001494761,
+    0.00485630100047274
+   ],
+   "terms": 128,
+   "warm_median_seconds": 0.00485630100047274,
+   "warm_min_seconds": 0.00485630100047274
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2120984,
+   "case": "keyed family (per-key dense states)",
+   "coefficients": 512,
+   "first_seconds": 0.004089366999323829,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004089366999323829,
+    0.005256246999124414,
+    0.0037289400006557116
+   ],
+   "warm_median_seconds": 0.004492593499890063,
+   "warm_min_seconds": 0.0037289400006557116
+  },
+  {
+   "backend": "duckdb",
+   "case": "coefficients (GROUP BY)",
+   "first_seconds": 0.00968789099897549,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00968789099897549,
+    0.0048974340006679995
+   ],
+   "warm_median_seconds": 0.0048974340006679995,
+   "warm_min_seconds": 0.0048974340006679995
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.005519958000149927,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.005519958000149927,
+    3.857199953927193e-05,
+    1.4847000784357078e-05
+   ],
+   "warm_median_seconds": 2.6709500161814503e-05,
+   "warm_min_seconds": 1.4847000784357078e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.0008136340002238285,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008136340002238285,
+    0.0008068379993346753,
+    0.0007939749993965961
+   ],
+   "warm_median_seconds": 0.0008004064993656357,
+   "warm_min_seconds": 0.0007939749993965961
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.020529083001747495,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.020529083001747495,
+    0.013832621001711232,
+    0.014587140000003274
+   ],
+   "warm_median_seconds": 0.014209880500857253,
+   "warm_min_seconds": 0.013832621001711232
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 8.207300015783403e-05,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": -49759,
+   "samples_seconds": [
+    8.207300015783403e-05,
+    2.166400008718483e-05,
+    1.4278000890044495e-05
+   ],
+   "warm_median_seconds": 1.7971000488614663e-05,
+   "warm_min_seconds": 1.4278000890044495e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 1.6098001651698723e-05,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 540015,
+   "samples_seconds": [
+    1.6098001651698723e-05,
+    1.2861999493907206e-05,
+    1.2085998605471104e-05
+   ],
+   "warm_median_seconds": 1.2473999049689155e-05,
+   "warm_min_seconds": 1.2085998605471104e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 1.343400072073564e-05,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": -794983,
+   "samples_seconds": [
+    1.343400072073564e-05,
+    1.2344999049673788e-05,
+    1.111799974751193e-05
+   ],
+   "warm_median_seconds": 1.173149939859286e-05,
+   "warm_min_seconds": 1.111799974751193e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 1.2200000128359534e-05,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 5566071,
+   "samples_seconds": [
+    1.2200000128359534e-05,
+    1.2223001249367371e-05,
+    1.1856000128318556e-05
+   ],
+   "warm_median_seconds": 1.2039500688842963e-05,
+   "warm_min_seconds": 1.1856000128318556e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 9.198399857268669e-05,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    9.198399857268669e-05,
+    3.680000008898787e-05
+   ],
+   "warm_median_seconds": 3.680000008898787e-05,
+   "warm_min_seconds": 3.680000008898787e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.0001997620001930045,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0001997620001930045,
+    0.0006096680008340627
+   ],
+   "warm_median_seconds": 0.0006096680008340627,
+   "warm_min_seconds": 0.0006096680008340627
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.001808745999369421,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001808745999369421,
+    0.0017343050003546523
+   ],
+   "warm_median_seconds": 0.0017343050003546523,
+   "warm_min_seconds": 0.0017343050003546523
+  },
+  {
+   "backend": "cpu",
+   "case": "joint sum G(z, z) (per-row x + y)",
+   "first_seconds": 0.007493491999412072,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007493491999412072,
+    0.006352199001412373
+   ],
+   "warm_median_seconds": 0.006352199001412373,
+   "warm_min_seconds": 0.006352199001412373
+  },
+  {
+   "backend": "duckdb",
+   "case": "per-row x + y (GROUP BY)",
+   "first_seconds": 0.004342066000390332,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004342066000390332,
+    0.005054842999015818
+   ],
+   "warm_median_seconds": 0.005054842999015818,
+   "warm_min_seconds": 0.005054842999015818
+  },
+  {
+   "backend": "cpu",
+   "bytes_checked": 248072,
+   "case": "conditional product (key-equijoin)",
+   "first_seconds": 0.0014539809999405406,
+   "join_tuples": 156350790,
+   "pairs": 8192,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 8
+   },
+   "per_key_coefficients": 1472,
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0014539809999405406,
+    0.0011360799999238225,
+    0.00107317900074122
+   ],
+   "terms": 23,
+   "warm_median_seconds": 0.0011046295003325213,
+   "warm_min_seconds": 0.00107317900074122
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 4.547400021692738e-05,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.547400021692738e-05,
+    1.771400093275588e-05,
+    1.4851999367238022e-05
+   ],
+   "warm_median_seconds": 1.628300014999695e-05,
+   "warm_min_seconds": 1.4851999367238022e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.0013133709999237908,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0013133709999237908,
+    0.0013438199985102983,
+    0.0013298649992066203
+   ],
+   "warm_median_seconds": 0.0013368424988584593,
+   "warm_min_seconds": 0.0013298649992066203
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.012853127000198583,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.012853127000198583,
+    0.01280596099968534,
+    0.02755816699936986
+   ],
+   "warm_median_seconds": 0.0201820639995276,
+   "warm_min_seconds": 0.01280596099968534
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 5.4602000091108494e-05,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 1069377308,
+   "samples_seconds": [
+    5.4602000091108494e-05,
+    2.786699951684568e-05,
+    2.3971999326022342e-05
+   ],
+   "warm_median_seconds": 2.591949942143401e-05,
+   "warm_min_seconds": 2.3971999326022342e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.320000021427404e-05,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 11521431442,
+   "samples_seconds": [
+    2.320000021427404e-05,
+    1.9469998733256944e-05,
+    1.7983998986892402e-05
+   ],
+   "warm_median_seconds": 1.8726998860074673e-05,
+   "warm_min_seconds": 1.7983998986892402e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.360500002396293e-05,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 137107587668,
+   "samples_seconds": [
+    2.360500002396293e-05,
+    5.0657999963732436e-05,
+    3.244700019422453e-05
+   ],
+   "warm_median_seconds": 4.155250007897848e-05,
+   "warm_min_seconds": 3.244700019422453e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.800699985527899e-05,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 1784674972834,
+   "samples_seconds": [
+    2.800699985527899e-05,
+    2.4634000510559417e-05,
+    2.0059000235050917e-05
+   ],
+   "warm_median_seconds": 2.2346500372805167e-05,
+   "warm_min_seconds": 2.0059000235050917e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 7.40529994800454e-05,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.40529994800454e-05,
+    4.532400089374278e-05
+   ],
+   "warm_median_seconds": 4.532400089374278e-05,
+   "warm_min_seconds": 4.532400089374278e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.004455546000826871,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.004455546000826871,
+    0.0004274789989722194
+   ],
+   "warm_median_seconds": 0.0004274789989722194,
+   "warm_min_seconds": 0.0004274789989722194
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.008183800000551855,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.008183800000551855,
+    0.011333652999383048
+   ],
+   "warm_median_seconds": 0.011333652999383048,
+   "warm_min_seconds": 0.011333652999383048
+  },
+  {
+   "backend": "duckdb",
+   "case": "key-equijoin GROUP BY a.x + b.y (complete reconstruction)",
+   "first_seconds": 0.14652355600082956,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.14652355600082956,
+    0.15017605100001674
+   ],
+   "warm_median_seconds": 0.15017605100001674,
+   "warm_min_seconds": 0.15017605100001674
+  },
+  {
+   "backend": "cpu",
+   "case": "conditional product (same slice)",
+   "first_seconds": 0.0030377959992620163,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0030377959992620163,
+    0.0021703259990317747
+   ],
+   "warm_median_seconds": 0.0021703259990317747,
+   "warm_min_seconds": 0.0021703259990317747
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001)",
+   "first_seconds": 0.0005250549984339159,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005250549984339159,
+    0.0004768369999510469
+   ],
+   "warm_median_seconds": 0.0004768369999510469,
+   "warm_min_seconds": 0.0004768369999510469
+  },
+  {
+   "backend": "cpu",
+   "bytes": 3728,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.006408156999896164,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006408156999896164,
+    0.005196616999455728,
+    0.004576667999572237
+   ],
+   "terms": 64,
+   "warm_median_seconds": 0.004886642499513982,
+   "warm_min_seconds": 0.004576667999572237
+  },
+  {
+   "backend": "cpu",
+   "bytes": 65680,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.01381319100073597,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01381319100073597,
+    0.01052827400053502
+   ],
+   "terms": 1024,
+   "warm_median_seconds": 0.01052827400053502,
+   "warm_min_seconds": 0.01052827400053502
+  },
+  {
+   "backend": "cpu",
+   "bytes": 3728,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.004425875000379165,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004425875000379165,
+    0.005456675000459654,
+    0.00555250899924431
+   ],
+   "terms": 64,
+   "warm_median_seconds": 0.005504591999851982,
+   "warm_min_seconds": 0.005456675000459654
+  },
+  {
+   "backend": "cpu",
+   "bytes": 65680,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.011162863000208745,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011162863000208745,
+    0.010365420999733033
+   ],
+   "terms": 1024,
+   "warm_median_seconds": 0.010365420999733033,
+   "warm_min_seconds": 0.010365420999733033
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2149656,
+   "case": "keyed family (per-key dense states)",
+   "coefficients": 4096,
+   "first_seconds": 0.004029738000099314,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004029738000099314,
+    0.003964510000514565,
+    0.004027639000923955
+   ],
+   "warm_median_seconds": 0.00399607450071926,
+   "warm_min_seconds": 0.003964510000514565
+  },
+  {
+   "backend": "duckdb",
+   "case": "coefficients (GROUP BY)",
+   "first_seconds": 0.0033247310002479935,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033247310002479935,
+    0.0028732530008710455
+   ],
+   "warm_median_seconds": 0.0028732530008710455,
+   "warm_min_seconds": 0.0028732530008710455
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 6.173699875944294e-05,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.173699875944294e-05,
+    1.3360999219003133e-05,
+    9.409000995219685e-06
+   ],
+   "warm_median_seconds": 1.138500010711141e-05,
+   "warm_min_seconds": 9.409000995219685e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.0008405469998251647,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008405469998251647,
+    0.0008769260002736701,
+    0.0007558079996670131
+   ],
+   "warm_median_seconds": 0.0008163669999703416,
+   "warm_min_seconds": 0.0007558079996670131
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.008230178000303567,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.008230178000303567,
+    0.00924278200000117,
+    0.022601434000534937
+   ],
+   "warm_median_seconds": 0.015922108000268054,
+   "warm_min_seconds": 0.00924278200000117
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 0.00010427400047774427,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": -40238,
+   "samples_seconds": [
+    0.00010427400047774427,
+    2.421200042590499e-05,
+    2.13229996006703e-05
+   ],
+   "warm_median_seconds": 2.2767500013287645e-05,
+   "warm_min_seconds": 2.13229996006703e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 2.208499972766731e-05,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 33603752,
+   "samples_seconds": [
+    2.208499972766731e-05,
+    3.8444000892923214e-05,
+    2.044000029854942e-05
+   ],
+   "warm_median_seconds": 2.9442000595736317e-05,
+   "warm_min_seconds": 2.044000029854942e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 2.1370000467868522e-05,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": -47167178,
+   "samples_seconds": [
+    2.1370000467868522e-05,
+    2.0395998944877647e-05,
+    1.960500048880931e-05
+   ],
+   "warm_median_seconds": 2.000049971684348e-05,
+   "warm_min_seconds": 1.960500048880931e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 2.0539000615826808e-05,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 20680717520,
+   "samples_seconds": [
+    2.0539000615826808e-05,
+    1.9756000256165862e-05,
+    1.9348999558133073e-05
+   ],
+   "warm_median_seconds": 1.9552499907149468e-05,
+   "warm_min_seconds": 1.9348999558133073e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 5.981799949950073e-05,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.981799949950073e-05,
+    5.650500133924652e-05
+   ],
+   "warm_median_seconds": 5.650500133924652e-05,
+   "warm_min_seconds": 5.650500133924652e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.0003202479983883677,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0003202479983883677,
+    0.0003228880013921298
+   ],
+   "warm_median_seconds": 0.0003228880013921298,
+   "warm_min_seconds": 0.0003228880013921298
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.00782145099947229,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00782145099947229,
+    0.007136432999686804
+   ],
+   "warm_median_seconds": 0.007136432999686804,
+   "warm_min_seconds": 0.007136432999686804
+  },
+  {
+   "backend": "cpu",
+   "case": "joint sum G(z, z) (per-row x + y)",
+   "first_seconds": 0.03117221399952541,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03117221399952541,
+    0.022482592999949702
+   ],
+   "warm_median_seconds": 0.022482592999949702,
+   "warm_min_seconds": 0.022482592999949702
+  },
+  {
+   "backend": "duckdb",
+   "case": "per-row x + y (GROUP BY)",
+   "first_seconds": 0.007525371000156156,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007525371000156156,
+    0.006927292999534984
+   ],
+   "warm_median_seconds": 0.006927292999534984,
+   "warm_min_seconds": 0.006927292999534984
+  },
+  {
+   "backend": "cpu",
+   "bytes_checked": 850184,
+   "case": "conditional product (key-equijoin)",
+   "first_seconds": 0.006091027000366012,
+   "join_tuples": 156351510,
+   "pairs": 65536,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 64
+   },
+   "per_key_coefficients": 5056,
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.006091027000366012,
+    0.0017303389995504403,
+    0.0016344149989890866
+   ],
+   "terms": 79,
+   "warm_median_seconds": 0.0016823769992697635,
+   "warm_min_seconds": 0.0016344149989890866
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 5.7682998885866255e-05,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.7682998885866255e-05,
+    1.333699947281275e-05,
+    1.0179999662796035e-05
+   ],
+   "warm_median_seconds": 1.1758499567804392e-05,
+   "warm_min_seconds": 1.0179999662796035e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.000959344000875717,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000959344000875717,
+    0.0009680679995653918,
+    0.000914602000193554
+   ],
+   "warm_median_seconds": 0.0009413349998794729,
+   "warm_min_seconds": 0.000914602000193554
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.021465141000589938,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.021465141000589938,
+    0.016950817000179086,
+    0.017138616000011098
+   ],
+   "warm_median_seconds": 0.017044716500095092,
+   "warm_min_seconds": 0.016950817000179086
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 4.595199970935937e-05,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 1086318294,
+   "samples_seconds": [
+    4.595199970935937e-05,
+    2.4028999177971855e-05,
+    2.058300015050918e-05
+   ],
+   "warm_median_seconds": 2.2305999664240517e-05,
+   "warm_min_seconds": 2.058300015050918e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.2000000171829015e-05,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 63467237818,
+   "samples_seconds": [
+    2.2000000171829015e-05,
+    5.066699850431178e-05,
+    3.6233999708201736e-05
+   ],
+   "warm_median_seconds": 4.345049910625676e-05,
+   "warm_min_seconds": 3.6233999708201736e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.689299981284421e-05,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 1230861213582,
+   "samples_seconds": [
+    2.689299981284421e-05,
+    2.2259999241214246e-05,
+    2.1565001588896848e-05
+   ],
+   "warm_median_seconds": 2.1912500415055547e-05,
+   "warm_min_seconds": 2.1565001588896848e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 2.2038999304641038e-05,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 56010800235994,
+   "samples_seconds": [
+    2.2038999304641038e-05,
+    2.1388999812188558e-05,
+    2.1052001102361828e-05
+   ],
+   "warm_median_seconds": 2.1220500457275193e-05,
+   "warm_min_seconds": 2.1052001102361828e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 5.401699854701292e-05,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.401699854701292e-05,
+    4.225200063956436e-05
+   ],
+   "warm_median_seconds": 4.225200063956436e-05,
+   "warm_min_seconds": 4.225200063956436e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.004507941001065774,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.004507941001065774,
+    0.00030726499971933663
+   ],
+   "warm_median_seconds": 0.00030726499971933663,
+   "warm_min_seconds": 0.00030726499971933663
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.003090611000516219,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.003090611000516219,
+    0.007234100999994553
+   ],
+   "warm_median_seconds": 0.007234100999994553,
+   "warm_min_seconds": 0.007234100999994553
+  },
+  {
+   "backend": "duckdb",
+   "case": "key-equijoin GROUP BY a.x + b.y (complete reconstruction)",
+   "first_seconds": 0.10256990900052187,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10256990900052187,
+    0.07363635499859811
+   ],
+   "warm_median_seconds": 0.07363635499859811,
+   "warm_min_seconds": 0.07363635499859811
+  },
+  {
+   "backend": "cpu",
+   "case": "conditional product (same slice)",
+   "first_seconds": 0.0031781140005477937,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0031781140005477937,
+    0.002764887000012095
+   ],
+   "warm_median_seconds": 0.002764887000012095,
+   "warm_min_seconds": 0.002764887000012095
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001)",
+   "first_seconds": 0.0015250229989760555,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0015250229989760555,
+    0.0014670009986730292
+   ],
+   "warm_median_seconds": 0.0014670009986730292,
+   "warm_min_seconds": 0.0014670009986730292
+  },
+  {
+   "backend": "cpu",
+   "bytes": 57488,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.009527735999654396,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.009527735999654396,
+    0.009570901998813497,
+    0.009457807000217144
+   ],
+   "terms": 1024,
+   "warm_median_seconds": 0.00951435449951532,
+   "warm_min_seconds": 0.009457807000217144
+  },
+  {
+   "backend": "cpu",
+   "bytes": 1046224,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.023469861000194214,
+   "params": {
+    "keys": 64,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.023469861000194214,
+    0.02098121299968625
+   ],
+   "terms": 16345,
+   "warm_median_seconds": 0.02098121299968625,
+   "warm_min_seconds": 0.02098121299968625
+  },
+  {
+   "backend": "cpu",
+   "bytes": 57488,
+   "case": "factor (marginal over the keys)",
+   "first_seconds": 0.010069945999930496,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010069945999930496,
+    0.009707147000881378,
+    0.017921909000506275
+   ],
+   "terms": 1024,
+   "warm_median_seconds": 0.013814528000693826,
+   "warm_min_seconds": 0.009707147000881378
+  },
+  {
+   "backend": "cpu",
+   "bytes": 1046224,
+   "case": "joint state (2-D support, x by 16)",
+   "first_seconds": 0.04510077600025397,
+   "params": {
+    "keys": 64,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04510077600025397,
+    0.036502553999525844
+   ],
+   "terms": 16345,
+   "warm_median_seconds": 0.036502553999525844,
+   "warm_min_seconds": 0.036502553999525844
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2640872,
+   "case": "keyed family (per-key dense states)",
+   "coefficients": 65498,
+   "first_seconds": 0.008391528001084225,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008391528001084225,
+    0.008655179000925273,
+    0.008156803000019863
+   ],
+   "warm_median_seconds": 0.008405991000472568,
+   "warm_min_seconds": 0.008156803000019863
+  },
+  {
+   "backend": "duckdb",
+   "case": "coefficients (GROUP BY)",
+   "first_seconds": 0.015204973999061622,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015204973999061622,
+    0.011866328999531106
+   ],
+   "warm_median_seconds": 0.011866328999531106,
+   "warm_min_seconds": 0.011866328999531106
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 6.898299943713937e-05,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.898299943713937e-05,
+    1.977800093300175e-05,
+    1.5547000657534227e-05
+   ],
+   "warm_median_seconds": 1.7662500795267988e-05,
+   "warm_min_seconds": 1.5547000657534227e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.010149858000659151,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.010149858000659151,
+    0.0014962589993956499,
+    0.0015072919995873235
+   ],
+   "warm_median_seconds": 0.0015017754994914867,
+   "warm_min_seconds": 0.0014962589993956499
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (factor)",
+   "first_seconds": 0.053945686000588466,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.053945686000588466,
+    0.05079626400038251,
+    0.03211471699978574
+   ],
+   "warm_median_seconds": 0.041455490500084125,
+   "warm_min_seconds": 0.03211471699978574
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 0.00022066400015319232,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": -142631,
+   "samples_seconds": [
+    0.00022066400015319232,
+    0.00015172299936239142,
+    0.00013836800098943058
+   ],
+   "warm_median_seconds": 0.000145045500175911,
+   "warm_min_seconds": 0.00013836800098943058
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 0.002966768999613123,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 8528321547,
+   "samples_seconds": [
+    0.002966768999613123,
+    0.00017073100025299937,
+    0.00014907200056768488
+   ],
+   "warm_median_seconds": 0.00015990150041034212,
+   "warm_min_seconds": 0.00014907200056768488
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 0.0001663530001678737,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": -30752314517,
+   "samples_seconds": [
+    0.0001663530001678737,
+    0.00016074599989224225,
+    0.00014892999934090767
+   ],
+   "warm_median_seconds": 0.00015483799961657496,
+   "warm_min_seconds": 0.00014892999934090767
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (factor)",
+   "first_seconds": 0.00015748999976494815,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 1337304481969023,
+   "samples_seconds": [
+    0.00015748999976494815,
+    0.00018236600044474471,
+    0.0001516840002295794
+   ],
+   "warm_median_seconds": 0.00016702500033716206,
+   "warm_min_seconds": 0.0001516840002295794
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.00013633900016429834,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00013633900016429834,
+    0.00012331900143180974
+   ],
+   "warm_median_seconds": 0.00012331900143180974,
+   "warm_min_seconds": 0.00012331900143180974
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.006406258999049896,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.006406258999049896,
+    0.0021842299993295455
+   ],
+   "warm_median_seconds": 0.0021842299993295455,
+   "warm_min_seconds": 0.0021842299993295455
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (factor)",
+   "first_seconds": 0.05824304999987362,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.05824304999987362,
+    0.04209082200031844
+   ],
+   "warm_median_seconds": 0.04209082200031844,
+   "warm_min_seconds": 0.04209082200031844
+  },
+  {
+   "backend": "cpu",
+   "case": "joint sum G(z, z) (per-row x + y)",
+   "first_seconds": 0.06335156200111669,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06335156200111669,
+    0.03255866499966942
+   ],
+   "warm_median_seconds": 0.03255866499966942,
+   "warm_min_seconds": 0.03255866499966942
+  },
+  {
+   "backend": "duckdb",
+   "case": "per-row x + y (GROUP BY)",
+   "first_seconds": 0.0033480729998700554,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033480729998700554,
+    0.002896685000450816
+   ],
+   "warm_median_seconds": 0.002896685000450816,
+   "warm_min_seconds": 0.002896685000450816
+  },
+  {
+   "backend": "cpu",
+   "bytes_checked": 11165720,
+   "case": "conditional product (key-equijoin)",
+   "first_seconds": 0.017472962999818265,
+   "join_tuples": 156342684,
+   "pairs": 1047968,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "support": 1024
+   },
+   "per_key_coefficients": 66458,
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.017472962999818265,
+    0.017446552999899723,
+    0.01528101800067816
+   ],
+   "terms": 1039,
+   "warm_median_seconds": 0.01636378550028894,
+   "warm_min_seconds": 0.01528101800067816
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 7.942000047478359e-05,
+   "params": {
+    "keys": 64,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.942000047478359e-05,
+    2.7415000658947974e-05,
+    1.714000063657295e-05
+   ],
+   "warm_median_seconds": 2.2277500647760462e-05,
+   "warm_min_seconds": 1.714000063657295e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.001563857000292046,
+   "params": {
+    "keys": 64,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001563857000292046,
+    0.0015794020000612363,
+    0.001546776999020949
+   ],
+   "warm_median_seconds": 0.0015630894995410927,
+   "warm_min_seconds": 0.001546776999020949
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient requests (conditional product)",
+   "first_seconds": 0.017754422999132657,
+   "params": {
+    "keys": 64,
+    "requests": 1000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.017754422999132657,
+    0.015744390000691055,
+    0.019563986999855842
+   ],
+   "warm_median_seconds": 0.01765418850027345,
+   "warm_min_seconds": 0.015744390000691055
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 0.00020195599972794298,
+   "params": {
+    "keys": 64,
+    "order": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 925537484,
+   "samples_seconds": [
+    0.00020195599972794298,
+    0.00013661499906447716,
+    0.0001462599993828917
+   ],
+   "warm_median_seconds": 0.00014143749922368443,
+   "warm_min_seconds": 0.00013661499906447716
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 0.0001487970002926886,
+   "params": {
+    "keys": 64,
+    "order": 2,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 13343015201704,
+   "samples_seconds": [
+    0.0001487970002926886,
+    0.00017504899915365968,
+    0.00015698499919380993
+   ],
+   "warm_median_seconds": 0.0001660169991737348,
+   "warm_min_seconds": 0.00015698499919380993
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 0.00016037500063248444,
+   "params": {
+    "keys": 64,
+    "order": 3,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 251606434249646,
+   "samples_seconds": [
+    0.00016037500063248444,
+    0.000150727999425726,
+    0.00014352399921335746
+   ],
+   "warm_median_seconds": 0.00014712599931954173,
+   "warm_min_seconds": 0.00014352399921335746
+  },
+  {
+   "backend": "cpu",
+   "case": "raw moment (conditional product)",
+   "first_seconds": 0.0001422770001227036,
+   "params": {
+    "keys": 64,
+    "order": 4,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 2095802841493741252,
+   "samples_seconds": [
+    0.0001422770001227036,
+    0.00022516299941344187,
+    0.00015445899953192566
+   ],
+   "warm_median_seconds": 0.00018981099947268376,
+   "warm_min_seconds": 0.00015445899953192566
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.0003646810000645928,
+   "params": {
+    "keys": 64,
+    "points": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0003646810000645928,
+    0.0003418039996176958
+   ],
+   "warm_median_seconds": 0.0003418039996176958,
+   "warm_min_seconds": 0.0003418039996176958
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.006933812999704969,
+   "params": {
+    "keys": 64,
+    "points": 10,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.006933812999704969,
+    0.006512833000670071
+   ],
+   "warm_median_seconds": 0.006512833000670071,
+   "warm_min_seconds": 0.006512833000670071
+  },
+  {
+   "backend": "cpu",
+   "case": "exact evaluation (conditional product)",
+   "first_seconds": 0.05643751000025077,
+   "params": {
+    "keys": 64,
+    "points": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.05643751000025077,
+    0.043183709000004455
+   ],
+   "warm_median_seconds": 0.043183709000004455,
+   "warm_min_seconds": 0.043183709000004455
+  },
+  {
+   "backend": "duckdb",
+   "case": "key-equijoin GROUP BY a.x + b.y (complete reconstruction)",
+   "first_seconds": 0.10276201099986793,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10276201099986793,
+    0.13484229399909964
+   ],
+   "warm_median_seconds": 0.13484229399909964,
+   "warm_min_seconds": 0.13484229399909964
+  },
+  {
+   "backend": "cpu",
+   "case": "conditional product (same slice)",
+   "first_seconds": 0.03372427599970251,
+   "params": {
+    "keys": 64,
+    "rows": 100000,
+    "slice_rows": 20000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03372427599970251,
+    0.032046412999989116
+   ],
+   "warm_median_seconds": 0.032046412999989116,
+   "warm_min_seconds": 0.032046412999989116
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 5.7098000979749486e-05,
+   "intermediate_bytes_checked": 7360,
+   "max_bits": 46,
+   "pairs_checked": 176,
+   "params": {
+    "power": 4,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.7098000979749486e-05,
+    3.265200030000415e-05
+   ],
+   "support_growth": 29,
+   "terms": 29,
+   "warm_median_seconds": 3.265200030000415e-05,
+   "warm_min_seconds": 3.265200030000415e-05
+  },
+  {
+   "backend": "python",
+   "case": "power (explicit dict products)",
+   "first_seconds": 5.287200110615231e-05,
+   "params": {
+    "power": 4,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "-16": 118727795761,
+    "-15": 537207879968,
+    "-14": 1399370514180,
+    "-13": 2870439964912,
+    "-12": 5112959216474,
+    "-11": 8288822451232,
+    "-10": 12561987872060,
+    "-9": 18060432241720,
+    "-8": 24423311213591,
+    "-7": 31104468841528,
+    "-6": 37678958482904,
+    "-5": 43641267517584,
+    "-4": 48511345570676,
+    "-3": 51797889311104,
+    "-2": 53016265588880,
+    "-1": 51785334105440,
+    "0": 48468887354599,
+    "1": 43616841474640,
+    "2": 37646915783788,
+    "3": 31075233382688,
+    "4": 24372829950514,
+    "5": 18038274559904,
+    "6": 12546778941748,
+    "7": 8279200636840,
+    "8": 5114104434401,
+    "9": 2866457565400,
+    "10": 1399767191576,
+    "11": 538039535072,
+    "12": 127880620816
+   },
+   "samples_seconds": [
+    5.287200110615231e-05
+   ],
+   "warm_median_seconds": 5.287200110615231e-05,
+   "warm_min_seconds": 5.287200110615231e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.00033889299993461464,
+   "intermediate_bytes_checked": 71584,
+   "max_bits": 193,
+   "pairs_checked": 848,
+   "params": {
+    "power": 16,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00033889299993461464,
+    0.0003323009987070691
+   ],
+   "support_growth": 113,
+   "terms": 113,
+   "warm_median_seconds": 0.0003323009987070691,
+   "warm_min_seconds": 0.0003323009987070691
+  },
+  {
+   "backend": "python",
+   "case": "power (explicit dict products)",
+   "first_seconds": 0.0008136729993566405,
+   "params": {
+    "power": 16,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "-64": 198705377280605746058709937327517232316712641,
+    "-63": 3596330371770281850302784283079289737875221632,
+    "-62": 33776549797988565336426404097224444892692073744,
+    "-61": 220006640572957080876651439687678354398154954176,
+    "-60": 1119354274270374573420247138711513750037501463624,
+    "-59": 4746400999804438407581639643970501269373693230208,
+    "-58": 17467775083973931419930585397133202867366829248464,
+    "-57": 57352153779394500049988668488796440554282272247648,
+    "-56": 171348656036723530932509375047641091297353572594356,
+    "-55": 472736327662312802655172939753211628709028043262944,
+    "-54": 1218010390993669430835973817515053230714764908245136,
+    "-53": 2956598222246301509629805790435023393732161794255040,
+    "-52": 6808855282757010997233101219859717047945738852379160,
+    "-51": 14960350067458243871168720475384180335392441799345984,
+    "-50": 31506220676866594202897631160269385089244858100098416,
+    "-49": 63840583052795729708630249338204668692397929238108512,
+    "-48": 124863469411577974260169193183620474931238532824551746,
+    "-47": 236370036660615478951609151555268342598535210619301152,
+    "-46": 434088613424784479050824403924016120173971456081503824,
+    "-45": 774935457110482455853487079097895022632579670237231296,
+    "-44": 1347138868448999550084683469116433019095627856912195928,
+    "-43": 2283931184676593877060558744449049958438745092875486208,
+    "-42": 3781485844377319879414835105405385320633478990077651696,
+    "-41": 6121655756385839790652988294110867379916839956829968800,
+    "-40": 9699815499329154178789937159832799601750983693826827940,
+    "-39": 15057694746616041570738416663234729316152628159855976096,
+    "-38": 22920495994502864803370409675682448796503274826872139952,
+    "-37": 34236816639770555055319280618708778430962729739434288704,
+    "-36": 50218969655651797031467202588483860704622128286306108936,
+    "-35": 72380275946338268073208800417129028307831154789032106304,
+    "-34": 102564876966005994198018735470282947824399146181821872336,
+    "-33": 142964713788791533723383391991124668162523954743008791200,
+    "-32": 196117690226729792537817437147944327302809834674453324015,
+    "-31": 264880847521824316360080156569219502153813775962146286304,
+    "-30": 352372785238759469812009902198195920726722517153144270336,
+    "-29": 461880696337518851530074580352188421595953495272447461376,
+    "-28": 596729317818373901447855821140601455066805912748304049424,
+    "-27": 760111825682319424621962960618691199616112722905379152128,
+    "-26": 954886118687184686434906622515114741787475002111490695968,
+    "-25": 1183343824847482615819971651601204633213942926180414480832,
+    "-24": 1446963408030868101383059895025355854629626460192917136744,
+    "-23": 1746162543762579524153419674672316783744903222609888501952,
+    "-22": 2080068016659281711012933183748230948206057797877248607904,
+    "-21": 2446323306566307826969667800165287571789536837661248562048,
+    "-20": 2840954369719085731520805374070055357858248252524805533552,
+    "-19": 3258312591472678537917504428553696728000767903360903835264,
+    "-18": 3691110362142260862543500446353352200527126266146184328032,
+    "-17": 4130559288083499042755941117711159729051622652489617299904,
+    "-16": 4566614001216901045962513355226097390362145747580995784348,
+    "-15": 4988316391017955769635114683431652645008679868218121116992,
+    "-14": 5384226549413038176504743120432102147242025139824333025440,
+    "-13": 5742918599652417568400229519960505446186731999293830820224,
+    "-12": 6053512712082427790944617500461506498476660644202333545008,
+    "-11": 6306209762332366859439413949296234264766250163673127504384,
+    "-10": 6492792867600273683096819218876238846933613978518233946336,
+    "-9": 6607060808011957624704398286343020335546625630187221827392,
+    "-8": 6645162168638893028890429658157775149552140625878236586216,
+    "-7": 6605805672354655576289791407999820708551652071481257641792,
+    "-6": 6490331062498010975672503870432293813799802863285290608224,
+    "-5": 6302635238750083319291587003274307664892232602493426608256,
+    "-4": 6048959189334186382108134103618816330406194349011080893072,
+    "-3": 5737551581761245672866192842570517322163166644360185617536,
+    "-2": 5378233715648866254847246789622371419734136836185376394912,
+    "-1": 4981897111914255604588557593535745791450007802592540489024,
+    "0": 4559968768540582456814524845659248789711034267345131471791,
+    "1": 4123879810933588599816987794944016918003842852292583546944,
+    "2": 3684570978874136827773472527560882657812485207951927823120,
+    "3": 3252063492759280522634826170125514768195634644150513831360,
+    "4": 2835116940890687185950068087615639981931006479190953832296,
+    "5": 2440987698711470956330810526603136372156991311144270770304,
+    "6": 2075292866542384092505350142013613082782670793500236422160,
+    "7": 1741976600168801301875837228359770675079103180852044796128,
+    "8": 1443368699821626779774707886562420301305008906305698166756,
+    "9": 1180319931343206986944824000789063067603109711398297164128,
+    "10": 952395077543831893893239243393821732980946980305034344912,
+    "11": 758103233148313628178769629399542779699638069047180795840,
+    "12": 595145232721702747371242698827662062485605170511691889144,
+    "13": 460660041189280274947803335160285526301683404639172309568,
+    "14": 351455033276488750379252509524908384644858593377377327664,
+    "15": 264208881745292448280357796793253720164618095194283966176,
+    "16": 195639809619861779118683110324727066622719286501111927362,
+    "17": 142635835628412656998549681804367415877325365176505741216,
+    "18": 102347038069209746414049229777268685712487844715323122192,
+    "19": 72242568618659551936540686608440605753123564439650144704,
+    "20": 50137061258349581811708781492659181656953610949191458296,
+    "21": 34192198243402821820379482951242217877297611172205739520,
+    "22": 22899589752955709461164139983345926810086756570628049712,
+    "23": 15050925983145540577365193961122895828626195022526340384,
+    "24": 9700728390848729452481365530147425552706810124047653492,
+    "25": 6126124615288283553926866122005233674586485361070273568,
+    "26": 3787050034283364957095454745866748548641694997197428720,
+    "27": 2289262296048829605834786412369775650160612460532499776,
+    "28": 1351634576956124686739947367807829244417723661964727272,
+    "29": 778425377441626868082992498592795274821627992450703936,
+    "30": 436632798599273708291728242365770445618987103233475984,
+    "31": 238129614215848551327416238249677425982786282670657056,
+    "32": 126024199612286921659969403965599138219489493932714625,
+    "33": 64572868749200817138976158950405566162713306555682400,
+    "34": 31948462631961713273409677713675196776553412801822944,
+    "35": 15215921412244376222094584217261405736471638808516736,
+    "36": 6949981172676485366111049297773384608969379657727424,
+    "37": 3030875864511382769415948661616895012538989650552320,
+    "38": 1255137037519687487134582193709771779196808739463680,
+    "39": 490271465237959207902321948091064157087964243757056,
+    "40": 179121213089459341173982021422733181322071245325824,
+    "41": 60555538435695903660929616794592589934968878800896,
+    "42": 18679720679496839556577158938512408804452619919360,
+    "43": 5159847732690608116325860000231400980266260725760,
+    "44": 1243320049810538016564521400614891059573146107904,
+    "45": 251445993806500995364929931316511495035246739456,
+    "46": 40113902690413514894489690164465852192003063808,
+    "47": 4500786248790618333846089678765594393901006848,
+    "48": 267435430919792305608104295300260875154292736
+   },
+   "samples_seconds": [
+    0.0008136729993566405
+   ],
+   "warm_median_seconds": 0.0008136729993566405,
+   "warm_min_seconds": 0.0008136729993566405
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.014943050000510993,
+   "intermediate_bytes_checked": 973600,
+   "max_bits": 781,
+   "pairs_checked": 3536,
+   "params": {
+    "power": 64,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014943050000510993
+   ],
+   "support_growth": 449,
+   "terms": 449,
+   "warm_median_seconds": 0.014943050000510993,
+   "warm_min_seconds": 0.014943050000510993
+  },
+  {
+   "backend": "python",
+   "case": "power (explicit dict products)",
+   "first_seconds": 0.03252448099920002,
+   "params": {
+    "power": 64,
+    "rows": 5000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "-256": 1558972591425217216428899319766630785982241694144041183790079862956503824443914375282062506103882205287845700893793768441598405788550698691770194655538396166790699754557356604161,
+    "-255": 112862179293366321685455716342083035572574690007402340964809597710731833941343416170334801123322961151468979395541158404930435864378620939702668129611174929308241187001140419506688,
+    "-254": 4124002065329355991804797011174518888123677832462068485493670030304743499676453894701206229183959246184997809754739622332577789123568967868371042506122440555843201622221005997392960,
+    "-253": 101428264623980231768106304884537944600665140423904055500159607590820886964509631497986926269525575425821345496475722261842210781600965570728847056203044258177200948145033059339040512,
+    "-252": 1889219527079093627298240896047941111236763308834723329018165582836626520807177179524906229787166062017624882647371355382566231450426420491567428426022247344883162258578197398445702944,
+    "-251": 28429572028586603833324098764195851234932592399253458886642498474317529832284498922859615862207567161904276186982712895227309967106592337363147960638437661251835150810468942002558071296,
+    "-250": 360077396735162299520372430591583189133358644910224573303622308118144811859811326197663474698013146761695383418269518641419509044013496972529895903613748717266731812803352799853768983872,
+    "-249": 3948485226288831226358551854019439017551237457002430993551799818061437641293888542245148816170775923292677281438743956994532869672891592153520212727348500166406245163713659987923398706560,
+    "-248": 38270080305527628655568928776967935804289435596893858337598869700137725879892743164625701966752508450313438522114765070837150243041213730616518194758001663883928849051739659713622529782864,
+    "-247": 333077945861691184564850959618270300874011061979458017528044836756290279472221167500107611617714022016631455482142519060044216980683951088940204179463488433092142776144389723061310952394624,
+    "-246": 2635745095676657961037630668695087906708719307350963463460845704435595259225485702404790627094661477673806111551549868009099334055514313695411935578941029458531827131303070918988344674973504,
+    "-245": 19156224926280069142160341442500054403297937408144674794500064012950101355757665110414506765788973224779859991893902157521364487784548877122475635579888553783289870041229471513721984681194240,
+    "-244": 128937128193791073092575823046397378363287518495013947447635629862961927027355869310546913977698783337174317662683927304809571456051347028907421864133975091548283058711041723945281639360485856,
+    "-243": 809353352316827575310401227414538727795202935778391347670981026228985767124712352022857979367061558737235846057079346366355847682841986621374139413170063997379197663622193594592060784173859072,
+    "-242": 4766153820958648291296975950238016971831210432143858704755483361383350018291798459182911939964528967391521990668681804443469212869909317473409808917682919426540915518602123224109150457298403520,
+    "-241": 26465840018579740489014237032947482831629772685253135948844384040886882629253066035707589284387867470870712067507059087441443735516860683277071559344925165458636666529258525804381967836439320448,
+    "-240": 139193464596757644938676406613167216912529416628064196936893771251268367631192039308522875840297895328868861940326531351746977833784804743699400682768898025892157234530711072661279148476650105704,
+    "-239": 696077522529952660931118885050319502105172834509754118467506608635564268120085644584572942576329055054723048565832178495288397036768717203247117126203759187921475768826076098319219911813155375744,
+    "-238": 3321198778114988083268558156282561535146671039035634144555334628436824281587240657264086551966327730434569109418310919153622405256745588604952069044308148605988788415162776331299281752654023604672,
+    "-237": 15165548830506112894255426213481284691925385794704908189288868582030425864865593314390214810777774949692988249791313526530319515229917441310460730068414788217251687877325638337178973781299358781696,
+    "-236": 66456094592657915649734103508371643348456149919182424811597360281810042875977878680160785563097707310592129586710645049990203798845984338461341986690131039244047277366174063285241176059371685946016,
+    "-235": 280151290544821020215767182083909510566289683003941567252837715840504195124184315016373506098833924709441148757123320209748511508586914369992699169677772656912090047123336767768127148104474472312832,
+    "-234": 1138665504102741168948327736944443702564953033331009157104248885493170987552129376439694160432004015332290205773111957641810547938831101031280365743315797795612552452506260566213414230985427779554880,
+    "-233": 4471163790266884510773639215353803358633887401984593041776732258898603943438380046112304812910141770704492954742001546284560282540630769850100198253826942397558215880986420261200132546038733513625984,
+    "-232": 16992721593566480900027320281789224827171821550998240612823453296924626039546093326234805676975395722551777361935373438744686995292582714184699198689981283052913477276870007153637304360044364525195504,
+    "-231": 62611159668156294473824093501172796120096097400941048928650141631371902271766332712343789462804140131957926078258833071604093089615983976085756211526275760991825681224173371140910447131584927635408256,
+    "-230": 224003578253645044999325040577542085273529688398627904182398945444048370405835242895052682906043530076392827687899284350206722049651541318916674835522841055768910779921086405365414458555832516408582208,
+    "-229": 779267962397864575640328461593096846539256134125990821722356556272695568774530624141709547299199292903017785103636702700315113648419491242678858501162123717159958554293740716578845988807880367273811712,
+    "-228": 2639451863412028119763698648854791805539163570438976331703595550493847126480299777134746302339205382880500392638121283785851618867536034315403623631584089488214393061964320745303400683230010142608737376,
+    "-227": 8714837876483196081971666999775023277823062525384724775014610342197449866039673770233243474501504937374861180621969392015832358554676466094169701911185301506952570058524181326247575356676249130186620672,
+    "-226": 28080746507929681860855468407597965928478945297375239521047908713187093890059629814380813015239230458157153166451649390981075030295379928475665106708738643711082872686090812745982681054075261053384128960,
+    "-225": 88391850839771692587552442423631358436052914018213559050945705591080597693588289434242064328873496444754073420851731362607057046843792878673202979132691510354169527683717415478543059250614547941296786304,
+    "-224": 272075342194957899555859903669132097594296585258350074817601112866587074466209185402673945231224368215032816092635139676496179738682728984735732499354983107882481824578907928029193348644283275031486381332,
+    "-223": 819653385198299308645701853663600149309261543169014171460122387444074358761038149749529455564849433574886740634483325131072363341232194898043116357865224951772011770986500949042167850647964087097553483904,
+    "-222": 2418801685701172801516578356441648834651745679977732088700733515962927373670202636914286579108707028750688114040027788201631916613557388824307561516506218517860494245948902909841682310950476443270770721216,
+    "-221": 6997462439082977407063705112197493058104551147965081558092414450439777813686144810857598757525403714806889063849296825174055446901020316957290046285239277947509062816204237169759634966563972116795604394240,
+    "-220": 19859621029124585873037503313084123618460926908594391858358556849974967935664446613704674600761663074133066791399267310741830148126894083848937379455293875669882344922339420242558203636571291266033796587168,
+    "-219": 55333922596520414677667619844163191827761999862979264895365765949542020169921425876146809135693009557611725109048912546515378397813415969049347163076588040279927681597348978720364630160790174594321489784320,
+    "-218": 151455142432513800598677209394411268414752492973045894990808633052124576309388983978110622740716683429181824622212710428474884298483636181526144087189375082375060855005458234929416784310500778541124648003136,
+    "-217": 407487169521050095919848527004140569661344626046478585628061180500278603379601942176279517598726553206175099443153276246058894218804476601942599326506586530078543010225366870620449181240892050829140127969152,
+    "-216": 1078278973488040426014321062952850411345570336481100516884169294098239457022893429270054825879284813197722461518806075121884268631739296850936671844549504345284326815456078952134033507905528347504812944725456,
+    "-215": 2807833662592845993626617808627809356456302158966728214211891095908728587503236217030394525365617181360804987318069574157807007747181542690043259475163627125470623671467512105076658026710018225164078758262144,
+    "-214": 7198753608224096722343885453388394624388659979331063224899750702457925193825361845399437277244165652418673075930086251717830495630725313501860747012915382548576048660945737501635863392891214373470416078651456,
+    "-213": 18180232924636101621403304887628401277841328550931753361985676083615658340856427878275808112013612482642396919905074059285798098645405927982868132433927491717025885662976468575723966555532899013370513767116544,
+    "-212": 45247753392118364533249171650516857432436452124919383806160633874782518763034295189505924214244484261332574815129057661765933161397584452435140341091859455167647062525081132590484311087144037279210764058663264,
+    "-211": 111029611052915137042699129022366373575520956563881595789317194825011908115814032493187937314542292734799850085312754938713765279074029268800016269052416544287431249836508783595405559725591479950338527975028992,
+    "-210": 268722402555463880428547823196813141637429839939274169224357099460759957491142691754249478569002398406698966981085542022123056039436312337395426134185194511875407371426631799514449829362566111372897235219411904,
+    "-209": 641744494594979703145216283201020134919102909562957226039137275386403449327806551603627228426801938886174848935915059645689964901305752209605092514044025326697119629425743931622343745895203086473108149976795520,
+    "-208": 1512777838017333190635573633330601681771052283957380796852185991199492195189878012792281146718587085449034273783873379299716343289751150758646681901111878534938116934423202737054681179073003321750466385831981720,
+    "-207": 3521246885100016829077558936250361931112281331862196206433036963942871003967161652461377091606559692715687448424629383822982447140907838359759294233994823739739406645018743331227413443672664868913001492836111488,
+    "-206": 8096033989670199761728060245634094692824423567067720304851723235723263397513965006406857731661695294105276198714970723664838433238888074816295072588846935251864669903134374131362745953883537792350424365893209280,
+    "-205": 18392551404424067925229047115958463691348404747776885845421758946449603875451303440215180917123590077433990985809194226587695841052142093318490712289261382591045334842902236794298786349538457851323634767798355200,
+    "-204": 41298876874979541907600422695875431890908313007178563692957710539836955849140009454703796833608909385502319636544581304192336216039789050920228262681900178169862568413869787097112605538049136660659913168176770336,
+    "-203": 91682790666162613890332234204905614909425374773680783277924973862979178606843031847860358770910320885011833780150451461440574940216798671980513500540486989555535731500477215359218291640589078691033910917149117440,
+    "-202": 201285145290492751394212395395277648639242968749854566558123047113018012698763019155663790325013854528870957996228476225162629630925773813825477758833449567743373082861930752351217976976073075063753832048849856320,
+    "-201": 437145056302979060949438503741402383657063002859037180801750399469893234688775386959203154576709606497553592795264961249671608765572893261601106573803171153938241485403988080171765871673848944241653257307989992320,
+    "-200": 939377020048556563835760429445265272309686878896353922144526993213379323530377557947889661021065904782759729003324952769378857236668873484057733636661227330524393502432153719494406598825678642443373288832035692784,
+    "-199": 1997839592340340431064663398175303868084501945081604073762184856297732683543692042695886221117438686870738102207329207829255649544875223288933057711588565137513975826089801484488555404390816333709229110785892707200,
+    "-198": 4206190534550107023199135978853204703176893960975647662651892707087557323084758970887448960559718233480181109680206125305884846406793570753873997019365333551083389136163362993421140525717095009613643835276181031232,
+    "-197": 8768433123363419037552489252083137489473566527752576928140155060959530481161957850708461513162136481229933844305227297003593721835038884090604790696162073520775043599614955707094256385059580652567168118524954204928,
+    "-196": 18103096051920549097834197467428346223891288590235970130263834824339022442613777215255312562691847780603490662910978489495793878449871872673947388712369676030040542891824848951766093512387328107800074118928378832864,
+    "-195": 37022933728851583519278116138747372128925138321388440080263762642726137805605183160779867644644295440101068222327451566053329045274797037172450011494597683173905079446730506606752280619721763701950981107241246068480,
+    "-194": 75017336810502087126901198910140608692006238196630317473107104260687715494654279910126682510369046509678065120666110403312431123476819553961156472525807401114575976084568238260326904193205242090597385483633425814720,
+    "-193": 150628667533498192344227508328710524298635842449265726510548822914901522233287787445173928072950707075901111023854590306838007707942598318167040937387504058251952044825839188856394305931847070213195253402264991319424,
+    "-192": 299769842386181830651981136037077595311305411385714549604059927611492107858242515185520807310579098787804752699019204559042636451135946248644445605591590171293015614755810431952929899868313337661416247493642171936386,
+    "-191": 591396364741923019664294925435054214902132287560815159947122646950805368519647984487670542998684990342363010360807722169525354230813284008574656283253318043422268995163341266505703590201530614371639865256812756930176,
+    "-190": 1156785869829514112628703992204616156180333240635743786029932494654298094125445772553542404003508950025395419931061589485699567727716829058691860708061390472358558734769020061467414753761861192973546385374961868215360,
+    "-189": 2243785727269133331477312846495254931803943828002134581431634991547248357409654405810980064130893036329893928998973973082019450517836400368253113602736463243877004543686637185842828753154520048693999639832928201344768,
+    "-188": 4316499893372951139957228971217921736734807145045968017980138743871641105269306074439806561713706042273965610855418058840778099242131190439087340515823110309676050367082810455357005929850288729319732241680438685860576,
+    "-187": 8237006835216724834643298882743389502686905101667213467945289624812195346384178723109428853615534867802746723658423075278460818860775743721755645073912132933987484759478573132604031750904565020573826309120436072484352,
+    "-186": 15593998701706360764327336466137421567291187946471235649582130401894126544680880101140809572263672356580099165845501870703542828239582960774563578734422015389445355006782269111124836987027106371650206123137840469845184,
+    "-185": 29292519822179383754685673081420710652011090338331424172937235819546158189366616733694590875703179293065372743947002057009836623761259186748587625282468300617270928483792817135746719419950456786090787608368741507047040,
+    "-184": 54604169186570073360814925962892113033096223985630291027833309004957045922010213185328087103835751227376117977684191345054561475518374326117203771496191548568914260788757467653145052860775805211761471493935388213508528,
+    "-183": 101023249336086450088333300007305481054612872214895281903585045246824386127716262377659032451985113496004954175455812451902275455538771991646362788241387481763913046657445706532710265741908481679527975480659270798621824,
+    "-182": 185523105866638647195408902412424962043769976346506473661961117217065183739799807201006334713102690015359669608260151869078702676096998594630227100312157463943602646340937510726724621258706446171802235789131014292437696,
+    "-181": 338227297821233689708373600173984198705666299216064721288958662144094494136463729089042090296144266765088069015598867038476788974290866272824949504407108905011633512357283758239395029508735777762807130785837857153795328,
+    "-180": 612215536200084631932133099451619110038767831806512957101410296879108481225113702600160424510477737674585312176065458084208255567094189781461152531618331042031125392662626933654164340921001167934074952278038003416898848,
+    "-179": 1100359133207047211123847408722603047313766983058464573694087950717890940479998475461553407683732543977088255754056760207895424066689487532340746684683740128744141084123465529670658789826712966243219296055024297901276928,
+    "-178": 1964023741488357995426073371082002792619766706818984419118250232988660796599930884656806370644852072211170695304452633697909847395591067801293554337732439976258266513536625935767753910112794189036327210867778238515189056,
+    "-177": 3481668378360151091610095753991141810955862511166940189852671525214271786209652583416743060586129164441153546384195664822001134902514422895729190367963160075093180866664799438552878146297598289239357520961034700373769344,
+    "-176": 6130574827971386009704509240851451865308580102644419690835054167933896973595176664421732111248442946919349871067879400147733657181488149809528665436314711212851807288641314642071361968752366971694092589842557642472704120,
+    "-175": 10723373603375420171091226069654470334597408025567505330136193873943247596552243062308637085249846171807991626928487903563568425799114005368177117953416961047792901108068190859791058323924986947853200922275547700326967680,
+    "-174": 18634600453728009403846234555589609929897096008366616810992856123757740064615585715480065148400948533462256536254552989520846365846284546324535713807290293032320456544488174943301668409496078058565328516834860947018579008,
+    "-173": 32174203685111644035049173539100636557774319122990497820753433804051919829764772662113240266747206484532546590870078569460286988992951245560906936955999766687218022253177939075814891400088359749064630197429369431392999168,
+    "-172": 55199357062633237051014168267218750235472378141161023531919288067930052091001604788181954831458146266905589729156662032585547114036158418082653229063764217112643350861132675871648754001669981231952276793201020235102257760,
+    "-171": 94110253840115999385680023975184510696258267743573332656110196343021778021454372474989253638254074239103621450395925271482754291357042747981258952203823684520030708242605306154619846900743283627435301119219645862604847104,
+    "-170": 159460696950714332279711607732072540881768170919657844036128975367447831463808507930224530022254206301902773887749192332751046411035918831863985429849857655007747960678883363185575829754299126958553342595900623809654522816,
+    "-169": 268546892269231205566992606293405934302730889148898205554450083718788919777796188203261874993927909400075112476721040920955433752463920513513035095361510513516278098596524594575888348797978870298431980714235018415239676544,
+    "-168": 449543039159484805595941145361541145504927222258527168231974247026962237969539674360287984602363948153555685538954490676869078107635725662690959045241810613116939317493014303049525659419299068513955453581999410728386177552,
+    "-167": 748067854658916873916124624012017492165395268618645211768567913256558349719212329558857199587720792939451850781813746344169270768108634908849879691884196424153848527517772949597194858607071076595919296884684675201772160640,
+    "-166": 1237548406364221888906158874845340773924987155509470139324357424951123965727577567235146130750076424170404565425199830640059326239866627610737735378952248695889797488864051798190217312062738367271421030883836206621382529472,
+    "-165": 2035480095932109968460361082687931452059700525012048291304763068298977863193453849039019129175070714891983978523838321570546150438260165846915544275609641786876162473789047994398181933773575217189298833786261125885487962368,
+    "-164": 3328787386125643828327575800246107390471282945763455283645595312279004675318551401331812711565476441696230876429115381744889240556403494639633037435399995303530445295293783936994012613190921474932137317106012274337553603232,
+    "-163": 5413149036182574953080605833531149500598395328974426489494855362316288416534444564483685355775071991996376876202040842913308294858572693718661638497422104779764998743209095273722752654725914136011075021519780752250279178496,
+    "-162": 8753626239563339391614194166390819379321918172658032606394541436054607096183235206861220649367866382611131557062812776799392123137662397150453568749835928552376647471870961379653290761725021827844895118052152912000886697024,
+    "-161": 14077600931505828049702020351783309650211796573145507185926574873305973727759881308311650930821182042963925759105447789862222578027502286403860820575779983484203290584166737873510987918552592337381435892531715528823145322624,
+    "-160": 22516438791685002981149237924759257193615407526749751544076466064798759783924748070338376872074752061677798005061463341868338612620950199584735221654059935722711375384475889217339677014210319746093035821502901693548320596932,
+    "-159": 35820213929230117336402893986899628637663588876752312986565878471682984098182289086435797707543823238670438159482183470932513620352132492220946872837431455747269428055256437828985778572571317808441334361420454901564671183744,
+    "-158": 56681372026039236409473101924192937205019159316687819162343384109763915260987023597022253193194965384901948694875806302539038401423737950606413687534897292344149589906664049978290778308330613927169759757152190291535978578496,
+    "-157": 89219919813183945558299995520239439389086981753296203146733408950266352176386564891938790176305961637232186294522430225908135058178050209299948089011905138827502988368550789573276462471841219209914756672319264786500879142656,
+    "-156": 139706788743602581200440843732060137585906565844907139799764768173347614213089426485499026165006710227144297853757980946829666424763499343079717782463418148411867590425539589940869427591651774141176159550360284069015076965728,
+    "-155": 217636462204778908871416034756265510996010258275455786293882205447326285892165007353334360031795276933773064065027625760071085625388623624157006420642739038248720587428889769513038102134259333066714983666745339015375235463680,
+    "-154": 337308975904976353754866642462227058670504245616648856171089108710444492679892769036263336699651001685293104291752232573103658932929920855555285629397178590558034782016802260563188306429986737845363651006935417055773717594560,
+    "-153": 520150773702468477159687299661254409425948597512989764406372172679492628303530615198754780397882406391523125029576071590786892954690923839201277487193030000174856482807253077869497199181658772208807576956825577242634125248640,
+    "-152": 798101518779447695313038514043387794168795257209745446067546353056859714548144191761106261632353776213092949314212247753669587696596097581970628120851335422443827859364242736501966630708215756381367057120401354140889031799728,
+    "-151": 1218530545521945569313891048186109814770087172500457086218359384092578535728807778887719281591594675899658757607857485550747220886722197321799900306144337707820188377646876650708151150581538197336834176709707650242099856169600,
+    "-150": 1851336668277061291584326791474743382068319158431225696347992935339064996074126225276973703347560529166896989094742496010722678924997892135752132324833908638473566869573895883073226306394273683481304431316046900519655107418048,
+    "-149": 2799147964600687044655060803328220790350739152400548057815106230141481845245252159329192265292561314403085643223823068580429950728958019464994764609182033440575052776763980420835451153966276624797639386239758886802786693296384,
+    "-148": 4211899823653233811455072967854401743581660506404191703851246318151872457333022299494681739722162179945965909968834872777816738660489448904727976035887235659601591129606654207403798523414125990872900748695475666021613300674208,
+    "-147": 6307564313276709872556961924185920098135607826058670301257030903846949616746958159055383992426912776873260206953608972309022001544561343760888573985491306576919713507289931854877284305306330738283891950802463568493318379888384,
+    "-146": 9401476954997251752145481655562911231555942369570024352618987474665943257893563433497022785804953798457374657043102385622802331603163402596103642560303439523619688471478315090885600045039428254129798402360472944874630328196160,
+    "-145": 13947617412499416276624241453779154553878469728815084762977478558674816578317428816112727320200090572559366605227692047908827053395416296263294282499214730841818380940797082560947241433073486634142411179999770971523780042305152,
+    "-144": 20596425221774167491090986712093476236032985057570009333308898124107893201780132982700189769799377823618876752269852369942348545577217423124951650420968437332768746946917512438527811936378882610027098318870668833014940037538696,
+    "-143": 30275369724754102354289124557951686919663664620832788477437564781607998096561111727741865575377823191925843243019961017005527969791289959688007256887679124560055196417615030691932715648168080951026032829190165933512060203355008,
+    "-142": 44300672070487286510744051432723587334363189993286066325034864866271581192657464073291138435813668814942180195947918745140247870730196525867745645854126458674660413445641138203561210504036083567894708845939735893188874963368768,
+    "-141": 64531458670826472187730393399729355784301127712153860968985854376922777518311307563400423641002985541465686764542728550094987490288649976966996327447281302513103687571557548257539235143233140993847013137729795207731235417742080,
+    "-140": 93581415052038909108443753848767046488926180738020544218314719058682626748082047960983248697729206956003599974958130162420835905257701129118515750505366702198112503812533218789254094819590020120166909140821803414779205333689056,
+    "-139": 135107964536615981463115275037524377369359438484524507487975585270317411374202466203118751864008050060685349416627261320693177503927603143837673872447179338823057276295929673523834115949538563337957292852914213583622127217359872,
+    "-138": 194205439467034915164082990246308837780585682840825970391759127001035158642214807316550754521738651216853537025505262415391859170616325264745769553953343408896049210522831087767252111489591911108025316920682331209902195358759104,
+    "-137": 277937042479965592658453298491990703038215358647382166969900041718819368783924979253628307502574972449371631604484778454739895711560444773695767556290747657973346785957428660546219308038897359220047582955230499459641727610143872,
+    "-136": 396051101983398470918740435042991531704169252785362606919310404259533741629619468012087550790642674584343512557692911254306921771061491311726680115469205604461056357988338533145781411869766950179366987531195034164269932016488592,
+    "-135": 561940807836353212374787884609089747783918964201758557803741947126789902120034083535726255072095440721893441692104379441998001498207053268031177370047575340624332517164627962254974428916813147188032884124767098341494290818561152,
+    "-134": 793923994700791216434436241093713643892304608627180564703395871002076324715963794756529999241440305087076441988675395157564399099298511369434762930057031139859514644755060869203024625535472646138948965787062199525894395157653184,
+    "-133": 1116941491482233062940833996635636014329709256726664969753937412868116970560635524761489206684319877259930160972508277920393013439223096621910285365737110070082728115430375077517350258702116669736607330692545712306064780935079168,
+    "-132": 1564800111253808166308137598411436091458779300594147773526683344724369860312011826308154823106132206169907097100893364168739770417540101339990453949849501945431974246375754587644053720709022375618945304150371840524529385261392928,
+    "-131": 2183120738825857191263888395851322361991690607999940978989389785438167444270528270639799993581522740750111608051076053815936682828030619676148690366218156022311482455413315395368574063932846730785445207530633515941794616320461056,
+    "-130": 3033194610461860257847808808507186943800566330999796809998385417710984152690424848044028137071416733984415574721336622346570612245415167891394568537146977306559324200985899960595100849897990329994139691841397254922907127141147456,
+    "-129": 4197003423868605922560560530959701672375907840938639698087688116993025140144012199258790530774233244633885328585206088035091464295510810202728131817680248812166780468412466520400748631017080849431452711843582686307489115444241024,
+    "-128": 5783723256576326325706439208208930557204848274133678265563644666545319179559265727122260769344610834254326657517887761915560313423879740484506518254465158135912185763352190771885025029470855427334019191300282423102091003208003823,
+    "-127": 7938110544554387797048220786956609658077773627103928982259414840097310876900034770384262891890722067130063562306101380895422131130504767779467045219487318094947766851496140858622077820308285738094524903913721752086074070955250560,
+    "-126": 10851262966159889049143131914288731943547718505012113367424036332360688276163990476958010029949738392105115757527610626176371691895543690566045367534567172209386993188515048858789715178920630288206510334684767317781659989453075456,
+    "-125": 14774361613850708837343896550568391812352102836175111855986583500731120466058250573295787134317211111830269060970377847500114683856544279188120609296992204386669697925603566640648213640832279683156375369607252123654463842662883328,
+    "-124": 20036136157245075529554559860391780269243198611035943841886583011644582138190896151459161916805489725434523222514342610778588988536317594517032138656927293570001798923163899504737330794130247000816063109606275993525209113920135744,
+    "-123": 27064954819692649046975015119191122420228256360542272673786493908956134935372515063266874398528083746967734270059970649913743632852148422229277579591179899117965942595277866829535324508040615036838917226871086612311794572837088256,
+    "-122": 36416629031016043811011457533579872136367193747561169254455894851010407634129693733519985314070970731114768345497763488623066012144172511832359426653887739924654901110836939800538663349815076642974963522673078479449638302745902208,
+    "-121": 48809241727788795667357881379368059356060088114682597179213136702879422545877794996393653456900116930679223401030361141710688137537616626172704232224189719626470331221421993663118607520672099613823450309112156426901182467403921152,
+    "-120": 65166561498115795727403652001243396583685344722079756570624532693548435539456052483933783575378164492596605226087558289564249766877154088706696020749920976748461911632426168252895092703049957229767966356442510722174272263577404704,
+    "-119": 86671894907302744697572789684210874198220218307456805469827613057211737049814756594467271349172906966328733764105569941647823033813329534510782570855342616199929684612406956841100741441990181862815208106444721861982450035579755264,
+    "-118": 114834558746500644784822803924190988819226990921668527092224600980495115875859925631661367838526798157184922464513986578805535294472578475683200976486554832649057693314541362545581619466421818706297329287252032248752974870726797440,
+    "-117": 151571524291874155910250283719910544140922529568641700463680352127889323478053914213590012940334185660052407362550867991582621643057370276418737560611931450563127287187204338051050434618180476755278414731205745040499245559021567488,
+    "-116": 199307197663176147081065525766241405840469085392731712590244789708597325553132962688181114773973329234921729534516381566292804990881203692241785651393927165442052047691694454163474880732207067649966589195451989082979211868457030336,
+    "-115": 261094753463671013785558733024661846725584248919336678945665618599020781091416516319370545049359709581405422099007116806490119019474798167120647426822046699000866589125042235500482216829453600571352038538034737355159222187210615296,
+    "-114": 340762930857854450352580300255802821833926992782284420400469804997055868876465574561055928105843168549582861743245308400111088661189134750841520794316894596157021855013907120264366498290612322357693098119782172905389861827905955712,
+    "-113": 443092727838067035434284098343079109830313768506443481708303573505080645851543838640158464898324852624900815294524275327909126207249314311899748031028667073851079138221488037394310760797960464494423955390058910345703743416083925760,
+    "-112": 574028983896817035775801284106927119182407714658840681334775022021735298681661981344132431113606800315622359598285591678866531487201220623917427341280223158892242008984753566884644058383379719985665887907649808751514626242184619920,
+    "-111": 740932413963666367674834006292239846774694942309461917515548459293144597694199613125627751151113293912372075352545409529562942655183817145526576314265403510366595924054380282471874746804616156951587630647535623119399137898243598592,
+    "-110": 952878234179268093542423893749620240621037955197542225535525697551819967533458695222664320465222190300826162339083372735606431480317139270693684299162479597447819185003931980220008641598232437797873421821171642237625133896037204352,
+    "-109": 1221008085898854597432144040428754873697786173718616488976604732514876854869382104389317185621413283600374112829373478214426362230510933738718067987213924961406007620279090337869696119017591850984053370798601433522668487943341091328,
+    "-108": 1558942497002111375915304133444572645378699637327035040323268586875997860453929285559835044155326369914177728857755915462784775950679673357510401857542376716441502574681115453410883905211163457226149546939896158214593628715427277376,
+    "-107": 1983261593271025826441445785681060074117554268131936607949287806059121080816165299144686870289364770622583724465599514182918495138987386282760792888206591703475080353719046323617903013539002698592856802321454631492840550758016892928,
+    "-106": 2514062156543659528128966253791844564256970059376790525277049102008422454793638938005235619357353542724285389612783323274253886576570065901860837344586169648162632532086712114438147200909600486133449445469923181660573090237073501824,
+    "-105": 3175599384834821951806222269157769898370489193785220483767455883933464865860070391745635645315370891861129865372278682776791580263581689407370841276003255081462139878972619788273805879847996901400474350265652678940419532805312204544,
+    "-104": 3997021801985910791358477870359996847008464604110146256368985403106093463387109579727651098922027970789514886136180270295160690313663510633205332950584035304894552618350003933750503824985695690759697022156308168948775934445224467296,
+    "-103": 5013207645376239714914807274711640953877799880382107291932188677521422550049361932634151590402352691189488495194559348838917845367521001941501837454712834383420710479185644388777177417987439491192612056424511148060736867476910667520,
+    "-102": 6265710680410210228048402732331517834531118999444537101003190021406140552531913245712180112253554352761565067732385960376952722117384097951646956700278258431160382919222081588188689346050241346944304319807248919631520845216209576576,
+    "-101": 7803822697250500225308863674903205064923634489905482556193576778520780419202671146589412209981147129946795110235592086193386080129653596644479568059363779286573651621022729330409994928685981832585251165625035589502535484337578358272,
+    "-100": 9685758883891652109471257634603307828812261992762935897613172536584292684598243912854102631940430981471775341487151718487905067954889207588403569041619539581159315898941560799161995712158500031831606907218125723305910177592846019520,
+    "-99": 11979970784940001739657298314599083698012077722122321047263122458588665175322541528295189459217843303507379614867040403345279841788065383578208050860795328232769011655336875350606091704889718630253462108465885374425889622308880422400,
+    "-98": 14766589593585425261863564915780246556896406739117736656806854372709123682903526071746983573129997514365827162843475558934407570927524824052953294707518963024782979619209398213086058983652171778830887307586356103552762609573708644736,
+    "-97": 18139000035168073846744774341195362748129465819458455221099283740904155539756862805628833714376918254078739308120949125985826340362018560639193969121456027340672104597309950661237271057887691155097168000907910400923785180523141206784,
+    "-96": 22205542040864821556861904515751329443689969095092508171255160381597649359169707888195270168479768061376331450740608784424434257875442114527059973080269638077263949328959862867758252740094331680335849599904722757408872364621771169064,
+    "-95": 27091333745258045621227057753395948077235539795124757367858558251786235801856218894150112473058498399616167900763673853092083133798184569948436733398894231104466690189327070410262124213533299234511912591613572566770211997306791228672,
+    "-94": 32940205050663276895569059775431231097738618061132181574894214497735466948562943178142326639547905444709005714113359463243944846725984656249547571094777398248499270096221108856291783572084908289820607738302892138927461701195123681664,
+    "-93": 39916726079237133218615569475638208142070323879174366304356375436587843510065566804885138363421568152891893400518843843758254226449243872724006615631273910206904144123150464440783601331097417886028592438181748764825252306616494418432,
+    "-92": 48208309296260091699523104935840347474748571930788750846104081169695705260586369979166019158290955366733692026829968859451207991626523601538091595157853570968358584556404581106708255889986386283334766571712063661844967972751782071872,
+    "-91": 58027357973440283455004106328577065394301433614483960430979710442591414637199410773936678739936456062732156398964848506931713128739506910693957807957574460121527500626985304726560988165937505803491836366843710243826775308353280961536,
+    "-90": 69613427035529801236275544559936702982109809442974641784020310169780034620311751690123927716723508037652931989763530356694672217726611952375922015332137480244928228390761891886077889843190023189891215949578708347583074747617443862144,
+    "-89": 83235355292992471788597026479832015395184981259726438844047837893154692560718867829178246412889087303014290202753180035190192695475358630246110815146339837419605502248544411558033619906116600512580784914310243234104360971377481583360,
+    "-88": 99193320736453508883933472141484773136027768138202230294608814723098241463809478524121587962260576660469971244833632529186453880675125868011310442754133141111246362359830403104456819358652723701707470006359040618005776121844102578720,
+    "-87": 117820763117906727991223559512546934005322343649695984191128788743122742885841098972770851075384271076226927851024235737222492220197338816902958878998086915607065700639421819722701579102271470388115850324082128002356106196194871158528,
+    "-86": 139486110666638768753890049687370453804231590631916132147833142608337245057203457583178522288846177355979088660586730879795991794728304726189867557810290099449241626117157704163708168891426249834411455304328280246401244321481532299904,
+    "-85": 164594240716173893434849168593207201849969637525940900132311455161985643916194056820523181878355270335986110252296697585355273277413120653891953308094873457515113554718477057056603440340929508706611539445218040999658481934526463636992,
+    "-84": 193587597515923346850439328980738138810281138175282238022383120614812339887112420646766841858389995185849414559030659538148254298760589764534002176584174545952234949884924119704909696020279208975149212628943695016883491776875581346240,
+    "-83": 226946884859669990658873021026302978862100523005849947456838300250824383624965518908419959833945449361556031860801371421595127839325307729764723716424713647769869841743881550556819790890450846874756124195168617623166333845301063662080,
+    "-82": 265191246697469911108901428147195871814193291290858021797834158722578369235718583350478368990484414740005211057952153265875752395834779896635116642551317815210197452802926674163174180256758755970028641499230842915320967588572633337216,
+    "-81": 308877845938588254221408656911089566969233008565725857795673867407096719439888164194328148159899353073156854045513215736616688869299292019008067644840313095676097385744366216893364978980896469614524728914123554652687165527289587912448,
+    "-80": 358600750537839920677347553543753854101023744686703636451579788121839270793444197085491162170629280860241480860265234758367679963495208168462292527350509997239748321007486406251036068633352556051212175889593347558966201835025671596656,
+    "-79": 414989037019026022564060909173110077451191410809196837560007308783196643853849686627756252469522898115382277676965850706356883264761217398308528454239187247294956726849476320987190564183030867464039519859528032485362531299724261571840,
+    "-78": 478704025143190348783600351826224356162546217165141896379265998090403353501683718220584158551450426205767027901702590834905583965035594140816591441810419587939290489880287924709784572143245104381038242786215849888451577732870836455296,
+    "-77": 550435563761872179897661069393771080475821044157976007050883541714212809917183981197625586184230828187474341483063334975513388640512984698849376362628762580775734702242477593834620721687125065900127707176943158593722349034656712790528,
+    "-76": 630897297246973018889325820821132462122178811738180189261369196219546843655615936409991918987306624944444655250776126145359862656943043987915712530574752742359200017705882582097102328596769274327159887147997992409375782142808642993984,
+    "-75": 720820854439527267104564927618152293903352206280483523780500205262109686003406293637234343305514979210383996182968820993131562096139063784255422279859867285733023512344750052653094401781308713587464495944242533905218391135490352535552,
+    "-74": 820948917914342287335303287666175363730503290846600356214899468497001224878754586340248692606185016637585451792908038532468540941918787768335915195756025558022711055044363708104503143956156733475451884107058271752899601955289637707904,
+    "-73": 932027150530988305677065581823928979014029205388883025292568384121922908030263668129945855780041772418423300321285946685503449840243508701232021095481072824309213148735270666271475040248348102128483554059955601780772203008148947063552,
+    "-72": 1054794978645773362879181259816586276177579251922651766860871622906972872972516159012699528480892579978365905406151626718637645217264873604575410071054439286970223322457602718861589378227091423413366630678946986496772531799811961572704,
+    "-71": 1189975256791879772470735911222807031007157956937286075199044599861976987491029341089597719016329507048733354890868328295566760379535391542887024725263869679617768576408311584914535816357420655363112039798634141672400477360824720933632,
+    "-70": 1338262866771255147258565470492653511499861591933459239175894091742456993898808649475452275015445068342821816516063635043144684025877753873758894604050250346525761261342219552388801662577750961060838318368449305140185624026254928163968,
+    "-69": 1500312334490683746777998418961556775751231771670829773393901570911028459097645004825525563030958601891659574252178486840728462835377995882861839666397480823142562830899543486821616155802839917573854189965159947801402811278326313790976,
+    "-68": 1676724579936768711867354821316881509633187977970756737661368786860886875481924123957126231432920318743327807592366117890224273746522652450442975006051619114549931841458140433006950611317127592153082359761435029711909902850291978093248,
+    "-67": 1868032948718061143713890489972510339632539551290383167245003992690188410838205334120154998479060579266064663252394021237517150603458547719921683833646828374135921512135097823362750235973024103783175731744543706363431519442032573011456,
+    "-66": 2074688706790932774430914303499610738282824770427282502455098232454447834430617928712397931153399021255475223508538313976714770437440410209635535700147294657875361656799797722143931711225287162485636957802874527179644982001325773494144,
+    "-65": 2297046212413168581627242841534403367600269510707912977292027696456323849688010691235868747295922244977937064797873696670843889643981787015819625076123043402308620571978000932735260714509086512399590096542149376779396667983099543381760,
+    "-64": 2535348010040265710310056378351718233908862465431461006091906593511488616494917493028568236173101263091715630317442050676391511878583898992084025368709419119750999380702743600789074108193065695545013342268515763215244515874621976708380,
+    "-63": 2789710118744224547972168976988306136528821360381386857436720836652547511745724058320745370221061006305160805450739176470429170323525901390903096019807214977204658892506205413707753557043652550474716707386700088788206270592546247807232,
+    "-62": 3060107811718732060561579596934181365943758125017123359459417865455747934984468121163028672691515909215116610421212183913109548707747843469692134826799582264108722599043376715767773001467781309690106265619786164514502199501647271203968,
+    "-61": 3346362202472807494572753209823394694237503643236602330889248643296153378344507240624521099960725326103193748006879290089879286299294214198382900660333795425888054721610669740288591190177433492090150679642198658549167134395627214691840,
+    "-60": 3648127966388111082143074137891184510268744793855628196375121334120623060782527345937909264752143777549046094996590403993125923555180291980936332403729468610368690293267041747260849647849498488914327841061680467704767609878745584910784,
+    "-59": 3964882532489166012044877116981512225744578611184671364746550146312737787546612409935683420125413534054112278064025949991306290104781936416705750086805746654589073818996731909638598420411224322186482626395230379253719107029465761561600,
+    "-58": 4295917078741204814002052524070000671107497204096326136178150846198565867716295056352197029344219265602390502833322557700091323765700233281867230766138155028631325315513184224763217016112749858376229607397185624021312603510734880231808,
+    "-57": 4640329654300815183851151067796643054801502631072998556027188263116501069181526533109044591307308781098471159137668361567922052829238038936797560777743362880320371004058042494377848591431199718552626993161210705554404010264446875946240,
+    "-56": 4997020733452768790143910148518407377064750829075574265563683851241469305278910925571087677330755365060500282997996214518643524878863196452626353062869719337757540388078555094504569617788298686442783527823224574823257196575856455019360,
+    "-55": 5364691478256159789313422468808629377018212344841106733078995615172883953461423031998298280966350628861917695802551971859515837224924172880547785854054066684239059635058268934927422225833533167459799608765360939796500377044742610528512,
+    "-54": 5741844950235242866551468513771413020564342350734250343735749883348233696947895455499741630286244396412758971841758182996659613341981619930292233953069715823028466748853723015065446128874980231681730945837985552324360304177289436183936,
+    "-53": 6126790466102230387178828877325329347762750294871778938218682910169497816838019611369278150978314057073136936897334450100549618804678338722379425594883702270528163430061477285401323273740528157501542378469905098240873680807486586710528,
+    "-52": 6517651239094337002473677643418987073518320561484837449551449284639439526616236528782894622898004266212163118138465600070780784554672023642068592952987578419706511324444647232622274042965691697013790257420686575894764050194772070962752,
+    "-51": 6912375386936344748786808984125940134663462019663083323638599220261341586831422939791008202965134849770088157175004080294732417201673948009296732601613328054676678598038696041749386371648667788756031319454982127587295890191856051715584,
+    "-50": 7308750320871420585878675222253258441457540111915804878961235188434748256856338031956516981800055264775411356414615369873447539989839431168593998057118010028929818262998855931965271278945866839375031310273965004927352423324404310704768,
+    "-49": 7704420459062927920167531669276137110479345925452980923670172836994763934168835513225452647791748176064115160624825578115302344826071799648330034776998781510122189036472364112123153256657297724541779706494848564735087325107313722837248,
+    "-48": 8096908133611449037315006064639813379863286089193699300766311905051711709772485692393268473170323930808841955197531699402375185374028751152517707710091701092371485262057610913881388816258337358978270457181753089483694013951931026386544,
+    "-47": 8483637485293181879361769292163270143922617152595500856994794287025675911188554007087528593018450418948116017685047767773214089170440010567173328077123533526637560712276769704591084297203111981135237897816212223528082249160113679377152,
+    "-46": 8861961065883586962169597699433462952762883652063550506944361847552303022514876001817931302198899278604713240535454644829137749548314816418232050025789311143466466203932213265466758039447053583892472900648605625517899230393401323835520,
+    "-45": 9229188796637776898487056862719766000886164020714502501049087928126906336768133783610711550982419770602694994472331604688618640965864023587764191289153193081491875234498932776125450293264962924621370283245428548269934841861294922223104,
+    "-44": 9582618865226355297883752748303434478272488537179352460779292210817414924778961847653202481975222196869460747033573340447016740789167144642548384305892955502956056163836994145636522013951986746361004795385037182397251764515719590631616,
+    "-43": 9919570084190476361870621152107941960323222460845142871350746167730270071990159444803104556896956945223421853694775652041446722237810380333253993444498081623719551900170461504635240431086564773760802497477579391064144963771124917342208,
+    "-42": 10237415183681315183706797819712129173859768957311142773269857230120138692907269436217213199528006863522175246502611497483625585824066683837614512898284392994791628814556217396615213996243353381496430359117532258278206702471286820556672,
+    "-41": 10533614471598605488261918938026985589234611805572806955597722702959280605398663720222929628966943261354069952712580155768982297464685691570027361635785742304195835453037824578387606323259996506556980194773876996141410582289263093077248,
+    "-40": 10805749266702104328325531168426185428233807335243172240820821568281705340500223950660199376361381764795491773457272034926733752805312128203265603111521234715073472776309211442696225004319667179199569185457116445094157953726870964084768,
+    "-39": 11051554495993700070961592442222521573005739484472422378734215102393585631653476543988887810720740995819784353301474451853019339173677041395073928703968350693836512374697775997037450354207599243617001648924444637050296457515934117870848,
+    "-38": 11268949847456605694744737474430903294916960153078380140673800045165610215903397294259829500726794131675839052426604776632025470669461566335712713198887964569086268873062320792669590082695716974929472211866860985160336406365235084979072,
+    "-37": 11456068883500205323980489538597324426701032950491042168110954920714934547728970710685467074834422167670137974171568914627803032507970022657918436581485844299046185075367980492615555610089656067358480246557295325853183238096647126684160,
+    "-36": 11611285549187210659370037430819912569377971068189091281444360849956897625881833241711053671323985946148510661061539504137088850977500993015697174463179104603469494356403562630781577815808238843628161432182151403975380411486963935834432,
+    "-35": 11733237552080114802562260094600997302567975416710110038318348459924031779746243130048071662100381718018458309367308105096312026554736135802875611581001574271107128929331948823613242665672479729877041064926530483553045484802486522552832,
+    "-34": 11820846146480896457852861420082016103739087956129060488729811433247231483474260437394014647665478127498202885039849430424182486415184523070248725885379099097712599818618341323246357930335898443129319068832569846226558182024662026416256,
+    "-33": 11873331922693301391520677780765292634038924434029967306308408379587414894604610696540476188017377561235712678971078170863457207953315900313129912097246493404824825524679269577493618476830376660315094692956942249182548940121670689833216,
+    "-32": 11890226280083664758402724615341592859297347985542800537290256246298510715760676416509719995513829492176791295603689838050781854507366710824105003294112637854504675329211127202595079440253560918029105970493312452345521706830211831488808,
+    "-31": 11871378349205171135159851082508362835939237920609475029286914497812686297171799817385102795038544893564881971887905521931809251500625766027741545464029721462383757956431672661275633475941898597441227017109653492551292271696381995394816,
+    "-30": 11816957220869799641826212199707647321829341695875254982291629521283723234132335130283967939752771924470798722953286278876525682396722172856775986225461720784831956085843019584227727715504180177201481779881545082872950018116246498944128,
+    "-29": 11727449436395808199699970271343129105916021945905838353067076291517458965979676663766036056869095144003389504342005932505268820923127100214788719042491738833900432641455906363158213498655556464251393855964377299895870409415440429161984,
+    "-28": 11603651790801886099045347494670621934857129531142356263346262965113661772380991319820711894244246776060703376273947177320912756794352999605196615805065590324204317623210774285367672727341079169994060627660862108010727807993381453664960,
+    "-27": 11446659596899307589188632345995740537288471877442538891912938985060574898099476318339621164229908129698918021340844913418235439022060294053642793028731750335290240208193303150455951014269893373186235016709798605765378902688319468508160,
+    "-26": 11257850650531356451436742912246230308000606219661475965874674378623234746286203071624831319509502024599399330573337787488156875424938077335960219483180966879195255371668821324258199817525721381438801622907752112883661946125080174523264,
+    "-25": 11038865223229378642988365199660194994270213289179449269880451975858909774470551522308736036974164165598517979543019310936530276605750964832468939367551002558695366609043928862286319118004505723830585187222244401406408543494347574497536,
+    "-24": 10791582486100531782169038556226466050600563436831176477275160403089155459210591846780306144243492121098706806708723651898276382113179055470350915648819881374459121500401113094600442883803833012736373787638719592063728572121180348055904,
+    "-23": 10518093835904211287528429407132311839064566669336828233138844280656952050846927810037999971867291623100555819241153574364612176751639744971419735310509782754334464429108228157954185804296955838798151967527528052232183697960884726781184,
+    "-22": 10220673649408081526356485896698634935568245757498232324865116598594463892066930627808035934036866257834881710781452492362482524096557662536761035457033408527813519075088331486244333502677527381083910114832042642562482635931888118521728,
+    "-21": 9901748034007958763595765505613906418523599413323273490841089114909102326903318226538914499063264608135509360088526881528295209195865178656680204645687239198268214104387837747837757507999866637120906966660918365530269557129549822337536,
+    "-20": 9563862170420053930031504442903370164734227796888845198226748888298861576502536265150338302399881365341114948343906870251921789495182812525726801863144705538775769819149459380866432207637918953563399965265841539940465057058262526063936,
+    "-19": 9209646856603370599657149759321246982929981991175119156893096534644282845390305051328653571964008320466325874978079049665982028179790119090606585609793088249708308527342566305755633745866002568162924115711339190938366800780798988148224,
+    "-18": 8841784860964356544988560198545407108909300308986739159494734429587948831022183394194323949784790642042972946414102528713560950025328773280508698603662417840555454996857532844571038658990466024948261684458030869367082249846434205837440,
+    "-17": 8462977677769844115864772377205721657272021098580373609016491424152968997078705005010228119175636916691754975892896668311165710417662338505790594481677865684132804636675694080814737009106474667259606788918543022166095325402468068236544,
+    "-16": 8075913249371961404387924760257606987037458981828062251305976568797367744930544850438007743094289215938907586693763102669849324882543383268516916090430309418963790087239599453546404012765807831889970391569008967313293019138505742048144,
+    "-15": 7683235179505830987397150939705482874194358125314794705731270646827587245743614388110587302788188470123773261856386485955816644554612304292699189815310244635228524430162975839075882923418689014618701597073094157964923282147216152770304,
+    "-14": 7287513911036407752101315014959085062011811076803543748648081482835821608147451581582225788844217611506640890913974454545196871831339479539846225961579001759967932161210070557315296182202477435277047234115754325434556466204618381493888,
+    "-13": 6891220281829547924161462351187608226148849452925606694225246306854806687274032495139799496724930691108938047767178146138962235642485487468560853195192894372666079799092731169555968682901187078464251911089654189708111825580283724985856,
+    "-12": 6496701805811551484768903815642749697710769758490511265507763023130469882438481471532728094302149650849096715043184637212537309895884766830919226883951589010731164412544231279596398776556568367212900209928942584665679826090825273601472,
+    "-11": 6106161954783398412261192179536261228561503129518607749550293703805042770955413672869304563810844740072714208096048947245797607711637850908864677939118863215307435585836057161395647872189939715506567874133058174044587625416111585466368,
+    "-10": 5721642642240087765899817343238268009865830450288679625855698399984762795195949296091822521667859256791341635961877736065826292551752495357246402468360780638825309490212498937840727050233068973363187493882009440375144158592626246582656,
+    "-9": 5345010035361460943462129524636984124834915963166969135256926252431530752383471881928196383870298894413252730785377399359765601442704612797527684740131766118398489638616836190796082920124991363160960635378032531409016544534189026412800,
+    "-8": 4977943747455495967609195593575965791937157962332222838274454748246319045321067040239745757108830389859059283657741741331517404765025455165862315828853169202253314774237280153514440512636701041570664226000890105923407592152911644164896,
+    "-7": 4621929392275479710194331183169421053613190435317467400809400312585015785214828370241596321803106808932325042010696466701246062613585344145304974313600011722774276951535866428608371510183617098845877546723684376271124308902575600224512,
+    "-6": 4278254415437013891764564112520575401826135703986009688414085779261648311659150506019957094034300443059834724317077278517224381764415548179523190130134492058623100520804450971276168950794716458299745220147986210015522370278038942031232,
+    "-5": 3948007058038860373438468283580841004679643300741291880856085620890392123497602399653312160304120038442337872070915433816568449738372101742925636310457175554509321387135096533049229055215637109541790849369018452408109327835891514804736,
+    "-4": 3632078254693603824463611010331972273869275657035986805125629098800514890154410467589753416573024817453513669330939983636332731876035223656796346488691321851290946743352607533046528296964728653604652639550966078483429201199233994346560,
+    "-3": 3331166223372035167151854627922097647994494021851354004293790685534178752666458654852940775810615853533013556316689705016742577697332434601279140674196373640536734402989428191604836738527727877774846570984509538426059645970820706808320,
+    "-2": 3045783468343850825541927747843549649139009676249032627254449118683983370817297248821541533638810015722234804672072473768667840335440268915114717102759399484739527961855813089363593234388968779941263844915368199594608653485596642186880,
+    "-1": 2776265890355748145330271532448419461004235114884881374989800748179302151376699240705890589421828204550673805675207442689216914627106599932803304422650492854402265036872270058069140650787412520045705368661454219168662550226046165599488,
+    "0": 2522783680050461604052214917055532339425173147024106589723077552582362806307475164282492297255503075612423006869592226178132040773359246817555818702692586026875297350993529706348679368295888517128780997761603871235128469617992949947375,
+    "1": 2285353661265467383735126662589682998555569039640555514851630452189385568249025332279072398122201298167676096551778248398964797853201934909082299931879357257242350432726836297477503378498221083090812761701317566240369381504471944354048,
+    "2": 2063852749797814531823712830657163213510466454868564110530466704379299734204634625772775346242136302306591128583974253937845248662011869995067800553923014407957174354899556173107877788700700245159886318959177464288224419847046025576512,
+    "3": 1858032199824913403375273336634219337934780995286385573320197511239433766217980856436694562394792405342268464924038891228561275783518037317834618946343447799006680647635497361996323425149382635621377728887143774140976043574270389249792,
+    "4": 1667532323612700457792428633654102938793776218433077154704322751397943533221043158214842717749321595536013261078247127921812411032117968149375823069946291285272833805147664481999529343286075531860222174374149212505044125820147710639520,
+    "5": 1491897389483077103137349997715019714133593694254247810464897732572161402881020810524247013588959497148298313550661887726894503948581246650636518370545801554853179310284672133557053423887529324841634312210932586472994284983733327432192,
+    "6": 1330590427230094635929665854016406249896259470444618333937861998861430807865126666151803282313929452410842014843916295498853172021269642968194988382063821024231569265469365736973409556508197479388036478100053384329235832870668966060608,
+    "7": 1183007698203512841317121754703813088844994088442799962983391179216661411608359278018187042182600065844359206324409335229536703317157862988600205610390894484212927952409000977719824504835040230937331203148493316996509153572322143865728,
+    "8": 1048492618046590540301091691296679720905945289013598455031214706456558780793648480878377168999866385580851414033199125133051129713401590961383203694192441253894802025247985637247180580967581321176629030389749206454650424246083350082960,
+    "9": 926348952536342503781829529429930752663978417263514851295147937129836653598834319021497425077700508391098882798965924073773768206836092942061592390032086709511472666314734241334160193732652077233227056286363432551374757702179115949440,
+    "10": 815853140139156806240203419387361563755552974877019305506498073112432411197820073337986016132550919764474719094175414919633355676428853264264518391845066508077697400994763515658923906635174554453255075110102892938081803439077417339968,
+    "11": 716265627853560456803419234108230782625167514336986474111929466553268077444002721116850671759329163218942551905905684331174064622808440261488697771025695783317374168796315726066842636130236699899345918457133970369614457453168726580992,
+    "12": 626841138856386197562215747315417144930002909956822863122207967998747424174487649050054726891816661974733211418549825047522725841798400037834505373228304689246924625060313317873145093175580074820263029441138653755485738528254313792864,
+    "13": 546837820704575154742763120589799025021182800333976788542195858949229656913172022932286252268904587679603670704033019378873301477507167187163045045237055737026817197055622506442544815706391979570188220278949554186271894711216371582208,
+    "14": 475525250801814530875393686040997338247324922923015281121606796925045502267668058740206350914478318410141008917232608524648758596936588219244612645720069638106460046113025549331715056838928747377546801258866476771649205881002899975104,
+    "15": 412191301073989007397437792522334323764199954398370306083846359454177367308292039989786412305077356400590242700569608630846755486085451272435082892989346095001058720700480572635891911969392356143044918019201081270003349271552362554752,
+    "16": 356147885993409166449889280710801119848490094011988593269112950994627282264125349574450812235507030648701742669838500208372482658743868094905932874734333818711145689587075726994914019929656774036337976223579907316870883068599114451336,
+    "17": 306735637054001828190743648616060597950208587733447016865102587855721691601698451445715200325628853422222907400006816430984471482424845229540173154548874846103415472548088071129627366523778784138702388956667888474651740344978701591680,
+    "18": 263327562446398183534310776254787150286558671393786700044337652237683953556607029548468657196879235977193902647943549185238809895441099702174714785284591491648581009466510378286286405154775880788716313245247083821118428835139866855616,
+    "19": 225331763033546353179898426196099420549039570840266768646348330452516289387978966480328170176573434224805194208823775516946185271329390566073005860954070217309049288271890064792146021868244652632377232197011670914898383985439191627008,
+    "20": 192193284893456132341228954902907698678223628248531068814062053120234265891279375745028165741195371570388206529667850958881617009387041764614808908809588806395752813981444553148599825854162954288851627048552774693162208348662419339552,
+    "21": 163395194859751571535563058179881573435925115039239716130954445743663305749557437113648946237503208567861109865058106981322018845075161424474753683069379908370921352259704723831502859839032334060022096224102807496151213743471495417856,
+    "22": 138458968895973733971130451254047734500596909927806254209355608579361034076332440195150888764448580409748325527958020317661893473461441132072772775589061953647743194062880767424797066673292904241719285348041511719152156198615333846848,
+    "23": 116944284073324080240427472733956643633848054849828325465002300143436868764841935273167735001069475751209776794621968225957649527310127852627251038328191973502963834444532961876762123072694110158072877835471633874011259546316278990720,
+    "24": 98448303700604097820448704320119803816200504053354425799167868486665597252641127311890077842123736717146412573061716284908342071915589505360813595549974093180670280533791176788434864323648857789591565232029131970093590675462298165424,
+    "25": 82604542112239565763181559890658849655456985438814593945558270894816246713423503538454924313032019167858301187483993522751526102805167863599907045789556058407313200149942179374451457069271054973406498427825256480319804549731312364416,
+    "26": 69081391091839815724610752971194967809587925944884145565069564847709582325009749026912269993276323422747264254794621911853694623586237024662806899103184916755081559899330560432242707693281880279917263530844961418136936708349040924992,
+    "27": 57580384223992469090441358839513123047980546528507814909952145436810533300004381678504403019709147711550315088372250951233950448472375964816110671783264235976209195876374683533382625221779767250649150568823842531770244907940230970112,
+    "28": 47834268939125237599583300960906311446757035089686059579747413845999460551287270567077518170945477725925765056854896088133939887257817608317908774219933457057560463740325721132795839246824313755758621266591053848920290796436018887136,
+    "29": 39604948935262726197865870148754744900692609584198237248077950632369033631560296281293197543996081378569996728823950386204028861325859059230577570521049116774559741282595959999869688433574312512050515532207132824939503929678759361280,
+    "30": 32681352287813082636078191028609744803896295314232718483096229828641887104162622484783524718715697391709160787678874130664377652404175632587978162353866272188951102251064324705003929531927914545552843978235531137474831726994188110016,
+    "31": 26877273123448140542797690377975734231796502448296591685152498119128788900853612889025414191871294109333592100863531780718053092002485292526840152288088433775223003680747137583153060936157429517228490792811848035990769824956203788672,
+    "32": 22029227431877365567082646351416406197437983734037896211664866909697281192824273339436332264492846379115886999745623052072321605894844735797598183213980125998303156153915913086222698850123935077710379580246241558329008622897349874116,
+    "33": 17994356580360066764215600203399062174288633991075474295879945996604408465257738714520079244373063113242313425656786271013194111203681096513940097198362077798467557907776582359617318654346732886367950833591497880972202650987002481280,
+    "34": 14648405506633435202328617150794166267620476667683692818947676485229472118627189594916281522198989830075184307911460436196999968283724194827836492967132047877198733999228057288175804894521182618845109171648120133392998054440135633088,
+    "35": 11883796490699594282669369262265942478582997739417161322002909639009736343477234825179219085621793763924553445769259522279697023500490044833512962763168971750631980546116921428665628076798078247540748721910105725925038306060393571584,
+    "36": 9607813908889707798447954260677198498941449169924246068050159089278240011911532064553052715508413790743096486379105919211328656423308794577743532928583397763156359795311140469411981019457820182389011505521782612519789162270651400480,
+    "37": 7740910492262820079140451071444990649030433782040914972664610875568524816158874425845859476979557183774821470044445216277042694147745883154034423198526567808197640333492722229068774120988722426067404960584432678336263633027386574336,
+    "38": 6215141359753317924020628686506633478009337552747960507147671665122843672570964066308612746370847801127824317709183518770131398467944316773265920053182953119917304988781888014907241900464908009630898272661394920824447481306149637952,
+    "39": 4972728468807614102966753498076409033133470535282698069612612569397777158766853081160287175942619472964589246990424735241260836368515047216764536571897884397088524858493091234491556641598999329913878166488583638876818951309455355264,
+    "40": 3964755100638068552810589493147518261377839702780245052233160812081115896750650168593276164738232120252812776973776989149536723412882160058728016722311823347863259218381693497833285113614978784445583381353957734273035042629721918224,
+    "41": 3149987539125687404207810677894453304686813432674364648994330482800648472057229280248592651916206943774411866242743354974632697226021161087249089511241431532787296433205699709007629726257519253354025456044021784289416116731572824960,
+    "42": 2493819167960287250914983238002662154702542397314618592618744298606794837042137846379361349932892076125852677288548449489680060527120820273985631548245756720686346529230223481710900447816606207673395817005885911783353797144097214784,
+    "43": 1967330749662306521134041251879691349755046322647072420944855656234711980544047726373718163178621787280374970322321598562146567853020177588992484086172587319056491637968347520332426466627689362178438190887534569325987796142289267456,
+    "44": 1546459608914924044264302062609633877770916067051359732999946339850733441435592301812592259434933791495042728434829346301455208412238103511088667278892835876132766023332292518932843113801062030057254596257354973899493691703983277792,
+    "45": 1211269766065930777659511000045977902514692704483998803779018517121727413808231429134744467508278524870542424849876867148152019486837252042483498322072670617147667979545097536793003632192755222114165211638633351799055426795900402944,
+    "46": 945314700251352211614015596512226035043169041130670996328126633915649480828778866910696223618430876375429546568369603899300845959495242482600415911179377220310783595064287080428379341377289583088176042267363157545474520419492041408,
+    "47": 735084312988366614219392013496130130823087410525053199004608097713977319616611995981139043613157362819938043176389009124518056391767151373370316826396301574153027669992896172143591902905338442943347314069498874710955974856615325568,
+    "48": 569527763213510164321052690290111450920749238237295794354264713072585918514681894390237194659462874714067860753943779619280058846928611863186894495436551576493520519755045385477102449636996957097270094004146916065379026946497963640,
+    "49": 439644108649534948637326970313298757410721995262469356108595858935085665986880941389002998084891194433999514211297373678681119036935988826426807337055160427338680645280122847937538276833110239331074632913316620353036386170709837440,
+    "50": 338133075761146094686347970869247018001924967490175230375841848704356477862337748978740119240919793483378746039706037772627256639966627599079042556053689868092563699501210684312788366038077068512461617368676897020246411119752490944,
+    "51": 259098756011230700040278523874510095580561624852544215190775925756714694797540297388732948190079343412896059100800168636792259519163199342155178887997338136383560113171925813170370416111944514170707665033962673036209041679889570048,
+    "52": 197799559228532143047493413382968407235251211073433382456821169162048685763039264797160770487629249421685637270604180558654364649836170043265570897466165854899032878271679909111047785987385813982897406159282274274900243264590240160,
+    "53": 150438320066756345365859071804036783592244883063490295364253559430967170774775148866105232314510888160257139343978618100532913940615978578027723901357921669845022515094589264546539183346743080701954457912966659996233939975141579776,
+    "54": 113987029789927067002487879851175531115560521588842979472842849164404838936947813340343411975393663624303856876955627465681876126668883160125762399165501140593518980954411542647982725068883372015771731077138198223809184456453715008,
+    "55": 86041236219040140243189188873028470348674087345960495723043647520235226901607191474749920226849682236242463993283285288381402467191116274424976472232358278973566646807421897436902440623292578287169933535031750744926888915992211840,
+    "56": 64699706708917928753851598107212226092767078189116704249867558434030747149312695864247354436195754830990038816960997727481111244760928083183993795888216515301405685326894122732059501697740476844069057717324976882286697537173084848,
+    "57": 48465472957942124513114938454493283670288344526096613094278543453284996993767622889401073161953464669017681752226106463334388433683107774302783210976055382170618319630682216969208454911876194870289734338810038181122954977998453120,
+    "58": 36164865668956958972679561173259626949321867554971153949751319103030579492469731258170279005041274576823570264906620519593276381226634461616688022907340420508216018997869456123683896029531538286005137293808452102981433425300315712,
+    "59": 26881597419149476106146407724639243398835799034425243747049282911915035688597336545275701326104629694046565109228008981736093807939490723504808924143019404255643731553820118285874053688679239160772166196244331928521107472231663360,
+    "60": 19903361428491369856288388514599025460687882423049466286220194085472086372045181845241257347832341903841267741312327961913395053556270725831696504191041111452740426086596314452088410551765499661931139227017145110810019692563046240,
+    "61": 14678781733294135432657231968881329822043040745214597446007206611260377045495961148380061898477620802165639525811379299254292005873338034331429975940118849968027059490928182347495307506421176996017157577481871143175630741524949760,
+    "62": 10782877328392500996188484455867512424707557180122547930119552220401296545251453463595769601749864734408172230064769004992030687731511188172967716069454203069101386440402954473274404535246981414881549445299032655327403267038566336,
+    "63": 7889490835364017631510510903039685912904943780661180866114220348150346202036953964285958387659403929446685811392109767554298730696270190194044109234836528042540060135709078913260925200859741978554042735733654239091968560369228672,
+    "64": 5749383548606581032167497627833486262438460296801738533546640774561542564758624825964729223635307273557420372473655357400388824652411686179190421821480942328718429373837433341110488869689350072715336778840616417011081157696750210,
+    "65": 4172916104448727486503253651913224679157695817936702947270312840248597373015402777764601755752254449337344207470302285679443127359002774711999781990594380595401559647638412082579505992411433922147746346835167567750843438516131968,
+    "66": 3016420553659404809378696486622109858983054051061514959979227877623752904312578438638598316313065164528160776173843476473256761431997243111627445943959473798701804135429325766355947805016103167069710014306771873910454972142596928,
+    "67": 2171528430054311392354326173902140766381892334698904070527234670048758414018799689346374884632582903525078857027400800459275641015578943141668738110238478038335576210370146681691222525290266975133239855687494620571575478814747392,
+    "68": 1556853607343453716650363622560574813305983156173987792048963771465232677511287303644650251201604432378632298918767545953230706624891362522995797196762924161230705624182332268139974087670681848363735384976121746948628368078261600,
+    "69": 1111541319960993119573372979019583549374026082465158298460202966800819937362792659269691971970326389307576569283678332667833842415660793873740884102450499734713056304128280343558067761287707552327688621187228117670486132602770944,
+    "70": 790288513553883647776426695765426120050266597907531978986772039160978270524514909681546280980658448630613746032171410018522351809607613604692610844680976697993805686012705640204365218649741850233159603440474946461467104031784384,
+    "71": 559518294003543507065652007657997073213165629180050887679985119663599234035334815995343331337441513794164000143316497574046656938647666999006862678240443462677395266330626466399519654342100290510249287610589220357980983516392576,
+    "72": 394455029003889403843902975002829789121130105231922935088956903698136300172553527776994433311272005883796126531138843607111479377623949866135860811812564608768070094305923807000253507138371036242609341537719223444967636015281136,
+    "73": 276898744604309407437791125215311584841033749241531790723746991589693054147751472313555250544423914878734138127929131457764483939087918317544226576326466960963795003068922141268024321331450372598017522186352452825006539781788288,
+    "74": 193539726006438548304513244166865015724424852225110630417183876317309575823966222817723148396393161851776255274253187598544868867582386689483548495100958837497611332712708873605979598058521020274512481991293642770235001219914688,
+    "75": 134688315627637342889682292421823383655049137317033972580712552268959178323870598816580322956383119134544307798139835606545454508650111164368596969977383905260003833163714730030220846600462992296289223958373266677668698773094656,
+    "76": 93322217932457653556098062282535580778116388281404838315268160951581578489238217760245773800156645243802925589166263210249412141212747568217433377125469342714354600684000747603705862208972500138908995159268973448606742194395808,
+    "77": 64375381177378108890269917104942756442041597755799360739538207417436805997206765210671586483772181438335497892735437328726527881331423580141429054953897265414314622912064310474506568043788249808063913912748747919398076212908800,
+    "78": 44209757631305164173951923760150261420986192240169855849075232722803054814794213410287543182953152162091428030208722892233036230825361884826682043518557160169293770043108852557001737867011213439104184715879692055546001190442048,
+    "79": 30224808271075537605176552861173058678311430970825771911277761707961819055129913063871233052870977485265686112184647165377110757070252279773996371526835379545236974529121334861446989874351536307152768303182145860683423093355136,
+    "80": 20570233426217673285817741433911236852168675599863761112545870132900598757649669036279243752379511941453910145233705902670179192275008714859250194156384448081356423717032141614775002572300810587898337092396467135358082565041304,
+    "81": 13935670390467241660884288496586628922750850617256161276022679085774521120284291502120593674655535778105304876706927460863126018951184759509254542734275152703936603460038555044037306605420623595891645968004024953569863942970240,
+    "82": 9397488571680012101073278706262312674582838965439247015864036468829993557833382789320543935360694952297641832884589511677776655838754942935096336358622153993445139551827173616184941701742004442950013774158405641780219682418496,
+    "83": 6307727477092903351314195673343264626352320804787953321867060033518698387667425932773512210974924923685870622315634273594338766075549601880527882380971499355444778353164279022170084586975914920143075878464588252955077068581632,
+    "84": 4213981688284318673687776434837131062999384277187231089148497177918772280144216022545795577827841417004771561150643631017860710273738133188008953232681706042492089957222791226969203878891945684677577899368448832572189138198240,
+    "85": 2801895569680302016254846997286807414854054381296454874120571136228841253437715467509422848687788032451890169616049531101691972331373210098485350393053163286102048242769686975254444522147824858001409002760972897105888515651584,
+    "86": 1854092159300322434722043242018042757862361040237403668966395329584216079717236196110414283676799825115135457580510106109285409179955114651439184608944799547669657642796564580062450564647500288681085543448473454262774578000064,
+    "87": 1220986228018184409885521109933750730329931623275785327037814828022367047639388758593654582792646313666880681904492744842238546775824416854756091476430683671667868993638367160323148028652013470571614395794021545735916558876800,
+    "88": 800147005412569568986185444295482128320424945262762683855704350149611251848454315550921869583507007121967701874344754364996578450162671262236971403571554805040384147698646230604548528483348936282601583346093404917249749723344,
+    "89": 521779900202006870495216588597136833261915252777973372147803597786237197846756062620586375736503835379290014086828661043139864067859198351487189646168491684928385718463944101883847615888877117442468216434954644941741872043136,
+    "90": 338564859235081128276113092670972584051214614907642449717550146478034846883034248561219777580760415429957126532871403806563078781260797716216512614252170462830010010369499449926398686435924366617748717566068835881332530144960,
+    "91": 218580420463188575310041431733029336692993667545784562665403317892595586743703068432177535589410435295047961015050381729492574942219777886840161253887228652901124828391387792576091273523620982717964842151542062767940771742976,
+    "92": 140401831107409670201380029184774834459141765060642694304350227568113612410245007521572570816886895664104484896552376058853427367426662419860811553942506364585442382047694820500901182700435415125283263651247288622771593873952,
+    "93": 89722862165633815996730885378623785811083045643431123023605783654411076459830764526873589172153594119959753527854008138766784327824086329833575950171957743269085596710677889994708727510916535639256360068436313740694835617024,
+    "94": 57039850182211693190656770879027809054547661562501985460712196980941345046481962198610342700355170457965677392440253728443353919110732708397691403553728534126462244033848380885907861464711805006622227243620731704715408138048,
+    "95": 36072312141720991289069389720843025607134046383404163911052034823217336606644351843650360655623953624020522859127607499861830657499127303956889008472174095277868965454744662667757776518490037203497241267511362275230823292544,
+    "96": 22691578462689369943760320338557808831919299836729635007419671950554243814778506617375976390521785339170576425935226390021377424361715769956462434690774785429259472931983031168069509269135740905406523770161345039605378254612,
+    "97": 14197917434241010462527422447845122421559482139274350668680807910522065923725658154928057542021186395072463690196105486318484196702521455884224560199104326891793279931532560562482852227838652923674169038048353824137315931520,
+    "98": 8835419558293951692093967231258337934066141979152106081787804798148127222597242701365797774559803858209901895034705784842230429914445107051182340092864306821013443154503596470508105939542900297747773211386631334971968947520,
+    "99": 5468206962631439165282513398124542790128373185008723730268023734759438683643499878763055404941042805903404205011505390450499510456616984837223561127129184554817757986699368636665337774826258242999398349025837485254862004992,
+    "100": 3365501789775477275818245595739907137289535132294023038485314955701656038392104932004498000112896575657488605080270765390386680583037064730497011311236853640224048233804502377686375682432414609421329296449789870301738938848,
+    "101": 2059742421385545497486810216680844746617330416360114708306095082199002746192430296595014166382339356871609232895925304847854801922699681274602444282973786951642672626298386105145674967162818013214014924954469012212143739392,
+    "102": 1253442671160047699398584403526024782942052244194194592398158341718562216968097725340124967434471303705817833664485281371658824388271549234092848495378250860912394230299110515642423476199327719566246199073758043088445079232,
+    "103": 758392322709567301500225472915384327659612878955453275857927040377479028790708925305468300478035969739363877444348122903919560074391538350413472928655380738414804801590559206286547710285084881027695275583726540605373595264,
+    "104": 456194246334089327417975575607551085333617766788063879703270675710136784165724001046220766057287325024650043451710355715328794664561989878007599654157547262849700898053665586879672938247501232558978837956874853772570486768,
+    "105": 272797078895539346655629885984883991308685122749833366841925018551051493065000242173384288491525434518281186328961911650960554447873250141295934719160118796124039768627254758574707450835646494302234660222704428647987251328,
+    "106": 162154991939092794240568501381281127129165917571445287110377723659119373025709638514079097992379593757633019317078628292219124582725882115001425250584933201411668684885656330562132883619863698159153641886208404548709801152,
+    "107": 95804805144203870381641184359307264476378282173895199790547765119751975918980900727927115640910846031952645549512485348197344239907932768741720603010809747696228283558871970269755351883691362870214096859581138609470168320,
+    "108": 56256829985851911935075886409439982274549325818831139325756837398072477630025024951919857996136760297206578610516765201273899994159815234175745887235311649249044540744967006431233246473917351060455226160215322866716961312,
+    "109": 32829009275180088858769153786451142834589031036770216000977372803675231235355284490618934217779912430014794985863892735024738175901195406500046941810696894047944962359160103674883563001576706424535922919872461202614309632,
+    "110": 19036946716831846063977662109804014815569556286195691002620333433209023952249243749423597567695385941163554780874315359102934000552826766277111823552240051241049315274137165694049790287980108793929167544421604364498806592,
+    "111": 10968698197963289406352176659353547592208904240976450393266652684451224088956530448519711646056098435750434559589245688634348383323920165079910733721283845474992710389481956882581023139640383057826148333459692597573446784,
+    "112": 6279010643118535355605654002210164049027657337658297002254108649159305964886280573616652602058296466977196038776836168718694218947852115817093584126613346110300222951335214011226448676798156797907226195387587480463654248,
+    "113": 3570791482852727575184917571986308605344921526846030035383386539321173003353360947324374326080086543956620610431425237114236417989535778848850395453832536383749084231842578615260218244857868136936344484137260005178566016,
+    "114": 2017122996618786552309377412345679062065448402519533307932616992176797769104801654622762994478822526226278209737461167779510810676898577920686622639341304091705549663309475330519523002813803717570084284079290402998336064,
+    "115": 1131751281113579013291805028218431060835682923261508982391346373321837381603036825138868062481294440079408914315560792381210492024790676729418171159754925421114902142490115757736531044517297463694494943166110914586558208,
+    "116": 630630541471565141725967492428482890936772136349504642029959267180385345085061399633055743175339245214138091353484313601289489890340321162166142198347108586294622583141649976360319832925386722037039700298183774170769760,
+    "117": 348945468039169869602305574350836110257627939100637320898175992852510352461938120488155509595388615525061719847316900149480653852038965548824536271337491505319584664069664142564211456301925889108121716546929952481225728,
+    "118": 191712433529174917881380419656205804229853220487673735419388103997722778737161570851034393104781255715165094318667040496684685313895442168882971289533111494973221889771627550991706566156719894539608917434115201506511296,
+    "119": 104569037571761089730977200740596402375510694518896796468214125984298191851311140164311031389089696350294338841008663020350453959844172937254306867984573282441911059932375831926347583403175107661732500438361151243815552,
+    "120": 56619274073833393824136342139422607389827861157367685567641396055307613641598699980624772198178108357057673500072241803429305543069580422759600057834315905989246897440900290951819376470822294945864273228081695119680336,
+    "121": 30428481772172100431762256624806519432427041654213672759836787307665386479312333800446002592628871289301141466993873827660463160951487224310940038424826674581551058736435991459669485615277723610017886615614340764129920,
+    "122": 16229144835288674490830556125836738633995821656792606310291892331919271678078799467150598778788360371312912595307675308644545124748125485039567740948234643034040813097047704926985150091225074779482392383593234509520832,
+    "123": 8589204573050004291980495567164484897310015622056900838496364130276172140477704547470374079954689582134671668032756858614472717559477443739684859964602034914349142523557502987575208816215632110365800450129621784445184,
+    "124": 4510168224358518933431060153390123594192985649353353112087392479808720288029956888477195353072439815996307012577272826166917764710386847777755679637754841625673550368983135653473929525694281908771549754241279944147360,
+    "125": 2349380581356529370786798464815357112026443411248379679395847445225728665125117543577405166997561387051418091092978917394941699008192315329073396320788769239920051328742053579931974573364804048945653921260399501260032,
+    "126": 1213866501866794564151220939867539590116136255871491239605951616021410318982256347764290423499073207138017950507026334558005424605817046852317074533218781197017164465975547268706913553569174702582935810408837515625024,
+    "127": 621983812311016441300500467460233427112144971939698252855905218484106955429858853880624924936221050361145366182362265583280633855900480884781316277189427924892862777870449299254718690708893142291512351528490876260480,
+    "128": 316015955239900895568469318859364925426565850583547956938813847217430951953355922435001978849207836704134200019870335079344780943896716225761683538937851635205068572529376271838311808757126094024726837598436501277185,
+    "129": 159180269052134716930173578754912350911773289776614593237675588474948371034056656974204410837059211576857722806377790016878031195506261372907646240433697016437382051020452614281592487242426409216378515417123432212864,
+    "130": 79477736819734348769841867011345310686177140132847434807887938867740503854764889887179700879381708167390984458973023943677294410764335134504114054129694382183813922316243191251312060123136573575902245322418482637696,
+    "131": 39327884359016393311309768587836967275563815952468091219638147400599959508667979906126653347967236320571053225821816763294965209960850118598236216944736689602820478593063698965232230628200161124489836791422373818880,
+    "132": 19282983041330096847425539355849767458409962012753179646564817675407184750470698622286147869984529585302727592694414623424453079330323129919000116507855800414316039781983595408286171500766702548365971209982679846656,
+    "133": 9366618681410675218741922286591480483518185730455960397554170892810618533125696841471466230809406021761425941952336365978006148054578137199687602738269160290859029727073847976303155871270973164823989866978305423360,
+    "134": 4506500707216460814397796209914059058755238215607555121843687090754581672634539308000274486022322512454371284297783026223380161993393535067812515906436982586918407247943207971531636026444885935839277380127275214848,
+    "135": 2147105494966754806017971181930740317532459832061906396894946333836795092033851615543746212649198653944680071279931334931283715142613667581247844268866524880667699065136900996430033325642820249124525975047329783808,
+    "136": 1012815088328243960961174263932604949694069024656651941556710792790559949949928852504752260352133224496591496590440818223788800388807747080188152303364433512476518242503860851142800768869775086910183970498781870080,
+    "137": 472902061705000324014726942943783858751317272688775851248050707995759334421593151496108558822709305056371878976252687163869672604844824090201679985212065032412326845047316750069564927226448467457274657912507695104,
+    "138": 218511161698390075263319607658048684811183577643112938484706150995604006771571057857516616180296755099889101551713957828859700103287742570601863635425191906830006137961866728348380082102424869265285584557709557760,
+    "139": 99891825048565166249851762028781827991422508884288747568321019588691998624977369001620220343659271892849852538664618591553710973128861839442242843916758661886065332405760270503766898453776465822414536271463579648,
+    "140": 45167686282007677393654511213858313064737781710214873868331348316168686985474744168724152693674250233219354404601816375195114646806065399350460202739758190795998068161508546034594189330179062958499356504218206208,
+    "141": 20195277529103590252697489346985130680952702284952971230399855262265019781661877179161272408672564318484815568213592043715027190446032452543173330797627132982499652319801224079826812049130008450482312347506966528,
+    "142": 8926329523150694928899108450856151694177146407673544288835988447900565071267113335773329093809334977679992534385659943965034698791356620876297277395889860717861432917029237795278478771178131213014023106720169984,
+    "143": 3899135212427576882953690485906284255874046991593219630359923797795297266146775858813194029393592701659757286190265576116756088517007756930608398627953283594156683162903370109130365318614995073004755129122947072,
+    "144": 1682677658328957474028420198049932007472749099797401632180269449784920898304466105666505466606677942409592154475629902335071639319236107656750531876582665379713152642839532687280809466197055026434090691523772416,
+    "145": 717181598865238936082346680010975317047954181553174784483431762662422731856741505522266712721250125426681502957942464522702861980861146873553689828070245422555076170070315561959924056001716354632960871772454912,
+    "146": 301789526350181195319247303984169493972743943819663418737252463353507879593707981495761371420773230083159456699525075205115434328414791343191147333944567738187849629291931518283137647511055828776482656495861760,
+    "147": 125334221657855871839333576922181030667075479736365046233448657759319246490652510014645154105727250956385163508617788075472442751279284805258496116070173709644732500664801081676088892643644720366791224503304192,
+    "148": 51352454817956295026904569451171115576926385846830127546250824375241642887252303722778436813294064967393637399542404229042510036384526508873705119025644155176708796734481906893547404975872797006289074384797696,
+    "149": 20749405297367950677558921277134809066562670737322447672846094015366763582804347102425345678325155569196606663720867055685657352278156224694254952362280983265578027966507643419238083212430354868351617999044608,
+    "150": 8264575417945072827541374832181053737792792263323412793093278905884391190542878343302873913505066630011750102659288148124441405981607478743414715532304800003242970923797006136609348240103288177562451332562944,
+    "151": 3243496366263976819473118480306283840960041603958598848451638236086634717056800221657170717125891016502638206986569229281320108321702924529806512923672009386804572101631226354947954092744013635547607165042688,
+    "152": 1253663569248215630539822282341141375068930071261581429749230408538858111913868580165940133107500562818876850035786822755319118548140329633046768558973172600498866404886534616421179006158790272552014996045824,
+    "153": 476989089261701545067795962135273486347248966228312319905405190611545369333444780153678038039812773904779777534281357011286025572412494534964990301479788720143632429058418277762232078064527071577229647413248,
+    "154": 178553480680180564160361494065393910117777928805223322663252496485020936566326362689189695726826715204664283093438304983328997499431323121442745102839006658224794151319839700854120936527950681176711253458944,
+    "155": 65723345165483974830268832717216719715355439450207677725981182908302019696398221088689250832963643363234652922573063147094631020560021031094183126218178503264632755099373132914650841364455566722890943430656,
+    "156": 23774248799618961214320834893759561042497595443996732900458575593123124047345287544974009419221935851376902218518914970674220598250340245875500912332058106382533451376812579684811732106628718172630702620672,
+    "157": 8446137634494427721365181084304753920813926192920938790292726013352463147479597442989813405903933581341494281288235868885410727016601449422795655110940654935365652623406639241378705813036431600908213682176,
+    "158": 2944996532597907196405149369823385797180674653256545979610155684755443723819003001747582355876059253348973549482606134189274630433715377214117285642281373852612067596383637687385200423225757988045813972992,
+    "159": 1007114617843222647400689623380648052529666389395241473732774092615108474241072667374496136257202453646392055707369953184125681987849135486651244181334806692970285687027372796989148428821396906533273468928,
+    "160": 337529759209909508680515051904624042739215262683702192780010291512669906377987559555389682232894191432207938053226253928362767097287812078628963460078479164937453613763194810016322972602156120616311193600,
+    "161": 110772845832849011123958112967053748436623584223637225428952454538859091895229784196473119346822604282623422339961510696359472599519740852027134985332425401870501787844233044163074539058301789669886525440,
+    "162": 35568609415772966737980508759474726526874453127120876863477644248543311346826827560051199113277485749271875210086505736385382672823719978634230818825612839599263988445100484707545944116000274610539986944,
+    "163": 11163742331523633037413708794949840028289666720266344688338872622861377475090158303612686637854947077351129461786383584953926680907663271169241481250118840536594397745995274722756216354126851147946786816,
+    "164": 3421598310829084991586248793171617266774242557489765672189799053712486216349044049528093200311002370505208417745781781102613354138134458430678336541219963312703828746094241428144384075175847365674270720,
+    "165": 1022959007354533526538149867220182116047104105788189290315468361934199914019037551312269632115255451631280831513327610258619173685839818141750298580785548460314441074942437283192363631663912897539473408,
+    "166": 297984840463758401819160751728705660232846369403501357643376782993151398486290555359574285713686949986043280695418170072365287878904337934974480698342473042808861052989734736541491438611818640551444480,
+    "167": 84468038650281398258047198924580277831306331241969381229917700873592165224843856012036179389008542868021643819405123607480443437828607192286183739637121189976512087535122246400463030249859936101072896,
+    "168": 23268181842829282653092605399369637111556522838723501039264470738861142865184917851143548181498009707946486069196695000625242625475332580907598535215139529021505071509891020333218214458479131083407360,
+    "169": 6219593919677187897523444988091437956995087639851177750462194686819498286316327186977001354691386770244643654086592718837543065602992146794627077811798630266084843325341387876452054082959383803723776,
+    "170": 1610610322793558723252537887868505483021595468827525530754226726739560109524115422889171501123266864123869360583164533836582760767740970001866767613126713970218637425474008285488221371190865477763072,
+    "171": 403348881308018340195774464127435592162271685268163430639822021514092676602729983972285470500300773515685728252235223044046758182767446220254553524854139590240955223831255460798953122104020809285632,
+    "172": 97496867598654475938699450164581900961170060518653627061967385091367171043320937630896415547840139811724776585267246693344608230307093468976741743546915659415017357834093081798810450975473121886208,
+    "173": 22698162526030948277653701320322527451175783512798973854146342014547773826793332081343808702204795786118084474029123851122477693179512018686875837918160167184063607687704660405279274326787660709888,
+    "174": 5077520336218362937698939404408376943847869252900810227437301884520544699042540702408769427773481735867118617374002739516877454329728769219242111874901849632144759252320211895577477403635345260544,
+    "175": 1088498519242391278613477366273895564903203366662121533672576066150507206199546573567263002198732495071526568459937379428257720971287179344240314882953595811472143450037492281988275803262621319168,
+    "176": 222965149333293437530312299423175988670386688104978677666657649218714118745890475531102759946880107307547690823482817662358830562477983681788713014151649830935732912755664906269952402939462025216,
+    "177": 43494607977358382890442894632362570936693111755937776746953230812051270374173899101050134225815252920346099651570897897302195781422631209802847699876661764166769448416657789155702047199442501632,
+    "178": 8049827924748739202881852677826322781722686650980163333707088358279918376382380408883939840184287694892659526883902870793290218051786188762559217310253118928366070277084039176008488361381593088,
+    "179": 1407411087388071938072347938794953503420526298999634924071330932962023285050592250270606064367752432764830998221240811269645973433270767786817950339640654847074090275279994695051814914809135104,
+    "180": 231304418255128778346676164227099738934011404122038153685714437178673312327727754571985123004271323947082377967923684639000544061464136918328634847652578950711963810649927052327893646996144128,
+    "181": 35527693376649717664193496104723292055054070350983113447891067664578140801184098958414135563787163810546827367285236003769191002666205789130097862155333754196994942019709914343978904162664448,
+    "182": 5065415200460727942236777016683623628735251628810259142645764318945603024406819732389389338706812245703401613123867656790478010199250994829982034023063893745192445041421555662633966478819328,
+    "183": 664963467363417787072185548408971570047212889093420365421002624408654226019779369402603618702335051723633127979038930202485989024173607198504701419214008672226690687766324701613930949115904,
+    "184": 79584256173365557931627435427389928910201800579191533812312643079696053210929150930882553397598982019120506605170746313548713149450246338500560409786654247564862933765300873345872454221824,
+    "185": 8578040544235039216209763053019918752155939373102345822037646532370375340093282707944020009824245084264598876508039589069349322632099869547338982646249968196350604564421758473877973893120,
+    "186": 819831692755994457765488774627088393373538095634532515736215680845936446607181961314634867939229265433179757190544584875749010624531176634863499762173008205330171645942576058817618903040,
+    "187": 68072191192283097186573593681774282938441931573644704147943509458955002376135737012164295051785615724618292352124846363023586943653089963792304674505608000828856867926345688821568372736,
+    "188": 4775082618408220786259382808627094753275679743775672478332927002911628048373973791231573640648848475559650927634488634460317809119117237647530660783058626067670565394171155389272293376,
+    "189": 271723265099313644222969847905285885463388769807665997349224074463656845844034357597084784561035204449809549235548698982336341135068510468580433915835011656339493684710486622297128960,
+    "190": 11762029571767747578525910076183237240873597345216838293006878812583026860848690804098140211525026330813370188592551178648049339744509594366678941999950073678570171056744246538141696,
+    "191": 344354062325428942751334332586555765914125060569657061552053890793286563691089162161849895621726036993389779776564872387644672083456080865828260107009359274027248415001513245540352,
+    "192": 5115354960021028114201558299055056339841186064702278487880768747376425007136111858425731259484105974812377988533033428254459308075982123354662647654799206226855488676741477564416
+   },
+   "samples_seconds": [
+    0.03252448099920002
+   ],
+   "warm_median_seconds": 0.03252448099920002,
+   "warm_min_seconds": 0.03252448099920002
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 5.840099947818089e-05,
+   "intermediate_bytes_checked": 2112,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.840099947818089e-05,
+    2.9999000616953708e-05
+   ],
+   "support_growth": 4,
+   "warm_median_seconds": 2.9999000616953708e-05,
+   "warm_min_seconds": 2.9999000616953708e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 2.4988999939523637e-05,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.4988999939523637e-05,
+    1.7070000467356294e-05,
+    9.990999387810007e-06
+   ],
+   "warm_median_seconds": 1.353049992758315e-05,
+   "warm_min_seconds": 9.990999387810007e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 4.8473999413545243e-05,
+   "lengths": 9,
+   "maxabs": 330,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 330
+   },
+   "samples_seconds": [
+    4.8473999413545243e-05,
+    3.561000085028354e-05,
+    0.00414944300064235
+   ],
+   "warm_median_seconds": 0.0020925265007463167,
+   "warm_min_seconds": 3.561000085028354e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 3 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 329,
+    "power": 8,
+    "series_order": 4,
+    "support": 8
+   },
+   "phase": "refusal",
+   "refusal_seconds": 7.670999912079424e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "python",
+   "case": "walk table (enumerated walks)",
+   "first_seconds": 0.017216829999597394,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017216829999597394
+   ],
+   "warm_median_seconds": 0.017216829999597394,
+   "warm_min_seconds": 0.017216829999597394
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 0.0001399590000801254,
+   "intermediate_bytes_checked": 6816,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001399590000801254,
+    6.992399903538171e-05
+   ],
+   "support_growth": 16,
+   "warm_median_seconds": 6.992399903538171e-05,
+   "warm_min_seconds": 6.992399903538171e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 1.8155000361730345e-05,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8155000361730345e-05,
+    1.267300103791058e-05,
+    9.586001397110522e-06
+   ],
+   "warm_median_seconds": 1.1129501217510551e-05,
+   "warm_min_seconds": 9.586001397110522e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 5.862499892828055e-05,
+   "lengths": 9,
+   "maxabs": 198682,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 198682
+   },
+   "samples_seconds": [
+    5.862499892828055e-05,
+    7.90069989307085e-05,
+    4.4701999286189675e-05
+   ],
+   "warm_median_seconds": 6.185449910844909e-05,
+   "warm_min_seconds": 4.4701999286189675e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 15 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 198681,
+    "power": 8,
+    "series_order": 16,
+    "support": 8
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.200099854439031e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 0.00014449300033447798,
+   "intermediate_bytes_checked": 21600,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014449300033447798,
+    0.00014172700139170047
+   ],
+   "support_growth": 57,
+   "warm_median_seconds": 0.00014172700139170047,
+   "warm_min_seconds": 0.00014172700139170047
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 5.302899990056176e-05,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.302899990056176e-05,
+    5.076399975223467e-05,
+    4.8771000365377404e-05
+   ],
+   "warm_median_seconds": 4.9767500058806036e-05,
+   "warm_min_seconds": 4.8771000365377404e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 0.00011619399992923718,
+   "lengths": 9,
+   "maxabs": 1137639,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 1137639
+   },
+   "samples_seconds": [
+    0.00011619399992923718,
+    0.00013736400069319643,
+    0.00010423799903946929
+   ],
+   "warm_median_seconds": 0.00012080099986633286,
+   "warm_min_seconds": 0.00010423799903946929
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 28 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 1137638,
+    "power": 8,
+    "series_order": 64,
+    "support": 8
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.345200017676689e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.0001166260008176323,
+   "params": {
+    "length": 8,
+    "pairs": 1,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0001166260008176323,
+    6.406600004993379e-05,
+    4.445000013220124e-05
+   ],
+   "warm_median_seconds": 5.4258000091067515e-05,
+   "warm_min_seconds": 4.445000013220124e-05
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 2.6428999262861907e-05,
+   "params": {
+    "length": 8,
+    "pairs": 1,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.6428999262861907e-05
+   ],
+   "warm_median_seconds": 2.6428999262861907e-05,
+   "warm_min_seconds": 2.6428999262861907e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.0019359769994480303,
+   "params": {
+    "length": 8,
+    "pairs": 100,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0019359769994480303,
+    0.0019377770004211925,
+    0.0018019689996435773
+   ],
+   "warm_median_seconds": 0.0018698730000323849,
+   "warm_min_seconds": 0.0018019689996435773
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 0.0015718619997642236,
+   "params": {
+    "length": 8,
+    "pairs": 100,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015718619997642236
+   ],
+   "warm_median_seconds": 0.0015718619997642236,
+   "warm_min_seconds": 0.0015718619997642236
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.019036339999729535,
+   "params": {
+    "length": 8,
+    "pairs": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.019036339999729535,
+    0.01901397500114399,
+    0.039428428000974236
+   ],
+   "warm_median_seconds": 0.029221201501059113,
+   "warm_min_seconds": 0.01901397500114399
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.0002297589999216143,
+   "intermediate_bytes_checked": 61568,
+   "max_bits": 43,
+   "pairs_checked": 12160,
+   "params": {
+    "power": 4,
+    "rows": 5000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002297589999216143,
+    0.00021590799951809458
+   ],
+   "support_growth": 253,
+   "terms": 253,
+   "warm_median_seconds": 0.00021590799951809458,
+   "warm_min_seconds": 0.00021590799951809458
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.04016139499981364,
+   "intermediate_bytes_checked": 636512,
+   "max_bits": 190,
+   "pairs_checked": 60544,
+   "params": {
+    "power": 16,
+    "rows": 5000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04016139499981364,
+    0.04389749700021639
+   ],
+   "support_growth": 1009,
+   "terms": 1009,
+   "warm_median_seconds": 0.04389749700021639,
+   "warm_min_seconds": 0.04389749700021639
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.6113569119988824,
+   "intermediate_bytes_checked": 8742368,
+   "max_bits": 778,
+   "pairs_checked": 254080,
+   "params": {
+    "power": 64,
+    "rows": 5000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.6113569119988824
+   ],
+   "support_growth": 4033,
+   "terms": 4033,
+   "warm_median_seconds": 0.6113569119988824,
+   "warm_min_seconds": 0.6113569119988824
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 5.492300078913104e-05,
+   "intermediate_bytes_checked": 8416,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.492300078913104e-05,
+    2.8804999601561576e-05
+   ],
+   "support_growth": 4,
+   "warm_median_seconds": 2.8804999601561576e-05,
+   "warm_min_seconds": 2.8804999601561576e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 1.7677000869298354e-05,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7677000869298354e-05,
+    8.275999789475463e-06,
+    8.065000656642951e-06
+   ],
+   "warm_median_seconds": 8.170500223059207e-06,
+   "warm_min_seconds": 8.065000656642951e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 4.015800004708581e-05,
+   "lengths": 9,
+   "maxabs": 330,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 330
+   },
+   "samples_seconds": [
+    4.015800004708581e-05,
+    2.9040998924756423e-05,
+    2.5489000108791515e-05
+   ],
+   "warm_median_seconds": 2.726499951677397e-05,
+   "warm_min_seconds": 2.5489000108791515e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 3 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 329,
+    "power": 8,
+    "series_order": 4,
+    "support": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.5564999305061065e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 4.343799992057029e-05,
+   "intermediate_bytes_checked": 9760,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.343799992057029e-05,
+    3.7402000089059584e-05
+   ],
+   "support_growth": 16,
+   "warm_median_seconds": 3.7402000089059584e-05,
+   "warm_min_seconds": 3.7402000089059584e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 1.0630999895511195e-05,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0630999895511195e-05,
+    9.49400055105798e-06,
+    8.768000043346547e-06
+   ],
+   "warm_median_seconds": 9.131000297202263e-06,
+   "warm_min_seconds": 8.768000043346547e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 6.106599903432652e-05,
+   "lengths": 9,
+   "maxabs": 245157,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 245157
+   },
+   "samples_seconds": [
+    6.106599903432652e-05,
+    3.9852000554674305e-05,
+    3.5090000892523676e-05
+   ],
+   "warm_median_seconds": 3.747100072359899e-05,
+   "warm_min_seconds": 3.5090000892523676e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 15 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 245156,
+    "power": 8,
+    "series_order": 16,
+    "support": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.6641000658855774e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 0.0002663750001374865,
+   "intermediate_bytes_checked": 27424,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002663750001374865,
+    0.0002515559990570182
+   ],
+   "support_growth": 64,
+   "warm_median_seconds": 0.0002515559990570182,
+   "warm_min_seconds": 0.0002515559990570182
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 5.046900150773581e-05,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.046900150773581e-05,
+    4.7028999688336626e-05,
+    4.61470008303877e-05
+   ],
+   "warm_median_seconds": 4.658800025936216e-05,
+   "warm_min_seconds": 4.61470008303877e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 0.00010746000043582171,
+   "lengths": 9,
+   "maxabs": 1329890705,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 1329890705
+   },
+   "samples_seconds": [
+    0.00010746000043582171,
+    0.00010234699948341586,
+    9.756899999047164e-05
+   ],
+   "warm_median_seconds": 9.995799973694375e-05,
+   "warm_min_seconds": 9.756899999047164e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 63 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 1329890704,
+    "power": 8,
+    "series_order": 64,
+    "support": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.130300062068272e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.0002293739999004174,
+   "params": {
+    "length": 64,
+    "pairs": 1,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0002293739999004174,
+    0.00017707900042296387,
+    0.0001693699996394571
+   ],
+   "warm_median_seconds": 0.00017322450003121048,
+   "warm_min_seconds": 0.0001693699996394571
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 0.0007268179997481639,
+   "params": {
+    "length": 64,
+    "pairs": 1,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007268179997481639
+   ],
+   "warm_median_seconds": 0.0007268179997481639,
+   "warm_min_seconds": 0.0007268179997481639
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.03187037399948167,
+   "params": {
+    "length": 64,
+    "pairs": 100,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.03187037399948167,
+    0.0313574100000551,
+    0.03127685300023586
+   ],
+   "warm_median_seconds": 0.03131713150014548,
+   "warm_min_seconds": 0.03127685300023586
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 0.08991142199920432,
+   "params": {
+    "length": 64,
+    "pairs": 100,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08991142199920432
+   ],
+   "warm_median_seconds": 0.08991142199920432,
+   "warm_min_seconds": 0.08991142199920432
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.2319254579997505,
+   "params": {
+    "length": 64,
+    "pairs": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.2319254579997505,
+    0.2650563160004822,
+    0.3327452680005081
+   ],
+   "warm_median_seconds": 0.29890079200049513,
+   "warm_min_seconds": 0.2650563160004822
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 0.024037459999817656,
+   "intermediate_bytes_checked": 990368,
+   "max_bits": 39,
+   "pairs_checked": 3097630,
+   "params": {
+    "power": 4,
+    "rows": 5000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.024037459999817656,
+    0.02363710800091212
+   ],
+   "support_growth": 4093,
+   "terms": 4093,
+   "warm_median_seconds": 0.02363710800091212,
+   "warm_min_seconds": 0.02363710800091212
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "first_seconds": 9.196559691999937,
+   "intermediate_bytes_checked": 10320512,
+   "max_bits": 186,
+   "pairs_checked": 15484114,
+   "params": {
+    "power": 16,
+    "rows": 5000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.196559691999937
+   ],
+   "support_growth": 16369,
+   "terms": 16369,
+   "warm_median_seconds": 9.196559691999937,
+   "warm_min_seconds": 9.196559691999937
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power G^k",
+   "limit": 16777216,
+   "message": "product: needs 65030050 tensor, budget 16777216",
+   "need": 65030050,
+   "params": {
+    "power": 64,
+    "predicted": {
+     "bytes": 141920768,
+     "support": 65473,
+     "tensor": 65030050,
+     "terms": 65473,
+     "variables": 1
+    },
+    "rows": 5000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.880199958279263e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 7.979200017871335e-05,
+   "intermediate_bytes_checked": 121816,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.979200017871335e-05,
+    3.1563999073114246e-05
+   ],
+   "support_growth": 4,
+   "warm_median_seconds": 3.1563999073114246e-05,
+   "warm_min_seconds": 3.1563999073114246e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 1.8648001059773378e-05,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8648001059773378e-05,
+    8.306000381708145e-06,
+    7.550999725935981e-06
+   ],
+   "warm_median_seconds": 7.928500053822063e-06,
+   "warm_min_seconds": 7.550999725935981e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 5.4288999308482744e-05,
+   "lengths": 9,
+   "maxabs": 330,
+   "params": {
+    "power": 8,
+    "series_order": 4,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 330
+   },
+   "samples_seconds": [
+    5.4288999308482744e-05,
+    3.3949998396565206e-05,
+    2.8339998607407324e-05
+   ],
+   "warm_median_seconds": 3.1144998501986265e-05,
+   "warm_min_seconds": 2.8339998607407324e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 3 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 329,
+    "power": 8,
+    "series_order": 4,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.6646999685908668e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 5.3607000154443085e-05,
+   "intermediate_bytes_checked": 123160,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.3607000154443085e-05,
+    4.151500070292968e-05
+   ],
+   "support_growth": 16,
+   "warm_median_seconds": 4.151500070292968e-05,
+   "warm_min_seconds": 4.151500070292968e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 1.2214000889798626e-05,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2214000889798626e-05,
+    9.89299951470457e-06,
+    9.922001481754705e-06
+   ],
+   "warm_median_seconds": 9.907500498229638e-06,
+   "warm_min_seconds": 9.89299951470457e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 4.4362999688019045e-05,
+   "lengths": 9,
+   "maxabs": 245157,
+   "params": {
+    "power": 8,
+    "series_order": 16,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 245157
+   },
+   "samples_seconds": [
+    4.4362999688019045e-05,
+    4.011000055470504e-05,
+    3.5877999835065566e-05
+   ],
+   "warm_median_seconds": 3.79940001948853e-05,
+   "warm_min_seconds": 3.5877999835065566e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 15 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 245156,
+    "power": 8,
+    "series_order": 16,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.3353000869974494e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated declared power G^8 mod z^N",
+   "first_seconds": 0.00011816900041594636,
+   "intermediate_bytes_checked": 128536,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011816900041594636,
+    0.00011345699931553099
+   ],
+   "support_growth": 64,
+   "warm_median_seconds": 0.00011345699931553099,
+   "warm_min_seconds": 0.00011345699931553099
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded series power s^8 (192-bit sums, declared bound)",
+   "first_seconds": 7.485900096071418e-05,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.485900096071418e-05,
+    5.7068000387516804e-05,
+    5.158400017535314e-05
+   ],
+   "warm_median_seconds": 5.432600028143497e-05,
+   "warm_min_seconds": 5.158400017535314e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table, lengths <= 8",
+   "first_seconds": 0.00011189200085937046,
+   "lengths": 9,
+   "maxabs": 1329890705,
+   "params": {
+    "power": 8,
+    "series_order": 64,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "bound": 4611686018427387904,
+    "lengths": 9,
+    "maxabs": 1329890705
+   },
+   "samples_seconds": [
+    0.00011189200085937046,
+    0.0001313600005232729,
+    0.00013596399912785273
+   ],
+   "warm_median_seconds": 0.00013366199982556282,
+   "warm_min_seconds": 0.0001313600005232729
+  },
+  {
+   "backend": "cpu",
+   "case": "walk table one past its declared bound",
+   "message": "walk table (total coefficient 63 exceeds the declared bound): an exact native value exceeds its fixed-width carrier",
+   "params": {
+    "bound": 1329890704,
+    "power": 8,
+    "series_order": 64,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 8.711599912203383e-05,
+   "refused": true,
+   "resource": "declared bound"
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.0002827749995049089,
+   "params": {
+    "length": 64,
+    "pairs": 1,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0002827749995049089,
+    0.0002161819993489189,
+    0.00016753099953348283
+   ],
+   "warm_median_seconds": 0.00019185649944120087,
+   "warm_min_seconds": 0.00016753099953348283
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 0.004849437000302714,
+   "params": {
+    "length": 64,
+    "pairs": 1,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004849437000302714
+   ],
+   "warm_median_seconds": 0.004849437000302714,
+   "warm_min_seconds": 0.004849437000302714
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.03227495700048166,
+   "params": {
+    "length": 64,
+    "pairs": 100,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.03227495700048166,
+    0.037712100998760434,
+    0.03693679200114275
+   ],
+   "warm_median_seconds": 0.03732444649995159,
+   "warm_min_seconds": 0.03693679200114275
+  },
+  {
+   "backend": "python",
+   "case": "convolutions (Python ints)",
+   "first_seconds": 0.1592706219998945,
+   "params": {
+    "length": 64,
+    "pairs": 100,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1592706219998945
+   ],
+   "warm_median_seconds": 0.1592706219998945,
+   "warm_min_seconds": 0.1592706219998945
+  },
+  {
+   "backend": "cpu",
+   "case": "batched 192-bit convolutions",
+   "first_seconds": 0.4147939899994526,
+   "params": {
+    "length": 64,
+    "pairs": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.4147939899994526,
+    0.3473881209993124,
+    0.3344790080009261
+   ],
+   "warm_median_seconds": 0.34093356450011925,
+   "warm_min_seconds": 0.3344790080009261
+  },
+  {
+   "backend": "cpu",
+   "case": "declared power past the benchmark budget (support 1024)",
+   "limit": 16777216,
+   "message": "product: needs 17652880 tensor, budget 16777216",
+   "need": 17652880,
+   "params": {
+    "power": 18
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.643099989858456e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "independence check (refused: same source, no declaration)",
+   "first_seconds": 4.871800047112629e-05,
+   "params": {},
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    4.871800047112629e-05,
+    1.2709000657196157e-05,
+    7.745000402792357e-06,
+    5.808000423712656e-06,
+    5.9970006986986846e-06
+   ],
+   "warm_median_seconds": 6.871000550745521e-06,
+   "warm_min_seconds": 5.808000423712656e-06
+  }
+ ],
+ "seconds": 15.204280029000074,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "declared power of a 1024-value support (2^24 pairs per product)",
+   "largest_admitted": {
+    "bytes": 11523784,
+    "power": 17,
+    "support": 17392,
+    "tensor": 16614535
+   },
+   "limits": {
+    "bytes": 1073741824,
+    "support": 1048576,
+    "tensor": 16777216
+   },
+   "smallest_refused": {
+    "bytes": 12792336,
+    "power": 18,
+    "support": 18415,
+    "tensor": 17652880
+   }
+  }
+ ]
+}

@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 4 |
-| planned | 40 |
-| in_progress | 19 |
+| partial | 2 |
+| planned | 33 |
+| in_progress | 28 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -573,7 +573,7 @@ Benchmark cases:
 
 ### FND-007: Proof certificates and evidence scope
 
-Status: **partial**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Unify universal laws, enforced schema facts, exhaustive snapshot certificates and statistical hypotheses. Certificates include exact domain/revision and arithmetic carrier.
 
@@ -618,6 +618,14 @@ Additional limits:
 
 - Polynomial checks are exact within 128 bits (wider rows refused, or checked modulo p and recorded as approximate); derivations combine polynomial claims only; hypotheses record sample counts, not a confidence bound.
 - Source tokens are process-specific: a persisted snapshot is never fresh in another process (it stays readable).
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/FND-007/tests_test_math_certificates.json](results/math/FND-007/tests_test_math_certificates.json)
+- tests: [results/math/FND-007/sanitized_test_math_certificates.json](results/math/FND-007/sanitized_test_math_certificates.json)
+- benchmarks: [results/math/FND-007/benchmark_cpu_math_certificates_vm.json](results/math/FND-007/benchmark_cpu_math_certificates_vm.json)
 
 <a id="fnd-008"></a>
 
@@ -799,7 +807,7 @@ Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 ### FND-011: State serialization and interoperability
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Versioned persistence for typed mathematical states, including basis, domain/proof identity, endianness, exactness, checksums and owned metadata; no live addresses serialized.
 
@@ -844,6 +852,14 @@ Additional limits:
 
 - Little-endian records only (a foreign byte order is refused, not converted); histograms and moments rehydrate only into their recorded scope.
 - A reloaded moment state declares the accumulation width it used (128 or 192 bits).
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/FND-011/tests_test_math_persist.json](results/math/FND-011/tests_test_math_persist.json)
+- tests: [results/math/FND-011/sanitized_test_math_persist.json](results/math/FND-011/sanitized_test_math_persist.json)
+- benchmarks: [results/math/FND-011/benchmark_cpu_math_persist_vm.json](results/math/FND-011/benchmark_cpu_math_persist_vm.json)
 
 <a id="fnd-012"></a>
 
@@ -1656,7 +1672,7 @@ Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
 
 ### GEN-002: Convolution and bounded formal series
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Products encode independent/full-product combinations; truncated series support declared bounded coefficients and path lengths.
 
@@ -1697,6 +1713,14 @@ Additional limits:
 
 - At most two variables (GEN-001's limit); per-key coefficients below 2^127; keyed families are 1-D and dense per key.
 - Independence declarations and cross-table key correspondence are trusted, not verified against the data.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/GEN-002/tests_test_math_conv.json](results/math/GEN-002/tests_test_math_conv.json)
+- tests: [results/math/GEN-002/sanitized_test_math_conv.json](results/math/GEN-002/sanitized_test_math_conv.json)
+- benchmarks: [results/math/GEN-002/benchmark_cpu_math_conv_vm.json](results/math/GEN-002/benchmark_cpu_math_conv_vm.json)
 
 ## DIST: Distribution algebra
 
@@ -2972,7 +2996,7 @@ Observed-domain and symbolic-domain model counts and witnesses.
 
 ### COUNT-001: Observed-domain constraint counts and witnesses
 
-Status: **partial**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Return satisfying stored rows/counts and counterexample witnesses with explicit snapshot scope.
 
@@ -3018,6 +3042,14 @@ Additional limits:
 - Counts over the observed selected rows, or by enumeration of at most 2^20 assignments with the default budget; symbolic (decision-diagram, weighted) counting is COUNT-002's.
 - One count over all selected rows (no per-group counts, no weights); conditions on exact-valued columns only (BOOL-001).
 - The certificate is COUNT-001's own type built on FND-007's record and staleness reasons (FND-007 has no claim kind for counts); it is not serialized; its coverage is computed on the host in both paths.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/COUNT-001/tests_test_math_count.json](results/math/COUNT-001/tests_test_math_count.json)
+- tests: [results/math/COUNT-001/sanitized_test_math_count.json](results/math/COUNT-001/sanitized_test_math_count.json)
+- benchmarks: [results/math/COUNT-001/benchmark_cpu_math_count_vm.json](results/math/COUNT-001/benchmark_cpu_math_count_vm.json)
 
 <a id="count-002"></a>
 
@@ -3122,7 +3154,7 @@ Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
 
 ### FIELD-002: Parity relationship discovery and substitution
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Discover bounded exact XOR dependencies, verify them over the scoped data, and substitute equivalent predicate circuits.
 
@@ -3163,6 +3195,14 @@ Additional limits:
 - Rewrites only XOR forms whose variables are disjoint, with one relation per call, greedily; the cost is the number of columns and planes scanned, not their widths.
 - The rewrite itself runs on the CPU; discovery inherits FIELD-001's limits (at most 64 columns, listwise over the complete rows).
 - Certificates record no dimension; a certificate that skipped NULL rows never authorizes a substitution.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/FIELD-002/tests_test_math_parity.json](results/math/FIELD-002/tests_test_math_parity.json)
+- tests: [results/math/FIELD-002/sanitized_test_math_parity.json](results/math/FIELD-002/sanitized_test_math_parity.json)
+- benchmarks: [results/math/FIELD-002/benchmark_cpu_math_parity_vm.json](results/math/FIELD-002/benchmark_cpu_math_parity_vm.json)
 
 ## GEOM: Algebraic geometry
 
@@ -3487,7 +3527,7 @@ Winning groups, exact breakpoints and parameter regions.
 
 ### ENV-001: Univariate affine/quadratic group envelopes
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Return winning groups and exact parameter breakpoints with a declared tie policy.
 
@@ -3527,6 +3567,14 @@ Additional limits:
 
 - One parameter, degree at most 2; the build grows roughly with groups^2 when every group wins (budgeted).
 - The envelope is built on the CPU; irrational breakpoints are certified intervals refined on request; envelope values only at rational inputs.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/ENV-001/tests_test_math_env.json](results/math/ENV-001/tests_test_math_env.json)
+- tests: [results/math/ENV-001/sanitized_test_math_env.json](results/math/ENV-001/sanitized_test_math_env.json)
+- benchmarks: [results/math/ENV-001/benchmark_cpu_math_env_vm.json](results/math/ENV-001/benchmark_cpu_math_env_vm.json)
 
 <a id="env-002"></a>
 
@@ -3651,7 +3699,7 @@ Factorized explanation and multiplicity expressions.
 
 ### PROV-001: Factorized provenance payloads
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Native shared-DAG annotations distinguish Boolean existence, bag multiplicity and polynomial provenance.
 
@@ -3691,6 +3739,14 @@ Additional limits:
 
 - No SUM/MIN aggregates, difference, outer joins or recursion; integer values only; one owner per store (not thread-safe).
 - The expansion budget may refuse polynomials that would fit; witnesses are minimized in quadratic time.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/PROV-001/tests_test_math_prov.json](results/math/PROV-001/tests_test_math_prov.json)
+- tests: [results/math/PROV-001/sanitized_test_math_prov.json](results/math/PROV-001/sanitized_test_math_prov.json)
+- benchmarks: [results/math/PROV-001/benchmark_cpu_math_prov_vm.json](results/math/PROV-001/benchmark_cpu_math_prov_vm.json)
 
 <a id="prov-002"></a>
 
@@ -3737,7 +3793,7 @@ Contributions, interaction indices and bounded minimal changes.
 
 ### ATTR-001: Sparse interaction and contribution attribution
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Compute declared marginal/coalition contributions and sparse-decomposition attribution indices.
 
@@ -3783,6 +3839,14 @@ Additional limits:
 - The minimum search explores levels in increasing size without pruning beyond the monotone extreme-value proof; the number of minimum solutions is exact only when the minimum level completes.
 - Supports, interactions and the Moebius inversion are single-threaded CPU code; the CUDA paths are coalition values, the exhaustive accumulation and the batch evaluation of explore and search.
 - No FND-007 certificate is emitted: the sum identities are checked natively and reported per result; FND-007's claim kinds are row relations of a scope or polynomial laws of at most 8 variables.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/ATTR-001/tests_test_math_attr.json](results/math/ATTR-001/tests_test_math_attr.json)
+- tests: [results/math/ATTR-001/sanitized_test_math_attr.json](results/math/ATTR-001/sanitized_test_math_attr.json)
+- benchmarks: [results/math/ATTR-001/benchmark_cpu_math_attr_vm.json](results/math/ATTR-001/benchmark_cpu_math_attr_vm.json)
 
 <a id="attr-002"></a>
 
@@ -3966,7 +4030,7 @@ Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
 
 ### DELTA-002: Bilinear/join and nonlinear update laws
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Carry all finite cross terms and typed nonlinear-finalizer state; distinguish update calculus from an infinitesimal derivative.
 
@@ -4006,6 +4070,14 @@ Additional limits:
 
 - Two-sided joins only, over dense key ids shared by both sides (no key dictionary); side states dense over keys x groups.
 - COUNT DISTINCT and MIN/MAX are maintained for single-table value states (a join result raises DomainError); the min/max-only state refuses with RebuildRequired when the last extreme is deleted.
+
+Validation receipts:
+
+Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
+
+- tests: [results/math/DELTA-002/tests_test_math_bilinear.json](results/math/DELTA-002/tests_test_math_bilinear.json)
+- tests: [results/math/DELTA-002/sanitized_test_math_bilinear.json](results/math/DELTA-002/sanitized_test_math_bilinear.json)
+- benchmarks: [results/math/DELTA-002/benchmark_cpu_math_bilinear_vm.json](results/math/DELTA-002/benchmark_cpu_math_bilinear_vm.json)
 
 ## UNC: Certified uncertainty
 

@@ -1,0 +1,2164 @@
+{
+ "argv": [
+  "--capability",
+  "FIELD-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/FIELD-002/benchmark_cpu_math_parity_vm.json"
+ ],
+ "capability": "FIELD-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:36:28+00:00"
+ },
+ "notes": [
+  "1000 rows: (b0 XOR b1) AND b2 -> rewritten, cost {'original': 3, 'rewritten': 2}; d0 AND b2 -> rewritten (mode all), cost {'original': 2, 'rewritten': 3}; certified relations 3; rounds 2; near miss rejected at its row 340",
+  "after a codec change of code the substitution is refused: ('columns',)",
+  "100000 rows: (b0 XOR b1) AND b2 -> rewritten, cost {'original': 3, 'rewritten': 2}; d0 AND b2 -> rewritten (mode all), cost {'original': 2, 'rewritten': 3}; certified relations 3; rounds 2; near miss rejected at its row 33340",
+  "1000000 rows: (b0 XOR b1) AND b2 -> rewritten, cost {'original': 3, 'rewritten': 2}; d0 AND b2 -> rewritten (mode all), cost {'original': 2, 'rewritten': 3}; certified relations 3; rounds 2; near miss rejected at its row 333340",
+  "Discovery is FIELD-001's (proposals, exhaustive verification); certification is FND-007's snapshot (CUDA: tr_mgpu_cert_verify adopted); the substitution's rewrite runs on the CPU and its verification on every row has a CUDA kernel. Native CPU paths are single-threaded; CUDA is timed only with --device."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 4.4439999328460544e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    4.4439999328460544e-05,
+    1.833500027714763e-05,
+    1.270500069949776e-05
+   ],
+   "warm_median_seconds": 1.5520000488322694e-05,
+   "warm_min_seconds": 1.270500069949776e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0006601599998248275,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.0006601599998248275
+   ],
+   "warm_median_seconds": 0.0006601599998248275,
+   "warm_min_seconds": 0.0006601599998248275
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 6.036000013409648e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    6.036000013409648e-05,
+    3.3120000807684846e-05,
+    2.437699913571123e-05
+   ],
+   "warm_median_seconds": 2.8748499971698038e-05,
+   "warm_min_seconds": 2.437699913571123e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 2.417799987597391e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.417799987597391e-05,
+    2.1478001144714653e-05,
+    1.7708000086713582e-05
+   ],
+   "warm_median_seconds": 1.9593000615714118e-05,
+   "warm_min_seconds": 1.7708000086713582e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 1.5329000234487467e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    1.5329000234487467e-05,
+    1.0634999853209592e-05,
+    9.143999704974703e-06
+   ],
+   "warm_median_seconds": 9.889499779092148e-06,
+   "warm_min_seconds": 9.143999704974703e-06
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0006267130011110567,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.0006267130011110567
+   ],
+   "warm_median_seconds": 0.0006267130011110567,
+   "warm_min_seconds": 0.0006267130011110567
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 3.8348000089172274e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    3.8348000089172274e-05,
+    2.3557000531582162e-05,
+    2.0544999642879702e-05
+   ],
+   "warm_median_seconds": 2.2051000087230932e-05,
+   "warm_min_seconds": 2.0544999642879702e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 2.0404999304446392e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0404999304446392e-05,
+    1.818100099626463e-05,
+    1.6898000467335805e-05
+   ],
+   "warm_median_seconds": 1.7539500731800217e-05,
+   "warm_min_seconds": 1.6898000467335805e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 1.3622000551549718e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    1.3622000551549718e-05,
+    1.0062998626381159e-05,
+    9.385999874211848e-06
+   ],
+   "warm_median_seconds": 9.724499250296503e-06,
+   "warm_min_seconds": 9.385999874211848e-06
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0004907199981971644,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.0004907199981971644
+   ],
+   "warm_median_seconds": 0.0004907199981971644,
+   "warm_min_seconds": 0.0004907199981971644
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 3.881700104102492e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    3.881700104102492e-05,
+    2.1215000742813572e-05,
+    1.9004000932909548e-05
+   ],
+   "warm_median_seconds": 2.010950083786156e-05,
+   "warm_min_seconds": 1.9004000932909548e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 1.8680000721360557e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8680000721360557e-05,
+    1.169900133390911e-05,
+    1.0657999155228026e-05
+   ],
+   "warm_median_seconds": 1.1178500244568568e-05,
+   "warm_min_seconds": 1.0657999155228026e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 9.117999070440419e-06,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    9.117999070440419e-06,
+    7.002001439104788e-06,
+    6.4209998527076095e-06
+   ],
+   "warm_median_seconds": 6.711500645906199e-06,
+   "warm_min_seconds": 6.4209998527076095e-06
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0002105290004692506,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.0002105290004692506
+   ],
+   "warm_median_seconds": 0.0002105290004692506,
+   "warm_min_seconds": 0.0002105290004692506
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 2.0479999875533395e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    2.0479999875533395e-05,
+    1.3271001080283895e-05,
+    1.2368000170681626e-05
+   ],
+   "warm_median_seconds": 1.281950062548276e-05,
+   "warm_min_seconds": 1.2368000170681626e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 1.2778000382240862e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2778000382240862e-05,
+    1.0764999387902208e-05,
+    1.0846999430214055e-05
+   ],
+   "warm_median_seconds": 1.0805999409058131e-05,
+   "warm_min_seconds": 1.0764999387902208e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 9.444998795515858e-06,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    9.444998795515858e-06,
+    7.0090009103296325e-06,
+    5.485999281518161e-06
+   ],
+   "warm_median_seconds": 6.247500095923897e-06,
+   "warm_min_seconds": 5.485999281518161e-06
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0001288150015170686,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    0.0001288150015170686
+   ],
+   "warm_median_seconds": 0.0001288150015170686,
+   "warm_min_seconds": 0.0001288150015170686
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 2.4875998860807158e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    2.4875998860807158e-05,
+    1.2476000847527757e-05,
+    1.0914000085904263e-05
+   ],
+   "warm_median_seconds": 1.169500046671601e-05,
+   "warm_min_seconds": 1.0914000085904263e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 1.3089000276522711e-05,
+   "params": {
+    "density": 0.5,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3089000276522711e-05,
+    1.0664000001270324e-05,
+    1.0460998964845203e-05
+   ],
+   "warm_median_seconds": 1.0562499483057763e-05,
+   "warm_min_seconds": 1.0460998964845203e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 8.970000635599717e-06,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    8.970000635599717e-06,
+    6.677000783383846e-06,
+    6.077998477849178e-06
+   ],
+   "warm_median_seconds": 6.377499630616512e-06,
+   "warm_min_seconds": 6.077998477849178e-06
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 9.634600064600818e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    9.634600064600818e-05
+   ],
+   "warm_median_seconds": 9.634600064600818e-05,
+   "warm_min_seconds": 9.634600064600818e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 1.7595999452169053e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    1.7595999452169053e-05,
+    1.2073000107193366e-05,
+    1.1094000001321547e-05
+   ],
+   "warm_median_seconds": 1.1583500054257456e-05,
+   "warm_min_seconds": 1.1094000001321547e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 1.1619000360951759e-05,
+   "params": {
+    "density": 0.05,
+    "n": 32,
+    "rank": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1619000360951759e-05,
+    9.98599898593966e-06,
+    9.48000160860829e-06
+   ],
+   "warm_median_seconds": 9.733000297273975e-06,
+   "warm_min_seconds": 9.48000160860829e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 6.477299939433578e-05,
+   "params": {
+    "n": 32,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.477299939433578e-05,
+    5.325799975253176e-05,
+    4.821699985768646e-05
+   ],
+   "warm_median_seconds": 5.073749980510911e-05,
+   "warm_min_seconds": 4.821699985768646e-05
+  },
+  {
+   "backend": "numpy-blas-mod2",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 0.00031198600117932074,
+   "params": {
+    "n": 32,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00031198600117932074,
+    7.441100024152547e-05
+   ],
+   "warm_median_seconds": 7.441100024152547e-05,
+   "warm_min_seconds": 7.441100024152547e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 2.3034999685478397e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    2.3034999685478397e-05,
+    1.8379001630819403e-05,
+    1.5872999938437715e-05
+   ],
+   "warm_median_seconds": 1.712600078462856e-05,
+   "warm_min_seconds": 1.5872999938437715e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0015409429997816915,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    0.0015409429997816915
+   ],
+   "warm_median_seconds": 0.0015409429997816915,
+   "warm_min_seconds": 0.0015409429997816915
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.004141662000620272,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    0.004141662000620272,
+    8.046400034800172e-05,
+    3.801399907388259e-05
+   ],
+   "warm_median_seconds": 5.923899971094215e-05,
+   "warm_min_seconds": 3.801399907388259e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 3.328800085000694e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.328800085000694e-05,
+    2.7862999559147283e-05,
+    2.580299951659981e-05
+   ],
+   "warm_median_seconds": 2.6832999537873548e-05,
+   "warm_min_seconds": 2.580299951659981e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 2.130800021404866e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    2.130800021404866e-05,
+    1.6598000001977198e-05,
+    1.4307001038105227e-05
+   ],
+   "warm_median_seconds": 1.5452500520041212e-05,
+   "warm_min_seconds": 1.4307001038105227e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0015205440013232874,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    0.0015205440013232874
+   ],
+   "warm_median_seconds": 0.0015205440013232874,
+   "warm_min_seconds": 0.0015205440013232874
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 6.236800072656479e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    6.236800072656479e-05,
+    3.697399915836286e-05,
+    3.2406000173068605e-05
+   ],
+   "warm_median_seconds": 3.468999966571573e-05,
+   "warm_min_seconds": 3.2406000173068605e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 2.9130998882465065e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 128
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9130998882465065e-05,
+    2.6076000722241588e-05,
+    2.4476999897160567e-05
+   ],
+   "warm_median_seconds": 2.5276500309701078e-05,
+   "warm_min_seconds": 2.4476999897160567e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 4.060500032210257e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    4.060500032210257e-05,
+    3.193399970768951e-05,
+    2.6933001208817586e-05
+   ],
+   "warm_median_seconds": 2.9433500458253548e-05,
+   "warm_min_seconds": 2.6933001208817586e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0010600030000205152,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.0010600030000205152
+   ],
+   "warm_median_seconds": 0.0010600030000205152,
+   "warm_min_seconds": 0.0010600030000205152
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 6.792500062147155e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    6.792500062147155e-05,
+    4.8919999244390056e-05,
+    4.48240007244749e-05
+   ],
+   "warm_median_seconds": 4.687199998443248e-05,
+   "warm_min_seconds": 4.48240007244749e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 6.517299880215432e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.517299880215432e-05,
+    6.76139989082003e-05,
+    5.824299842061009e-05
+   ],
+   "warm_median_seconds": 6.29284986644052e-05,
+   "warm_min_seconds": 5.824299842061009e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 2.2858001102576964e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    2.2858001102576964e-05,
+    1.896699905046262e-05,
+    1.531000089016743e-05
+   ],
+   "warm_median_seconds": 1.7138499970315024e-05,
+   "warm_min_seconds": 1.531000089016743e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0009934339996107155,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.0009934339996107155
+   ],
+   "warm_median_seconds": 0.0009934339996107155,
+   "warm_min_seconds": 0.0009934339996107155
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 4.998199983674567e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    4.998199983674567e-05,
+    3.289699998276774e-05,
+    2.6106999939656816e-05
+   ],
+   "warm_median_seconds": 2.9501999961212277e-05,
+   "warm_min_seconds": 2.6106999939656816e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 3.1123001463129185e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.1123001463129185e-05,
+    2.909700015152339e-05,
+    2.5195000489475206e-05
+   ],
+   "warm_median_seconds": 2.7146000320499297e-05,
+   "warm_min_seconds": 2.5195000489475206e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 2.909099930548109e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    2.909099930548109e-05,
+    2.2573000023839995e-05,
+    2.0096000298508443e-05
+   ],
+   "warm_median_seconds": 2.133450016117422e-05,
+   "warm_min_seconds": 2.0096000298508443e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.00040743700083112344,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.00040743700083112344
+   ],
+   "warm_median_seconds": 0.00040743700083112344,
+   "warm_min_seconds": 0.00040743700083112344
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 4.0625000110594556e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    4.0625000110594556e-05,
+    2.82279997918522e-05,
+    2.5875000574160367e-05
+   ],
+   "warm_median_seconds": 2.7051500183006283e-05,
+   "warm_min_seconds": 2.5875000574160367e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 3.5510000088834204e-05,
+   "params": {
+    "density": 0.5,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.5510000088834204e-05,
+    3.0203000278561376e-05,
+    2.5946001187548973e-05
+   ],
+   "warm_median_seconds": 2.8074500733055174e-05,
+   "warm_min_seconds": 2.5946001187548973e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 2.0526998923742212e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    2.0526998923742212e-05,
+    1.7210000805789605e-05,
+    1.6277999748126604e-05
+   ],
+   "warm_median_seconds": 1.6744000276958104e-05,
+   "warm_min_seconds": 1.6277999748126604e-05
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.00035973400008515455,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.00035973400008515455
+   ],
+   "warm_median_seconds": 0.00035973400008515455,
+   "warm_min_seconds": 0.00035973400008515455
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 3.1861000024946406e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    3.1861000024946406e-05,
+    2.472400046826806e-05,
+    2.253099955851212e-05
+   ],
+   "warm_median_seconds": 2.362750001339009e-05,
+   "warm_min_seconds": 2.253099955851212e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 2.727699938986916e-05,
+   "params": {
+    "density": 0.05,
+    "n": 128,
+    "rank": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.727699938986916e-05,
+    2.4394001229666173e-05,
+    2.3421998776029795e-05
+   ],
+   "warm_median_seconds": 2.3908000002847984e-05,
+   "warm_min_seconds": 2.3421998776029795e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 0.00025647599977673963,
+   "params": {
+    "n": 128,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00025647599977673963,
+    0.00022261999947659206,
+    0.00019947500004491303
+   ],
+   "warm_median_seconds": 0.00021104749976075254,
+   "warm_min_seconds": 0.00019947500004491303
+  },
+  {
+   "backend": "numpy-blas-mod2",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 0.001837344998421031,
+   "params": {
+    "n": 128,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001837344998421031,
+    0.0005188859995541861
+   ],
+   "warm_median_seconds": 0.0005188859995541861,
+   "warm_min_seconds": 0.0005188859995541861
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.0001443699984520208,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.0001443699984520208,
+    0.0001323570013482822,
+    0.00016792399947007652
+   ],
+   "warm_median_seconds": 0.00015014050040917937,
+   "warm_min_seconds": 0.0001323570013482822
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.011420873001043219,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.011420873001043219
+   ],
+   "warm_median_seconds": 0.011420873001043219,
+   "warm_min_seconds": 0.011420873001043219
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.0002968890003103297,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.0002968890003103297,
+    0.00026952299958793446,
+    0.0002443810008116998
+   ],
+   "warm_median_seconds": 0.0002569520001998171,
+   "warm_min_seconds": 0.0002443810008116998
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.00022370999977283645,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022370999977283645,
+    0.00021684800049115438,
+    0.00023932800104375929
+   ],
+   "warm_median_seconds": 0.00022808800076745683,
+   "warm_min_seconds": 0.00021684800049115438
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.00012859799971920438,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.00012859799971920438,
+    0.0001389680001011584,
+    0.00013014199976169039
+   ],
+   "warm_median_seconds": 0.0001345549999314244,
+   "warm_min_seconds": 0.00013014199976169039
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.011210791000848985,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.011210791000848985
+   ],
+   "warm_median_seconds": 0.011210791000848985,
+   "warm_min_seconds": 0.011210791000848985
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.0003049100014322903,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.0003049100014322903,
+    0.0002584329995443113,
+    0.000249159000304644
+   ],
+   "warm_median_seconds": 0.00025379599992447766,
+   "warm_min_seconds": 0.000249159000304644
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.00024385399956372567,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 512
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00024385399956372567,
+    0.00432351400013431,
+    0.0002488390000507934
+   ],
+   "warm_median_seconds": 0.0022861765000925516,
+   "warm_min_seconds": 0.0002488390000507934
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.0006439580010919599,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.0006439580010919599,
+    0.000668664999466273,
+    0.0006489480001619086
+   ],
+   "warm_median_seconds": 0.0006588064998140908,
+   "warm_min_seconds": 0.0006489480001619086
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.012623927999811713,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.012623927999811713
+   ],
+   "warm_median_seconds": 0.012623927999811713,
+   "warm_min_seconds": 0.012623927999811713
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.0008360840001842007,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.0008360840001842007,
+    0.0008183760000974871,
+    0.0008199370004149387
+   ],
+   "warm_median_seconds": 0.0008191565002562129,
+   "warm_min_seconds": 0.0008183760000974871
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.005234108999502496,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005234108999502496,
+    0.0011909160002687713,
+    0.0011504779995448189
+   ],
+   "warm_median_seconds": 0.001170696999906795,
+   "warm_min_seconds": 0.0011504779995448189
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.000526572999660857,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.000526572999660857,
+    0.00048498499927518424,
+    0.00553442599994014
+   ],
+   "warm_median_seconds": 0.003009705499607662,
+   "warm_min_seconds": 0.00048498499927518424
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.013008074998651864,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.013008074998651864
+   ],
+   "warm_median_seconds": 0.013008074998651864,
+   "warm_min_seconds": 0.013008074998651864
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.0006869539993203944,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.0006869539993203944,
+    0.0006521489995066077,
+    0.000643458000922692
+   ],
+   "warm_median_seconds": 0.0006478035002146498,
+   "warm_min_seconds": 0.000643458000922692
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.0007544660002167802,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007544660002167802,
+    0.0007091709994710982,
+    0.0007222830008686287
+   ],
+   "warm_median_seconds": 0.0007157270001698635,
+   "warm_min_seconds": 0.0007091709994710982
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.00038306700116663706,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.00038306700116663706,
+    0.00039124400063883513,
+    0.0003905890007445123
+   ],
+   "warm_median_seconds": 0.0003909165006916737,
+   "warm_min_seconds": 0.0003905890007445123
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.007381753001027391,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.007381753001027391
+   ],
+   "warm_median_seconds": 0.007381753001027391,
+   "warm_min_seconds": 0.007381753001027391
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.00044711900045513175,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.00044711900045513175,
+    0.00044402899948181584,
+    0.00040869300028134603
+   ],
+   "warm_median_seconds": 0.00042636099988158094,
+   "warm_min_seconds": 0.00040869300028134603
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.0005740470005548559,
+   "params": {
+    "density": 0.5,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005740470005548559,
+    0.0006721040008415002,
+    0.0005398160010372521
+   ],
+   "warm_median_seconds": 0.0006059600009393762,
+   "warm_min_seconds": 0.0005398160010372521
+  },
+  {
+   "backend": "cpu",
+   "case": "rank",
+   "first_seconds": 0.00023279699962586164,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.00023279699962586164,
+    0.004313153998737107,
+    0.00026986500051862095
+   ],
+   "warm_median_seconds": 0.002291509499627864,
+   "warm_min_seconds": 0.00026986500051862095
+  },
+  {
+   "backend": "numpy-elimination",
+   "case": "rank",
+   "first_seconds": 0.0023385700005746912,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.0023385700005746912
+   ],
+   "warm_median_seconds": 0.0023385700005746912,
+   "warm_min_seconds": 0.0023385700005746912
+  },
+  {
+   "backend": "cpu",
+   "case": "elimination (reduced row echelon form)",
+   "first_seconds": 0.0002944759999081725,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.0002944759999081725,
+    0.0002570709984865971,
+    0.00024910700085456483
+   ],
+   "warm_median_seconds": 0.00025308899967058096,
+   "warm_min_seconds": 0.00024910700085456483
+  },
+  {
+   "backend": "cpu",
+   "case": "nullspace basis (the proposals)",
+   "first_seconds": 0.0003344790002302034,
+   "params": {
+    "density": 0.05,
+    "n": 512,
+    "rank": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003344790002302034,
+    0.0011961389991483884,
+    0.0003116789994237479
+   ],
+   "warm_median_seconds": 0.0007539089992860681,
+   "warm_min_seconds": 0.0003116789994237479
+  },
+  {
+   "backend": "cpu",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 0.006104426998717827,
+   "params": {
+    "n": 512,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006104426998717827,
+    0.0021036679991084384,
+    0.002038103999439045
+   ],
+   "warm_median_seconds": 0.0020708859992737416,
+   "warm_min_seconds": 0.002038103999439045
+  },
+  {
+   "backend": "numpy-blas-mod2",
+   "case": "syndromes H x of many rows",
+   "first_seconds": 0.011652049000986153,
+   "params": {
+    "n": 512,
+    "vectors": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011652049000986153,
+    0.008733824000955792
+   ],
+   "warm_median_seconds": 0.008733824000955792,
+   "warm_min_seconds": 0.008733824000955792
+  },
+  {
+   "backend": "cpu",
+   "case": "bit columns (state construction)",
+   "first_seconds": 0.000690819999363157,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000690819999363157,
+    0.0001702780009509297,
+    0.00010712400035117753
+   ],
+   "warm_median_seconds": 0.00013870100065105362,
+   "warm_min_seconds": 0.00010712400035117753
+  },
+  {
+   "backend": "cpu",
+   "case": "candidate generation (256-row sample)",
+   "first_seconds": 0.00013892900096834637,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "complete": 1000,
+    "excluded": 0,
+    "sample_rank": 11,
+    "sample_rows": 256
+   },
+   "samples_seconds": [
+    0.00013892900096834637,
+    8.292100028484128e-05,
+    6.97859995852923e-05,
+    5.170599979464896e-05,
+    4.7698000344098546e-05
+   ],
+   "warm_median_seconds": 6.074599968997063e-05,
+   "warm_min_seconds": 4.7698000344098546e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.00014241200005926657,
+   "params": {
+    "proposals": 4,
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014241200005926657,
+    7.640700096089859e-05,
+    0.00010690999988582917,
+    9.364300058223307e-05,
+    6.392099930963013e-05
+   ],
+   "warm_median_seconds": 8.502500077156583e-05,
+   "warm_min_seconds": 6.392099930963013e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.010046812998552923,
+   "params": {
+    "proposals": 4,
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010046812998552923,
+    0.005643758000587695
+   ],
+   "warm_median_seconds": 0.005643758000587695,
+   "warm_min_seconds": 0.005643758000587695
+  },
+  {
+   "backend": "cpu",
+   "case": "discovery with FND-007 certificates",
+   "first_seconds": 0.004761034999319236,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004761034999319236,
+    0.00024937099988164846,
+    0.00022918600006960332
+   ],
+   "warm_median_seconds": 0.0002392784999756259,
+   "warm_min_seconds": 0.00022918600006960332
+  },
+  {
+   "backend": "cpu",
+   "case": "re-certification of the found relations",
+   "first_seconds": 0.0001956329997483408,
+   "params": {
+    "relations": 3,
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001956329997483408,
+    9.939199844666291e-05,
+    6.419200144591741e-05
+   ],
+   "warm_median_seconds": 8.179199994629016e-05,
+   "warm_min_seconds": 6.419200144591741e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: b0 XOR b1 rewritten as d0",
+   "first_seconds": 0.00038392399983422365,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00038392399983422365,
+    0.00011822999840660486,
+    9.301899990532547e-05,
+    0.00014824699974269606,
+    9.622099969419651e-05
+   ],
+   "warm_median_seconds": 0.00010722549905040069,
+   "warm_min_seconds": 9.301899990532547e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: d0 rewritten as b0 XOR b1 (mode all)",
+   "first_seconds": 0.00011754699880839325,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011754699880839325,
+    8.007900032680482e-05,
+    8.257599984062836e-05,
+    7.902600009401795e-05,
+    7.155200000852346e-05
+   ],
+   "warm_median_seconds": 7.955250021041138e-05,
+   "warm_min_seconds": 7.155200000852346e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "condition bitmaps of the rewrite (state construction)",
+   "first_seconds": 9.157999920716975e-05,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.157999920716975e-05,
+    7.538099998782855e-05,
+    0.00023696300013398286
+   ],
+   "warm_median_seconds": 0.0001561720000609057,
+   "warm_min_seconds": 7.538099998782855e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 3.141699926345609e-05,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "equivalent": true,
+    "mismatches": 0,
+    "points": 1000,
+    "witness": null
+   },
+   "samples_seconds": [
+    3.141699926345609e-05,
+    1.941499976965133e-05,
+    1.4014000043971464e-05,
+    8.499000614392571e-06,
+    8.338000043295324e-06
+   ],
+   "warm_median_seconds": 1.1256500329182018e-05,
+   "warm_min_seconds": 8.338000043295324e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 0.002496282999345567,
+   "params": {
+    "rows": 1000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002496282999345567,
+    0.006175070999233867
+   ],
+   "warm_median_seconds": 0.006175070999233867,
+   "warm_min_seconds": 0.006175070999233867
+  },
+  {
+   "backend": "cpu",
+   "case": "bit columns (state construction)",
+   "first_seconds": 0.002971017000163556,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002971017000163556,
+    0.002680141999007901,
+    0.006999113000347279
+   ],
+   "warm_median_seconds": 0.00483962749967759,
+   "warm_min_seconds": 0.002680141999007901
+  },
+  {
+   "backend": "cpu",
+   "case": "candidate generation (256-row sample)",
+   "first_seconds": 0.004218710999339237,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "complete": 100000,
+    "excluded": 0,
+    "sample_rank": 11,
+    "sample_rows": 256
+   },
+   "samples_seconds": [
+    0.004218710999339237,
+    0.00044120100028521847,
+    0.00042663899876060896,
+    0.00044548400001076516,
+    0.00046594400009780657
+   ],
+   "warm_median_seconds": 0.0004433425001479918,
+   "warm_min_seconds": 0.00042663899876060896
+  },
+  {
+   "backend": "cpu",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.00022327599981508683,
+   "params": {
+    "proposals": 4,
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022327599981508683,
+    0.00015168500067375135,
+    0.00015048900058900472,
+    0.00013497500003722962,
+    0.0001310360003117239
+   ],
+   "warm_median_seconds": 0.00014273200031311717,
+   "warm_min_seconds": 0.0001310360003117239
+  },
+  {
+   "backend": "duckdb",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.006620301001021289,
+   "params": {
+    "proposals": 4,
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006620301001021289,
+    0.0062743010003032396
+   ],
+   "warm_median_seconds": 0.0062743010003032396,
+   "warm_min_seconds": 0.0062743010003032396
+  },
+  {
+   "backend": "cpu",
+   "case": "discovery with FND-007 certificates",
+   "first_seconds": 0.008856218000801164,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008856218000801164,
+    0.008428377001109766,
+    0.011237912000069628
+   ],
+   "warm_median_seconds": 0.009833144500589697,
+   "warm_min_seconds": 0.008428377001109766
+  },
+  {
+   "backend": "cpu",
+   "case": "re-certification of the found relations",
+   "first_seconds": 0.003137762001642841,
+   "params": {
+    "relations": 3,
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003137762001642841,
+    0.007389675998638268,
+    0.0031288219997804845
+   ],
+   "warm_median_seconds": 0.005259248999209376,
+   "warm_min_seconds": 0.0031288219997804845
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: b0 XOR b1 rewritten as d0",
+   "first_seconds": 0.00019732699911401141,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019732699911401141,
+    0.0001017459999275161,
+    8.920700020098593e-05,
+    8.547099969291594e-05,
+    0.0001471939995099092
+   ],
+   "warm_median_seconds": 9.547650006425101e-05,
+   "warm_min_seconds": 8.547099969291594e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: d0 rewritten as b0 XOR b1 (mode all)",
+   "first_seconds": 9.516499994788319e-05,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.516499994788319e-05,
+    8.616299965069629e-05,
+    9.989400132326409e-05,
+    8.450700079265516e-05,
+    8.698999954503961e-05
+   ],
+   "warm_median_seconds": 8.657649959786795e-05,
+   "warm_min_seconds": 8.450700079265516e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "condition bitmaps of the rewrite (state construction)",
+   "first_seconds": 0.009253371999875526,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.009253371999875526,
+    0.011418084999604616,
+    0.005049217001214856
+   ],
+   "warm_median_seconds": 0.008233651000409736,
+   "warm_min_seconds": 0.005049217001214856
+  },
+  {
+   "backend": "cpu",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 0.00015149099999689497,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "equivalent": true,
+    "mismatches": 0,
+    "points": 100000,
+    "witness": null
+   },
+   "samples_seconds": [
+    0.00015149099999689497,
+    6.161599958431907e-05,
+    6.804799886594992e-05,
+    6.586800009245053e-05,
+    5.0135000492446125e-05
+   ],
+   "warm_median_seconds": 6.37419998383848e-05,
+   "warm_min_seconds": 5.0135000492446125e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 0.00373232200036,
+   "params": {
+    "rows": 100000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00373232200036,
+    0.010036632000264945
+   ],
+   "warm_median_seconds": 0.010036632000264945,
+   "warm_min_seconds": 0.010036632000264945
+  },
+  {
+   "backend": "cpu",
+   "case": "bit columns (state construction)",
+   "first_seconds": 0.04442781100078719,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04442781100078719,
+    0.046057284000198706,
+    0.05154332500023884
+   ],
+   "warm_median_seconds": 0.04880030450021877,
+   "warm_min_seconds": 0.046057284000198706
+  },
+  {
+   "backend": "cpu",
+   "case": "candidate generation (256-row sample)",
+   "first_seconds": 0.007630066998899565,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "complete": 1000000,
+    "excluded": 0,
+    "sample_rank": 11,
+    "sample_rows": 256
+   },
+   "samples_seconds": [
+    0.007630066998899565,
+    0.0036879929994029226,
+    0.015622205999534344,
+    0.007638396000402281,
+    0.009786630000235164
+   ],
+   "warm_median_seconds": 0.008712513000318722,
+   "warm_min_seconds": 0.0036879929994029226
+  },
+  {
+   "backend": "cpu",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.0041108169989456655,
+   "params": {
+    "proposals": 4,
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0041108169989456655,
+    0.001452914000765304,
+    0.0013465480005834252,
+    0.0013321739988896297,
+    0.004688001999966218
+   ],
+   "warm_median_seconds": 0.0013997310006743646,
+   "warm_min_seconds": 0.0013321739988896297
+  },
+  {
+   "backend": "duckdb",
+   "case": "exact verification of every proposal",
+   "first_seconds": 0.05582509499981825,
+   "params": {
+    "proposals": 4,
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05582509499981825,
+    0.05796691700015799
+   ],
+   "warm_median_seconds": 0.05796691700015799,
+   "warm_min_seconds": 0.05796691700015799
+  },
+  {
+   "backend": "cpu",
+   "case": "discovery with FND-007 certificates",
+   "first_seconds": 0.17849374099932902,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17849374099932902,
+    0.0745273519987677,
+    0.0966278659998352
+   ],
+   "warm_median_seconds": 0.08557760899930145,
+   "warm_min_seconds": 0.0745273519987677
+  },
+  {
+   "backend": "cpu",
+   "case": "re-certification of the found relations",
+   "first_seconds": 0.04848111200044514,
+   "params": {
+    "relations": 3,
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04848111200044514,
+    0.0525844040002994,
+    0.04423493200010853
+   ],
+   "warm_median_seconds": 0.048409668000203965,
+   "warm_min_seconds": 0.04423493200010853
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: b0 XOR b1 rewritten as d0",
+   "first_seconds": 0.00033688299845380243,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00033688299845380243,
+    0.00019164700097462628,
+    0.0001539250006317161,
+    0.00014821199874859303,
+    0.00016005500037863385
+   ],
+   "warm_median_seconds": 0.00015699000050517498,
+   "warm_min_seconds": 0.00014821199874859303
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution: d0 rewritten as b0 XOR b1 (mode all)",
+   "first_seconds": 0.00015894600073806942,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015894600073806942,
+    0.00017982999997911975,
+    0.00015862100008234847,
+    0.00013985399891680572,
+    0.00014032000035513192
+   ],
+   "warm_median_seconds": 0.0001494705002187402,
+   "warm_min_seconds": 0.00013985399891680572
+  },
+  {
+   "backend": "cpu",
+   "case": "condition bitmaps of the rewrite (state construction)",
+   "first_seconds": 0.07590920700022252,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.07590920700022252,
+    0.07681067199882818,
+    0.07704920399919502
+   ],
+   "warm_median_seconds": 0.0769299379990116,
+   "warm_min_seconds": 0.07681067199882818
+  },
+  {
+   "backend": "cpu",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 0.0006060279993107542,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "equivalent": true,
+    "mismatches": 0,
+    "points": 1000000,
+    "witness": null
+   },
+   "samples_seconds": [
+    0.0006060279993107542,
+    0.0005309079988364829,
+    0.0004728679996333085,
+    0.0003932110012101475,
+    0.00043123800060129724
+   ],
+   "warm_median_seconds": 0.00045205300011730287,
+   "warm_min_seconds": 0.0003932110012101475
+  },
+  {
+   "backend": "duckdb",
+   "case": "verification of the substituted predicate on every row",
+   "first_seconds": 0.02238926000063657,
+   "params": {
+    "rows": 1000000,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02238926000063657,
+    0.01568031900023925
+   ],
+   "warm_median_seconds": 0.01568031900023925,
+   "warm_min_seconds": 0.01568031900023925
+  },
+  {
+   "backend": "cpu",
+   "case": "discovery within a 256-row sample budget",
+   "first_seconds": 0.0003097239987255307,
+   "params": {
+    "sample": 256
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.0003097239987255307
+   ],
+   "warm_median_seconds": 0.0003097239987255307,
+   "warm_min_seconds": 0.0003097239987255307
+  },
+  {
+   "backend": "cpu",
+   "case": "discovery past a 256-row sample budget",
+   "limit": 256,
+   "message": "parity discovery: needs 257 support, budget 256",
+   "need": 257,
+   "params": {
+    "sample": 257
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.263499977241736e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution within its circuit budget",
+   "first_seconds": 7.635899964952841e-05,
+   "params": {
+    "nodes": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.635899964952841e-05
+   ],
+   "warm_median_seconds": 7.635899964952841e-05,
+   "warm_min_seconds": 7.635899964952841e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "substitution one node past its circuit budget",
+   "limit": 4,
+   "message": "parity substitution: needs 5 circuit, budget 4",
+   "need": 5,
+   "params": {
+    "nodes": 5
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.83879989082925e-05,
+   "refused": true,
+   "resource": "circuit"
+  }
+ ],
+ "seconds": 3.781782532001671,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "discovery sample rows (support 256)",
+   "largest_admitted": {
+    "sample": 256
+   },
+   "smallest_refused": {
+    "sample": 257
+   }
+  },
+  {
+   "grid": "rewritten program nodes (circuit budget)",
+   "largest_admitted": {
+    "circuit": 5
+   },
+   "smallest_refused": {
+    "circuit": 4
+   }
+  }
+ ]
+}
