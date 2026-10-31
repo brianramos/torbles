@@ -1,0 +1,2217 @@
+{
+ "argv": [
+  "--capability",
+  "INV-001",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/INV-001/benchmark_cpu_math_inv_vm.json"
+ ],
+ "capability": "INV-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "a4ff3bb2f14099a7f535b95fde7228af59c22fc0",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "b46ec481a478b529e2e64c8a5f8b80448e8b40ae0cb81c143ad129370806d377",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "d130cb58d7c9aa4831389f24ad5e4259fa3810777262fbc9666eaa1c0c87b985"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T10:03:06+00:00"
+ },
+ "notes": [
+  "RESP-001 at 1000 rows: exact theta = 1262281/419587 (unique); the response function is built once (phase build), every later solve reads no rows.",
+  "RESP-001 at 100000 rows: exact theta = 21241639/7082052 (unique); the response function is built once (phase build), every later solve reads no rows.",
+  "Exactness: every native answer is exact (rationals, isolating intervals with certified sign changes); the numpy rows are uncertified floating baselines, their 'agrees' flags record whether they happened to match the exact answer.",
+  "CUDA is timed only with --device; the emulation is not a CUDA timing. The refinement on CUDA uses the device sign kernel once per bisection round (one kernel launch per round).",
+  "wall time 0.9 s"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "RESP-001 response function (moments + reduce)",
+   "first_seconds": 0.002555770999606466,
+   "params": {
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002555770999606466
+   ],
+   "warm_median_seconds": 0.002555770999606466,
+   "warm_min_seconds": 0.002555770999606466
+  },
+  {
+   "backend": "cpu",
+   "case": "least-squares zero of the RESP-001 gradient",
+   "first_seconds": 0.001098288001230685,
+   "params": {
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": "unique",
+   "samples_seconds": [
+    0.001098288001230685,
+    9.093300104723312e-05,
+    5.8428999182069674e-05,
+    4.822099981538486e-05,
+    4.671900023822673e-05
+   ],
+   "warm_median_seconds": 5.3324999498727266e-05,
+   "warm_min_seconds": 4.671900023822673e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "RESP-001 loss = minimum + 1 (two irrational roots)",
+   "first_seconds": 0.000940281999646686,
+   "params": {
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.000940281999646686,
+    0.0007286529998964397,
+    0.0006728640000801533,
+    0.0006714229984936537,
+    0.0006703809995087795
+   ],
+   "warm_median_seconds": 0.0006721434992869035,
+   "warm_min_seconds": 0.0006703809995087795
+  },
+  {
+   "backend": "numpy",
+   "case": "least squares (numpy.linalg.lstsq, floating)",
+   "first_seconds": 0.0013714749984501395,
+   "params": {
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": 3.008389201762686,
+   "samples_seconds": [
+    0.0013714749984501395,
+    7.478499901480973e-05,
+    3.057799949601758e-05,
+    2.3223999960464425e-05,
+    2.1859999833395705e-05
+   ],
+   "warm_median_seconds": 2.6900999728241004e-05,
+   "warm_min_seconds": 2.1859999833395705e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "RESP-001 response function (moments + reduce)",
+   "first_seconds": 0.002539843999329605,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002539843999329605
+   ],
+   "warm_median_seconds": 0.002539843999329605,
+   "warm_min_seconds": 0.002539843999329605
+  },
+  {
+   "backend": "cpu",
+   "case": "least-squares zero of the RESP-001 gradient",
+   "first_seconds": 0.00015728499965916853,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": "unique",
+   "samples_seconds": [
+    0.00015728499965916853,
+    5.572199916059617e-05,
+    4.637299934984185e-05,
+    4.4094998884247616e-05,
+    5.8084999182028696e-05
+   ],
+   "warm_median_seconds": 5.104749925521901e-05,
+   "warm_min_seconds": 4.4094998884247616e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "RESP-001 loss = minimum + 1 (two irrational roots)",
+   "first_seconds": 0.0010144829993805615,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.0010144829993805615,
+    0.000909262000277522,
+    0.0009439830009796424,
+    0.000889915998413926,
+    0.0008977159995993134
+   ],
+   "warm_median_seconds": 0.0009034889999384177,
+   "warm_min_seconds": 0.000889915998413926
+  },
+  {
+   "backend": "numpy",
+   "case": "least squares (numpy.linalg.lstsq, floating)",
+   "first_seconds": 0.0021383650000643684,
+   "params": {
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": 2.9993621905063668,
+   "samples_seconds": [
+    0.0021383650000643684,
+    0.0014132899996184278,
+    0.001333899999735877,
+    0.0013668289993802318,
+    0.0012347110005066497
+   ],
+   "warm_median_seconds": 0.0013503644995580544,
+   "warm_min_seconds": 0.0012347110005066497
+  },
+  {
+   "backend": "cpu",
+   "case": "first-slice expressions",
+   "first_seconds": 2.7078998755314387e-05,
+   "params": {},
+   "phase": "build",
+   "samples_seconds": [
+    2.7078998755314387e-05
+   ],
+   "warm_median_seconds": 2.7078998755314387e-05,
+   "warm_min_seconds": 2.7078998755314387e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: unique (2 x 2)",
+   "first_seconds": 0.0002974190010718303,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 0,
+    "fm_inequalities": 0,
+    "kind": "unique",
+    "reason": null
+   },
+   "samples_seconds": [
+    0.0002974190010718303,
+    0.00014265000027080532,
+    0.00012171100024715997,
+    0.00013461299931805115,
+    0.00011457599975983612,
+    0.0001360989990644157,
+    0.00012642799993045628
+   ],
+   "warm_median_seconds": 0.00013052049962425372,
+   "warm_min_seconds": 0.00011457599975983612
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: empty: inconsistent",
+   "first_seconds": 0.00016457499987154733,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 0,
+    "fm_inequalities": 0,
+    "kind": "empty",
+    "reason": "inconsistent"
+   },
+   "samples_seconds": [
+    0.00016457499987154733,
+    0.00010248000035062432,
+    8.705300024303142e-05,
+    9.061600030690897e-05,
+    8.457299918518402e-05,
+    8.143400009430479e-05,
+    8.08100012363866e-05
+   ],
+   "warm_median_seconds": 8.581299971410772e-05,
+   "warm_min_seconds": 8.08100012363866e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: empty: outside the box",
+   "first_seconds": 0.00013856400073564146,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 1,
+    "fm_inequalities": 0,
+    "kind": "empty",
+    "reason": "outside"
+   },
+   "samples_seconds": [
+    0.00013856400073564146,
+    0.00012738399891532026,
+    0.00012163300016254652,
+    0.00012015600077575073,
+    0.00012743899969791528,
+    0.00011935900147364009,
+    0.00011857999925268814
+   ],
+   "warm_median_seconds": 0.00012089450046914862,
+   "warm_min_seconds": 0.00011857999925268814
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: whole domain (0 = 0)",
+   "first_seconds": 9.31289996515261e-05,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 0,
+    "fm_inequalities": 0,
+    "kind": "whole",
+    "reason": null
+   },
+   "samples_seconds": [
+    9.31289996515261e-05,
+    0.00013994500113767572,
+    9.162999958789442e-05,
+    8.862100003170781e-05,
+    8.6385998656624e-05,
+    9.628999941924121e-05,
+    8.802999946055934e-05
+   ],
+   "warm_median_seconds": 9.012549980980111e-05,
+   "warm_min_seconds": 8.6385998656624e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: unique by the box (x + y = 2, x, y <= 1)",
+   "first_seconds": 0.00011509100113471504,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 0,
+    "fm_inequalities": 0,
+    "kind": "unique",
+    "reason": null
+   },
+   "samples_seconds": [
+    0.00011509100113471504,
+    0.00010956799997074995,
+    9.536200013826601e-05,
+    9.558199963066727e-05,
+    9.127799967245664e-05,
+    9.159999899566174e-05,
+    9.16640001378255e-05
+   ],
+   "warm_median_seconds": 9.351300013804575e-05,
+   "warm_min_seconds": 9.127799967245664e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: family: simplex in 3 unknowns",
+   "first_seconds": 0.00029364200054260436,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 2,
+    "fm_inequalities": 4,
+    "kind": "family",
+    "reason": null
+   },
+   "samples_seconds": [
+    0.00029364200054260436,
+    0.00026079000053869095,
+    0.0002675079995242413,
+    0.00023502600015490316,
+    0.0002264300001115771,
+    0.000248475998887443,
+    0.00021629399998346344
+   ],
+   "warm_median_seconds": 0.00024175099952117307,
+   "warm_min_seconds": 0.00021629399998346344
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: family: simplex in 6 unknowns",
+   "first_seconds": 0.0008230950006691273,
+   "params": {},
+   "phase": "run",
+   "result": {
+    "dims": 5,
+    "fm_inequalities": 70,
+    "kind": "family",
+    "reason": null
+   },
+   "samples_seconds": [
+    0.0008230950006691273,
+    0.0007984520016179886,
+    0.0007853579991206061,
+    0.0007802239997545257,
+    0.000764731001254404,
+    0.0007754039997962536,
+    0.0008029760010686005
+   ],
+   "warm_median_seconds": 0.0007827909994375659,
+   "warm_min_seconds": 0.000764731001254404
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: rank-deficient 4 x 4 (family, no box)",
+   "first_seconds": 0.0004970410009264015,
+   "params": {
+    "equations": 4,
+    "unknowns": 4
+   },
+   "phase": "run",
+   "result": "family",
+   "samples_seconds": [
+    0.0004970410009264015,
+    0.0003859919997921679,
+    0.00035039999966102187,
+    0.0003522830011206679,
+    0.00036077300137549173
+   ],
+   "warm_median_seconds": 0.0003565280012480798,
+   "warm_min_seconds": 0.00035039999966102187
+  },
+  {
+   "backend": "numpy",
+   "case": "linear: rank-deficient 4 x 4 (lstsq, floating)",
+   "first_seconds": 0.0006133030001365114,
+   "params": {
+    "equations": 4,
+    "unknowns": 4
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.0006133030001365114,
+    5.557199983741157e-05,
+    2.5747998734004796e-05,
+    1.8663000446395017e-05,
+    1.805300053092651e-05
+   ],
+   "warm_median_seconds": 2.2205499590199906e-05,
+   "warm_min_seconds": 1.805300053092651e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: rank-deficient 8 x 8 (family, no box)",
+   "first_seconds": 0.0015091690002009273,
+   "params": {
+    "equations": 8,
+    "unknowns": 8
+   },
+   "phase": "run",
+   "result": "family",
+   "samples_seconds": [
+    0.0015091690002009273,
+    0.001352695999230491,
+    0.0013246369999251328,
+    0.0013357429997995496,
+    0.001298227000006591
+   ],
+   "warm_median_seconds": 0.0013301899998623412,
+   "warm_min_seconds": 0.001298227000006591
+  },
+  {
+   "backend": "numpy",
+   "case": "linear: rank-deficient 8 x 8 (lstsq, floating)",
+   "first_seconds": 0.00014284099961514585,
+   "params": {
+    "equations": 8,
+    "unknowns": 8
+   },
+   "phase": "run",
+   "result": 7,
+   "samples_seconds": [
+    0.00014284099961514585,
+    4.288600030122325e-05,
+    2.715399932640139e-05,
+    2.2801999875809997e-05,
+    2.0896999558317475e-05
+   ],
+   "warm_median_seconds": 2.4977999601105694e-05,
+   "warm_min_seconds": 2.0896999558317475e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "linear: rank-deficient 16 x 8 (family, no box)",
+   "first_seconds": 0.002609929999380256,
+   "params": {
+    "equations": 16,
+    "unknowns": 8
+   },
+   "phase": "run",
+   "result": "family",
+   "samples_seconds": [
+    0.002609929999380256,
+    0.0025360609997733263,
+    0.002519810001103906,
+    0.002715888998864102,
+    0.002516942000511335
+   ],
+   "warm_median_seconds": 0.002527935500438616,
+   "warm_min_seconds": 0.002516942000511335
+  },
+  {
+   "backend": "numpy",
+   "case": "linear: rank-deficient 16 x 8 (lstsq, floating)",
+   "first_seconds": 0.00016019499889807776,
+   "params": {
+    "equations": 16,
+    "unknowns": 8
+   },
+   "phase": "run",
+   "result": 7,
+   "samples_seconds": [
+    0.00016019499889807776,
+    4.567200085148215e-05,
+    3.096699947491288e-05,
+    2.6633999368641526e-05,
+    2.5364999601151794e-05
+   ],
+   "warm_median_seconds": 2.8800499421777204e-05,
+   "warm_min_seconds": 2.5364999601151794e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.00018835400078387465,
+   "params": {
+    "degree": 2,
+    "hi": "10",
+    "lo": "-10",
+    "target": "no root (x^2 + 1)"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 0,
+    "expected": 0,
+    "iterations": 8,
+    "roots": 0
+   },
+   "samples_seconds": [
+    0.00018835400078387465,
+    0.0001281039985769894,
+    0.00011791500037361402
+   ],
+   "warm_median_seconds": 0.0001230094994753017,
+   "warm_min_seconds": 0.00011791500037361402
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 7.774300138407853e-05,
+   "params": {
+    "degree": 2,
+    "hi": "10",
+    "lo": "-10",
+    "target": "no root (x^2 + 1)"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 0,
+    "rounds": 0
+   },
+   "samples_seconds": [
+    7.774300138407853e-05,
+    6.855099854874425e-05,
+    5.5471000450779684e-05
+   ],
+   "warm_median_seconds": 6.201099949976197e-05,
+   "warm_min_seconds": 5.5471000450779684e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 0.0001410750010109041,
+   "params": {
+    "degree": 2,
+    "hi": "10",
+    "lo": "-10",
+    "target": "no root (x^2 + 1)"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 0,
+    "real_roots_in_bounds": 0
+   },
+   "samples_seconds": [
+    0.0001410750010109041,
+    5.5719001466059126e-05,
+    4.170199827058241e-05
+   ],
+   "warm_median_seconds": 4.871049986832077e-05,
+   "warm_min_seconds": 4.170199827058241e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.00022610200176131912,
+   "params": {
+    "degree": 1,
+    "hi": "10",
+    "lo": "-10",
+    "target": "one root (2x - 3)"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 1,
+    "expected": 1,
+    "iterations": 9,
+    "roots": 1
+   },
+   "samples_seconds": [
+    0.00022610200176131912,
+    0.00017824399947130587,
+    0.00012632600009965245
+   ],
+   "warm_median_seconds": 0.00015228499978547916,
+   "warm_min_seconds": 0.00012632600009965245
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 8.496699956594966e-05,
+   "params": {
+    "degree": 1,
+    "hi": "10",
+    "lo": "-10",
+    "target": "one root (2x - 3)"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 1,
+    "rounds": 0
+   },
+   "samples_seconds": [
+    8.496699956594966e-05,
+    7.117299901437946e-05,
+    7.950599865580443e-05
+   ],
+   "warm_median_seconds": 7.533949883509194e-05,
+   "warm_min_seconds": 7.117299901437946e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 4.826199983654078e-05,
+   "params": {
+    "degree": 1,
+    "hi": "10",
+    "lo": "-10",
+    "target": "one root (2x - 3)"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 1,
+    "real_roots_in_bounds": 1
+   },
+   "samples_seconds": [
+    4.826199983654078e-05,
+    3.62980008503655e-05,
+    3.2292999094352126e-05
+   ],
+   "warm_median_seconds": 3.429549997235881e-05,
+   "warm_min_seconds": 3.2292999094352126e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.00013918600052420516,
+   "params": {
+    "degree": 2,
+    "hi": "3",
+    "lo": "2",
+    "target": "no root in the bounds (x^2 - 2 on [2, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 0,
+    "expected": 0,
+    "iterations": 8,
+    "roots": 0
+   },
+   "samples_seconds": [
+    0.00013918600052420516,
+    0.00011676100075419527,
+    0.0001534630009700777
+   ],
+   "warm_median_seconds": 0.00013511200086213648,
+   "warm_min_seconds": 0.00011676100075419527
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 6.167600076878443e-05,
+   "params": {
+    "degree": 2,
+    "hi": "3",
+    "lo": "2",
+    "target": "no root in the bounds (x^2 - 2 on [2, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 0,
+    "rounds": 0
+   },
+   "samples_seconds": [
+    6.167600076878443e-05,
+    5.545499880099669e-05,
+    5.5219999921973795e-05
+   ],
+   "warm_median_seconds": 5.533749936148524e-05,
+   "warm_min_seconds": 5.5219999921973795e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 4.28769999416545e-05,
+   "params": {
+    "degree": 2,
+    "hi": "3",
+    "lo": "2",
+    "target": "no root in the bounds (x^2 - 2 on [2, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 0,
+    "real_roots_in_bounds": 0
+   },
+   "samples_seconds": [
+    4.28769999416545e-05,
+    4.538400025921874e-05,
+    3.7941999835311435e-05
+   ],
+   "warm_median_seconds": 4.1663000047265086e-05,
+   "warm_min_seconds": 3.7941999835311435e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.0002719730000535492,
+   "params": {
+    "degree": 5,
+    "hi": "3",
+    "lo": "1",
+    "target": "boundary roots ((x - 1)(x - 3)^2 (x^2 - 2) on [1, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 2,
+    "expected": 3,
+    "iterations": 35,
+    "roots": 3
+   },
+   "samples_seconds": [
+    0.0002719730000535492,
+    0.0002762380008789478,
+    0.00024638000104459934
+   ],
+   "warm_median_seconds": 0.00026130900096177356,
+   "warm_min_seconds": 0.00024638000104459934
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.0003613879998738412,
+   "params": {
+    "degree": 5,
+    "hi": "3",
+    "lo": "1",
+    "target": "boundary roots ((x - 1)(x - 3)^2 (x^2 - 2) on [1, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 3,
+    "rounds": 48
+   },
+   "samples_seconds": [
+    0.0003613879998738412,
+    0.0002788889996736543,
+    0.00029615600033139344
+   ],
+   "warm_median_seconds": 0.0002875225000025239,
+   "warm_min_seconds": 0.0002788889996736543
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 9.703400064609013e-05,
+   "params": {
+    "degree": 5,
+    "hi": "3",
+    "lo": "1",
+    "target": "boundary roots ((x - 1)(x - 3)^2 (x^2 - 2) on [1, 3])"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 3,
+    "real_roots_in_bounds": 3
+   },
+   "samples_seconds": [
+    9.703400064609013e-05,
+    5.003499973099679e-05,
+    4.362599975138437e-05
+   ],
+   "warm_median_seconds": 4.683049974119058e-05,
+   "warm_min_seconds": 4.362599975138437e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.00039924600059748627,
+   "params": {
+    "degree": 7,
+    "hi": null,
+    "lo": null,
+    "target": "multiplicities ((3x - 1)^3 (x + 2)^2 (x^2 - 5))"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 2,
+    "expected": 4,
+    "iterations": 119,
+    "roots": 4
+   },
+   "samples_seconds": [
+    0.00039924600059748627,
+    0.0003388820005056914,
+    0.00029641100081789773
+   ],
+   "warm_median_seconds": 0.00031764650066179456,
+   "warm_min_seconds": 0.00029641100081789773
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.00042286999996576924,
+   "params": {
+    "degree": 7,
+    "hi": null,
+    "lo": null,
+    "target": "multiplicities ((3x - 1)^3 (x + 2)^2 (x^2 - 5))"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 4,
+    "rounds": 49
+   },
+   "samples_seconds": [
+    0.00042286999996576924,
+    0.00042833299994526897,
+    0.0004172259996266803
+   ],
+   "warm_median_seconds": 0.0004227794997859746,
+   "warm_min_seconds": 0.0004172259996266803
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 6.361400119203608e-05,
+   "params": {
+    "degree": 7,
+    "hi": null,
+    "lo": null,
+    "target": "multiplicities ((3x - 1)^3 (x + 2)^2 (x^2 - 5))"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": false,
+    "certified": false,
+    "exact_count": 4,
+    "real_roots_in_bounds": 5
+   },
+   "samples_seconds": [
+    6.361400119203608e-05,
+    5.047800004831515e-05,
+    4.70689992653206e-05
+   ],
+   "warm_median_seconds": 4.8773499656817876e-05,
+   "warm_min_seconds": 4.70689992653206e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.0005050210002082167,
+   "params": {
+    "degree": 4,
+    "hi": null,
+    "lo": null,
+    "target": "rational roots in a quartic factor ((97x - 89)(101x - 7)(x^2 - 3))"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 2,
+    "expected": 4,
+    "iterations": 212,
+    "roots": 4
+   },
+   "samples_seconds": [
+    0.0005050210002082167,
+    0.00047450800047954544,
+    0.00043215200093982276
+   ],
+   "warm_median_seconds": 0.0004533300007096841,
+   "warm_min_seconds": 0.00043215200093982276
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.0002976300002046628,
+   "params": {
+    "degree": 4,
+    "hi": null,
+    "lo": null,
+    "target": "rational roots in a quartic factor ((97x - 89)(101x - 7)(x^2 - 3))"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 4,
+    "rounds": 23
+   },
+   "samples_seconds": [
+    0.0002976300002046628,
+    0.0002716819999477593,
+    0.0002667839999048738
+   ],
+   "warm_median_seconds": 0.00026923299992631655,
+   "warm_min_seconds": 0.0002667839999048738
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 5.098099973110948e-05,
+   "params": {
+    "degree": 4,
+    "hi": null,
+    "lo": null,
+    "target": "rational roots in a quartic factor ((97x - 89)(101x - 7)(x^2 - 3))"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 4,
+    "real_roots_in_bounds": 4
+   },
+   "samples_seconds": [
+    5.098099973110948e-05,
+    4.250199890520889e-05,
+    3.7769999835290946e-05
+   ],
+   "warm_median_seconds": 4.013599937024992e-05,
+   "warm_min_seconds": 3.7769999835290946e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.0006655209999735234,
+   "params": {
+    "degree": 8,
+    "hi": null,
+    "lo": null,
+    "target": "degree 8: 2 rational, 6 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 2,
+    "expected": 8,
+    "iterations": 316,
+    "roots": 8
+   },
+   "samples_seconds": [
+    0.0006655209999735234,
+    0.0005651819992635865,
+    0.000561826998819015
+   ],
+   "warm_median_seconds": 0.0005635044990413007,
+   "warm_min_seconds": 0.000561826998819015
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.0011468190004961798,
+   "params": {
+    "degree": 8,
+    "hi": null,
+    "lo": null,
+    "target": "degree 8: 2 rational, 6 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 8,
+    "rounds": 45
+   },
+   "samples_seconds": [
+    0.0011468190004961798,
+    0.0011748319993785117,
+    0.00112105399966822
+   ],
+   "warm_median_seconds": 0.0011479429995233659,
+   "warm_min_seconds": 0.00112105399966822
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 7.740799992461689e-05,
+   "params": {
+    "degree": 8,
+    "hi": null,
+    "lo": null,
+    "target": "degree 8: 2 rational, 6 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 8,
+    "real_roots_in_bounds": 8
+   },
+   "samples_seconds": [
+    7.740799992461689e-05,
+    6.072799988032784e-05,
+    4.773199907504022e-05
+   ],
+   "warm_median_seconds": 5.422999947768403e-05,
+   "warm_min_seconds": 4.773199907504022e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.0020024999994348036,
+   "params": {
+    "degree": 16,
+    "hi": null,
+    "lo": null,
+    "target": "degree 16: 4 rational, 12 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 4,
+    "expected": 16,
+    "iterations": 1203,
+    "roots": 16
+   },
+   "samples_seconds": [
+    0.0020024999994348036,
+    0.0019108859996777028,
+    0.0020644169999286532
+   ],
+   "warm_median_seconds": 0.001987651499803178,
+   "warm_min_seconds": 0.0019108859996777028
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.003866993998599355,
+   "params": {
+    "degree": 16,
+    "hi": null,
+    "lo": null,
+    "target": "degree 16: 4 rational, 12 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 16,
+    "rounds": 42
+   },
+   "samples_seconds": [
+    0.003866993998599355,
+    0.003786903998843627,
+    0.0034549150004750118
+   ],
+   "warm_median_seconds": 0.0036209094996593194,
+   "warm_min_seconds": 0.0034549150004750118
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 0.00011893699956999626,
+   "params": {
+    "degree": 16,
+    "hi": null,
+    "lo": null,
+    "target": "degree 16: 4 rational, 12 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 16,
+    "real_roots_in_bounds": 16
+   },
+   "samples_seconds": [
+    0.00011893699956999626,
+    8.355299905815627e-05,
+    7.612000081280712e-05
+   ],
+   "warm_median_seconds": 7.98364999354817e-05,
+   "warm_min_seconds": 7.612000081280712e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "isolation (exact)",
+   "first_seconds": 0.015163027001108276,
+   "params": {
+    "degree": 32,
+    "hi": null,
+    "lo": null,
+    "target": "degree 32: 8 rational, 24 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "exact": 8,
+    "expected": 32,
+    "iterations": 5678,
+    "roots": 32
+   },
+   "samples_seconds": [
+    0.015163027001108276,
+    0.015008569000201533,
+    0.014197065000189468
+   ],
+   "warm_median_seconds": 0.0146028170001955,
+   "warm_min_seconds": 0.014197065000189468
+  },
+  {
+   "backend": "cpu",
+   "case": "refinement to 2^-50",
+   "first_seconds": 0.016691281000021263,
+   "params": {
+    "degree": 32,
+    "hi": null,
+    "lo": null,
+    "target": "degree 32: 8 rational, 24 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "roots": 32,
+    "rounds": 33
+   },
+   "samples_seconds": [
+    0.016691281000021263,
+    0.01694893000058073,
+    0.017747184998370358
+   ],
+   "warm_median_seconds": 0.017348057499475544,
+   "warm_min_seconds": 0.01694893000058073
+  },
+  {
+   "backend": "numpy",
+   "case": "real roots (numpy.roots, floating)",
+   "first_seconds": 0.0002761959985946305,
+   "params": {
+    "degree": 32,
+    "hi": null,
+    "lo": null,
+    "target": "degree 32: 8 rational, 24 irrational roots"
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_count": 32,
+    "real_roots_in_bounds": 32
+   },
+   "samples_seconds": [
+    0.0002761959985946305,
+    0.000282618999335682,
+    0.0002675099985935958
+   ],
+   "warm_median_seconds": 0.0002750644989646389,
+   "warm_min_seconds": 0.0002675099985935958
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.00026985899967257865,
+   "params": {
+    "dimension": 1,
+    "grid_points": 8,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 19,
+    "complete": true,
+    "matches": 1,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.00026985899967257865,
+    0.00017057399963960052,
+    0.0001628600002732128
+   ],
+   "warm_median_seconds": 0.00016671699995640665,
+   "warm_min_seconds": 0.0001628600002732128
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.00012348500058578793,
+   "params": {
+    "dimension": 1,
+    "grid_points": 8,
+    "values": 8
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00012348500058578793
+   ],
+   "warm_median_seconds": 0.00012348500058578793,
+   "warm_min_seconds": 0.00012348500058578793
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 0.00011039400123991072,
+   "params": {
+    "dimension": 1,
+    "grid_points": 8,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 1,
+    "matches": 1
+   },
+   "samples_seconds": [
+    0.00011039400123991072,
+    5.9703001170419157e-05,
+    1.9678000171552412e-05
+   ],
+   "warm_median_seconds": 3.9690500670985784e-05,
+   "warm_min_seconds": 1.9678000171552412e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0001840860004449496,
+   "params": {
+    "dimension": 1,
+    "grid_points": 8,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 19,
+    "complete": false,
+    "matches": 0,
+    "next": 2,
+    "reason": "iterations",
+    "searched": 2
+   },
+   "samples_seconds": [
+    0.0001840860004449496,
+    0.00020283199955883902,
+    0.00015031399925646838
+   ],
+   "warm_median_seconds": 0.0001765729994076537,
+   "warm_min_seconds": 0.00015031399925646838
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 1,
+    "grid_points": 8,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "complete": true,
+    "matches": 1,
+    "next": 8,
+    "reason": "complete",
+    "searched": 8
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.00030037099895707797,
+   "params": {
+    "dimension": 1,
+    "grid_points": 16,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": true,
+    "matches": 1,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.00030037099895707797,
+    0.00024474500060023274,
+    0.00024003100043046288
+   ],
+   "warm_median_seconds": 0.0002423880005153478,
+   "warm_min_seconds": 0.00024003100043046288
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.00015834099940548185,
+   "params": {
+    "dimension": 1,
+    "grid_points": 16,
+    "values": 16
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00015834099940548185
+   ],
+   "warm_median_seconds": 0.00015834099940548185,
+   "warm_min_seconds": 0.00015834099940548185
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 3.866500082949642e-05,
+   "params": {
+    "dimension": 1,
+    "grid_points": 16,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 1,
+    "matches": 1
+   },
+   "samples_seconds": [
+    3.866500082949642e-05,
+    1.961999987543095e-05,
+    1.6980000509647653e-05
+   ],
+   "warm_median_seconds": 1.83000001925393e-05,
+   "warm_min_seconds": 1.6980000509647653e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0002975190000142902,
+   "params": {
+    "dimension": 1,
+    "grid_points": 16,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": false,
+    "matches": 0,
+    "next": 5,
+    "reason": "iterations",
+    "searched": 5
+   },
+   "samples_seconds": [
+    0.0002975190000142902,
+    0.0002450759984640172,
+    0.0002946170006907778
+   ],
+   "warm_median_seconds": 0.0002698464995773975,
+   "warm_min_seconds": 0.0002450759984640172
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 1,
+    "grid_points": 16,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "complete": true,
+    "matches": 1,
+    "next": 16,
+    "reason": "complete",
+    "searched": 16
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.0005209589999140007,
+   "params": {
+    "dimension": 1,
+    "grid_points": 32,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 19,
+    "complete": true,
+    "matches": 3,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.0005209589999140007,
+    0.0007711969992669765,
+    0.0007974759992066538
+   ],
+   "warm_median_seconds": 0.0007843364992368151,
+   "warm_min_seconds": 0.0007711969992669765
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.000366770000255201,
+   "params": {
+    "dimension": 1,
+    "grid_points": 32,
+    "values": 32
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.000366770000255201
+   ],
+   "warm_median_seconds": 0.000366770000255201,
+   "warm_min_seconds": 0.000366770000255201
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 7.346100028371438e-05,
+   "params": {
+    "dimension": 1,
+    "grid_points": 32,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 3,
+    "matches": 3
+   },
+   "samples_seconds": [
+    7.346100028371438e-05,
+    2.064399996015709e-05,
+    1.7730999388732016e-05
+   ],
+   "warm_median_seconds": 1.9187499674444553e-05,
+   "warm_min_seconds": 1.7730999388732016e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0005756309983553365,
+   "params": {
+    "dimension": 1,
+    "grid_points": 32,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 19,
+    "complete": false,
+    "matches": 0,
+    "next": 10,
+    "reason": "iterations",
+    "searched": 10
+   },
+   "samples_seconds": [
+    0.0005756309983553365,
+    0.0005367900012061,
+    0.0005004210015613353
+   ],
+   "warm_median_seconds": 0.0005186055013837176,
+   "warm_min_seconds": 0.0005004210015613353
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 1,
+    "grid_points": 32,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 16,
+    "reason": "output",
+    "searched": 16
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.00036422999983187765,
+   "params": {
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 14,
+    "complete": true,
+    "matches": 3,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.00036422999983187765,
+    0.00027139900157635566,
+    0.00025167000057990663
+   ],
+   "warm_median_seconds": 0.00026153450107813114,
+   "warm_min_seconds": 0.00025167000057990663
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.0006095049993746215,
+   "params": {
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.0006095049993746215
+   ],
+   "warm_median_seconds": 0.0006095049993746215,
+   "warm_min_seconds": 0.0006095049993746215
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 5.284200051391963e-05,
+   "params": {
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 3,
+    "matches": 3
+   },
+   "samples_seconds": [
+    5.284200051391963e-05,
+    2.0965000658179633e-05,
+    1.8967000869452022e-05
+   ],
+   "warm_median_seconds": 1.9966000763815828e-05,
+   "warm_min_seconds": 1.8967000869452022e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.00031080699955055024,
+   "params": {
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 14,
+    "complete": false,
+    "matches": 1,
+    "next": 21,
+    "reason": "iterations",
+    "searched": 21
+   },
+   "samples_seconds": [
+    0.00031080699955055024,
+    0.0005071119994681794,
+    0.0002598450009827502
+   ],
+   "warm_median_seconds": 0.0003834785002254648,
+   "warm_min_seconds": 0.0002598450009827502
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 36,
+    "reason": "output",
+    "searched": 36
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.00048482300007890444,
+   "params": {
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": true,
+    "matches": 5,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.00048482300007890444,
+    0.0004975249994458864,
+    0.0006229680002434179
+   ],
+   "warm_median_seconds": 0.0005602464998446521,
+   "warm_min_seconds": 0.0004975249994458864
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.002362790000915993,
+   "params": {
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": 5,
+   "samples_seconds": [
+    0.002362790000915993
+   ],
+   "warm_median_seconds": 0.002362790000915993,
+   "warm_min_seconds": 0.002362790000915993
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 6.045600093784742e-05,
+   "params": {
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 5,
+    "matches": 5
+   },
+   "samples_seconds": [
+    6.045600093784742e-05,
+    2.397099888185039e-05,
+    2.0159000996500254e-05
+   ],
+   "warm_median_seconds": 2.2064999939175323e-05,
+   "warm_min_seconds": 2.0159000996500254e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0005339870003808755,
+   "params": {
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": false,
+    "matches": 1,
+    "next": 85,
+    "reason": "iterations",
+    "searched": 85
+   },
+   "samples_seconds": [
+    0.0005339870003808755,
+    0.0005587920004472835,
+    0.0005934649998380337
+   ],
+   "warm_median_seconds": 0.0005761285001426586,
+   "warm_min_seconds": 0.0005587920004472835
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 92,
+    "reason": "output",
+    "searched": 92
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.0010339549990021624,
+   "params": {
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": true,
+    "matches": 2,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.0010339549990021624,
+    0.0011932609995710663,
+    0.001008076000289293
+   ],
+   "warm_median_seconds": 0.0011006684999301797,
+   "warm_min_seconds": 0.001008076000289293
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.011329695000313222,
+   "params": {
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.011329695000313222
+   ],
+   "warm_median_seconds": 0.011329695000313222,
+   "warm_min_seconds": 0.011329695000313222
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 0.00010855700020329095,
+   "params": {
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 2,
+    "matches": 2
+   },
+   "samples_seconds": [
+    0.00010855700020329095,
+    7.602900041092653e-05,
+    3.4852999306167476e-05
+   ],
+   "warm_median_seconds": 5.5440999858547e-05,
+   "warm_min_seconds": 3.4852999306167476e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0013017360015510349,
+   "params": {
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": false,
+    "matches": 0,
+    "next": 341,
+    "reason": "iterations",
+    "searched": 341
+   },
+   "samples_seconds": [
+    0.0013017360015510349,
+    0.0010267170000588521,
+    0.0014468879999185447
+   ],
+   "warm_median_seconds": 0.0012368024999886984,
+   "warm_min_seconds": 0.0010267170000588521
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 720,
+    "reason": "output",
+    "searched": 720
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.0006606549995922251,
+   "params": {
+    "dimension": 3,
+    "grid_points": 512,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 15,
+    "complete": true,
+    "matches": 3,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.0006606549995922251,
+    0.0005255239993857685,
+    0.0009282170012738789
+   ],
+   "warm_median_seconds": 0.0007268705003298237,
+   "warm_min_seconds": 0.0005255239993857685
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.005640118999508559,
+   "params": {
+    "dimension": 3,
+    "grid_points": 512,
+    "values": 8
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.005640118999508559
+   ],
+   "warm_median_seconds": 0.005640118999508559,
+   "warm_min_seconds": 0.005640118999508559
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 8.031899960769806e-05,
+   "params": {
+    "dimension": 3,
+    "grid_points": 512,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 3,
+    "matches": 3
+   },
+   "samples_seconds": [
+    8.031899960769806e-05,
+    3.0633998903795145e-05,
+    2.5133998860837892e-05
+   ],
+   "warm_median_seconds": 2.788399888231652e-05,
+   "warm_min_seconds": 2.5133998860837892e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0005089699989184737,
+   "params": {
+    "dimension": 3,
+    "grid_points": 512,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 15,
+    "complete": false,
+    "matches": 1,
+    "next": 170,
+    "reason": "iterations",
+    "searched": 170
+   },
+   "samples_seconds": [
+    0.0005089699989184737,
+    0.0004242920003889594,
+    0.00039329900027951226
+   ],
+   "warm_median_seconds": 0.00040879550033423584,
+   "warm_min_seconds": 0.00039329900027951226
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 3,
+    "grid_points": 512,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 292,
+    "reason": "output",
+    "searched": 292
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.0013183080009184778,
+   "params": {
+    "dimension": 3,
+    "grid_points": 4096,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": true,
+    "matches": 16,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.0013183080009184778,
+    0.0014797909989283653,
+    0.001204428999699303
+   ],
+   "warm_median_seconds": 0.0013421099993138341,
+   "warm_min_seconds": 0.001204428999699303
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.0458582880000904,
+   "params": {
+    "dimension": 3,
+    "grid_points": 4096,
+    "values": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.0458582880000904
+   ],
+   "warm_median_seconds": 0.0458582880000904,
+   "warm_min_seconds": 0.0458582880000904
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 0.00022026199985702988,
+   "params": {
+    "dimension": 3,
+    "grid_points": 4096,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 16,
+    "matches": 16
+   },
+   "samples_seconds": [
+    0.00022026199985702988,
+    6.168500112835318e-05,
+    5.6724000387475826e-05
+   ],
+   "warm_median_seconds": 5.92045007579145e-05,
+   "warm_min_seconds": 5.6724000387475826e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0010471299992786953,
+   "params": {
+    "dimension": 3,
+    "grid_points": 4096,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": false,
+    "matches": 4,
+    "next": 1365,
+    "reason": "iterations",
+    "searched": 1365
+   },
+   "samples_seconds": [
+    0.0010471299992786953,
+    0.0009086399986699689,
+    0.0008148420001816703
+   ],
+   "warm_median_seconds": 0.0008617409994258196,
+   "warm_min_seconds": 0.0008148420001816703
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 3,
+    "grid_points": 4096,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 1053,
+    "reason": "output",
+    "searched": 1053
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search",
+   "first_seconds": 0.005282857999191037,
+   "params": {
+    "dimension": 3,
+    "grid_points": 32768,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": true,
+    "matches": 62,
+    "primes": 1
+   },
+   "samples_seconds": [
+    0.005282857999191037,
+    0.005050683999797911,
+    0.004914508001093054
+   ],
+   "warm_median_seconds": 0.004982596000445483,
+   "warm_min_seconds": 0.004914508001093054
+  },
+  {
+   "backend": "python",
+   "case": "exact brute force (Python Fractions)",
+   "first_seconds": 0.36434189999999944,
+   "params": {
+    "dimension": 3,
+    "grid_points": 32768,
+    "values": 32
+   },
+   "phase": "run",
+   "result": 62,
+   "samples_seconds": [
+    0.36434189999999944
+   ],
+   "warm_median_seconds": 0.36434189999999944,
+   "warm_min_seconds": 0.36434189999999944
+  },
+  {
+   "backend": "numpy",
+   "case": "float64 brute force (tolerance 1e-9)",
+   "first_seconds": 0.0010300920002919156,
+   "params": {
+    "dimension": 3,
+    "grid_points": 32768,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "agrees": true,
+    "certified": false,
+    "exact_matches": 62,
+    "matches": 62
+   },
+   "samples_seconds": [
+    0.0010300920002919156,
+    0.00047782500041648746,
+    0.000395689001379651
+   ],
+   "warm_median_seconds": 0.00043675700089806924,
+   "warm_min_seconds": 0.000395689001379651
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by iterations (total / 3)",
+   "first_seconds": 0.0027259360012976686,
+   "params": {
+    "dimension": 3,
+    "grid_points": 32768,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 18,
+    "complete": false,
+    "matches": 25,
+    "next": 10922,
+    "reason": "iterations",
+    "searched": 10922
+   },
+   "samples_seconds": [
+    0.0027259360012976686,
+    0.002576468999905046,
+    0.0024735000006330665
+   ],
+   "warm_median_seconds": 0.0025249845002690563,
+   "warm_min_seconds": 0.0024735000006330665
+  },
+  {
+   "backend": "cpu",
+   "case": "search truncated by the output budget (1 match)",
+   "params": {
+    "dimension": 3,
+    "grid_points": 32768,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "complete": false,
+    "matches": 1,
+    "next": 2032,
+    "reason": "output",
+    "searched": 2032
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search (large rationals)",
+   "first_seconds": 0.0003537009997671703,
+   "params": {
+    "coefficients": "up to 10^18, denominators 10^18",
+    "dimension": 2,
+    "grid_points": 64,
+    "values": 8
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 806,
+    "complete": true,
+    "matches": 0,
+    "primes": 14
+   },
+   "samples_seconds": [
+    0.0003537009997671703,
+    0.0002891999993153149,
+    0.0002896900004998315
+   ],
+   "warm_median_seconds": 0.0002894449999075732,
+   "warm_min_seconds": 0.0002891999993153149
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search (large rationals)",
+   "first_seconds": 0.0006116679996921448,
+   "params": {
+    "coefficients": "up to 10^18, denominators 10^18",
+    "dimension": 2,
+    "grid_points": 256,
+    "values": 16
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1470,
+    "complete": true,
+    "matches": 0,
+    "primes": 25
+   },
+   "samples_seconds": [
+    0.0006116679996921448,
+    0.0005688929995812941,
+    0.0005825230000482406
+   ],
+   "warm_median_seconds": 0.0005757079998147674,
+   "warm_min_seconds": 0.0005688929995812941
+  },
+  {
+   "backend": "cpu",
+   "case": "exhaustive exact search (large rationals)",
+   "first_seconds": 0.0014566230001946678,
+   "params": {
+    "coefficients": "up to 10^18, denominators 10^18",
+    "dimension": 2,
+    "grid_points": 1024,
+    "values": 32
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 2783,
+    "complete": true,
+    "matches": 0,
+    "primes": 46
+   },
+   "samples_seconds": [
+    0.0014566230001946678,
+    0.0013810879991069669,
+    0.0013970139989396557
+   ],
+   "warm_median_seconds": 0.0013890509990233113,
+   "warm_min_seconds": 0.0013810879991069669
+  }
+ ],
+ "seconds": 0.9383147900007316,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "detail": "more than 3 searched coordinates is UnsupportedError (TR_INV_SWEEP_DIMS)",
+   "grid": "sweep coordinates",
+   "largest_admitted": {
+    "coordinates": 3
+   },
+   "smallest_refused": {
+    "coordinates": 4
+   }
+  },
+  {
+   "detail": "OverflowError past 128 primes (tests)",
+   "grid": "multimodular bound (signs)",
+   "largest_admitted": {
+    "bound_bits": 7806,
+    "primes": 128
+   },
+   "smallest_refused": {
+    "bound_bits": 7807,
+    "primes": 129
+   }
+  }
+ ]
+}

@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 15 |
-| planned | 56 |
-| in_progress | 4 |
+| partial | 11 |
+| planned | 49 |
+| in_progress | 15 |
 | validated | 6 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -447,7 +447,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `5615b56e021acb2071a440e963637b0a076db51e`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -465,7 +465,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 
 ### FND-005: Native module and operator registry
 
-Status: **partial**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Modules declare carriers, laws, valid transforms, sufficient state, proof dependencies, native kernels and complete construction/reuse costs.
 
@@ -517,23 +517,19 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `bae446434669e110608f41ece4187a911334e477`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
-- tests: [results/algebra_domains/validation.json](results/algebra_domains/validation.json)
-- tests: [results/algebra_domains/focused.log](results/algebra_domains/focused.log)
-- tests: [results/algebra_domains/native_domain_validation.json](results/algebra_domains/native_domain_validation.json)
-- tests: [results/algebra_domains/native_state_validation.json](results/algebra_domains/native_state_validation.json)
-- tests: [results/algebra_domains/independent_audit.json](results/algebra_domains/independent_audit.json)
-- tests: [results/algebra_foundation/native_validation.json](results/algebra_foundation/native_validation.json)
-- tests: [results/algebra_domains/benchmark_audit.json](results/algebra_domains/benchmark_audit.json)
+- tests: [results/math/FND-005/tests_test_math_registry.json](results/math/FND-005/tests_test_math_registry.json)
+- tests: [results/math/FND-005/sanitized_test_math_registry.json](results/math/FND-005/sanitized_test_math_registry.json)
 - benchmarks: [results/algebra_domains/cache_cpu.json](results/algebra_domains/cache_cpu.json)
 - benchmarks: [results/algebra_domains/cache_gpu.json](results/algebra_domains/cache_gpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_cpu.json](results/algebra_domains/response_baseline_cpu.json)
 - benchmarks: [results/algebra_domains/response_current_cpu.json](results/algebra_domains/response_current_cpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
+- benchmarks: [results/math/FND-005/benchmark_cpu_math_registry_vm.json](results/math/FND-005/benchmark_cpu_math_registry_vm.json)
 
 <a id="fnd-006"></a>
 
@@ -618,7 +614,7 @@ Benchmark cases:
 
 ### FND-008: Complete-plan choice and cost evidence
 
-Status: **partial**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Cost chaining, algebraic combination, basis construction/reuse, fusion and materialization independently. Preserve explicit scan and CPU/GPU finalization accounting.
 
@@ -667,11 +663,19 @@ Additional limits:
 - Cached states are reused on the CPU only, not kept in device memory.
 - The planner covers the registry's request kind and the DISC-001 verifier; later families register their candidates.
 
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/FND-008/tests_test_math_planner.json](results/math/FND-008/tests_test_math_planner.json)
+- tests: [results/math/FND-008/sanitized_test_math_planner.json](results/math/FND-008/sanitized_test_math_planner.json)
+- benchmarks: [results/math/FND-008/benchmark_cpu_math_planner_vm.json](results/math/FND-008/benchmark_cpu_math_planner_vm.json)
+
 <a id="fnd-009"></a>
 
 ### FND-009: Numeric carriers and exactness conversions
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Extend checked rationals to explicit wide integers, arbitrary precision, real/complex numerical values, finite fields, intervals and truncated series without silently mixing laws.
 
@@ -713,6 +717,14 @@ Additional limits:
 - Interval endpoints are doubles; no transcendental interval functions; complex division refused when the divisor's squared modulus rounds to zero.
 - Series have rational coefficients only (no GF(p) series); composition is cubic in the order.
 - Batched checked evaluations may write part of their output array before refusing; the Python layer discards it.
+
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/FND-009/tests_test_math_carriers.json](results/math/FND-009/tests_test_math_carriers.json)
+- tests: [results/math/FND-009/sanitized_test_math_carriers.json](results/math/FND-009/sanitized_test_math_carriers.json)
+- benchmarks: [results/math/FND-009/benchmark_cpu_math_carriers_vm.json](results/math/FND-009/benchmark_cpu_math_carriers_vm.json)
 
 <a id="fnd-010"></a>
 
@@ -766,7 +778,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `5dcd0377d6c3efed9699ba287c82e491e7442c8a`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 - tests: [results/math/FND-010/tests_test_math_budgets.json](results/math/FND-010/tests_test_math_budgets.json)
 - tests: [results/math/FND-010/sanitized_test_math_budgets.json](results/math/FND-010/sanitized_test_math_budgets.json)
@@ -873,7 +885,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `44f06add727d6eb05f672af7c436e327ac28d81c`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 - tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
 - tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
@@ -883,7 +895,7 @@ Measured runtime: `44f06add727d6eb05f672af7c436e327ac28d81c`.
 
 ### FND-013: State ownership, concurrency and native ABI
 
-Status: **partial**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Opaque owned handles, immutable sharing, explicit release, deterministic closed-handle errors and serialized mutable caches; ABI version/size checks cover all ctypes boundaries.
 
@@ -934,23 +946,19 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `bae446434669e110608f41ece4187a911334e477`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
-- tests: [results/algebra_domains/validation.json](results/algebra_domains/validation.json)
-- tests: [results/algebra_domains/focused.log](results/algebra_domains/focused.log)
-- tests: [results/algebra_domains/native_domain_validation.json](results/algebra_domains/native_domain_validation.json)
-- tests: [results/algebra_domains/native_state_validation.json](results/algebra_domains/native_state_validation.json)
-- tests: [results/algebra_domains/independent_audit.json](results/algebra_domains/independent_audit.json)
-- tests: [results/algebra_foundation/native_validation.json](results/algebra_foundation/native_validation.json)
-- tests: [results/algebra_domains/benchmark_audit.json](results/algebra_domains/benchmark_audit.json)
+- tests: [results/math/FND-013/tests_test_math_handles.json](results/math/FND-013/tests_test_math_handles.json)
+- tests: [results/math/FND-013/sanitized_test_math_handles.json](results/math/FND-013/sanitized_test_math_handles.json)
 - benchmarks: [results/algebra_domains/cache_cpu.json](results/algebra_domains/cache_cpu.json)
 - benchmarks: [results/algebra_domains/cache_gpu.json](results/algebra_domains/cache_gpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_cpu.json](results/algebra_domains/response_baseline_cpu.json)
 - benchmarks: [results/algebra_domains/response_current_cpu.json](results/algebra_domains/response_current_cpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
+- benchmarks: [results/math/FND-013/benchmark_cpu_math_handles_vm.json](results/math/FND-013/benchmark_cpu_math_handles_vm.json)
 
 ## CALC: Continuous calculus
 
@@ -1084,7 +1092,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### CALC-003: Non-polynomial finite-separation calculus
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Closed families such as fixed-frequency phase shifts and separable exponentials return compact parameter functions and their derivatives/integrals.
 
@@ -1130,6 +1138,14 @@ Additional limits:
 - phi
 -  < 2^62; at most 16 phase factors.
 
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/CALC-003/tests_test_math_calc.json](results/math/CALC-003/tests_test_math_calc.json)
+- tests: [results/math/CALC-003/sanitized_test_math_calc.json](results/math/CALC-003/sanitized_test_math_calc.json)
+- benchmarks: [results/math/CALC-003/benchmark_cpu_math_calc_vm.json](results/math/CALC-003/benchmark_cpu_math_calc_vm.json)
+
 ## JET: Derivative algebras
 
 Dual numbers and truncated multivariate series for simultaneous values and derivatives.
@@ -1138,7 +1154,7 @@ Dual numbers and truncated multivariate series for simultaneous values and deriv
 
 ### JET-001: Dual-number directional derivatives
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Native pair payloads carry a value and first directional derivative with typed sum/product/chain laws.
 
@@ -1180,11 +1196,19 @@ Additional limits:
 - Circuits have one output and the expansion center is fixed per plan.
 - Only the aggregate runs on CUDA; plan compilation, readouts and conversions are CPU.
 
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/JET-001/tests_test_math_jet.json](results/math/JET-001/tests_test_math_jet.json)
+- tests: [results/math/JET-001/sanitized_test_math_jet.json](results/math/JET-001/sanitized_test_math_jet.json)
+- benchmarks: [results/math/JET-001/benchmark_cpu_math_jet_vm.json](results/math/JET-001/benchmark_cpu_math_jet_vm.json)
+
 <a id="jet-002"></a>
 
 ### JET-002: Higher-order and multivariate jets
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Truncated series payloads produce Hessians, Hessian-vector products and mixed partials with explicit factorial or Hasse-basis conventions.
 
@@ -1225,6 +1249,14 @@ Additional limits:
 - Evaluation uses int64 numerators over fixed int64 denominators; many decimal or rational factors refuse early (no big-rational or GF(p) evaluation engine, only exact conversions of results).
 - Circuits have one output and the expansion center is fixed per plan.
 - Only the aggregate runs on CUDA; plan compilation, readouts and conversions are CPU.
+
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/JET-002/tests_test_math_jet.json](results/math/JET-002/tests_test_math_jet.json)
+- tests: [results/math/JET-002/sanitized_test_math_jet.json](results/math/JET-002/sanitized_test_math_jet.json)
+- benchmarks: [results/math/JET-002/benchmark_cpu_math_jet_vm.json](results/math/JET-002/benchmark_cpu_math_jet_vm.json)
 
 ## RESP: Whole response functions
 
@@ -1337,7 +1369,7 @@ Solve for parameter values or changes producing a requested answer.
 
 ### INV-001: Linear and univariate polynomial inverse answers
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Solve bounded exact linear equations first; extend to certified intervals/algebraic roots for univariate response targets.
 
@@ -1378,6 +1410,14 @@ Additional limits:
 - Sign evaluation and refinement use at most 128 moduli (values up to about 7,800 bits) and raise OverflowError beyond.
 - The grid search takes first-slice polynomials (int64 rational coefficients, degree <= 8, at most 8 unknowns); solve_affine takes up to 64 unknowns.
 - Sturm sequences and Fourier-Motzkin elimination are exact but grow quickly with degree or free parameters; both are budgeted.
+
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/INV-001/tests_test_math_inv.json](results/math/INV-001/tests_test_math_inv.json)
+- tests: [results/math/INV-001/sanitized_test_math_inv.json](results/math/INV-001/sanitized_test_math_inv.json)
+- benchmarks: [results/math/INV-001/benchmark_cpu_math_inv_vm.json](results/math/INV-001/benchmark_cpu_math_inv_vm.json)
 
 <a id="inv-002"></a>
 
@@ -1424,7 +1464,7 @@ Optimize query-defined objectives under explicitly declared domains and constrai
 
 ### OPT-001: Quadratic objective minimizers
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Minimize scalar or small multivariate quadratic response functions with singular/indefinite/domain cases explicit.
 
@@ -1465,6 +1505,14 @@ Additional limits:
 
 - Boxes up to 8 parameters (3^n faces); one-sided bounds and general linear constraints are not supported.
 - Unconstrained solves and the exact face phase run on the CPU.
+
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/OPT-001/tests_test_math_opt.json](results/math/OPT-001/tests_test_math_opt.json)
+- tests: [results/math/OPT-001/sanitized_test_math_opt.json](results/math/OPT-001/sanitized_test_math_opt.json)
+- benchmarks: [results/math/OPT-001/benchmark_cpu_math_opt_vm.json](results/math/OPT-001/benchmark_cpu_math_opt_vm.json)
 
 <a id="opt-002"></a>
 
@@ -1792,7 +1840,7 @@ Moment matrices, regression, covariance, projections and eigensystems.
 
 ### LIN-001: Grouped moment matrices and regression systems
 
-Status: **partial**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Assemble exact counts, sums, X^T X and X^T y from a compatible basis and grain; general grouped/wide banks extend the initial scalar slice.
 
@@ -1838,11 +1886,19 @@ Additional limits:
 - At most 16 features; dense groups (absent groups use memory).
 - Pairwise states built from a bank lack per-pair sums, so covariance on them is refused; the pairwise covariance/correlation may be indefinite (tested), the raw pairwise Gram is PSD.
 
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/LIN-001/tests_test_math_lin.json](results/math/LIN-001/tests_test_math_lin.json)
+- tests: [results/math/LIN-001/sanitized_test_math_lin.json](results/math/LIN-001/sanitized_test_math_lin.json)
+- benchmarks: [results/math/LIN-001/benchmark_cpu_math_lin_vm.json](results/math/LIN-001/benchmark_cpu_math_lin_vm.json)
+
 <a id="lin-002"></a>
 
 ### LIN-002: Solves, projections, covariance and eigensystems
 
-Status: **planned**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Small native matrix operators finalize retained states, with exact solves where supported and explicit numerical contracts for decompositions.
 
@@ -1882,6 +1938,14 @@ Additional limits:
 
 - Solves up to 64 x 63; the CRT and verification step on the CPU costs about an exact solve, so the device pays off only with many systems.
 - Eigensystems are floating point with certified residual and eigenvalue bounds; no claim on eigenvector accuracy beyond the reported bounds.
+
+Validation receipts:
+
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+
+- tests: [results/math/LIN-002/tests_test_math_lin.json](results/math/LIN-002/tests_test_math_lin.json)
+- tests: [results/math/LIN-002/sanitized_test_math_lin.json](results/math/LIN-002/sanitized_test_math_lin.json)
+- benchmarks: [results/math/LIN-002/benchmark_cpu_math_lin_vm.json](results/math/LIN-002/benchmark_cpu_math_lin_vm.json)
 
 <a id="lin-003"></a>
 
@@ -2942,7 +3006,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `5dcd0377d6c3efed9699ba287c82e491e7442c8a`.
+Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 - tests: [results/math/DISC-001/tests_test_math_disc.json](results/math/DISC-001/tests_test_math_disc.json)
 - tests: [results/math/DISC-001/sanitized_test_math_disc.json](results/math/DISC-001/sanitized_test_math_disc.json)

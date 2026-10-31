@@ -1,0 +1,1110 @@
+{
+ "argv": [
+  "--capability",
+  "FND-013",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/FND-013/benchmark_cpu_math_handles_vm.json"
+ ],
+ "capability": "FND-013",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "a4ff3bb2f14099a7f535b95fde7228af59c22fc0",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "b46ec481a478b529e2e64c8a5f8b80448e8b40ae0cb81c143ad129370806d377",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "d130cb58d7c9aa4831389f24ad5e4259fa3810777262fbc9666eaa1c0c87b985"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T09:59:39+00:00"
+ },
+ "notes": [
+  "Lifetime records give seconds per create/use/close cycle per batch and the native counters and RSS after every batch; first-slice rows are the Python-owned objects without a table.",
+  "Concurrency: Python threads; native evaluations release the GIL and run in parallel (up to the machine's cores), cache calls are short and serialized by the cache's native mutex (and the GIL). The process priority and CPU affinity are only read.",
+  "NumPy int64 is a speed baseline only: it is exact on this grid because every value fits int64; it would wrap silently past it, where the native evaluation returns 128-bit values or flags overflow."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "table construction",
+   "first_seconds": 0.0010810570001922315,
+   "params": {
+    "capacity": 1024
+   },
+   "phase": "build",
+   "result": 1024,
+   "samples_seconds": [
+    0.0010810570001922315,
+    5.355800021789037e-05,
+    4.233000072417781e-05,
+    4.588399860949721e-05,
+    3.643499985628296e-05
+   ],
+   "warm_median_seconds": 4.410699966683751e-05,
+   "warm_min_seconds": 3.643499985628296e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 0.000206718001209083,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 16,
+   "samples_seconds": [
+    0.000206718001209083,
+    4.06340004701633e-05,
+    2.6432999220560305e-05,
+    2.4197999664465897e-05,
+    2.0512999981292523e-05
+   ],
+   "warm_median_seconds": 2.53154994425131e-05,
+   "warm_min_seconds": 2.0512999981292523e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 0.005588604999502422,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.005588604999502422,
+    0.005589259999396745,
+    0.005828004999784753,
+    0.005504893000761513,
+    0.005429902999821934,
+    0.0054791649999970105
+   ],
+   "warm_median_seconds": 0.005504893000761513,
+   "warm_min_seconds": 0.005429902999821934
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 0.01261572499970498,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01261572499970498,
+    0.012704569000561605,
+    0.01253590600026655
+   ],
+   "warm_median_seconds": 0.012620237500414078,
+   "warm_min_seconds": 0.01253590600026655
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.0057721539997146465,
+   "params": {
+    "points": 125,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0057721539997146465,
+    0.002136396999048884
+   ],
+   "warm_median_seconds": 0.002136396999048884,
+   "warm_min_seconds": 0.002136396999048884
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 0.00011475700011942536,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 256,
+   "samples_seconds": [
+    0.00011475700011942536,
+    4.9500000386615284e-05,
+    3.938699956052005e-05,
+    3.587299943319522e-05,
+    3.343299977132119e-05
+   ],
+   "warm_median_seconds": 3.7629999496857636e-05,
+   "warm_min_seconds": 3.343299977132119e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 0.1279761719997623,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.1279761719997623,
+    0.12810159800028487,
+    0.12737715900038893,
+    0.12868457500007935,
+    0.12670101600087946,
+    0.12882252300005348
+   ],
+   "warm_median_seconds": 0.12810159800028487,
+   "warm_min_seconds": 0.12670101600087946
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 0.19515653399867006,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.19515653399867006,
+    0.1872600099995907,
+    0.18574855599945295
+   ],
+   "warm_median_seconds": 0.18650428299952182,
+   "warm_min_seconds": 0.18574855599945295
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.004727941000965075,
+   "params": {
+    "points": 20,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004727941000965075,
+    0.004636275001757895
+   ],
+   "warm_median_seconds": 0.004636275001757895,
+   "warm_min_seconds": 0.004636275001757895
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 0.0009669430000940338,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 4096,
+   "samples_seconds": [
+    0.0009669430000940338,
+    0.0007579520006402163,
+    0.0007793139993736986,
+    0.0007899579995864769,
+    0.0007161529993027216
+   ],
+   "warm_median_seconds": 0.0007686330000069574,
+   "warm_min_seconds": 0.0007161529993027216
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 1.9080257719997462,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    1.9080257719997462,
+    2.090502094999465,
+    1.9725214489990321,
+    2.0450880419994064,
+    1.9541488080012641,
+    2.036719625999467
+   ],
+   "warm_median_seconds": 2.036719625999467,
+   "warm_min_seconds": 1.9541488080012641
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 4.187190556000132,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.187190556000132,
+    4.054166672000065,
+    4.079746344999876
+   ],
+   "warm_median_seconds": 4.06695650849997,
+   "warm_min_seconds": 4.054166672000065
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.08624588000020594,
+   "params": {
+    "points": 20,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08624588000020594,
+    0.11567657600062375
+   ],
+   "warm_median_seconds": 0.11567657600062375,
+   "warm_min_seconds": 0.11567657600062375
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "limit": 256,
+   "message": "polynomial: needs 257 support, budget 256",
+   "need": 257,
+   "params": {
+    "budget_support": 256,
+    "terms": 257
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.641899977286812e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "limit": 1000,
+   "message": "polynomial evaluation: needs 1001 output, budget 1000",
+   "need": 1001,
+   "params": {
+    "budget_output": 1000,
+    "points": 1001
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.35739984823158e-05,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "insert into a full table",
+   "limit": 4,
+   "message": "polynomial: needs 5 states, budget 4",
+   "need": 5,
+   "params": {
+    "capacity": 4,
+    "live": 4
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.1014000089489855e-05,
+   "refused": true,
+   "resource": "states"
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 6.065819468744848e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 9601,
+     "destroyed": 3200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 65110016
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 19201,
+     "destroyed": 6400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 65110016
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 28801,
+     "destroyed": 9600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 65110016
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 38401,
+     "destroyed": 12800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 65110016
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 48001,
+     "destroyed": 16000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 65114112
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "polynomial, 16 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 65101824,
+   "samples_seconds": [
+    6.065819468744848e-05,
+    7.054377687495616e-05,
+    8.430495906225133e-05,
+    9.360126999979456e-05,
+    7.58716643747448e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 8.008831171849807e-05,
+   "warm_min_seconds": 7.054377687495616e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 0.0010511770450000312,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 52801,
+     "destroyed": 17600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 57601,
+     "destroyed": 19200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 62401,
+     "destroyed": 20800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 67201,
+     "destroyed": 22400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 72001,
+     "destroyed": 24000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 65728512
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 1600,
+    "kind": "polynomial, 256 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 65728512,
+   "samples_seconds": [
+    0.0010511770450000312,
+    0.0010322899537504782,
+    0.0009719777106249694,
+    0.0009401552806241397,
+    0.0009084635249996609
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 0.0009560664956245546,
+   "warm_min_seconds": 0.0009084635249996609
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 0.014546037231241371,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 72481,
+     "destroyed": 24160,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 72961,
+     "destroyed": 24320,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 73441,
+     "destroyed": 24480,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 73921,
+     "destroyed": 24640,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65728512
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 24800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65728512
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 160,
+    "kind": "polynomial, 4096 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 65728512,
+   "samples_seconds": [
+    0.014546037231241371,
+    0.014209926187493237,
+    0.013180473700003859,
+    0.013290112193749338,
+    0.01382596029375236
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 0.013558036243750848,
+   "warm_min_seconds": 0.013180473700003859
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 2.3810258750245338e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 28000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 31200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 34400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 37600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 40800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "domain"
+   },
+   "phase": "repeated",
+   "rss_before": 65728512,
+   "samples_seconds": [
+    2.3810258750245338e-05,
+    2.4994932187496487e-05,
+    2.5098811249790742e-05,
+    2.440354500038211e-05,
+    2.5366478125192772e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 2.5046871718643616e-05,
+   "warm_min_seconds": 2.440354500038211e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 2.7003178437325915e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 44000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 47200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 50400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 53600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 56800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 65732608
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "bank"
+   },
+   "phase": "repeated",
+   "rss_before": 65732608,
+   "samples_seconds": [
+    2.7003178437325915e-05,
+    2.731996656279989e-05,
+    2.6984046562574805e-05,
+    3.051387625021107e-05,
+    3.0130291562500134e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 2.8725129062650012e-05,
+   "warm_min_seconds": 2.6984046562574805e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 3.490985250095946e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 76001,
+     "destroyed": 60000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 77601,
+     "destroyed": 63200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 79201,
+     "destroyed": 66400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 80801,
+     "destroyed": 69600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 82401,
+     "destroyed": 72800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 1600,
+    "kind": "state cache with put and get"
+   },
+   "phase": "repeated",
+   "rss_before": 65732608,
+   "samples_seconds": [
+    3.490985250095946e-05,
+    3.830815687592803e-05,
+    3.350644062493302e-05,
+    3.231060937423536e-05,
+    3.2494163749561265e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 3.300030218724714e-05,
+   "warm_min_seconds": 3.231060937423536e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 3.081956750008885e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 92001,
+     "destroyed": 76000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 101601,
+     "destroyed": 79200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 111201,
+     "destroyed": 82400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 120801,
+     "destroyed": 85600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 130401,
+     "destroyed": 88800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 65732608
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "deferred close (retain, close, release)"
+   },
+   "phase": "repeated",
+   "rss_before": 65732608,
+   "samples_seconds": [
+    3.081956750008885e-05,
+    3.3525799687481594e-05,
+    3.6230747812737715e-05,
+    3.2493005625156e-05,
+    3.559293062494362e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 3.4559365156212605e-05,
+   "warm_min_seconds": 3.2493005625156e-05
+  },
+  {
+   "backend": "first-slice",
+   "case": "lifetime",
+   "first_seconds": 1.1920788124939464e-05,
+   "memory_after_batches": [
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "domain"
+   },
+   "phase": "repeated",
+   "rss_before": 65732608,
+   "samples_seconds": [
+    1.1920788124939464e-05,
+    1.2437071562771962e-05,
+    1.1750154062042384e-05,
+    1.2978763125488513e-05,
+    1.4864342500118255e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 1.2707917344130237e-05,
+   "warm_min_seconds": 1.1750154062042384e-05
+  },
+  {
+   "backend": "first-slice",
+   "case": "lifetime",
+   "first_seconds": 6.275002187408063e-06,
+   "memory_after_batches": [
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    },
+    {
+     "rss_bytes": 65736704
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "state cache"
+   },
+   "phase": "repeated",
+   "rss_before": 65736704,
+   "samples_seconds": [
+    6.275002187408063e-06,
+    6.199143437584098e-06,
+    5.962528437635228e-06,
+    5.950876874862843e-06,
+    6.23414093752217e-06
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 6.0808359376096635e-06,
+   "warm_min_seconds": 5.950876874862843e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime totals",
+   "params": {},
+   "phase": "final",
+   "result": {
+    "allocations": 1,
+    "deferred_closes": 16000,
+    "destroyed": 88802,
+    "inserted": 88802,
+    "live": 0,
+    "payload_bytes": 0,
+    "releases": 153600,
+    "retains": 153600
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 4.783289386999968,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 1
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    4.783289386999968,
+    4.962336741000399,
+    4.7817383559995505
+   ],
+   "warm_median_seconds": 4.872037548499975,
+   "warm_min_seconds": 4.7817383559995505
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.15933703699920443,
+   "params": {
+    "operations": 6000,
+    "threads": 1,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.15933703699920443,
+    0.1349340980013949,
+    0.1347187320006924
+   ],
+   "warm_median_seconds": 0.13482641500104364,
+   "warm_min_seconds": 0.1347187320006924
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 2.7133013189995836,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 2
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    2.7133013189995836,
+    2.5953463179994287,
+    2.5998955779996322
+   ],
+   "warm_median_seconds": 2.5976209479995305,
+   "warm_min_seconds": 2.5953463179994287
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.48073933299929195,
+   "params": {
+    "operations": 6000,
+    "threads": 2,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.48073933299929195,
+    0.7041965959997469,
+    0.4385514469995542
+   ],
+   "warm_median_seconds": 0.5713740214996506,
+   "warm_min_seconds": 0.4385514469995542
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 2.6280587100009143,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 4
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    2.6280587100009143,
+    2.5584295530006784,
+    2.723434877001637
+   ],
+   "warm_median_seconds": 2.6409322150011576,
+   "warm_min_seconds": 2.5584295530006784
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.5714490430000296,
+   "params": {
+    "operations": 6000,
+    "threads": 4,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.5714490430000296,
+    0.6061587330004841,
+    0.6102321580001444
+   ],
+   "warm_median_seconds": 0.6081954455003142,
+   "warm_min_seconds": 0.6061587330004841
+  },
+  {
+   "after": {
+    "affinity": [
+     0,
+     1
+    ],
+    "nice": 0
+   },
+   "backend": "os",
+   "before": {
+    "affinity": [
+     0,
+     1
+    ],
+    "nice": 0
+   },
+   "case": "process scheduling",
+   "params": {},
+   "phase": "read only",
+   "result": {
+    "affinity_unchanged": true,
+    "cpus": 2,
+    "nice_after": 0,
+    "nice_before": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrency totals",
+   "params": {},
+   "phase": "final",
+   "result": {
+    "cache_hits": 54000,
+    "cache_puts": 54000,
+    "releases": 324866,
+    "retains": 324866
+   }
+  }
+ ],
+ "seconds": 82.90802149900082,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget_support": 256,
+   "grid": "polynomial support",
+   "largest_admitted": {
+    "terms": 256
+   },
+   "smallest_refused": {
+    "terms": 257
+   }
+  },
+  {
+   "budget_output": 1000,
+   "grid": "evaluation output",
+   "largest_admitted": {
+    "points": 1000
+   },
+   "smallest_refused": {
+    "points": 1001
+   }
+  },
+  {
+   "capacity": 4,
+   "grid": "table capacity",
+   "largest_admitted": {
+    "live": 4
+   },
+   "smallest_refused": {
+    "live": 5
+   }
+  }
+ ]
+}
