@@ -91,6 +91,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 53 | kernel | exact finite-feature kernel embeddings | KERNEL-001 | kernel features | `tr_kernel_build` | `tr_mgpu_kernel_build`, `tr_mgpu_kernel_upload`, `tr_mgpu_kernel_query`, `tr_mgpu_kernel_bytes`, `tr_mgpu_kernel_free` |
 | 54 | symcount | symbolic model counting | COUNT-002 | decision diagram | `tr_symc_compile` | `tr_mgpu_symcount_levels`, `tr_mgpu_symcount_brute` |
 | 55 | explain | explanations and deletion propagation | PROV-002 | explanation state | `tr_expl_create` | `tr_mgpu_explain_propagate` |
+| 56 | fourier | fixed spectral basis | SPEC-001 | spectral basis | `tr_fourier_plan_create` | `tr_mgpu_fourier_sums` |
+| 57 | lin.update | leave-group-out and low-rank updates | LIN-003 | solved system | `tr_linupd_fit` | `tr_mgpu_linupd_logo` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

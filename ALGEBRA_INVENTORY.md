@@ -2119,20 +2119,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [LIN-001](#lin-001), [LIN-002](#lin-002), [DELTA-001](#delta-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_linupd.c): immutable exact solved models of LIN-002's normal equations of a fit of a LIN-001 moment state (value units, exact ridge on the features, feature subsets; A, A0, b, y^T y, sum y, n, the design) or of any square rational system, with LIN-002's canonical verified solution set (unique / family with the canonical nullspace / none with a certificate) and statistics, and (on request) A^-1 and det(A) from fraction-free Gauss-Jordan elimination of [M | diag(L) | c] over big integers with A A^-1 = I verified exactly. Exact Sherman-Morrison-Woodbury updates A + U V^T (rank <= 64): the capacitance K = I + V^T A^-1 U and its determinant (rank one: 1 + v^T A^-1 u) formed exactly, det(K) != 0 giving A'^-1 and x' (verified A' x' = b'), det(K) = 0 or no kept inverse following the declared contract (an exact rebuild with LIN-002's canonical singular solution set, or SingularError); row deletions and insertions (U = -/+ Z^T, V = Z^T, y^T y, sum y, n updated; one row: 1 -/+ h), ridge changes (the rank-p Woodbury update or a rebuild from A0, equal), subtraction or addition of a compatible group state. Leave-one-group-out plans: the group states copied, their 192-bit total and every complement total - g formed exactly, the exact integer complement systems (row scaling den 10^(s_u + T)) with their Hadamard bounds; every system solved exactly (LIN-002's Bareiss), or finished from modular residues: agreeing primes, Garner CRT of the det-scaled reduced row echelon form, exact verification against the integer system, more primes when short. A binary64 variant: Gauss-Jordan with partial pivoting on the midpoint of A's tight enclosure, certified by interval arithmetic (alpha >= ||I - R A||_inf, bound = ||R (b - A x~)||_inf / (1 - alpha), kappa >= ||A|| ||R||), refused when alpha >= 1 or the bound exceeds the tolerance.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_linupd_gpu.cu (tr_mgpu_linupd_logo): batched leave-one-group-out solves, one work item per (group, prime in [2^61, 2^62)): the complement normal system of its group formed modulo its prime directly from the copied group states and their total (192-bit words reduced, row scaling and ridge modulo p), then LIN-002's modular Gauss-Jordan elimination (tr_lin_modular_rref) into its own output block (header and det-scaled reduced row echelon form); one output slot per work item, equal bit for bit to the CPU reference tr_linupd_logo_residues (emulated with a scrambled thread order in the tests); the host finish (prime choice, CRT within the Hadamard bounds, exact verification) gives the same canonical models as the CPU path.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Fit / system: variables = n (<= 63), tensor = n (2n + 1), output = n (n + 1), plus LIN-002's normal-equation needs k (k + 1); updates: tensor = n r + r^2 + n^2 (r <= 64), output = n (n + 1).
+- Leave-one-group-out plan: states = groups x slots, tensor = systems x n (n + 1), output = systems, bytes = the copies; each system as a fit; CUDA: tensor = systems x primes x (4 + n (n + 1)), bytes = the device copies and residues (at most 1024 primes).
+- Floating variant: tensor = n^2, bytes = 48 n^2; refused with NotConvergedError when a pivot vanishes, alpha >= 1 or the certified bound exceeds tol.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_lin.c`
-- `torbles/math_lin.h`
-- `tests/test_math_lin.py`
+- `torbles/math_linupd.h`
+- `torbles/math_linupd.c`
+- `torbles/math_linupd_gpu.cu`
+- `torbles/math_linupd.py`
+- `tests/test_math_linupd.py`
+- `bench/benchmark_math_linupd.py`
 
 Acceptance tests:
 
@@ -2143,6 +2147,14 @@ Benchmark cases:
 
 - Use feature dimensions 2/4/8/16, groups 1/16/256 and 1k/100k/1M rows; report moment/matrix assembly, bytes and solve/decomposition time separately.
 - Include well-conditioned, nearly singular and exactly rank-deficient matrices; compare repeated model/ridge/deletion requests against complete reconstruction.
+
+Additional limits:
+
+- Woodbury updates use canonical big rationals (O(n^2 r) rational operations, a gcd each): in the benchmark (20,000 rows) a one-row Woodbury deletion took 2.4 to 14 times as long as the exact rebuild of the updated normal equations with its inverse (3 to 17 unknowns) and was faster than the complete reconstruction from the rows only for small systems (5x at 3 unknowns, within 10% at 9 and 17); a ridge change touching every feature was 3 to 5 times slower than its rebuild from A0. A fraction-free (adjugate) inverse representation that would avoid most gcds is not implemented.
+- Leave-group-out subtracts moment states and solves each complement system again; there is no low-rank downdate from Gram matrices (moment states do not keep the rows).
+- Row deletions need the deleted rows and cannot detect rows that were never in the data; rows updates are for common-listwise regression models only.
+- The CUDA kernel covers the modular LOGO eliminations; the host forms the exact integer systems (Hadamard bounds, verification) and runs the CRT, comparable in cost to the exact CPU solve; updates and the floating variant are CPU code.
+- No FND-007 certificate is emitted: FND-007's claim kinds are row relations of a scope or polynomial laws, and a fitted model proves neither; every exact solution is verified natively (A x = b, A A^-1 = I, the CRT reconstruction against the integer system) and flagged so.
 
 ## TENSOR: Tensor algebra
 
@@ -2342,20 +2354,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-004](#fnd-004), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_fourier.c, the per-row reduction shared with CUDA in math_fourier.h): a basis plan over an FND-004 scope (d <= 16 columns, an optional weight column, unit radian / pi / turn, a set of m distinct exact int64-rational frequency vectors, sorted for exact lookup) with 64.192 fixed-point reduction constants (radians from a 512-bit 2/pi, pi and turn units exact when dyadic) and CALC-003's proven sum scale; per counted row the angle reduced exactly in 384-bit two's complement (quadrant exact, fraction to 128 bits; exact integer angles give exact sin / cos), CALC-003's certified 120-bit sin / cos, each weighted enclosure rounded outward to integers and summed exactly in 128 bits per (group, frequency); per group the selected and counted rows and the exact weight sum. Exact bounds [lo, hi] / (2^s 10^wscale) of C and S; for one radian dimension the sums equal CALC-003's phase family bit for bit. Phase actions without rescanning: translations tau and phases phi reduced exactly from the exact frequencies and the exact doubles, derivative orders in the translation (times i c omega_j) and the phase (times i), normalization by the exact weight sum (the empirical characteristic function), all as outward-rounded complex intervals; derivative states whose exact bounds are exact transforms (rotation by i^m, omega^alpha as big rationals, the unit factor c^|alpha| reported apart). Identity: columns, weight, unit, the exact frequency set and the scope's exact descriptor; require / Retained answer subsets and build new basis states for new frequencies; a frequency outside the basis is refused. The Boolean case: 2^k Walsh frequencies over 0 / 1 columns give SPEC-002's exact W(S) and the exact histogram through SPEC-002's inverse transform with its full-domain cost; incomplete Walsh sets, non-Boolean data and inexact coefficients are refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_fourier_gpu.cu (tr_mgpu_fourier_sums): a counts kernel (a slice of rows per work item: selected rows, counted rows and the exact weight sum per group, local while the group stays the same, one atomic add per counter, two-word 128-bit atomics for the weight sums) and a feature kernel (work item = (frequency, slice of rows): the same inline exact reduction and certified per-row enclosures as the CPU, accumulated locally per group and added with exact two-word 128-bit atomics tr_atomic_add_wide under the host's proof that no partial sum leaves 2^126); the readback is adopted natively after consistency checks; equal to the CPU bit for bit (emulated with a scrambled thread order in the tests). Actions, derivatives and the Walsh inverse run on the CPU.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Build: variables = d (<= 16), support = m frequencies (<= 2^22), states = groups x m, tensor = selected rows x m, bytes = the plan, the sums and the state (CUDA: every device copy, tr_fourier_device_bytes).
+- Actions: degree = |alpha| + beta with the state's (<= 64), output = requests x selected frequencies, tensor = output x (d + 1), bytes = the selected coefficients; derivative: degree, states, bytes; Walsh inverse: variables = k, tensor = 2^k, iterations = k, bytes = 40 x 2^k.
+- Refused before allocation: AlgebraBudgetError; UnsupportedError for d > 16, a reduction constant >= 2^64, |tau| or |phi| >= 2^62; DomainError for missing spectral support, a zero weight sum (characteristic function) or a non-Boolean Walsh inverse.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_spec.c`
-- `torbles/math_spec.h`
-- `tests/test_math_spec.py`
+- `torbles/math_fourier.h`
+- `torbles/math_fourier.c`
+- `torbles/math_fourier_gpu.cu`
+- `torbles/math_fourier.py`
+- `tests/test_math_fourier.py`
+- `bench/benchmark_math_fourier.py`
 
 Acceptance tests:
 
@@ -2366,6 +2382,14 @@ Benchmark cases:
 
 - Use fixed frequency sets of 1/8/32 elements and 1/100/10,000 phase/evaluation requests; distinguish new-frequency construction from fixed-basis actions.
 - For Boolean transforms vary k=3/6/10/12 within budget, reporting all 2^k states, normalization and forward/inverse timings rather than claiming row-count-only cost.
+
+Additional limits:
+
+- One certified 120-bit sin / cos per (row, frequency), about 2 us on the CPU (no harmonic recurrences or angle-addition reuse); frequencies are int64 rationals; at most 16 dimensions.
+- Actions return outward-rounded double rectangles (no exact bounds of rotations by transcendental angles); only derivative states carry exact rational transforms.
+- Only the feature sums run on CUDA; actions, derivatives, lookups and the Walsh inverse are CPU code.
+- The only inverse transform is the Boolean (Walsh) one; no general discrete Fourier inversion or band-limited reconstruction is offered, and nothing is ever reconstructed from an incomplete basis.
+- No FND-007 certificate is emitted: FND-007's claim kinds are row relations of a scope or polynomial laws, and a basis proves neither; its exact scaled bounds (and the Walsh case's exact points) are the results' own evidence.
 
 <a id="spec-002"></a>
 

@@ -81,7 +81,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "moment tensors", "contraction plans",
     "kernel features",
     "decision diagram",
-    "explanation state"};
+    "explanation state",
+    "spectral basis",
+    "solved system"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -624,6 +626,24 @@ static const tr_reg_module modules[] = {
                    "tr_expl_propagate_need", "tr_expl_lineage", "tr_expl_explain", "tr_expl_probability_weights",
                    "tr_expl_probability_bounds"},
      .cuda_entry = {"tr_mgpu_explain_propagate"}},
+    {FAMILY(TR_REG_M_FOURIER, "fourier", "fourier", "SPEC-001", "fixed spectral basis"),
+     .state_kind = TR_REG_STATE_SPECTRAL_BASIS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(COUNT) | CB(INT128) | CB(QINTERVAL) | CB(BIGQ) | CB(CINTERVAL),
+     .laws_relied = TR_REG_FOLD | TR_LAW_INVERSE | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_ENCLOSURE | TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_fourier_plan_create", "tr_fourier_build", "tr_fourier_sums", "tr_fourier_from_sums",
+                   "tr_fourier_act", "tr_fourier_derive", "tr_fourier_exact", "tr_fourier_find",
+                   "tr_fourier_require", "tr_fourier_walsh_inverse", "tr_fourier_device_need"},
+     .cuda_entry = {"tr_mgpu_fourier_sums"}},
+    {FAMILY(TR_REG_M_LINUPD, "lin.update", "linupd", "LIN-003", "leave-group-out and low-rank updates"),
+     .state_kind = TR_REG_STATE_SOLVED_SYSTEM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(COUNT) | CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(GFP) | CB(INTERVAL) | CB(FLOAT64),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = TR_PROOF_BOUND | TR_PROOF_PRIME | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_linupd_fit", "tr_linupd_system", "tr_linupd_update", "tr_linupd_rows", "tr_linupd_ridge",
+                   "tr_linupd_subtract", "tr_linupd_float_solve", "tr_linupd_logo_plan", "tr_linupd_logo_solve",
+                   "tr_linupd_logo_residues", "tr_linupd_logo_finish", "tr_linupd_equal"},
+     .cuda_entry = {"tr_mgpu_linupd_logo"}},
 };
 #undef BUILTIN
 #undef FAMILY
