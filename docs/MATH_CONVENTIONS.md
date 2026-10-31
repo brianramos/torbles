@@ -31,7 +31,8 @@ is measured again (the renderer's `--check` refuses a stale hash).
 | CUDA kernels | `torbles/math_<fam>_gpu.cu` (built into `libmathgpu.so` by nvcc, and as C++ with `-DEMULATE` into `libmathgpu_emu.so`) |
 | Python API | `torbles/math_<fam>.py` (opt-in; `import torbles` must not load it) |
 | tests | `tests/test_math_<fam>.py` (unittest; run by `tests/run_all.sh`) |
-| benchmark | `bench/benchmark_math_<fam>.py` |
+| benchmark | `bench/benchmark_math_<fam>.py` (receipt format: `bench/math_bench.py`) |
+| documentation | `docs/math/<fam>.md`, linked from `docs/MATHEMATICS.md` |
 | receipts | `results/math/<CAPABILITY-ID>/` |
 
 The build compiles every `torbles/math*.c` into `libalg.so` and every `torbles/math_*_gpu.cu` into the GPU library, so
@@ -79,7 +80,8 @@ adding a family needs no build-file edit.
   intervals as a pair with their contract, never as an unqualified float.
 - A request outside the budgets raises `AlgebraBudgetError`; an unsupported type or domain raises `DomainError`;
   nothing falls back to a Python implementation.
-- The public entry points are documented in `docs/MATHEMATICS.md` with their exact scope and refusals.
+- The public entry points are documented in `docs/math/<fam>.md` with their exact scope and refusals.
+- Native codes map to exceptions through `torbles.math_errors.check` (codes and classes listed in `docs/math/gates.md`); budgets through `torbles.math_budgets` (`docs/math/budgets.md`).
 
 ## Tests
 

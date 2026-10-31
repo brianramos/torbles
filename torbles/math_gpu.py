@@ -39,14 +39,37 @@ def device():
                 library=handle._name)
 
 
-def check(code):
+def check(code, refusal=None, what=""):
     """map a native error code of a GPU entry point to the exception the CPU modules raise"""
     if code == 0:
         return
+    from . import math_errors
     if code == -11:
-        raise RuntimeError(f"CUDA device error on {device()['name']}")
-    from .mathematics import _check
-    _check(code)
+        raise math_errors.DeviceError(f"CUDA device error on {device()['name']}")
+    math_errors.check(code, refusal, what)
+
+
+def require_device():
+    """refuse the emulation where an actual device is required (TORBLES_MATH_REQUIRE_DEVICE=1, benchmarks --device)"""
+    info = device()
+    if info["emulated"]:
+        from .math_errors import DeviceError
+        raise DeviceError("an actual CUDA device is required, but only the emulation is loaded (run `make gpu`)")
+    return info
+
+
+def bind(name, restype, argtypes):
+    """a GPU entry point with its ctypes signature"""
+    fn = getattr(lib(), name)
+    fn.restype, fn.argtypes = restype, argtypes
+    return fn
+
+
+def run(name, *args, refusal=None, what=""):
+    """call a bound GPU entry point and map its code; with TORBLES_MATH_REQUIRE_DEVICE=1 the emulation is refused"""
+    if os.environ.get("TORBLES_MATH_REQUIRE_DEVICE") == "1":
+        require_device()
+    check(getattr(lib(), name)(*args), refusal, what)
 
 
 def i64_array(values):

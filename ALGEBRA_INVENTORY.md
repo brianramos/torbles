@@ -699,9 +699,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C: exact saturating size formulas, the ordered budget check and the costed expanded/factored choice (inline in math_budgets.h, exported by math_budgets.c), and the exact distinct-cell pre-pass that refuses before any output.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_budgets_gpu.cu (tr_mgpu_budgets_count_cells): the distinct-cell pre-pass on the device, with the device copies of its inputs budgeted before allocation.
 
 Bounds:
 
@@ -715,9 +715,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_budgets.c`
 - `torbles/math_budgets.h`
+- `torbles/math_budgets.c`
+- `torbles/math_budgets_gpu.cu`
+- `torbles/math_budgets.py`
 - `tests/test_math_budgets.py`
+- `bench/benchmark_math_budgets.py`
 
 Acceptance tests:
 
@@ -728,6 +731,11 @@ Benchmark cases:
 
 - Measure expansion versus factored fallback at polynomial, histogram and Boolean domain boundaries.
 - Record resource/refusal thresholds rather than extrapolating missing measurements.
+
+Additional limits:
+
+- The first-slice polynomial kernel keeps its fixed limits (8 variables, degree 8, 128 terms); the budget module states them (Budget.polynomial_kernel) and refuses at the same boundaries but does not replace them.
+- Costs given to the representation choice are relative work units supplied by the calling capability, not measured times.
 
 <a id="fnd-011"></a>
 
@@ -783,9 +791,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: None.
 
-Native CPU: Validation and independent oracles may use Python or trusted reference libraries. Claimed production mathematical operators execute natively and must be checked against those oracles.
+Native CPU: The gates run natively built code against independent oracles (Python integers and Fractions, sympy, networkx, DuckDB); bench/validate_math.py runs each capability's tests, sanitizers, nvcc and benchmark and writes its receipts; the renderer refuses unbacked claims.
 
-GPU: CUDA validation requires an actual device/kernel trace; emulation remains a separately labeled correctness path and does not establish CUDA performance.
+GPU: CUDA core kernel math_core_gpu.cu (exact 128-bit accumulation, min, max; device identity); device receipts come only from an actual device (--device refuses the emulation), and emulated runs are labeled.
 
 Bounds:
 
@@ -800,9 +808,18 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
+- `tests/test_math_gates.py`
 - `tests/test_mathematics.py`
 - `tests/mathematics_native_edges.c`
 - `tests/validate_mathematics_native.py`
+- `tests/sanitize_math.sh`
+- `torbles/math_core_gpu.cu`
+- `torbles/math_gpu.py`
+- `torbles/math_errors.py`
+- `bench/validate_math.py`
+- `bench/render_algebra_inventory.py`
+- `bench/math_bench.py`
+- `bench/benchmark_math_gates.py`
 - `bench/benchmark_mathematics.py`
 
 Acceptance tests:
@@ -814,6 +831,10 @@ Benchmark cases:
 
 - Run every new module's declared benchmark cases with raw observations and source/library hashes.
 - Keep existing mixed workload as regression controls without claiming new module coverage from it.
+
+Additional limits:
+
+- The gate verifies that receipts exist, pass and match the measured sources; whether an oracle is independent of the implementation is reviewed per capability, not decided by the gate.
 
 <a id="fnd-013"></a>
 
@@ -2766,9 +2787,9 @@ Exactness: Exact exhaustive snapshot evidence for supported non-NULL logical aff
 
 Dependencies: None.
 
-Native CPU: Existing bounded native implementation.
+Native CPU: Existing bounded native discovery (relationships.c); math_disc.c adds the order-independent exhaustive verifier (tr_disc_verify) and the affine proposal, both native.
 
-GPU: Discovery/verification currently CPU native; query lowerings may use actual CUDA where supported.
+GPU: CUDA kernel math_disc_gpu.cu (tr_mgpu_disc_verify): exhaustive verification of one hypothesis on the device, identical evidence to the CPU verifier and to tr_probe; proposals stay on the CPU.
 
 Bounds:
 
@@ -2781,6 +2802,20 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c): Existing bounded equation composition/search.
 - [tests/test_relationships.py](tests/test_relationships.py): Recorded relationship tests; rerun required for new changes.
 
+Implementation targets (proposed until the capability is validated):
+
+- `torbles/relationships.h`
+- `torbles/relationships.c`
+- `torbles/relationships_optimizer.c`
+- `torbles/relationships.py`
+- `torbles/math_disc.h`
+- `torbles/math_disc.c`
+- `torbles/math_disc_gpu.cu`
+- `torbles/math_disc.py`
+- `tests/test_math_disc.py`
+- `tests/test_relationships.py`
+- `bench/benchmark_math_disc.py`
+
 Acceptance tests:
 
 - Preserve existing tests for signed offsets, sum/product/square probes and one-row violations.
@@ -2790,6 +2825,11 @@ Benchmark cases:
 
 - Use 2/4/8 observed variables over 1k/100k/1M rows with planted affine/product/conservation relations plus one-row near misses; report proposal and exhaustive verification separately.
 - Vary candidate/basis degree budgets and revision stability; measure exact Gram/nullspace state growth and refusals rather than extrapolating unsupported bases.
+
+Additional limits:
+
+- The CUDA verifier copies one hypothesis's columns to the device per call; there is no device-resident catalog, and discovery (proposal enumeration) is CPU only.
+- Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor.
 
 <a id="disc-002"></a>
 

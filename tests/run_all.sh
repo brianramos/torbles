@@ -74,6 +74,10 @@ run "native mathematical functions and moments"   python3 -m unittest discover -
 run "typed mathematical domain contracts"        python3 -m unittest discover -s tests -p test_math_domains.py
 run "native mathematical module dispatch"        python3 -m unittest discover -s tests -p test_math_modules.py
 run "native compatible moment-state reuse"       python3 -m unittest discover -s tests -p test_math_state.py
+for f in tests/test_math_*.py; do   # every further mathematical capability (CUDA paths: the device after make gpu)
+  case "${f##*/}" in test_math_domains.py|test_math_modules.py|test_math_state.py) continue;; esac
+  m=${f##*/}; run "mathematics: ${m%.py}" python3 -m unittest discover -s tests -p "$m"
+done
 run "previous GROUP BY path (mask split / rows)"  env TORBLES_GROUPBY=split python3 tests/check_small.py
 run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORBLES_PLAN_CACHE=0 python3 tests/check_small.py
 run "no row kernel for many groups"               env TORBLES_ROWPATH_GROUPS=0 python3 tests/check_small.py

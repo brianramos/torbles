@@ -194,3 +194,13 @@ function harness against the preserved earlier runtime to expose dispatch costs.
 The next dependencies are grouped/validity-aware state, shared native multi-output
 accumulation, additional typed operators, and optimizer-driven construction/reuse
 selection. They remain explicit inventory items with their own validation gates.
+
+## Further capabilities
+
+Each capability beyond the first slice has its own page, with its exact scope, budgets and refusals; the conventions
+they share (native C, a CUDA kernel per capability, oracles, receipts) are in [MATH_CONVENTIONS.md](MATH_CONVENTIONS.md),
+and their status is the inventory's.
+
+- [Budgets](math/budgets.md) (FND-010): resource limits, exact size formulas, representation choice, output pre-pass.
+- [Relationship verification](math/disc.md) (DISC-001): affine, sum and product hypotheses verified on the CPU or in CUDA.
+- [Validation gates](math/gates.md) (FND-012): receipts, the inventory check, error codes, device identity.

@@ -23,7 +23,11 @@
 enum { TR_MATH_SINGULAR = -9,        /* a system has no unique solution (singular, rank deficient) */
        TR_MATH_NO_SOLUTION = -10,    /* an inverse / preimage query has no answer in its declared domain */
        TR_MATH_DEVICE = -11,         /* the CUDA device failed or is absent (never a silent CPU fallback) */
-       TR_MATH_UNSUPPORTED = -12 };  /* the request is outside the capability's declared scope */
+       TR_MATH_UNSUPPORTED = -12,    /* the request is outside the capability's declared scope */
+       TR_MATH_STALE = -13,          /* a state's source changed (revision, rows or scope) since the state was built */
+       TR_MATH_NOT_CONVERGED = -14,  /* an iterative method did not certify its result within its iteration budget */
+       TR_MATH_INFEASIBLE = -15,     /* the constraints of an optimization or search admit no point */
+       TR_MATH_UNBOUNDED = -16 };    /* an objective is unbounded below on its declared domain */
 
 typedef struct { int64_t lo; int64_t hi; } tr_math_i128;   /* value = hi * 2^64 + (uint64_t)lo */
 typedef struct { double lo, hi; } tr_math_interval;          /* lo <= exact value <= hi */
