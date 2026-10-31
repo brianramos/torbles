@@ -2231,9 +2231,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [LATTICE-001](#lattice-001), [FIELD-001](#field-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_spec.c): exact Walsh-Hadamard transforms of the occupancy histogram (integer forward coefficients, exact rational inverse under a declared normalization), Parseval identities, parity correlations of condition subsets, constant parities cross-checked with FIELD-001, and coefficient truncation reported as an explicit approximation with its exact residual energy; the full 2^k cost is reported.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_spec_gpu.cu: the butterfly passes of the fast Walsh-Hadamard transform, one launch per pass, equal to the CPU.
 
 Bounds:
 
@@ -2242,9 +2242,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_spec.c`
 - `torbles/math_spec.h`
+- `torbles/math_spec.c`
+- `torbles/math_spec_gpu.cu`
+- `torbles/math_spec.py`
 - `tests/test_math_spec.py`
+- `bench/benchmark_math_spec.py`
 
 Acceptance tests:
 
@@ -2255,6 +2258,11 @@ Benchmark cases:
 
 - Use fixed frequency sets of 1/8/32 elements and 1/100/10,000 phase/evaluation requests; distinguish new-frequency construction from fixed-basis actions.
 - For Boolean transforms vary k=3/6/10/12 within budget, reporting all 2^k states, normalization and forward/inverse timings rather than claiming row-count-only cost.
+
+Additional limits:
+
+- Correlations, truncation, evaluation and constant parities are CPU only.
+- Transforms are exact in 128 bits (refused beyond); Parseval and truncation energies must fit 256 bits.
 
 ## MULTI: Multiscale analysis
 
@@ -2570,9 +2578,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [BOOL-001](#bool-001), [DIST-001](#dist-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_influence.c): influence of each condition of a BOOL-001 predicate (the measure where its XOR derivative is 1), total influence and bounded mixed interactions, under the uniform assignment measure and the empirical row measure as separate results, labelled as coordinate sensitivity of the predicate, not a causal effect.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_influence_gpu.cu: word-parallel cofactor evaluation for every condition over row bitmaps with popcount accumulation, equal to the CPU.
 
 Bounds:
 
@@ -2581,9 +2589,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_bool.c`
-- `torbles/math_bool.h`
-- `tests/test_math_bool.py`
+- `torbles/math_influence.h`
+- `torbles/math_influence.c`
+- `torbles/math_influence_gpu.cu`
+- `torbles/math_influence.py`
+- `tests/test_math_influence.py`
+- `bench/benchmark_math_influence.py`
 
 Acceptance tests:
 
@@ -2594,6 +2605,11 @@ Benchmark cases:
 
 - Use predicate DAGs with 4/8/16 conditions and varying shared subexpressions; compare independent cofactor evaluation with shared-mask execution.
 - Measure signed and XOR first/mixed differences under uniform assignment and empirical row measures; include sparse support and NULL-conditioned scopes.
+
+Additional limits:
+
+- No per-group or weighted measures.
+- With more than 20 conditions the uniform measure is refused by the default budget (measures=('empirical',) avoids it).
 
 ## LATTICE: Subset-lattice algebra
 
@@ -2611,9 +2627,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-001](#dist-001), [BOOL-001](#bool-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_lattice.c): the bounded k-condition occupancy histogram of BOOL-001 conditions over the selected rows of a scope: exact bag counts of every one of the 2^k cells, condition order kept, UNKNOWN outcomes in a declared three-valued encoding (never silently false), k and 2^k states budgeted.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_lattice_gpu.cu: the histogram scan (cell id per row from the condition bits, atomic or per-thread local counts), equal to the CPU.
 
 Bounds:
 
@@ -2622,9 +2638,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_lattice.c`
 - `torbles/math_lattice.h`
+- `torbles/math_lattice.c`
+- `torbles/math_lattice_gpu.cu`
+- `torbles/math_lattice.py`
 - `tests/test_math_lattice.py`
+- `bench/benchmark_math_lattice.py`
 
 Acceptance tests:
 
@@ -2635,6 +2654,10 @@ Benchmark cases:
 
 - Vary Boolean condition count k=3/6/10/12, predicate overlap and occupancy sparsity; record 2^k state bytes and native histogram scans.
 - Compare 1/100/all intersection/coalition requests with one histogram plus zeta/Mobius transforms, retaining cases where full-domain construction loses.
+
+Additional limits:
+
+- One histogram per domain (no per-group histograms); at most 30 axes; on the device, histograms of more than 64 cells use one atomic per row.
 
 <a id="lattice-002"></a>
 
@@ -2648,9 +2671,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [LATTICE-001](#lattice-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_lattice.c): zeta (all intersections, subset and superset variants) and Moebius transforms of the occupancy histogram, inclusion-exclusion counts and bounded coalition interactions, exact with checked 128-bit intermediates or FND-009 big integers, never wrapping.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_lattice_gpu.cu: the k butterfly passes of the fast zeta/Moebius transforms, one launch per pass, equal to the CPU.
 
 Bounds:
 
@@ -2659,9 +2682,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_lattice.c`
 - `torbles/math_lattice.h`
+- `torbles/math_lattice.c`
+- `torbles/math_lattice_gpu.cu`
+- `torbles/math_lattice.py`
 - `tests/test_math_lattice.py`
+- `bench/benchmark_math_lattice.py`
 
 Acceptance tests:
 
@@ -2672,6 +2698,11 @@ Benchmark cases:
 
 - Vary Boolean condition count k=3/6/10/12, predicate overlap and occupancy sparsity; record 2^k state bytes and native histogram scans.
 - Compare 1/100/all intersection/coalition requests with one histogram plus zeta/Mobius transforms, retaining cases where full-domain construction loses.
+
+Additional limits:
+
+- Direct coefficients, inclusion-exclusion counts and the big-integer carrier are CPU only.
+- Measured: answering 1 or 100 requests directly beats building the full transform at k = 16; the transform wins for all 2^k requests.
 
 ## QUANT: Quantified queries
 

@@ -221,3 +221,6 @@ and their status is the inventory's.
 - [Histograms and quantiles](math/dist.md) (DIST-001, DIST-002): grouped scalar/joint histograms, exact CDF, quantiles, range integrals.
 - [Loss curves](math/resp.md) (RESP-002): exact piecewise absolute, hinge and squared-hinge losses with slopes and minimizers.
 - [Group quantifiers](math/quant.md) (QUANT-001, QUANT-002): some/all/none with SQL NULL semantics, relational division.
+- [Boolean lattices](math/lattice.md) (LATTICE-001, LATTICE-002): 2^k occupancy histograms, zeta/Moebius, inclusion-exclusion.
+- [Walsh spectra](math/spec.md) (SPEC-002): exact Walsh-Hadamard transforms, Parseval, parity correlations.
+- [Predicate influence](math/influence.md) (BOOL-002): influence and interactions under uniform and empirical measures.
