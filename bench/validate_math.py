@@ -50,26 +50,43 @@ _IMPORT = re.compile(r"^\s*(?:from\s+(?:\.|torbles\.?)\s*(math\w*)\s+import|from
 
 
 def covered(files):
-    """the planned files plus the local headers they include and the torbles.math* modules they import"""
-    seen, todo = [], list(files)
-    while todo:
+    """the planned files plus, transitively, the local headers they include and the torbles.math* modules they import,
+    and one level of implementations: the .c behind each header a planned file includes and the native sources of
+    each module a planned file imports (an implementation's own includes are not followed, so a registration-only
+    include does not tie every capability to every other)"""
+    def includes(f):
+        base = Path(f).parent
+        return [c for c in ((base / inc).as_posix() for inc in _INCLUDE.findall((ROOT / f).read_text(errors="replace")))
+                if (ROOT / c).is_file()]
+
+    def imports(f):
+        out = []
+        for a, b, c in _IMPORT.findall((ROOT / f).read_text(errors="replace")):
+            names = [a or c] if (a or c) else [n.strip().split(" as ")[0] for n in b.split(",")]
+            out += [f"torbles/{n}.py" for n in names if n.startswith("math") and (ROOT / "torbles" / f"{n}.py").is_file()]
+        return out
+
+    planned = [f for f in files if (ROOT / f).is_file()]
+    seen, todo = [], list(planned)
+    while todo:                                   # headers and Python modules, transitively
         f = todo.pop(0)
         if f in seen or not (ROOT / f).is_file():
             continue
         seen.append(f)
-        text = (ROOT / f).read_text(errors="replace")
-        base = Path(f).parent
         if f.endswith((".c", ".h", ".cu")):
-            for inc in _INCLUDE.findall(text):
-                cand = (base / inc).as_posix()
-                if (ROOT / cand).is_file():
-                    todo.append(cand)
+            todo += [c for c in includes(f) if c.endswith(".h")]
         elif f.endswith(".py"):
-            for a, b, c in _IMPORT.findall(text):
-                names = [a or c] if (a or c) else [n.strip().split(" as ")[0] for n in b.split(",")]
-                for n in names:
-                    if n.startswith("math") and (ROOT / "torbles" / f"{n}.py").is_file():
-                        todo.append(f"torbles/{n}.py")
+            todo += imports(f)
+    for f in planned:                             # one level of implementations
+        if f.endswith((".c", ".h", ".cu")):
+            impls = [c[:-2] + ".c" for c in includes(f) if c.endswith(".h")]
+        elif f.endswith(".py"):
+            impls = [m[:-3] + ext for m in imports(f) for ext in (".h", ".c")]
+        else:
+            impls = []
+        for c in impls:
+            if (ROOT / c).is_file() and c not in seen:
+                seen.append(c)
     return seen
 
 
