@@ -1345,9 +1345,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-002](#dist-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_resp.c): complete piecewise absolute, hinge (both orientations) and squared-hinge loss functions of a parameter from the sorted support and its prefix moments: exact values and one-sided slopes at and between every breakpoint, minimizer sets with a tie convention, empty and degenerate cases specified.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_resp_gpu.cu: batched evaluation of many parameter requests against the retained prefix state, equal to the CPU.
 
 Bounds:
 
@@ -1356,9 +1356,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_resp.c`
 - `torbles/math_resp.h`
+- `torbles/math_resp.c`
+- `torbles/math_resp_gpu.cu`
+- `torbles/math_resp.py`
 - `tests/test_math_resp.py`
+- `bench/benchmark_math_resp.py`
+- `torbles/math_dist.c`
 
 Acceptance tests:
 
@@ -1369,6 +1373,11 @@ Benchmark cases:
 
 - Use squared, absolute and hinge loss families over 1k/100k/1M rows with 1/10/100/10,000 parameter requests; separate basis/prefix construction from reuse.
 - Vary distinct breakpoints or basis rank from 2 to the supported limit and include one-shot requests where retained-state construction loses.
+
+Additional limits:
+
+- The piecewise function and minimizers are CPU; one direct pass is cheaper than building the state for a single request (measured).
+- At most 2^20 breakpoints per group with the default budget.
 
 ## INV: Inverse queries
 
@@ -1656,9 +1665,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-004](#fnd-004)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_dist.c): grouped scalar and joint (2..3 column) histograms over FND-004 scopes with exact counts, optional exact weight sums, explicit per-column NULL categories and group presence, in dense (bounded domain) or sparse (sorted CSR support) form, budgeted; exact dense/sparse conversions, merges, marginals and rollups.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_dist_gpu.cu: histogram construction on the device (atomic cell counts over the bounded code domain, compaction in several launches), equal to the CPU state.
 
 Bounds:
 
@@ -1672,9 +1681,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_dist.c`
 - `torbles/math_dist.h`
+- `torbles/math_dist.c`
+- `torbles/math_dist_gpu.cu`
+- `torbles/math_dist.py`
 - `tests/test_math_dist.py`
+- `bench/benchmark_math_dist.py`
 
 Acceptance tests:
 
@@ -1685,6 +1697,11 @@ Benchmark cases:
 
 - Use 1k/100k/1M rows, support sizes 8/64/1,024 and joint dimensions 1/2/3; report sparse/dense construction, state bytes and native scan count.
 - Run 1/100/10,000 CDF, quantile, tail or information requests from shared support; include duplicates, structural zeros and near-row-sized support.
+
+Additional limits:
+
+- Device sparse builds need the dense counting scratch over the value range to fit the budget (no device sort); merges, rollups, marginals and conversions are CPU.
+- At most 3 coordinates and 2^32-1 scope rows; the CPU sort path uses 128 bytes of scratch per row.
 
 <a id="dist-002"></a>
 
@@ -1698,9 +1715,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-001](#dist-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_dist.c): prefix counts, weights and moments over the sorted support: exact CDF and tails at and between observed values with declared endpoint inclusion, exact quantiles (PERCENTILE_DISC and PERCENTILE_CONT as exact rationals), trimmed sums and range integrals of value^k, ties and empty input specified.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_dist_gpu.cu: batched CDF, quantile and range requests (one work item per request, a binary search over the uploaded prefix arrays), equal to the CPU.
 
 Bounds:
 
@@ -1714,9 +1731,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_dist.c`
 - `torbles/math_dist.h`
+- `torbles/math_dist.c`
+- `torbles/math_dist_gpu.cu`
+- `torbles/math_dist.py`
 - `tests/test_math_dist.py`
+- `bench/benchmark_math_dist.py`
 
 Acceptance tests:
 
@@ -1727,6 +1747,11 @@ Benchmark cases:
 
 - Use 1k/100k/1M rows, support sizes 8/64/1,024 and joint dimensions 1/2/3; report sparse/dense construction, state bytes and native scan count.
 - Run 1/100/10,000 CDF, quantile, tail or information requests from shared support; include duplicates, structural zeros and near-row-sized support.
+
+Additional limits:
+
+- Weighted quantiles need nonnegative weights and treat each row as repeated by its weight in the column's stored integer units.
+- Prefix construction is CPU; results are exact rationals returned as (numerator, denominator).
 
 <a id="dist-003"></a>
 

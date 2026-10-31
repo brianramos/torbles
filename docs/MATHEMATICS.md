@@ -218,3 +218,5 @@ and their status is the inventory's.
 - [Signed updates](math/delta.md) (DELTA-001): insert, delete, weight-change and move deltas on exact states.
 - [Predicate cofactors](math/bool.md) (BOOL-001): cofactors, XOR and signed differences under SQL three-valued logic.
 - [GF(2) primitives](math/field.md) (FIELD-001): packed elimination, nullspaces, syndromes, parity dependencies.
+- [Histograms and quantiles](math/dist.md) (DIST-001, DIST-002): grouped scalar/joint histograms, exact CDF, quantiles, range integrals.
+- [Loss curves](math/resp.md) (RESP-002): exact piecewise absolute, hinge and squared-hinge losses with slopes and minimizers.
