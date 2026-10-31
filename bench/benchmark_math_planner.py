@@ -21,7 +21,38 @@ import statistics
 import time
 
 import numpy as np
-from scipy.optimize import nnls
+
+
+def nnls(A, b):
+    """non-negative least squares by the Lawson-Hanson active-set method (the benchmark's own analysis, NumPy only):
+    (x >= 0 minimizing ||A x - b||, the residual norm), as scipy.optimize.nnls returns"""
+    A, b = np.asarray(A, dtype=np.float64), np.asarray(b, dtype=np.float64)
+    m, n = A.shape
+    x, passive = np.zeros(n), np.zeros(n, dtype=bool)
+    tol = 10 * np.finfo(np.float64).eps * max(m, n) * max(1.0, float(np.abs(A).sum(axis=0).max(initial=0.0)))
+
+    def solve(mask):
+        z = np.zeros(n)
+        if mask.any():
+            z[mask] = np.linalg.lstsq(A[:, mask], b, rcond=None)[0]
+        return z
+    for _ in range(3 * n + 3):
+        w = A.T @ (b - A @ x)
+        free = ~passive
+        if not free.any() or w[free].max() <= tol:
+            break
+        passive[np.argmax(np.where(free, w, -np.inf))] = True
+        z = solve(passive)
+        while passive.any() and z[passive].min() <= tol:
+            bad = passive & (z <= tol)
+            alpha = np.min(x[bad] / np.maximum(x[bad] - z[bad], np.finfo(np.float64).tiny))
+            x = x + alpha * (z - x)
+            passive &= x > tol
+            x[~passive] = 0.0
+            z = solve(passive)
+        x = z
+    return x, float(np.linalg.norm(A @ x - b))
+
 
 from math_bench import Bench
 from torbles import math_planner as mp, math_registry as reg

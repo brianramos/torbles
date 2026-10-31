@@ -28,6 +28,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INVENTORY = ROOT / "docs" / "algebra_inventory.json"
+if str(ROOT) not in sys.path:          # the device run imports torbles in this process (no PYTHONPATH needed)
+    sys.path.insert(0, str(ROOT))
 
 
 def sh(cmd, env=None, timeout=7200):
