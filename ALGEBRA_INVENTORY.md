@@ -1587,9 +1587,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-001](#dist-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_gen.c): generating polynomials of 1-D and 2-D finite supports with exact (big-integer) coefficients keeping bag multiplicity and declared shifts for negative values; coefficient extraction, exact evaluation at rationals, raw and factorial moments through the Euler operator and derivatives, products, powers, truncated products and conversion to FND-009 truncated series, with support growth, coefficient pairs and bytes budgeted before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_gen_gpu.cu: the exact 128-bit convolution of two coefficient arrays and batched exact evaluation, equal to the CPU.
 
 Bounds:
 
@@ -1598,9 +1598,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_gen.c`
 - `torbles/math_gen.h`
+- `torbles/math_gen.c`
+- `torbles/math_gen_gpu.cu`
+- `torbles/math_gen.py`
 - `tests/test_math_gen.py`
+- `bench/benchmark_math_gen.py`
+- `torbles/math_dist.c`
 
 Acceptance tests:
 
@@ -1611,6 +1615,11 @@ Benchmark cases:
 
 - Build sparse/dense generating states for support sizes 8/64/1,024 and two-dimensional support; measure coefficient, moment and evaluation requests separately.
 - Compare convolution/truncated-series orders 4/16/64 with explicit tiny products; record support growth, intermediate bytes and budget refusals.
+
+Additional limits:
+
+- At most 2 variables; the device kernels take one variable, int64 inputs and 128-bit outputs (larger coefficients are CPU).
+- Powers multiply sequentially (quadratic, no FFT); the byte budget counts big-integer coefficients without allocator overhead.
 
 <a id="gen-002"></a>
 
@@ -1765,9 +1774,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-001](#dist-001), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_info.c): marginal and contingency tables from DIST-001 joint histogram states (no row reads), NULL as a category or excluded per declared coordinate; entropy, conditional entropy, mutual and conditional mutual information, G and chi-square statistics, Cramer's V, as exact rational bounds from certified fixed-point logarithms summed exactly in 256 bits, plus outward-rounded doubles; chi-square and V^2 also as exact fractions; statistics over coordinates not held jointly are refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_info_gpu.cu: the per-cell certified terms and their exact 256-bit sums, equal bit for bit to the CPU.
 
 Bounds:
 
@@ -1776,9 +1785,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
+- `torbles/math_info.h`
+- `torbles/math_info.c`
+- `torbles/math_info_gpu.cu`
+- `torbles/math_info.py`
+- `tests/test_math_info.py`
+- `bench/benchmark_math_info.py`
 - `torbles/math_dist.c`
-- `torbles/math_dist.h`
-- `tests/test_math_dist.py`
 
 Acceptance tests:
 
@@ -1789,6 +1802,10 @@ Benchmark cases:
 
 - Use 1k/100k/1M rows, support sizes 8/64/1,024 and joint dimensions 1/2/3; report sparse/dense construction, state bytes and native scan count.
 - Run 1/100/10,000 CDF, quantile, tail or information requests from shared support; include duplicates, structural zeros and near-row-sized support.
+
+Additional limits:
+
+- A group's total weight below 2^64; at most 3 coordinates; marginal tables, exact chi-square and request answers are CPU; no p-values; results in bits are enclosed as doubles only (exact bounds are in nats).
 
 ## PAIR: Pairwise statistics
 
@@ -1806,9 +1823,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-002](#dist-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_pair.c): pairwise summaries from sorted counts and prefix states without enumerating pairs: absolute-difference sums (Gini mean difference), Mann-Whitney U and AUC with ties counted half, Kolmogorov-Smirnov, 1-Wasserstein and two-sample Cramer-von Mises, exact rationals with self-pair, ordering, normalization and empty-class conventions explicit.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_pair_gpu.cu: batched summary requests over groups or class pairs from the retained prefix states (one work item per request), equal to the CPU.
 
 Bounds:
 
@@ -1817,9 +1834,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_pair.c`
 - `torbles/math_pair.h`
+- `torbles/math_pair.c`
+- `torbles/math_pair_gpu.cu`
+- `torbles/math_pair.py`
 - `tests/test_math_pair.py`
+- `bench/benchmark_math_pair.py`
+- `torbles/math_dist.c`
 
 Acceptance tests:
 
@@ -1830,6 +1851,11 @@ Benchmark cases:
 
 - For scalar supports 8/64/1,024, compare pairwise summaries with explicit pairs on small data and retained-prefix computation on larger repeated inputs.
 - Vary ties, class imbalance, diagonal exclusion and weights; separate support sorting from 1/100/10,000 summary requests.
+
+Additional limits:
+
+- Each class's total mass below 2^64 (Cramer-von Mises needs a further size bound; overflow refused); KS two-sided only; with weights a self-pair is a weight unit paired with itself.
+- One thread per request: a request over near-row-sized support is long on the device.
 
 <a id="pair-002"></a>
 

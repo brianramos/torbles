@@ -224,3 +224,6 @@ and their status is the inventory's.
 - [Boolean lattices](math/lattice.md) (LATTICE-001, LATTICE-002): 2^k occupancy histograms, zeta/Moebius, inclusion-exclusion.
 - [Walsh spectra](math/spec.md) (SPEC-002): exact Walsh-Hadamard transforms, Parseval, parity correlations.
 - [Predicate influence](math/influence.md) (BOOL-002): influence and interactions under uniform and empirical measures.
+- [Information statistics](math/info.md) (DIST-003): entropy, mutual information, contingency statistics with certified bounds.
+- [Pairwise summaries](math/pair.md) (PAIR-001): Gini difference, AUC, KS, Wasserstein and Cramer-von Mises from prefixes.
+- [Generating polynomials](math/gen.md) (GEN-001): exact coefficients, moments, products and truncated series of supports.
