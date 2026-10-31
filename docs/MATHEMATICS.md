@@ -227,3 +227,7 @@ and their status is the inventory's.
 - [Information statistics](math/info.md) (DIST-003): entropy, mutual information, contingency statistics with certified bounds.
 - [Pairwise summaries](math/pair.md) (PAIR-001): Gini difference, AUC, KS, Wasserstein and Cramer-von Mises from prefixes.
 - [Generating polynomials](math/gen.md) (GEN-001): exact coefficients, moments, products and truncated series of supports.
+- [Certificates](math/certificates.md) (FND-007): laws, schema facts, snapshot proofs and hypotheses, never confused.
+- [Persistence](math/persist.md) (FND-011): versioned, checksummed records of mathematical states.
+- [Convolutions and series](math/conv.md) (GEN-002): declared-independence products, per-key products, bounded walks.
+- [Provenance](math/prov.md) (PROV-001): factorized derivations in the Boolean, counting and polynomial semirings.

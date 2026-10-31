@@ -904,7 +904,11 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_DIST_INFO = 35,         /* DIST-003 entropy, mutual information, contingency statistics */
        TR_REG_M_PAIR = 36,              /* PAIR-001 sorted-distribution pairwise summaries */
        TR_REG_M_GEN = 37,               /* GEN-001 generating polynomials of finite supports */
-       TR_REG_M_END = 38 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_CERT = 38,              /* FND-007 proof certificates and evidence scope */
+       TR_REG_M_PERSIST = 39,           /* FND-011 state serialization */
+       TR_REG_M_CONV = 40,              /* GEN-002 convolution and bounded formal series */
+       TR_REG_M_PROV = 41,              /* PROV-001 factorized provenance payloads */
+       TR_REG_M_END = 42 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -933,7 +937,10 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_SPECTRUM = 27,        /* 2^k Walsh coefficients */
        TR_REG_STATE_CONTINGENCY = 28,     /* per group: marginal and contingency tables of a joint histogram */
        TR_REG_STATE_GENERATING = 29,      /* exact coefficients of a generating polynomial (declared shifts) */
-       TR_REG_STATE_KINDS = 30 };
+       TR_REG_STATE_CERTIFICATE = 30,     /* a claim, its kind (law, schema, snapshot, hypothesis) and its scope */
+       TR_REG_STATE_RECORD = 31,          /* a versioned, checksummed serialized state */
+       TR_REG_STATE_PROVENANCE = 32,      /* a shared derivation DAG over source-tuple variables */
+       TR_REG_STATE_KINDS = 33 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1142,6 +1149,17 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_GEN, MULTIPLY, BIGINT, TR__CPU), TR__I(TR_REG_M_GEN, EVAL, INT128, TR__ALL),
     TR__I(TR_REG_M_GEN, EVAL, BIGQ, TR__CPU), TR__I(TR_REG_M_GEN, DIFFERENTIATE, BIGINT, TR__CPU),
     TR__I(TR_REG_M_GEN, CONVERT, SERIES, TR__CPU),
+    /* 38 FND-007 exhaustive snapshot evidence; polynomial claims checked exactly in 128 bits */
+    TR__I(TR_REG_M_CERT, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_CERT, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_CERT, EVAL, INT128, TR__CPU),
+    /* 39 FND-011 records: position-weighted checksums of 64-bit words */
+    TR__I(TR_REG_M_PERSIST, CONVERT, INTEGER, TR__CPU), TR__I(TR_REG_M_PERSIST, FOLD, MOD128, TR__ALL),
+    /* 40 GEN-002 declared products, per-key conditional products, bounded series and walks */
+    TR__I(TR_REG_M_CONV, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_CONV, MULTIPLY, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_CONV, FOLD, BIGINT, TR__ALL), TR__I(TR_REG_M_CONV, COEFFICIENTS, SERIES, TR__CPU),
+    /* 41 PROV-001 the DAG evaluated in B, N or N[X] */
+    TR__I(TR_REG_M_PROV, LOGIC, BOOLEAN, TR__ALL), TR__I(TR_REG_M_PROV, EVAL, COUNT, TR__ALL),
+    TR__I(TR_REG_M_PROV, MULTIPLY, BIGINT, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

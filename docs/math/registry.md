@@ -73,6 +73,10 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 35 | info | entropy, mutual information, contingency | DIST-003 | contingency tables | `tr_info_query` | `tr_mgpu_info_sums` |
 | 36 | pair | sorted-distribution pairwise summaries | PAIR-001 | prefix sums | `tr_pair_query` | `tr_mgpu_pair_query` |
 | 37 | gen | generating polynomials | GEN-001 | generating polynomial | `tr_gen_from_hist` | `tr_mgpu_gen_conv`, `tr_mgpu_gen_eval` |
+| 38 | certificates | proof certificates and evidence scope | FND-007 | certificate | `tr_cert_snapshot` | `tr_mgpu_cert_verify` |
+| 39 | persist | state serialization | FND-011 | serialized record | `tr_persist_load` | `tr_mgpu_persist_checksum` |
+| 40 | conv | convolution and bounded formal series | GEN-002 | generating polynomial | `tr_conv_product` | `tr_mgpu_conv_batch`, `tr_mgpu_conv_conditional`, `tr_mgpu_conv_walks` |
+| 41 | prov | factorized provenance payloads | PROV-001 | provenance dag | `tr_prov_evaluate` | `tr_mgpu_prov_evaluate` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

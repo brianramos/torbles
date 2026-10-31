@@ -581,9 +581,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_certificates.c): one certificate type for universal laws, enforced schema facts, exhaustive snapshot certificates (table identity and revision, rows, exact selection, NULL policy, join multiplicity, carrier) and statistical hypotheses, never confused; typed claims (DISC-001 rules, FIELD-001 parity relations, MULTI-001 refinement maps, QUANT-002 coverage, polynomial relations); freshness checks with the exact staleness reason; exact authorization only for laws, schema facts and fresh complete snapshots; derivations P = sum q_i G_i checked in Z[x].
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_certificates_gpu.cu: exhaustive re-verification of one or many snapshot certificates over all selected rows (violations and the smallest witness with atomics), adopted after exact checks, equal to the CPU.
 
 Bounds:
 
@@ -597,9 +597,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_certificates.c`
 - `torbles/math_certificates.h`
+- `torbles/math_certificates.c`
+- `torbles/math_certificates_gpu.cu`
+- `torbles/math_certificates.py`
 - `tests/test_math_certificates.py`
+- `bench/benchmark_math_certificates.py`
 
 Acceptance tests:
 
@@ -610,6 +613,11 @@ Benchmark cases:
 
 - Measure certificate checking separately from candidate discovery.
 - Compare certificate reuse, invalidation and full re-verification over growing row counts.
+
+Additional limits:
+
+- Polynomial checks are exact within 128 bits (wider rows refused, or checked modulo p and recorded as approximate); derivations combine polynomial claims only; hypotheses record sample counts, not a confidence bound.
+- Source tokens are process-specific: a persisted snapshot is never fresh in another process (it stays readable).
 
 <a id="fnd-008"></a>
 
@@ -799,9 +807,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-004](#fnd-004), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_persist.c): versioned little-endian records of FND-004 banks (with their scope descriptor), DIST-001 histograms, LIN-001 moment systems, FND-009 big integers, big rationals and GF(p) elements, and FND-007 certificates, each with type, carrier, basis, source identity and revision, selection digest, metadata and a checksum, no live addresses; loads refuse truncated, corrupted, unknown-version and wrong-type records with distinct reasons; reloaded states keep their recorded source and are never fresh views of a changed one.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_persist_gpu.cu: the order-independent position-weighted checksum of 64-bit words on the device, equal to the CPU.
 
 Bounds:
 
@@ -815,9 +823,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_persist.c`
 - `torbles/math_persist.h`
+- `torbles/math_persist.c`
+- `torbles/math_persist_gpu.cu`
+- `torbles/math_persist.py`
 - `tests/test_math_persist.py`
+- `bench/benchmark_math_persist.py`
 
 Acceptance tests:
 
@@ -828,6 +839,11 @@ Benchmark cases:
 
 - Report serialization/load/validation time and bytes separately from mathematical evaluation.
 - Compare persisted versus rebuilt state under fixed data and changing query families.
+
+Additional limits:
+
+- Little-endian records only (a foreign byte order is refused, not converted); histograms and moments rehydrate only into their recorded scope.
+- A reloaded moment state declares the accumulation width it used (128 or 192 bits).
 
 <a id="fnd-012"></a>
 
@@ -1648,9 +1664,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [GEN-001](#gen-001), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_conv.c, on GEN-001): products of generating states for independent draws and full Cartesian products with support growth budgeted; every factor records its source, and a product of factors from the same keyed scope without an independence declaration is refused (DomainError) in favour of the per-key conditional product or the joint state; bounded series with declared coefficient bounds and walk tables over path lengths, divergent walk sums refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_conv_gpu.cu: batched exact convolutions, per-key conditional products in parallel over keys, and walk tables, equal to the CPU.
 
 Bounds:
 
@@ -1659,9 +1675,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
+- `torbles/math_conv.h`
+- `torbles/math_conv.c`
+- `torbles/math_conv_gpu.cu`
+- `torbles/math_conv.py`
+- `tests/test_math_conv.py`
+- `bench/benchmark_math_conv.py`
 - `torbles/math_gen.c`
-- `torbles/math_gen.h`
-- `tests/test_math_gen.py`
 
 Acceptance tests:
 
@@ -1672,6 +1692,11 @@ Benchmark cases:
 
 - Build sparse/dense generating states for support sizes 8/64/1,024 and two-dimensional support; measure coefficient, moment and evaluation requests separately.
 - Compare convolution/truncated-series orders 4/16/64 with explicit tiny products; record support growth, intermediate bytes and budget refusals.
+
+Additional limits:
+
+- At most two variables (GEN-001's limit); per-key coefficients below 2^127; keyed families are 1-D and dense per key.
+- Independence declarations and cross-table key correspondence are trusted, not verified against the data.
 
 ## DIST: Distribution algebra
 
@@ -3597,9 +3622,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_prov.c): a shared factorized derivation DAG per store for source, select, union, join and group (global group included), with explicit NULL and group presence; results tagged by semiring: Boolean existence with minimal witnesses, bag multiplicities, and expanded N[X] polynomials; node, child, byte and expansion budgets checked before anything is added.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_prov_gpu.cu: the DAG evaluated under many valuations at once (one work item per valuation, e.g. source deletions), equal to the CPU.
 
 Bounds:
 
@@ -3608,9 +3633,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_prov.c`
 - `torbles/math_prov.h`
+- `torbles/math_prov.c`
+- `torbles/math_prov_gpu.cu`
+- `torbles/math_prov.py`
 - `tests/test_math_prov.py`
+- `bench/benchmark_math_prov.py`
 
 Acceptance tests:
 
@@ -3621,6 +3649,11 @@ Benchmark cases:
 
 - Use small joins with shared versus independent derivations and increasing duplicate multiplicities; record factorized DAG nodes, annotation bytes and evaluation time.
 - Compare 1/100/1,000 source-deletion or explanation requests against complete query reconstruction; include annotation-budget overflow and correlated derivations.
+
+Additional limits:
+
+- No SUM/MIN aggregates, difference, outer joins or recursion; integer values only; one owner per store (not thread-safe).
+- The expansion budget may refuse polynomials that would fit; witnesses are minimized in quadratic time.
 
 <a id="prov-002"></a>
 

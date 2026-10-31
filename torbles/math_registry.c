@@ -69,7 +69,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
     "quadratic objective", "separated coefficients", "jet aggregates", "hierarchy", "maintained cells",
     "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
-    "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial"};
+    "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial",
+    "certificate", "serialized record", "provenance dag"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -449,6 +450,42 @@ static const tr_reg_module modules[] = {
                    "tr_gen_euler", "tr_gen_derivative", "tr_gen_mul", "tr_gen_pow", "tr_gen_truncate",
                    "tr_gen_to_series", "tr_gen_mul_need"},
      .cuda_entry = {"tr_mgpu_gen_conv", "tr_mgpu_gen_eval"}},
+    {FAMILY(TR_REG_M_CERT, "certificates", "certificates", "FND-007", "proof certificates and evidence scope"),
+     .state_kind = TR_REG_STATE_CERTIFICATE, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(COUNT) | CB(CODE),
+     .laws_relied = TR_REG_RING | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_cert_snapshot", "tr_cert_hypothesis", "tr_cert_schema", "tr_cert_law", "tr_cert_verify",
+                   "tr_cert_adopt", "tr_cert_fresh", "tr_cert_authorize_exact", "tr_cert_derive", "tr_cert_reverify",
+                   "tr_cert_get_claim", "tr_cert_verify_need"},
+     .cuda_entry = {"tr_mgpu_cert_verify"}},
+    {FAMILY(TR_REG_M_PERSIST, "persist", "persist", "FND-011", "state serialization"),
+     .state_kind = TR_REG_STATE_RECORD, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(MOD128) | CB(BIGINT) | CB(BIGQ) | CB(GFP),
+     .laws_relied = TR_REG_FOLD | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_persist_bank", "tr_persist_histogram", "tr_persist_moments", "tr_persist_certificate",
+                   "tr_persist_bigint", "tr_persist_bigq", "tr_persist_gfp", "tr_persist_load", "tr_persist_validate",
+                   "tr_persist_fresh", "tr_persist_checksum", "tr_persist_save_need"},
+     .cuda_entry = {"tr_mgpu_persist_checksum"}},
+    {FAMILY(TR_REG_M_CONV, "conv", "conv", "GEN-002", "convolution and bounded formal series"),
+     .state_kind = TR_REG_STATE_GENERATING, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(SERIES) | CB(COUNT),
+     .laws_relied = TR_REG_RING | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_conv_factor_from_hist", "tr_conv_declare", "tr_conv_check_product", "tr_conv_product",
+                   "tr_conv_product_need", "tr_conv_conditional", "tr_conv_joint_sum", "tr_conv_batch_run",
+                   "tr_conv_series_mul", "tr_conv_series_walks", "tr_conv_walks_run", "tr_conv_series_check"},
+     .cuda_entry = {"tr_mgpu_conv_batch", "tr_mgpu_conv_conditional", "tr_mgpu_conv_walks"}},
+    {FAMILY(TR_REG_M_PROV, "prov", "prov", "PROV-001", "factorized provenance payloads"),
+     .state_kind = TR_REG_STATE_PROVENANCE, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BOOLEAN) | CB(COUNT) | CB(BIGINT),
+     .laws_relied = TR_REG_RING | TR_LAW_IDEMPOTENT | TR_LAW_MUL_IDEMPOTENT | TR_LAW_EXACT,  /* B is a lattice; N is not */
+     .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_prov_store_create", "tr_prov_source", "tr_prov_select", "tr_prov_union", "tr_prov_join",
+                   "tr_prov_group", "tr_prov_plan_build", "tr_prov_evaluate", "tr_prov_expand", "tr_prov_witnesses",
+                   "tr_prov_need"},
+     .cuda_entry = {"tr_mgpu_prov_evaluate"}},
 };
 #undef BUILTIN
 #undef FAMILY
