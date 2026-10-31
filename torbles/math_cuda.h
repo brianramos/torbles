@@ -6,7 +6,8 @@
  *   TR_DEVICE / TR_HD                    device / host+device helpers
  *   TR_GRID_LOOP(i, n) { ... }           grid-stride loop over 0..n-1
  *   TR_LAUNCH(name, n, args...)          launch over n work items (blocks/threads chosen here)
- *   tr_atomic_add_u64 / _i64 / _i128, tr_atomic_min_i64 / _u64, tr_atomic_max_i64 / _u64, tr_atomic_or_u64
+ *   tr_atomic_add_u64 / _i64 / _i128 (int64 addend) / _wide (__int128 addend), tr_atomic_min_i64 / _u64,
+ *   tr_atomic_max_i64 / _u64, tr_atomic_or_u64
  *   tr_popc64(x)                         population count of a 64-bit word (device and emulation)
  *   tr_cuda_alloc / tr_cuda_zero / tr_cuda_copy_in / tr_cuda_copy_out / tr_cuda_free / tr_cuda_sync
  * A kernel's result must not depend on the order of its threads: accumulate with these atomics or write one output
@@ -106,6 +107,20 @@ static inline void tr_atomic_add_i64(int64_t *p, int64_t x) { tr_atomic_add_u64(
 #else
 __device__ static inline void tr_atomic_add_i64(int64_t *p, int64_t x) { tr_atomic_add_u64((uint64_t *)p, (uint64_t)x); }
 #endif
+
+/* exact signed 128-bit accumulation in two words of a full 128-bit addend: lo += low word (mod 2^64), hi += high word
+ * + the carry of that add. The words hold the exact sum modulo 2^128, which is the exact sum when the host proved
+ * |sum| < 2^127 before launching. */
+#ifdef EMULATE
+static inline void tr_atomic_add_wide(int64_t *lo, int64_t *hi, __int128 x) {
+#else
+__device__ static inline void tr_atomic_add_wide(int64_t *lo, int64_t *hi, __int128 x) {
+#endif
+    uint64_t xl = (uint64_t)x, xh = (uint64_t)((unsigned __int128)x >> 64);
+    uint64_t old = tr_atomic_add_u64((uint64_t *)lo, xl);
+    uint64_t carry = (old + xl) < old;
+    if (xh + carry) tr_atomic_add_u64((uint64_t *)hi, xh + carry);
+}
 
 /* exact signed 128-bit accumulation in two words: lo += x (mod 2^64), hi += sign extension + carry of that add */
 #ifdef EMULATE
