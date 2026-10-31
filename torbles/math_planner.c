@@ -1,8 +1,13 @@
 /* FND-008: complete-plan choice and cost evidence; see math_planner.h. SPDX-License-Identifier: Apache-2.0 */
 #include "math_planner.h"
 #include "mathematics.h"
+#include "math_handles.h"
 #include <stdlib.h>
 #include <string.h>
+
+TR_MATH_ABI(tr_planner_selectivity, 1);          /* the ctypes boundary (math_handles.h) */
+TR_MATH_ABI(tr_planner_force, 1);
+TR_MATH_ABI(tr_planner_evidence, 1);
 
 _Static_assert(sizeof(tr_planner_selectivity) == 80, "selectivity ABI size");
 _Static_assert(sizeof(tr_planner_force) == 16, "force ABI size");

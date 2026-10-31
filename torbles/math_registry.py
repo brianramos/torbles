@@ -48,26 +48,32 @@ _NAMES_BY_REPR = {v: k for k, v in REPRESENTATIONS.items()}
 
 
 class _Step(C.Structure):
+    _native_ = "tr_reg_step"
     _fields_ = [("op", C.c_int32), ("carrier", C.c_int32)]
 
 
 class _Chain(C.Structure):
+    _native_ = "tr_reg_chain"
     _fields_ = [("input", C.c_int32), ("len", C.c_int32), ("step", _Step * 6)]
 
 
 class _Operator(C.Structure):
+    _native_ = "tr_reg_operator"
     _fields_ = [("id", C.c_int32), ("input", C.c_int32), ("output", C.c_int32), ("required", C.c_uint32)]
 
 
 class _Conversion(C.Structure):
+    _native_ = "tr_reg_conversion"
     _fields_ = [("from_carrier", C.c_int32), ("to_carrier", C.c_int32), ("kind", C.c_int32)]
 
 
 class _Refusal(C.Structure):
+    _native_ = "tr_reg_refusal"
     _fields_ = [(n, C.c_int32) for n in ("kind", "code", "step", "op", "carrier", "law", "from_carrier", "to_carrier")]
 
 
 class _Request(C.Structure):
+    _native_ = "tr_reg_request"
     _fields_ = [("rows", C.c_uint64), ("ncodes", C.c_uint64), ("codes", C.c_void_p), ("validity", C.c_void_p),
                 ("selected", C.c_void_p), ("offset", C.c_int64), ("source", C.c_uint64), ("revision", C.c_uint64),
                 ("width", C.c_int32), ("aggregate", C.c_int32), ("npolys", C.c_int32), ("reserved", C.c_int32),
@@ -75,15 +81,18 @@ class _Request(C.Structure):
 
 
 class _I128(C.Structure):
+    _native_ = "tr_math_i128"
     _fields_ = [("lo", C.c_int64), ("hi", C.c_int64)]
 
 
 class _Result(C.Structure):
+    _native_ = "tr_reg_result"
     _fields_ = [("value", _I128 * POLYS), ("selected", C.c_uint64), ("valid", C.c_uint64), ("nulls", C.c_uint64),
                 ("npolys", C.c_int32), ("aggregate", C.c_int32)]
 
 
 class _Explain(C.Structure):
+    _native_ = "tr_reg_explain"
     _fields_ = [(n, C.c_int32) for n in ("abi", "status", "module", "representation", "device", "finalize", "reused",
                                          "code")] + [
         ("refusal", _Refusal), ("budget", _BudgetRefusal)] + [
@@ -92,6 +101,7 @@ class _Explain(C.Structure):
 
 
 class _StateInfo(C.Structure):
+    _native_ = "tr_reg_state_info"
     _fields_ = [(n, C.c_int32) for n in ("representation", "degree", "width", "has_validity")] + [
         ("support", C.c_uint32), ("has_selection", C.c_uint32)] + [
         (n, C.c_uint64) for n in ("elements", "bytes", "rows", "ncodes", "selected", "valid", "nulls", "source",
@@ -99,6 +109,7 @@ class _StateInfo(C.Structure):
 
 
 class _Candidate(C.Structure):
+    _native_ = "tr_reg_candidate"
     _fields_ = [(n, C.c_int32) for n in ("module", "representation", "device", "finalize", "reuse", "batch", "status",
                                          "reason", "code", "valid")] + [
         ("shared", C.c_uint32), ("reserved", C.c_uint32), ("refusal", _Refusal), ("budget", _BudgetRefusal),
@@ -106,10 +117,12 @@ class _Candidate(C.Structure):
 
 
 class _Impl(C.Structure):
+    _native_ = "tr_reg_impl"
     _fields_ = [("op", C.c_int32), ("carrier", C.c_int32)]
 
 
 class _Module(C.Structure):
+    _native_ = "tr_reg_module"
     _fields_ = [(n, C.c_int32) for n in ("abi", "id", "representation", "state_kind", "requests", "devices", "nimpl",
                                          "finalize")] + [
         (n, C.c_uint32) for n in ("carriers", "laws_relied", "laws_guaranteed", "proofs")] + [

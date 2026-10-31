@@ -473,9 +473,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-002](#fnd-002)
 
-Native CPU: Implemented two compiled native modules and checked executable dispatch for polynomial arithmetic/calculus/evaluation and scalar moment contraction. Other representations/candidate selection remain work.
+Native CPU: Native C (math_registry.c): a constant table of module descriptors (carriers, required and guaranteed laws, operators with carriers, state kind, proof dependencies, CPU and CUDA entry points, cost coefficients) covering the two first-slice built-ins, FND-010, DISC-001 and four executors of one request kind (direct scan, code histogram, sparse power sums, bit-plane counts) plus a proven-empty answer; a composition check that names the missing law or conversion; explanation records of what ran.
 
-GPU: Current coefficient operators execute on native CPU; inherited row aggregation can use actual CUDA, recorded separately.
+GPU: CUDA kernels math_registry_gpu.cu: the direct-scan and histogram executors of the request (exact 128-bit sums, min, max of integer polynomials of a column), reporting device or emulation in the explanation.
 
 Bounds:
 
@@ -489,6 +489,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
+- `torbles/math_registry.h`
+- `torbles/math_registry.c`
+- `torbles/math_registry_gpu.cu`
+- `torbles/math_registry.py`
+- `tests/test_math_registry.py`
+- `bench/benchmark_math_registry.py`
 - `torbles/math_modules.c`
 - `torbles/math_modules.h`
 - `tests/test_math_modules.py`
@@ -505,8 +511,9 @@ Benchmark cases:
 
 Additional limits:
 
-- Two compiled native modules only; no dynamic plugin registration or histogram/factored/tensor kernels.
-- Trace work is a crude shape proxy, not calibrated latency, complete construction cost or an automatic selection policy.
+- One request kind (sum/min/max of up to four integer polynomials of one column of 32-bit codes); later families add their descriptors.
+- Cost coefficients are hand-set estimates checked (not calibrated) by the benchmark; the CUDA ones are guesses until measured on a device.
+- Power-sum and bit-plane representations compute modulo 2^128 and are admitted only when the exact result is proven to fit.
 
 Validation receipts:
 
@@ -619,9 +626,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-005](#fnd-005)
 
-Native CPU: Existing chain/combine/hybrid and bounded-stage choosers run natively. A generalized basis/state/fusion/materialization planner remains planned.
+Native CPU: Native C (math_planner.c): costed candidate plans with separate scan, construction, reuse, fusion, materialization and CPU/GPU finalization components, budget refusals, the cheapest admissible choice, full evidence of every candidate, sampled selectivity that is never a proof of emptiness, and forced controls that run the named representation or are refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_planner_gpu.cu: sampled and exact counts of selected rows over bitmap words for selectivity estimates, equal to the CPU counts.
 
 Bounds:
 
@@ -636,9 +643,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_planner.c`
 - `torbles/math_planner.h`
+- `torbles/math_planner.c`
+- `torbles/math_planner_gpu.cu`
+- `torbles/math_planner.py`
 - `tests/test_math_planner.py`
+- `bench/benchmark_math_planner.py`
+- `torbles/math_registry.c`
+- `torbles/math_registry_gpu.cu`
 
 Acceptance tests:
 
@@ -652,7 +664,8 @@ Benchmark cases:
 
 Additional limits:
 
-- Existing costs are explicit heuristics, including a narrow SF1 CPU pilot; not globally calibrated.
+- Cached states are reused on the CPU only, not kept in device memory.
+- The planner covers the registry's request kind and the DISC-001 verifier; later families register their candidates.
 
 <a id="fnd-009"></a>
 

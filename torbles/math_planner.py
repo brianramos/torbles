@@ -36,16 +36,19 @@ POLYSUM, VERIFY = 16, 8
 
 
 class _Selectivity(C.Structure):
+    _native_ = "tr_planner_selectivity"
     _fields_ = [(n, C.c_uint64) for n in ("rows", "words", "sample_words", "sample_rows", "sample_selected",
                                           "estimate", "lower", "upper")] + [
         (n, C.c_int32) for n in ("exact", "empty_proven", "zero_sample", "method")]
 
 
 class _Force(C.Structure):
+    _native_ = "tr_planner_force"
     _fields_ = [(n, C.c_int32) for n in ("representation", "device", "finalize", "reuse")]
 
 
 class _Evidence(C.Structure):
+    _native_ = "tr_planner_evidence"
     _fields_ = [(n, C.c_int32) for n in ("abi", "request", "ncandidates", "chosen", "forced", "reason", "code",
                                          "devices")] + [
         ("force", _Force), ("refusal", _BudgetRefusal), ("selectivity", _Selectivity),

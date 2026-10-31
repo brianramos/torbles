@@ -3,6 +3,9 @@
  * so the counts equal tr_planner_sample's whatever the thread order. SPDX-License-Identifier: Apache-2.0 */
 #include "math_cuda.h"
 #include "math_planner.h"
+#include "math_handles.h"
+
+TR_MGPU_ABI(tr_planner_selectivity, 1);          /* the ctypes boundary (math_handles.h) */
 
 TR_KERNEL void tr_planner_sample_kernel(const uint64_t *selected, uint64_t rows, uint64_t n, uint64_t words,
                                         uint64_t *acc) {

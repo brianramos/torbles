@@ -2,9 +2,23 @@
 #include "math_registry.h"
 #include "math_modules.h"
 #include "torble.h"
+#include "math_handles.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
+TR_MATH_ABI(tr_reg_step, 1);          /* the ctypes boundary (math_handles.h) */
+TR_MATH_ABI(tr_reg_chain, 1);
+TR_MATH_ABI(tr_reg_operator, 1);
+TR_MATH_ABI(tr_reg_conversion, 1);
+TR_MATH_ABI(tr_reg_refusal, 1);
+TR_MATH_ABI(tr_reg_request, 1);
+TR_MATH_ABI(tr_reg_result, 1);
+TR_MATH_ABI(tr_reg_explain, 1);
+TR_MATH_ABI(tr_reg_state_info, 1);
+TR_MATH_ABI(tr_reg_candidate, 1);
+TR_MATH_ABI(tr_reg_impl, 1);
+TR_MATH_ABI(tr_reg_module, 1);
 
 extern void at_decode_column(const atable_t *, int, uint32_t *);
 

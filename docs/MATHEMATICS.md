@@ -207,3 +207,5 @@ and their status is the inventory's.
 - [Scopes and state banks](math/bank.md) (FND-004): selected rows, exact grouped moments, rollups, the state cache.
 - [Handles and ABI checks](math/handles.md) (FND-013): owned handles, deferred close, struct layout checks.
 - [Numeric carriers](math/carriers.md) (FND-009): big integers and rationals, GF(p), CRT, intervals, truncated series.
+- [Module registry](math/registry.md) (FND-005): module descriptors, law and carrier checks, explanations.
+- [Plan choice](math/planner.md) (FND-008): costed candidates, sampling that never proves emptiness, forced controls.

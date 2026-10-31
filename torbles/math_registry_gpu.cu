@@ -7,6 +7,12 @@
  * integer adds. Results equal tr_reg_execute's bit for bit. SPDX-License-Identifier: Apache-2.0 */
 #include "math_cuda.h"
 #include "math_registry.h"
+#include "math_handles.h"
+
+TR_MGPU_ABI(tr_reg_request, 1);          /* the ctypes boundary (math_handles.h) */
+TR_MGPU_ABI(tr_reg_result, 1);
+TR_MGPU_ABI(tr_reg_explain, 1);
+TR_MGPU_ABI(tr_reg_state_info, 1);
 
 /* a full 128-bit value added modulo 2^128 into acc[0] (low word), acc[1] (high word): the carry of the low add goes
  * into the high word (a local equivalent of math_cuda.h's tr_atomic_add_i128 for 128-bit addends) */
