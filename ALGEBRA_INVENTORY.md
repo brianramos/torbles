@@ -1432,9 +1432,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [RESP-001](#resp-001), [LIN-001](#lin-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_opt.c, with the exact solver of math_lin.c): exact minimizers of quadratics q(t) = t'At/2 - b't + c: positive definite (unique), positive semidefinite and consistent (minimal value and an affine family), inconsistent or indefinite (unbounded below with a certificate direction), and box-constrained optima by exact face enumeration with exact KKT checks; infeasible boxes refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_opt_gpu.cu: the face filter of the box-constrained problem (each work item one active set), equal to the CPU.
 
 Bounds:
 
@@ -1443,9 +1443,13 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_opt.c`
 - `torbles/math_opt.h`
+- `torbles/math_opt.c`
+- `torbles/math_opt_gpu.cu`
+- `torbles/math_opt.py`
 - `tests/test_math_opt.py`
+- `bench/benchmark_math_opt.py`
+- `torbles/math_lin.c`
 
 Acceptance tests:
 
@@ -1456,6 +1460,11 @@ Benchmark cases:
 
 - Benchmark positive-definite, singular and indefinite quadratics in 1/2/4/8 parameters, with and without box constraints; report matrix/state build and solve separately.
 - Compare repeated optimization over 1k/100k/1M source rows using shared states against full objective recomputation; retain infeasible/unbounded cases.
+
+Additional limits:
+
+- Boxes up to 8 parameters (3^n faces); one-sided bounds and general linear constraints are not supported.
+- Unconstrained solves and the exact face phase run on the CPU.
 
 <a id="opt-002"></a>
 
@@ -1791,9 +1800,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-003](#fnd-003), [FND-004](#fnd-004)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_lin.c): exact grouped counts, sums, X^T X, X^T y and y^T y (with or without an intercept) for up to 16 features from a scope, by a fused pass or from the FND-004 bank, under a declared validity policy: common-listwise (a true Gram matrix) or pairwise (per-entry counts).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_lin_gpu.cu: the fused moment scan per group with exact wide atomics, equal to the CPU states.
 
 Bounds:
 
@@ -1807,9 +1816,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_lin.c`
 - `torbles/math_lin.h`
+- `torbles/math_lin.c`
+- `torbles/math_lin_gpu.cu`
+- `torbles/math_lin.py`
 - `tests/test_math_lin.py`
+- `bench/benchmark_math_lin.py`
 
 Acceptance tests:
 
@@ -1823,7 +1835,8 @@ Benchmark cases:
 
 Additional limits:
 
-- Existing SQL statistics do not provide a general reusable matrix-state API or a fused matrix-state scan.
+- At most 16 features; dense groups (absent groups use memory).
+- Pairwise states built from a bank lack per-pair sums, so covariance on them is refused; the pairwise covariance/correlation may be indefinite (tested), the raw pairwise Gram is PSD.
 
 <a id="lin-002"></a>
 
@@ -1837,9 +1850,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [LIN-001](#lin-001), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_lin.c): exact rational solves (modular elimination over several primes, CRT, rational reconstruction and exact verification of A x = b), exact rank, solution sets of rank-deficient systems (unique, none, affine family), exact inertia (positive definite, semidefinite, indefinite), exact covariance and correlation-squared, exact projections and residual sums; numerical symmetric eigensystems (cyclic Jacobi) returned with residual, orthogonality and eigenvalue error bounds.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_lin_gpu.cu: batched modular solves, one work item per (system, prime), with the CPU doing CRT, reconstruction and exact verification.
 
 Bounds:
 
@@ -1848,9 +1861,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_lin.c`
 - `torbles/math_lin.h`
+- `torbles/math_lin.c`
+- `torbles/math_lin_gpu.cu`
+- `torbles/math_lin.py`
 - `tests/test_math_lin.py`
+- `bench/benchmark_math_lin.py`
 
 Acceptance tests:
 
@@ -1861,6 +1877,11 @@ Benchmark cases:
 
 - Use feature dimensions 2/4/8/16, groups 1/16/256 and 1k/100k/1M rows; report moment/matrix assembly, bytes and solve/decomposition time separately.
 - Include well-conditioned, nearly singular and exactly rank-deficient matrices; compare repeated model/ridge/deletion requests against complete reconstruction.
+
+Additional limits:
+
+- Solves up to 64 x 63; the CRT and verification step on the CPU costs about an exact solve, so the device pays off only with many systems.
+- Eigensystems are floating point with certified residual and eigenvalue bounds; no claim on eigenvector accuracy beyond the reported bounds.
 
 <a id="lin-003"></a>
 

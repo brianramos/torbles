@@ -1774,13 +1774,17 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_opt.c, with the exact solver of math_lin.c): exact minimizers of quadratics q(t) = t'At/2 - b't + c: positive definite (unique), positive semidefinite and consistent (minimal value and an affine family), inconsistent or indefinite (unbounded below with a certificate direction), and box-constrained optima by exact face enumeration with exact KKT checks; infeasible boxes refused.",
+   "gpu": "CUDA kernel math_opt_gpu.cu: the face filter of the box-constrained problem (each work item one active set), equal to the CPU.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_opt.c",
     "torbles/math_opt.h",
-    "tests/test_math_opt.py"
+    "torbles/math_opt.c",
+    "torbles/math_opt_gpu.cu",
+    "torbles/math_opt.py",
+    "tests/test_math_opt.py",
+    "bench/benchmark_math_opt.py",
+    "torbles/math_lin.c"
    ],
    "acceptance_tests": [
     "Compare positive-definite solutions with independent exact linear solves.",
@@ -1790,7 +1794,10 @@
     "Benchmark positive-definite, singular and indefinite quadratics in 1/2/4/8 parameters, with and without box constraints; report matrix/state build and solve separately.",
     "Compare repeated optimization over 1k/100k/1M source rows using shared states against full objective recomputation; retain infeasible/unbounded cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "Boxes up to 8 parameters (3^n faces); one-sided bounds and general linear constraints are not supported.",
+    "Unconstrained solves and the exact face phase run on the CPU."
+   ],
    "validation": null
   },
   {
@@ -2144,8 +2151,8 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_lin.c): exact grouped counts, sums, X^T X, X^T y and y^T y (with or without an intercept) for up to 16 features from a scope, by a fused pass or from the FND-004 bank, under a declared validity policy: common-listwise (a true Gram matrix) or pairwise (per-entry counts).",
+   "gpu": "CUDA kernel math_lin_gpu.cu: the fused moment scan per group with exact wide atomics, equal to the CPU states.",
    "existing_evidence": [
     {
      "path": "torbles/sqlexec.py",
@@ -2159,9 +2166,12 @@
     }
    ],
    "planned_files": [
-    "torbles/math_lin.c",
     "torbles/math_lin.h",
-    "tests/test_math_lin.py"
+    "torbles/math_lin.c",
+    "torbles/math_lin_gpu.cu",
+    "torbles/math_lin.py",
+    "tests/test_math_lin.py",
+    "bench/benchmark_math_lin.py"
    ],
    "acceptance_tests": [
     "Match explicit matrix products for signed, duplicated and selectively grouped rows.",
@@ -2172,7 +2182,8 @@
     "Include well-conditioned, nearly singular and exactly rank-deficient matrices; compare repeated model/ridge/deletion requests against complete reconstruction."
    ],
    "limitations": [
-    "Existing SQL statistics do not provide a general reusable matrix-state API or a fused matrix-state scan."
+    "At most 16 features; dense groups (absent groups use memory).",
+    "Pairwise states built from a bank lack per-pair sums, so covariance on them is refused; the pairwise covariance/correlation may be indefinite (tested), the raw pairwise Gram is PSD."
    ],
    "validation": null
   },
@@ -2196,13 +2207,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_lin.c): exact rational solves (modular elimination over several primes, CRT, rational reconstruction and exact verification of A x = b), exact rank, solution sets of rank-deficient systems (unique, none, affine family), exact inertia (positive definite, semidefinite, indefinite), exact covariance and correlation-squared, exact projections and residual sums; numerical symmetric eigensystems (cyclic Jacobi) returned with residual, orthogonality and eigenvalue error bounds.",
+   "gpu": "CUDA kernel math_lin_gpu.cu: batched modular solves, one work item per (system, prime), with the CPU doing CRT, reconstruction and exact verification.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_lin.c",
     "torbles/math_lin.h",
-    "tests/test_math_lin.py"
+    "torbles/math_lin.c",
+    "torbles/math_lin_gpu.cu",
+    "torbles/math_lin.py",
+    "tests/test_math_lin.py",
+    "bench/benchmark_math_lin.py"
    ],
    "acceptance_tests": [
     "Exact rational solves match Fraction elimination; rank-deficient and indefinite cases are explicit.",
@@ -2212,7 +2226,10 @@
     "Use feature dimensions 2/4/8/16, groups 1/16/256 and 1k/100k/1M rows; report moment/matrix assembly, bytes and solve/decomposition time separately.",
     "Include well-conditioned, nearly singular and exactly rank-deficient matrices; compare repeated model/ridge/deletion requests against complete reconstruction."
    ],
-   "limitations": [],
+   "limitations": [
+    "Solves up to 64 x 63; the CRT and verification step on the CPU costs about an exact solve, so the device pays off only with many systems.",
+    "Eigensystems are floating point with certified residual and eigenvalue bounds; no claim on eigenvector accuracy beyond the reported bounds."
+   ],
    "validation": null
   },
   {

@@ -212,3 +212,5 @@ and their status is the inventory's.
 - [Jets](math/jet.md) (JET-001, JET-002): exact directional derivatives, gradients, Hessians and higher partials of circuits and aggregates.
 - [Inverse answers](math/inv.md) (INV-001): exact affine solution sets, certified polynomial roots, finite-grid search.
 - [Non-polynomial separation](math/calc.md) (CALC-003): phase and exponential families with certified coefficient enclosures.
+- [Moment matrices and solves](math/lin.md) (LIN-001, LIN-002): grouped Gram systems, exact solves, inertia, covariance, certified eigensystems.
+- [Quadratic minimizers](math/opt.md) (OPT-001): exact unique, nonunique, unbounded and box-constrained optima.
