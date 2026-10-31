@@ -1133,9 +1133,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_jet.c): immutable budgeted polynomial circuits (constants, parameters, data columns, add, sub, mul, integer powers, rational scaling) and plans (order, 0..64 seed directions, expansion center); Taylor (Hasse) jets with exact int64 numerators over plan-fixed denominators and checked 128-bit intermediates; aggregates of jets over FND-004 scopes with SQL NULL semantics, exact merges, and carrier conversions of every component or a refusal.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_jet_gpu.cu: the aggregate jet over the selected rows of each group (one work item per row slice, the same inline evaluation code, exact 128-bit sums via tr_atomic_add_wide), equal to the CPU.
 
 Bounds:
 
@@ -1144,9 +1144,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_jet.c`
 - `torbles/math_jet.h`
+- `torbles/math_jet.c`
+- `torbles/math_jet_gpu.cu`
+- `torbles/math_jet.py`
 - `tests/test_math_jet.py`
+- `bench/benchmark_math_jet.py`
 
 Acceptance tests:
 
@@ -1157,6 +1160,12 @@ Benchmark cases:
 
 - Vary one to eight seed directions and jet orders 1/2/3 on shared polynomial circuits; measure state bytes and arithmetic operations.
 - Compare a joint value/derivative pass with independently transformed circuits; include sparse gradients and a dense worst-supported interaction case.
+
+Additional limits:
+
+- Evaluation uses int64 numerators over fixed int64 denominators; many decimal or rational factors refuse early (no big-rational or GF(p) evaluation engine, only exact conversions of results).
+- Circuits have one output and the expansion center is fixed per plan.
+- Only the aggregate runs on CUDA; plan compilation, readouts and conversions are CPU.
 
 <a id="jet-002"></a>
 
@@ -1170,9 +1179,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [JET-001](#jet-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_jet.c): immutable budgeted polynomial circuits (constants, parameters, data columns, add, sub, mul, integer powers, rational scaling) and plans (order, 0..64 seed directions, expansion center); Taylor (Hasse) jets with exact int64 numerators over plan-fixed denominators and checked 128-bit intermediates; aggregates of jets over FND-004 scopes with SQL NULL semantics, exact merges, and carrier conversions of every component or a refusal.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_jet_gpu.cu: the aggregate jet over the selected rows of each group (one work item per row slice, the same inline evaluation code, exact 128-bit sums via tr_atomic_add_wide), equal to the CPU.
 
 Bounds:
 
@@ -1181,9 +1190,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_jet.c`
 - `torbles/math_jet.h`
+- `torbles/math_jet.c`
+- `torbles/math_jet_gpu.cu`
+- `torbles/math_jet.py`
 - `tests/test_math_jet.py`
+- `bench/benchmark_math_jet.py`
 
 Acceptance tests:
 
@@ -1194,6 +1206,12 @@ Benchmark cases:
 
 - Vary one to eight seed directions and jet orders 1/2/3 on shared polynomial circuits; measure state bytes and arithmetic operations.
 - Compare a joint value/derivative pass with independently transformed circuits; include sparse gradients and a dense worst-supported interaction case.
+
+Additional limits:
+
+- Evaluation uses int64 numerators over fixed int64 denominators; many decimal or rational factors refuse early (no big-rational or GF(p) evaluation engine, only exact conversions of results).
+- Circuits have one output and the expansion center is fixed per plan.
+- Only the aggregate runs on CUDA; plan compilation, readouts and conversions are CPU.
 
 ## RESP: Whole response functions
 
