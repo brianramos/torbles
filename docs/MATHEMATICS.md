@@ -214,3 +214,5 @@ and their status is the inventory's.
 - [Non-polynomial separation](math/calc.md) (CALC-003): phase and exponential families with certified coefficient enclosures.
 - [Moment matrices and solves](math/lin.md) (LIN-001, LIN-002): grouped Gram systems, exact solves, inertia, covariance, certified eigensystems.
 - [Quadratic minimizers](math/opt.md) (OPT-001): exact unique, nonunique, unbounded and box-constrained optima.
+- [Hierarchies](math/multi.md) (MULTI-001): certified refinement maps, exact per-level rollups, contrasts.
+- [Signed updates](math/delta.md) (DELTA-001): insert, delete, weight-change and move deltas on exact states.

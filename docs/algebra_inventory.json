@@ -3030,8 +3030,8 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_multi.c): hierarchies of 2..8 levels over FND-004 scopes, refinement maps certified exhaustively on the data (a violation is a refusal with its witness row) or marked declared, per-level banks rolled up exactly from the finest level with explicit absent and all-NULL groups, localized updates with a full-rollup fallback, and exact Haar-like contrasts (child against parent, siblings).",
+   "gpu": "CUDA kernels math_multi_gpu.cu: the exhaustive certification of a refinement map (minimum and maximum coarse code per fine group with atomics, the smallest violating row) and batched contrasts; the finest bank uses the FND-004 kernel.",
    "existing_evidence": [
     {
      "path": "torbles/keydesign.py",
@@ -3045,9 +3045,12 @@
     }
    ],
    "planned_files": [
-    "torbles/math_multi.c",
     "torbles/math_multi.h",
-    "tests/test_math_multi.py"
+    "torbles/math_multi.c",
+    "torbles/math_multi_gpu.cu",
+    "torbles/math_multi.py",
+    "tests/test_math_multi.py",
+    "bench/benchmark_math_multi.py"
    ],
    "acceptance_tests": [
     "Child states merge exactly into parents with explicit absent/all-NULL groups.",
@@ -3057,7 +3060,11 @@
     "Use balanced and skew hierarchies with 2/4/8 levels, groups 8/64/1,024 and repeated coarse/fine requests; report retained state bytes and rollup/refinement work.",
     "Compare localized changes in 1%/10%/all hierarchy leaves with complete reconstruction, including cases where adaptive refinement provides no gain."
    ],
-   "limitations": [],
+   "limitations": [
+    "Rollups and localized updates run on the CPU; contrasts are in logical units (the decimal scale is reported, not divided out).",
+    "Map bindings are exact copies of the id arrays for array scopes (memory proportional to rows).",
+    "After an update without new levels the maps are carried, not re-proven; re-certification rescans all rows."
+   ],
    "validation": null
   },
   {
@@ -4441,8 +4448,8 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_delta.c): insert, delete, weight-change and group-move deltas merged exactly into FND-004 bank states (counts, per-monomial counts and 128-bit sums, with an overflow proof), producing a new immutable state whose source identity records the update so old proofs and cache entries are not reused; a negative multiplicity in a state that promises a nonnegative measure is refused with the group and need.",
+   "gpu": "CUDA kernel math_delta_gpu.cu: a delta batch applied to the states on the device (signed atomic adds of counts and 128-bit sums), equal to the CPU, with the nonnegativity check exact before the new state is exposed.",
    "existing_evidence": [
     {
      "path": "torbles/algq.py",
@@ -4456,9 +4463,12 @@
     }
    ],
    "planned_files": [
-    "torbles/math_delta.c",
     "torbles/math_delta.h",
-    "tests/test_math_delta.py"
+    "torbles/math_delta.c",
+    "torbles/math_delta_gpu.cu",
+    "torbles/math_delta.py",
+    "tests/test_math_delta.py",
+    "bench/benchmark_math_delta.py"
    ],
    "acceptance_tests": [
     "Random signed update sequences match complete state reconstruction after every step.",
@@ -4468,7 +4478,11 @@
     "Apply insert/delete/weight-change batches of 1/10/1,000 rows to 1k/100k/1M-row states; separate initial build from each maintained update.",
     "Vary one versus both changing sides of bilinear joins and group-move frequency; compare every update with complete reconstruction, retaining rebuild/refusal cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "The nonnegativity check sees aggregates only: deleting a row that is absent but matches the group, validity and values of present rows cannot be detected.",
+    "The overflow proof is conservative (a net-zero swap of two large rows may be refused; a rebuild is the fallback); each update copies the whole state.",
+    "Bilinear (join) deltas are DELTA-002."
+   ],
    "validation": null
   },
   {

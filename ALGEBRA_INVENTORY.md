@@ -2247,9 +2247,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-004](#fnd-004)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_multi.c): hierarchies of 2..8 levels over FND-004 scopes, refinement maps certified exhaustively on the data (a violation is a refusal with its witness row) or marked declared, per-level banks rolled up exactly from the finest level with explicit absent and all-NULL groups, localized updates with a full-rollup fallback, and exact Haar-like contrasts (child against parent, siblings).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_multi_gpu.cu: the exhaustive certification of a refinement map (minimum and maximum coarse code per fine group with atomics, the smallest violating row) and batched contrasts; the finest bank uses the FND-004 kernel.
 
 Bounds:
 
@@ -2263,9 +2263,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_multi.c`
 - `torbles/math_multi.h`
+- `torbles/math_multi.c`
+- `torbles/math_multi_gpu.cu`
+- `torbles/math_multi.py`
 - `tests/test_math_multi.py`
+- `bench/benchmark_math_multi.py`
 
 Acceptance tests:
 
@@ -2276,6 +2279,12 @@ Benchmark cases:
 
 - Use balanced and skew hierarchies with 2/4/8 levels, groups 8/64/1,024 and repeated coarse/fine requests; report retained state bytes and rollup/refinement work.
 - Compare localized changes in 1%/10%/all hierarchy leaves with complete reconstruction, including cases where adaptive refinement provides no gain.
+
+Additional limits:
+
+- Rollups and localized updates run on the CPU; contrasts are in logical units (the decimal scale is reported, not divided out).
+- Map bindings are exact copies of the id arrays for array scopes (memory proportional to rows).
+- After an update without new levels the maps are carried, not re-proven; re-certification rescans all rows.
 
 <a id="multi-002"></a>
 
@@ -3589,9 +3598,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-004](#fnd-004), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_delta.c): insert, delete, weight-change and group-move deltas merged exactly into FND-004 bank states (counts, per-monomial counts and 128-bit sums, with an overflow proof), producing a new immutable state whose source identity records the update so old proofs and cache entries are not reused; a negative multiplicity in a state that promises a nonnegative measure is refused with the group and need.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_delta_gpu.cu: a delta batch applied to the states on the device (signed atomic adds of counts and 128-bit sums), equal to the CPU, with the nonnegativity check exact before the new state is exposed.
 
 Bounds:
 
@@ -3605,9 +3614,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_delta.c`
 - `torbles/math_delta.h`
+- `torbles/math_delta.c`
+- `torbles/math_delta_gpu.cu`
+- `torbles/math_delta.py`
 - `tests/test_math_delta.py`
+- `bench/benchmark_math_delta.py`
 
 Acceptance tests:
 
@@ -3618,6 +3630,12 @@ Benchmark cases:
 
 - Apply insert/delete/weight-change batches of 1/10/1,000 rows to 1k/100k/1M-row states; separate initial build from each maintained update.
 - Vary one versus both changing sides of bilinear joins and group-move frequency; compare every update with complete reconstruction, retaining rebuild/refusal cases.
+
+Additional limits:
+
+- The nonnegativity check sees aggregates only: deleting a row that is absent but matches the group, validity and values of present rows cannot be detected.
+- The overflow proof is conservative (a net-zero swap of two large rows may be refused; a rebuild is the fallback); each update copies the whole state.
+- Bilinear (join) deltas are DELTA-002.
 
 <a id="delta-002"></a>
 
