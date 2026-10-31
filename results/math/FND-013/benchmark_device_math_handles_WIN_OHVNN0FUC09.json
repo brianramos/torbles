@@ -1,0 +1,1279 @@
+{
+ "argv": [
+  "--capability",
+  "FND-013",
+  "--out",
+  "/home/brian/torbles_math/results/math/FND-013/benchmark_device_math_handles_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "FND-013",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "2cabc7ed424807bc9d2b8382d71e3ac29fcfee96",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "6315b90ea4915ebf572ce7e55e241de80e642f929e320d2f6114d5eab67d0ca0",
+   "torbles/libgpu.so": "ccd9d7ca765ae9cda07dcdd75dc0299dae6562cb1d1de34d594e14acdd9f2498",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "9a8eee0ede0e2d6af68a3044aab075191a52adb195e25cde3839c86f5c3006e1",
+   "torbles/libmathgpu_emu.so": "fa83b024ad1c95ff028c16cfb5b8dc0f1121972c0eb376bbd2587991d3c1df08"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-10-31T11:10:45+00:00"
+ },
+ "notes": [
+  "Lifetime records give seconds per create/use/close cycle per batch and the native counters and RSS after every batch; first-slice rows are the Python-owned objects without a table.",
+  "Concurrency: Python threads; native evaluations release the GIL and run in parallel (up to the machine's cores), cache calls are short and serialized by the cache's native mutex (and the GIL). The process priority and CPU affinity are only read.",
+  "NumPy int64 is a speed baseline only: it is exact on this grid because every value fits int64; it would wrap silently past it, where the native evaluation returns 128-bit values or flags overflow."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "table construction",
+   "first_seconds": 0.0005938629910815507,
+   "params": {
+    "capacity": 1024
+   },
+   "phase": "build",
+   "result": 1024,
+   "samples_seconds": [
+    0.0005938629910815507,
+    3.679498331621289e-05,
+    3.578100586310029e-05,
+    3.121898043900728e-05,
+    3.095701686106622e-05
+   ],
+   "warm_median_seconds": 3.3499993151053786e-05,
+   "warm_min_seconds": 3.095701686106622e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 0.00036883901339024305,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 16,
+   "samples_seconds": [
+    0.00036883901339024305,
+    2.4517998099327087e-05,
+    1.4909979654476047e-05,
+    1.244997838512063e-05,
+    1.0199000826105475e-05
+   ],
+   "warm_median_seconds": 1.3679979019798338e-05,
+   "warm_min_seconds": 1.0199000826105475e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 0.002074675023322925,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.002074675023322925,
+    0.0020057760120835155,
+    0.0019717980176210403,
+    0.0019029299728572369,
+    0.0019171220192220062,
+    0.0018709950090851635
+   ],
+   "warm_median_seconds": 0.0019171220192220062,
+   "warm_min_seconds": 0.0018709950090851635
+  },
+  {
+   "backend": "cuda",
+   "case": "evaluation",
+   "first_seconds": 0.06786646498949267,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.06786646498949267,
+    0.0008890250173863024,
+    0.0012064049951732159,
+    0.0009026039915625006,
+    0.0007757669955026358,
+    0.0007679149857722223
+   ],
+   "warm_median_seconds": 0.0008890250173863024,
+   "warm_min_seconds": 0.0007679149857722223
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 0.004273014987120405,
+   "params": {
+    "points": 10000,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004273014987120405,
+    0.004216208995785564,
+    0.004162167984759435
+   ],
+   "warm_median_seconds": 0.0041891884902725,
+   "warm_min_seconds": 0.004162167984759435
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.0008808150014374405,
+   "params": {
+    "points": 125,
+    "terms": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008808150014374405,
+    0.0008633499965071678
+   ],
+   "warm_median_seconds": 0.0008633499965071678,
+   "warm_min_seconds": 0.0008633499965071678
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 5.184600013308227e-05,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 256,
+   "samples_seconds": [
+    5.184600013308227e-05,
+    2.8287991881370544e-05,
+    2.1768995793536305e-05,
+    1.8983992049470544e-05,
+    1.9176019122824073e-05
+   ],
+   "warm_median_seconds": 2.047250745818019e-05,
+   "warm_min_seconds": 1.8983992049470544e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 0.03340139798820019,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.03340139798820019,
+    0.03294416901189834,
+    0.03301353700226173,
+    0.03347248901263811,
+    0.03361438799765892,
+    0.03311648400267586
+   ],
+   "warm_median_seconds": 0.03311648400267586,
+   "warm_min_seconds": 0.03294416901189834
+  },
+  {
+   "backend": "cuda",
+   "case": "evaluation",
+   "first_seconds": 0.0015848249895498157,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.0015848249895498157,
+    0.0012979469902347773,
+    0.0010831129911821336,
+    0.000982742989435792,
+    0.0009814740042202175,
+    0.00104476697742939
+   ],
+   "warm_median_seconds": 0.00104476697742939,
+   "warm_min_seconds": 0.0009814740042202175
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 0.060114065010566264,
+   "params": {
+    "points": 10000,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.060114065010566264,
+    0.05889122799271718,
+    0.05976419401122257
+   ],
+   "warm_median_seconds": 0.059327711001969874,
+   "warm_min_seconds": 0.05889122799271718
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.001967952004633844,
+   "params": {
+    "points": 20,
+    "terms": 256,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001967952004633844,
+    0.0019540099892765284
+   ],
+   "warm_median_seconds": 0.0019540099892765284,
+   "warm_min_seconds": 0.0019540099892765284
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "first_seconds": 0.0004235059896018356,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "build",
+   "result": 4096,
+   "samples_seconds": [
+    0.0004235059896018356,
+    0.0003787909809034318,
+    0.00036219999310560524,
+    0.0003523860068526119,
+    0.00035569199826568365
+   ],
+   "warm_median_seconds": 0.00035894599568564445,
+   "warm_min_seconds": 0.0003523860068526119
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "first_seconds": 0.6823990120028611,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.6823990120028611,
+    0.6809995499788783,
+    0.6823398020060267,
+    0.6818828359828331,
+    0.6812028480053414,
+    0.6801799029926769
+   ],
+   "warm_median_seconds": 0.6812028480053414,
+   "warm_min_seconds": 0.6801799029926769
+  },
+  {
+   "backend": "cuda",
+   "case": "evaluation",
+   "first_seconds": 0.007025544997304678,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "overflowed": 0
+   },
+   "samples_seconds": [
+    0.007025544997304678,
+    0.0064222140063066036,
+    0.006055459001800045,
+    0.006418679986381903,
+    0.006165835016872734,
+    0.006044996000127867
+   ],
+   "warm_median_seconds": 0.006165835016872734,
+   "warm_min_seconds": 0.006044996000127867
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluation",
+   "first_seconds": 2.0664533950039186,
+   "params": {
+    "points": 10000,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0664533950039186,
+    1.9771876469894778,
+    1.9667020390043035
+   ],
+   "warm_median_seconds": 1.9719448429968907,
+   "warm_min_seconds": 1.9667020390043035
+  },
+  {
+   "backend": "python-int",
+   "case": "evaluation",
+   "first_seconds": 0.034307157999137416,
+   "params": {
+    "points": 20,
+    "terms": 4096,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.034307157999137416,
+    0.033571355015737936
+   ],
+   "warm_median_seconds": 0.033571355015737936,
+   "warm_min_seconds": 0.033571355015737936
+  },
+  {
+   "backend": "cpu",
+   "case": "polynomial construction",
+   "limit": 256,
+   "message": "polynomial: needs 257 support, budget 256",
+   "need": 257,
+   "params": {
+    "budget_support": 256,
+    "terms": 257
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.4204025976359844e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation",
+   "limit": 1000,
+   "message": "polynomial evaluation: needs 1001 output, budget 1000",
+   "need": 1001,
+   "params": {
+    "budget_output": 1000,
+    "points": 1001
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.5291996533051133e-05,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cuda",
+   "case": "evaluation",
+   "limit": 1000,
+   "message": "polynomial evaluation on the device: needs 1001 output, budget 1000",
+   "need": 1001,
+   "params": {
+    "budget_output": 1000,
+    "points": 1001
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.158600884489715e-05,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cuda",
+   "case": "evaluation",
+   "limit": 145391,
+   "message": "polynomial evaluation on the device: needs 145392 bytes, budget 145391",
+   "need": 145392,
+   "params": {
+    "budget_bytes": 145391,
+    "points": 1000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.118600140325725e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "insert into a full table",
+   "limit": 4,
+   "message": "polynomial: needs 5 states, budget 4",
+   "need": 5,
+   "params": {
+    "capacity": 4,
+    "live": 4
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.0557996574789286e-05,
+   "refused": true,
+   "resource": "states"
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 2.382381593633909e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 9601,
+     "destroyed": 3200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 183128064
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 19201,
+     "destroyed": 6400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 183128064
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 28801,
+     "destroyed": 9600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 183128064
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 38401,
+     "destroyed": 12800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 183128064
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 48001,
+     "destroyed": 16000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 503,
+     "rss_bytes": 183128064
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "polynomial, 16 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 183128064,
+   "samples_seconds": [
+    2.382381593633909e-05,
+    2.371979656345502e-05,
+    2.39720531317289e-05,
+    2.402385031018639e-05,
+    2.380350062594516e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 2.3887776878837028e-05,
+   "warm_min_seconds": 2.371979656345502e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 0.00022998082124104258,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 52801,
+     "destroyed": 17600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 183713792
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 57601,
+     "destroyed": 19200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 184377344
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 62401,
+     "destroyed": 20800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 185049088
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 67201,
+     "destroyed": 22400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 185720832
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 72001,
+     "destroyed": 24000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 6263,
+     "rss_bytes": 186384384
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 1600,
+    "kind": "polynomial, 256 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 183443456,
+   "samples_seconds": [
+    0.00022998082124104258,
+    0.0002299052593843953,
+    0.00022612532562561684,
+    0.00022608696437600884,
+    0.0002234534237504704
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 0.00022610614500081285,
+   "warm_min_seconds": 0.0002234534237504704
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 0.004808322868848336,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 72481,
+     "destroyed": 24160,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186454016
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 72961,
+     "destroyed": 24320,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186523648
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 73441,
+     "destroyed": 24480,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186585088
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 73921,
+     "destroyed": 24640,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186654720
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 24800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186724352
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 160,
+    "kind": "polynomial, 4096 terms"
+   },
+   "phase": "repeated",
+   "rss_before": 186388480,
+   "samples_seconds": [
+    0.004808322868848336,
+    0.004823998987558298,
+    0.005155595874930441,
+    0.004830896818748443,
+    0.004810399624875572
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 0.00482744790315337,
+   "warm_min_seconds": 0.004810399624875572
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 8.786954367678845e-06,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 28000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186728448
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 31200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186728448
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 34400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186728448
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 37600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186728448
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 40800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186728448
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "domain"
+   },
+   "phase": "repeated",
+   "rss_before": 186724352,
+   "samples_seconds": [
+    8.786954367678845e-06,
+    8.528354064765154e-06,
+    8.367710315724252e-06,
+    8.318653754031401e-06,
+    8.368990629605832e-06
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 8.368350472665041e-06,
+   "warm_min_seconds": 8.318653754031401e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 9.965304998331704e-06,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 44000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 47200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 50400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 53600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 74401,
+     "destroyed": 56800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 98423,
+     "rss_bytes": 186732544
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "bank"
+   },
+   "phase": "repeated",
+   "rss_before": 186728448,
+   "samples_seconds": [
+    9.965304998331704e-06,
+    9.871552192635136e-06,
+    9.79737531451974e-06,
+    9.82872124950518e-06,
+    1.0035051564045717e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 9.850136721070157e-06,
+   "warm_min_seconds": 9.79737531451974e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 1.0823811244335957e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 76001,
+     "destroyed": 60000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 77601,
+     "destroyed": 63200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 79201,
+     "destroyed": 66400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 80801,
+     "destroyed": 69600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 82401,
+     "destroyed": 72800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 1600,
+    "kind": "state cache with put and get"
+   },
+   "phase": "repeated",
+   "rss_before": 186732544,
+   "samples_seconds": [
+    1.0823811244335957e-05,
+    1.0531798125157366e-05,
+    1.0907760006375612e-05,
+    1.0584993142401799e-05,
+    1.0531583757256158e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 1.0558395633779582e-05,
+   "warm_min_seconds": 1.0531583757256158e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime",
+   "first_seconds": 1.0580010621197288e-05,
+   "memory_after_batches": [
+    {
+     "allocations": 1,
+     "allocations_total": 92001,
+     "destroyed": 76000,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186732544
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 101601,
+     "destroyed": 79200,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186736640
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 111201,
+     "destroyed": 82400,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186736640
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 120801,
+     "destroyed": 85600,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186736640
+    },
+    {
+     "allocations": 1,
+     "allocations_total": 130401,
+     "destroyed": 88800,
+     "live": 2,
+     "payload_bytes": 87,
+     "peak_payload_bytes": 8388695,
+     "rss_bytes": 186736640
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "deferred close (retain, close, release)"
+   },
+   "phase": "repeated",
+   "rss_before": 186732544,
+   "samples_seconds": [
+    1.0580010621197288e-05,
+    1.0711179693316807e-05,
+    1.066359437572828e-05,
+    1.0338330002923613e-05,
+    1.06370109369891e-05
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 1.065030265635869e-05,
+   "warm_min_seconds": 1.0338330002923613e-05
+  },
+  {
+   "backend": "first-slice",
+   "case": "lifetime",
+   "first_seconds": 4.822773435080307e-06,
+   "memory_after_batches": [
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "domain"
+   },
+   "phase": "repeated",
+   "rss_before": 186736640,
+   "samples_seconds": [
+    4.822773435080307e-06,
+    4.809747188119218e-06,
+    4.7768706281203775e-06,
+    4.798226873390377e-06,
+    4.730159062091843e-06
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 4.787548750755377e-06,
+   "warm_min_seconds": 4.730159062091843e-06
+  },
+  {
+   "backend": "first-slice",
+   "case": "lifetime",
+   "first_seconds": 1.4813984398642788e-06,
+   "memory_after_batches": [
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    },
+    {
+     "rss_bytes": 186744832
+    }
+   ],
+   "params": {
+    "batches": 5,
+    "cycles_per_batch": 3200,
+    "kind": "state cache"
+   },
+   "phase": "repeated",
+   "rss_before": 186744832,
+   "samples_seconds": [
+    1.4813984398642788e-06,
+    1.4903165629220893e-06,
+    1.5020378123153933e-06,
+    1.4680759340990335e-06,
+    1.4534300044033443e-06
+   ],
+   "unit": "seconds per cycle",
+   "warm_median_seconds": 1.4791962485105615e-06,
+   "warm_min_seconds": 1.4534300044033443e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "lifetime totals",
+   "params": {},
+   "phase": "final",
+   "result": {
+    "allocations": 1,
+    "deferred_closes": 16000,
+    "destroyed": 88802,
+    "inserted": 88802,
+    "live": 0,
+    "payload_bytes": 0,
+    "releases": 153600,
+    "retains": 153600
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 1.2933798829908483,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 1
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    1.2933798829908483,
+    1.2919027089956217,
+    1.2897388239798602
+   ],
+   "warm_median_seconds": 1.290820766487741,
+   "warm_min_seconds": 1.2897388239798602
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.04930477897869423,
+   "params": {
+    "operations": 6000,
+    "threads": 1,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.04930477897869423,
+    0.04934238299028948,
+    0.04901545500615612
+   ],
+   "warm_median_seconds": 0.0491789189982228,
+   "warm_min_seconds": 0.04901545500615612
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 0.6786945110070519,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 2
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    0.6786945110070519,
+    0.6509059540112503,
+    0.6472004849929363
+   ],
+   "warm_median_seconds": 0.6490532195020933,
+   "warm_min_seconds": 0.6472004849929363
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.08304341597249731,
+   "params": {
+    "operations": 6000,
+    "threads": 2,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.08304341597249731,
+    0.08571070397738367,
+    0.07891355099854991
+   ],
+   "warm_median_seconds": 0.08231212748796679,
+   "warm_min_seconds": 0.07891355099854991
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrent immutable evaluation",
+   "first_seconds": 0.3242913860012777,
+   "params": {
+    "calls": 96,
+    "points": 4000,
+    "terms": 256,
+    "threads": 4
+   },
+   "phase": "run",
+   "result": 96,
+   "samples_seconds": [
+    0.3242913860012777,
+    0.32876204000785947,
+    0.32314626601873897
+   ],
+   "warm_median_seconds": 0.3259541530132992,
+   "warm_min_seconds": 0.32314626601873897
+  },
+  {
+   "backend": "cpu",
+   "case": "serialized cache updates",
+   "first_seconds": 0.13607117100036703,
+   "params": {
+    "operations": 6000,
+    "threads": 4,
+    "unit": "put + get pairs"
+   },
+   "phase": "run",
+   "result": 6000,
+   "samples_seconds": [
+    0.13607117100036703,
+    0.14068813697667792,
+    0.12793336299364455
+   ],
+   "warm_median_seconds": 0.13431074998516124,
+   "warm_min_seconds": 0.12793336299364455
+  },
+  {
+   "after": {
+    "affinity": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23
+    ],
+    "nice": 0
+   },
+   "backend": "os",
+   "before": {
+    "affinity": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19,
+     20,
+     21,
+     22,
+     23
+    ],
+    "nice": 0
+   },
+   "case": "process scheduling",
+   "params": {},
+   "phase": "read only",
+   "result": {
+    "affinity_unchanged": true,
+    "cpus": 24,
+    "nice_after": 0,
+    "nice_before": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "concurrency totals",
+   "params": {},
+   "phase": "final",
+   "result": {
+    "cache_hits": 54000,
+    "cache_puts": 54000,
+    "releases": 324866,
+    "retains": 324866
+   }
+  }
+ ],
+ "seconds": 25.343612999015022,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget_support": 256,
+   "grid": "polynomial support",
+   "largest_admitted": {
+    "terms": 256
+   },
+   "smallest_refused": {
+    "terms": 257
+   }
+  },
+  {
+   "budget_output": 1000,
+   "grid": "evaluation output",
+   "largest_admitted": {
+    "points": 1000
+   },
+   "smallest_refused": {
+    "points": 1001
+   }
+  },
+  {
+   "grid": "device copies",
+   "largest_admitted": {
+    "bytes": 145392
+   },
+   "points": 1000,
+   "smallest_refused": {
+    "bytes": 145391
+   }
+  },
+  {
+   "capacity": 4,
+   "grid": "table capacity",
+   "largest_admitted": {
+    "live": 4
+   },
+   "smallest_refused": {
+    "live": 5
+   }
+  }
+ ]
+}

@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 11 |
 | planned | 49 |
-| in_progress | 15 |
-| validated | 6 |
+| in_progress | 1 |
+| validated | 20 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -392,7 +392,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### FND-004: Reusable state bank, partitions and invalidation
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Cache immutable state banks keyed by exact domain, revision, codec, validity, basis and grouping grain; support compatible refinement/rollup maps and deliberate refresh.
 
@@ -417,16 +417,16 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_state.c](torbles/math_state.c): Bounded exact-descriptor scalar moment cache with owned clones, LRU and retained-byte accounting.
 - [tests/test_math_state.py](tests/test_math_state.py): Compatible reuse, source invalidation, lifetime, budget and metadata controls.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_scope.h`
-- `torbles/math_scope.c`
-- `torbles/math_bank.h`
-- `torbles/math_bank.c`
-- `torbles/math_bank_gpu.cu`
-- `torbles/math_bank.py`
-- `tests/test_math_bank.py`
-- `bench/benchmark_math_bank.py`
+- [torbles/math_scope.h](torbles/math_scope.h)
+- [torbles/math_scope.c](torbles/math_scope.c)
+- [torbles/math_bank.h](torbles/math_bank.h)
+- [torbles/math_bank.c](torbles/math_bank.c)
+- [torbles/math_bank_gpu.cu](torbles/math_bank_gpu.cu)
+- [torbles/math_bank.py](torbles/math_bank.py)
+- [tests/test_math_bank.py](tests/test_math_bank.py)
+- [bench/benchmark_math_bank.py](bench/benchmark_math_bank.py)
 
 Acceptance tests:
 
@@ -447,7 +447,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -460,12 +460,13 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
 - benchmarks: [results/math/FND-004/benchmark_cpu_math_bank_vm.json](results/math/FND-004/benchmark_cpu_math_bank_vm.json)
+- benchmarks: [results/math/FND-004/benchmark_device_math_bank_WIN_OHVNN0FUC09.json](results/math/FND-004/benchmark_device_math_bank_WIN_OHVNN0FUC09.json)
 
 <a id="fnd-005"></a>
 
 ### FND-005: Native module and operator registry
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Modules declare carriers, laws, valid transforms, sufficient state, proof dependencies, native kernels and complete construction/reuse costs.
 
@@ -487,17 +488,17 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_modules.c](torbles/math_modules.c): Executable dispatch for two actual built-ins: Qpolynomial transforms and scalar moment contraction.
 - [tests/test_math_modules.py](tests/test_math_modules.py): Native-domain/carrier checks and actual dispatch, including bypass-route spies.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_registry.h`
-- `torbles/math_registry.c`
-- `torbles/math_registry_gpu.cu`
-- `torbles/math_registry.py`
-- `tests/test_math_registry.py`
-- `bench/benchmark_math_registry.py`
-- `torbles/math_modules.c`
-- `torbles/math_modules.h`
-- `tests/test_math_modules.py`
+- [torbles/math_registry.h](torbles/math_registry.h)
+- [torbles/math_registry.c](torbles/math_registry.c)
+- [torbles/math_registry_gpu.cu](torbles/math_registry_gpu.cu)
+- [torbles/math_registry.py](torbles/math_registry.py)
+- [tests/test_math_registry.py](tests/test_math_registry.py)
+- [bench/benchmark_math_registry.py](bench/benchmark_math_registry.py)
+- [torbles/math_modules.c](torbles/math_modules.c)
+- [torbles/math_modules.h](torbles/math_modules.h)
+- [tests/test_math_modules.py](tests/test_math_modules.py)
 
 Acceptance tests:
 
@@ -517,7 +518,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -530,6 +531,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
 - benchmarks: [results/math/FND-005/benchmark_cpu_math_registry_vm.json](results/math/FND-005/benchmark_cpu_math_registry_vm.json)
+- benchmarks: [results/math/FND-005/benchmark_device_math_registry_WIN_OHVNN0FUC09.json](results/math/FND-005/benchmark_device_math_registry_WIN_OHVNN0FUC09.json)
 
 <a id="fnd-006"></a>
 
@@ -665,7 +667,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/FND-008/tests_test_math_planner.json](results/math/FND-008/tests_test_math_planner.json)
 - tests: [results/math/FND-008/sanitized_test_math_planner.json](results/math/FND-008/sanitized_test_math_planner.json)
@@ -675,7 +677,7 @@ Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
 
 ### FND-009: Numeric carriers and exactness conversions
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Extend checked rationals to explicit wide integers, arbitrary precision, real/complex numerical values, finite fields, intervals and truncated series without silently mixing laws.
 
@@ -692,14 +694,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_carriers.h`
-- `torbles/math_carriers.c`
-- `torbles/math_carriers_gpu.cu`
-- `torbles/math_carriers.py`
-- `tests/test_math_carriers.py`
-- `bench/benchmark_math_carriers.py`
+- [torbles/math_carriers.h](torbles/math_carriers.h)
+- [torbles/math_carriers.c](torbles/math_carriers.c)
+- [torbles/math_carriers_gpu.cu](torbles/math_carriers_gpu.cu)
+- [torbles/math_carriers.py](torbles/math_carriers.py)
+- [tests/test_math_carriers.py](tests/test_math_carriers.py)
+- [bench/benchmark_math_carriers.py](bench/benchmark_math_carriers.py)
 
 Acceptance tests:
 
@@ -720,17 +722,18 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/FND-009/tests_test_math_carriers.json](results/math/FND-009/tests_test_math_carriers.json)
 - tests: [results/math/FND-009/sanitized_test_math_carriers.json](results/math/FND-009/sanitized_test_math_carriers.json)
 - benchmarks: [results/math/FND-009/benchmark_cpu_math_carriers_vm.json](results/math/FND-009/benchmark_cpu_math_carriers_vm.json)
+- benchmarks: [results/math/FND-009/benchmark_device_math_carriers_WIN_OHVNN0FUC09.json](results/math/FND-009/benchmark_device_math_carriers_WIN_OHVNN0FUC09.json)
 
 <a id="fnd-010"></a>
 
 ### FND-010: Search, representation and output budgets
 
-Status: **in_progress**. Delivery wave: **W0**.
+Status: **validated**. Delivery wave: **W0**.
 
 Every new module bounds variable count, degree, support, tensor size, circuit size, iteration count and output cardinality; fallbacks remain explicit and costed.
 
@@ -752,14 +755,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_dag.c](torbles/relationships_dag.c): Existing DAG/instruction bounds.
 - [torbles/relationships_stage.c](torbles/relationships_stage.c): Existing degree, residual-scan and group-domain bounds.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_budgets.h`
-- `torbles/math_budgets.c`
-- `torbles/math_budgets_gpu.cu`
-- `torbles/math_budgets.py`
-- `tests/test_math_budgets.py`
-- `bench/benchmark_math_budgets.py`
+- [torbles/math_budgets.h](torbles/math_budgets.h)
+- [torbles/math_budgets.c](torbles/math_budgets.c)
+- [torbles/math_budgets_gpu.cu](torbles/math_budgets_gpu.cu)
+- [torbles/math_budgets.py](torbles/math_budgets.py)
+- [tests/test_math_budgets.py](tests/test_math_budgets.py)
+- [bench/benchmark_math_budgets.py](bench/benchmark_math_budgets.py)
 
 Acceptance tests:
 
@@ -778,11 +781,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/FND-010/tests_test_math_budgets.json](results/math/FND-010/tests_test_math_budgets.json)
 - tests: [results/math/FND-010/sanitized_test_math_budgets.json](results/math/FND-010/sanitized_test_math_budgets.json)
 - benchmarks: [results/math/FND-010/benchmark_cpu_math_budgets_vm.json](results/math/FND-010/benchmark_cpu_math_budgets_vm.json)
+- benchmarks: [results/math/FND-010/benchmark_device_math_budgets_WIN_OHVNN0FUC09.json](results/math/FND-010/benchmark_device_math_budgets_WIN_OHVNN0FUC09.json)
 
 <a id="fnd-011"></a>
 
@@ -830,7 +834,7 @@ Benchmark cases:
 
 ### FND-012: Differential validation and benchmark gates
 
-Status: **in_progress**. Delivery wave: **W0**.
+Status: **validated**. Delivery wave: **W0**.
 
 Per-capability oracles, algebraic property checks, scope/NULL/bag/refusal tests and measured build/cold/reuse benchmarks. Existing suite remains a regression gate.
 
@@ -853,21 +857,21 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [tests/test_relationship_stages.py](tests/test_relationship_stages.py): Existing stage correctness/property tests.
 - [tests/check_algebra.py](tests/check_algebra.py): Existing switch-on/off and DuckDB differential checks of algebraic paths (the prior mixed-scaling validation: Recorded in the prototype it comes from (prototype/mixed-scaling, results/mixed_scaling); not copied into this repository.)
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `tests/test_math_gates.py`
-- `tests/test_mathematics.py`
-- `tests/mathematics_native_edges.c`
-- `tests/validate_mathematics_native.py`
-- `tests/sanitize_math.sh`
-- `torbles/math_core_gpu.cu`
-- `torbles/math_gpu.py`
-- `torbles/math_errors.py`
-- `bench/validate_math.py`
-- `bench/render_algebra_inventory.py`
-- `bench/math_bench.py`
-- `bench/benchmark_math_gates.py`
-- `bench/benchmark_mathematics.py`
+- [tests/test_math_gates.py](tests/test_math_gates.py)
+- [tests/test_mathematics.py](tests/test_mathematics.py)
+- [tests/mathematics_native_edges.c](tests/mathematics_native_edges.c)
+- [tests/validate_mathematics_native.py](tests/validate_mathematics_native.py)
+- [tests/sanitize_math.sh](tests/sanitize_math.sh)
+- [torbles/math_core_gpu.cu](torbles/math_core_gpu.cu)
+- [torbles/math_gpu.py](torbles/math_gpu.py)
+- [torbles/math_errors.py](torbles/math_errors.py)
+- [bench/validate_math.py](bench/validate_math.py)
+- [bench/render_algebra_inventory.py](bench/render_algebra_inventory.py)
+- [bench/math_bench.py](bench/math_bench.py)
+- [bench/benchmark_math_gates.py](bench/benchmark_math_gates.py)
+- [bench/benchmark_mathematics.py](bench/benchmark_mathematics.py)
 
 Acceptance tests:
 
@@ -885,17 +889,18 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
 - tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
 - benchmarks: [results/math/FND-012/benchmark_cpu_math_gates_vm.json](results/math/FND-012/benchmark_cpu_math_gates_vm.json)
+- benchmarks: [results/math/FND-012/benchmark_device_math_gates_WIN_OHVNN0FUC09.json](results/math/FND-012/benchmark_device_math_gates_WIN_OHVNN0FUC09.json)
 
 <a id="fnd-013"></a>
 
 ### FND-013: State ownership, concurrency and native ABI
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Opaque owned handles, immutable sharing, explicit release, deterministic closed-handle errors and serialized mutable caches; ABI version/size checks cover all ctypes boundaries.
 
@@ -918,15 +923,15 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_domains.py](torbles/math_domains.py): Owned Python wrappers and serialized mutable cache operations.
 - [tests/test_math_domains.py](tests/test_math_domains.py): Descriptor ownership, ABI/layout and closed-handle controls.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_handles.h`
-- `torbles/math_handles.c`
-- `torbles/math_handles_gpu.cu`
-- `torbles/math_handles.py`
-- `tests/test_math_handles.py`
-- `tests/math_handles_native_threads.c`
-- `bench/benchmark_math_handles.py`
+- [torbles/math_handles.h](torbles/math_handles.h)
+- [torbles/math_handles.c](torbles/math_handles.c)
+- [torbles/math_handles_gpu.cu](torbles/math_handles_gpu.cu)
+- [torbles/math_handles.py](torbles/math_handles.py)
+- [tests/test_math_handles.py](tests/test_math_handles.py)
+- [tests/math_handles_native_threads.c](tests/math_handles_native_threads.c)
+- [bench/benchmark_math_handles.py](bench/benchmark_math_handles.py)
 
 Acceptance tests:
 
@@ -946,7 +951,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -959,6 +964,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
 - benchmarks: [results/math/FND-013/benchmark_cpu_math_handles_vm.json](results/math/FND-013/benchmark_cpu_math_handles_vm.json)
+- benchmarks: [results/math/FND-013/benchmark_device_math_handles_WIN_OHVNN0FUC09.json](results/math/FND-013/benchmark_device_math_handles_WIN_OHVNN0FUC09.json)
 
 ## CALC: Continuous calculus
 
@@ -1092,7 +1098,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### CALC-003: Non-polynomial finite-separation calculus
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Closed families such as fixed-frequency phase shifts and separable exponentials return compact parameter functions and their derivatives/integrals.
 
@@ -1109,14 +1115,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_calc.h`
-- `torbles/math_calc.c`
-- `torbles/math_calc_gpu.cu`
-- `torbles/math_calc.py`
-- `tests/test_math_calc.py`
-- `bench/benchmark_math_calc.py`
+- [torbles/math_calc.h](torbles/math_calc.h)
+- [torbles/math_calc.c](torbles/math_calc.c)
+- [torbles/math_calc_gpu.cu](torbles/math_calc_gpu.cu)
+- [torbles/math_calc.py](torbles/math_calc.py)
+- [tests/test_math_calc.py](tests/test_math_calc.py)
+- [bench/benchmark_math_calc.py](bench/benchmark_math_calc.py)
 
 Acceptance tests:
 
@@ -1140,11 +1146,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/CALC-003/tests_test_math_calc.json](results/math/CALC-003/tests_test_math_calc.json)
 - tests: [results/math/CALC-003/sanitized_test_math_calc.json](results/math/CALC-003/sanitized_test_math_calc.json)
 - benchmarks: [results/math/CALC-003/benchmark_cpu_math_calc_vm.json](results/math/CALC-003/benchmark_cpu_math_calc_vm.json)
+- benchmarks: [results/math/CALC-003/benchmark_device_math_calc_WIN_OHVNN0FUC09.json](results/math/CALC-003/benchmark_device_math_calc_WIN_OHVNN0FUC09.json)
 
 ## JET: Derivative algebras
 
@@ -1154,7 +1161,7 @@ Dual numbers and truncated multivariate series for simultaneous values and deriv
 
 ### JET-001: Dual-number directional derivatives
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Native pair payloads carry a value and first directional derivative with typed sum/product/chain laws.
 
@@ -1171,14 +1178,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_jet.h`
-- `torbles/math_jet.c`
-- `torbles/math_jet_gpu.cu`
-- `torbles/math_jet.py`
-- `tests/test_math_jet.py`
-- `bench/benchmark_math_jet.py`
+- [torbles/math_jet.h](torbles/math_jet.h)
+- [torbles/math_jet.c](torbles/math_jet.c)
+- [torbles/math_jet_gpu.cu](torbles/math_jet_gpu.cu)
+- [torbles/math_jet.py](torbles/math_jet.py)
+- [tests/test_math_jet.py](tests/test_math_jet.py)
+- [bench/benchmark_math_jet.py](bench/benchmark_math_jet.py)
 
 Acceptance tests:
 
@@ -1198,17 +1205,18 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/JET-001/tests_test_math_jet.json](results/math/JET-001/tests_test_math_jet.json)
 - tests: [results/math/JET-001/sanitized_test_math_jet.json](results/math/JET-001/sanitized_test_math_jet.json)
 - benchmarks: [results/math/JET-001/benchmark_cpu_math_jet_vm.json](results/math/JET-001/benchmark_cpu_math_jet_vm.json)
+- benchmarks: [results/math/JET-001/benchmark_device_math_jet_WIN_OHVNN0FUC09.json](results/math/JET-001/benchmark_device_math_jet_WIN_OHVNN0FUC09.json)
 
 <a id="jet-002"></a>
 
 ### JET-002: Higher-order and multivariate jets
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Truncated series payloads produce Hessians, Hessian-vector products and mixed partials with explicit factorial or Hasse-basis conventions.
 
@@ -1225,14 +1233,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_jet.h`
-- `torbles/math_jet.c`
-- `torbles/math_jet_gpu.cu`
-- `torbles/math_jet.py`
-- `tests/test_math_jet.py`
-- `bench/benchmark_math_jet.py`
+- [torbles/math_jet.h](torbles/math_jet.h)
+- [torbles/math_jet.c](torbles/math_jet.c)
+- [torbles/math_jet_gpu.cu](torbles/math_jet_gpu.cu)
+- [torbles/math_jet.py](torbles/math_jet.py)
+- [tests/test_math_jet.py](tests/test_math_jet.py)
+- [bench/benchmark_math_jet.py](bench/benchmark_math_jet.py)
 
 Acceptance tests:
 
@@ -1252,11 +1260,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/JET-002/tests_test_math_jet.json](results/math/JET-002/tests_test_math_jet.json)
 - tests: [results/math/JET-002/sanitized_test_math_jet.json](results/math/JET-002/sanitized_test_math_jet.json)
 - benchmarks: [results/math/JET-002/benchmark_cpu_math_jet_vm.json](results/math/JET-002/benchmark_cpu_math_jet_vm.json)
+- benchmarks: [results/math/JET-002/benchmark_device_math_jet_WIN_OHVNN0FUC09.json](results/math/JET-002/benchmark_device_math_jet_WIN_OHVNN0FUC09.json)
 
 ## RESP: Whole response functions
 
@@ -1369,7 +1378,7 @@ Solve for parameter values or changes producing a requested answer.
 
 ### INV-001: Linear and univariate polynomial inverse answers
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Solve bounded exact linear equations first; extend to certified intervals/algebraic roots for univariate response targets.
 
@@ -1386,14 +1395,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_inv.h`
-- `torbles/math_inv.c`
-- `torbles/math_inv_gpu.cu`
-- `torbles/math_inv.py`
-- `tests/test_math_inv.py`
-- `bench/benchmark_math_inv.py`
+- [torbles/math_inv.h](torbles/math_inv.h)
+- [torbles/math_inv.c](torbles/math_inv.c)
+- [torbles/math_inv_gpu.cu](torbles/math_inv_gpu.cu)
+- [torbles/math_inv.py](torbles/math_inv.py)
+- [tests/test_math_inv.py](tests/test_math_inv.py)
+- [bench/benchmark_math_inv.py](bench/benchmark_math_inv.py)
 
 Acceptance tests:
 
@@ -1413,11 +1422,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/INV-001/tests_test_math_inv.json](results/math/INV-001/tests_test_math_inv.json)
 - tests: [results/math/INV-001/sanitized_test_math_inv.json](results/math/INV-001/sanitized_test_math_inv.json)
 - benchmarks: [results/math/INV-001/benchmark_cpu_math_inv_vm.json](results/math/INV-001/benchmark_cpu_math_inv_vm.json)
+- benchmarks: [results/math/INV-001/benchmark_device_math_inv_WIN_OHVNN0FUC09.json](results/math/INV-001/benchmark_device_math_inv_WIN_OHVNN0FUC09.json)
 
 <a id="inv-002"></a>
 
@@ -1464,7 +1474,7 @@ Optimize query-defined objectives under explicitly declared domains and constrai
 
 ### OPT-001: Quadratic objective minimizers
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Minimize scalar or small multivariate quadratic response functions with singular/indefinite/domain cases explicit.
 
@@ -1481,15 +1491,15 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_opt.h`
-- `torbles/math_opt.c`
-- `torbles/math_opt_gpu.cu`
-- `torbles/math_opt.py`
-- `tests/test_math_opt.py`
-- `bench/benchmark_math_opt.py`
-- `torbles/math_lin.c`
+- [torbles/math_opt.h](torbles/math_opt.h)
+- [torbles/math_opt.c](torbles/math_opt.c)
+- [torbles/math_opt_gpu.cu](torbles/math_opt_gpu.cu)
+- [torbles/math_opt.py](torbles/math_opt.py)
+- [tests/test_math_opt.py](tests/test_math_opt.py)
+- [bench/benchmark_math_opt.py](bench/benchmark_math_opt.py)
+- [torbles/math_lin.c](torbles/math_lin.c)
 
 Acceptance tests:
 
@@ -1508,11 +1518,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/OPT-001/tests_test_math_opt.json](results/math/OPT-001/tests_test_math_opt.json)
 - tests: [results/math/OPT-001/sanitized_test_math_opt.json](results/math/OPT-001/sanitized_test_math_opt.json)
 - benchmarks: [results/math/OPT-001/benchmark_cpu_math_opt_vm.json](results/math/OPT-001/benchmark_cpu_math_opt_vm.json)
+- benchmarks: [results/math/OPT-001/benchmark_device_math_opt_WIN_OHVNN0FUC09.json](results/math/OPT-001/benchmark_device_math_opt_WIN_OHVNN0FUC09.json)
 
 <a id="opt-002"></a>
 
@@ -1840,7 +1851,7 @@ Moment matrices, regression, covariance, projections and eigensystems.
 
 ### LIN-001: Grouped moment matrices and regression systems
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Assemble exact counts, sums, X^T X and X^T y from a compatible basis and grain; general grouped/wide banks extend the initial scalar slice.
 
@@ -1862,14 +1873,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/sqlexec.py](torbles/sqlexec.py): SQL statistical aggregates lower polynomial moments through existing native queries.
 - [torbles/alg.c](torbles/alg.c): Existing linear/bilinear masked reductions support matrix-state assembly.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_lin.h`
-- `torbles/math_lin.c`
-- `torbles/math_lin_gpu.cu`
-- `torbles/math_lin.py`
-- `tests/test_math_lin.py`
-- `bench/benchmark_math_lin.py`
+- [torbles/math_lin.h](torbles/math_lin.h)
+- [torbles/math_lin.c](torbles/math_lin.c)
+- [torbles/math_lin_gpu.cu](torbles/math_lin_gpu.cu)
+- [torbles/math_lin.py](torbles/math_lin.py)
+- [tests/test_math_lin.py](tests/test_math_lin.py)
+- [bench/benchmark_math_lin.py](bench/benchmark_math_lin.py)
 
 Acceptance tests:
 
@@ -1888,17 +1899,18 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/LIN-001/tests_test_math_lin.json](results/math/LIN-001/tests_test_math_lin.json)
 - tests: [results/math/LIN-001/sanitized_test_math_lin.json](results/math/LIN-001/sanitized_test_math_lin.json)
 - benchmarks: [results/math/LIN-001/benchmark_cpu_math_lin_vm.json](results/math/LIN-001/benchmark_cpu_math_lin_vm.json)
+- benchmarks: [results/math/LIN-001/benchmark_device_math_lin_WIN_OHVNN0FUC09.json](results/math/LIN-001/benchmark_device_math_lin_WIN_OHVNN0FUC09.json)
 
 <a id="lin-002"></a>
 
 ### LIN-002: Solves, projections, covariance and eigensystems
 
-Status: **in_progress**. Delivery wave: **W1**.
+Status: **validated**. Delivery wave: **W1**.
 
 Small native matrix operators finalize retained states, with exact solves where supported and explicit numerical contracts for decompositions.
 
@@ -1915,14 +1927,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_lin.h`
-- `torbles/math_lin.c`
-- `torbles/math_lin_gpu.cu`
-- `torbles/math_lin.py`
-- `tests/test_math_lin.py`
-- `bench/benchmark_math_lin.py`
+- [torbles/math_lin.h](torbles/math_lin.h)
+- [torbles/math_lin.c](torbles/math_lin.c)
+- [torbles/math_lin_gpu.cu](torbles/math_lin_gpu.cu)
+- [torbles/math_lin.py](torbles/math_lin.py)
+- [tests/test_math_lin.py](tests/test_math_lin.py)
+- [bench/benchmark_math_lin.py](bench/benchmark_math_lin.py)
 
 Acceptance tests:
 
@@ -1941,11 +1953,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/LIN-002/tests_test_math_lin.json](results/math/LIN-002/tests_test_math_lin.json)
 - tests: [results/math/LIN-002/sanitized_test_math_lin.json](results/math/LIN-002/sanitized_test_math_lin.json)
 - benchmarks: [results/math/LIN-002/benchmark_cpu_math_lin_vm.json](results/math/LIN-002/benchmark_cpu_math_lin_vm.json)
+- benchmarks: [results/math/LIN-002/benchmark_device_math_lin_WIN_OHVNN0FUC09.json](results/math/LIN-002/benchmark_device_math_lin_WIN_OHVNN0FUC09.json)
 
 <a id="lin-003"></a>
 
@@ -2952,7 +2965,7 @@ Polynomial identities, conserved quantities and hidden coordinates.
 
 ### DISC-001: Existing bounded affine, sum and product discovery
 
-Status: **in_progress**. Delivery wave: **W0**.
+Status: **validated**. Delivery wave: **W0**.
 
 Current native exhaustive modules discover/probe affine, sum and product relations with bounded candidate budgets and snapshot evidence.
 
@@ -2975,19 +2988,19 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c): Existing bounded equation composition/search.
 - [tests/test_relationships.py](tests/test_relationships.py): Recorded relationship tests; rerun required for new changes.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/relationships.h`
-- `torbles/relationships.c`
-- `torbles/relationships_optimizer.c`
-- `torbles/relationships.py`
-- `torbles/math_disc.h`
-- `torbles/math_disc.c`
-- `torbles/math_disc_gpu.cu`
-- `torbles/math_disc.py`
-- `tests/test_math_disc.py`
-- `tests/test_relationships.py`
-- `bench/benchmark_math_disc.py`
+- [torbles/relationships.h](torbles/relationships.h)
+- [torbles/relationships.c](torbles/relationships.c)
+- [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c)
+- [torbles/relationships.py](torbles/relationships.py)
+- [torbles/math_disc.h](torbles/math_disc.h)
+- [torbles/math_disc.c](torbles/math_disc.c)
+- [torbles/math_disc_gpu.cu](torbles/math_disc_gpu.cu)
+- [torbles/math_disc.py](torbles/math_disc.py)
+- [tests/test_math_disc.py](tests/test_math_disc.py)
+- [tests/test_relationships.py](tests/test_relationships.py)
+- [bench/benchmark_math_disc.py](bench/benchmark_math_disc.py)
 
 Acceptance tests:
 
@@ -3006,11 +3019,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `a4ff3bb2f14099a7f535b95fde7228af59c22fc0`.
+Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 - tests: [results/math/DISC-001/tests_test_math_disc.json](results/math/DISC-001/tests_test_math_disc.json)
 - tests: [results/math/DISC-001/sanitized_test_math_disc.json](results/math/DISC-001/sanitized_test_math_disc.json)
 - benchmarks: [results/math/DISC-001/benchmark_cpu_math_disc_vm.json](results/math/DISC-001/benchmark_cpu_math_disc_vm.json)
+- benchmarks: [results/math/DISC-001/benchmark_device_math_disc_WIN_OHVNN0FUC09.json](results/math/DISC-001/benchmark_device_math_disc_WIN_OHVNN0FUC09.json)
 
 <a id="disc-002"></a>
 
