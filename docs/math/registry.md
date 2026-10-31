@@ -70,6 +70,9 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 32 | spec.walsh | Walsh spectra and parity correlations | SPEC-002 | walsh spectrum | `tr_spec_walsh` | `tr_mgpu_spec_walsh`, `_inverse`, `tr_mgpu_registry_transform` |
 | 33 | influence | influence and interactions | BOOL-002 | condition masks | `tr_influence_compute` | `tr_mgpu_influence_compute` |
 | 34 | planner.sample | selectivity sample | FND-008 | none | `tr_planner_sample` | `tr_mgpu_planner_sample` |
+| 35 | info | entropy, mutual information, contingency | DIST-003 | contingency tables | `tr_info_query` | `tr_mgpu_info_sums` |
+| 36 | pair | sorted-distribution pairwise summaries | PAIR-001 | prefix sums | `tr_pair_query` | `tr_mgpu_pair_query` |
+| 37 | gen | generating polynomials | GEN-001 | generating polynomial | `tr_gen_from_hist` | `tr_mgpu_gen_conv`, `tr_mgpu_gen_eval` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

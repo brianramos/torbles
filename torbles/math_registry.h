@@ -901,7 +901,10 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_SPEC_WALSH = 32,        /* SPEC-002 Walsh spectra */
        TR_REG_M_INFLUENCE = 33,         /* BOOL-002 influence and interactions */
        TR_REG_M_PLANNER = 34,           /* FND-008 the planner's selectivity sample */
-       TR_REG_M_END = 35 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_DIST_INFO = 35,         /* DIST-003 entropy, mutual information, contingency statistics */
+       TR_REG_M_PAIR = 36,              /* PAIR-001 sorted-distribution pairwise summaries */
+       TR_REG_M_GEN = 37,               /* GEN-001 generating polynomials of finite supports */
+       TR_REG_M_END = 38 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -928,7 +931,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_OCCUPANCY = 25,       /* 2^k (or 3^k) cell counts of Boolean axes, per-axis counts */
        TR_REG_STATE_LATTICE_VECTOR = 26,  /* 2^k exact values over the subsets of k axes */
        TR_REG_STATE_SPECTRUM = 27,        /* 2^k Walsh coefficients */
-       TR_REG_STATE_KINDS = 28 };
+       TR_REG_STATE_CONTINGENCY = 28,     /* per group: marginal and contingency tables of a joint histogram */
+       TR_REG_STATE_GENERATING = 29,      /* exact coefficients of a generating polynomial (declared shifts) */
+       TR_REG_STATE_KINDS = 30 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1125,6 +1130,18 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_INFLUENCE, FOLD, INT128, TR__ALL),
     /* 34 FND-008 the selected rows of sampled words, counted exactly */
     TR__I(TR_REG_M_PLANNER, POPCOUNT, ROWSET, TR__ALL), TR__I(TR_REG_M_PLANNER, FOLD, COUNT, TR__ALL),
+    /* 35 DIST-003 tables from histogram states; certified log terms summed exactly; exact chi-square on the CPU */
+    TR__I(TR_REG_M_DIST_INFO, MERGE, COUNT, TR__CPU), TR__I(TR_REG_M_DIST_INFO, ENCLOSE, QINTERVAL, TR__ALL),
+    TR__I(TR_REG_M_DIST_INFO, FOLD, QINTERVAL, TR__ALL), TR__I(TR_REG_M_DIST_INFO, DIVIDE, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_DIST_INFO, ENCLOSE, INTERVAL, TR__CPU),
+    /* 36 PAIR-001 one pass or merge over prefix states, exact rationals */
+    TR__I(TR_REG_M_PAIR, ORDER, INTEGER, TR__ALL), TR__I(TR_REG_M_PAIR, CONTRACT, INT128, TR__ALL),
+    TR__I(TR_REG_M_PAIR, DIVIDE, BIGQ, TR__ALL),
+    /* 37 GEN-001 exact coefficients: convolution, evaluation, moments, series */
+    TR__I(TR_REG_M_GEN, COEFFICIENTS, SERIES, TR__CPU), TR__I(TR_REG_M_GEN, MULTIPLY, INT128, TR__ALL),
+    TR__I(TR_REG_M_GEN, MULTIPLY, BIGINT, TR__CPU), TR__I(TR_REG_M_GEN, EVAL, INT128, TR__ALL),
+    TR__I(TR_REG_M_GEN, EVAL, BIGQ, TR__CPU), TR__I(TR_REG_M_GEN, DIFFERENTIATE, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_GEN, CONVERT, SERIES, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

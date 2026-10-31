@@ -69,7 +69,7 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
     "quadratic objective", "separated coefficients", "jet aggregates", "hierarchy", "maintained cells",
     "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
-    "occupancy histogram", "lattice vector", "walsh spectrum"};
+    "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -424,6 +424,31 @@ static const tr_reg_module modules[] = {
      .cpu_entry = {"tr_planner_sample", "tr_planner_polysum", "tr_planner_verify", "tr_planner_choose",
                    "tr_planner_force_parse"},
      .cuda_entry = {"tr_mgpu_planner_sample"}},
+    {FAMILY(TR_REG_M_DIST_INFO, "info", "info", "DIST-003", "entropy, mutual information, contingency"),
+     .state_kind = TR_REG_STATE_CONTINGENCY, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(COUNT) | CB(QINTERVAL) | CB(INTERVAL) | CB(BIGQ),
+     .laws_relied = TR_REG_FOLD | TR_LAW_DIVISION | TR_LAW_ENCLOSURE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_info_support_build", "tr_info_support_get_view", "tr_info_support_group", "tr_info_state_build",
+                   "tr_info_sums", "tr_info_query", "tr_info_exact", "tr_info_ln_bounds", "tr_info_term_bounds",
+                   "tr_info_support_need", "tr_info_device_need"},
+     .cuda_entry = {"tr_mgpu_info_sums"}},
+    {FAMILY(TR_REG_M_PAIR, "pair", "pair", "PAIR-001", "sorted-distribution pairwise summaries"),
+     .state_kind = TR_REG_STATE_PREFIX_SUMS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(COUNT) | CB(INT128) | CB(BIGQ),
+     .laws_relied = TR_REG_RING | TR_LAW_ORDERED | TR_LAW_DIVISION | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_pair_query"},
+     .cuda_entry = {"tr_mgpu_pair_query"}},
+    {FAMILY(TR_REG_M_GEN, "gen", "gen", "GEN-001", "generating polynomials"),
+     .state_kind = TR_REG_STATE_GENERATING, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGINT) | CB(INT128) | CB(BIGQ) | CB(SERIES),
+     .laws_relied = TR_REG_RING | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_gen_from_hist", "tr_gen_from_terms", "tr_gen_coeff", "tr_gen_eval", "tr_gen_moment",
+                   "tr_gen_euler", "tr_gen_derivative", "tr_gen_mul", "tr_gen_pow", "tr_gen_truncate",
+                   "tr_gen_to_series", "tr_gen_mul_need"},
+     .cuda_entry = {"tr_mgpu_gen_conv", "tr_mgpu_gen_eval"}},
 };
 #undef BUILTIN
 #undef FAMILY

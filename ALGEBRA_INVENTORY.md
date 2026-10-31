@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 4 |
 | planned | 40 |
-| in_progress | 18 |
-| validated | 19 |
+| in_progress | 19 |
+| validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -466,7 +466,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 
 ### FND-005: Native module and operator registry
 
-Status: **validated**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Modules declare carriers, laws, valid transforms, sufficient state, proof dependencies, native kernels and complete construction/reuse costs.
 
@@ -474,9 +474,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-002](#fnd-002)
 
-Native CPU: Native C (math_registry.c): a constant table of module descriptors (carriers, required and guaranteed laws, operators with carriers, state kind, proof dependencies, CPU and CUDA entry points, cost coefficients) covering the two first-slice built-ins, FND-010, DISC-001 and four executors of one request kind (direct scan, code histogram, sparse power sums, bit-plane counts) plus a proven-empty answer; a composition check that names the missing law or conversion; explanation records of what ran.
+Native CPU: Native C (math_registry.c): a constant table of 37 module descriptors covering the first-slice built-ins, the executors of the registry's own request kind and every implemented family (key, capability, state kind, carriers, laws relied on and guaranteed, proof dependencies, devices, CPU and CUDA entry points, cost coefficients where calibrated); carriers include GF(2), GF(p), big integers and rationals, real, rational-endpoint and complex intervals, truncated series and Kleene logic, with explicit lift / residue / null_encode conversions; a composition check that names the missing law or conversion; explanation records (module, representation, entry point, device, refusal).
 
-GPU: CUDA kernels math_registry_gpu.cu: the direct-scan and histogram executors of the request (exact 128-bit sums, min, max of integer polynomials of a column), reporting device or emulation in the explanation.
+GPU: CUDA kernels math_registry_gpu.cu: the direct-scan and histogram executors of the registry's request kind and the lattice/Walsh transforms dispatched through the registry, reporting device or emulation.
 
 Bounds:
 
@@ -488,17 +488,17 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_modules.c](torbles/math_modules.c): Executable dispatch for two actual built-ins: Qpolynomial transforms and scalar moment contraction.
 - [tests/test_math_modules.py](tests/test_math_modules.py): Native-domain/carrier checks and actual dispatch, including bypass-route spies.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_registry.h](torbles/math_registry.h)
-- [torbles/math_registry.c](torbles/math_registry.c)
-- [torbles/math_registry_gpu.cu](torbles/math_registry_gpu.cu)
-- [torbles/math_registry.py](torbles/math_registry.py)
-- [tests/test_math_registry.py](tests/test_math_registry.py)
-- [bench/benchmark_math_registry.py](bench/benchmark_math_registry.py)
-- [torbles/math_modules.c](torbles/math_modules.c)
-- [torbles/math_modules.h](torbles/math_modules.h)
-- [tests/test_math_modules.py](tests/test_math_modules.py)
+- `torbles/math_registry.h`
+- `torbles/math_registry.c`
+- `torbles/math_registry_gpu.cu`
+- `torbles/math_registry.py`
+- `tests/test_math_registry.py`
+- `bench/benchmark_math_registry.py`
+- `torbles/math_modules.c`
+- `torbles/math_modules.h`
+- `tests/test_math_modules.py`
 
 Acceptance tests:
 
@@ -512,9 +512,8 @@ Benchmark cases:
 
 Additional limits:
 
-- One request kind (sum/min/max of up to four integer polynomials of one column of 32-bit codes); later families add their descriptors.
-- Cost coefficients are hand-set estimates checked (not calibrated) by the benchmark; the CUDA ones are guesses until measured on a device.
-- Power-sum and bit-plane representations compute modulo 2^128 and are admitted only when the exact result is proven to fit.
+- Descriptors are written by hand: a test checks that every named entry point exists in the libraries, every kernel file and tr_mgpu_* entry is described and every capability id exists, not that descriptions are complete.
+- Only the registry's own request kind and the LATTICE-002/SPEC-002 transforms execute through the registry; other families run through their own APIs, and their cost coefficients are not calibrated.
 
 Validation receipts:
 
