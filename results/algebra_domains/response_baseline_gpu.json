@@ -1,0 +1,612 @@
+{
+  "experiment": "fixed_scope_exact_polynomial_query_family",
+  "engine": "gpu",
+  "threads": 24,
+  "source": "/home/brian/torbles_discovery_bench/algebra_b4ca348",
+  "source_head": "b4ca3486904e823be14bfc4ce92a6d52e9188db7",
+  "method": "Actual serial batches; alternating paired order; exact comparisons outside timers; construction and first calls separate",
+  "limitations": [
+    "Synthetic signed integer columns, scalar fixed predicate, degree-two data basis",
+    "One process per invocation; within-process repetitions, not independent process rounds",
+    "Baseline runs independent native aggregate queries; it has no cross-query state reuse",
+    "Snapshot materialization uses several existing native queries, not a fused one-pass reducer",
+    "Coefficient calculus executes in native CPU code even when snapshot queries use CUDA",
+    "This is not a rerun or replacement of the mixed SSB matrix"
+  ],
+  "cases": [
+    {
+      "rows": 1000,
+      "selected_rows": 600,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 84.22651,
+        "moment_snapshot": 110.273871,
+        "symbolic_reduction": 0.025997
+      },
+      "first_ms": {
+        "independent_native_queries": 5.112369,
+        "native_function_from_snapshot": 0.205942
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            2.994684,
+            2.693366,
+            2.862944,
+            2.702404,
+            2.768783
+          ],
+          "median_ms": 2.768783,
+          "min_ms": 2.693366,
+          "max_ms": 2.994684
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.18305,
+            0.159743,
+            0.181928,
+            0.160763,
+            0.180445
+          ],
+          "median_ms": 0.180445,
+          "min_ms": 0.159743,
+          "max_ms": 0.18305
+        }
+      },
+      "warm_median_ratio": 15.34419352157167,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 600,
+        "source_signatures": [
+          [
+            "t",
+            633101664,
+            1000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            [
+              5,
+              6,
+              3
+            ],
+            "bd53cc6f7741b37c36b7a2a60328b7d1d3f8c896d31400f4b0a007d4169e6113",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            [],
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "gpu_executor": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+        "gpu_emulated": false,
+        "coefficient_executor": "native CPU",
+        "materialization_ms": 109.97961697285064,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "a6853bdf6b1dd489f088710a51ff7ca0ddbbbc919ced8fa816d2fbe9164391f5",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    },
+    {
+      "rows": 100000,
+      "selected_rows": 60000,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 53.579353,
+        "moment_snapshot": 2.212743,
+        "symbolic_reduction": 0.03809
+      },
+      "first_ms": {
+        "independent_native_queries": 5.043012,
+        "native_function_from_snapshot": 0.19325
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            3.063688,
+            2.700205,
+            2.392164,
+            2.885609,
+            2.823429
+          ],
+          "median_ms": 2.823429,
+          "min_ms": 2.392164,
+          "max_ms": 3.063688
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.190407,
+            0.166549,
+            0.198965,
+            0.161027,
+            0.181757
+          ],
+          "median_ms": 0.181757,
+          "min_ms": 0.161027,
+          "max_ms": 0.198965
+        }
+      },
+      "warm_median_ratio": 15.53408672018134,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 60000,
+        "source_signatures": [
+          [
+            "t",
+            667329120,
+            100000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            [
+              5,
+              6,
+              3
+            ],
+            "1dad8035aac30c9eb0e1b7d39cde6b12a369e9ae192590743ed4744c0efe3138",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            [],
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "gpu_executor": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+        "gpu_emulated": false,
+        "coefficient_executor": "native CPU",
+        "materialization_ms": 2.057525998679921,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "30974dda5b5a1f04380dd46b0d63d7bfcb8adb0ff89ec849a8841cc662a7da1d",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    },
+    {
+      "rows": 1000000,
+      "selected_rows": 600000,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 74.64843,
+        "moment_snapshot": 2.570451,
+        "symbolic_reduction": 0.024025
+      },
+      "first_ms": {
+        "independent_native_queries": 4.754833,
+        "native_function_from_snapshot": 0.270914
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            3.050911,
+            3.112632,
+            2.676024,
+            2.696563,
+            2.765006
+          ],
+          "median_ms": 2.765006,
+          "min_ms": 2.676024,
+          "max_ms": 3.112632
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.179652,
+            0.167294,
+            0.191657,
+            0.163325,
+            0.179763
+          ],
+          "median_ms": 0.179652,
+          "min_ms": 0.163325,
+          "max_ms": 0.191657
+        }
+      },
+      "warm_median_ratio": 15.390900184801728,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 600000,
+        "source_signatures": [
+          [
+            "t",
+            666445920,
+            1000000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            [
+              5,
+              6,
+              3
+            ],
+            "88c6da2005db9356cbfe2daa8df3d8cbc5219e6eceb616bfecc4715a73e3a934",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            [],
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "gpu_executor": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+        "gpu_emulated": false,
+        "coefficient_executor": "native CPU",
+        "materialization_ms": 2.3731020046398044,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "da6075f3aa04df29083678ec2e011e2df7935fd4d97cd1488ca536b6840a7898",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    }
+  ],
+  "all_correct": true,
+  "gpu_name": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+  "native_source_sha256": {
+    "mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+    "mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+    "mathematics.py": "979a373d697b84dd9bc2f2d8c9de4c6ef227759a0f0986c15084bd8ef536a39a"
+  },
+  "library_sha256": "1f757067cb554b7826309e505be7ce441efc7f6da418e5ae39eb3d82f1df726f",
+  "gpu_library_sha256": "e861692ffa1b827d464e96108f497d00fd95f99f4be15da599ba2688561c07fb"
+}

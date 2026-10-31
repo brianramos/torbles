@@ -123,7 +123,7 @@ def sum_width(measure, fact):
     return int(bound >= 1 << 63)
 
 __version__ = "0.2.0"
-_libpath = Path(__file__).with_name("libalg.so")
+_libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__).with_name("libalg.so"))   # (an instrumented build: tests/sanitize_math.sh)
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
 vp, u64 = ctypes.c_void_p, ctypes.c_uint64

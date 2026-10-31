@@ -1,0 +1,581 @@
+{
+  "experiment": "fixed_scope_exact_polynomial_query_family",
+  "engine": "gpu",
+  "threads": 24,
+  "source_head": "aaacb0fc879711cf18334a59f6da2564d2d1e419",
+  "method": "Actual serial batches; alternating paired order; exact comparisons outside timers; construction and first calls separate",
+  "limitations": [
+    "Synthetic signed integer columns, scalar fixed predicate, degree-two data basis",
+    "One process per invocation; within-process repetitions, not independent process rounds",
+    "Baseline runs independent native aggregate queries; it has no cross-query state reuse",
+    "Snapshot materialization uses several existing native queries, not a fused one-pass reducer",
+    "Coefficient calculus executes in native CPU code even when snapshot queries use CUDA",
+    "This is not a rerun or replacement of the mixed SSB matrix"
+  ],
+  "cases": [
+    {
+      "rows": 1000,
+      "selected_rows": 600,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 97.30681,
+        "moment_snapshot": 135.675874,
+        "symbolic_reduction": 0.25559
+      },
+      "first_ms": {
+        "independent_native_queries": 5.692163,
+        "native_function_from_snapshot": 0.316438
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            3.201582,
+            3.990217,
+            2.456463,
+            3.02174,
+            3.351292
+          ],
+          "median_ms": 3.201582,
+          "min_ms": 2.456463,
+          "max_ms": 3.990217
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.252459,
+            0.30318,
+            0.177164,
+            0.157937,
+            0.189308
+          ],
+          "median_ms": 0.189308,
+          "min_ms": 0.157937,
+          "max_ms": 0.30318
+        }
+      },
+      "warm_median_ratio": 16.912026961353984,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 600,
+        "source_signatures": [
+          [
+            "t",
+            1023967824,
+            1000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            "bd53cc6f7741b37c36b7a2a60328b7d1d3f8c896d31400f4b0a007d4169e6113",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "materialization_ms": 135.3759309859015,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "a6853bdf6b1dd489f088710a51ff7ca0ddbbbc919ced8fa816d2fbe9164391f5",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    },
+    {
+      "rows": 100000,
+      "selected_rows": 60000,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 56.778666,
+        "moment_snapshot": 1.87391,
+        "symbolic_reduction": 0.025503
+      },
+      "first_ms": {
+        "independent_native_queries": 5.229546,
+        "native_function_from_snapshot": 0.188104
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            2.879408,
+            2.888957,
+            2.786483,
+            2.676069,
+            2.653347
+          ],
+          "median_ms": 2.786483,
+          "min_ms": 2.653347,
+          "max_ms": 2.888957
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.179188,
+            0.15933,
+            0.185856,
+            0.158472,
+            0.178124
+          ],
+          "median_ms": 0.178124,
+          "min_ms": 0.158472,
+          "max_ms": 0.185856
+        }
+      },
+      "warm_median_ratio": 15.64350115649772,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 60000,
+        "source_signatures": [
+          [
+            "t",
+            1030005728,
+            100000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            "1dad8035aac30c9eb0e1b7d39cde6b12a369e9ae192590743ed4744c0efe3138",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "materialization_ms": 1.7281600157730281,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "30974dda5b5a1f04380dd46b0d63d7bfcb8adb0ff89ec849a8841cc662a7da1d",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    },
+    {
+      "rows": 1000000,
+      "selected_rows": 600000,
+      "parameters": [
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ],
+        [
+          1,
+          -1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          -4
+        ],
+        [
+          -3,
+          -1
+        ],
+        [
+          -2,
+          2
+        ],
+        [
+          -1,
+          -4
+        ],
+        [
+          0,
+          -1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          -4
+        ],
+        [
+          3,
+          -1
+        ],
+        [
+          -3,
+          2
+        ],
+        [
+          -2,
+          -4
+        ],
+        [
+          -1,
+          -1
+        ],
+        [
+          0,
+          2
+        ],
+        [
+          1,
+          -4
+        ],
+        [
+          2,
+          -1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          -3,
+          -4
+        ],
+        [
+          -2,
+          -1
+        ],
+        [
+          -1,
+          2
+        ],
+        [
+          0,
+          -4
+        ]
+      ],
+      "all_correct": true,
+      "setup_ms": {
+        "source_and_native_load": 75.507145,
+        "moment_snapshot": 3.672227,
+        "symbolic_reduction": 0.021082
+      },
+      "first_ms": {
+        "independent_native_queries": 5.21388,
+        "native_function_from_snapshot": 0.205957
+      },
+      "warm": {
+        "independent_native_queries": {
+          "raw_ms": [
+            2.51972,
+            2.749586,
+            2.82798,
+            2.973803,
+            3.648048
+          ],
+          "median_ms": 2.82798,
+          "min_ms": 2.51972,
+          "max_ms": 3.648048
+        },
+        "native_function_from_snapshot": {
+          "raw_ms": [
+            0.180729,
+            0.159645,
+            0.179717,
+            0.167065,
+            0.205608
+          ],
+          "median_ms": 0.179717,
+          "min_ms": 0.159645,
+          "max_ms": 0.205608
+        }
+      },
+      "warm_median_ratio": 15.735740080237264,
+      "snapshot_metadata": {
+        "scope_sql": "SELECT COUNT(*) FROM t WHERE t.flag >= 2",
+        "columns": [
+          "x",
+          "y"
+        ],
+        "row_count": 600000,
+        "source_signatures": [
+          [
+            "t",
+            1051281296,
+            1000000,
+            0,
+            [
+              "x",
+              "y",
+              "flag"
+            ],
+            "88c6da2005db9356cbfe2daa8df3d8cbc5219e6eceb616bfecc4715a73e3a934",
+            "{\"flag\": {\"kind\": \"int\", \"offset\": 0, \"sql_type\": \"BIGINT\"}, \"x\": {\"kind\": \"int\", \"offset\": -15, \"sql_type\": \"BIGINT\"}, \"y\": {\"kind\": \"int\", \"offset\": -21, \"sql_type\": \"BIGINT\"}}",
+            []
+          ]
+        ],
+        "engine_requested": "gpu",
+        "native_query_calls": 6,
+        "actual_devices": [
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu",
+          "gpu"
+        ],
+        "materialization_ms": 3.4855440026149154,
+        "empty_semantics": "zero linear functional, not SQL SUM NULL",
+        "construction": "one existing native aggregate query per basis term; not fused",
+        "lifetime": "immutable snapshot; later source mutations do not refresh it"
+      },
+      "expected_answer_sha256": "da6075f3aa04df29083678ec2e011e2df7935fd4d97cd1488ca536b6840a7898",
+      "post_snapshot_evaluation_fact_queries": 0,
+      "device_sets": [
+        "gpu"
+      ]
+    }
+  ],
+  "all_correct": true,
+  "native_source_sha256": {
+    "mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+    "mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+    "mathematics.py": "307560ce02da571ef9b60fa282f2b79f2753dbd4d716dd77b85a1c274008150e"
+  }
+}

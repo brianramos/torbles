@@ -1,0 +1,87 @@
+{
+  "all_passed": true,
+  "checked_utc": "2026-10-30T20:54:09.269980+00:00",
+  "compiler": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "python": "3.14.4",
+  "source_sha256": {
+    "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+    "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+    "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+    "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+    "torbles/math_modules.c": "23ef73625398828c370d71a3eb722ea9fc0dc469dd350f27fe8c1fd642fa0be3",
+    "torbles/math_modules.h": "c619271f69247ac3e366d8a8c9db95957e5eb987c93dae5652923d91bc34dff1",
+    "tests/math_domain_native_edges.c": "35f91c278be11dba755731f7614dcb144c5b8a67c005b46d5dfb09911d6b38d5",
+    "tests/validate_math_domains_native.py": "0fb2eb896887230aa510f9d8b10c2a75ae9da4436f3415b15a211c62e4ce44ef"
+  },
+  "checks": [
+    "ABI sizes and alignment",
+    "owned semantic keys and origins survive caller storage changes",
+    "exact identity includes kind, carrier, validity, grouping, revision and universe",
+    "wrong context, source origin, carrier, geometry and observed-variable calculus are refused",
+    "actual native polynomial arithmetic, moment contraction, parameter integration and evaluation",
+    "aggregate/parameter composition preserves source and rejects raw observed-coordinate mixing",
+    "output remains unchanged on invalid native evaluation",
+    "unsupported module/index checks",
+    "large constant exponent shape-cost arithmetic",
+    "function survives source descriptor/bank release"
+  ],
+  "sanitizers": {
+    "address": true,
+    "undefined": true,
+    "leak_detection": true,
+    "output": "Typed domains and executable registry edge checks passed."
+  },
+  "release_output": "Typed domains and executable registry edge checks passed.",
+  "commands": {
+    "reproduce": [
+      "/home/brian/torble_gpu_run/venv/bin/python",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/validate_math_domains_native.py",
+      "--receipt",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/results/algebra_domains/native_domain_validation.json"
+    ],
+    "release_compile": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O2",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/math_domain_native_edges.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_domain.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_modules.c",
+      "-o",
+      "/tmp/torbles-domain-validation-r1k_d9q3/domain_edges"
+    ],
+    "sanitizer_compile": [
+      "gcc",
+      "-std=c11",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O1",
+      "-g",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/math_domain_native_edges.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_domain.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_modules.c",
+      "-o",
+      "/tmp/torbles-domain-validation-r1k_d9q3/domain_edges_sanitized"
+    ],
+    "sanitized_run": [
+      "/tmp/torbles-domain-validation-r1k_d9q3/domain_edges_sanitized"
+    ]
+  },
+  "limitations": [
+    "Descriptor compatibility is checked over declared semantic identities, not a proof that arbitrary supplied moments came from a physical source.",
+    "Only current rational-polynomial and scalar-moment module kernels are registered; metadata for other carrier/domain kinds does not implement their mathematics.",
+    "All registry operations execute in native CPU code; no CUDA operator kernel is claimed.",
+    "Opaque native handles require valid ownership; concurrent close/execution must be serialized by callers."
+  ]
+}

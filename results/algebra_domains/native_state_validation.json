@@ -1,0 +1,103 @@
+{
+  "all_passed": true,
+  "checked_utc": "2026-10-30T20:54:47.089640+00:00",
+  "source_sha256": {
+    "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+    "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+    "torbles/math_state.c": "a521873f950bc1fe0c18cc089276d6d060e5060e029e3385d0ee0ac8e34d77fe",
+    "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+    "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+    "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+    "tests/validate_math_state_native.py": "21637171acb0f64548fa6c4ffd982f7a3db2501225312f8ece1dc1d81a04b753",
+    "tests/math_state_native_edges.c": "500557ed3e7885740de77cddf8b1a525bd5943abcc4b7f7bf082176da82b5749"
+  },
+  "compiler": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "random_oracle": {
+    "seed": 20261030,
+    "operations": 15000,
+    "data_dimensions": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "capacities": [
+      1,
+      2,
+      7
+    ],
+    "checks": [
+      "OrderedDict LRU identity/order",
+      "independent row-arithmetic moments",
+      "source input banks freed immediately after put",
+      "binary basis keys",
+      "exact statistics and retained-byte accounting"
+    ]
+  },
+  "sanitizer": {
+    "address": true,
+    "undefined": true,
+    "leak_detection": true,
+    "checks": [
+      "independent returned-bank lifetime",
+      "LRU and byte eviction",
+      "three staged-allocation failures leave cache/statistics unchanged",
+      "returned-clone allocation failure leaves statistics unchanged",
+      "replacement ownership",
+      "NULL/carrier/count refusal",
+      "embedded-NUL key distinction",
+      "same-key revision distinction",
+      "clear resets allocations/counters"
+    ],
+    "output": "ASAN/UBSAN state ownership, allocation-failure atomicity, LRU and budget checks passed."
+  },
+  "commands": {
+    "reproduce": [
+      "/home/brian/torble_gpu_run/venv/bin/python",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/validate_math_state_native.py",
+      "--receipt",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/results/algebra_domains/native_state_validation.json"
+    ],
+    "compile_shared": [
+      "gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O2",
+      "-shared",
+      "-fPIC",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_domain.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_state.c",
+      "-o",
+      "/tmp/torbles-math-state-validation-p3tq70r2/state.so"
+    ],
+    "compile_sanitizer": [
+      "gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O1",
+      "-g",
+      "-fsanitize=address,undefined",
+      "-fno-omit-frame-pointer",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_domain.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/math_state.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/math_state_native_edges.c",
+      "-Wl,--wrap=malloc,--wrap=calloc",
+      "-o",
+      "/tmp/torbles-math-state-validation-p3tq70r2/state_edges"
+    ],
+    "run_sanitizer": [
+      "/tmp/torbles-math-state-validation-p3tq70r2/state_edges"
+    ]
+  },
+  "scratch": "/tmp/torbles-math-state-validation-p3tq70r2"
+}

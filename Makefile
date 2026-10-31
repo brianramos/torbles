@@ -16,10 +16,18 @@ SF ?= 1
 T := torbles
 export PYTHONPATH := $(CURDIR):$(CURDIR)/torbles:$(CURDIR)/tests
 
-all: $(T)/libalg.so $(T)/libgpu_emu.so
+# the mathematical modules: every torbles/math*.c in the engine library, every torbles/math_*_gpu.cu in the GPU one
+MATHC := $(sort $(wildcard $(T)/math*.c))
+MATHH := $(sort $(wildcard $(T)/math*.h))
+MATHCU := $(sort $(wildcard $(T)/math_*_gpu.cu))
 
-$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h $(T)/mathematics.c $(T)/mathematics.h $(T)/math_domain.c $(T)/math_domain.h $(T)/math_modules.c $(T)/math_modules.h $(T)/math_state.c $(T)/math_state.h
-	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/mathematics.c $(T)/math_domain.c $(T)/math_modules.c $(T)/math_state.c -o $@ -lpthread
+all: $(T)/libalg.so $(T)/libgpu_emu.so $(T)/libmathgpu_emu.so
+
+$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h $(MATHC) $(MATHH)
+	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(MATHC) -o $@ -lpthread -lm
+
+$(T)/libmathgpu_emu.so: $(MATHCU) $(MATHH)
+	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(MATHCU) -o $@
 
 $(T)/libgpu_emu.so: $(T)/gpu.cu $(T)/torble.h
 	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(T)/gpu.cu -o $@
@@ -30,6 +38,9 @@ gpu: $(T)/libalg.so
 	 || ( $(NVCC) -O3 -gencode arch=compute_80,code=compute_80 -shared -Xcompiler -fPIC gpu.cu -o libgpu.so 2>>nvcc.err && echo "libgpu.so: PTX build (compute_80)" ) \
 	 || ( $(NVCC) -O3 -DNO_B1MMA -shared -Xcompiler -fPIC gpu.cu -o libgpu.so 2>>nvcc.err && echo "libgpu.so: built without the b1 MMA" ) \
 	 || ( cat nvcc.err; exit 1 )
+	@cd $(T) && ( $(NVCC) -O3 -arch=native -shared -Xcompiler -fPIC $(notdir $(MATHCU)) -o libmathgpu.so 2>nvcc_math.err && echo "libmathgpu.so: native build" ) \
+	 || ( $(NVCC) -O3 -gencode arch=compute_80,code=compute_80 -shared -Xcompiler -fPIC $(notdir $(MATHCU)) -o libmathgpu.so 2>>nvcc_math.err && echo "libmathgpu.so: PTX build (compute_80)" ) \
+	 || ( cat nvcc_math.err; exit 1 )
 	@$(PY) -c "import algq; t = algq.Table('probe', {'a': __import__('numpy').arange(1000, dtype='uint32')}); t.gpu_handle(); print('GPU:', algq.gpu_name()); algq.gpu_mm('mma'); print('tensor cores:', algq.gpu_mm()); algq.gpu_mm('word')"
 
 test: all
@@ -39,7 +50,7 @@ ssb: all
 	cd bench/ssb && $(PY) ssb_common.py $(SF) && $(PY) ssb_duck.py $(SF) && $(PY) ssb_torbles.py $(SF) derived
 
 clean:
-	rm -f $(T)/*.so $(T)/nvcc.err
+	rm -f $(T)/*.so $(T)/nvcc.err $(T)/nvcc_math.err
 	find . -name __pycache__ -prune -exec rm -rf {} +
 
 .PHONY: all gpu test ssb clean

@@ -1,0 +1,89 @@
+{
+  "all_passed": true,
+  "checked_utc": "2026-10-30T20:36:53.504939+00:00",
+  "compiler": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "source_sha256": {
+    "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+    "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+    "torbles/torble.h": "e50b0ae17a488bc76c4202e85c9bba0b096cf85b7aca5c09ec06adc0b02c0bf1",
+    "tests/validate_mathematics_native.py": "710d958e0acf62f9de052e36eea523e26924e709f01d4ae5e300c908ceb61641",
+    "tests/mathematics_native_edges.c": "17772a422bb057dea492c3f2ac832d31cb8726b5009cf1771fabaf2ea85132da"
+  },
+  "runtime_source_sha256": "d9acc626af9d8b7eaaee52413640041e8f8a0c5fffaa5927e354c10a03b03192",
+  "programs": {
+    "seed": 20261030,
+    "programs": 200,
+    "arithmetic_steps": 1600,
+    "checks": "Fraction polynomial arithmetic, operand immutability, derivative, antiderivative, substitution, evaluation"
+  },
+  "rational_edges": {
+    "canonical_input_constants": 63,
+    "pairs": 3969,
+    "binary_results": 11907,
+    "checks": "Every constant result/refusal compared with arbitrary-precision Fraction"
+  },
+  "moment_banks": {
+    "seed": 24030,
+    "banks": 60,
+    "data_variable_counts": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "checks": "Signed rows, empty bags, rational coefficients, retained parameter indices, missing cubic basis and malformed count states"
+  },
+  "tracked_native_handles_freed": 7196,
+  "sanitizers": {
+    "address": true,
+    "undefined": true,
+    "leak_detection": true,
+    "pairs": 3969,
+    "output": "ASAN/UBSAN native edge sweep passed.\ncanonical-rational pairs checked: 3969"
+  },
+  "commands": {
+    "reproduce": [
+      "/home/brian/torble_gpu_run/venv/bin/python",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/validate_mathematics_native.py",
+      "--receipt",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/results/algebra_foundation/native_validation.json"
+    ],
+    "compile_shared": [
+      "gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O2",
+      "-shared",
+      "-fPIC",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "-o",
+      "/tmp/torbles-mathematics-validation-87bj970t/mathematics.so"
+    ],
+    "compile_sanitized_edges": [
+      "gcc",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles",
+      "-O1",
+      "-g",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/tests/mathematics_native_edges.c",
+      "/mnt/c/Users/brian/Documents/torbles-discovery-prototype/torbles/mathematics.c",
+      "-o",
+      "/tmp/torbles-mathematics-validation-87bj970t/edges"
+    ],
+    "run_sanitized_edges": [
+      "/tmp/torbles-mathematics-validation-87bj970t/edges"
+    ]
+  },
+  "build_directory": "/tmp/torbles-mathematics-validation-87bj970t",
+  "scope": "Standalone native mathematical foundation; no engine library rebuild, no claims about unimplemented capability families"
+}

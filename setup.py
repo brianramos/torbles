@@ -10,7 +10,7 @@
 
 Everything else is in pyproject.toml. The engine is loaded with ctypes, so it is built as plain shared libraries
 (libalg.so, libgpu_emu.so, libgpu.so), not as Python extension modules."""
-import os, platform, shutil, subprocess, sys
+import glob, os, platform, shutil, subprocess, sys
 from setuptools import setup
 from setuptools.command.build_py import build_py
 from setuptools.dist import Distribution
@@ -36,14 +36,15 @@ class BuildEngine(build_py):
                      os.path.join(src, "relationships_system.c"),
                      os.path.join(src, "relationships_dag.c"),
                      os.path.join(src, "relationships_stage.c"),
-                     os.path.join(src, "mathematics.c"),
-                     os.path.join(src, "math_domain.c"),
-                     os.path.join(src, "math_modules.c"),
-                     os.path.join(src, "math_state.c"),
-                     "-o", os.path.join(out, "libalg.so"), "-lpthread"], src):
+                     *sorted(glob.glob(os.path.join(src, "math*.c"))),
+                     "-o", os.path.join(out, "libalg.so"), "-lpthread", "-lm"], src):
             sys.exit("could not compile torbles/alg.c: a C compiler (gcc or clang) is needed")
         if not _run([cxx, "-O2", "-fwrapv", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", os.path.join(src, "gpu.cu"), "-o", os.path.join(out, "libgpu_emu.so")], src):
             sys.exit("could not compile the GPU emulation (torbles/gpu.cu as C++): a C++ compiler is needed")
+        mathcu = sorted(glob.glob(os.path.join(src, "math_*_gpu.cu")))
+        if mathcu and not _run([cxx, "-O2", "-fwrapv", "-DEMULATE", "-x", "c++", "-shared", "-fPIC", *mathcu,
+                                "-o", os.path.join(out, "libmathgpu_emu.so")], src):
+            sys.exit("could not compile the emulation of the mathematical CUDA kernels: a C++ compiler is needed")
         nvcc = shutil.which("nvcc") or ("/usr/local/cuda/bin/nvcc" if os.path.exists("/usr/local/cuda/bin/nvcc") else None)
         if nvcc and os.environ.get("TORBLES_CUDA", "1") != "0" and not os.environ.get("TORBLES_PORTABLE"):
             gpu = os.path.join(out, "libgpu.so")
@@ -53,6 +54,10 @@ class BuildEngine(build_py):
                     print(f"torbles: CUDA executor built ({' '.join(flags)})"); break
             else:
                 print("torbles: nvcc found but the CUDA executor did not build; the CPU engine is installed")
+            for flags in (["-arch=native"], ["-gencode", "arch=compute_80,code=compute_80"]):
+                if mathcu and _run([nvcc, "-O3", *flags, "-shared", "-Xcompiler", "-fPIC", *mathcu,
+                                    "-o", os.path.join(out, "libmathgpu.so")], src):
+                    print(f"torbles: mathematical CUDA kernels built ({' '.join(flags)})"); break
 
 
 class BinaryDistribution(Distribution):

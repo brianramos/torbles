@@ -1,7 +1,6 @@
 # Native mathematical query functions
 
-This opt-in module starts a broader inventory of mathematical query families (32 families, 81 capabilities), which
-is kept with the prototype it comes from (`ALGEBRA_INVENTORY.md` on `prototype/mixed-scaling`).
+This opt-in module starts the broader [algebra inventory](../ALGEBRA_INVENTORY.md).
 It implements checked rational polynomial functions, parameter calculus, and
 immutable scalar moment snapshots. The remaining inventory capabilities retain
 their individual implementation and validation status.
