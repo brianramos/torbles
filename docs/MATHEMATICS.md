@@ -220,3 +220,4 @@ and their status is the inventory's.
 - [GF(2) primitives](math/field.md) (FIELD-001): packed elimination, nullspaces, syndromes, parity dependencies.
 - [Histograms and quantiles](math/dist.md) (DIST-001, DIST-002): grouped scalar/joint histograms, exact CDF, quantiles, range integrals.
 - [Loss curves](math/resp.md) (RESP-002): exact piecewise absolute, hinge and squared-hinge losses with slopes and minimizers.
+- [Group quantifiers](math/quant.md) (QUANT-001, QUANT-002): some/all/none with SQL NULL semantics, relational division.

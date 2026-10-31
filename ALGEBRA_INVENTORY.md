@@ -2689,9 +2689,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DIST-001](#dist-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_quant.c): per group of an FND-004 scope (also through a dimension lookup), the child row count and the rows where a BOOL-001 predicate is TRUE, FALSE or UNKNOWN, with declared group presence (child-row groups, every group id, or a parent scope); some / all / none / not-all / EXISTS / bool_or / bool_and answers in SQL three-valued logic with vacuous truth, empty, absent and all-NULL groups specified.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_quant_gpu.cu: the per-group state scan (64-row words with popcounts when a word lies in one group, atomic adds otherwise), checked for consistency before adoption, equal to the CPU.
 
 Bounds:
 
@@ -2704,9 +2704,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_quant.c`
 - `torbles/math_quant.h`
+- `torbles/math_quant.c`
+- `torbles/math_quant_gpu.cu`
+- `torbles/math_quant.py`
 - `tests/test_math_quant.py`
+- `bench/benchmark_math_quant.py`
 
 Acceptance tests:
 
@@ -2717,6 +2720,11 @@ Benchmark cases:
 
 - Use 1/100/10,000 groups with 1/8/64 children and 1%/50%/100% qualifying rows; include empty, duplicate and all-NULL child sets.
 - Vary required category sets of 4/16/64 elements; compare count/mask coverage states against materialized matching children.
+
+Additional limits:
+
+- Parent and child groupings must align (same key codecs and radices; checked from the key specs in Python).
+- A nullable parent key matches the child NULL group (IS NOT DISTINCT FROM semantics), declared and tested.
 
 <a id="quant-002"></a>
 
@@ -2730,9 +2738,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [QUANT-001](#quant-001), [FIELD-001](#field-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_quant.c): per group, the exact set of present categories as packed bit masks (FIELD-001 format) or sorted sets, chosen within the budget; division, exact match, overlap and disjointness against a required set resolved through the category dictionary, missing and extra categories per group; NULL categories never satisfy a requirement, duplicates count once; the state identity records the required set and the dictionary.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_quant_gpu.cu: category masks built with atomic or, coverage per group by AND-NOT and popcount, equal to the CPU.
 
 Bounds:
 
@@ -2741,9 +2749,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_quant.c`
 - `torbles/math_quant.h`
+- `torbles/math_quant.c`
+- `torbles/math_quant_gpu.cu`
+- `torbles/math_quant.py`
 - `tests/test_math_quant.py`
+- `bench/benchmark_math_quant.py`
 
 Acceptance tests:
 
@@ -2754,6 +2765,11 @@ Benchmark cases:
 
 - Use 1/100/10,000 groups with 1/8/64 children and 1%/50%/100% qualifying rows; include empty, duplicate and all-NULL child sets.
 - Vary required category sets of 4/16/64 elements; compare count/mask coverage states against materialized matching children.
+
+Additional limits:
+
+- A category is one group id of a single-key scope; multi-key, float, BLOB, date or timestamp categories are refused.
+- The sorted-set representation and merges are CPU only.
 
 ## COUNT: Constraint counting
 
