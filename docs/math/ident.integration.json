@@ -1,0 +1,71 @@
+{
+ "guide": [
+  {"page": "ident.md", "title": "Moment-Gram polynomial identity discovery", "capabilities": "DISC-002",
+   "summary": "the exact Gram matrix of a bounded monomial basis (exact 128-bit or modular moments, from a pass, a bank or LIN-001) and its LIN-002 nullspace propose every polynomial identity the data satisfy; each is verified exhaustively on every row (one violating row rejects it), labelled underdetermined, known or a consequence exactly, and certified by FND-007; signed weights never certify through a zero quadratic form; on the CPU and in CUDA."},
+  {"page": "geom.md", "title": "Certified sparse ideal reduction", "capabilities": "GEOM-001",
+   "summary": "relation certificates (DISC-002 identities, DISC-001 claims) form an ideal (Buchberger's reduced Groebner basis with cofactors); an expression is reduced exactly to f - g = sum h_i r_i, the certificate derived and checked by FND-007 and by batched dense checks, equivalent forms compared on every row and by measured bit widths and scans, derivatives only through declared dependencies; on the CPU and in CUDA."}
+ ],
+ "inventory": {
+  "DISC-002": {
+   "planned_files": ["torbles/math_ident.h", "torbles/math_ident.c", "torbles/math_ident_gpu.cu", "torbles/math_ident.py",
+                     "tests/test_math_ident.py", "bench/benchmark_math_ident.py"],
+   "cpu": "Native plan, Gram, nullspace, identities and certificates over an FND-004 scope and up to 8 integer columns: the canonical basis (every monomial of degree <= d or an explicit list, at most 63, increasing graded lexicographic order) and its distinct moment products; the representation decided before reading: EXACT when N W prod M_v^e <= 2^127 - 1 is proven from the scope's extremes (exact signed 128-bit moment sums), else MODULAR (residues modulo the recorded LIN-002 primes). The Gram G = sum w_r m(x_r) m(x_r)^T over the rows where every variable and the weight are present, from a fused pass, an FND-004 joint bank or LIN-001 moments (all equal), merged or subtracted (a difference is signed), recording its domain, weight signs and extremes. The nullspace: LIN-002's modular batch, CRT and exact verification G c = 0 for an exact Gram (exact rank and canonical vectors, one per free column), or per prime the reduced echelon form, the CRT and rational reconstruction of the primes agreeing on the best key for a modular Gram (rank a lower bound, unresolved vectors flagged). Each vector becomes a primitive integer polynomial (int64 coefficients or unrepresentable) with exact labels: distinct points S of its support columns (64-bit fingerprints in a radix sort, equal fingerprints compared value by value), underdetermined when its terms outnumber S (never a discovery), known (in the span of the declared relations' multiples within the basis) or a consequence (also of the earlier generators' multiples; fraction-free 128-bit elimination), and the Gram's sum-of-squares verdict (certified only for an exact Gram under nonnegative weights; refused as signed when a weight is negative or the Gram is a difference). Every candidate (kernel vectors or given polynomials) is verified on every selected row (a row with a NULL support column excluded) by an exact evaluation in W 64-bit words under a proven bound (W <= 8, else undecided), giving FND-007 evidence with the smallest violating row; a verified identity becomes an FND-007 snapshot certificate (the evidence adopted when W = 2, else FND-007's own check, which may refuse past 128 bits). The exact quadratic form c^T G c (big integers) and its binary64 value; a numerical near zero yields at most an FND-007 hypothesis on a sample. Budgets (variables, degree, support, tensor, states, iterations, bytes including the distinct-count scratch and device copies) are checked before allocation.",
+   "gpu": "tr_mgpu_ident_gram: work items (moment chunk, residue slot, row slice) evaluate the basis on each Gram row of their slice (exactly, or modulo their prime), accumulate their chunk's moments locally (proven 128-bit sums, or sums of residues) and add them with one two-word atomic each; the items of chunk 0 and slot 0 count the rows by weight sign and keep the weight extremes by atomic add, min and max. tr_mgpu_ident_verify: work items (candidate chunk, row slice) evaluate every candidate of the chunk on each row of the slice with the inline W-word evaluation, count locally and add one atomic per counter, the smallest violating row by atomic minimum. Both run the inline functions of math_ident.h on device copies of the columns and give the CPU's states and evidence bit for bit; the exact nullspace can run its LIN-002 elimination on the device (tr_mgpu_lin_eliminate). The host checks the plan's or candidates' structure and the budget of the device copies before launching. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
+   "limitations": ["A relation violated on a few rows makes its products with polynomials vanishing on those rows exact identities of one degree more (a near miss q = x + y at row r gives (q - x - y)(x - x_r) = 0); they hold on every row and are reported as discoveries, nothing factors them.",
+                   "Labels are decided within the basis's degree bound: an identity implied only through multiples past it is labelled a generator (GEOM-001 reduces such consequences exactly).",
+                   "At most 8 integer columns, 63 basis monomials (LIN-002's exact systems), degree 16 and 32 primes; larger requests are refused, never approximated.",
+                   "A modular Gram's rank is a lower bound and its vectors are proposals until the exhaustive verification; a vector whose rational reconstruction fails is unresolved.",
+                   "An identity verified in more than two 64-bit words may be refused a certificate by FND-007's 128-bit check (verified, not certified).",
+                   "The numerical quadratic form is binary64 and only ever supports a hypothesis certificate.",
+                   "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."]
+  },
+  "GEOM-001": {
+   "planned_files": ["torbles/math_geom.h", "torbles/math_geom.c", "torbles/math_geom_gpu.cu", "torbles/math_geom.py",
+                     "tests/test_math_geom.py", "bench/benchmark_math_geom.py"],
+   "cpu": "Native ideals, reductions, certificates, costs, row agreement, batched checks and derivatives over exact int64 rationals (an overflow is refused, never rounded): relations are up to 16 FND-007 certificates of one NULL policy (POLYNOMIAL claims, AFFINE / SUM / PRODUCT claims read as FND-007 reads them; laws, schema facts, tolerance and GF(p) claims refused) over at most 8 columns, recorded on one table (or array scope) through one column layout (checked on their FND-007 records), under LEX, DEGLEX or DEGREVLEX with a declared variable significance; the ideal is the reduced Groebner basis by Buchberger's algorithm (normal selection, product criterion, interreduction), each element with exact cofactors over the relations, or the monic relations themselves; reduction by the multivariate division algorithm gives f = g + sum h_i r_i with the remainder irreducible; its certificate P = D (f - g) with cofactors D h_i (D the lcm of every denominator) is derived by FND-007 (tr_cert_derive checks P - sum D h_i r_i = 0 in Z[x]); its kind is the weakest relation's and it authorizes only on the relations' own scope. Batched checks of certificates P = sum q_i G_i expand every product into a dense graded index with signed 128-bit sums under a proven bound (else undecided) and report the nonzero slots and the smallest nonzero monomial. Agreement evaluates the integer forms of f, g and D (f - g) exactly on every selected row (DISC-002's W-word evaluation; rows with a NULL column of f or g excluded): disagreements, the smallest disagreeing row and the largest bit lengths. Costs: terms, columns read, degree, naive multiplications, bound bits on the scope and measured bits; the cheaper form is chosen by a declared priority. Derivatives are formal, or total only through declared dependencies v = phi (refused undeclared, dependent or cyclic), and declarations are verified on every row. Budgets (iterations as S-pairs plus division steps, support, degree, output, states, bytes) are checked before allocation or as reached, refused never truncated.",
+   "gpu": "tr_mgpu_geom_agree: work items (pair chunk, row slice) evaluate D (f - g), D_f f and D_g g exactly on each selected row of their slice with DISC-002's inline W-word evaluation, count locally and add one atomic per counter, the smallest disagreeing row by atomic minimum and the largest bit lengths by atomic maxima. tr_mgpu_geom_check: one work item per product term (every term of P and every pair of terms of each cofactor and premise) adds its signed 128-bit value into its certificate's dense slot with the two-word atomic (the host proved every partial sum within 2^127 - 1, so the sum does not depend on the order), then a scan counts the nonzero slots per certificate and keeps the smallest by atomic minimum; a rank outside its slots (a malformed view) is refused. Both give the CPU's results bit for bit; the host validates the views and budgets the device copies before launching. Completion and reduction run on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
+   "limitations": ["Coefficients are int64 rationals: a reduction or certificate whose coefficients pass int64 is refused (no arbitrary-precision coefficients); a certificate past 4096 terms has no FND-007 claim.",
+                   "Completion is Buchberger's algorithm with the product criterion only (no F4/F5 or sugar strategy); lex bases can grow quickly and are refused by the budget.",
+                   "Relations: at most 16 certificates over at most 8 columns with one NULL policy (FND-007's derivation and claim limits); at most 128 basis elements.",
+                   "The CUDA kernels cover the row agreement and the batched certificate checks; completion, reduction and derivatives run on the CPU.",
+                   "Costs are bounds and widths measured on one scope, not a query planner's cost model.",
+                   "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {"name": "IDEAL", "label": "ideal", "comment": "a polynomial basis with cofactors over relation certificates"}
+  ],
+  "modules": [
+   {"enum": "IDENT", "key": "ident", "family": "ident", "capability": "DISC-002",
+    "name": "moment-Gram identity discovery", "comment": "Gram nullspaces, verified identities",
+    "state": "GRAM", "state_label": "Gram", "devices": "BOTH", "finalize": 1,
+    "carriers": ["INT128", "GFP", "BIGQ", "BIGINT", "INTEGER", "COUNT"],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_PRIME | TR_PROOF_NULL_POLICY",
+    "cpu_entry": ["tr_ident_plan_make", "tr_ident_gram_build", "tr_ident_gram_from_bank", "tr_ident_gram_from_lin",
+                  "tr_ident_gram_combine", "tr_ident_kernel_build", "tr_ident_propose", "tr_ident_candidates",
+                  "tr_ident_verify_view", "tr_ident_certify", "tr_ident_hypothesis", "tr_ident_support"],
+    "cuda_entry": ["tr_mgpu_ident_gram", "tr_mgpu_ident_verify"],
+    "impl": [["FOLD", "INT128", "ALL"], ["FOLD", "GFP", "ALL"], ["MERGE", "INT128", "CPU"],
+             ["SUBTRACT", "INT128", "CPU"], ["SOLVE", "BIGQ", "CPU"], ["CRT", "GFP", "CPU"],
+             ["RATRECON", "GFP", "CPU"], ["EVAL", "INTEGER", "ALL"], ["VERIFY", "INTEGER", "ALL"],
+             ["CONTRACT", "BIGINT", "CPU"]]},
+   {"enum": "GEOM", "key": "geom", "family": "geom", "capability": "GEOM-001",
+    "name": "certified ideal reduction", "comment": "Groebner bases, reduction certificates",
+    "state": "IDEAL", "state_label": "ideal", "devices": "BOTH", "finalize": 1,
+    "carriers": ["RATIONAL", "INTEGER", "INT128", "COUNT"],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": ["tr_geom_ideal_make", "tr_geom_reduce", "tr_geom_reduction_claims", "tr_geom_certify",
+                  "tr_geom_cost_of", "tr_geom_choose", "tr_geom_pairs_make", "tr_geom_agree_view",
+                  "tr_geom_checks_make", "tr_geom_checks_run", "tr_geom_derivative", "tr_geom_dependency_check"],
+    "cuda_entry": ["tr_mgpu_geom_agree", "tr_mgpu_geom_check"],
+    "impl": [["POLY_MUL", "RATIONAL", "CPU"], ["POLY_SUB", "RATIONAL", "CPU"], ["DIVIDE", "RATIONAL", "CPU"],
+             ["POLY_DERIVATIVE", "RATIONAL", "CPU"], ["MULTIPLY", "INT128", "ALL"], ["FOLD", "INT128", "ALL"],
+             ["EVAL", "INTEGER", "ALL"], ["VERIFY", "INTEGER", "ALL"]]}
+  ]
+ }
+}
