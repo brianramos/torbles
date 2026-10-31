@@ -124,10 +124,13 @@ def sample(request=None, bits=None, rows=None, sample_words=32, exact=False, bac
 
 
 def coefficients(overrides=None):
-    """the cost coefficient table [module id][cpu, cuda][component] of the registry, with overrides
+    """the cost coefficient table [module id][cpu, cuda][component] of the registry's planned modules (ids 1 .. 9:
+    the modules with candidates; the family modules have none and are not in the table), with overrides
     {(representation, "cpu" | "cuda"): {component: rate}}"""
     table = np.zeros((10, 2, len(reg.COST_COMPONENTS)), dtype=np.float64)
     for m in reg.modules():
+        if m["id"] >= len(table):
+            continue
         for d, dev in enumerate(("cpu", "cuda")):
             table[m["id"], d] = [m["costs"][dev][c] for c in reg.COST_COMPONENTS]
     for (representation, dev), rates in (overrides or {}).items():

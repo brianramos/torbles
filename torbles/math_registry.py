@@ -4,12 +4,16 @@
 """FND-005: the native module and operator registry (torbles/math_registry.c, math_registry_gpu.cu).
 
     from torbles import math_registry as reg
-    reg.modules()                                   # every native module: carriers, laws, operators, state, proofs,
-                                                    # CPU / CUDA entry points, cost coefficients
+    reg.modules()                                   # every native module (the first-slice built-ins, the registry's
+                                                    # representations and every implemented family): carriers, laws,
+                                                    # operators, state, proofs, CPU / CUDA entry points, costs
+    reg.module("lattice.transform"), reg.module("FIELD-001"), reg.implementations()
     reg.check_chain([("convert", "rational"), ("divide", "rational")], input="integer")   # or CarrierError
+    reg.check_chain([("fold", "gf2"), ("lift", "integer"), ("fold", "integer")], input="gf2")  # an explicit lift
     col = reg.Column(db["t"], "x")                  # the engine column's codes, decoded natively
     req = reg.Request(col, [[1, 0, 3]], aggregate="sum", rows=mask)       # sum of 1 + 3x^2 over the selected rows
     reg.execute(req, "histogram", backend="cuda")   # {"values": [...], "selected", "valid", "nulls", "explanation"}
+    reg.transform(counts, "mobius", carrier="int128", input="count", backend="cuda")   # LATTICE-002 / SPEC-002
 
 Values are exact Python ints (SUM: 128-bit exact; MIN/MAX: None when no selected row is valid). A refusal raises the
 exception of its native code (math_errors.check) with .explanation (what was refused and why) attached; a
@@ -26,9 +30,9 @@ from . import algq
 from .math_budgets import _Budget, _Need, _Refusal as _BudgetRefusal, Budget
 from .math_errors import RESOURCES, check as _check
 
-__all__ = ["carriers", "laws", "conversions", "operators", "modules", "module", "chain", "check_chain",
-           "explain_chain", "entry", "Column", "Request", "State", "execute", "build_state", "candidates", "verify",
-           "REPRESENTATIONS"]
+__all__ = ["carriers", "laws", "conversions", "operators", "modules", "module", "implementations", "chain",
+           "check_chain", "explain_chain", "entry", "Column", "Request", "State", "execute", "build_state", "candidates",
+           "verify", "transform", "REPRESENTATIONS"]
 
 POLYS, DEGREE, COMPONENTS, MAX_CANDIDATES = 4, 8, 12, 16
 REPRESENTATIONS = {"formal": 1, "moments": 2, "cells": 3, "verify": 4, "scan": 5, "histogram": 6, "power": 7,
@@ -37,12 +41,10 @@ AGGREGATES = {"sum": 1, "min": 2, "max": 3}
 COST_COMPONENTS = ("words", "scan", "chain", "combine", "construct", "reuse", "fusion", "materialize", "transfer",
                    "cpu_final", "gpu_final", "fixed")
 REFUSALS = ("none", "law", "conversion", "operator", "carrier", "implementation", "budget", "overflow", "bound",
-            "stale", "proof", "device", "invalid", "unsupported", "memory")
-STATE_KINDS = ("none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums",
-               "plane counts", "empty proof")
-PROOFS = ("domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain")
-REQUESTS = ("formal", "moments", "cells", "verify", "polysum")
-CONVERSION_KINDS = {1: "exact", 2: "checked", 3: "enclosing"}
+            "stale", "proof", "device", "invalid", "unsupported", "memory")      # = the native names (tested)
+IMPLS, ENTRIES, ENTRY_NAME, OPERATOR_WORDS = 32, 12, 40, 2
+TRANSFORMS = ("zeta", "mobius", "walsh")                                      # registry operators
+DIRECTIONS = {"up": 0, "down": 1}
 ON_CPU, ON_CUDA = 1, 2
 _NAMES_BY_REPR = {v: k for k, v in REPRESENTATIONS.items()}
 
@@ -64,7 +66,8 @@ class _Operator(C.Structure):
 
 class _Conversion(C.Structure):
     _native_ = "tr_reg_conversion"
-    _fields_ = [("from_carrier", C.c_int32), ("to_carrier", C.c_int32), ("kind", C.c_int32)]
+    _abi_version_ = 2
+    _fields_ = [("from_carrier", C.c_int32), ("to_carrier", C.c_int32), ("kind", C.c_int32), ("via", C.c_int32)]
 
 
 class _Refusal(C.Structure):
@@ -93,11 +96,12 @@ class _Result(C.Structure):
 
 class _Explain(C.Structure):
     _native_ = "tr_reg_explain"
+    _abi_version_ = 2
     _fields_ = [(n, C.c_int32) for n in ("abi", "status", "module", "representation", "device", "finalize", "reused",
                                          "code")] + [
         ("refusal", _Refusal), ("budget", _BudgetRefusal)] + [
         (n, C.c_uint64) for n in ("rows_scanned", "words_scanned", "state_elements", "state_bytes", "device_bytes",
-                                  "native_calls")]
+                                  "native_calls")] + [("entry", C.c_char * ENTRY_NAME)]
 
 
 class _StateInfo(C.Structure):
@@ -118,21 +122,24 @@ class _Candidate(C.Structure):
 
 class _Impl(C.Structure):
     _native_ = "tr_reg_impl"
-    _fields_ = [("op", C.c_int32), ("carrier", C.c_int32)]
+    _abi_version_ = 2
+    _fields_ = [("op", C.c_int32), ("carrier", C.c_int32), ("devices", C.c_int32), ("module", C.c_int32)]
 
 
 class _Module(C.Structure):
     _native_ = "tr_reg_module"
+    _abi_version_ = 2
     _fields_ = [(n, C.c_int32) for n in ("abi", "id", "representation", "state_kind", "requests", "devices", "nimpl",
                                          "finalize")] + [
         (n, C.c_uint32) for n in ("carriers", "laws_relied", "laws_guaranteed", "proofs")] + [
-        ("operators", C.c_uint64), ("impl", _Impl * 12), ("cost", (C.c_double * COMPONENTS) * 2),
-        ("name", C.c_char * 40), ("capability", C.c_char * 16), ("cpu_entry", (C.c_char * 32) * 2),
-        ("cuda_entry", (C.c_char * 32) * 2)]
+        ("operators", C.c_uint64 * OPERATOR_WORDS), ("cost_basis", C.c_int32), ("reserved", C.c_int32),
+        ("impl", _Impl * IMPLS), ("cost", (C.c_double * COMPONENTS) * 2),
+        ("name", C.c_char * 40), ("capability", C.c_char * 16), ("family", C.c_char * 16), ("key", C.c_char * 24),
+        ("cpu_entry", (C.c_char * ENTRY_NAME) * ENTRIES), ("cuda_entry", (C.c_char * ENTRY_NAME) * ENTRIES)]
 
 
-SIZES = {"refusal": 32, "chain": 56, "request": 384, "result": 96, "explanation": 136, "state_info": 104,
-         "candidate": 376, "module": 528}
+SIZES = {"refusal": 32, "chain": 56, "request": 384, "result": 96, "explanation": 176, "state_info": 104,
+         "candidate": 376, "module": 1832}
 _native = None
 
 
@@ -146,6 +153,7 @@ def _api():
             "carrier_info": (i32, [i32, P(u32), C.c_char_p, i32]),
             "operator_info": (i32, [i32, P(_Operator), C.c_char_p, i32]),
             "conversion_get": (i32, [i32, P(_Conversion)]), "law_name": (i32, [i32, C.c_char_p, i32]),
+            "name": (i32, [i32, i32, C.c_char_p, i32]), "impl_count": (i32, []), "impl_get": (i32, [i32, P(_Impl)]),
             "find": (i32, [i32, i32, i32]),
             "check_chain": (i32, [P(_Step), i32, i32, i32, i32, P(i32), P(_Refusal)]),
             "code_domain": (i32, [vp, u64, P(u64), P(i32)]),
@@ -161,6 +169,8 @@ def _api():
                                  P(_BudgetRefusal)]),
             "verify": (i32, [vp, i64, i64, vp, P(_Explain)]),
             "candidates_verify": (i32, [vp, i32, P(_Budget), P(_Candidate), i32, P(i32), P(_BudgetRefusal)]),
+            "transform": (i32, [i32, i32, i32, i32, i32, P(_I128), P(_I128), P(_Budget), P(_BudgetRefusal),
+                                P(_Explain)]),
         }
         native = {}
         for name, (restype, args) in sig.items():
@@ -180,6 +190,8 @@ def _gpu(name):
                                    C.c_uint64, P(_StateInfo), P(_Explain)],
         "tr_mgpu_registry_verify": [C.c_void_p, C.c_int64, C.c_int64, P(_Budget), C.c_void_p, P(_BudgetRefusal),
                                     P(_Explain)],
+        "tr_mgpu_registry_transform": [C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32, P(_I128), P(_I128),
+                                       P(_Budget), P(_BudgetRefusal), P(_Explain)],
     }
     fn = math_gpu.bind(name, C.c_int, sigs[name])
     if os.environ.get("TORBLES_MATH_REQUIRE_DEVICE") == "1":
@@ -194,26 +206,46 @@ def _text(buffer):
 _names = None
 
 
+_NAME_TABLES = {"states": 1, "proofs": 2, "requests": 3, "conversion_kinds": 4, "cost_bases": 5, "refusals": 6}
+
+
 def _tables():
+    """the native name tables, read once (every enumeration ends where the native lookup refuses the index)"""
     global _names
     if _names is None:
         api = _api()
-        buf = C.create_string_buffer(32)
-        carriers_, laws_, ops_ = [], [], []
-        for c in range(13):
+        buf = C.create_string_buffer(64)
+        carriers_, laws_, ops_ = [], [], [None]
+        for c in itertools.count():
             laws_mask = C.c_uint32()
-            _check(api["carrier_info"](c, C.byref(laws_mask), buf, 32))
+            if api["carrier_info"](c, C.byref(laws_mask), buf, 64) != 0:
+                break
             carriers_.append((buf.value.decode(), int(laws_mask.value)))
-        for b in range(12):
-            _check(api["law_name"](b, buf, 32))
+        for b in itertools.count():
+            if api["law_name"](b, buf, 64) != 0:
+                break
             laws_.append(buf.value.decode())
-        ops_.append(None)
-        for op in range(1, 28):
+        for op in itertools.count(1):
             info = _Operator()
-            _check(api["operator_info"](op, C.byref(info), buf, 32))
+            if api["operator_info"](op, C.byref(info), buf, 64) != 0:
+                break
             ops_.append((buf.value.decode(), info.input, info.output, info.required))
-        _names = dict(carriers=carriers_, laws=laws_, operators=ops_)
+        names = dict(carriers=carriers_, laws=laws_, operators=ops_)
+        for table, ident in _NAME_TABLES.items():
+            names[table] = []
+            for i in itertools.count():
+                if api["name"](ident, i, buf, 64) != 0:
+                    break
+                names[table].append(buf.value.decode())
+        _names = names
     return _names
+
+
+def names(table):
+    """a native name table: states, proofs, requests, conversion_kinds, cost_bases, refusals (or carriers, laws,
+    operators)"""
+    t = _tables()[table]
+    return tuple(x[0] if isinstance(x, tuple) else x for x in t if x is not None)
 
 
 def _carrier_id(name):
@@ -262,16 +294,31 @@ def carriers():
     return tuple(dict(id=i, name=n, laws=_law_names(m)) for i, (n, m) in enumerate(_tables()["carriers"]) if i)
 
 
-def conversions():
-    """the declared carrier conversions: exact (lossless), checked (lossless or refused), enclosing (not lossless)"""
+def _conversion_table():
     out = []
     for i in itertools.count():
         conv = _Conversion()
         if _api()["conversion_get"](i, C.byref(conv)) != 0:
             break
-        out.append({"from": _carrier_name(conv.from_carrier), "to": _carrier_name(conv.to_carrier),
-                    "kind": CONVERSION_KINDS[conv.kind]})
-    return tuple(out)
+        out.append(conv)
+    return out
+
+
+def conversions():
+    """the declared carrier conversions: exact (lossless), checked (lossless or refused), enclosing (not lossless),
+    applied at any step; lift (a residue to its representative: not a homomorphism), reduction (to a residue: not
+    injective) and encoding (three-valued outcomes: a declared NULL encoding), applied only by their operator (via)"""
+    kinds = _tables()["conversion_kinds"]
+    return tuple({"from": _carrier_name(c.from_carrier), "to": _carrier_name(c.to_carrier), "kind": kinds[c.kind],
+                  "via": _op_name(c.via) if c.via else None} for c in _conversion_table())
+
+
+def _explicit(frm, to):
+    """the operator that alone applies the declared conversion frm -> to (ids), or None"""
+    for c in _conversion_table():
+        if c.from_carrier == frm and c.to_carrier == to and c.via:
+            return c
+    return None
 
 
 def operators():
@@ -281,26 +328,36 @@ def operators():
                  for op, t in enumerate(_tables()["operators"]) if t)
 
 
+def _devices_of(mask):
+    return [d for b, d in enumerate(("cpu", "cuda")) if mask >> b & 1]
+
+
 def _module_dict(m):
+    t = _tables()
+    ops = [op for op in range(64 * OPERATOR_WORDS) if m.operators[op // 64] >> (op % 64) & 1]
     return dict(
-        id=m.id, name=_text(m.name), capability=_text(m.capability), representation=_NAMES_BY_REPR[m.representation],
-        state=STATE_KINDS[m.state_kind], requests=[r for b, r in enumerate(REQUESTS) if m.requests >> b & 1],
-        devices=[d for b, d in enumerate(("cpu", "cuda")) if m.devices >> b & 1],
+        id=m.id, key=_text(m.key), name=_text(m.name), capability=_text(m.capability), family=_text(m.family),
+        representation=_NAMES_BY_REPR.get(m.representation), state=t["states"][m.state_kind],
+        requests=[r for b, r in enumerate(t["requests"]) if m.requests >> b & 1],
+        devices=_devices_of(m.devices),
         cuda_finalize=[d for b, d in enumerate(("cpu", "gpu")) if m.finalize >> b & 1],
-        carriers=[_carrier_name(c) for c in range(13) if m.carriers >> c & 1],
+        carriers=[_carrier_name(c) for c in range(len(t["carriers"])) if m.carriers >> c & 1],
         laws_relied=_law_names(m.laws_relied), laws_guaranteed=_law_names(m.laws_guaranteed),
-        proofs=[p for b, p in enumerate(PROOFS) if m.proofs >> b & 1],
-        operator_ids=[op for op in range(64) if m.operators >> op & 1],
-        operators=[_op_name(op) for op in range(1, 28) if m.operators >> op & 1],
+        proofs=[p for b, p in enumerate(t["proofs"]) if m.proofs >> b & 1],
+        operator_ids=ops, operators=[_op_name(op) for op in ops if op],
         implements=[(_op_name(m.impl[i].op), _carrier_name(m.impl[i].carrier)) for i in range(m.nimpl)],
-        cpu_entries=[e for e in (_text(m.cpu_entry[0]), _text(m.cpu_entry[1])) if e],
-        cuda_entries=[e for e in (_text(m.cuda_entry[0]), _text(m.cuda_entry[1])) if e],
+        implementations=[dict(operator=_op_name(m.impl[i].op), carrier=_carrier_name(m.impl[i].carrier),
+                              devices=_devices_of(m.impl[i].devices)) for i in range(m.nimpl)],
+        cpu_entries=[e for e in (_text(x) for x in m.cpu_entry) if e],
+        cuda_entries=[e for e in (_text(x) for x in m.cuda_entry) if e],
         costs={dev: dict(zip(COST_COMPONENTS, (float(v) for v in m.cost[i]))) for i, dev in enumerate(("cpu", "cuda"))},
+        cost_basis=t["cost_bases"][m.cost_basis],
         cost_unit="relative work units per unit amount; not time")
 
 
 def modules():
-    """every registered native module (the first-slice built-ins included), in id order"""
+    """every registered native module (the first-slice built-ins, the registry's representations and the families),
+    in id order"""
     out = []
     for i in range(_api()["module_count"]()):
         m = _Module()
@@ -310,11 +367,33 @@ def modules():
 
 
 def module(id_or_name):
-    """one module by id or representation name"""
+    """one module by id, representation name, key ("lin.solve") or capability id when only one module has it"""
+    if isinstance(id_or_name, str):
+        if id_or_name in REPRESENTATIONS:
+            ident = REPRESENTATIONS[id_or_name]
+        else:
+            hits = [m for m in modules() if id_or_name in (m["key"], m["capability"])]
+            keyed = [m for m in hits if m["key"] == id_or_name]
+            if keyed or len(hits) == 1:
+                return (keyed or hits)[0]
+            raise ValueError(f"no single registry module {id_or_name!r}" +
+                             (f" (several: {', '.join(m['key'] for m in hits)})" if hits else ""))
+    else:
+        ident = int(id_or_name)
     m = _Module()
-    ident = REPRESENTATIONS[id_or_name] if isinstance(id_or_name, str) else int(id_or_name)
     _check(_api()["module_by_id"](ident, C.byref(m)), what="registry module")
     return _module_dict(m)
+
+
+def implementations():
+    """every (operator, carrier) a module implements, with the devices that run it"""
+    out = []
+    for i in range(_api()["impl_count"]()):
+        row = _Impl()
+        _check(_api()["impl_get"](i, C.byref(row)))
+        out.append(dict(module=row.module, operator=_op_name(row.op), carrier=_carrier_name(row.carrier),
+                        devices=_devices_of(row.devices)))
+    return tuple(out)
 
 
 def chain(representation, aggregate="sum", multiplicities=False):
@@ -329,10 +408,22 @@ def chain(representation, aggregate="sum", multiplicities=False):
 def _refusal_dict(r):
     if r.kind == 0:
         return None
-    return dict(kind=REFUSALS[r.kind], code=r.code, step=None if r.step < 0 else r.step,
-                operator=_op_name(r.op) if r.op else None, carrier=_carrier_name(r.carrier) if r.carrier else None,
-                law=_law_name(r.law), conversion=(_carrier_name(r.from_carrier), _carrier_name(r.to_carrier))
-                if r.from_carrier else None)
+    d = dict(kind=REFUSALS[r.kind], code=r.code, step=None if r.step < 0 else r.step,
+             operator=_op_name(r.op) if r.op else None, carrier=_carrier_name(r.carrier) if r.carrier else None,
+             law=_law_name(r.law), conversion=(_carrier_name(r.from_carrier), _carrier_name(r.to_carrier))
+             if r.from_carrier else None, via=None)
+    if d["kind"] == "conversion" and r.from_carrier:
+        c = _explicit(r.from_carrier, r.to_carrier)
+        if c is not None:
+            d["via"] = _op_name(c.via)
+            d["conversion_kind"] = _tables()["conversion_kinds"][c.kind]
+    return d
+
+
+_EXPLICIT = {"lift": "a representative, not a homomorphism: the operations of the two carriers differ (1 + 1 is 0 "
+                     "in GF(2), 2 in the integers)",
+             "reduction": "a homomorphism onto the residues, not injective",
+             "encoding": "UNKNOWN has no two-valued value: the NULL encoding must be declared"}
 
 
 def _refusal_text(d):
@@ -341,6 +432,9 @@ def _refusal_text(d):
     where = f"step {d['step']} ({d['operator']} in {d['carrier']}): " if d.get("step") is not None else ""
     if d["kind"] == "law":
         return f"{where}needs law {d['law']}, which {d['carrier']} lacks"
+    if d["kind"] == "conversion" and d.get("conversion") and d["step"] is not None and d.get("via"):
+        return (f"{where}needs the conversion {d['conversion'][0]} -> {d['conversion'][1]}, which only an explicit "
+                f"'{d['via']}' step declares ({d['conversion_kind']}: {_EXPLICIT[d['conversion_kind']]})")
     if d["kind"] == "conversion" and d.get("conversion") and d["step"] is not None:
         return f"{where}needs a lossless conversion {d['conversion'][0]} -> {d['conversion'][1]}, none is declared"
     if d["kind"] == "carrier":
@@ -351,6 +445,8 @@ def _refusal_text(d):
         return f"{where}no such operator"
     if d["kind"] == "bound" and d.get("operator") == "eval":
         return "the checked int64 evaluation is not proven to stay within int64 over the code domain"
+    if d["kind"] == "bound" and d.get("carrier") == "count":
+        return "the total of the counts exceeds 2^64 - 1: a count transform is not proven to stay within uint64"
     if d["kind"] == "bound":
         return "|result| < 2^127 is not proven for the mod 2^128 representation (mod128 -> int128 is checked)"
     if d["kind"] == "proof":
@@ -368,13 +464,16 @@ def _steps(steps):
 
 
 def explain_chain(steps, input="code", contract="exact", implemented=False):
-    """{"accepted": bool, "output": carrier or None, "refusal": None or {kind, step, operator, carrier, law, conversion}}"""
+    """{"accepted": bool, "output": carrier or None, "refusal": None or {kind, step, operator, carrier, law, conversion,
+    via}, "modules": the id of the module implementing each step (None where none does)}"""
     refusal, out = _Refusal(), C.c_int32()
-    rc = _api()["check_chain"](_steps(steps), len(steps), _carrier_id(input),
+    arr = _steps(steps)
+    rc = _api()["check_chain"](arr, len(steps), _carrier_id(input),
                                {"exact": 0, "enclosure": 1}[contract], int(bool(implemented)), C.byref(out),
                                C.byref(refusal))
+    found = [_api()["find"](arr[i].op, arr[i].carrier, ON_CPU | ON_CUDA) for i in range(len(steps))] if rc == 0 else []
     return dict(accepted=rc == 0, code=rc, output=_carrier_name(out.value) if rc == 0 else None,
-                refusal=_refusal_dict(refusal))
+                refusal=_refusal_dict(refusal), modules=[m or None for m in found])
 
 
 def check_chain(steps, input="code", contract="exact", implemented=False):
@@ -564,10 +663,11 @@ def _explanation(e):
         from . import math_gpu
         name = math_gpu.device()["name"]
     m = _Module()
-    mname = cap = None
+    mname = cap = family = key = None
     if _api()["module_by_id"](e.module, C.byref(m)) == 0:
-        mname, cap = _text(m.name), _text(m.capability)
+        mname, cap, family, key = _text(m.name), _text(m.capability), _text(m.family), _text(m.key)
     return dict(status="ran" if e.status == 0 else "refused", module=e.module, module_name=mname, capability=cap,
+                family=family, key=key, entry=_text(e.entry) or None,
                 representation=_NAMES_BY_REPR.get(e.representation), device=device, device_name=name,
                 finalize="gpu" if e.finalize == 1 else "cpu", reused=bool(e.reused), code=e.code,
                 refusal=_refusal_dict(e.refusal), budget=budget, rows_scanned=int(e.rows_scanned),
@@ -793,3 +893,45 @@ def verify(catalog, module, out, left, right=None, *, scale=1, bias=0, backend="
         name = explain["device"]
         return dict(evidence=math_disc._evidence(e, module, "cpu" if name == "cpu" else name, explain["device_name"]),
                     explanation=explain)
+
+
+# ------------------------------------------------------------------ transforms through the registry
+_I128_RANGE = (-(1 << 127), (1 << 127) - 1)
+
+
+def transform(values, op, carrier="int128", input=None, direction="up", backend="cpu", budget=None):
+    """a subset-lattice transform (op "zeta" or "mobius", direction "up": over supersets, "down": over subsets;
+    LATTICE-002) or the Walsh-Hadamard transform ("walsh", SPEC-002) of 2^k exact integers through the registry:
+    the composition [(op, carrier)] from the values' carrier `input` (default: carrier) is checked natively (laws,
+    conversions), the module implementing op in carrier on the backend is taken from the descriptors, and its entry
+    point runs (carrier: "count" (uint64 inputs; the total proves every zeta output fits), "integer" (checked int64),
+    "int128"). {"values": [int], "explanation": {...}}; refusals raise with .explanation (law, conversion,
+    implementation, bound, budget, overflow)."""
+    if op not in TRANSFORMS:
+        raise ValueError(f"op is one of {', '.join(TRANSFORMS)}")
+    if direction not in DIRECTIONS:
+        raise ValueError("direction is 'up' or 'down'")
+    if backend not in ("cpu", "cuda"):
+        raise ValueError("backend is 'cpu' or 'cuda'")
+    vals = [int(v) for v in values]
+    n = len(vals)
+    k = max(n, 1).bit_length() - 1
+    if n < 1 or n != 1 << k:
+        raise ValueError("a transform takes 2^k values")
+    for v in vals:
+        if not _I128_RANGE[0] <= v <= _I128_RANGE[1]:
+            raise OverflowError("transform values are 128-bit integers")
+    arr, out = (_I128 * n)(), (_I128 * n)()
+    for i, v in enumerate(vals):                    # two's complement words: lo = the low 64 bits (signed view)
+        lo = v & ((1 << 64) - 1)
+        arr[i].lo, arr[i].hi = lo - (1 << 64) if lo >> 63 else lo, v >> 64
+    b = budget or Budget()
+    refusal, ex = _BudgetRefusal(), _Explain()
+    args = (_op_id(op), DIRECTIONS[direction], _carrier_id(carrier), _carrier_id(input or carrier), k, arr, out,
+            C.byref(b.raw), C.byref(refusal), C.byref(ex))
+    rc = (_api()["transform"] if backend == "cpu" else _gpu("tr_mgpu_registry_transform"))(*args)
+    explain = _explanation(ex)
+    if rc:
+        _raise(rc, explain, f"{op} in {carrier} ({backend})")
+    return dict(values=[_i128(out[i]) for i in range(n)], op=op, direction=direction, carrier=carrier, k=k,
+                explanation=explain)

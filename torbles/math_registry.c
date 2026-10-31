@@ -1,6 +1,8 @@
 /* FND-005: the native module and operator registry; see math_registry.h. SPDX-License-Identifier: Apache-2.0 */
 #include "math_registry.h"
 #include "math_modules.h"
+#include "math_lattice.h"
+#include "math_spec.h"
 #include "torble.h"
 #include "math_handles.h"
 #include <stddef.h>
@@ -10,29 +12,36 @@
 TR_MATH_ABI(tr_reg_step, 1);          /* the ctypes boundary (math_handles.h) */
 TR_MATH_ABI(tr_reg_chain, 1);
 TR_MATH_ABI(tr_reg_operator, 1);
-TR_MATH_ABI(tr_reg_conversion, 1);
+TR_MATH_ABI(tr_reg_conversion, 2);
 TR_MATH_ABI(tr_reg_refusal, 1);
 TR_MATH_ABI(tr_reg_request, 1);
 TR_MATH_ABI(tr_reg_result, 1);
-TR_MATH_ABI(tr_reg_explain, 1);
+TR_MATH_ABI(tr_reg_explain, 2);
 TR_MATH_ABI(tr_reg_state_info, 1);
 TR_MATH_ABI(tr_reg_candidate, 1);
-TR_MATH_ABI(tr_reg_impl, 1);
-TR_MATH_ABI(tr_reg_module, 1);
+TR_MATH_ABI(tr_reg_impl, 2);
+TR_MATH_ABI(tr_reg_module, 2);
 
 extern void at_decode_column(const atable_t *, int, uint32_t *);
 
 _Static_assert(sizeof(tr_reg_refusal) == 32, "refusal ABI size");
 _Static_assert(sizeof(tr_reg_chain) == 56, "chain ABI size");
+_Static_assert(sizeof(tr_reg_conversion) == 16, "conversion ABI size");
 _Static_assert(sizeof(tr_reg_request) == 384, "request ABI size");
 _Static_assert(sizeof(tr_reg_result) == 96, "result ABI size");
-_Static_assert(sizeof(tr_reg_explain) == 136, "explanation ABI size");
+_Static_assert(sizeof(tr_reg_explain) == 176, "explanation ABI size");
 _Static_assert(sizeof(tr_reg_state_info) == 104, "state info ABI size");
 _Static_assert(sizeof(tr_reg_candidate) == 376, "candidate ABI size");
-_Static_assert(sizeof(tr_reg_module) == 528, "module ABI size");
+_Static_assert(sizeof(tr_reg_impl) == 16, "implementation row ABI size");
+_Static_assert(sizeof(tr_reg_module) == 1832, "module ABI size");
 _Static_assert(TR_REG_E_INVALID == TR_MATH_INVALID && TR_REG_E_MEMORY == TR_MATH_MEMORY &&
                TR_REG_E_OVERFLOW == TR_MATH_OVERFLOW && TR_REG_E_BUDGET == TR_MATH_BUDGET &&
-               TR_REG_E_CARRIER == TR_MATH_CARRIER_ERROR && TR_REG_E_OPERATOR == TR_MATH_OPERATOR_ERROR, "codes");
+               TR_REG_E_CARRIER == TR_MATH_CARRIER_ERROR && TR_REG_E_OPERATOR == TR_MATH_OPERATOR_ERROR &&
+               TR_REG_E_UNSUPPORTED == TR_MATH_UNSUPPORTED, "codes");
+_Static_assert(TR_REG_OPERATORS <= 64 * TR_REG_OPERATOR_WORDS && TR_REG_CARRIERS <= 32 && TR_REG_LAWS <= 32 &&
+               TR_REG_PROOFS <= 32, "masks");
+_Static_assert(TR_REG_TRANSFORM_MAX_K == TR_LATTICE_MAX_AXES && TR_REG_TRANSFORM_MAX_K == TR_SPEC_MAX_K,
+               "transform sizes");
 #define SAME(a, b) ((int)(a) == (int)(b))
 _Static_assert(SAME(TR_REG_C_INTEGER, TR_MATH_INTEGER) && SAME(TR_REG_C_RATIONAL, TR_MATH_RATIONAL) &&
                SAME(TR_REG_C_BOOLEAN, TR_MATH_BOOLEAN) && SAME(TR_REG_C_GF2, TR_MATH_GF2), "carriers of math_domain.h");
@@ -44,14 +53,34 @@ _Static_assert(SAME(TR_OP_POLY_ADD, TR_MATH_OP_ADD) && SAME(TR_OP_POLY_EVALUATE,
 /* ------------------------------------------------------------------ names */
 static const char *const carrier_names[TR_REG_CARRIERS] = {
     "any", "integer", "rational", "boolean", "gf2", "count", "int128", "mod128", "interval", "float64", "minmax",
-    "code", "rowset"};
+    "code", "rowset", "bigint", "bigq", "gfp", "cinterval", "series", "kleene", "qinterval"};
 static const char *const law_names[TR_REG_LAWS] = {
     "associative", "commutative", "identity", "inverse", "distributive", "idempotent", "mul_idempotent", "ordered",
-    "division", "char0", "exact", "enclosure"};
+    "division", "char0", "exact", "enclosure", "complement", "char2"};
 static const char *const operator_names[TR_REG_OPERATORS] = {
     "none", "poly_add", "poly_sub", "poly_mul", "poly_pow", "poly_derivative", "poly_integrate", "poly_substitute",
     "poly_evaluate", "bank_reduce", "convert", "eval", "fold", "merge", "scale_count", "distinct_fold", "subtract",
-    "divide", "order", "powers", "contract", "histogram", "bits", "and", "popcount", "mark_cells", "verify", "empty"};
+    "divide", "order", "powers", "contract", "histogram", "bits", "and", "popcount", "mark_cells", "verify", "empty",
+    "lift", "residue", "null_encode", "multiply", "euclid", "solve", "inertia", "minimize", "roots", "crt",
+    "ratrecon", "enclose", "coefficients", "differentiate", "predicate", "logic", "cofactor", "difference",
+    "quantify", "test", "occupancy", "zeta", "mobius", "walsh", "rollup", "refine", "group", "update", "prefix"};
+static const char *const state_names[TR_REG_STATE_KINDS] = {
+    "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
+    "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
+    "quadratic objective", "separated coefficients", "jet aggregates", "hierarchy", "maintained cells",
+    "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
+    "occupancy histogram", "lattice vector", "walsh spectrum"};
+static const char *const proof_names[TR_REG_PROOFS] = {
+    "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
+    "identity", "handle", "null_policy"};
+static const char *const request_names[TR_REG_REQUEST_KINDS] = {
+    "formal", "moments", "cells", "verify", "polysum", "family"};
+static const char *const conversion_kind_names[TR_REG_CONV_KINDS] = {
+    "none", "exact", "checked", "enclosing", "lift", "reduction", "encoding"};
+static const char *const cost_basis_names[2] = {"none", "estimate"};
+static const char *const refusal_names[TR_REG_REFUSALS] = {
+    "none", "law", "conversion", "operator", "carrier", "implementation", "budget", "overflow", "bound", "stale",
+    "proof", "device", "invalid", "unsupported", "memory"};
 
 static int32_t copy_name(const char *s, char *out, int32_t cap) {
     if (!out || cap <= 0) return TR_MATH_OK;
@@ -74,6 +103,21 @@ int32_t tr_reg_operator_info(int32_t op, tr_reg_operator *out, char *name, int32
     if (out) *out = tr_reg_operators[op];
     return copy_name(operator_names[op], name, cap);
 }
+int32_t tr_reg_name(int32_t table, int32_t index, char *name, int32_t cap) {
+    const char *const *names;
+    int32_t n;
+    switch (table) {
+    case TR_REG_NAMES_STATES: names = state_names; n = TR_REG_STATE_KINDS; break;
+    case TR_REG_NAMES_PROOFS: names = proof_names; n = TR_REG_PROOFS; break;
+    case TR_REG_NAMES_REQUESTS: names = request_names; n = TR_REG_REQUEST_KINDS; break;
+    case TR_REG_NAMES_CONVERSIONS: names = conversion_kind_names; n = TR_REG_CONV_KINDS; break;
+    case TR_REG_NAMES_COST_BASES: names = cost_basis_names; n = 2; break;
+    case TR_REG_NAMES_REFUSALS: names = refusal_names; n = TR_REG_REFUSALS; break;
+    default: return TR_MATH_INVALID;
+    }
+    if (index < 0 || index >= n) return TR_MATH_INVALID;
+    return copy_name(names[index], name, cap);
+}
 int32_t tr_reg_conversion_get(int32_t index, tr_reg_conversion *out) {
     if (!out || index < 0 || index >= TR_REG_CONVERSIONS) return TR_MATH_INVALID;
     *out = tr_reg_conversions[index];
@@ -84,121 +128,327 @@ int32_t tr_reg_chain_get(int32_t repr, int32_t slot, tr_reg_chain *out) {
     *out = tr_reg_chains[repr][slot];
     return TR_MATH_OK;
 }
+int32_t tr_reg_impl_count(void) { return TR_REG_IMPL_ROWS; }
+int32_t tr_reg_impl_get(int32_t index, tr_reg_impl *out) {
+    if (!out || index < 0 || index >= TR_REG_IMPL_ROWS) return TR_MATH_INVALID;
+    *out = tr_reg_impls[index];
+    return TR_MATH_OK;
+}
 
 /* ------------------------------------------------------------------ module descriptors */
-#define CB(c) (1u << (c))
-#define OB(op) (UINT64_C(1) << (op))
+#define CB(c) (1u << (TR_REG_C_##c))
 #define DATA_PROOFS (TR_PROOF_SCOPE | TR_PROOF_SNAPSHOT)
 /* cost coefficients per component, in the order WORDS, SCAN, CHAIN, COMBINE, CONSTRUCT, REUSE, FUSION, MATERIALIZE,
- * TRANSFER, CPU_FINAL, GPU_FINAL, FIXED. CPU rates are hand-set estimates (relative units of about a nanosecond on
- * the 2-core development machine), checked on held-out shapes by bench/benchmark_math_planner.py, which also fits
- * replacements on its training shapes; CUDA rates are uncalibrated estimates for a discrete device (launch and
- * synchronization in FIXED, PCIe copies in TRANSFER). FUSION is the fraction of the shared components' cost a fused
- * pass saves. None of them is a time. */
+ * TRANSFER, CPU_FINAL, GPU_FINAL, FIXED. CPU rates of modules 1 .. 9 are hand-set estimates (relative units of about
+ * a nanosecond on the 2-core development machine), checked on held-out shapes by bench/benchmark_math_planner.py,
+ * which also fits replacements on its training shapes; their CUDA rates are uncalibrated estimates for a discrete
+ * device (launch and synchronization in FIXED, PCIe copies in TRANSFER). FUSION is the fraction of the shared
+ * components' cost a fused pass saves. None of them is a time. The family modules (ids >= TR_REG_M_SCOPE) have no
+ * planner candidates and no amounts: their coefficients are zeros, nothing is calibrated (cost_basis NONE). */
 #define CUDA_RATES(chain, construct, gpu_final) {0.004, 0.01, chain, 2.0, construct, 0.6, 1.0, 0.05, 0.12, 1.2, gpu_final, 25000.0}
-static const tr_reg_module modules[TR_REG_MODULES - 1] = {
-    {.abi = TR_REG_ABI, .id = TR_REG_R_FORMAL, .representation = TR_REG_R_FORMAL, .state_kind = TR_REG_STATE_FORMAL,
-     .requests = TR_REG_REQ_FORMAL, .devices = TR_REG_ON_CPU, .nimpl = 8,
-     .carriers = CB(TR_REG_C_RATIONAL),
+#define BUILTIN(id_, key_, family_) .abi = TR_REG_ABI, .id = id_, .representation = id_, .key = key_, \
+    .family = family_, .cost_basis = TR_REG_COST_ESTIMATE
+#define FAMILY(id_, key_, family_, cap_, name_) .abi = TR_REG_ABI, .id = id_, .representation = 0, .key = key_, \
+    .family = family_, .capability = cap_, .name = name_, .requests = TR_REG_REQ_FAMILY, .cost_basis = TR_REG_COST_NONE
+static const tr_reg_module modules[] = {
+    {BUILTIN(TR_REG_R_FORMAL, "formal", "mathematics"), .state_kind = TR_REG_STATE_FORMAL,
+     .requests = TR_REG_REQ_FORMAL, .devices = TR_REG_ON_CPU,
+     .carriers = CB(RATIONAL),
      .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_DIVISION | TR_LAW_CHAR0 | TR_LAW_EXACT,
      .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_DOMAIN,
-     .impl = {{TR_OP_POLY_ADD, TR_REG_C_RATIONAL}, {TR_OP_POLY_SUB, TR_REG_C_RATIONAL}, {TR_OP_POLY_MUL, TR_REG_C_RATIONAL},
-              {TR_OP_POLY_POW, TR_REG_C_RATIONAL}, {TR_OP_POLY_DERIVATIVE, TR_REG_C_RATIONAL},
-              {TR_OP_POLY_INTEGRATE, TR_REG_C_RATIONAL}, {TR_OP_POLY_SUBSTITUTE, TR_REG_C_RATIONAL},
-              {TR_OP_POLY_EVALUATE, TR_REG_C_RATIONAL}},
      .cost = {{0, 0, 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 200.0}, {0}},
      .name = "checked rational polynomials", .capability = "FND-002",
      .cpu_entry = {"tr_math_module_apply", "tr_math_module_evaluate"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_MOMENTS, .representation = TR_REG_R_MOMENTS, .state_kind = TR_REG_STATE_MOMENT_BANK,
-     .requests = TR_REG_REQ_MOMENTS, .devices = TR_REG_ON_CPU, .nimpl = 4,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_RATIONAL),
+    {BUILTIN(TR_REG_R_MOMENTS, "moments", "mathematics"), .state_kind = TR_REG_STATE_MOMENT_BANK,
+     .requests = TR_REG_REQ_MOMENTS, .devices = TR_REG_ON_CPU,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(RATIONAL),
      .laws_relied = TR_REG_RING | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
      .proofs = TR_PROOF_DOMAIN | TR_PROOF_SNAPSHOT | TR_PROOF_SCOPE,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_POWERS, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_INTEGER},
-              {TR_OP_BANK_REDUCE, TR_REG_C_RATIONAL}},
      .cost = {{1.0, 1.5, 2.5, 0, 1.0, 0.5, 1.0, 0.05, 0, 2.0, 0, 20000.0}, {0}},
      .name = "scalar integer moments", .capability = "FND-003",
      .cpu_entry = {"tr_math_module_reduce", "tr_math_bank_create"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_CELLS, .representation = TR_REG_R_CELLS, .state_kind = TR_REG_STATE_CELL_BITMAP,
-     .requests = TR_REG_REQ_CELLS, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 3, .finalize = 2,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_ROWSET) | CB(TR_REG_C_COUNT),
+    {BUILTIN(TR_REG_R_CELLS, "cells", "budgets"), .state_kind = TR_REG_STATE_CELL_BITMAP,
+     .requests = TR_REG_REQ_CELLS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(CODE) | CB(ROWSET) | CB(COUNT),
      .laws_relied = TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDEMPOTENT | TR_LAW_EXACT,
      .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_CELL_DOMAIN,
-     .impl = {{TR_OP_MARK_CELLS, TR_REG_C_CODE}, {TR_OP_DISTINCT_FOLD, TR_REG_C_ROWSET}, {TR_OP_POPCOUNT, TR_REG_C_ROWSET}},
      .cost = {{1.0, 1.5, 1.5, 0, 0.3, 0, 1.0, 0.05, 0, 0.5, 0, 300.0}, CUDA_RATES(0.02, 0.01, 0.01)},
      .name = "distinct cell pre-pass", .capability = "FND-010",
      .cpu_entry = {"tr_math_budget_count_cells"}, .cuda_entry = {"tr_mgpu_budgets_count_cells"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_VERIFY, .representation = TR_REG_R_VERIFY, .state_kind = TR_REG_STATE_EVIDENCE,
-     .requests = TR_REG_REQ_VERIFY, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 2,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_MINMAX),
+    {BUILTIN(TR_REG_R_VERIFY, "verify", "disc"), .state_kind = TR_REG_STATE_EVIDENCE,
+     .requests = TR_REG_REQ_VERIFY, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(COUNT) | CB(MINMAX),
      .laws_relied = TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDENTITY | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_EXACT,
      .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_CATALOG,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_VERIFY, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_COUNT},
-              {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_FOLD, TR_REG_C_MINMAX}, {TR_OP_MERGE, TR_REG_C_MINMAX}},
      .cost = {{1.0, 1.2, 2.0, 0, 0, 0, 1.0, 0.05, 0, 1.0, 0, 300.0}, CUDA_RATES(0.02, 0.01, 0.01)},
      .name = "relation verification", .capability = "DISC-001",
      .cpu_entry = {"tr_reg_verify", "tr_disc_verify"}, .cuda_entry = {"tr_mgpu_registry_verify", "tr_mgpu_disc_verify"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_SCAN, .representation = TR_REG_R_SCAN, .state_kind = TR_REG_STATE_NONE,
-     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 2,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+    {BUILTIN(TR_REG_R_SCAN, "scan", "registry"), .state_kind = TR_REG_STATE_NONE,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(MINMAX),
      .laws_relied = TR_REG_RING | TR_LAW_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = 0,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EVAL, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_INT128},
-              {TR_OP_MERGE, TR_REG_C_INT128}, {TR_OP_FOLD, TR_REG_C_MINMAX}, {TR_OP_MERGE, TR_REG_C_MINMAX}},
      .cost = {{0.6, 1.6, 2.2, 0, 0, 0, 1.0, 0.05, 0, 1.0, 0, 400.0}, CUDA_RATES(0.02, 0.01, 0.01)},
      .name = "direct scan", .capability = "FND-005",
      .cpu_entry = {"tr_reg_execute"}, .cuda_entry = {"tr_mgpu_registry_execute"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_HISTOGRAM, .representation = TR_REG_R_HISTOGRAM, .state_kind = TR_REG_STATE_HISTOGRAM,
-     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 10, .finalize = 3,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+    {BUILTIN(TR_REG_R_HISTOGRAM, "histogram", "registry"), .state_kind = TR_REG_STATE_HISTOGRAM,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(COUNT) | CB(INT128) | CB(MINMAX),
      .laws_relied = TR_REG_RING | TR_LAW_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
      .proofs = DATA_PROOFS | TR_PROOF_CELL_DOMAIN,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EVAL, TR_REG_C_INTEGER}, {TR_OP_HISTOGRAM, TR_REG_C_CODE},
-              {TR_OP_FOLD, TR_REG_C_COUNT}, {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_SCALE_COUNT, TR_REG_C_INT128},
-              {TR_OP_FOLD, TR_REG_C_INT128}, {TR_OP_MERGE, TR_REG_C_INT128}, {TR_OP_DISTINCT_FOLD, TR_REG_C_MINMAX},
-              {TR_OP_MERGE, TR_REG_C_MINMAX}},
      .cost = {{0.6, 1.6, 1.8, 0, 0.35, 0.5, 1.0, 0.05, 0, 0.9, 0, 600.0}, CUDA_RATES(0.03, 0.01, 0.02)},
      .name = "code histogram", .capability = "FND-005",
      .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_POWER, .representation = TR_REG_R_POWER, .state_kind = TR_REG_STATE_POWER_SUMS,
-     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 1,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_MOD128) | CB(TR_REG_C_INT128),
+    {BUILTIN(TR_REG_R_POWER, "power", "registry"), .state_kind = TR_REG_STATE_POWER_SUMS,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(MOD128) | CB(INT128),
      .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
      .proofs = DATA_PROOFS | TR_PROOF_BOUND,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_POWERS, TR_REG_C_MOD128}, {TR_OP_FOLD, TR_REG_C_MOD128},
-              {TR_OP_MERGE, TR_REG_C_MOD128}, {TR_OP_CONTRACT, TR_REG_C_MOD128}, {TR_OP_CONVERT, TR_REG_C_INT128}},
      .cost = {{0.6, 1.6, 2.4, 0, 1.0, 0.5, 1.0, 0.05, 0, 4.0, 0, 500.0}, CUDA_RATES(0.03, 0.01, 0.01)},
      .name = "sparse power sums", .capability = "FND-005",
      .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_BITPLANE, .representation = TR_REG_R_BITPLANE, .state_kind = TR_REG_STATE_PLANE_COUNTS,
-     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 1,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_ROWSET) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_MOD128) | CB(TR_REG_C_INT128),
+    {BUILTIN(TR_REG_R_BITPLANE, "bitplane", "registry"), .state_kind = TR_REG_STATE_PLANE_COUNTS,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(ROWSET) | CB(COUNT) | CB(MOD128) | CB(INT128),
      .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_MUL_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
      .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN,
-     .impl = {{TR_OP_BITS, TR_REG_C_CODE}, {TR_OP_AND, TR_REG_C_ROWSET}, {TR_OP_POPCOUNT, TR_REG_C_ROWSET},
-              {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_CONTRACT, TR_REG_C_MOD128}, {TR_OP_CONVERT, TR_REG_C_INT128}},
      .cost = {{0.6, 1.6, 0.5, 2.0, 1.0, 0.5, 1.0, 0.05, 0, 1.5, 0, 600.0}, CUDA_RATES(0.01, 0.01, 0.01)},
      .name = "bit-plane factored counts", .capability = "FND-005",
      .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
-    {.abi = TR_REG_ABI, .id = TR_REG_R_EMPTY, .representation = TR_REG_R_EMPTY, .state_kind = TR_REG_STATE_EMPTY_PROOF,
-     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU, .nimpl = 3,
-     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+    {BUILTIN(TR_REG_R_EMPTY, "empty", "registry"), .state_kind = TR_REG_STATE_EMPTY_PROOF,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(MINMAX),
      .laws_relied = TR_LAW_IDENTITY, .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_EXACT_COUNT,
-     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EMPTY, TR_REG_C_INT128}, {TR_OP_EMPTY, TR_REG_C_MINMAX}},
      .cost = {{0.3, 0, 0, 0, 0, 0, 1.0, 0.05, 0, 0, 0, 200.0}, {0}},
      .name = "proven empty selection", .capability = "FND-008",
      .cpu_entry = {"tr_reg_execute"}},
+    /* ---- the implemented families: their own APIs, no planner candidates, zero cost coefficients ---- */
+    {FAMILY(TR_REG_M_SCOPE, "scope", "scope", "FND-004", "data scope"), .state_kind = TR_REG_STATE_SCOPE,
+     .devices = TR_REG_ON_CPU, .carriers = CB(CODE) | CB(INTEGER) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = DATA_PROOFS,
+     .cpu_entry = {"tr_scope_from_table", "tr_scope_from_arrays", "tr_scope_get_view", "tr_scope_fresh",
+                   "tr_scope_rollup_map", "tr_scope_key_write", "tr_scope_need_table"}},
+    {FAMILY(TR_REG_M_BANK, "bank", "bank", "FND-004", "grouped moment bank"), .state_kind = TR_REG_STATE_GROUPED_MOMENTS,
+     .devices = TR_REG_ON_BOTH, .finalize = 1, .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(COUNT),
+     .laws_relied = TR_REG_RING | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_REFINEMENT | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_bank_build", "tr_bank_init", "tr_bank_accumulate", "tr_bank_merge", "tr_bank_finish",
+                   "tr_bank_rollup", "tr_bank_cache_get", "tr_bank_from_states"},
+     .cuda_entry = {"tr_mgpu_bank_build", "tr_mgpu_bank_rollup"}},
+    {FAMILY(TR_REG_M_CARRIERS, "carriers", "carriers", "FND-009", "numeric carriers"), .state_kind = TR_REG_STATE_VALUES,
+     .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(RATIONAL) | CB(BIGQ) | CB(GFP) | CB(INTERVAL) |
+                 CB(CINTERVAL) | CB(SERIES) | CB(FLOAT64),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE, .proofs = TR_PROOF_PRIME | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_carrier_conversion", "tr_bigint_mul", "tr_bigint_divmod", "tr_bigq_div", "tr_carrier_crt",
+                   "tr_carrier_interval_op", "tr_series_mul", "tr_gfp_vec", "tr_gfp_matvec", "tr_carrier_enclose_q64_vec",
+                   "tr_carrier_sum_i64", "tr_carrier_dot_wide"},
+     .cuda_entry = {"tr_mgpu_carriers_gfp_vec", "tr_mgpu_carriers_gfp_dot", "tr_mgpu_carriers_gfp_matvec",
+                    "tr_mgpu_carriers_gfp_reduce_i64", "tr_mgpu_carriers_enclose_q64", "tr_mgpu_carriers_sum_i64",
+                    "tr_mgpu_carriers_dot_wide"}},
+    {FAMILY(TR_REG_M_HANDLES, "handles", "handles", "FND-013", "handles and sparse polynomials"),
+     .state_kind = TR_REG_STATE_HANDLE_TABLE, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(INT128),
+     .laws_relied = TR_REG_RING | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_HANDLE,
+     .cpu_entry = {"tr_math_handles_create", "tr_math_handles_ipoly_create", "tr_math_handles_ipoly_evaluate",
+                   "tr_math_handles_retain", "tr_math_handles_release", "tr_math_handles_close", "tr_math_handles_abi"},
+     .cuda_entry = {"tr_mgpu_handles_evaluate", "tr_mgpu_handles_abi"}},
+    {FAMILY(TR_REG_M_LIN_MOMENTS, "lin.moments", "lin", "LIN-001", "grouped moment matrices"),
+     .state_kind = TR_REG_STATE_GRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(COUNT),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_lin_moments_build", "tr_lin_moments_from_bank", "tr_lin_moments_from_states",
+                   "tr_lin_moments_combine", "tr_lin_moments_get_states", "tr_lin_moments_need"},
+     .cuda_entry = {"tr_mgpu_lin_moments"}},
+    {FAMILY(TR_REG_M_LIN_SOLVE, "lin.solve", "lin", "LIN-002", "exact solves and eigensystems"),
+     .state_kind = TR_REG_STATE_GRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGINT) | CB(BIGQ) | CB(GFP) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE, .proofs = TR_PROOF_BOUND | TR_PROOF_PRIME,
+     .cpu_entry = {"tr_lin_solve", "tr_lin_system", "tr_lin_fit", "tr_lin_inertia", "tr_lin_covariance",
+                   "tr_lin_eigen", "tr_lin_pca", "tr_lin_batch_fits", "tr_lin_batch_residues", "tr_lin_batch_finish"},
+     .cuda_entry = {"tr_mgpu_lin_eliminate"}},
+    {FAMILY(TR_REG_M_OPT, "opt", "opt", "OPT-001", "quadratic minimizers"), .state_kind = TR_REG_STATE_QUADRATIC,
+     .devices = TR_REG_ON_BOTH, .finalize = 1, .carriers = CB(BIGQ) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_DOMAIN,
+     .cpu_entry = {"tr_opt_quad_create", "tr_opt_quad_from_moments", "tr_opt_quad_from_poly", "tr_opt_minimize",
+                   "tr_opt_faces"},
+     .cuda_entry = {"tr_mgpu_opt_faces"}},
+    {FAMILY(TR_REG_M_JET_DUAL, "jet.dual", "jet", "JET-001", "dual-number directional derivatives"),
+     .state_kind = TR_REG_STATE_JETS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(SERIES) | CB(BIGQ) | CB(GFP) | CB(INTERVAL),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_CHAR0 | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_jet_circuit_create", "tr_jet_plan_create", "tr_jet_agg_build", "tr_jet_agg_merge",
+                   "tr_jet_agg_add", "tr_jet_values_from_agg", "tr_jet_values_convert", "tr_jet_plan_need"},
+     .cuda_entry = {"tr_mgpu_jet_aggregate"}},
+    {FAMILY(TR_REG_M_JET_TAYLOR, "jet.taylor", "jet", "JET-002", "multivariate Taylor jets"),
+     .state_kind = TR_REG_STATE_JETS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(SERIES) | CB(BIGQ) | CB(GFP) | CB(INTERVAL),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_CHAR0 | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_jet_circuit_create", "tr_jet_plan_create", "tr_jet_agg_build", "tr_jet_agg_merge",
+                   "tr_jet_agg_read", "tr_jet_values_from_agg", "tr_jet_values_convert", "tr_jet_plan_need"},
+     .cuda_entry = {"tr_mgpu_jet_aggregate"}},
+    {FAMILY(TR_REG_M_INV, "inv", "inv", "INV-001", "inverse answers"), .state_kind = TR_REG_STATE_FORMAL,
+     .devices = TR_REG_ON_BOTH, .finalize = 3, .carriers = CB(BIGINT) | CB(BIGQ) | CB(GFP) | CB(QINTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE, .proofs = TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_PRIME,
+     .cpu_entry = {"tr_inv_linear_solve", "tr_inv_linear_from_polys", "tr_inv_isolate", "tr_inv_isolate_poly",
+                   "tr_inv_roots_refine", "tr_inv_signs_eval", "tr_inv_sweep_prepare", "tr_inv_sweep_eval"},
+     .cuda_entry = {"tr_mgpu_inv_signs", "tr_mgpu_inv_sweep"}},
+    {FAMILY(TR_REG_M_CALC, "calc", "calc", "CALC-003", "finite-separation calculus"),
+     .state_kind = TR_REG_STATE_SEPARATED, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(QINTERVAL) | CB(INTERVAL),
+     .laws_relied = TR_REG_FOLD | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_calc_plan_create", "tr_calc_build", "tr_calc_sums", "tr_calc_from_sums", "tr_calc_derive",
+                   "tr_calc_integrate", "tr_calc_evaluate", "tr_calc_require"},
+     .cuda_entry = {"tr_mgpu_calc_sums"}},
+    {FAMILY(TR_REG_M_MULTI, "multi", "multi", "MULTI-001", "hierarchy rollups and contrasts"),
+     .state_kind = TR_REG_STATE_HIERARCHY, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(CODE) | CB(INT128) | CB(COUNT) | CB(BIGINT) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_REFINEMENT | TR_PROOF_IDENTITY | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_multi_map_certify", "tr_multi_map_declare", "tr_multi_map_verify", "tr_multi_map_compose",
+                   "tr_multi_map_from_cert", "tr_multi_hier_build", "tr_multi_hier_update", "tr_multi_contrasts"},
+     .cuda_entry = {"tr_mgpu_multi_certify", "tr_mgpu_multi_contrasts"}},
+    {FAMILY(TR_REG_M_DELTA, "delta", "delta", "DELTA-001", "signed state updates"),
+     .state_kind = TR_REG_STATE_MAINTAINED, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(COUNT),
+     .laws_relied = TR_REG_FOLD | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_delta_from_arrays", "tr_delta_from_scope", "tr_delta_between", "tr_delta_state_from_bank",
+                   "tr_delta_state_apply", "tr_delta_state_from_cells", "tr_delta_state_to_bank", "tr_delta_state_need"},
+     .cuda_entry = {"tr_mgpu_delta_apply"}},
+    {FAMILY(TR_REG_M_BOOL, "bool", "bool", "BOOL-001", "predicate cofactors and differences"),
+     .state_kind = TR_REG_STATE_CONDITION_MASKS, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(KLEENE) | CB(BOOLEAN) | CB(GF2) | CB(COUNT) | CB(INT128),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_CHAR2 | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_bool_program_create", "tr_bool_masks_build", "tr_bool_masks_assignments",
+                   "tr_bool_masks_adopt", "tr_bool_differences", "tr_bool_differences_view", "tr_bool_direct",
+                   "tr_bool_differences_need"},
+     .cuda_entry = {"tr_mgpu_bool_masks", "tr_mgpu_bool_differences"}},
+    {FAMILY(TR_REG_M_FIELD, "field", "field", "FIELD-001", "GF(2) algebra and parity relations"),
+     .state_kind = TR_REG_STATE_GF2_BITS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(GF2) | CB(CODE) | CB(ROWSET) | CB(KLEENE) | CB(BOOLEAN) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_CHAR2 | TR_LAW_COMPLEMENT | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_field_rank", "tr_field_rref", "tr_field_nullspace", "tr_field_solve", "tr_field_syndromes",
+                   "tr_field_bits_build", "tr_field_verify", "tr_field_discover"},
+     .cuda_entry = {"tr_mgpu_field_syndromes", "tr_mgpu_field_verify", "tr_mgpu_field_discover"}},
+    {FAMILY(TR_REG_M_DIST_HIST, "dist.histogram", "dist", "DIST-001", "reusable histograms"),
+     .state_kind = TR_REG_STATE_JOINT_HISTOGRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(COUNT) | CB(INT128),
+     .laws_relied = TR_REG_FOLD | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN | TR_PROOF_REFINEMENT,
+     .cpu_entry = {"tr_dist_hist_build", "tr_dist_hist_init", "tr_dist_hist_accumulate", "tr_dist_hist_finish",
+                   "tr_dist_hist_merge", "tr_dist_hist_rollup", "tr_dist_hist_marginal", "tr_dist_hist_from_states"},
+     .cuda_entry = {"tr_mgpu_dist_hist_build"}},
+    {FAMILY(TR_REG_M_DIST_PREFIX, "dist.prefix", "dist", "DIST-002", "prefix distribution calculus"),
+     .state_kind = TR_REG_STATE_PREFIX_SUMS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(COUNT) | CB(INT128) | CB(BIGQ),
+     .laws_relied = TR_REG_FOLD | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_DIVISION | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = DATA_PROOFS | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_dist_prefix_build", "tr_dist_prefix_get_view", "tr_dist_query", "tr_dist_prefix_need",
+                   "tr_dist_prefix_device_bytes"},
+     .cuda_entry = {"tr_mgpu_dist_query", "tr_mgpu_dist_prefix_upload", "tr_mgpu_dist_prefix_free",
+                    "tr_mgpu_dist_prefix_bytes", "tr_mgpu_dist_prefix_device_view"}},
+    {FAMILY(TR_REG_M_RESP, "resp", "resp", "RESP-002", "piecewise loss curves"),
+     .state_kind = TR_REG_STATE_PREFIX_SUMS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_BOUND,
+     .cpu_entry = {"tr_resp_eval", "tr_resp_pieces", "tr_resp_minimize"}, .cuda_entry = {"tr_mgpu_resp_eval"}},
+    {FAMILY(TR_REG_M_QUANT_GROUPS, "quant.groups", "quant", "QUANT-001", "quantified group predicates"),
+     .state_kind = TR_REG_STATE_QUANTIFIER, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(KLEENE) | CB(CODE) | CB(COUNT),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_quant_groups_build", "tr_quant_groups_merge", "tr_quant_groups_answer", "tr_quant_groups_tally",
+                   "tr_quant_groups_adopt", "tr_quant_groups_need"},
+     .cuda_entry = {"tr_mgpu_quant_groups"}},
+    {FAMILY(TR_REG_M_QUANT_COVER, "quant.cover", "quant", "QUANT-002", "relational division"),
+     .state_kind = TR_REG_STATE_COVERAGE, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(CODE) | CB(ROWSET) | CB(COUNT) | CB(BOOLEAN),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_COMPLEMENT | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_quant_cover_build", "tr_quant_cover_require", "tr_quant_cover_answer", "tr_quant_cover_merge",
+                   "tr_quant_cover_masks", "tr_quant_cover_adopt", "tr_quant_dict_codes", "tr_quant_cover_need"},
+     .cuda_entry = {"tr_mgpu_quant_cover", "tr_mgpu_quant_cover_test"}},
+    {FAMILY(TR_REG_M_LATTICE_HIST, "lattice.histogram", "lattice", "LATTICE-001", "occupancy histograms"),
+     .state_kind = TR_REG_STATE_OCCUPANCY, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(KLEENE) | CB(BOOLEAN) | CB(CODE) | CB(COUNT),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_COMPLEMENT | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_lattice_hist_build", "tr_lattice_hist_from_counts", "tr_lattice_hist_merge",
+                   "tr_lattice_hist_vector", "tr_lattice_hist_vector_i128", "tr_lattice_hist_need"},
+     .cuda_entry = {"tr_mgpu_lattice_hist"}},
+    {FAMILY(TR_REG_M_LATTICE_TRANSFORM, "lattice.transform", "lattice", "LATTICE-002", "subset-lattice transforms"),
+     .state_kind = TR_REG_STATE_LATTICE_VECTOR, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(COUNT) | CB(INTEGER) | CB(INT128) | CB(BIGINT),
+     .laws_relied = TR_REG_FOLD | TR_LAW_INVERSE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_BOUND,
+     .cpu_entry = {"tr_lattice_transform", "tr_lattice_transform_bigint", "tr_lattice_coefficients",
+                   "tr_lattice_counts", "tr_lattice_order_sets", "tr_lattice_transform_need", "tr_reg_transform"},
+     .cuda_entry = {"tr_mgpu_lattice_transform", "tr_mgpu_registry_transform"}},
+    {FAMILY(TR_REG_M_SPEC_WALSH, "spec.walsh", "spec", "SPEC-002", "Walsh spectra and parity correlations"),
+     .state_kind = TR_REG_STATE_SPECTRUM, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(GF2),
+     .laws_relied = TR_REG_FIELD | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = 0,
+     .cpu_entry = {"tr_spec_walsh", "tr_spec_walsh_inverse", "tr_spec_parseval", "tr_spec_correlations",
+                   "tr_spec_coefficients", "tr_spec_truncate", "tr_spec_constant_parities", "tr_reg_transform"},
+     .cuda_entry = {"tr_mgpu_spec_walsh", "tr_mgpu_spec_walsh_inverse", "tr_mgpu_registry_transform"}},
+    {FAMILY(TR_REG_M_INFLUENCE, "influence", "influence", "BOOL-002", "influence and interactions"),
+     .state_kind = TR_REG_STATE_CONDITION_MASKS, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(KLEENE) | CB(BOOLEAN) | CB(GF2) | CB(INTEGER) | CB(COUNT) | CB(INT128),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_INVERSE | TR_LAW_CHAR2 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_influence_compute", "tr_influence_sets", "tr_influence_need"},
+     .cuda_entry = {"tr_mgpu_influence_compute"}},
+    {FAMILY(TR_REG_M_PLANNER, "planner.sample", "planner", "FND-008", "selectivity sample"),
+     .state_kind = TR_REG_STATE_NONE, .devices = TR_REG_ON_BOTH, .finalize = 1, .carriers = CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_FOLD | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_EXACT_COUNT,
+     .cpu_entry = {"tr_planner_sample", "tr_planner_polysum", "tr_planner_verify", "tr_planner_choose",
+                   "tr_planner_force_parse"},
+     .cuda_entry = {"tr_mgpu_planner_sample"}},
 };
+#undef BUILTIN
+#undef FAMILY
+_Static_assert(sizeof modules / sizeof modules[0] == TR_REG_M_END - 1, "one descriptor per module id");
 
-/* operators implemented: the bits of the implementation list; for the two first-slice built-ins, the operator set of
- * their validated table (math_modules.c), so the registry never claims more than tr_math_module_apply dispatches */
+/* the implementation rows of the module, the operator mask they make; for the two first-slice built-ins the operator
+ * set of their validated table (math_modules.c), so the registry never claims more than tr_math_module_apply
+ * dispatches */
 static void describe(int32_t index, tr_reg_module *out) {
     *out = modules[index];
-    out->operators = 0;
-    for (int32_t i = 0; i < out->nimpl; i++) out->operators |= OB(out->impl[i].op);
+    out->nimpl = 0;
+    for (int32_t w = 0; w < TR_REG_OPERATOR_WORDS; w++) out->operators[w] = 0;
+    for (int32_t i = 0; i < TR_REG_IMPL_ROWS; i++) {
+        const tr_reg_impl *row = &tr_reg_impls[i];
+        if (row->module != out->id) continue;
+        if (out->nimpl < TR_REG_IMPLS) out->impl[out->nimpl++] = *row;
+        out->operators[row->op / 64] |= UINT64_C(1) << (row->op % 64);
+    }
     if (out->id == TR_REG_R_FORMAL || out->id == TR_REG_R_MOMENTS) {
         for (int32_t i = 0; i < tr_math_module_count(); i++) {
             tr_math_module_info info;
-            if (tr_math_module_get(i, &info) == TR_MATH_OK && info.id == out->id) out->operators = info.operators;
+            if (tr_math_module_get(i, &info) == TR_MATH_OK && info.id == out->id) {
+                out->operators[0] = info.operators;
+                for (int32_t w = 1; w < TR_REG_OPERATOR_WORDS; w++) out->operators[w] = 0;
+            }
         }
     }
 }
@@ -213,14 +463,7 @@ int32_t tr_reg_module_by_id(int32_t id, tr_reg_module *out) {
         if (modules[i].id == id) return tr_reg_module_get(i, out);
     return TR_MATH_INVALID;
 }
-int32_t tr_reg_find(int32_t op, int32_t carrier, int32_t devices) {
-    for (int32_t i = 0; i < tr_reg_module_count(); i++) {
-        if (!(modules[i].devices & devices)) continue;
-        for (int32_t k = 0; k < modules[i].nimpl; k++)
-            if (modules[i].impl[k].op == op && modules[i].impl[k].carrier == carrier) return modules[i].id;
-    }
-    return 0;
-}
+int32_t tr_reg_find(int32_t op, int32_t carrier, int32_t devices) { return tr_reg_find_impl(op, carrier, devices); }
 int32_t tr_reg_check_chain(const tr_reg_step *steps, int32_t n, int32_t input, int32_t contract, int32_t require_impl,
                            int32_t *output, tr_reg_refusal *r) {
     int32_t rc = tr_reg_check_laws(steps, n, input, contract, output, r);
@@ -471,6 +714,7 @@ static int32_t budget_gate(const tr_math_budget *budget, const tr_math_need *nee
 tr_reg_state *tr_reg_state_build(const tr_reg_request *r, int32_t repr, uint32_t support, int32_t D,
                                  const tr_math_budget *budget, tr_reg_explain *ex, int32_t *error) {
     tr_reg_explain_init(ex, repr, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    tr_reg_explain_entry(ex, "tr_reg_state_build");
     set_error(error, TR_MATH_OK);
     int32_t rc = precheck(r, repr, ex);
     if (!rc && !is_state_repr(repr)) rc = refuse_reg(ex, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
@@ -583,6 +827,7 @@ void tr_reg_state_free(tr_reg_state *st) {
 int32_t tr_reg_execute(const tr_reg_request *r, int32_t repr, const tr_reg_state *reuse, const tr_math_budget *budget,
                        tr_reg_result *res, tr_reg_explain *ex) {
     tr_reg_explain_init(ex, repr, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    tr_reg_explain_entry(ex, "tr_reg_execute");
     if (!res) return refuse_reg(ex, TR_REG_REFUSE_INVALID, TR_MATH_INVALID);
     int32_t rc = precheck(r, repr, ex);
     if (rc) return rc;
@@ -792,6 +1037,7 @@ int32_t tr_reg_candidates(const tr_reg_request *r, const tr_reg_state *cached, i
 /* ------------------------------------------------------------------ DISC-001 through the registry */
 int32_t tr_reg_verify(const tr_disc_view *v, int64_t scale, int64_t bias, tr_disc_evidence *e, tr_reg_explain *ex) {
     tr_reg_explain_init(ex, TR_REG_R_VERIFY, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    tr_reg_explain_entry(ex, "tr_disc_verify");
     int32_t rc = tr_disc_verify(v, scale, bias, e);
     if (ex && v) { ex->rows_scanned = v->rows; ex->words_scanned = (v->rows + 63) / 64; ex->native_calls = 1; }
     return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
@@ -831,4 +1077,44 @@ int32_t tr_reg_candidates_verify(const tr_disc_view *v, int32_t devices, const t
     }
     *count = n;
     return TR_MATH_OK;
+}
+
+/* ------------------------------------------------------------------ transforms through the registry */
+/* the module's own operation and carrier codes (math_lattice.h) */
+static int32_t lattice_op(int32_t op, int32_t variant) {
+    if (op == TR_OP_ZETA) return variant == TR_REG_UP ? TR_LATTICE_ZETA_UP : TR_LATTICE_ZETA_DOWN;
+    return variant == TR_REG_UP ? TR_LATTICE_MOBIUS_UP : TR_LATTICE_MOBIUS_DOWN;
+}
+int32_t tr_reg_transform(int32_t op, int32_t variant, int32_t carrier, int32_t input, int32_t k, const tr_math_i128 *in,
+                         tr_math_i128 *out, const tr_math_budget *budget, tr_math_refusal *refusal, tr_reg_explain *ex) {
+    tr_reg_explain_begin(ex, 0, 0, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    tr_budget_none(refusal);
+    int32_t module = 0;
+    int32_t rc = tr_reg_transform_check(op, variant, carrier, input, k, in, out, TR_REG_ON_CPU, &module, ex);
+    if (rc) return rc;
+    const int lattice = module == TR_REG_M_LATTICE_TRANSFORM;
+    const int32_t fop = lattice ? lattice_op(op, variant) : 0;
+    const int32_t fcarrier = carrier == TR_REG_C_INTEGER ? TR_LATTICE_I64 : TR_LATTICE_I128;
+    tr_reg_explain_entry(ex, lattice ? "tr_lattice_transform" : "tr_spec_walsh");
+    /* the module's budget first, so that nothing is read before it passes (the module checks it again) */
+    tr_math_need need;
+    if (lattice ? tr_lattice_transform_need(k, fop, fcarrier, &need) : tr_spec_need(k, &need))
+        return refuse_reg(ex, TR_REG_REFUSE_INVALID, TR_MATH_INVALID);
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    tr_math_refusal br;
+    if ((rc = tr_budget_check(budget, &need, &br))) {
+        if (refusal) *refusal = br;
+        if (ex) ex->budget = br;
+        return refuse_reg(ex, TR_REG_REFUSE_BUDGET, rc);
+    }
+    if (k > TR_REG_TRANSFORM_MAX_K) return refuse_reg(ex, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
+    if ((rc = tr_reg_transform_values(op, carrier, input, k, in, ex))) return rc;
+    rc = lattice ? tr_lattice_transform(k, fop, fcarrier, in, out, budget, refusal)
+                 : tr_spec_walsh(k, in, out, budget, NULL, refusal);
+    if (ex) {
+        ex->state_elements = (uint64_t)1 << k; ex->state_bytes = ((uint64_t)1 << k) * 16; ex->native_calls = 1;
+        if (rc == TR_MATH_BUDGET && refusal) ex->budget = *refusal;
+    }
+    return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
 }

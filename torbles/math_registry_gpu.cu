@@ -4,14 +4,19 @@
  * POWER (sparse power sums modulo 2^128) and BITPLANE (counts per set of bit planes), both finalized on the CPU.
  * Each thread accumulates its rows locally and adds its counts, sums and extremes with one atomic per counter (sums
  * as 128-bit two-word adds), so results do not depend on thread order; the histogram and plane counts are atomic
- * integer adds. Results equal tr_reg_execute's bit for bit. SPDX-License-Identifier: Apache-2.0 */
+ * integer adds. Results equal tr_reg_execute's bit for bit. Also DISC-001's verifier and the LATTICE-002 / SPEC-002
+ * transforms through the registry (tr_mgpu_registry_verify, tr_mgpu_registry_transform: the composition check and
+ * the implementing module from tr_reg_impls before anything is read, then the family's own kernels).
+ * SPDX-License-Identifier: Apache-2.0 */
 #include "math_cuda.h"
 #include "math_registry.h"
+#include "math_lattice.h"
+#include "math_spec.h"
 #include "math_handles.h"
 
 TR_MGPU_ABI(tr_reg_request, 1);          /* the ctypes boundary (math_handles.h) */
 TR_MGPU_ABI(tr_reg_result, 1);
-TR_MGPU_ABI(tr_reg_explain, 1);
+TR_MGPU_ABI(tr_reg_explain, 2);
 TR_MGPU_ABI(tr_reg_state_info, 1);
 
 /* a full 128-bit value added modulo 2^128 into acc[0] (low word), acc[1] (high word): the carry of the low add goes
@@ -319,6 +324,7 @@ extern "C" {
 int tr_mgpu_registry_execute(const tr_reg_request *r, int32_t repr, int32_t finalize, const tr_math_budget *budget,
                              tr_reg_result *res, tr_reg_explain *ex) {
     tr_reg_explain_init(ex, repr, tr_cuda_emulated() ? TR_REG_DEV_EMULATION : TR_REG_DEV_CUDA, finalize);
+    tr_reg_explain_entry(ex, "tr_mgpu_registry_execute");
     if (!res || !r) return refuse(ex, TR_REG_REFUSE_INVALID, TR_REG_E_INVALID);
     tr_reg_result_init(res, r);
     tr_reg_device g;
@@ -366,6 +372,7 @@ int tr_mgpu_registry_state(const tr_reg_request *r, int32_t repr, uint32_t suppo
                            const tr_math_budget *budget, void *raw, uint64_t capacity, tr_reg_state_info *info,
                            tr_reg_explain *ex) {
     tr_reg_explain_init(ex, repr, tr_cuda_emulated() ? TR_REG_DEV_EMULATION : TR_REG_DEV_CUDA, TR_REG_FINAL_CPU);
+    tr_reg_explain_entry(ex, "tr_mgpu_registry_state");
     if (!r || !info || repr == TR_REG_R_SCAN) return refuse(ex, TR_REG_REFUSE_INVALID, TR_REG_E_INVALID);
     tr_reg_device g;
     int32_t rc = device_build(r, repr, TR_REG_FINAL_CPU, support, D, budget, &g, ex);
@@ -389,10 +396,52 @@ int tr_mgpu_registry_state(const tr_reg_request *r, int32_t repr, uint32_t suppo
 int tr_mgpu_registry_verify(const tr_disc_view *v, int64_t scale, int64_t bias, const tr_math_budget *budget,
                             tr_disc_evidence *e, tr_math_refusal *refusal, tr_reg_explain *ex) {
     tr_reg_explain_init(ex, TR_REG_R_VERIFY, tr_cuda_emulated() ? TR_REG_DEV_EMULATION : TR_REG_DEV_CUDA, TR_REG_FINAL_GPU);
+    tr_reg_explain_entry(ex, "tr_mgpu_disc_verify");
     int rc = tr_mgpu_disc_verify(v, scale, bias, budget, e, refusal);
     if (ex && v) {
         ex->rows_scanned = v->rows; ex->words_scanned = (v->rows + 63) / 64; ex->native_calls = 1;
         ex->device_bytes = tr_disc_bytes(v);
+        if (rc == TR_REG_E_BUDGET && refusal) ex->budget = *refusal;
+    }
+    return rc ? refuse(ex, kind_of(rc), rc) : 0;
+}
+/* A transform through the registry on the device (tr_reg_transform's contract): the composition check and the
+ * module's implementation on CUDA (tr_reg_impls) before anything is read; LATTICE-002's or SPEC-002's kernels
+ * (k launches, one per butterfly pass; the copies: the values in, the overflow flag and the values out). */
+int tr_mgpu_registry_transform(int32_t op, int32_t variant, int32_t carrier, int32_t input, int32_t k,
+                               const tr_math_i128 *in, tr_math_i128 *out, const tr_math_budget *budget,
+                               tr_math_refusal *refusal, tr_reg_explain *ex) {
+    tr_reg_explain_begin(ex, 0, 0, tr_cuda_emulated() ? TR_REG_DEV_EMULATION : TR_REG_DEV_CUDA, TR_REG_FINAL_GPU);
+    tr_budget_none(refusal);
+    int32_t module = 0;
+    int32_t rc = tr_reg_transform_check(op, variant, carrier, input, k, in, out, TR_REG_ON_CUDA, &module, ex);
+    if (rc) return rc;
+    const int lattice = module == TR_REG_M_LATTICE_TRANSFORM;
+    const int32_t fop = !lattice ? 0 : op == TR_OP_ZETA ? (variant == TR_REG_UP ? TR_LATTICE_ZETA_UP : TR_LATTICE_ZETA_DOWN)
+                                                       : (variant == TR_REG_UP ? TR_LATTICE_MOBIUS_UP : TR_LATTICE_MOBIUS_DOWN);
+    const int32_t fcarrier = carrier == TR_REG_C_INTEGER ? TR_LATTICE_I64 : TR_LATTICE_I128;
+    tr_reg_explain_entry(ex, lattice ? "tr_mgpu_lattice_transform" : "tr_mgpu_spec_walsh");
+    tr_math_need need;
+    if (lattice ? tr_lattice_transform_base_need(k, fop, fcarrier, &need) : tr_spec_base_need(k, &need))
+        return refuse(ex, TR_REG_REFUSE_INVALID, TR_REG_E_INVALID);
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    tr_math_refusal br;
+    if ((rc = tr_budget_check(budget, &need, &br))) {
+        if (refusal) *refusal = br;
+        if (ex) ex->budget = br;
+        return refuse(ex, TR_REG_REFUSE_BUDGET, rc);
+    }
+    if (k > TR_REG_TRANSFORM_MAX_K) return refuse(ex, TR_REG_REFUSE_UNSUPPORTED, TR_REG_E_UNSUPPORTED);
+    if ((rc = tr_reg_transform_values(op, carrier, input, k, in, ex))) return rc;
+    rc = lattice ? tr_mgpu_lattice_transform(k, fop, fcarrier, in, out, budget, refusal)
+                 : tr_mgpu_spec_walsh(k, in, out, budget, NULL, refusal);
+    if (ex) {
+        const uint64_t n = (uint64_t)1 << k;
+        ex->state_elements = n; ex->state_bytes = n * 16;
+        /* the values in and the overflow flag out; on success the values out too */
+        ex->device_bytes = rc == 0 ? 2 * n * 16 + 8 : rc == TR_REG_E_OVERFLOW ? n * 16 + 8 : 0;
+        ex->native_calls = (uint64_t)k + (lattice && fcarrier == TR_LATTICE_I64 ? 1 : 0);
         if (rc == TR_REG_E_BUDGET && refusal) ex->budget = *refusal;
     }
     return rc ? refuse(ex, kind_of(rc), rc) : 0;
