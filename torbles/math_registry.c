@@ -74,7 +74,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "certificate", "serialized record", "provenance dag", "join terms", "envelope",
     "cooperative game",
     "constraint counts", "parity relations",
-    "abstract state", "code set"};
+    "abstract state", "code set",
+    "ideal"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -553,6 +554,24 @@ static const tr_reg_module modules[] = {
      .cpu_entry = {"tr_pre_codec_for_column", "tr_pre_preimage", "tr_pre_set_get_info", "tr_pre_set_spans",
                    "tr_pre_set_contains", "tr_pre_set_get_view", "tr_pre_set_certificate", "tr_pre_scan"},
      .cuda_entry = {"tr_mgpu_pre_scan"}},
+    {FAMILY(TR_REG_M_IDENT, "ident", "ident", "DISC-002", "moment-Gram identity discovery"),
+     .state_kind = TR_REG_STATE_GRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INT128) | CB(GFP) | CB(BIGQ) | CB(BIGINT) | CB(INTEGER) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_PRIME | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_ident_plan_make", "tr_ident_gram_build", "tr_ident_gram_from_bank", "tr_ident_gram_from_lin",
+                   "tr_ident_gram_combine", "tr_ident_kernel_build", "tr_ident_propose", "tr_ident_candidates",
+                   "tr_ident_verify_view", "tr_ident_certify", "tr_ident_hypothesis", "tr_ident_support"},
+     .cuda_entry = {"tr_mgpu_ident_gram", "tr_mgpu_ident_verify"}},
+    {FAMILY(TR_REG_M_GEOM, "geom", "geom", "GEOM-001", "certified ideal reduction"),
+     .state_kind = TR_REG_STATE_IDEAL, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(RATIONAL) | CB(INTEGER) | CB(INT128) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_geom_ideal_make", "tr_geom_reduce", "tr_geom_reduction_claims", "tr_geom_certify",
+                   "tr_geom_cost_of", "tr_geom_choose", "tr_geom_pairs_make", "tr_geom_agree_view",
+                   "tr_geom_checks_make", "tr_geom_checks_run", "tr_geom_derivative", "tr_geom_dependency_check"},
+     .cuda_entry = {"tr_mgpu_geom_agree", "tr_mgpu_geom_check"}},
 };
 #undef BUILTIN
 #undef FAMILY

@@ -917,7 +917,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_PARITY = 46,            /* FIELD-002 parity relationship discovery and substitution */
        TR_REG_M_UNC = 47,               /* UNC-001 intervals, affine forms, congruences, pruning */
        TR_REG_M_PRE = 48,               /* PRE-001 affine, square, residue, piecewise maps to codes */
-       TR_REG_M_END = 49 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_IDENT = 49,             /* DISC-002 Gram nullspaces, verified identities */
+       TR_REG_M_GEOM = 50,              /* GEOM-001 Groebner bases, reduction certificates */
+       TR_REG_M_END = 51 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -956,7 +958,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_PARITY_RELATIONS = 37,  /* certified parity relations, rewritten predicates */
        TR_REG_STATE_ABSTRACT = 38,          /* per group and column: rows, present, min, max, gcd */
        TR_REG_STATE_CODE_SET = 39,          /* spans of stored codes, branch programs and laws */
-       TR_REG_STATE_KINDS = 40 };
+       TR_REG_STATE_IDEAL = 40,             /* a polynomial basis with cofactors over relation certificates */
+       TR_REG_STATE_KINDS = 41 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1208,6 +1211,17 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_PRE, DIVIDE, BIGQ, TR__CPU), TR__I(TR_REG_M_PRE, EUCLID, BIGINT, TR__CPU),
     TR__I(TR_REG_M_PRE, ORDER, CODE, TR__ALL), TR__I(TR_REG_M_PRE, EVAL, RATIONAL, TR__ALL),
     TR__I(TR_REG_M_PRE, PREDICATE, RATIONAL, TR__ALL), TR__I(TR_REG_M_PRE, FOLD, COUNT, TR__ALL),
+    /* 49 DISC-002 Gram nullspaces, verified identities */
+    TR__I(TR_REG_M_IDENT, FOLD, INT128, TR__ALL), TR__I(TR_REG_M_IDENT, FOLD, GFP, TR__ALL),
+    TR__I(TR_REG_M_IDENT, MERGE, INT128, TR__CPU), TR__I(TR_REG_M_IDENT, SUBTRACT, INT128, TR__CPU),
+    TR__I(TR_REG_M_IDENT, SOLVE, BIGQ, TR__CPU), TR__I(TR_REG_M_IDENT, CRT, GFP, TR__CPU),
+    TR__I(TR_REG_M_IDENT, RATRECON, GFP, TR__CPU), TR__I(TR_REG_M_IDENT, EVAL, INTEGER, TR__ALL),
+    TR__I(TR_REG_M_IDENT, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_IDENT, CONTRACT, BIGINT, TR__CPU),
+    /* 50 GEOM-001 Groebner bases, reduction certificates */
+    TR__I(TR_REG_M_GEOM, POLY_MUL, RATIONAL, TR__CPU), TR__I(TR_REG_M_GEOM, POLY_SUB, RATIONAL, TR__CPU),
+    TR__I(TR_REG_M_GEOM, DIVIDE, RATIONAL, TR__CPU), TR__I(TR_REG_M_GEOM, POLY_DERIVATIVE, RATIONAL, TR__CPU),
+    TR__I(TR_REG_M_GEOM, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_GEOM, FOLD, INT128, TR__ALL),
+    TR__I(TR_REG_M_GEOM, EVAL, INTEGER, TR__ALL), TR__I(TR_REG_M_GEOM, VERIFY, INTEGER, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU

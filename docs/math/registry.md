@@ -84,6 +84,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 46 | parity | parity discovery and substitution | FIELD-002 | parity relations | `tr_parity_discover` | `tr_mgpu_parity_verify` |
 | 47 | unc | certified abstract states | UNC-001 | abstract state | `tr_unc_program_check` | `tr_mgpu_unc_eval`, `tr_mgpu_unc_rows` |
 | 48 | pre | exact preimages of derived predicates | PRE-001 | code set | `tr_pre_codec_for_column` | `tr_mgpu_pre_scan` |
+| 49 | ident | moment-Gram identity discovery | DISC-002 | Gram | `tr_ident_plan_make` | `tr_mgpu_ident_gram`, `tr_mgpu_ident_verify` |
+| 50 | geom | certified ideal reduction | GEOM-001 | ideal | `tr_geom_ideal_make` | `tr_mgpu_geom_agree`, `tr_mgpu_geom_check` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated
