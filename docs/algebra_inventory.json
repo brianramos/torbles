@@ -568,11 +568,12 @@
    "scope": "Cache immutable state banks keyed by exact domain, revision, codec, validity, basis and grouping grain; support compatible refinement/rollup maps and deliberate refresh.",
    "exactness": "Exact semantics must be specified for the stated domain; floating or approximate implementations require an explicit precision/error contract.",
    "budgets": [
-    "Cache capacity 1..128; explicit retained-byte budget, default 8 MiB; fixed entry allocation and owned keys count toward the budget.",
-    "Current banks store complete degree-two moments for at most four integer coordinates. Returned clones own independent storage; one bounded staging payload permits atomic replacement."
+    "Scope: at most 32 value columns and 2^32-1 dense groups (the product of the key radices); states = groups x monomials and the decoded bytes are budgeted (math_budgets.h) before allocation.",
+    "Bank: at most 1024 monomials of total degree <= 4; every product and sum is proven to fit 127 bits from the column extremes and row counts before accumulation, else refused (TR_MATH_OVERFLOW).",
+    "Cache: capacity 1..128 with a retained-byte budget; keys are exact descriptors (table identity and revision, selection bits, columns, keys and lookups, basis, validity mode)."
    ],
-   "cpu": "Implemented native exact-descriptor LRU for scalar integer moment banks. Python fingerprints sources and serializes mutable cache access; broader state alignment remains work.",
-   "gpu": "Actual CUDA queries can populate a bank on misses. Compatible hits perform CPU lookup/cloning and report no GPU row execution.",
+   "cpu": "Native C: data scopes (math_scope.c: selected rows, exact logical values, validity, dense group ids, decoded once from the engine table or taken from arrays) and grouped exact moment banks (math_bank.c: bag multiplicity, per-monomial valid counts and 128-bit sums, SQL or listwise validity, chunked build and merge, exact rollup, an exact-descriptor LRU cache). The first slice's scalar moment cache (math_state.c) is unchanged.",
+   "gpu": "CUDA kernels math_bank_gpu.cu (tr_mgpu_bank_build, tr_mgpu_bank_rollup): the bank and its rollup on the device with exactly the CPU states, device copies budgeted before allocation.",
    "existing_evidence": [
     {
      "path": "torbles/relationships_system.c",
@@ -596,9 +597,14 @@
     }
    ],
    "planned_files": [
-    "torbles/math_state.c",
-    "torbles/math_state.h",
-    "tests/test_math_state.py"
+    "torbles/math_scope.h",
+    "torbles/math_scope.c",
+    "torbles/math_bank.h",
+    "torbles/math_bank.c",
+    "torbles/math_bank_gpu.cu",
+    "torbles/math_bank.py",
+    "tests/test_math_bank.py",
+    "bench/benchmark_math_bank.py"
    ],
    "acceptance_tests": [
     "A different predicate, NULL policy, revision or group grain cannot hit the same live cache entry.",
@@ -609,8 +615,10 @@
     "Measure state bytes and cache eviction at bounded capacities."
    ],
    "limitations": [
-    "Current reuse is scalar, integer, non-NULL, degree-two only; no grouped states, refinement, rollup or automatic refresh.",
-    "Cache-hit construction still validates source fingerprints and may read membership/rank metadata proportional to source-domain size."
+    "CPU accumulation is single-threaded (only decoding uses the engine's threads); dense groups take memory for absent groups too.",
+    "The overflow proof is conservative (max magnitude per factor times rows), so some requests whose sums would fit are refused.",
+    "Dimension lookups are copied at build; the native freshness check covers the fact table, and the Python layer tracks dimension revisions.",
+    "Not supported: lookups through derived surrogate keys, self-extending columns as group keys, date/timestamp/string columns as values."
    ],
    "validation": {
     "tests": [
