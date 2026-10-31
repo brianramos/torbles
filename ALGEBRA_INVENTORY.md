@@ -517,7 +517,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
+Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -666,7 +666,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `77472b9f66941ee337eccd5bff8590eeb91f696d`.
+Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
 
 - tests: [results/math/FND-008/tests_test_math_planner.json](results/math/FND-008/tests_test_math_planner.json)
 - tests: [results/math/FND-008/sanitized_test_math_planner.json](results/math/FND-008/sanitized_test_math_planner.json)
@@ -888,7 +888,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `3983bf5eec82829968c0e6f2308c3abf04990798`.
+Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
 
 - tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
 - tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
