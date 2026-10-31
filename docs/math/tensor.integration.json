@@ -1,0 +1,182 @@
+{
+ "guide": [
+  {
+   "page": "tensor.md",
+   "title": "Moment tensors and contraction planning",
+   "capabilities": "TENSOR-001, TENSOR-002",
+   "summary": "exact dense, sparse and factored moment and joint count tensors per group (no forced Cartesian expansion; exact conversions, marginals, slices, permutations, outer products), and bounded tensor networks contracted along the cheapest admissible order chosen through the FND-008 planner from exact per-step shapes, bytes and lifetimes, over-budget intermediates refused."
+  }
+ ],
+ "inventory": {
+  "TENSOR-001": {
+   "planned_files": [
+    "torbles/math_tensor.h",
+    "torbles/math_tensor.c",
+    "torbles/math_tensor_gpu.cu",
+    "torbles/math_tensor.py",
+    "tests/test_math_tensor.py",
+    "bench/benchmark_math_tensor.py"
+   ],
+   "cpu": "Native C (math_tensor.c): exact retained multi-index states over an FND-004 scope, per group: moment tensors T_g[i] = sum w prod_k x[col_k[i_k]] of order 0..8 over per-axis column lists (the constant 1 allowed; listwise, or SQL with per-entry contributing-row counts; axes sharing one column list accumulate their sorted multi-indices only) and joint count tensors over categorical axes (scope or explicit domains, NULL a slot of its own, weighted or not), with the selected and contributing rows kept apart from NULL validity; dense, sparse (CSR, strictly increasing multi-indices) and factored (declared rank-one sums with int64 factors, built without expansion) forms with exact conversions preserving order, dimensions, axes, groups, rows, counts and entries; marginalization, slicing, permutation, outer products, ungrouping and entry access in any form; int128 entries proven before any row is read (N x max|w| x prod_k max|x| <= 2^127 - 1) and every derived sum checked; a chunked builder (init, accumulate, merge, finish) that gives the same state bit for bit for any chunking; budgets (variables, degree, tensor, states, support, bytes) checked before allocation.",
+   "gpu": "CUDA kernels math_tensor_gpu.cu (tr_mgpu_tensor_build): dense moment work items (entry, row slice) accumulate locally and add with the exact two-word atomic (symmetric tensors on their canonical entries, then a copy launch); count work items add one atomic per row; sparse builds insert every emission into an open-addressing table of at least twice the capacity (a local 64-bit compare-and-swap claims a slot) whose occupied slots the host sorts into the canonical CSR; the readback is adopted by tr_tensor_from_states after shape, row, order and bound checks; equal to the CPU bit for bit.",
+   "limitations": [
+    "Entries are limited to 128 bits (refused beyond); orders up to 8, at most 64 columns per axis, dimensions below 2^32 and fewer than 2^64 cells per group.",
+    "A factored form's bound is a conservative sum over its terms, so some factored operations refuse what the dense form computes; count tensors have no factored form.",
+    "The CPU loops are single-threaded; the device sparse build sorts its hash table on the host."
+   ]
+  },
+  "TENSOR-002": {
+   "planned_files": [
+    "torbles/math_tensor.h",
+    "torbles/math_tensor.c",
+    "torbles/math_tensor_gpu.cu",
+    "torbles/math_tensor.py",
+    "tests/test_math_tensor.py",
+    "bench/benchmark_math_tensor.py"
+   ],
+   "cpu": "Native C (math_tensor.c): networks of 1..8 TENSOR-001 tensors with named indices (at most 16 labels; a grouped tensor's group label first) contracted by Einstein summation along orders of pairwise steps: every order enumerated when there are at most max_orders (default 64), otherwise a bounded search (the greedy orders, then depth-first ones); each order with the CPU dense, CPU sparse (operands matched on their shared labels, products sorted and reduced) and CUDA dense kernels; exact per-step labels, dimensions, cells, summed combinations, stored entries (sparse: exact upper bounds), bytes, scratch, live bytes by materialization lifetime, the peak, the output bytes and a magnitude bound per step proven before execution; exact amounts per FND-008 cost component costed and budget-checked by tr_planner_choose (the family's own rates passed as the planner's override table), the cheapest admissible candidate chosen and rejected candidates kept as evidence with their refusals; execution of any admissible candidate returns the exact tensor with the actual per-step entries, bytes and peak.",
+   "gpu": "CUDA kernel math_tensor_gpu.cu (tr_mgpu_tensor_contract): the dense candidate's pairwise steps, one work item per result entry evaluating the shared tr_tensor_dense_entry (exact int128 products and sums; every step bound re-proven on the host before copying), intermediates kept on the device and freed after their consumer; equal to the CPU kernels bit for bit.",
+   "limitations": [
+    "No factored contraction kernel: factored operands are expanded (costed and budgeted); the CUDA contraction is dense only (sparse candidates run on the CPU).",
+    "Sparse sizes in a plan are exact upper bounds, not the data's actual supports; the rates are hand-set estimates in relative work units (not calibrated times); traces within one tensor are not supported."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "MOMENT_TENSOR",
+    "label": "moment tensors",
+    "comment": "per group: dense, sparse or factored moment or count tensors"
+   },
+   {
+    "name": "CONTRACTION_PLAN",
+    "label": "contraction plans",
+    "comment": "costed contraction orders, step shapes, bytes, lifetimes"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "TENSOR_STATE",
+    "key": "tensor.state",
+    "family": "tensor",
+    "capability": "TENSOR-001",
+    "name": "sparse and factored moment tensors",
+    "comment": "sparse and factored moment tensors",
+    "state": "MOMENT_TENSOR",
+    "state_label": "moment tensors",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INTEGER",
+     "INT128",
+     "COUNT",
+     "CODE"
+    ],
+    "laws_relied": "TR_REG_RING | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_tensor_build",
+     "tr_tensor_init",
+     "tr_tensor_accumulate",
+     "tr_tensor_merge_builder",
+     "tr_tensor_finish",
+     "tr_tensor_need",
+     "tr_tensor_from_states",
+     "tr_tensor_convert",
+     "tr_tensor_marginal",
+     "tr_tensor_slice",
+     "tr_tensor_permute",
+     "tr_tensor_outer"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_tensor_build"
+    ],
+    "impl": [
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "HISTOGRAM",
+      "CODE",
+      "ALL"
+     ],
+     [
+      "MERGE",
+      "INT128",
+      "CPU"
+     ],
+     [
+      "MULTIPLY",
+      "INT128",
+      "CPU"
+     ]
+    ]
+   },
+   {
+    "enum": "TENSOR_CONTRACT",
+    "key": "tensor.contract",
+    "family": "tensor",
+    "capability": "TENSOR-002",
+    "name": "costed contraction planning",
+    "comment": "costed tensor contraction planning",
+    "state": "CONTRACTION_PLAN",
+    "state_label": "contraction plans",
+    "devices": "BOTH",
+    "finalize": 2,
+    "carriers": [
+     "INTEGER",
+     "INT128"
+    ],
+    "laws_relied": "TR_REG_RING | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "TR_PROOF_BOUND",
+    "cpu_entry": [
+     "tr_tensor_net_plan",
+     "tr_tensor_net_create",
+     "tr_tensor_net_free",
+     "tr_tensor_plan_get_info",
+     "tr_tensor_plan_get",
+     "tr_tensor_plan_free",
+     "tr_tensor_net_execute",
+     "tr_tensor_net_program",
+     "tr_tensor_net_input_dense",
+     "tr_tensor_default_rates"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_tensor_contract"
+    ],
+    "impl": [
+     [
+      "CONTRACT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ]
+    ]
+   }
+  ]
+ }
+}

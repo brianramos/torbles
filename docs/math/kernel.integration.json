@@ -1,0 +1,126 @@
+{
+ "guide": [
+  {
+   "page": "kernel.md",
+   "title": "Exact finite-feature kernels",
+   "capabilities": "KERNEL-001",
+   "summary": "polynomial, monomial and delta kernels reduced exactly to TENSOR-001 feature states: kernel sums over selected pairs (weights, self-pair exclusion, ordered or unordered), kernel mean embeddings, biased and unbiased MMD and witness values as exact rationals; kernels without an exact finite feature map, or one the state does not retain, refused, never approximated."
+  }
+ ],
+ "inventory": {
+  "KERNEL-001": {
+   "planned_files": [
+    "torbles/math_kernel.h",
+    "torbles/math_kernel.c",
+    "torbles/math_kernel_gpu.cu",
+    "torbles/math_kernel.py",
+    "tests/test_math_kernel.py",
+    "bench/benchmark_math_kernel.py"
+   ],
+   "cpu": "Native C (math_kernel.c): kernels with an explicit finite feature map, polynomial (x.y + c)^d (d <= 8, |c|^d <= 2^127 - 1; linear and homogeneous included), declared monomial sums sum_t w_t x^a_t y^a_t and delta kernels (categorical match, NULL a category of its own), reduced to TENSOR-001 states: the listwise moment tensor of order D >= d over (1, x_1..x_n), or the count tensor, with per group W = sum w, Q = sum w^2 and the declared kernel's self-pair sum sum w^2 k(x, x) (1024 bits, proven to fit before any row is read); exact kernel sums over selected pairs (across groups, within a group with or without self-pairs, ordered or unordered) and their weighted pair counts, kernel mean inner products, biased and unbiased MMD^2 and witness values, as exact rationals in 1024-bit words (overflow refused per request, never wrapped), evaluated over the C(n + d, d) sorted multi-indices with their multiplicities; any kernel the state retains (family, degree <= D, a subset of its columns) is evaluated on the same state, an absent degree, dimension or family is refused (UNSUPPORTED), and RBF, Laplace and other kernels are refused, never approximated; budgets (the tensor's needs, 288 bytes a group, evaluation items, output) checked before allocation.",
+   "gpu": "CUDA kernels math_kernel_gpu.cu: the feature state (tr_mgpu_kernel_build: TENSOR-001's device build of the feature tensor, then one work item per row slice summing W, Q and Dg locally and adding them with exact atomics, the 1024-bit sums by a local 16-word atomic carry chain), adopted by tr_kernel_from_states after consistency checks; batched requests (tr_mgpu_kernel_upload once per state and kernel, then tr_mgpu_kernel_query: one work item per request running the shared evaluator tr_kernel_eval_request, one output slot each); equal to the CPU bit for bit.",
+   "limitations": [
+    "Exact finite-feature kernels only: RBF, Laplace and other kernels without an exact finite feature map are refused (declared approximations are KERNEL-002's).",
+    "The feature tensor stores (n + 1)^D cells per group (dense, or sparse at the data's support), so the tensor budget bounds the dimension and degree; listwise only (a row with a NULL feature column does not contribute).",
+    "Answers are limited to 1024 bits (refused beyond) and are unreduced num / den natively; the CUDA query kernel has a 1984-byte stack frame with register spills and runs one work item per request."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "KERNEL_FEATURES",
+    "label": "kernel features",
+    "comment": "per group: a feature tensor, weight sums, self-pair terms"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "KERNEL",
+    "key": "kernel",
+    "family": "kernel",
+    "capability": "KERNEL-001",
+    "name": "exact finite-feature kernel embeddings",
+    "comment": "exact finite-feature kernel embeddings",
+    "state": "KERNEL_FEATURES",
+    "state_label": "kernel features",
+    "devices": "BOTH",
+    "finalize": 3,
+    "carriers": [
+     "INTEGER",
+     "INT128",
+     "BIGINT",
+     "BIGQ",
+     "COUNT",
+     "CODE"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_kernel_build",
+     "tr_kernel_check",
+     "tr_kernel_need",
+     "tr_kernel_from_states",
+     "tr_kernel_get_info",
+     "tr_kernel_get_group",
+     "tr_kernel_get_tensor",
+     "tr_kernel_eval_make",
+     "tr_kernel_eval_get_view",
+     "tr_kernel_query",
+     "tr_kernel_view_device_bytes",
+     "tr_kernel_free"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_kernel_build",
+     "tr_mgpu_kernel_upload",
+     "tr_mgpu_kernel_query",
+     "tr_mgpu_kernel_bytes",
+     "tr_mgpu_kernel_free"
+    ],
+    "impl": [
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "HISTOGRAM",
+      "CODE",
+      "ALL"
+     ],
+     [
+      "CONTRACT",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "SUBTRACT",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "ALL"
+     ]
+    ]
+   }
+  ]
+ }
+}
