@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 16 |
+| partial | 15 |
 | planned | 56 |
-| in_progress | 3 |
+| in_progress | 4 |
 | validated | 6 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -392,7 +392,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### FND-004: Reusable state bank, partitions and invalidation
 
-Status: **partial**. Delivery wave: **W1**.
+Status: **in_progress**. Delivery wave: **W1**.
 
 Cache immutable state banks keyed by exact domain, revision, codec, validity, basis and grouping grain; support compatible refinement/rollup maps and deliberate refresh.
 
@@ -447,23 +447,19 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `bae446434669e110608f41ece4187a911334e477`.
+Measured runtime: `5615b56e021acb2071a440e963637b0a076db51e`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
-- tests: [results/algebra_domains/validation.json](results/algebra_domains/validation.json)
-- tests: [results/algebra_domains/focused.log](results/algebra_domains/focused.log)
-- tests: [results/algebra_domains/native_domain_validation.json](results/algebra_domains/native_domain_validation.json)
-- tests: [results/algebra_domains/native_state_validation.json](results/algebra_domains/native_state_validation.json)
-- tests: [results/algebra_domains/independent_audit.json](results/algebra_domains/independent_audit.json)
-- tests: [results/algebra_foundation/native_validation.json](results/algebra_foundation/native_validation.json)
-- tests: [results/algebra_domains/benchmark_audit.json](results/algebra_domains/benchmark_audit.json)
+- tests: [results/math/FND-004/tests_test_math_bank.json](results/math/FND-004/tests_test_math_bank.json)
+- tests: [results/math/FND-004/sanitized_test_math_bank.json](results/math/FND-004/sanitized_test_math_bank.json)
 - benchmarks: [results/algebra_domains/cache_cpu.json](results/algebra_domains/cache_cpu.json)
 - benchmarks: [results/algebra_domains/cache_gpu.json](results/algebra_domains/cache_gpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_cpu.json](results/algebra_domains/response_baseline_cpu.json)
 - benchmarks: [results/algebra_domains/response_current_cpu.json](results/algebra_domains/response_current_cpu.json)
 - benchmarks: [results/algebra_domains/response_baseline_gpu.json](results/algebra_domains/response_baseline_gpu.json)
 - benchmarks: [results/algebra_domains/response_current_gpu.json](results/algebra_domains/response_current_gpu.json)
+- benchmarks: [results/math/FND-004/benchmark_cpu_math_bank_vm.json](results/math/FND-004/benchmark_cpu_math_bank_vm.json)
 
 <a id="fnd-005"></a>
 

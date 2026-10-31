@@ -559,7 +559,7 @@
    "id": "FND-004",
    "family_id": null,
    "title": "Reusable state bank, partitions and invalidation",
-   "status": "partial",
+   "status": "in_progress",
    "wave": "W1",
    "depends_on": [
     "FND-001",
@@ -622,13 +622,8 @@
    ],
    "validation": {
     "tests": [
-     "results/algebra_domains/validation.json",
-     "results/algebra_domains/focused.log",
-     "results/algebra_domains/native_domain_validation.json",
-     "results/algebra_domains/native_state_validation.json",
-     "results/algebra_domains/independent_audit.json",
-     "results/algebra_foundation/native_validation.json",
-     "results/algebra_domains/benchmark_audit.json"
+     "results/math/FND-004/tests_test_math_bank.json",
+     "results/math/FND-004/sanitized_test_math_bank.json"
     ],
     "benchmarks": [
      "results/algebra_domains/cache_cpu.json",
@@ -636,22 +631,43 @@
      "results/algebra_domains/response_baseline_cpu.json",
      "results/algebra_domains/response_current_cpu.json",
      "results/algebra_domains/response_baseline_gpu.json",
-     "results/algebra_domains/response_current_gpu.json"
+     "results/algebra_domains/response_current_gpu.json",
+     "results/math/FND-004/benchmark_cpu_math_bank_vm.json"
     ],
-    "measured_runtime_commit": "bae446434669e110608f41ece4187a911334e477",
+    "measured_runtime_commit": "5615b56e021acb2071a440e963637b0a076db51e",
     "source_sha256": {
-     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_scope.c": "41a8ea60b45c81e81b570a11f49ab564d052227aec44f62daa19003482d3aedc",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_bank.c": "932355ae87d393b16360fc3d9afde13c98a42012cbb2535ca303ade93d2d74e8",
+     "torbles/math_bank_gpu.cu": "c0d0dcd468345f9148c3ae0169828f1eb21c32995580f96c71dfe43bca054e0c",
+     "torbles/math_bank.py": "c195cde485e6752e02ed94b480aa7b8d32e4d815f9f2061e242fec460053acd8",
+     "tests/test_math_bank.py": "ebc080e7703a27c29e61ff5cf750310940f29d8c008edcf55ba82fbced65194a",
+     "bench/benchmark_math_bank.py": "fb1151b9241d263f3cb6f152949fc1ec700d5b1ff525ce28312c417a79c0441e",
+     "torbles/math_num.h": "6cf2f8d8f0f57b50dd99be7bbec1aab41604443866480742ba01c1c0d7585aaa",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
      "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
-     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
-     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
-     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
      "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
-     "torbles/math_modules.c": "23ef73625398828c370d71a3eb722ea9fc0dc469dd350f27fe8c1fd642fa0be3",
-     "torbles/math_modules.h": "c619271f69247ac3e366d8a8c9db95957e5eb987c93dae5652923d91bc34dff1",
-     "torbles/math_state.c": "a521873f950bc1fe0c18cc089276d6d060e5060e029e3385d0ee0ac8e34d77fe",
-     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e"
+     "torbles/torble.h": "9c8bff5f6d8b73425ae318c685ca29b48510b66ee30584f6190ea6e803fe077d",
+     "torbles/math_cuda.h": "d50133264baa1e890c326145e92a5adfc54199dd01d63b63b39e3902517d8178",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "9adfd4ce00c2d2dcb658199dd701282b871c17a27e1be6d82fd73b61d563e368",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475"
     },
-    "notes": "Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions."
+    "notes": "Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.",
+    "cuda": {
+     "kernels": [
+      "torbles/math_bank_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/FND-004/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/FND-004/emulated.json"
+     ]
+    }
    }
   },
   {
