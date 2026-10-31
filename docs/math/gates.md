@@ -14,7 +14,7 @@ receipts, actual-device CUDA receipts, or with a source that differs from the me
 Native error codes map to exceptions in `torbles/math_errors.py`: -1 `ValueError`, -2 `MemoryError`,
 -3 `OverflowError`, -5 `AlgebraBudgetError`, -6 `DomainError`, -7 `CarrierError`, -8 `OperatorError`,
 -9 `SingularError`, -10 `NoSolutionError`, -11 `DeviceError`, -12 `UnsupportedError`, -13 `StaleStateError`,
--14 `NotConvergedError`, -15 `InfeasibleError`, -16 `UnboundedError`.
+-14 `NotConvergedError`, -15 `InfeasibleError`, -16 `UnboundedError`, -17 `ClosedHandleError`.
 
 `torbles.math_gpu.device()` names the device the kernels ran on, or `"CPU emulation of the CUDA kernels"`;
 `TORBLES_MATH_REQUIRE_DEVICE=1` makes every CUDA entry point refuse the emulation.

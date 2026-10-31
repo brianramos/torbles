@@ -39,20 +39,16 @@ import numpy as np
 from . import algq
 from .math_budgets import Budget, _Budget, _Refusal
 from .math_domains import CARRIERS, GROUPING, KINDS as DOMAIN_KINDS, VALIDITY, _CacheStats, _DomainSpec, _key_bytes
-from .math_errors import check as _math_check
+from .math_errors import check as _math_check, ClosedHandleError
 
 __all__ = ["HandleTable", "Handle", "Polynomial", "Domain", "Bank", "StateCache", "ClosedHandleError", "AbiError",
            "KINDS", "abi_check", "abi_entries", "python_structures"]
 
-CLOSED = -17                       # TR_MATH_CLOSED (math_handles.h; local to FND-013)
+CLOSED = -17                       # TR_MATH_CLOSED (math_num.h)
 KINDS = {"polynomial": 1, "domain": 2, "bank": 3, "state cache": 4}
 _KIND_NAMES = {v: k for k, v in KINDS.items()}
 M64 = (1 << 64) - 1
 I64 = (-(1 << 63), (1 << 63) - 1)
-
-
-class ClosedHandleError(RuntimeError):
-    """The handle (or its table) was closed; raised the same way whether or not the payload was freed yet."""
 
 
 class AbiError(RuntimeError):

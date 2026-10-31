@@ -55,8 +55,7 @@ extern "C" {
 #endif
 
 #define TR_HANDLES_ABI 1
-/* A closed (released) handle. Local to FND-013: not yet in math_num.h, whose next free code it takes. */
-enum { TR_MATH_CLOSED = -17 };
+/* A closed (released) handle: TR_MATH_CLOSED (-17), defined in math_num.h. */
 
 enum { TR_HANDLE_ANY = 0,             /* retain / lock: accept any kind */
        TR_HANDLE_IPOLY = 1,           /* immutable sparse integer polynomial (this module) */

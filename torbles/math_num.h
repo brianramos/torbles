@@ -27,7 +27,8 @@ enum { TR_MATH_SINGULAR = -9,        /* a system has no unique solution (singula
        TR_MATH_STALE = -13,          /* a state's source changed (revision, rows or scope) since the state was built */
        TR_MATH_NOT_CONVERGED = -14,  /* an iterative method did not certify its result within its iteration budget */
        TR_MATH_INFEASIBLE = -15,     /* the constraints of an optimization or search admit no point */
-       TR_MATH_UNBOUNDED = -16 };    /* an objective is unbounded below on its declared domain */
+       TR_MATH_UNBOUNDED = -16,      /* an objective is unbounded below on its declared domain */
+       TR_MATH_CLOSED = -17 };       /* a handle that was issued and closed (math_handles.h) */
 
 typedef struct { int64_t lo; int64_t hi; } tr_math_i128;   /* value = hi * 2^64 + (uint64_t)lo */
 typedef struct { double lo, hi; } tr_math_interval;          /* lo <= exact value <= hi */

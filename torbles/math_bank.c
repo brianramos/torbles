@@ -3,7 +3,12 @@
 #include "math_bank.h"
 #include "mathematics.h"
 #include "math_domain.h"
+#include "math_handles.h"
 #include <stdlib.h>
+
+TR_MATH_ABI(tr_bank_states, 1);          /* the ctypes boundary of FND-004 (math_handles.h) */
+TR_MATH_ABI(tr_bank_info, 1);
+TR_MATH_ABI(tr_bank_cache_stats, 1);
 #include <string.h>
 
 _Static_assert(sizeof(tr_bank_term) == 16, "tr_bank_term ABI");

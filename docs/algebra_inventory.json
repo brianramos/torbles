@@ -1168,8 +1168,8 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "Owned descriptors/banks/functions, copied semantic keys/origins, fixed ctypes ABI checks and serialized mutable-cache access are implemented. Broader concurrent lifecycle integration remains partial.",
-   "gpu": "No new asynchronous GPU handle lifecycle; inherited aggregate queries finish before immutable bank construction returns.",
+   "cpu": "Native C: a caller-owned handle table (slot + generation ids, C11 atomic reference counts, deferred free on close during a live operation, per-payload mutex for mutable caches, live-allocation counts) and an ABI registry (TR_MATH_ABI / TR_MGPU_ABI entries in linker sections) that Python checks against every ctypes Structure of the torbles.math* modules.",
+   "gpu": "CUDA kernel math_handles_gpu.cu: one immutable sparse integer polynomial shared by all threads, evaluated exactly (128-bit, overflow flagged per point) at many points; equal to the CPU path and to Python integers.",
    "existing_evidence": [
     {
      "path": "torbles/math_domain.h",
@@ -1188,9 +1188,13 @@
     }
    ],
    "planned_files": [
-    "torbles/math_handles.c",
     "torbles/math_handles.h",
-    "tests/test_math_handles.py"
+    "torbles/math_handles.c",
+    "torbles/math_handles_gpu.cu",
+    "torbles/math_handles.py",
+    "tests/test_math_handles.py",
+    "tests/math_handles_native_threads.c",
+    "bench/benchmark_math_handles.py"
    ],
    "acceptance_tests": [
     "Repeated create/release and shared immutable evaluations do not leak or reuse freed buffers.",
@@ -1201,8 +1205,9 @@
     "Compare concurrent immutable evaluation and serialized cache updates without changing user process priorities."
    ],
    "limitations": [
-    "Mutable cache calls are serialized; explicit close versus operations on expressions/domains remains externally serialized.",
-    "Broader heterogeneous-state concurrency and global ABI/lifetime integration remain work."
+    "The first-slice Python wrappers (Domain, MomentCache, expressions) are not yet table-owned; their close remains externally serialized.",
+    "The ABI check compares size, alignment and version, not field order; engine ctypes structs (algq.py, relationships.py) are outside it.",
+    "Freeing a table must not race other calls on it natively; the Python wrapper waits for operations in flight."
    ],
    "validation": {
     "tests": [

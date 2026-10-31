@@ -868,9 +868,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005)
 
-Native CPU: Owned descriptors/banks/functions, copied semantic keys/origins, fixed ctypes ABI checks and serialized mutable-cache access are implemented. Broader concurrent lifecycle integration remains partial.
+Native CPU: Native C: a caller-owned handle table (slot + generation ids, C11 atomic reference counts, deferred free on close during a live operation, per-payload mutex for mutable caches, live-allocation counts) and an ABI registry (TR_MATH_ABI / TR_MGPU_ABI entries in linker sections) that Python checks against every ctypes Structure of the torbles.math* modules.
 
-GPU: No new asynchronous GPU handle lifecycle; inherited aggregate queries finish before immutable bank construction returns.
+GPU: CUDA kernel math_handles_gpu.cu: one immutable sparse integer polynomial shared by all threads, evaluated exactly (128-bit, overflow flagged per point) at many points; equal to the CPU path and to Python integers.
 
 Bounds:
 
@@ -885,9 +885,13 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_handles.c`
 - `torbles/math_handles.h`
+- `torbles/math_handles.c`
+- `torbles/math_handles_gpu.cu`
+- `torbles/math_handles.py`
 - `tests/test_math_handles.py`
+- `tests/math_handles_native_threads.c`
+- `bench/benchmark_math_handles.py`
 
 Acceptance tests:
 
@@ -901,8 +905,9 @@ Benchmark cases:
 
 Additional limits:
 
-- Mutable cache calls are serialized; explicit close versus operations on expressions/domains remains externally serialized.
-- Broader heterogeneous-state concurrency and global ABI/lifetime integration remain work.
+- The first-slice Python wrappers (Domain, MomentCache, expressions) are not yet table-owned; their close remains externally serialized.
+- The ABI check compares size, alignment and version, not field order; engine ctypes structs (algq.py, relationships.py) are outside it.
+- Freeing a table must not race other calls on it natively; the Python wrapper waits for operations in flight.
 
 Validation receipts:
 

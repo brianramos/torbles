@@ -16,6 +16,11 @@
  * exact sum because the host proved |sum| < 2^127 (tr_bank_prove) before launching. */
 #include "math_cuda.h"
 #include "math_bank.h"
+#include "math_handles.h"
+
+TR_MGPU_ABI(tr_scope_view, 1);          /* structs passed to the CUDA library (math_handles.h) */
+TR_MGPU_ABI(tr_scope_view_column, 1);
+TR_MGPU_ABI(tr_bank_states, 1);
 
 #define TR_BANK_WORK (UINT64_C(1) << 19)      /* about this many work items per launch */
 #define TR_BANK_MIN_ROWS 32                    /* and at least this many rows per work item */

@@ -151,9 +151,10 @@ class Handles(unittest.TestCase):
                               tr_math_refusal=24, tr_math_choice=72, tr_disc_view=104, tr_disc_evidence=72,
                               tr_math_i128=16, tr_math_interval=16, tr_math_handle_stats=216, tr_math_handle_info=40,
                               tr_math_ipoly_view=32, tr_math_abi_entry=64)
-        self.assertEqual({k: v["size"] for k, v in cpu.items()}, expected_sizes)
-        self.assertEqual(set(cuda), {"tr_math_budget", "tr_math_refusal", "tr_disc_view", "tr_disc_evidence",
-                                     "tr_math_ipoly_view", "tr_math_i128", "tr_math_abi_entry"})
+        # later families register more structs; these must be present with exactly these sizes
+        self.assertEqual({k: cpu[k]["size"] for k in expected_sizes if k in cpu}, expected_sizes)
+        self.assertLessEqual({"tr_math_budget", "tr_math_refusal", "tr_disc_view", "tr_disc_evidence",
+                              "tr_math_ipoly_view", "tr_math_i128", "tr_math_abi_entry"}, set(cuda))
         for name, e in cuda.items():                    # one layout per struct across both libraries
             self.assertEqual((e["size"], e["align"], e["version"]), (cpu[name]["size"], cpu[name]["align"],
                                                                       cpu[name]["version"]), name)

@@ -4,8 +4,17 @@
 #include "mathematics.h"
 #include "math_domain.h"
 #include "torble.h"
+#include "math_handles.h"
 #include <stdlib.h>
 #include <string.h>
+
+TR_MATH_ABI(tr_scope_column, 1);         /* the ctypes boundary of FND-004 (math_handles.h) */
+TR_MATH_ABI(tr_scope_key, 1);
+TR_MATH_ABI(tr_scope_array, 1);
+TR_MATH_ABI(tr_scope_view_column, 1);
+TR_MATH_ABI(tr_scope_view, 1);
+TR_MATH_ABI(tr_scope_info, 1);
+TR_MATH_ABI(tr_scope_column_info, 1);
 
 extern void at_decode_column(const atable_t *, int, uint32_t *);
 

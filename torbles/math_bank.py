@@ -46,53 +46,63 @@ P = C.POINTER
 
 
 class _Column(C.Structure):
+    _native_ = "tr_scope_column"
     _fields_ = [("col", C.c_int32), ("valid", C.c_int32), ("hi", C.c_int32), ("shift", C.c_int32),
                 ("offset", C.c_int64), ("scale", C.c_int32), ("reserved", C.c_int32)]
 
 
 class _Key(C.Structure):
+    _native_ = "tr_scope_key"
     _fields_ = [("col", C.c_int32), ("valid", C.c_int32), ("nullable", C.c_int32), ("null_code", C.c_uint32),
                 ("radix", C.c_uint64), ("lookup", C.c_void_p), ("lookup_valid", C.c_void_p), ("lookup_n", C.c_uint64)]
 
 
 class _Array(C.Structure):
+    _native_ = "tr_scope_array"
     _fields_ = [("values", C.c_void_p), ("valid", C.c_void_p), ("scale", C.c_int32), ("reserved", C.c_int32)]
 
 
 class _ViewColumn(C.Structure):
+    _native_ = "tr_scope_view_column"
     _fields_ = [("codes", C.c_void_p), ("values", C.c_void_p), ("valid", C.c_void_p), ("offset", C.c_int64),
                 ("min", C.c_int64), ("max", C.c_int64), ("nvalid", C.c_uint64), ("scale", C.c_int32),
                 ("reserved", C.c_int32)]
 
 
 class _View(C.Structure):
+    _native_ = "tr_scope_view"
     _fields_ = [("rows", C.c_uint64), ("selected", C.c_uint64), ("ngroups", C.c_uint64), ("selection", C.c_void_p),
                 ("groups", C.c_void_p), ("ncols", C.c_int32), ("reserved", C.c_int32),
                 ("col", _ViewColumn * MAX_COLUMNS)]
 
 
 class _ScopeInfo(C.Structure):
+    _native_ = "tr_scope_info"
     _fields_ = [(n, C.c_uint64) for n in ("rows", "selected", "ngroups", "bytes", "table", "revision")] + [
         ("digest", C.c_uint64 * 2), ("version", C.c_uint64 * 2), ("identity", C.c_uint8 * 16),
         ("source", C.c_int32), ("ncols", C.c_int32), ("nkeys", C.c_int32), ("reserved", C.c_int32)]
 
 
 class _ColumnInfo(C.Structure):
+    _native_ = "tr_scope_column_info"
     _fields_ = [("offset", C.c_int64), ("min", C.c_int64), ("max", C.c_int64), ("nvalid", C.c_uint64)] + [
         (n, C.c_int32) for n in ("scale", "storage", "col", "valid", "hi", "shift")]
 
 
 class _States(C.Structure):
+    _native_ = "tr_bank_states"
     _fields_ = [("ngroups", C.c_uint64), ("nterms", C.c_int32), ("reserved", C.c_int32), ("rows", C.c_void_p),
                 ("count", C.c_void_p), ("sum", C.c_void_p)]
 
 
 class _BankInfo(C.Structure):
+    _native_ = "tr_bank_info"
     _fields_ = [(n, C.c_uint64) for n in ("ngroups", "present", "rows", "bytes")] + [("digest", C.c_uint64 * 2)] + [
         (n, C.c_int32) for n in ("ncols", "nterms", "mode", "degree")] + [("joint", C.c_uint32), ("scoped", C.c_int32)]
 
 
 class _CacheStats(C.Structure):
+    _native_ = "tr_bank_cache_stats"
     _fields_ = [(n, C.c_uint64) for n in ("hits", "misses", "puts", "evictions", "refreshes", "invalidations",
                                           "bytes", "max_bytes")] + [("capacity", C.c_int32), ("entries", C.c_int32)]
 

@@ -205,3 +205,4 @@ and their status is the inventory's.
 - [Relationship verification](math/disc.md) (DISC-001): affine, sum and product hypotheses verified on the CPU or in CUDA.
 - [Validation gates](math/gates.md) (FND-012): receipts, the inventory check, error codes, device identity.
 - [Scopes and state banks](math/bank.md) (FND-004): selected rows, exact grouped moments, rollups, the state cache.
+- [Handles and ABI checks](math/handles.md) (FND-013): owned handles, deferred close, struct layout checks.

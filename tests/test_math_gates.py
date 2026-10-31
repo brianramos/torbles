@@ -126,7 +126,7 @@ class Gates(unittest.TestCase):
 
     def test_fnd012_error_codes_map_to_distinct_exceptions(self):
         seen = {}
-        for code in (-1, -2, -3, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16):
+        for code in (-1, -2, -3, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16, -17):
             with self.assertRaises(Exception) as ctx:
                 math_errors.check(code)
             seen[code] = type(ctx.exception)

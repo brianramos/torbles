@@ -45,6 +45,10 @@ class UnboundedError(ValueError):
     """An objective is unbounded below on its declared domain."""
 
 
+class ClosedHandleError(RuntimeError):
+    """The handle (or its table) was closed; raised the same way whether or not the payload was freed yet."""
+
+
 _BY_CODE = {
     -1: (ValueError, "invalid native mathematical input"),
     -2: (MemoryError, "native mathematical allocation failed"),
@@ -61,6 +65,7 @@ _BY_CODE = {
     -14: (NotConvergedError, "not certified within the iteration budget"),
     -15: (InfeasibleError, "the constraints admit no point"),
     -16: (UnboundedError, "the objective is unbounded below"),
+    -17: (ClosedHandleError, "the handle is closed"),
 }
 
 
