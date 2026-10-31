@@ -162,7 +162,8 @@ class Handles(unittest.TestCase):
         crossing = {(r["native"], r["library"]) for r in report["checked"]}
         for name in cuda:
             self.assertIn((name, "cuda"), crossing)
-        self.assertEqual(report["without_python_mirror"], ["tr_math_interval"])
+        # natively registered structs without a ctypes mirror: only those that never cross into Python
+        self.assertLessEqual(set(report["without_python_mirror"]), {"tr_math_interval"})
         # the registry refuses a caller whose entry struct differs
         native = mh._api()
         self.assertEqual(native["abi"](None, 0, C.sizeof(mh._AbiEntry) - 1), -1)

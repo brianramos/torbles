@@ -899,13 +899,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_carriers.c): arbitrary-precision integers and canonical rationals (limb budgets, floor/truncating division, gcd, shifts, powers, integer square roots), GF(p) for verified primes p < 2^62 with Barrett reduction, CRT and rational reconstruction, outward-rounded real and complex intervals, truncated rational power series (product, reciprocal, composition, exp, log), and an explicit conversion/combination matrix.",
+   "gpu": "CUDA kernels math_carriers_gpu.cu (tr_mgpu_carriers_gfp_vec/dot/matvec/reduce_i64, enclose_q64, sum_i64, dot_wide): batched GF(p) arithmetic, exact 128-bit sums and dot products, enclosures of int64 rationals; equal bit for bit to the CPU functions.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_carriers.c",
     "torbles/math_carriers.h",
-    "tests/test_math_carriers.py"
+    "torbles/math_carriers.c",
+    "torbles/math_carriers_gpu.cu",
+    "torbles/math_carriers.py",
+    "tests/test_math_carriers.py",
+    "bench/benchmark_math_carriers.py"
    ],
    "acceptance_tests": [
     "Round-trip lossless conversions preserve values; narrowing and incompatible-carrier operations fail explicitly.",
@@ -915,7 +918,12 @@
     "Benchmark coefficient bit width and carrier-conversion cost independently of row count.",
     "Compare native fixed-width, wide and arbitrary-precision paths on matched expressions."
    ],
-   "limitations": [],
+   "limitations": [
+    "Schoolbook multiplication and quadratic decimal conversion: slow past a few thousand bits.",
+    "Interval endpoints are doubles; no transcendental interval functions; complex division refused when the divisor's squared modulus rounds to zero.",
+    "Series have rational coefficients only (no GF(p) series); composition is cubic in the order.",
+    "Batched checked evaluations may write part of their output array before refusing; the Python layer discards it."
+   ],
    "validation": null
   },
   {

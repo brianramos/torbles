@@ -50,30 +50,37 @@ I128_MIN, I128_MAX = -(1 << 127), (1 << 127) - 1
 
 
 class _I128(C.Structure):
+    _native_ = "tr_math_i128"
     _fields_ = [("lo", C.c_int64), ("hi", C.c_int64)]
 
 
 class _Q(C.Structure):
+    _native_ = "tr_math_rational"
     _fields_ = [("numerator", C.c_int64), ("denominator", C.c_int64)]
 
 
 class _Interval(C.Structure):
+    _native_ = "tr_math_interval"
     _fields_ = [("lo", C.c_double), ("hi", C.c_double)]
 
 
 class _CInterval(C.Structure):
+    _native_ = "tr_carrier_cinterval"
     _fields_ = [("re", _Interval), ("im", _Interval)]
 
 
 class _GFP(C.Structure):
+    _native_ = "tr_gfp"
     _fields_ = [("p", C.c_uint64), ("mu", C.c_uint64), ("r64", C.c_uint64), ("k", C.c_uint32), ("reserved", C.c_uint32)]
 
 
 class _Elem(C.Structure):
+    _native_ = "tr_gfp_elem"
     _fields_ = [("p", C.c_uint64), ("v", C.c_uint64)]
 
 
 class _Desc(C.Structure):
+    _native_ = "tr_carrier_desc"
     _fields_ = [("carrier", C.c_int32), ("law", C.c_int32), ("exact", C.c_int32), ("certified", C.c_int32),
                 ("precision_bits", C.c_int32), ("reserved", C.c_int32), ("name", C.c_char * 24)]
 

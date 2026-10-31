@@ -666,9 +666,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-002](#fnd-002), [FND-005](#fnd-005)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_carriers.c): arbitrary-precision integers and canonical rationals (limb budgets, floor/truncating division, gcd, shifts, powers, integer square roots), GF(p) for verified primes p < 2^62 with Barrett reduction, CRT and rational reconstruction, outward-rounded real and complex intervals, truncated rational power series (product, reciprocal, composition, exp, log), and an explicit conversion/combination matrix.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_carriers_gpu.cu (tr_mgpu_carriers_gfp_vec/dot/matvec/reduce_i64, enclose_q64, sum_i64, dot_wide): batched GF(p) arithmetic, exact 128-bit sums and dot products, enclosures of int64 rationals; equal bit for bit to the CPU functions.
 
 Bounds:
 
@@ -677,9 +677,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_carriers.c`
 - `torbles/math_carriers.h`
+- `torbles/math_carriers.c`
+- `torbles/math_carriers_gpu.cu`
+- `torbles/math_carriers.py`
 - `tests/test_math_carriers.py`
+- `bench/benchmark_math_carriers.py`
 
 Acceptance tests:
 
@@ -690,6 +693,13 @@ Benchmark cases:
 
 - Benchmark coefficient bit width and carrier-conversion cost independently of row count.
 - Compare native fixed-width, wide and arbitrary-precision paths on matched expressions.
+
+Additional limits:
+
+- Schoolbook multiplication and quadratic decimal conversion: slow past a few thousand bits.
+- Interval endpoints are doubles; no transcendental interval functions; complex division refused when the divisor's squared modulus rounds to zero.
+- Series have rational coefficients only (no GF(p) series); composition is cubic in the order.
+- Batched checked evaluations may write part of their output array before refusing; the Python layer discards it.
 
 <a id="fnd-010"></a>
 

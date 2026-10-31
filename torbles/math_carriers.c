@@ -2,10 +2,16 @@
  * SPDX-License-Identifier: Apache-2.0 */
 #include "math_carriers.h"
 #include "mathematics.h"
+#include "math_handles.h"
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+
+TR_MATH_ABI(tr_gfp, 1);                  /* the ctypes boundary of FND-009 (math_handles.h) */
+TR_MATH_ABI(tr_gfp_elem, 1);
+TR_MATH_ABI(tr_carrier_cinterval, 1);
+TR_MATH_ABI(tr_carrier_desc, 1);
 
 _Static_assert(sizeof(tr_math_rational) == sizeof(tr_num_rational), "tr_num_rational has the layout of tr_math_rational");
 _Static_assert(offsetof(tr_math_rational, denominator) == offsetof(tr_num_rational, denominator), "rational layout");

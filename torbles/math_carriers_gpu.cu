@@ -9,6 +9,10 @@
  * SPDX-License-Identifier: Apache-2.0 */
 #include "math_cuda.h"
 #include "math_carriers.h"
+#include "math_handles.h"
+
+TR_MGPU_ABI(tr_gfp, 1);                 /* structs passed to the CUDA library (math_handles.h) */
+TR_MGPU_ABI(tr_math_interval, 1);
 
 /* exact signed 128-bit atomic accumulation of a 128-bit value: lo += x (mod 2^64), hi += high word + carry */
 TR_DEVICE void tr_carriers_add128(int64_t *lo, int64_t *hi, __int128 x) {
