@@ -210,3 +210,5 @@ and their status is the inventory's.
 - [Module registry](math/registry.md) (FND-005): module descriptors, law and carrier checks, explanations.
 - [Plan choice](math/planner.md) (FND-008): costed candidates, sampling that never proves emptiness, forced controls.
 - [Jets](math/jet.md) (JET-001, JET-002): exact directional derivatives, gradients, Hessians and higher partials of circuits and aggregates.
+- [Inverse answers](math/inv.md) (INV-001): exact affine solution sets, certified polynomial roots, finite-grid search.
+- [Non-polynomial separation](math/calc.md) (CALC-003): phase and exponential families with certified coefficient enclosures.

@@ -1092,9 +1092,9 @@ Exactness: Separation identities are algebraically exact; transcendental coeffic
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-004](#fnd-004), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_calc.c): retained data coefficients of the fixed-frequency sine phase family (2^k coefficients for k phase parameters) and of the separable exponential family per group, with exact derivatives and integrals in the parameters as coefficient transforms, and rigorous enclosures of every transcendental coefficient and evaluated value; another frequency, family or scope is a new construction and a derivative in the frequency is refused.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_calc_gpu.cu: the coefficient sums over rows, accumulated as exact scaled integers with 128-bit atomics, equal bit for bit to the CPU enclosures.
 
 Bounds:
 
@@ -1103,9 +1103,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_calc.c`
 - `torbles/math_calc.h`
+- `torbles/math_calc.c`
+- `torbles/math_calc_gpu.cu`
+- `torbles/math_calc.py`
 - `tests/test_math_calc.py`
+- `bench/benchmark_math_calc.py`
 
 Acceptance tests:
 
@@ -1116,6 +1119,16 @@ Benchmark cases:
 
 - Vary one to eight parameters, 8/32/128 terms and derivative order 1/2/4; report construction and coefficient-transform cost separately.
 - Compare 1/100/10,000 evaluations or bound pairs after one retained-state build; include zero polynomials and degree/coefficient refusal boundaries.
+
+Additional limits:
+
+- Sine and cosine enclosures are absolute (about 2^-113 per row times 
+- w
+- ), so tiny values have large relative width.
+- After a definite integral the coefficients are double intervals without exact bounds.
+- Only the phase and separable exponential families are retained; evaluation points are doubles with 
+- phi
+-  < 2^62; at most 16 phase factors.
 
 ## JET: Derivative algebras
 
@@ -1332,9 +1345,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [RESP-001](#resp-001), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_inv.c): exact affine target inverses (unique point, empty with the reason, whole domain, or an affine family with a witness, directions and exact parameter ranges, by exact elimination and Fourier-Motzkin bounds), certified real-root isolation of univariate polynomial targets in declared bounds (square-free decomposition, exact rational roots, Sturm-certified isolating intervals with multiplicities, refinement to a width), and exhaustive finite-grid search with an explicit incomplete result.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_inv_gpu.cu: the finite-grid sweep (exact evaluation at every grid point, matches collected order-independently) and batched exact sign evaluation for root refinement, equal to the CPU.
 
 Bounds:
 
@@ -1343,9 +1356,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_inv.c`
 - `torbles/math_inv.h`
+- `torbles/math_inv.c`
+- `torbles/math_inv_gpu.cu`
+- `torbles/math_inv.py`
 - `tests/test_math_inv.py`
+- `bench/benchmark_math_inv.py`
 
 Acceptance tests:
 
@@ -1356,6 +1372,12 @@ Benchmark cases:
 
 - Use linear and bounded-degree univariate targets with zero/one/multiple/no solutions and domains containing exact boundary roots; report solving separately from state construction.
 - Sweep parameter dimension 1/2/3 and finite domains of 8/16/32 values per coordinate, retaining incomplete-search cases and proof bounds.
+
+Additional limits:
+
+- Sign evaluation and refinement use at most 128 moduli (values up to about 7,800 bits) and raise OverflowError beyond.
+- The grid search takes first-slice polynomials (int64 rational coefficients, degree <= 8, at most 8 unknowns); solve_affine takes up to 64 unknowns.
+- Sturm sequences and Fourier-Motzkin elimination are exact but grow quickly with degree or free parameters; both are budgeted.
 
 <a id="inv-002"></a>
 

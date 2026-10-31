@@ -1434,13 +1434,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_calc.c): retained data coefficients of the fixed-frequency sine phase family (2^k coefficients for k phase parameters) and of the separable exponential family per group, with exact derivatives and integrals in the parameters as coefficient transforms, and rigorous enclosures of every transcendental coefficient and evaluated value; another frequency, family or scope is a new construction and a derivative in the frequency is refused.",
+   "gpu": "CUDA kernel math_calc_gpu.cu: the coefficient sums over rows, accumulated as exact scaled integers with 128-bit atomics, equal bit for bit to the CPU enclosures.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_calc.c",
     "torbles/math_calc.h",
-    "tests/test_math_calc.py"
+    "torbles/math_calc.c",
+    "torbles/math_calc_gpu.cu",
+    "torbles/math_calc.py",
+    "tests/test_math_calc.py",
+    "bench/benchmark_math_calc.py"
    ],
    "acceptance_tests": [
     "Fixed-frequency sine phase sweeps match direct numerical evaluation at declared precision.",
@@ -1450,7 +1453,15 @@
     "Vary one to eight parameters, 8/32/128 terms and derivative order 1/2/4; report construction and coefficient-transform cost separately.",
     "Compare 1/100/10,000 evaluations or bound pairs after one retained-state build; include zero polynomials and degree/coefficient refusal boundaries."
    ],
-   "limitations": [],
+   "limitations": [
+    "Sine and cosine enclosures are absolute (about 2^-113 per row times ",
+    "w",
+    "), so tiny values have large relative width.",
+    "After a definite integral the coefficients are double intervals without exact bounds.",
+    "Only the phase and separable exponential families are retained; evaluation points are doubles with ",
+    "phi",
+    " < 2^62; at most 16 phase factors."
+   ],
    "validation": null
   },
   {
@@ -1678,13 +1689,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_inv.c): exact affine target inverses (unique point, empty with the reason, whole domain, or an affine family with a witness, directions and exact parameter ranges, by exact elimination and Fourier-Motzkin bounds), certified real-root isolation of univariate polynomial targets in declared bounds (square-free decomposition, exact rational roots, Sturm-certified isolating intervals with multiplicities, refinement to a width), and exhaustive finite-grid search with an explicit incomplete result.",
+   "gpu": "CUDA kernels math_inv_gpu.cu: the finite-grid sweep (exact evaluation at every grid point, matches collected order-independently) and batched exact sign evaluation for root refinement, equal to the CPU.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_inv.c",
     "torbles/math_inv.h",
-    "tests/test_math_inv.py"
+    "torbles/math_inv.c",
+    "torbles/math_inv_gpu.cu",
+    "torbles/math_inv.py",
+    "tests/test_math_inv.py",
+    "bench/benchmark_math_inv.py"
    ],
    "acceptance_tests": [
     "Exact linear target inverses detect unique, empty and whole-domain solution sets.",
@@ -1694,7 +1708,11 @@
     "Use linear and bounded-degree univariate targets with zero/one/multiple/no solutions and domains containing exact boundary roots; report solving separately from state construction.",
     "Sweep parameter dimension 1/2/3 and finite domains of 8/16/32 values per coordinate, retaining incomplete-search cases and proof bounds."
    ],
-   "limitations": [],
+   "limitations": [
+    "Sign evaluation and refinement use at most 128 moduli (values up to about 7,800 bits) and raise OverflowError beyond.",
+    "The grid search takes first-slice polynomials (int64 rational coefficients, degree <= 8, at most 8 unknowns); solve_affine takes up to 64 unknowns.",
+    "Sturm sequences and Fourier-Motzkin elimination are exact but grow quickly with degree or free parameters; both are budgeted."
+   ],
    "validation": null
   },
   {
