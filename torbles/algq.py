@@ -128,6 +128,7 @@ if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` i
 lib = ctypes.CDLL(str(_libpath))
 vp, u64 = ctypes.c_void_p, ctypes.c_uint64
 for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_create", vp, [u64, ctypes.c_int, vp]),
+                        ("at_save", ctypes.c_int, [vp, ctypes.c_char_p]), ("at_load", vp, [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]),
                         ("at_bytes", u64, [vp]), ("at_width", ctypes.c_int, [vp, ctypes.c_int]), ("at_nplanes", ctypes.c_int, [vp]),
                         ("at_flip", None, [vp, ctypes.c_int, u64]), ("at_validate", u64, [vp, vp, u64]),
                         ("at_filter_bitmap", u64, [vp, vp, ctypes.c_int, vp]), ("at_filter_bitmap_masked", u64, [vp, vp, ctypes.c_int, vp, vp]), ("bm_ids", u64, [vp, u64, vp]), ("pt_filter_bitmap", u64, [vp, vp, ctypes.c_int, vp]),
