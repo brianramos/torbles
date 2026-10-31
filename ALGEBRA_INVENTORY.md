@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 1 |
-| planned | 32 |
-| in_progress | 30 |
+| planned | 30 |
+| in_progress | 32 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -3212,7 +3212,7 @@ Certified ideal reduction, elimination and generator selection.
 
 ### GEOM-001: Certified sparse ideal reduction
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Verify f-g=sum(h_i*r_i) certificates over a declared carrier/domain and choose cheaper equivalent query representations.
 
@@ -3256,6 +3256,14 @@ Additional limits:
 - The CUDA kernels cover the row agreement and the batched certificate checks; completion, reduction and derivatives run on the CPU.
 - Costs are bounds and widths measured on one scope, not a query planner's cost model.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `2e0e328cf05243328e3a4e64b529f54463387459`.
+
+- tests: [results/math/GEOM-001/tests_test_math_geom.json](results/math/GEOM-001/tests_test_math_geom.json)
+- tests: [results/math/GEOM-001/sanitized_test_math_geom.json](results/math/GEOM-001/sanitized_test_math_geom.json)
+- benchmarks: [results/math/GEOM-001/benchmark_cpu_math_geom_vm.json](results/math/GEOM-001/benchmark_cpu_math_geom_vm.json)
 
 <a id="geom-002"></a>
 
@@ -3367,7 +3375,7 @@ Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 ### DISC-002: Moment-Gram polynomial identity discovery
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Use exact Gram/nullspace relationships of a bounded basis to propose and certify polynomial identities under nonnegative row weights.
 
@@ -3412,6 +3420,14 @@ Additional limits:
 - An identity verified in more than two 64-bit words may be refused a certificate by FND-007's 128-bit check (verified, not certified).
 - The numerical quadratic form is binary64 and only ever supports a hypothesis certificate.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `2e0e328cf05243328e3a4e64b529f54463387459`.
+
+- tests: [results/math/DISC-002/tests_test_math_ident.json](results/math/DISC-002/tests_test_math_ident.json)
+- tests: [results/math/DISC-002/sanitized_test_math_ident.json](results/math/DISC-002/sanitized_test_math_ident.json)
+- benchmarks: [results/math/DISC-002/benchmark_cpu_math_ident_vm.json](results/math/DISC-002/benchmark_cpu_math_ident_vm.json)
 
 <a id="disc-003"></a>
 
