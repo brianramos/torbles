@@ -3,7 +3,7 @@
  "device": false,
  "emulated": true,
  "machine": {
-  "commit": "a4ff3bb2f14099a7f535b95fde7228af59c22fc0",
+  "commit": "77472b9f66941ee337eccd5bff8590eeb91f696d",
   "cores": 2,
   "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
   "host": "vm",
@@ -13,14 +13,14 @@
   },
   "numpy": "2.5.3",
   "python": "3.13.18",
-  "when": "2026-10-31T09:48:54+00:00"
+  "when": "2026-10-31T11:16:56+00:00"
  },
- "passed": true,
+ "passed": false,
  "run": {
   "command": "/usr/local/bin/python3 -m unittest -k fnd012 test_math_gates",
-  "returncode": 0,
-  "seconds": 1.912068,
-  "stderr_tail": ".......\n----------------------------------------------------------------------\nRan 7 tests in 1.761s\n\nOK\n",
+  "returncode": 1,
+  "seconds": 1.771439,
+  "stderr_tail": ".....FE\n======================================================================\nERROR: test_fnd012_renderer_refuses_unbacked_or_stale_validation (test_math_gates.Gates.test_fnd012_renderer_refuses_unbacked_or_stale_validation)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/claude/release/torbles-math/tests/test_math_gates.py\", line 54, in test_fnd012_renderer_refuses_unbacked_or_stale_validation\n    renderer.validate(data)                                     # the committed inventory passes\n    ~~~~~~~~~~~~~~~~~^^^^^^\n  File \"/home/claude/release/torbles-math/bench/render_algebra_inventory.py\", line 81, in validate\n    raise ValueError(f\"{name}: current source differs from validated receipt: {path}\")\nValueError: FND-012: current source differs from validated receipt: bench/validate_math.py\n\n======================================================================\nFAIL: test_fnd012_inventory_view_is_current (test_math_gates.Gates.test_fnd012_inventory_view_is_current)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/claude/release/torbles-math/tests/test_math_gates.py\", line 156, in test_fnd012_inventory_view_is_current\n    self.assertEqual(run.returncode, 0, run.stdout + run.stderr)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 1 != 0 : Traceback (most recent call last):\n  File \"/home/claude/release/torbles-math/bench/render_algebra_inventory.py\", line 246, in <module>\n    main()\n    ~~~~^^\n  File \"/home/claude/release/torbles-math/bench/render_algebra_inventory.py\", line 234, in main\n    summary = validate(data)\n  File \"/home/claude/release/torbles-math/bench/render_algebra_inventory.py\", line 81, in validate\n    raise ValueError(f\"{name}: current source differs from validated receipt: {path}\")\nValueError: FND-012: current source differs from validated receipt: bench/validate_math.py\n\n\n----------------------------------------------------------------------\nRan 7 tests in 1.616s\n\nFAILED (failures=1, errors=1)\n",
   "stdout_tail": "",
   "tests_ran": 7
  },
