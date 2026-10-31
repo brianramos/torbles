@@ -73,7 +73,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial",
     "certificate", "serialized record", "provenance dag", "join terms", "envelope",
     "cooperative game",
-    "constraint counts", "parity relations"};
+    "constraint counts", "parity relations",
+    "abstract state", "code set"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -535,6 +536,23 @@ static const tr_reg_module modules[] = {
                    "tr_parity_found_certificate", "tr_parity_substitute", "tr_parity_rewrite_program",
                    "tr_parity_verify", "tr_parity_verify_view", "tr_parity_verify_need"},
      .cuda_entry = {"tr_mgpu_parity_verify"}},
+    {FAMILY(TR_REG_M_UNC, "unc", "unc", "UNC-001", "certified abstract states"),
+     .state_kind = TR_REG_STATE_ABSTRACT, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(QINTERVAL) | CB(INTERVAL) | CB(RATIONAL) | CB(INTEGER) | CB(KLEENE) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_ENCLOSURE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY | TR_PROOF_PRIME,
+     .cpu_entry = {"tr_unc_program_check", "tr_unc_state_from_scope", "tr_unc_state_from_inputs", "tr_unc_eval",
+                   "tr_unc_eval_need", "tr_unc_trace", "tr_unc_rows", "tr_unc_filter", "tr_unc_sum_fits",
+                   "tr_unc_cong_meet", "tr_unc_identity", "tr_unc_certify"},
+     .cuda_entry = {"tr_mgpu_unc_eval", "tr_mgpu_unc_rows"}},
+    {FAMILY(TR_REG_M_PRE, "pre", "pre", "PRE-001", "exact preimages of derived predicates"),
+     .state_kind = TR_REG_STATE_CODE_SET, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(BIGINT) | CB(CODE) | CB(RATIONAL) | CB(KLEENE) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_pre_codec_for_column", "tr_pre_preimage", "tr_pre_set_get_info", "tr_pre_set_spans",
+                   "tr_pre_set_contains", "tr_pre_set_get_view", "tr_pre_set_certificate", "tr_pre_scan"},
+     .cuda_entry = {"tr_mgpu_pre_scan"}},
 };
 #undef BUILTIN
 #undef FAMILY

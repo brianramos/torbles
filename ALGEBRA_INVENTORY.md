@@ -3401,9 +3401,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-007](#fnd-007), [UNC-001](#unc-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native transformation of a predicate y op c (op <, <=, =, <>, >=, >, or IN a finite set) on a derived value y = f(x) into the exact set of stored codes of the generator column, for its codec (logical = code + offset, x = logical / 10^scale, codes over a declared domain, e.g. 0 .. 2^width - 1 of an engine column): affine maps a x + b (a negative slope flips the inequality; integer rounding by floor and ceil of the exact threshold), squares a x^2 + b (symmetric intervals by integer square roots, zero, one or two points for equalities, both branches always), residue maps x mod m (sets of residues of L mod m 10^scale, then residue classes of codes, or plain intervals when the domain is not larger than the modulus) and piecewise maps of affine and square pieces with closed domains (each piece solved in its code range, all unioned; a piece whose image lies on one side is decided by UNC-001's exact abstract evaluation). Thresholds are FND-009 big rationals, so nothing overflows or rounds. A zero slope or modulus is refused (DomainError) and pieces whose code ranges leave a gap (a missing branch, DomainError) or overlap (ValueError) are refused, never approximated. Results are sorted, disjoint spans with the empty and whole-domain flags, the exact code count and the NULL guard (a NULL value never satisfies), with one FND-007 law (ring identity of the codec substitution D f((code + offset) / T) - (P code + Q), decided canonically zero by FND-007) per branch. The scan sets the rows of a scope column whose present codes are in the set and, with the direct check, evaluates the original predicate exactly on every selected row (UNC-001's row evaluator) and counts mismatches. Budgets (support, output, bytes) are checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: tr_mgpu_pre_scan: one work item per 64-row word evaluates the transformed predicate on the stored codes (span membership by binary search) and writes its own bitmap word; with the direct check it also evaluates the original predicate on each selected row with UNC-001's exact row evaluator and adds the counts (NULL rows, in-set rows, true rows, mismatches, undecided rows, rows outside the domain) by atomics, the first mismatching and undecided rows by atomic minimum. It runs the inline functions of math_pre.h on the set's plain view with device copies, equal to the CPU bit for bit. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.
 
 Bounds:
 
@@ -3417,9 +3417,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_pre.c`
 - `torbles/math_pre.h`
+- `torbles/math_pre.c`
+- `torbles/math_pre_gpu.cu`
+- `torbles/math_pre.py`
 - `tests/test_math_pre.py`
+- `bench/benchmark_math_pre.py`
 
 Acceptance tests:
 
@@ -3430,6 +3433,14 @@ Benchmark cases:
 
 - Use affine positive/negative slopes, monotone pieces, squares and residue maps over bounded integer domains; compare all predicate boundaries with direct evaluation.
 - Vary preimage branch counts 1/4/16/64 and predicate selectivity; compare transformed plane predicates with the correct direct/lookup candidate and retain losing cases.
+
+Additional limits:
+
+- Maps are affine, a x^2 + b (vertex at 0), x mod m with an integer m and pieces of affine and square maps; no general polynomial or composed maps.
+- Residue spans have no bit-plane program (a code lookup is the engine candidate); self-extending (wide) columns are not supported.
+- The law certificates cover the algebraic substitution of the codec; the integer rounding is proved by the exact computation and the exhaustive tests, not by a certificate; a branch whose coefficients leave int64 has none.
+- The direct check evaluates in int64 rationals: a row it cannot decide is reported (overflow), not checked.
+- The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
 
 <a id="pre-002"></a>
 
@@ -4012,9 +4023,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-009](#fnd-009), [FND-007](#fnd-007)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native abstract states over the groups of an FND-004 scope (per group and column: selected rows, present rows, logical min and max, gcd of the differences) and expression programs (up to 64 nodes over up to 32 columns: column, constant, +, -, *, negation, division by a nonzero constant, min, max, abs, square, mod by a positive constant, the six comparisons, AND, OR, NOT, IS NULL, IS NOT NULL). Each numeric node carries a reduced product: nullness (SQL propagation), an interval with exact int64-rational bounds (overflow widens soundly and is flagged) or FND-009 outward-rounded doubles, an affine form over shared noise symbols (one per column, one approximation symbol per node holding its nonlinear remainder, rounding errors and condensed terms, so x - x = 0 and a node minus itself is 0) with exact rational or rigorously bounded double coefficients truncated to a chosen precision, a rank limit (terms condensed into the node's symbol) and an error budget (the form collapses past it), a rational congruence r + mZ with Granger's rules and the CRT meet (GF(p) as m = p), and a zero fact; boolean nodes carry their set of SQL outcomes. Comparisons decide d = a - b as a form intersected with the interval difference and the class of d. Per group a boolean root is decided ALL, NONE, UNKNOWN or EMPTY; the filter keeps ALL groups, prunes NONE groups and evaluates the rows of UNKNOWN groups exactly (int64 rationals with 128-bit intermediates, SQL NULLs; an undecidable row is refused as overflow). Also: every node's value for a group (trace), the symbolic affine form, the overflow decision of a SUM over a group in a given accumulator width and unit, FND-007 LAW certificates (ring identities D E - D L = 0 of exact affine identities, canonicalized by FND-007) and SNAPSHOT certificates of proved NOT NULL, congruence modulo a prime (GF(p) polynomial claims) and constant facts, re-verified by FND-007 on every selected row; freshness through the scope's FND-007 record. Budgets (circuit, variables, support, states, output, bytes) are checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: tr_mgpu_unc_eval: one work item per group evaluates the program through every node with its values in its own slots of a device scratch (chunks of 4096 groups) and writes its own result slot; tr_mgpu_unc_rows: one work item per 64-row word writes its own bitmap word (rows of groups decided by the proof set or cleared, the others evaluated exactly) and adds its counts by atomics, the first overflowing row by atomic minimum. Both run the inline functions of math_unc.h (the double operations are FND-009's contraction-safe directed operations), so they equal the CPU bit for bit; the host validates programs and inputs and budgets the device copies before launching. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.
 
 Bounds:
 
@@ -4023,9 +4034,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_unc.c`
 - `torbles/math_unc.h`
+- `torbles/math_unc.c`
+- `torbles/math_unc_gpu.cu`
+- `torbles/math_unc.py`
 - `tests/test_math_unc.py`
+- `bench/benchmark_math_unc.py`
 
 Acceptance tests:
 
@@ -4036,6 +4050,16 @@ Benchmark cases:
 
 - Use correlated cancellation, interval thresholds and modular constraints with 1%/50%/99% ambiguous regions; report proof/pruning work and concrete fallback work separately.
 - Vary coefficient precision, approximation rank and error budget; compare certified bounds with exhaustive small or high-precision oracles and record unproved cases.
+
+Additional limits:
+
+- Comparison outcomes are combined as sets: AND / OR of correlated predicates (x < 5 AND x >= 5) are not decided.
+- The inputs are per column (no joint information between columns); the correlation kept is the algebraic one of shared nodes and columns.
+- Congruence tightening of interval bounds is applied in the exact carrier only; binary64 intervals keep full precision while form coefficients may be truncated.
+- Exact arithmetic is int64 rationals with 128-bit intermediates: past it bounds widen (flagged) and concrete rows are refused as overflow, never wrapped.
+- FND-007 has no inequality claim kind: interval bounds and pruning decisions are tied to the scope's record (freshness), not issued as certificates; law certificates need polynomial nodes over at most 8 columns and int64 coefficients.
+- MIN / MAX propagate NULL (unlike SQL LEAST / GREATEST); division and mod take constant divisors only.
+- The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
 
 <a id="unc-002"></a>
 

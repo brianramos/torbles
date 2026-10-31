@@ -82,6 +82,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 44 | attr | contribution attribution | ATTR-001 | cooperative game | `tr_attr_game_prov` | `tr_mgpu_attr_values`, `tr_mgpu_attr_exhaustive`, `tr_mgpu_attr_explore`, `tr_mgpu_attr_search` |
 | 45 | count | observed-domain constraint counts | COUNT-001 | constraint counts | `tr_count_set_create` | `tr_mgpu_count_counts`, `tr_mgpu_count_extract` |
 | 46 | parity | parity discovery and substitution | FIELD-002 | parity relations | `tr_parity_discover` | `tr_mgpu_parity_verify` |
+| 47 | unc | certified abstract states | UNC-001 | abstract state | `tr_unc_program_check` | `tr_mgpu_unc_eval`, `tr_mgpu_unc_rows` |
+| 48 | pre | exact preimages of derived predicates | PRE-001 | code set | `tr_pre_codec_for_column` | `tr_mgpu_pre_scan` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

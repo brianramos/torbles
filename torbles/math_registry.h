@@ -915,7 +915,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_ATTR = 44,              /* ATTR-001 sparse interaction and contribution attribution */
        TR_REG_M_COUNT = 45,             /* COUNT-001 observed-domain constraint counts and witnesses */
        TR_REG_M_PARITY = 46,            /* FIELD-002 parity relationship discovery and substitution */
-       TR_REG_M_END = 47 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_UNC = 47,               /* UNC-001 intervals, affine forms, congruences, pruning */
+       TR_REG_M_PRE = 48,               /* PRE-001 affine, square, residue, piecewise maps to codes */
+       TR_REG_M_END = 49 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -952,7 +954,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_GAME = 35,              /* a declared cooperative game (coalition values or a provenance plan with players) and its Moebius support */
        TR_REG_STATE_CONSTRAINT_COUNTS = 36, /* per constraint: TRUE / FALSE / UNKNOWN points, witnesses, rows covered */
        TR_REG_STATE_PARITY_RELATIONS = 37,  /* certified parity relations, rewritten predicates */
-       TR_REG_STATE_KINDS = 38 };
+       TR_REG_STATE_ABSTRACT = 38,          /* per group and column: rows, present, min, max, gcd */
+       TR_REG_STATE_CODE_SET = 39,          /* spans of stored codes, branch programs and laws */
+       TR_REG_STATE_KINDS = 40 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1195,6 +1199,15 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_PARITY, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_PARITY, POLY_SUBSTITUTE, GF2, TR__CPU),
     TR__I(TR_REG_M_PARITY, LOGIC, KLEENE, TR__ALL), TR__I(TR_REG_M_PARITY, POPCOUNT, ROWSET, TR__ALL),
     TR__I(TR_REG_M_PARITY, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_PARITY, ORDER, COUNT, TR__ALL),
+    /* 47 UNC-001 intervals, affine forms, congruences, pruning */
+    TR__I(TR_REG_M_UNC, ENCLOSE, QINTERVAL, TR__ALL), TR__I(TR_REG_M_UNC, ENCLOSE, INTERVAL, TR__ALL),
+    TR__I(TR_REG_M_UNC, PREDICATE, RATIONAL, TR__ALL), TR__I(TR_REG_M_UNC, LOGIC, KLEENE, TR__ALL),
+    TR__I(TR_REG_M_UNC, EVAL, RATIONAL, TR__ALL), TR__I(TR_REG_M_UNC, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_UNC, EUCLID, INTEGER, TR__CPU),
+    /* 48 PRE-001 affine, square, residue, piecewise maps to codes */
+    TR__I(TR_REG_M_PRE, DIVIDE, BIGQ, TR__CPU), TR__I(TR_REG_M_PRE, EUCLID, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_PRE, ORDER, CODE, TR__ALL), TR__I(TR_REG_M_PRE, EVAL, RATIONAL, TR__ALL),
+    TR__I(TR_REG_M_PRE, PREDICATE, RATIONAL, TR__ALL), TR__I(TR_REG_M_PRE, FOLD, COUNT, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU
