@@ -247,7 +247,14 @@ def main():
     for cap in caps:
         if cap not in by:
             raise SystemExit(f"unknown capability {cap}")
-        results[cap] = validate(cap, by[cap], a.device, a.skip_bench)
+        entry = by[cap]
+        old = (entry.get("validation") or {}).get("source_sha256") or {}
+        if entry["status"] == "validated" and old != {f: sha(f) for f in covered(entry["planned_files"]) if (ROOT / f).is_file()}:
+            # an edited covered source voids the validated claim before anything is measured again
+            entry["status"] = "in_progress"
+            INVENTORY.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
+            subprocess.run([sys.executable, "bench/render_algebra_inventory.py"], cwd=ROOT, capture_output=True)
+        results[cap] = validate(cap, entry, a.device, a.skip_bench)
         INVENTORY.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
         subprocess.run([sys.executable, "bench/render_algebra_inventory.py"], cwd=ROOT, capture_output=True)
         print(f"{cap}: {'receipts written' if results[cap] else 'FAILED (see results/math/' + cap + ')'}; status {by[cap]['status']}", flush=True)
