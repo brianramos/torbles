@@ -75,7 +75,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "cooperative game",
     "constraint counts", "parity relations",
     "abstract state", "code set",
-    "ideal"};
+    "ideal",
+    "moment tensors", "contraction plans",
+    "kernel features"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -572,6 +574,34 @@ static const tr_reg_module modules[] = {
                    "tr_geom_cost_of", "tr_geom_choose", "tr_geom_pairs_make", "tr_geom_agree_view",
                    "tr_geom_checks_make", "tr_geom_checks_run", "tr_geom_derivative", "tr_geom_dependency_check"},
      .cuda_entry = {"tr_mgpu_geom_agree", "tr_mgpu_geom_check"}},
+    {FAMILY(TR_REG_M_TENSOR_STATE, "tensor.state", "tensor", "TENSOR-001", "sparse and factored moment tensors"),
+     .state_kind = TR_REG_STATE_MOMENT_TENSOR, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(COUNT) | CB(CODE),
+     .laws_relied = TR_REG_RING | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_tensor_build", "tr_tensor_init", "tr_tensor_accumulate", "tr_tensor_merge_builder",
+                   "tr_tensor_finish", "tr_tensor_need", "tr_tensor_from_states", "tr_tensor_convert",
+                   "tr_tensor_marginal", "tr_tensor_slice", "tr_tensor_permute", "tr_tensor_outer"},
+     .cuda_entry = {"tr_mgpu_tensor_build"}},
+    {FAMILY(TR_REG_M_TENSOR_CONTRACT, "tensor.contract", "tensor", "TENSOR-002", "costed contraction planning"),
+     .state_kind = TR_REG_STATE_CONTRACTION_PLAN, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(INT128),
+     .laws_relied = TR_REG_RING | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_BOUND,
+     .cpu_entry = {"tr_tensor_net_plan", "tr_tensor_net_create", "tr_tensor_net_free", "tr_tensor_plan_get_info",
+                   "tr_tensor_plan_get", "tr_tensor_plan_free", "tr_tensor_net_execute", "tr_tensor_net_program",
+                   "tr_tensor_net_input_dense", "tr_tensor_default_rates"},
+     .cuda_entry = {"tr_mgpu_tensor_contract"}},
+    {FAMILY(TR_REG_M_KERNEL, "kernel", "kernel", "KERNEL-001", "exact finite-feature kernel embeddings"),
+     .state_kind = TR_REG_STATE_KERNEL_FEATURES, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(COUNT) | CB(CODE),
+     .laws_relied = TR_REG_FIELD | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_kernel_build", "tr_kernel_check", "tr_kernel_need", "tr_kernel_from_states",
+                   "tr_kernel_get_info", "tr_kernel_get_group", "tr_kernel_get_tensor", "tr_kernel_eval_make",
+                   "tr_kernel_eval_get_view", "tr_kernel_query", "tr_kernel_view_device_bytes", "tr_kernel_free"},
+     .cuda_entry = {"tr_mgpu_kernel_build", "tr_mgpu_kernel_upload", "tr_mgpu_kernel_query", "tr_mgpu_kernel_bytes",
+                    "tr_mgpu_kernel_free"}},
 };
 #undef BUILTIN
 #undef FAMILY

@@ -86,6 +86,9 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 48 | pre | exact preimages of derived predicates | PRE-001 | code set | `tr_pre_codec_for_column` | `tr_mgpu_pre_scan` |
 | 49 | ident | moment-Gram identity discovery | DISC-002 | Gram | `tr_ident_plan_make` | `tr_mgpu_ident_gram`, `tr_mgpu_ident_verify` |
 | 50 | geom | certified ideal reduction | GEOM-001 | ideal | `tr_geom_ideal_make` | `tr_mgpu_geom_agree`, `tr_mgpu_geom_check` |
+| 51 | tensor.state | sparse and factored moment tensors | TENSOR-001 | moment tensors | `tr_tensor_build` | `tr_mgpu_tensor_build` |
+| 52 | tensor.contract | costed contraction planning | TENSOR-002 | contraction plans | `tr_tensor_net_plan` | `tr_mgpu_tensor_contract` |
+| 53 | kernel | exact finite-feature kernel embeddings | KERNEL-001 | kernel features | `tr_kernel_build` | `tr_mgpu_kernel_build`, `tr_mgpu_kernel_upload`, `tr_mgpu_kernel_query`, `tr_mgpu_kernel_bytes`, `tr_mgpu_kernel_free` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

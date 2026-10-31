@@ -919,7 +919,10 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_PRE = 48,               /* PRE-001 affine, square, residue, piecewise maps to codes */
        TR_REG_M_IDENT = 49,             /* DISC-002 Gram nullspaces, verified identities */
        TR_REG_M_GEOM = 50,              /* GEOM-001 Groebner bases, reduction certificates */
-       TR_REG_M_END = 51 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_TENSOR_STATE = 51,      /* TENSOR-001 sparse and factored moment tensors */
+       TR_REG_M_TENSOR_CONTRACT = 52,   /* TENSOR-002 costed tensor contraction planning */
+       TR_REG_M_KERNEL = 53,            /* KERNEL-001 exact finite-feature kernel embeddings */
+       TR_REG_M_END = 54 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -959,7 +962,10 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_ABSTRACT = 38,          /* per group and column: rows, present, min, max, gcd */
        TR_REG_STATE_CODE_SET = 39,          /* spans of stored codes, branch programs and laws */
        TR_REG_STATE_IDEAL = 40,             /* a polynomial basis with cofactors over relation certificates */
-       TR_REG_STATE_KINDS = 41 };
+       TR_REG_STATE_MOMENT_TENSOR = 41,     /* per group: dense, sparse or factored moment or count tensors */
+       TR_REG_STATE_CONTRACTION_PLAN = 42,  /* costed contraction orders, step shapes, bytes, lifetimes */
+       TR_REG_STATE_KERNEL_FEATURES = 43,   /* per group: a feature tensor, weight sums, self-pair terms */
+       TR_REG_STATE_KINDS = 44 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1222,6 +1228,18 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_GEOM, DIVIDE, RATIONAL, TR__CPU), TR__I(TR_REG_M_GEOM, POLY_DERIVATIVE, RATIONAL, TR__CPU),
     TR__I(TR_REG_M_GEOM, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_GEOM, FOLD, INT128, TR__ALL),
     TR__I(TR_REG_M_GEOM, EVAL, INTEGER, TR__ALL), TR__I(TR_REG_M_GEOM, VERIFY, INTEGER, TR__ALL),
+    /* 51 TENSOR-001 sparse and factored moment tensors */
+    TR__I(TR_REG_M_TENSOR_STATE, FOLD, INT128, TR__ALL), TR__I(TR_REG_M_TENSOR_STATE, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_TENSOR_STATE, POWERS, INTEGER, TR__ALL), TR__I(TR_REG_M_TENSOR_STATE, HISTOGRAM, CODE, TR__ALL),
+    TR__I(TR_REG_M_TENSOR_STATE, MERGE, INT128, TR__CPU), TR__I(TR_REG_M_TENSOR_STATE, MULTIPLY, INT128, TR__CPU),
+    /* 52 TENSOR-002 costed tensor contraction planning */
+    TR__I(TR_REG_M_TENSOR_CONTRACT, CONTRACT, INT128, TR__ALL), TR__I(TR_REG_M_TENSOR_CONTRACT, MULTIPLY, INT128, TR__ALL),
+    TR__I(TR_REG_M_TENSOR_CONTRACT, FOLD, INT128, TR__ALL),
+    /* 53 KERNEL-001 exact finite-feature kernel embeddings */
+    TR__I(TR_REG_M_KERNEL, FOLD, INT128, TR__ALL), TR__I(TR_REG_M_KERNEL, FOLD, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_KERNEL, POWERS, INTEGER, TR__ALL), TR__I(TR_REG_M_KERNEL, HISTOGRAM, CODE, TR__ALL),
+    TR__I(TR_REG_M_KERNEL, CONTRACT, BIGINT, TR__ALL), TR__I(TR_REG_M_KERNEL, SUBTRACT, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_KERNEL, MULTIPLY, BIGINT, TR__ALL), TR__I(TR_REG_M_KERNEL, DIVIDE, BIGQ, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU

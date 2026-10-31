@@ -2160,9 +2160,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [LIN-001](#lin-001), [FND-004](#fnd-004)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_tensor.c): exact retained multi-index states over an FND-004 scope, per group: moment tensors T_g[i] = sum w prod_k x[col_k[i_k]] of order 0..8 over per-axis column lists (the constant 1 allowed; listwise, or SQL with per-entry contributing-row counts; axes sharing one column list accumulate their sorted multi-indices only) and joint count tensors over categorical axes (scope or explicit domains, NULL a slot of its own, weighted or not), with the selected and contributing rows kept apart from NULL validity; dense, sparse (CSR, strictly increasing multi-indices) and factored (declared rank-one sums with int64 factors, built without expansion) forms with exact conversions preserving order, dimensions, axes, groups, rows, counts and entries; marginalization, slicing, permutation, outer products, ungrouping and entry access in any form; int128 entries proven before any row is read (N x max|w| x prod_k max|x| <= 2^127 - 1) and every derived sum checked; a chunked builder (init, accumulate, merge, finish) that gives the same state bit for bit for any chunking; budgets (variables, degree, tensor, states, support, bytes) checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_tensor_gpu.cu (tr_mgpu_tensor_build): dense moment work items (entry, row slice) accumulate locally and add with the exact two-word atomic (symmetric tensors on their canonical entries, then a copy launch); count work items add one atomic per row; sparse builds insert every emission into an open-addressing table of at least twice the capacity (a local 64-bit compare-and-swap claims a slot) whose occupied slots the host sorts into the canonical CSR; the readback is adopted by tr_tensor_from_states after shape, row, order and bound checks; equal to the CPU bit for bit.
 
 Bounds:
 
@@ -2171,9 +2171,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_tensor.c`
 - `torbles/math_tensor.h`
+- `torbles/math_tensor.c`
+- `torbles/math_tensor_gpu.cu`
+- `torbles/math_tensor.py`
 - `tests/test_math_tensor.py`
+- `bench/benchmark_math_tensor.py`
 
 Acceptance tests:
 
@@ -2184,6 +2187,12 @@ Benchmark cases:
 
 - Vary tensor order 2/3/4, support sparsity 1%/10%/dense and dimensions 2/4/8; record actual intermediate shapes and bytes.
 - Compare multiple contraction orders, sparse and dense states on identical tensors; include cases where the cheapest order changes and over-budget intermediates are refused.
+
+Additional limits:
+
+- Entries are limited to 128 bits (refused beyond); orders up to 8, at most 64 columns per axis, dimensions below 2^32 and fewer than 2^64 cells per group.
+- A factored form's bound is a conservative sum over its terms, so some factored operations refuse what the dense form computes; count tensors have no factored form.
+- The CPU loops are single-threaded; the device sparse build sorts its hash table on the host.
 
 <a id="tensor-002"></a>
 
@@ -2197,9 +2206,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [TENSOR-001](#tensor-001), [FND-008](#fnd-008)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_tensor.c): networks of 1..8 TENSOR-001 tensors with named indices (at most 16 labels; a grouped tensor's group label first) contracted by Einstein summation along orders of pairwise steps: every order enumerated when there are at most max_orders (default 64), otherwise a bounded search (the greedy orders, then depth-first ones); each order with the CPU dense, CPU sparse (operands matched on their shared labels, products sorted and reduced) and CUDA dense kernels; exact per-step labels, dimensions, cells, summed combinations, stored entries (sparse: exact upper bounds), bytes, scratch, live bytes by materialization lifetime, the peak, the output bytes and a magnitude bound per step proven before execution; exact amounts per FND-008 cost component costed and budget-checked by tr_planner_choose (the family's own rates passed as the planner's override table), the cheapest admissible candidate chosen and rejected candidates kept as evidence with their refusals; execution of any admissible candidate returns the exact tensor with the actual per-step entries, bytes and peak.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_tensor_gpu.cu (tr_mgpu_tensor_contract): the dense candidate's pairwise steps, one work item per result entry evaluating the shared tr_tensor_dense_entry (exact int128 products and sums; every step bound re-proven on the host before copying), intermediates kept on the device and freed after their consumer; equal to the CPU kernels bit for bit.
 
 Bounds:
 
@@ -2208,9 +2217,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_tensor.c`
 - `torbles/math_tensor.h`
+- `torbles/math_tensor.c`
+- `torbles/math_tensor_gpu.cu`
+- `torbles/math_tensor.py`
 - `tests/test_math_tensor.py`
+- `bench/benchmark_math_tensor.py`
 
 Acceptance tests:
 
@@ -2221,6 +2233,11 @@ Benchmark cases:
 
 - Vary tensor order 2/3/4, support sparsity 1%/10%/dense and dimensions 2/4/8; record actual intermediate shapes and bytes.
 - Compare multiple contraction orders, sparse and dense states on identical tensors; include cases where the cheapest order changes and over-budget intermediates are refused.
+
+Additional limits:
+
+- No factored contraction kernel: factored operands are expanded (costed and budgeted); the CUDA contraction is dense only (sparse candidates run on the CPU).
+- Sparse sizes in a plan are exact upper bounds, not the data's actual supports; the rates are hand-set estimates in relative work units (not calibrated times); traces within one tensor are not supported.
 
 ## KERNEL: Kernel calculations
 
@@ -2238,9 +2255,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [TENSOR-001](#tensor-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_kernel.c): kernels with an explicit finite feature map, polynomial (x.y + c)^d (d <= 8, |c|^d <= 2^127 - 1; linear and homogeneous included), declared monomial sums sum_t w_t x^a_t y^a_t and delta kernels (categorical match, NULL a category of its own), reduced to TENSOR-001 states: the listwise moment tensor of order D >= d over (1, x_1..x_n), or the count tensor, with per group W = sum w, Q = sum w^2 and the declared kernel's self-pair sum sum w^2 k(x, x) (1024 bits, proven to fit before any row is read); exact kernel sums over selected pairs (across groups, within a group with or without self-pairs, ordered or unordered) and their weighted pair counts, kernel mean inner products, biased and unbiased MMD^2 and witness values, as exact rationals in 1024-bit words (overflow refused per request, never wrapped), evaluated over the C(n + d, d) sorted multi-indices with their multiplicities; any kernel the state retains (family, degree <= D, a subset of its columns) is evaluated on the same state, an absent degree, dimension or family is refused (UNSUPPORTED), and RBF, Laplace and other kernels are refused, never approximated; budgets (the tensor's needs, 288 bytes a group, evaluation items, output) checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_kernel_gpu.cu: the feature state (tr_mgpu_kernel_build: TENSOR-001's device build of the feature tensor, then one work item per row slice summing W, Q and Dg locally and adding them with exact atomics, the 1024-bit sums by a local 16-word atomic carry chain), adopted by tr_kernel_from_states after consistency checks; batched requests (tr_mgpu_kernel_upload once per state and kernel, then tr_mgpu_kernel_query: one work item per request running the shared evaluator tr_kernel_eval_request, one output slot each); equal to the CPU bit for bit.
 
 Bounds:
 
@@ -2249,9 +2266,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_kernel.c`
 - `torbles/math_kernel.h`
+- `torbles/math_kernel.c`
+- `torbles/math_kernel_gpu.cu`
+- `torbles/math_kernel.py`
 - `tests/test_math_kernel.py`
+- `bench/benchmark_math_kernel.py`
 
 Acceptance tests:
 
@@ -2262,6 +2282,12 @@ Benchmark cases:
 
 - Compare exact polynomial features at dimensions 2/4/8 and degrees 1/2/4 against direct small kernel matrices; separate feature-state construction and reuse.
 - For explicitly approximate kernels vary feature counts 16/64/256 and fixed seeds; record observed error against a small exact numerical oracle alongside time and memory.
+
+Additional limits:
+
+- Exact finite-feature kernels only: RBF, Laplace and other kernels without an exact finite feature map are refused (declared approximations are KERNEL-002's).
+- The feature tensor stores (n + 1)^D cells per group (dense, or sparse at the data's support), so the tensor budget bounds the dimension and degree; listwise only (a row with a NULL feature column does not contribute).
+- Answers are limited to 1024 bits (refused beyond) and are unreduced num / den natively; the CUDA query kernel has a 1984-byte stack frame with register spills and runs one work item per request.
 
 <a id="kernel-002"></a>
 
