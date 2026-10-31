@@ -1,0 +1,7991 @@
+{
+ "argv": [
+  "--capability",
+  "PRE-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/PRE-001/benchmark_cpu_math_pre_vm.json"
+ ],
+ "capability": "PRE-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "246664aa793bcecefac4cd954e6366a1a85271f8",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "b18cad5ff705a04113c097db4650ee1a4124bf92b30bf50f1376dbcaf9fc5555",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "768fcc410ebaf6226a8832b74812dd00c7a5ec7d2d742768b0883a92b24b51e3"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T22:44:37+00:00"
+ },
+ "notes": [
+  "case 2, cases the transformed plane predicate loses (retained): 1 branches, selectivity 0.5: direct 8.20e-04s vs plane 8.44e-04s",
+  "CPU = native libalg; CUDA timings only with --device; DuckDB and NumPy evaluate the original predicate exactly (integers multiplied through by positive denominators); the engine plane predicate is at_filter_bitmap_masked on the OR of BETWEENs of the transformed code intervals."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399990,
+    "empty": false,
+    "in_set": 399990,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 10,
+    "empty": false,
+    "in_set": 10,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399990,
+    "empty": false,
+    "in_set": 399990,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 10,
+    "empty": false,
+    "in_set": 10,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 6.720000055793207e-05,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    6.720000055793207e-05,
+    3.965900032198988e-05,
+    2.4726999981794506e-05,
+    2.2693999198963866e-05,
+    2.6619998607202433e-05
+   ],
+   "warm_median_seconds": 2.567349929449847e-05,
+   "warm_min_seconds": 2.2693999198963866e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197703,
+    "empty": false,
+    "in_set": 197703,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.005261397000140278,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 197703,
+   "samples_seconds": [
+    0.005261397000140278,
+    0.005001790001188056,
+    0.00503867400038871,
+    0.004944025000440888,
+    0.0050230329998157686
+   ],
+   "warm_median_seconds": 0.005012411500501912,
+   "warm_min_seconds": 0.004944025000440888
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02623426600075618,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02623426600075618,
+    0.02651547200002824,
+    0.026120126000023447
+   ],
+   "warm_median_seconds": 0.026317799000025843,
+   "warm_min_seconds": 0.026120126000023447
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.001857231000030879,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.001857231000030879,
+    0.0009319609998783562,
+    0.0007787020003888756,
+    0.000690191998728551,
+    0.0007078939997882117
+   ],
+   "warm_median_seconds": 0.0007432980000885436,
+   "warm_min_seconds": 0.000690191998728551
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.004700482000771444,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.004700482000771444,
+    0.004091712999070296,
+    0.003698593998706201,
+    0.003724184000020614,
+    0.0039020509993861197
+   ],
+   "warm_median_seconds": 0.0038131174997033668,
+   "warm_min_seconds": 0.003698593998706201
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0009694519994809525,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.0009694519994809525,
+    0.000962413001616369,
+    0.0008670719998917775,
+    0.0008462789992336184,
+    0.0005592960005742498
+   ],
+   "warm_median_seconds": 0.000856675499562698,
+   "warm_min_seconds": 0.0005592960005742498
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010839500100701116,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010839500100701116,
+    3.211900002497714e-05,
+    2.1997000658302568e-05,
+    1.9320999854244292e-05,
+    1.8749000446405262e-05
+   ],
+   "warm_median_seconds": 2.065900025627343e-05,
+   "warm_min_seconds": 1.8749000446405262e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197703,
+    "empty": false,
+    "in_set": 197703,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.005300675000398769,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 197703,
+   "samples_seconds": [
+    0.005300675000398769,
+    0.005500310000570607,
+    0.0052026620014657965,
+    0.0055515710009785835,
+    0.005058869999629678
+   ],
+   "warm_median_seconds": 0.005351486001018202,
+   "warm_min_seconds": 0.005058869999629678
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.026352476999818464,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.026352476999818464,
+    0.027885376000995166,
+    0.027014872999643558
+   ],
+   "warm_median_seconds": 0.02745012450031936,
+   "warm_min_seconds": 0.027014872999643558
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0025374510005349293,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.0025374510005349293,
+    0.0010471209989191266,
+    0.0007895409999036929,
+    0.0006857429998490261,
+    0.0011112219999631634
+   ],
+   "warm_median_seconds": 0.0009183309994114097,
+   "warm_min_seconds": 0.0006857429998490261
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.0034259860003658105,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.0034259860003658105,
+    0.002893003000281169,
+    0.002407359999779146,
+    0.002538194999942789,
+    0.002936964001492015
+   ],
+   "warm_median_seconds": 0.002715599000111979,
+   "warm_min_seconds": 0.002407359999779146
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008676569996168837,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197703,
+   "samples_seconds": [
+    0.0008676569996168837,
+    0.0005580860015470535,
+    0.0008454950002487749,
+    0.0008347540006070631,
+    0.0005564500006585149
+   ],
+   "warm_median_seconds": 0.0006964200010770583,
+   "warm_min_seconds": 0.0005564500006585149
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 7.985699994605966e-05,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    7.985699994605966e-05,
+    2.4770999516476877e-05,
+    1.631399936741218e-05,
+    1.4963001376600005e-05,
+    1.4737999663338996e-05
+   ],
+   "warm_median_seconds": 1.5638500372006092e-05,
+   "warm_min_seconds": 1.4737999663338996e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0016442279993498232,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 0,
+   "samples_seconds": [
+    0.0016442279993498232,
+    0.0014847379989078036,
+    0.0015645069997844985,
+    0.0018473710006219335,
+    0.00150256199958676
+   ],
+   "warm_median_seconds": 0.0015335344996856293,
+   "warm_min_seconds": 0.0014847379989078036
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.025947623000320164,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.025947623000320164,
+    0.025930618001439143,
+    0.025784233999729622
+   ],
+   "warm_median_seconds": 0.025857426000584383,
+   "warm_min_seconds": 0.025784233999729622
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0022416470001189737,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0022416470001189737,
+    0.0009464819995628204,
+    0.0007003279988566646,
+    0.0007444580005540047,
+    0.0007220200004667277
+   ],
+   "warm_median_seconds": 0.0007332390005103662,
+   "warm_min_seconds": 0.0007003279988566646
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.001407202000336838,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.001407202000336838,
+    0.0008009100001800107,
+    0.0007053359986457508,
+    0.0006586500003322726,
+    0.0007285390001925407
+   ],
+   "warm_median_seconds": 0.0007169374994191458,
+   "warm_min_seconds": 0.0006586500003322726
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008197269999072887,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0008197269999072887,
+    0.0005074879991298076,
+    0.0007672339997952804,
+    0.0007749340002192184,
+    0.0004773579985339893
+   ],
+   "warm_median_seconds": 0.000637360999462544,
+   "warm_min_seconds": 0.0004773579985339893
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 8.325399903696962e-05,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    8.325399903696962e-05,
+    2.38070006162161e-05,
+    1.6882000636542216e-05,
+    1.6168000001925975e-05,
+    1.4813000234426e-05
+   ],
+   "warm_median_seconds": 1.6525000319234096e-05,
+   "warm_min_seconds": 1.4813000234426e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.002309432000402012,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 400000,
+   "samples_seconds": [
+    0.002309432000402012,
+    0.0022123750004539033,
+    0.002277970999784884,
+    0.002203645999543369,
+    0.0023576210005558096
+   ],
+   "warm_median_seconds": 0.0022451730001193937,
+   "warm_min_seconds": 0.002203645999543369
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02590863099976559,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02590863099976559,
+    0.025832907000221894,
+    0.026574883000648697
+   ],
+   "warm_median_seconds": 0.026203895000435296,
+   "warm_min_seconds": 0.025832907000221894
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0011487819992908044,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0011487819992908044,
+    0.0009287409993703477,
+    0.000692264000463183,
+    0.0007078910002746852,
+    0.0007131649999791989
+   ],
+   "warm_median_seconds": 0.0007105280001269421,
+   "warm_min_seconds": 0.000692264000463183
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.002554225999119808,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.002554225999119808,
+    0.0021315040012268582,
+    0.001727774000755744,
+    0.001766936999047175,
+    0.0017396460007148562
+   ],
+   "warm_median_seconds": 0.0017532914998810156,
+   "warm_min_seconds": 0.001727774000755744
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008342479995917529,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0008342479995917529,
+    0.0005189729999983683,
+    0.0008319820008182433,
+    0.0008100560007733293,
+    0.0005025059999752557
+   ],
+   "warm_median_seconds": 0.0006645145003858488,
+   "warm_min_seconds": 0.0005025059999752557
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010768200081656687,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010768200081656687,
+    3.576000017346814e-05,
+    2.220799979113508e-05,
+    1.8591999833006412e-05,
+    1.823999991756864e-05
+   ],
+   "warm_median_seconds": 2.0399999812070746e-05,
+   "warm_min_seconds": 1.823999991756864e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202297,
+    "empty": false,
+    "in_set": 202297,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.004859276999923168,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 202297,
+   "samples_seconds": [
+    0.004859276999923168,
+    0.0046906370007491205,
+    0.004706755000370322,
+    0.0047026699994603405,
+    0.004639717000827659
+   ],
+   "warm_median_seconds": 0.0046966535001047305,
+   "warm_min_seconds": 0.004639717000827659
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02492235499994422,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02492235499994422,
+    0.025217176000296604,
+    0.026565053000012995
+   ],
+   "warm_median_seconds": 0.0258911145001548,
+   "warm_min_seconds": 0.025217176000296604
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.001243814998815651,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.001243814998815651,
+    0.0009496149996266467,
+    0.0007781010008329758,
+    0.0007093719996191794,
+    0.0007218450009531807
+   ],
+   "warm_median_seconds": 0.0007499730008930783,
+   "warm_min_seconds": 0.0007093719996191794
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.005173306999495253,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.005173306999495253,
+    0.004216452998662135,
+    0.003957720999096637,
+    0.003706417999637779,
+    0.003761356998438714
+   ],
+   "warm_median_seconds": 0.0038595389987676754,
+   "warm_min_seconds": 0.003706417999637779
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.000597951999225188,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.000597951999225188,
+    0.000559919999432168,
+    0.0008379390001209686,
+    0.0008488029998261482,
+    0.0005331930005922914
+   ],
+   "warm_median_seconds": 0.0006989294997765683,
+   "warm_min_seconds": 0.0005331930005922914
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00011606299995037261,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00011606299995037261,
+    3.3499998608022e-05,
+    2.148799831047654e-05,
+    1.8828000975190662e-05,
+    1.8634998923516832e-05
+   ],
+   "warm_median_seconds": 2.01579996428336e-05,
+   "warm_min_seconds": 1.8634998923516832e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202297,
+    "empty": false,
+    "in_set": 202297,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0048730140006227884,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 202297,
+   "samples_seconds": [
+    0.0048730140006227884,
+    0.004936137000186136,
+    0.0050460260008549085,
+    0.0048686860009183874,
+    0.004925629000354093
+   ],
+   "warm_median_seconds": 0.004930883000270114,
+   "warm_min_seconds": 0.0048686860009183874
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.025874289998682798,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.025874289998682798,
+    0.026229248000163352,
+    0.025542604000293068
+   ],
+   "warm_median_seconds": 0.02588592600022821,
+   "warm_min_seconds": 0.025542604000293068
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.001251977000720217,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.001251977000720217,
+    0.0009430089994566515,
+    0.0007135109990485944,
+    0.0007535690001532203,
+    0.0007514850003644824
+   ],
+   "warm_median_seconds": 0.0007525270002588513,
+   "warm_min_seconds": 0.0007135109990485944
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.003345156999785104,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.003345156999785104,
+    0.0028129170004831394,
+    0.002491448998625856,
+    0.0024045500013016863,
+    0.002441223001369508
+   ],
+   "warm_median_seconds": 0.002466335999997682,
+   "warm_min_seconds": 0.0024045500013016863
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008753320016694488,
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202297,
+   "samples_seconds": [
+    0.0008753320016694488,
+    0.0008269199988717446,
+    0.0008543909989384701,
+    0.0008131430004141293,
+    0.0005143199996382464
+   ],
+   "warm_median_seconds": 0.000820031499642937,
+   "warm_min_seconds": 0.0005143199996382464
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197694,
+    "empty": false,
+    "in_set": 197694,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197703,
+    "empty": false,
+    "in_set": 197703,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 9,
+    "empty": false,
+    "in_set": 9,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399991,
+    "empty": false,
+    "in_set": 399991,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202306,
+    "empty": false,
+    "in_set": 202306,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine +3/2 x + 7",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202297,
+    "empty": false,
+    "in_set": 202297,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399996,
+    "empty": false,
+    "in_set": 399996,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 4,
+    "empty": false,
+    "in_set": 4,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399996,
+    "empty": false,
+    "in_set": 399996,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 4,
+    "empty": false,
+    "in_set": 4,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 6.160000157251488e-05,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    6.160000157251488e-05,
+    3.008900057466235e-05,
+    2.7243999284110032e-05,
+    2.5262001145165414e-05,
+    2.3384000087389722e-05
+   ],
+   "warm_median_seconds": 2.6253000214637723e-05,
+   "warm_min_seconds": 2.3384000087389722e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202306,
+    "empty": false,
+    "in_set": 202306,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.005226789000516874,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 202306,
+   "samples_seconds": [
+    0.005226789000516874,
+    0.00496813999961887,
+    0.005026631000873749,
+    0.005068459000540315,
+    0.004908991999400314
+   ],
+   "warm_median_seconds": 0.00499738550024631,
+   "warm_min_seconds": 0.004908991999400314
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.029753012999208295,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.029753012999208295,
+    0.029697321999265114,
+    0.029253125001559965
+   ],
+   "warm_median_seconds": 0.02947522350041254,
+   "warm_min_seconds": 0.029253125001559965
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0025354919998790137,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.0025354919998790137,
+    0.0009598209999239771,
+    0.0007434459985233843,
+    0.0007019089989626082,
+    0.0007306850002350984
+   ],
+   "warm_median_seconds": 0.0007370654993792414,
+   "warm_min_seconds": 0.0007019089989626082
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.0035253000005468493,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.0035253000005468493,
+    0.0028499969994300045,
+    0.0026621189990692073,
+    0.0025627449995226925,
+    0.0023578090003866237
+   ],
+   "warm_median_seconds": 0.00261243199929595,
+   "warm_min_seconds": 0.0023578090003866237
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008748879990889691,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.0008748879990889691,
+    0.0008631370001239702,
+    0.0008785079990047961,
+    0.0008456859995931154,
+    0.000526019999597338
+   ],
+   "warm_median_seconds": 0.0008544114998585428,
+   "warm_min_seconds": 0.000526019999597338
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010496600043552462,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010496600043552462,
+    3.1085999580682255e-05,
+    2.2584999896935187e-05,
+    1.8996001017512754e-05,
+    1.8560000171419233e-05
+   ],
+   "warm_median_seconds": 2.079050045722397e-05,
+   "warm_min_seconds": 1.8560000171419233e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202306,
+    "empty": false,
+    "in_set": 202306,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.00487548599994625,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 202306,
+   "samples_seconds": [
+    0.00487548599994625,
+    0.004708812000899343,
+    0.004919297000014922,
+    0.004909715000394499,
+    0.005124539000462391
+   ],
+   "warm_median_seconds": 0.00491450600020471,
+   "warm_min_seconds": 0.004708812000899343
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.028827486999944085,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.028827486999944085,
+    0.02855438600090565,
+    0.029299691999767674
+   ],
+   "warm_median_seconds": 0.028927039000336663,
+   "warm_min_seconds": 0.02855438600090565
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.001322950000030687,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.001322950000030687,
+    0.000995665001028101,
+    0.0007961920000525424,
+    0.0007229130005725892,
+    0.0007045290003588889
+   ],
+   "warm_median_seconds": 0.0007595525003125658,
+   "warm_min_seconds": 0.0007045290003588889
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.00510204200145381,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.00510204200145381,
+    0.004006918001323356,
+    0.00416177199986123,
+    0.0037155320005695103,
+    0.003563345999282319
+   ],
+   "warm_median_seconds": 0.0038612250009464333,
+   "warm_min_seconds": 0.003563345999282319
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0005861179997737054,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 202306,
+   "samples_seconds": [
+    0.0005861179997737054,
+    0.0005512509997060988,
+    0.0008514370001648786,
+    0.0008388899987039622,
+    0.0008583920007367851
+   ],
+   "warm_median_seconds": 0.0008451634994344204,
+   "warm_min_seconds": 0.0005512509997060988
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 9.329000022262335e-05,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    9.329000022262335e-05,
+    2.428299922030419e-05,
+    1.6444999346276745e-05,
+    1.483999949414283e-05,
+    1.5016999896033667e-05
+   ],
+   "warm_median_seconds": 1.5730999621155206e-05,
+   "warm_min_seconds": 1.483999949414283e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0014369579985213932,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 0,
+   "samples_seconds": [
+    0.0014369579985213932,
+    0.0012694919987552566,
+    0.001144372001363081,
+    0.0015230150002025766,
+    0.0012339500008238247
+   ],
+   "warm_median_seconds": 0.0012517209997895407,
+   "warm_min_seconds": 0.001144372001363081
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.030089379999481025,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.030089379999481025,
+    0.02749893599866482,
+    0.05687321699952008
+   ],
+   "warm_median_seconds": 0.04218607649909245,
+   "warm_min_seconds": 0.02749893599866482
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0047028129993123,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0047028129993123,
+    0.0014080540004215436,
+    0.0007945950001158053,
+    0.0007504919994971715,
+    0.000715981999746873
+   ],
+   "warm_median_seconds": 0.0007725434998064884,
+   "warm_min_seconds": 0.000715981999746873
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.008695130998603418,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.008695130998603418,
+    0.0010373949990025721,
+    0.0008041239998419769,
+    0.000685098000758444,
+    0.0013723409992962843
+   ],
+   "warm_median_seconds": 0.0009207594994222745,
+   "warm_min_seconds": 0.000685098000758444
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.002365196000027936,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.002365196000027936,
+    0.0008081560008577071,
+    0.004561313999147387,
+    0.0005043370001658332,
+    0.0008027089988900116
+   ],
+   "warm_median_seconds": 0.0008054324998738593,
+   "warm_min_seconds": 0.0005043370001658332
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00011417499990784563,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00011417499990784563,
+    2.612999924167525e-05,
+    1.7659000150160864e-05,
+    1.516900010756217e-05,
+    1.5653000446036458e-05
+   ],
+   "warm_median_seconds": 1.665600029809866e-05,
+   "warm_min_seconds": 1.516900010756217e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.002260958999613649,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 400000,
+   "samples_seconds": [
+    0.002260958999613649,
+    0.002267679001306533,
+    0.002347187000850681,
+    0.002173303999370546,
+    0.002247225998871727
+   ],
+   "warm_median_seconds": 0.00225745250008913,
+   "warm_min_seconds": 0.002173303999370546
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.036235351999494014,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.036235351999494014,
+    0.03114402999926824,
+    0.04227649799940991
+   ],
+   "warm_median_seconds": 0.03671026399933908,
+   "warm_min_seconds": 0.03114402999926824
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.004876340000919299,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.004876340000919299,
+    0.0009811100007937057,
+    0.0007201600001280895,
+    0.0007026169987511821,
+    0.000719055999070406
+   ],
+   "warm_median_seconds": 0.0007196079995992477,
+   "warm_min_seconds": 0.0007026169987511821
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.009888205999232014,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.009888205999232014,
+    0.0021738640007242793,
+    0.007853215000068303,
+    0.00471238899990567,
+    0.0016577460010012146
+   ],
+   "warm_median_seconds": 0.0034431265003149747,
+   "warm_min_seconds": 0.0016577460010012146
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0021608690003631637,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0021608690003631637,
+    0.0014573339994967682,
+    0.001773206999132526,
+    0.001275629001611378,
+    0.003024228000867879
+   ],
+   "warm_median_seconds": 0.0016152704993146472,
+   "warm_min_seconds": 0.001275629001611378
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00012029999925289303,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00012029999925289303,
+    0.00011215700033062603,
+    2.8860000384156592e-05,
+    1.985500057344325e-05,
+    1.9564000467653386e-05
+   ],
+   "warm_median_seconds": 2.435750047879992e-05,
+   "warm_min_seconds": 1.9564000467653386e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197694,
+    "empty": false,
+    "in_set": 197694,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.020788093999726698,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 197694,
+   "samples_seconds": [
+    0.020788093999726698,
+    0.015070841000124346,
+    0.007950983999762684,
+    0.01115384299919242,
+    0.00929857699884451
+   ],
+   "warm_median_seconds": 0.010226209999018465,
+   "warm_min_seconds": 0.007950983999762684
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.06582993499978329,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.06582993499978329,
+    0.06205018999935419,
+    0.0550072869991709
+   ],
+   "warm_median_seconds": 0.058528738499262545,
+   "warm_min_seconds": 0.0550072869991709
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0013110060008330038,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.0013110060008330038,
+    0.000953988999754074,
+    0.0010675779994926415,
+    0.0008213490000343882,
+    0.000764655000239145
+   ],
+   "warm_median_seconds": 0.0008876689998942311,
+   "warm_min_seconds": 0.000764655000239145
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.004020185999252135,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.004020185999252135,
+    0.0034796119998645736,
+    0.002701274999708403,
+    0.002645024000230478,
+    0.011548786000275868
+   ],
+   "warm_median_seconds": 0.0030904434997864882,
+   "warm_min_seconds": 0.002645024000230478
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0009129039990511956,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.0009129039990511956,
+    0.0005510580012924038,
+    0.0008816600002319319,
+    0.0006147629992483417,
+    0.000871265001478605
+   ],
+   "warm_median_seconds": 0.0007430140003634733,
+   "warm_min_seconds": 0.0005510580012924038
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010457899952598382,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010457899952598382,
+    2.9717999495915137e-05,
+    2.1411999114206992e-05,
+    1.8777000150294043e-05,
+    1.805200008675456e-05
+   ],
+   "warm_median_seconds": 2.0094499632250518e-05,
+   "warm_min_seconds": 1.805200008675456e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197694,
+    "empty": false,
+    "in_set": 197694,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.005962254999758443,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 197694,
+   "samples_seconds": [
+    0.005962254999758443,
+    0.005624459001410287,
+    0.005321799999364885,
+    0.0051630689995363355,
+    0.005270134000966209
+   ],
+   "warm_median_seconds": 0.005295967000165547,
+   "warm_min_seconds": 0.0051630689995363355
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.03211337900029321,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.03211337900029321,
+    0.029651028000444057,
+    0.030584223999539972
+   ],
+   "warm_median_seconds": 0.030117625999992015,
+   "warm_min_seconds": 0.029651028000444057
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0015395190002891468,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.0015395190002891468,
+    0.001221600999997463,
+    0.0009835979999479605,
+    0.0008632349999970756,
+    0.0008366300007764949
+   ],
+   "warm_median_seconds": 0.0009234164999725181,
+   "warm_min_seconds": 0.0008366300007764949
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.014266872000007425,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.014266872000007425,
+    0.008504485998855671,
+    0.01060707099895808,
+    0.007240980999995372,
+    0.013144481999916025
+   ],
+   "warm_median_seconds": 0.009555778498906875,
+   "warm_min_seconds": 0.007240980999995372
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0016238049993262393,
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 197694,
+   "samples_seconds": [
+    0.0016238049993262393,
+    0.0006297370000538649,
+    0.0008424560001003556,
+    0.0010835240009328118,
+    0.0006646570000157226
+   ],
+   "warm_median_seconds": 0.0007535565000580391,
+   "warm_min_seconds": 0.0006297370000538649
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202297,
+    "empty": false,
+    "in_set": 202297,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 202306,
+    "empty": false,
+    "in_set": 202306,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 9,
+    "empty": false,
+    "in_set": 9,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399991,
+    "empty": false,
+    "in_set": 399991,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197703,
+    "empty": false,
+    "in_set": 197703,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "affine -5/3 x + 11",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 197694,
+    "empty": false,
+    "in_set": 197694,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399990,
+    "empty": false,
+    "in_set": 399990,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 10,
+    "empty": false,
+    "in_set": 10,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399990,
+    "empty": false,
+    "in_set": 399990,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 10,
+    "empty": false,
+    "in_set": 10,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010084899986395612,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010084899986395612,
+    4.1786999645410106e-05,
+    3.7662999602616765e-05,
+    3.211399962310679e-05,
+    2.5380999431945384e-05
+   ],
+   "warm_median_seconds": 3.488849961286178e-05,
+   "warm_min_seconds": 2.5380999431945384e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 150898,
+    "empty": false,
+    "in_set": 150898,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.004951798000547569,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 150898,
+   "samples_seconds": [
+    0.004951798000547569,
+    0.0050798850006685825,
+    0.00546647800001665,
+    0.005292670999551774,
+    0.005108263001602609
+   ],
+   "warm_median_seconds": 0.005200467000577191,
+   "warm_min_seconds": 0.0050798850006685825
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.022757954000553582,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.022757954000553582,
+    0.02243531400017673,
+    0.023237028000949067
+   ],
+   "warm_median_seconds": 0.0228361710005629,
+   "warm_min_seconds": 0.02243531400017673
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.004385897000247496,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.004385897000247496,
+    0.0015611239996360382,
+    0.0011749249988497468,
+    0.0010990020000463119,
+    0.0010042550002253847
+   ],
+   "warm_median_seconds": 0.0011369634994480293,
+   "warm_min_seconds": 0.0010042550002253847
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.004227372000968899,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.004227372000968899,
+    0.003544919998603291,
+    0.0029775430011795834,
+    0.0027768349991674768,
+    0.0029560860002675327
+   ],
+   "warm_median_seconds": 0.002966814500723558,
+   "warm_min_seconds": 0.0027768349991674768
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0009058779996848898,
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.0009058779996848898,
+    0.0006561800000781659,
+    0.0008653059994685464,
+    0.000882649999766727,
+    0.0005740239994338481
+   ],
+   "warm_median_seconds": 0.0007607429997733561,
+   "warm_min_seconds": 0.0005740239994338481
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010265399941999931,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010265399941999931,
+    3.2021000151871704e-05,
+    2.289300027769059e-05,
+    2.0830999346799217e-05,
+    1.8786000509862788e-05
+   ],
+   "warm_median_seconds": 2.1861999812244903e-05,
+   "warm_min_seconds": 1.8786000509862788e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 150898,
+    "empty": false,
+    "in_set": 150898,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.006928658998731407,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 150898,
+   "samples_seconds": [
+    0.006928658998731407,
+    0.006978261999392998,
+    0.006401463999281987,
+    0.005335494999599177,
+    0.0053254430004017195
+   ],
+   "warm_median_seconds": 0.005868479499440582,
+   "warm_min_seconds": 0.0053254430004017195
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.034189812000477104,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.034189812000477104,
+    0.041180026999427355,
+    0.03998653900089266
+   ],
+   "warm_median_seconds": 0.04058328300016001,
+   "warm_min_seconds": 0.03998653900089266
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0021198180002102163,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.0021198180002102163,
+    0.0016367330008506542,
+    0.0012898620007035788,
+    0.0012353160000202479,
+    0.0012620629986486165
+   ],
+   "warm_median_seconds": 0.0012759624996760977,
+   "warm_min_seconds": 0.0012353160000202479
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.005963038000118104,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.005963038000118104,
+    0.005320876000041608,
+    0.004668945999583229,
+    0.004632186000890215,
+    0.004572712001390755
+   ],
+   "warm_median_seconds": 0.004650566000236722,
+   "warm_min_seconds": 0.004572712001390755
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.001150797001173487,
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 150898,
+   "samples_seconds": [
+    0.001150797001173487,
+    0.0007735869985481258,
+    0.0008384430002479348,
+    0.0009993749990826473,
+    0.0006878349995531607
+   ],
+   "warm_median_seconds": 0.0008060149993980303,
+   "warm_min_seconds": 0.0006878349995531607
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00011075800102844369,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00011075800102844369,
+    3.573100002540741e-05,
+    2.5829000151134096e-05,
+    2.3585000235470943e-05,
+    2.2788999558542855e-05
+   ],
+   "warm_median_seconds": 2.470700019330252e-05,
+   "warm_min_seconds": 2.2788999558542855e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0016069020002760226,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 0,
+   "samples_seconds": [
+    0.0016069020002760226,
+    0.001597313001184375,
+    0.0015106560003914637,
+    0.001798980001694872,
+    0.0016520910012332024
+   ],
+   "warm_median_seconds": 0.0016247020012087887,
+   "warm_min_seconds": 0.0015106560003914637
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.025406287999430788,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.025406287999430788,
+    0.02490646700061916,
+    0.02184666900029697
+   ],
+   "warm_median_seconds": 0.023376568000458064,
+   "warm_min_seconds": 0.02184666900029697
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.002209015001426451,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.002209015001426451,
+    0.001565331998790498,
+    0.0013498680000338936,
+    0.00118593399929523,
+    0.0010627859992382582
+   ],
+   "warm_median_seconds": 0.0012679009996645618,
+   "warm_min_seconds": 0.0010627859992382582
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.0016723829994589323,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0016723829994589323,
+    0.0010218309998890618,
+    0.0008661610008857679,
+    0.00107348900019133,
+    0.0012088869989383966
+   ],
+   "warm_median_seconds": 0.0010476600000401959,
+   "warm_min_seconds": 0.0008661610008857679
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0011470230001577875,
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0011470230001577875,
+    0.0007671759994991589,
+    0.0008319869994011242,
+    0.001332222000201,
+    0.0005994490002194652
+   ],
+   "warm_median_seconds": 0.0007995814994501416,
+   "warm_min_seconds": 0.0005994490002194652
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 9.269400106859393e-05,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    9.269400106859393e-05,
+    3.370199920027517e-05,
+    1.8860999261960387e-05,
+    1.9056000382988714e-05,
+    1.633300053072162e-05
+   ],
+   "warm_median_seconds": 1.895849982247455e-05,
+   "warm_min_seconds": 1.633300053072162e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0027940029995079385,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 400000,
+   "samples_seconds": [
+    0.0027940029995079385,
+    0.0034054549996653805,
+    0.0025232240004697815,
+    0.002438401999825146,
+    0.0023254730003827717
+   ],
+   "warm_median_seconds": 0.0024808130001474638,
+   "warm_min_seconds": 0.0023254730003827717
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.024997832000735798,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.024997832000735798,
+    0.02385239700015518,
+    0.02549078900119639
+   ],
+   "warm_median_seconds": 0.024671593000675784,
+   "warm_min_seconds": 0.02385239700015518
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0016758470010245219,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0016758470010245219,
+    0.001229269000759814,
+    0.0009793520002858713,
+    0.000948535000134143,
+    0.0009832460000325227
+   ],
+   "warm_median_seconds": 0.000981299000159197,
+   "warm_min_seconds": 0.000948535000134143
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.003144280000924482,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.003144280000924482,
+    0.0024354439992748667,
+    0.0021744840014434885,
+    0.0030308330005937023,
+    0.0020452750013646437
+   ],
+   "warm_median_seconds": 0.0023049640003591776,
+   "warm_min_seconds": 0.0020452750013646437
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0008726020005269675,
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0008726020005269675,
+    0.0005266979987936793,
+    0.0008173180012818193,
+    0.0008209709994844161,
+    0.0005127879994688556
+   ],
+   "warm_median_seconds": 0.0006720080000377493,
+   "warm_min_seconds": 0.0005127879994688556
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 9.773700003279373e-05,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    9.773700003279373e-05,
+    3.1780999051989056e-05,
+    4.808099947695155e-05,
+    2.3819000489311293e-05,
+    1.9888999304384924e-05
+   ],
+   "warm_median_seconds": 2.7799999770650174e-05,
+   "warm_min_seconds": 1.9888999304384924e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 249102,
+    "empty": false,
+    "in_set": 249102,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0060607199993683025,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 249102,
+   "samples_seconds": [
+    0.0060607199993683025,
+    0.005770731999291456,
+    0.006277732998569263,
+    0.006590827000763966,
+    0.006270655998378061
+   ],
+   "warm_median_seconds": 0.006274194498473662,
+   "warm_min_seconds": 0.005770731999291456
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.024158198000804987,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.024158198000804987,
+    0.02374203199906333,
+    0.026781178999954136
+   ],
+   "warm_median_seconds": 0.025261605499508732,
+   "warm_min_seconds": 0.02374203199906333
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0019036939993384294,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.0019036939993384294,
+    0.0015277630009222776,
+    0.0011343520000082208,
+    0.0010218929983238922,
+    0.001070824999260367
+   ],
+   "warm_median_seconds": 0.0011025884996342938,
+   "warm_min_seconds": 0.0010218929983238922
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.005381708000641083,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.005381708000641083,
+    0.0046502580007654615,
+    0.0031027770000946475,
+    0.0032638009997754125,
+    0.0029283280000527157
+   ],
+   "warm_median_seconds": 0.00318328899993503,
+   "warm_min_seconds": 0.0029283280000527157
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0011925460003112676,
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.0011925460003112676,
+    0.001425918000677484,
+    0.0008327639989147428,
+    0.0011058889995183563,
+    0.0007678109996049898
+   ],
+   "warm_median_seconds": 0.0009693264992165496,
+   "warm_min_seconds": 0.0007678109996049898
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00011469400124042295,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00011469400124042295,
+    3.315199865028262e-05,
+    2.2956999600864947e-05,
+    2.7877000320586376e-05,
+    2.436199974908959e-05
+   ],
+   "warm_median_seconds": 2.6119500034837984e-05,
+   "warm_min_seconds": 2.2956999600864947e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 249102,
+    "empty": false,
+    "in_set": 249102,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.005838971999764908,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 249102,
+   "samples_seconds": [
+    0.005838971999764908,
+    0.0057922119995055255,
+    0.005888057999982266,
+    0.006377637000696268,
+    0.0061342320004769135
+   ],
+   "warm_median_seconds": 0.00601114500022959,
+   "warm_min_seconds": 0.0057922119995055255
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.024080322998997872,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.024080322998997872,
+    0.025745861001269077,
+    0.02409016099954897
+   ],
+   "warm_median_seconds": 0.024918011000409024,
+   "warm_min_seconds": 0.02409016099954897
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0017239469998457935,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.0017239469998457935,
+    0.0012490240005718078,
+    0.0011292760009382619,
+    0.0010177889998885803,
+    0.0009798110004339833
+   ],
+   "warm_median_seconds": 0.001073532500413421,
+   "warm_min_seconds": 0.0009798110004339833
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.003870444001222495,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.003870444001222495,
+    0.0035380589997657808,
+    0.0030869799993524794,
+    0.0032019890004448825,
+    0.002878409000913962
+   ],
+   "warm_median_seconds": 0.003144484499898681,
+   "warm_min_seconds": 0.002878409000913962
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0045923950001451885,
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 249102,
+   "samples_seconds": [
+    0.0045923950001451885,
+    0.0004180070009169867,
+    0.0004127909996896051,
+    0.00042775099973368924,
+    0.0004187619997537695
+   ],
+   "warm_median_seconds": 0.0004183845003353781,
+   "warm_min_seconds": 0.0004127909996896051
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 1,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 150880,
+    "empty": false,
+    "in_set": 150880,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 150898,
+    "empty": false,
+    "in_set": 150898,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 18,
+    "empty": false,
+    "in_set": 18,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 399982,
+    "empty": false,
+    "in_set": 399982,
+    "mismatches": 0,
+    "spans": 3
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 249120,
+    "empty": false,
+    "in_set": 249120,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "square x^2",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 249102,
+    "empty": false,
+    "in_set": 249102,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 325858,
+    "empty": false,
+    "in_set": 325858,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 330091,
+    "empty": false,
+    "in_set": 330091,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 4233,
+    "empty": false,
+    "in_set": 4233,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 395767,
+    "empty": false,
+    "in_set": 395767,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 74142,
+    "empty": false,
+    "in_set": 74142,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 69909,
+    "empty": false,
+    "in_set": 69909,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 5.570400026044808e-05,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    5.570400026044808e-05,
+    2.0737999875564128e-05,
+    1.4289000318967737e-05,
+    1.3020999176660553e-05,
+    1.2372000128380023e-05
+   ],
+   "warm_median_seconds": 1.3654999747814145e-05,
+   "warm_min_seconds": 1.2372000128380023e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 111665,
+    "empty": false,
+    "in_set": 111665,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.006637877000684966,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 111665,
+   "samples_seconds": [
+    0.006637877000684966,
+    0.006463289999373956,
+    0.005591749999439344,
+    0.005940295000982587,
+    0.006130967998615233
+   ],
+   "warm_median_seconds": 0.00603563149979891,
+   "warm_min_seconds": 0.005591749999439344
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.03906390800148074,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.03906390800148074,
+    0.03981490000114718,
+    0.04106553200108465
+   ],
+   "warm_median_seconds": 0.040440216001115914,
+   "warm_min_seconds": 0.03981490000114718
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.006976492000831058,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 111665,
+   "samples_seconds": [
+    0.006976492000831058,
+    0.0032004550012061372,
+    0.009984256999814534,
+    0.0035724070003197994,
+    0.003569638000044506
+   ],
+   "warm_median_seconds": 0.0035710225001821527,
+   "warm_min_seconds": 0.0032004550012061372
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.007753711999612278,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 111665,
+   "samples_seconds": [
+    0.007753711999612278,
+    0.0074046610006917035,
+    0.006070307001209585,
+    0.006727657999363146,
+    0.008356080999874393
+   ],
+   "warm_median_seconds": 0.007066159500027425,
+   "warm_min_seconds": 0.006070307001209585
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 8.41390010464238e-05,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    8.41390010464238e-05,
+    2.1174999346840195e-05,
+    1.3188000593800098e-05,
+    1.243499900738243e-05,
+    1.3130998922861181e-05
+   ],
+   "warm_median_seconds": 1.315949975833064e-05,
+   "warm_min_seconds": 1.243499900738243e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 111665,
+    "empty": false,
+    "in_set": 111665,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0061547879995487165,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 111665,
+   "samples_seconds": [
+    0.0061547879995487165,
+    0.006163203001051443,
+    0.006514894999781973,
+    0.0061770330012222985,
+    0.006713991000651731
+   ],
+   "warm_median_seconds": 0.006345964000502136,
+   "warm_min_seconds": 0.006163203001051443
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.03943472299943096,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.03943472299943096,
+    0.03996112700042431,
+    0.03832724699896062
+   ],
+   "warm_median_seconds": 0.039144186999692465,
+   "warm_min_seconds": 0.03832724699896062
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0037144349989830516,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 111665,
+   "samples_seconds": [
+    0.0037144349989830516,
+    0.0031787960015208228,
+    0.0030111840005702106,
+    0.0030108270002529025,
+    0.002969441000459483
+   ],
+   "warm_median_seconds": 0.0030110055004115566,
+   "warm_min_seconds": 0.002969441000459483
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.0070582379994448274,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 111665,
+   "samples_seconds": [
+    0.0070582379994448274,
+    0.00644952699985879,
+    0.006763279001461342,
+    0.006731802999638603,
+    0.006087216999731027
+   ],
+   "warm_median_seconds": 0.006590664999748697,
+   "warm_min_seconds": 0.006087216999731027
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 6.838000081188511e-05,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    6.838000081188511e-05,
+    1.9410001186770387e-05,
+    1.2217000403325073e-05,
+    1.116900057240855e-05,
+    1.0863001079997048e-05
+   ],
+   "warm_median_seconds": 1.1693000487866811e-05,
+   "warm_min_seconds": 1.0863001079997048e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0015024340009404114,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 0,
+   "samples_seconds": [
+    0.0015024340009404114,
+    0.0014829570009169402,
+    0.0015039299996715272,
+    0.001546313000289956,
+    0.0016366189993277658
+   ],
+   "warm_median_seconds": 0.0015251214999807416,
+   "warm_min_seconds": 0.0014829570009169402
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.048540370999035076,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.048540370999035076,
+    0.04759615199873224,
+    0.038315564999720664
+   ],
+   "warm_median_seconds": 0.04295585849922645,
+   "warm_min_seconds": 0.038315564999720664
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.004405056999530643,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.004405056999530643,
+    0.003526407999743242,
+    0.0033370389992342098,
+    0.003540035000696662,
+    0.003373589001057553
+   ],
+   "warm_median_seconds": 0.0034499985004003975,
+   "warm_min_seconds": 0.0033370389992342098
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.0014542320004693465,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.0014542320004693465,
+    0.0008044149999477668,
+    0.0006919659990671789,
+    0.0008947850001277402,
+    0.0008028190004552016
+   ],
+   "warm_median_seconds": 0.0008036170002014842,
+   "warm_min_seconds": 0.0006919659990671789
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 7.099700087564997e-05,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    7.099700087564997e-05,
+    2.1628000467899255e-05,
+    1.3480999768944457e-05,
+    1.3052998838247731e-05,
+    1.2013999366899952e-05
+   ],
+   "warm_median_seconds": 1.3266999303596094e-05,
+   "warm_min_seconds": 1.2013999366899952e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 0,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0023536349999631057,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 400000,
+   "samples_seconds": [
+    0.0023536349999631057,
+    0.002341523999348283,
+    0.0023319550000451272,
+    0.002575249000074109,
+    0.002314370998647064
+   ],
+   "warm_median_seconds": 0.002336739499696705,
+   "warm_min_seconds": 0.002314370998647064
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.040964783998788334,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.040964783998788334,
+    0.04078220699921076,
+    0.04090775900112931
+   ],
+   "warm_median_seconds": 0.04084498300017003,
+   "warm_min_seconds": 0.04078220699921076
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.00427119199957815,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.00427119199957815,
+    0.0036026990001118975,
+    0.0034725469995464664,
+    0.0036669800010713516,
+    0.0035932400005549425
+   ],
+   "warm_median_seconds": 0.00359796950033342,
+   "warm_min_seconds": 0.0034725469995464664
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.01491484500002116,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.01491484500002116,
+    0.012569733000418637,
+    0.011727381999662612,
+    0.00766542500059586,
+    0.011663948000204982
+   ],
+   "warm_median_seconds": 0.011695664999933797,
+   "warm_min_seconds": 0.00766542500059586
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.003970302999732667,
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.003970302999732667,
+    0.00033398400046280585,
+    0.0002654610016179504,
+    0.0002624890003062319,
+    0.0002586150003480725
+   ],
+   "warm_median_seconds": 0.00026397500096209114,
+   "warm_min_seconds": 0.0002586150003480725
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 9.070600026461761e-05,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    9.070600026461761e-05,
+    2.2153000827529468e-05,
+    1.3640001270687208e-05,
+    1.237499964190647e-05,
+    1.2182001228211448e-05
+   ],
+   "warm_median_seconds": 1.3007500456296839e-05,
+   "warm_min_seconds": 1.2182001228211448e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 288335,
+    "empty": false,
+    "in_set": 288335,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.008308902999488055,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 288335,
+   "samples_seconds": [
+    0.008308902999488055,
+    0.008267209999758052,
+    0.008433344999502879,
+    0.007590899998831446,
+    0.0074478829992585815
+   ],
+   "warm_median_seconds": 0.007929054999294749,
+   "warm_min_seconds": 0.0074478829992585815
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.043832866998855025,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.043832866998855025,
+    0.04439212900069833,
+    0.044178328000270994
+   ],
+   "warm_median_seconds": 0.044285228500484664,
+   "warm_min_seconds": 0.044178328000270994
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.004221928000333719,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 288335,
+   "samples_seconds": [
+    0.004221928000333719,
+    0.003637449999587261,
+    0.003516276001391816,
+    0.0036104969985899515,
+    0.0036616260003938805
+   ],
+   "warm_median_seconds": 0.0036239734990886063,
+   "warm_min_seconds": 0.003516276001391816
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.008084304001386045,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 288335,
+   "samples_seconds": [
+    0.008084304001386045,
+    0.0066882390001410386,
+    0.007605660000990611,
+    0.006814365000536782,
+    0.007189767000454594
+   ],
+   "warm_median_seconds": 0.007002066000495688,
+   "warm_min_seconds": 0.0066882390001410386
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010931900033028796,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00010931900033028796,
+    3.913400178134907e-05,
+    2.886199945351109e-05,
+    1.571000029798597e-05,
+    1.2874999811174348e-05
+   ],
+   "warm_median_seconds": 2.228599987574853e-05,
+   "warm_min_seconds": 1.2874999811174348e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 288335,
+    "empty": false,
+    "in_set": 288335,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.007569998000690248,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 288335,
+   "samples_seconds": [
+    0.007569998000690248,
+    0.007263417001013295,
+    0.007277851998878759,
+    0.007250268999996479,
+    0.014958314000978135
+   ],
+   "warm_median_seconds": 0.007270634499946027,
+   "warm_min_seconds": 0.007250268999996479
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.06437224999899627,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.06437224999899627,
+    0.07406661699860706,
+    0.04562220700063335
+   ],
+   "warm_median_seconds": 0.059844411999620206,
+   "warm_min_seconds": 0.04562220700063335
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0038817799995740643,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 288335,
+   "samples_seconds": [
+    0.0038817799995740643,
+    0.003260409001086373,
+    0.0033922519996849587,
+    0.003362230998391169,
+    0.00346651800100517
+   ],
+   "warm_median_seconds": 0.003377241499038064,
+   "warm_min_seconds": 0.003260409001086373
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB SQL of the original predicate",
+   "first_seconds": 0.007600367000122787,
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 288335,
+   "samples_seconds": [
+    0.007600367000122787,
+    0.006601699999009725,
+    0.006713020000461256,
+    0.006188010000187205,
+    0.006062252999981865
+   ],
+   "warm_median_seconds": 0.006394854999598465,
+   "warm_min_seconds": 0.006062252999981865
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 0,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 0,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 0,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 107526,
+    "empty": false,
+    "in_set": 107526,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 111665,
+    "empty": false,
+    "in_set": 111665,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 4139,
+    "empty": false,
+    "in_set": 4139,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 395861,
+    "empty": false,
+    "in_set": 395861,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 292474,
+    "empty": false,
+    "in_set": 292474,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "residue x mod 97",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 0,
+    "direct_true": 288335,
+    "empty": false,
+    "in_set": 288335,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 145472,
+    "empty": false,
+    "in_set": 145472,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 145482,
+    "empty": false,
+    "in_set": 145482,
+    "mismatches": 0,
+    "spans": 3
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 3,
+    "direct_true": 10,
+    "empty": false,
+    "in_set": 10,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 3,
+    "direct_true": 399990,
+    "empty": false,
+    "in_set": 399990,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 254528,
+    "empty": false,
+    "in_set": 254528,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "image boundary"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 1,
+    "direct_true": 254518,
+    "empty": false,
+    "in_set": 254518,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00016839999989315402,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00016839999989315402,
+    0.00010497900075279176,
+    7.498800005123485e-05,
+    6.350400144583546e-05,
+    6.151500019768719e-05
+   ],
+   "warm_median_seconds": 6.924600074853515e-05,
+   "warm_min_seconds": 6.151500019768719e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 137667,
+    "empty": false,
+    "in_set": 137667,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.006030090999047388,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 137667,
+   "samples_seconds": [
+    0.006030090999047388,
+    0.006235644999833312,
+    0.005806408000353258,
+    0.005811004999486613,
+    0.005813664998640888
+   ],
+   "warm_median_seconds": 0.005812334999063751,
+   "warm_min_seconds": 0.005806408000353258
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.024102359000607976,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.024102359000607976,
+    0.02340373900005943,
+    0.02351864599950204
+   ],
+   "warm_median_seconds": 0.023461192499780736,
+   "warm_min_seconds": 0.02340373900005943
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.008531567000318319,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 137667,
+   "samples_seconds": [
+    0.008531567000318319,
+    0.005186420999962138,
+    0.005216466001002118,
+    0.0049290620008832775,
+    0.005188414999793167
+   ],
+   "warm_median_seconds": 0.005187417999877653,
+   "warm_min_seconds": 0.0049290620008832775
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0013247449987829896,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 137667,
+   "samples_seconds": [
+    0.0013247449987829896,
+    0.00036843400084762834,
+    0.0003684049988805782,
+    0.0003762500000448199,
+    0.00036742700103786774
+   ],
+   "warm_median_seconds": 0.00036841949986410327,
+   "warm_min_seconds": 0.00036742700103786774
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00019148499995935708,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00019148499995935708,
+    9.191100070893299e-05,
+    7.320100121432915e-05,
+    6.468600076914299e-05,
+    8.479099960823078e-05
+   ],
+   "warm_median_seconds": 7.899600041127997e-05,
+   "warm_min_seconds": 6.468600076914299e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 137667,
+    "empty": false,
+    "in_set": 137667,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0054761670016887365,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 137667,
+   "samples_seconds": [
+    0.0054761670016887365,
+    0.005601779999778955,
+    0.005683646999386838,
+    0.005916246000197134,
+    0.005768125998656615
+   ],
+   "warm_median_seconds": 0.005725886499021726,
+   "warm_min_seconds": 0.005601779999778955
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.025333814999612514,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.025333814999612514,
+    0.023777566000717343,
+    0.023427531001289026
+   ],
+   "warm_median_seconds": 0.023602548501003184,
+   "warm_min_seconds": 0.023427531001289026
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.007171989000198664,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 137667,
+   "samples_seconds": [
+    0.007171989000198664,
+    0.005563594999330235,
+    0.0054774670006736415,
+    0.005259674000626546,
+    0.005357345000447822
+   ],
+   "warm_median_seconds": 0.005417406000560732,
+   "warm_min_seconds": 0.005259674000626546
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0032329529985872796,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 137667,
+   "samples_seconds": [
+    0.0032329529985872796,
+    0.00039628699960303493,
+    0.00038018200029910076,
+    0.0003438260009716032,
+    0.00037392099875432905
+   ],
+   "warm_median_seconds": 0.0003770514995267149,
+   "warm_min_seconds": 0.0003438260009716032
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0001785989989002701,
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.0001785989989002701,
+    7.039000047370791e-05,
+    5.749800038756803e-05,
+    8.151899965014309e-05,
+    6.528099947900046e-05
+   ],
+   "warm_median_seconds": 6.783549997635419e-05,
+   "warm_min_seconds": 5.749800038756803e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 4,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.0016449120012111962,
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 0,
+   "samples_seconds": [
+    0.0016449120012111962,
+    0.0013667919993167743,
+    0.0015124980000109645,
+    0.001440694999473635,
+    0.0015846530004637316
+   ],
+   "warm_median_seconds": 0.0014765964997422998,
+   "warm_min_seconds": 0.0013667919993167743
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02763303800020367,
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02763303800020367,
+    0.03352874600022915,
+    0.025190258000293397
+   ],
+   "warm_median_seconds": 0.029359502000261273,
+   "warm_min_seconds": 0.025190258000293397
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.007180110998888267,
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.007180110998888267,
+    0.005485532999955467,
+    0.005722168998545385,
+    0.005364922000808292,
+    0.005171426999368123
+   ],
+   "warm_median_seconds": 0.0054252275003818795,
+   "warm_min_seconds": 0.005171426999368123
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.003208170001016697,
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 0,
+   "samples_seconds": [
+    0.003208170001016697,
+    0.0008493149998685112,
+    0.000783168999987538,
+    0.00048586499906377867,
+    0.0007865419993322575
+   ],
+   "warm_median_seconds": 0.0007848554996598978,
+   "warm_min_seconds": 0.00048586499906377867
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00017226700038008858,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00017226700038008858,
+    7.161500070651527e-05,
+    5.7719000324141234e-05,
+    6.889799988130108e-05,
+    5.676100045093335e-05
+   ],
+   "warm_median_seconds": 6.330850010272115e-05,
+   "warm_min_seconds": 5.676100045093335e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 4,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.002461440999468323,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 400000,
+   "samples_seconds": [
+    0.002461440999468323,
+    0.003244840001570992,
+    0.002396839001448825,
+    0.002316361000339384,
+    0.002342407000469393
+   ],
+   "warm_median_seconds": 0.002369623000959109,
+   "warm_min_seconds": 0.002316361000339384
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02647750200048904,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02647750200048904,
+    0.026098871998328832,
+    0.025725526000314858
+   ],
+   "warm_median_seconds": 0.025912198999321845,
+   "warm_min_seconds": 0.025725526000314858
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.00700661399969249,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.00700661399969249,
+    0.005407249000199954,
+    0.0061651019987039035,
+    0.006196518999786349,
+    0.006118514000263531
+   ],
+   "warm_median_seconds": 0.006141807999483717,
+   "warm_min_seconds": 0.005407249000199954
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0010225879996141884,
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 400000,
+   "samples_seconds": [
+    0.0010225879996141884,
+    0.0007081219991960097,
+    0.0008930310013965936,
+    0.0006439720000344096,
+    0.0009061990003829123
+   ],
+   "warm_median_seconds": 0.0008005765002963017,
+   "warm_min_seconds": 0.0006439720000344096
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00020631600091292057,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00020631600091292057,
+    9.806500020204112e-05,
+    7.534399992437102e-05,
+    7.159000051615294e-05,
+    7.132800055842381e-05
+   ],
+   "warm_median_seconds": 7.346700022026198e-05,
+   "warm_min_seconds": 7.132800055842381e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 262333,
+    "empty": false,
+    "in_set": 262333,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.006976057999054319,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 262333,
+   "samples_seconds": [
+    0.006976057999054319,
+    0.007886347000749083,
+    0.007866656000260264,
+    0.006890623000799678,
+    0.006977367998842965
+   ],
+   "warm_median_seconds": 0.007422011999551614,
+   "warm_min_seconds": 0.006890623000799678
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.0308286039999075,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.0308286039999075,
+    0.03118021000045701,
+    0.027848719000758138
+   ],
+   "warm_median_seconds": 0.029514464500607573,
+   "warm_min_seconds": 0.027848719000758138
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.0072738409999146825,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 262333,
+   "samples_seconds": [
+    0.0072738409999146825,
+    0.006377433999659843,
+    0.005630743000438088,
+    0.00637202199868625,
+    0.005798048001452116
+   ],
+   "warm_median_seconds": 0.006085035000069183,
+   "warm_min_seconds": 0.005630743000438088
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0011213300003873883,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 262333,
+   "samples_seconds": [
+    0.0011213300003873883,
+    0.000772585000959225,
+    0.0010627680003381101,
+    0.0007689329995628214,
+    0.0011072349989262875
+   ],
+   "warm_median_seconds": 0.0009176765006486676,
+   "warm_min_seconds": 0.0007689329995628214
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00021250600002531428,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "transform",
+   "samples_seconds": [
+    0.00021250600002531428,
+    9.916100134432781e-05,
+    8.750199958740268e-05,
+    6.83250000292901e-05,
+    6.187500002852175e-05
+   ],
+   "warm_median_seconds": 7.791349980834639e-05,
+   "warm_min_seconds": 6.187500002852175e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 262333,
+    "empty": false,
+    "in_set": 262333,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scan (codes in the set)",
+   "first_seconds": 0.007050482001432101,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "scan",
+   "result": 262333,
+   "samples_seconds": [
+    0.007050482001432101,
+    0.007413999001073535,
+    0.0067327380002097925,
+    0.008311165000122855,
+    0.006928462000360014
+   ],
+   "warm_median_seconds": 0.007171230500716774,
+   "warm_min_seconds": 0.0067327380002097925
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check of every row",
+   "first_seconds": 0.02602085100079421,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "check",
+   "result": 0,
+   "samples_seconds": [
+    0.02602085100079421,
+    0.025857331000224804,
+    0.026356292999480502
+   ],
+   "warm_median_seconds": 0.026106811999852653,
+   "warm_min_seconds": 0.025857331000224804
+  },
+  {
+   "backend": "numpy",
+   "case": "baseline: NumPy exact evaluation of the values",
+   "first_seconds": 0.00715277299968875,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 262333,
+   "samples_seconds": [
+    0.00715277299968875,
+    0.00592429299831565,
+    0.0060079089998907875,
+    0.005946892999418196,
+    0.005528042998776073
+   ],
+   "warm_median_seconds": 0.005935592998866923,
+   "warm_min_seconds": 0.005528042998776073
+  },
+  {
+   "backend": "engine",
+   "case": "engine bit-plane predicate on the code intervals",
+   "first_seconds": 0.0011270670001977123,
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "fractional"
+   },
+   "phase": "baseline",
+   "result": 262333,
+   "samples_seconds": [
+    0.0011270670001977123,
+    0.0007751539997116197,
+    0.0010360979995311936,
+    0.000749308999729692,
+    0.0010324920003768057
+   ],
+   "warm_median_seconds": 0.0009038230000442127,
+   "warm_min_seconds": 0.000749308999729692
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 4,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 4,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 4,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": true,
+    "decided": 4,
+    "direct_true": 400000,
+    "empty": false,
+    "in_set": 400000,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 4,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "outside"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 4,
+    "direct_true": 0,
+    "empty": true,
+    "in_set": 0,
+    "mismatches": 0,
+    "spans": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 137658,
+    "empty": false,
+    "in_set": 137658,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 137667,
+    "empty": false,
+    "in_set": 137667,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 9,
+    "empty": false,
+    "in_set": 9,
+    "mismatches": 0,
+    "spans": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": "<>",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 399991,
+    "empty": false,
+    "in_set": 399991,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">=",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 262342,
+    "empty": false,
+    "in_set": 262342,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "direct check",
+   "params": {
+    "map": "pieces (4)",
+    "op": ">",
+    "rows": 400000,
+    "scenario": "boundaries",
+    "threshold": "at a value"
+   },
+   "phase": "check",
+   "result": {
+    "all": false,
+    "decided": 2,
+    "direct_true": 262333,
+    "empty": false,
+    "in_set": 262333,
+    "mismatches": 0,
+    "spans": 2
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00014619799912907183,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 1,
+    "decided": 0,
+    "spans": 1
+   },
+   "samples_seconds": [
+    0.00014619799912907183,
+    3.5088000004179776e-05,
+    2.467600097588729e-05
+   ],
+   "warm_median_seconds": 2.9882000490033533e-05,
+   "warm_min_seconds": 2.467600097588729e-05
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0006056359998183325,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 4700,
+   "samples_seconds": [
+    0.0006056359998183325,
+    0.0005197270002099685,
+    0.000548897000044235,
+    0.0005261440001049777,
+    0.0005651430001307745
+   ],
+   "warm_median_seconds": 0.0005375205000746064,
+   "warm_min_seconds": 0.0005197270002099685
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.0026625689988577506,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 4700,
+   "samples_seconds": [
+    0.0026625689988577506,
+    0.002413371001239284,
+    0.002429708998533897,
+    0.002535006000471185,
+    0.0023523599993495736
+   ],
+   "warm_median_seconds": 0.0024215399998865905,
+   "warm_min_seconds": 0.0023523599993495736
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.0028037610009050695,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 4700,
+   "samples_seconds": [
+    0.0028037610009050695,
+    0.0010736410004028585,
+    0.0008950150004238822,
+    0.000939919000302325,
+    0.0009669089995441027
+   ],
+   "warm_median_seconds": 0.0009534139999232139,
+   "warm_min_seconds": 0.0008950150004238822
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.0016904389995033853,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 4700,
+   "samples_seconds": [
+    0.0016904389995033853,
+    0.0015379209999082377,
+    0.0014657399988209363,
+    0.0014366510004037991,
+    0.0014348189997690497
+   ],
+   "warm_median_seconds": 0.0014511954996123677,
+   "warm_min_seconds": 0.0014348189997690497
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.0009534139999232139,
+    "lookup_s": 0.0014511954996123677,
+    "plane_s": 0.0005375205000746064,
+    "scan_s": 0.0024215399998865905,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 9.741599933477119e-05,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 1,
+    "decided": 0,
+    "spans": 1
+   },
+   "samples_seconds": [
+    9.741599933477119e-05,
+    4.1835999581962824e-05,
+    3.645300057542045e-05
+   ],
+   "warm_median_seconds": 3.9144500078691635e-05,
+   "warm_min_seconds": 3.645300057542045e-05
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0005942799998592818,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 202714,
+   "samples_seconds": [
+    0.0005942799998592818,
+    0.0008465430000796914,
+    0.0005422659996838775,
+    0.0008860640009515919,
+    0.0008410970003751572
+   ],
+   "warm_median_seconds": 0.0008438200002274243,
+   "warm_min_seconds": 0.0005422659996838775
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.005273482000120566,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 202714,
+   "samples_seconds": [
+    0.005273482000120566,
+    0.005375887998525286,
+    0.005473986000652076,
+    0.005266391999612097,
+    0.005506631001480855
+   ],
+   "warm_median_seconds": 0.005424936999588681,
+   "warm_min_seconds": 0.005266391999612097
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.0013188550001359545,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 202714,
+   "samples_seconds": [
+    0.0013188550001359545,
+    0.00083403200005705,
+    0.0008060279997152975,
+    0.0008719889992789831,
+    0.0007872099995438475
+   ],
+   "warm_median_seconds": 0.0008200299998861738,
+   "warm_min_seconds": 0.0007872099995438475
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.001441082000383176,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 202714,
+   "samples_seconds": [
+    0.001441082000383176,
+    0.0054769700000179,
+    0.0014295559994934592,
+    0.0014062209993426222,
+    0.00805890899937367
+   ],
+   "warm_median_seconds": 0.0034532629997556796,
+   "warm_min_seconds": 0.0014062209993426222
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.0008200299998861738,
+    "lookup_s": 0.0034532629997556796,
+    "plane_s": 0.0008438200002274243,
+    "scan_s": 0.005424936999588681,
+    "winner": "direct"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00010611200013954658,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 1,
+    "decided": 0,
+    "spans": 1
+   },
+   "samples_seconds": [
+    0.00010611200013954658,
+    3.928099977201782e-05,
+    2.8184000257169828e-05
+   ],
+   "warm_median_seconds": 3.3732500014593825e-05,
+   "warm_min_seconds": 2.8184000257169828e-05
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0038561920009669848,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 394312,
+   "samples_seconds": [
+    0.0038561920009669848,
+    0.0005658289992425125,
+    0.0009227459995599929,
+    0.002551248000600026,
+    0.001483326999732526
+   ],
+   "warm_median_seconds": 0.0012030364996462595,
+   "warm_min_seconds": 0.0005658289992425125
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.0024627179991512094,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 394312,
+   "samples_seconds": [
+    0.0024627179991512094,
+    0.010918801999650896,
+    0.010543192000113777,
+    0.002434446001643664,
+    0.010568927998974686
+   ],
+   "warm_median_seconds": 0.010556059999544232,
+   "warm_min_seconds": 0.002434446001643664
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.0013931419998698402,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 394312,
+   "samples_seconds": [
+    0.0013931419998698402,
+    0.005117090999192442,
+    0.0010250970008200966,
+    0.0014098840001679491,
+    0.0009030239998537581
+   ],
+   "warm_median_seconds": 0.0012174905004940229,
+   "warm_min_seconds": 0.0009030239998537581
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.005665380998834735,
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 394312,
+   "samples_seconds": [
+    0.005665380998834735,
+    0.006625869000345119,
+    0.0014214650000212714,
+    0.0014254220004659146,
+    0.006348078999508289
+   ],
+   "warm_median_seconds": 0.0038867504999871016,
+   "warm_min_seconds": 0.0014214650000212714
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 1,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.0012174905004940229,
+    "lookup_s": 0.0038867504999871016,
+    "plane_s": 0.0012030364996462595,
+    "scan_s": 0.010556059999544232,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00015818700012459885,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 4,
+    "decided": 3,
+    "spans": 1
+   },
+   "samples_seconds": [
+    0.00015818700012459885,
+    0.004169073001321522,
+    0.00012621699897863436
+   ],
+   "warm_median_seconds": 0.002147645000150078,
+   "warm_min_seconds": 0.00012621699897863436
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.005478676999700838,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 5683,
+   "samples_seconds": [
+    0.005478676999700838,
+    0.0003522890001477208,
+    0.0003754310000658734,
+    0.00045053099893266335,
+    0.0003547810010786634
+   ],
+   "warm_median_seconds": 0.0003651060005722684,
+   "warm_min_seconds": 0.0003522890001477208
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.006182523999086698,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 5683,
+   "samples_seconds": [
+    0.006182523999086698,
+    0.006666064999080845,
+    0.0021953699997538934,
+    0.006271942000239505,
+    0.0023072619987942744
+   ],
+   "warm_median_seconds": 0.00428960199951689,
+   "warm_min_seconds": 0.0021953699997538934
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.017214329998751055,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 5683,
+   "samples_seconds": [
+    0.017214329998751055,
+    0.00905601399972511,
+    0.009286370999689098,
+    0.009005855999930645,
+    0.012621750000107568
+   ],
+   "warm_median_seconds": 0.009171192499707104,
+   "warm_min_seconds": 0.009005855999930645
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.002084611000100267,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 5683,
+   "samples_seconds": [
+    0.002084611000100267,
+    0.002680828998563811,
+    0.001992776000406593,
+    0.0019948910012317356,
+    0.0019091890007985057
+   ],
+   "warm_median_seconds": 0.0019938335008191643,
+   "warm_min_seconds": 0.0019091890007985057
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.009171192499707104,
+    "lookup_s": 0.0019938335008191643,
+    "plane_s": 0.0003651060005722684,
+    "scan_s": 0.00428960199951689,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0001785969998309156,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 4,
+    "decided": 2,
+    "spans": 3
+   },
+   "samples_seconds": [
+    0.0001785969998309156,
+    8.307899952342268e-05,
+    7.25009995221626e-05
+   ],
+   "warm_median_seconds": 7.778999952279264e-05,
+   "warm_min_seconds": 7.25009995221626e-05
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.005920534000324551,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198539,
+   "samples_seconds": [
+    0.005920534000324551,
+    0.0065071819990407676,
+    0.0005162480010767467,
+    0.000532315998498234,
+    0.0005083530013507698
+   ],
+   "warm_median_seconds": 0.0005242819997874903,
+   "warm_min_seconds": 0.0005083530013507698
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.017562873999850126,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198539,
+   "samples_seconds": [
+    0.017562873999850126,
+    0.018254886999784503,
+    0.010188058999119676,
+    0.009563244999299059,
+    0.009486859000389813
+   ],
+   "warm_median_seconds": 0.009875651999209367,
+   "warm_min_seconds": 0.009486859000389813
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.00736230899929069,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198539,
+   "samples_seconds": [
+    0.00736230899929069,
+    0.006245446000320953,
+    0.00656604700088792,
+    0.006644918999882066,
+    0.006408941000699997
+   ],
+   "warm_median_seconds": 0.0064874940007939585,
+   "warm_min_seconds": 0.006245446000320953
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.0024874490009096917,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198539,
+   "samples_seconds": [
+    0.0024874490009096917,
+    0.002231542999652447,
+    0.00261681199845043,
+    0.0023793539985490497,
+    0.002438039000480785
+   ],
+   "warm_median_seconds": 0.0024086964995149174,
+   "warm_min_seconds": 0.002231542999652447
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.0064874940007939585,
+    "lookup_s": 0.0024086964995149174,
+    "plane_s": 0.0005242819997874903,
+    "scan_s": 0.009875651999209367,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0002287499992235098,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 4,
+    "decided": 3,
+    "spans": 2
+   },
+   "samples_seconds": [
+    0.0002287499992235098,
+    0.00017627800116315484,
+    0.00011926700062758755
+   ],
+   "warm_median_seconds": 0.0001477725008953712,
+   "warm_min_seconds": 0.00011926700062758755
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0004273119993740693,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 397240,
+   "samples_seconds": [
+    0.0004273119993740693,
+    0.0004105909993086243,
+    0.0004297460000088904,
+    0.00040845799958333373,
+    0.0003804099997068988
+   ],
+   "warm_median_seconds": 0.000409524499445979,
+   "warm_min_seconds": 0.0003804099997068988
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.005071393999969587,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 397240,
+   "samples_seconds": [
+    0.005071393999969587,
+    0.004420839999511372,
+    0.005506628000148339,
+    0.0059686899985536,
+    0.0058930830000463175
+   ],
+   "warm_median_seconds": 0.005699855500097328,
+   "warm_min_seconds": 0.004420839999511372
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.005536544000278809,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 397240,
+   "samples_seconds": [
+    0.005536544000278809,
+    0.005296696001096279,
+    0.0052741210001840955,
+    0.005340534000424668,
+    0.005310268999892287
+   ],
+   "warm_median_seconds": 0.005303482500494283,
+   "warm_min_seconds": 0.0052741210001840955
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.001881518001027871,
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 397240,
+   "samples_seconds": [
+    0.001881518001027871,
+    0.0018746259993349668,
+    0.001868686000307207,
+    0.0018648120003490476,
+    0.0019159660005243495
+   ],
+   "warm_median_seconds": 0.0018716559998210869,
+   "warm_min_seconds": 0.0018648120003490476
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 4,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.005303482500494283,
+    "lookup_s": 0.0018716559998210869,
+    "plane_s": 0.000409524499445979,
+    "scan_s": 0.005699855500097328,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0003022679993591737,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 16,
+    "decided": 15,
+    "spans": 1
+   },
+   "samples_seconds": [
+    0.0003022679993591737,
+    0.0001924049993249355,
+    0.00018251099936605897
+   ],
+   "warm_median_seconds": 0.00018745799934549723,
+   "warm_min_seconds": 0.00018251099936605897
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.002538220000133151,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 2760,
+   "samples_seconds": [
+    0.002538220000133151,
+    0.00100487300005625,
+    0.0005455440004880074,
+    0.0008731299985811347,
+    0.0008285830008389894
+   ],
+   "warm_median_seconds": 0.000850856499710062,
+   "warm_min_seconds": 0.0005455440004880074
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.003542860000379733,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 2760,
+   "samples_seconds": [
+    0.003542860000379733,
+    0.0034196420001535444,
+    0.003587338000215823,
+    0.003498491001664661,
+    0.0035703510002349503
+   ],
+   "warm_median_seconds": 0.0035344210009498056,
+   "warm_min_seconds": 0.0034196420001535444
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.022262995998971746,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 2760,
+   "samples_seconds": [
+    0.022262995998971746,
+    0.021986765999827185,
+    0.02200818200071808,
+    0.022656700000879937,
+    0.02171939499930886
+   ],
+   "warm_median_seconds": 0.021997474000272632,
+   "warm_min_seconds": 0.02171939499930886
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.004106878999664332,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 2760,
+   "samples_seconds": [
+    0.004106878999664332,
+    0.005065895998995984,
+    0.003646182000011322,
+    0.0038177599999471568,
+    0.004130311999688274
+   ],
+   "warm_median_seconds": 0.0039740359998177155,
+   "warm_min_seconds": 0.003646182000011322
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.021997474000272632,
+    "lookup_s": 0.0039740359998177155,
+    "plane_s": 0.000850856499710062,
+    "scan_s": 0.0035344210009498056,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.00031962499997462146,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 16,
+    "decided": 14,
+    "spans": 9
+   },
+   "samples_seconds": [
+    0.00031962499997462146,
+    0.00021659000049112365,
+    0.00019039399921894073
+   ],
+   "warm_median_seconds": 0.0002034919998550322,
+   "warm_min_seconds": 0.00019039399921894073
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.001932438999574515,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 195454,
+   "samples_seconds": [
+    0.001932438999574515,
+    0.0021931289993517566,
+    0.0021659989997715456,
+    0.0019059549995290581,
+    0.002076013999612769
+   ],
+   "warm_median_seconds": 0.0021210064996921574,
+   "warm_min_seconds": 0.0019059549995290581
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.01168733100166719,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 195454,
+   "samples_seconds": [
+    0.01168733100166719,
+    0.011046286001146655,
+    0.012247218000993598,
+    0.011200445998838404,
+    0.01053165200028161
+   ],
+   "warm_median_seconds": 0.01112336599999253,
+   "warm_min_seconds": 0.01053165200028161
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.02246957200077304,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 195454,
+   "samples_seconds": [
+    0.02246957200077304,
+    0.021811115999298636,
+    0.0211614540003211,
+    0.02269928100031393,
+    0.02266683499874489
+   ],
+   "warm_median_seconds": 0.022238975499021763,
+   "warm_min_seconds": 0.0211614540003211
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.0042763550009112805,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 195454,
+   "samples_seconds": [
+    0.0042763550009112805,
+    0.008834255000692792,
+    0.004110212999876239,
+    0.004045069999847328,
+    0.003948731999116717
+   ],
+   "warm_median_seconds": 0.004077641499861784,
+   "warm_min_seconds": 0.003948731999116717
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.022238975499021763,
+    "lookup_s": 0.004077641499861784,
+    "plane_s": 0.0021210064996921574,
+    "scan_s": 0.01112336599999253,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0003615770001488272,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 16,
+    "decided": 15,
+    "spans": 2
+   },
+   "samples_seconds": [
+    0.0003615770001488272,
+    0.00021650700000463985,
+    0.0002262840007460909
+   ],
+   "warm_median_seconds": 0.00022139550037536537,
+   "warm_min_seconds": 0.00021650700000463985
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.000791821001257631,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 396277,
+   "samples_seconds": [
+    0.000791821001257631,
+    0.0007379779999610037,
+    0.0010697869984142017,
+    0.0010679509996407432,
+    0.0008033069989323849
+   ],
+   "warm_median_seconds": 0.0009356289992865641,
+   "warm_min_seconds": 0.0007379779999610037
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.0037013260007370263,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 396277,
+   "samples_seconds": [
+    0.0037013260007370263,
+    0.003666565000457922,
+    0.0037698050000471994,
+    0.0040941140014183475,
+    0.003849540998999146
+   ],
+   "warm_median_seconds": 0.0038096729995231726,
+   "warm_min_seconds": 0.003666565000457922
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.02440436500000942,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 396277,
+   "samples_seconds": [
+    0.02440436500000942,
+    0.02482497300115938,
+    0.022933276000912883,
+    0.02284009100003459,
+    0.022154139000122086
+   ],
+   "warm_median_seconds": 0.022886683500473737,
+   "warm_min_seconds": 0.022154139000122086
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.004232970000884961,
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 396277,
+   "samples_seconds": [
+    0.004232970000884961,
+    0.003986895000707591,
+    0.003985307999755605,
+    0.004109087998585892,
+    0.00421199500124203
+   ],
+   "warm_median_seconds": 0.004047991499646741,
+   "warm_min_seconds": 0.003985307999755605
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 16,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.022886683500473737,
+    "lookup_s": 0.004047991499646741,
+    "plane_s": 0.0009356289992865641,
+    "scan_s": 0.0038096729995231726,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0008817480011202861,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 64,
+    "decided": 63,
+    "spans": 1
+   },
+   "samples_seconds": [
+    0.0008817480011202861,
+    0.0008620520002295962,
+    0.000598466000155895
+   ],
+   "warm_median_seconds": 0.0007302590001927456,
+   "warm_min_seconds": 0.000598466000155895
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0008858050005073892,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 3723,
+   "samples_seconds": [
+    0.0008858050005073892,
+    0.0005582180001511006,
+    0.0008428960009041475,
+    0.000853114001074573,
+    0.0005500899987964658
+   ],
+   "warm_median_seconds": 0.000700557000527624,
+   "warm_min_seconds": 0.0005500899987964658
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.0027074949994130293,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 3723,
+   "samples_seconds": [
+    0.0027074949994130293,
+    0.002852636998795788,
+    0.002648166000653873,
+    0.0028022499991493532,
+    0.0027055310001742328
+   ],
+   "warm_median_seconds": 0.002753890499661793,
+   "warm_min_seconds": 0.002648166000653873
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.09401784500005306,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 3723,
+   "samples_seconds": [
+    0.09401784500005306,
+    0.1330529150000075,
+    0.09795525800109317,
+    0.09854831300071965,
+    0.10759708899968246
+   ],
+   "warm_median_seconds": 0.10307270100020105,
+   "warm_min_seconds": 0.09795525800109317
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.013893249999455293,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "candidate",
+   "result": 3723,
+   "samples_seconds": [
+    0.013893249999455293,
+    0.01253955100037274,
+    0.01311379999970086,
+    0.012426622999555548,
+    0.013736995000726893
+   ],
+   "warm_median_seconds": 0.0128266755000368,
+   "warm_min_seconds": 0.012426622999555548
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.01
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.10307270100020105,
+    "lookup_s": 0.0128266755000368,
+    "plane_s": 0.000700557000527624,
+    "scan_s": 0.002753890499661793,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0008566910000809003,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 64,
+    "decided": 63,
+    "spans": 32
+   },
+   "samples_seconds": [
+    0.0008566910000809003,
+    0.0006880119999550516,
+    0.0006385910000972217
+   ],
+   "warm_median_seconds": 0.0006633015000261366,
+   "warm_min_seconds": 0.0006385910000972217
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0036834969996561995,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198410,
+   "samples_seconds": [
+    0.0036834969996561995,
+    0.009396338000442483,
+    0.006357594998917193,
+    0.005949243999566534,
+    0.006142381000245223
+   ],
+   "warm_median_seconds": 0.006249987999581208,
+   "warm_min_seconds": 0.005949243999566534
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.017662279999058228,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198410,
+   "samples_seconds": [
+    0.017662279999058228,
+    0.017239079999853857,
+    0.018779518999508582,
+    0.01755474600031448,
+    0.016716931999326334
+   ],
+   "warm_median_seconds": 0.01739691300008417,
+   "warm_min_seconds": 0.016716931999326334
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.09400060799998755,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198410,
+   "samples_seconds": [
+    0.09400060799998755,
+    0.09491381299994828,
+    0.1049741080005333,
+    0.10001742399981595,
+    0.09709614799976407
+   ],
+   "warm_median_seconds": 0.09855678599979001,
+   "warm_min_seconds": 0.09491381299994828
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.013069573999018758,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "candidate",
+   "result": 198410,
+   "samples_seconds": [
+    0.013069573999018758,
+    0.012276862998987781,
+    0.013150793998647714,
+    0.012383413000861765,
+    0.012512752999100485
+   ],
+   "warm_median_seconds": 0.012448082999981125,
+   "warm_min_seconds": 0.012276862998987781
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.5
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.09855678599979001,
+    "lookup_s": 0.012448082999981125,
+    "plane_s": 0.006249987999581208,
+    "scan_s": 0.01739691300008417,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "transform (exact code set)",
+   "first_seconds": 0.0008016439987841295,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "transform",
+   "result": {
+    "branches": 64,
+    "decided": 63,
+    "spans": 2
+   },
+   "samples_seconds": [
+    0.0008016439987841295,
+    0.0008140569989336655,
+    0.000631544000498252
+   ],
+   "warm_median_seconds": 0.0007228004997159587,
+   "warm_min_seconds": 0.000631544000498252
+  },
+  {
+   "backend": "engine",
+   "case": "transformed plane predicate (engine)",
+   "first_seconds": 0.0010609399996610591,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 395442,
+   "samples_seconds": [
+    0.0010609399996610591,
+    0.0006965089996811002,
+    0.0010045790004369337,
+    0.0006880750006530434,
+    0.000989715999821783
+   ],
+   "warm_median_seconds": 0.0008431124997514416,
+   "warm_min_seconds": 0.0006880750006530434
+  },
+  {
+   "backend": "cpu",
+   "case": "native scan of the code set",
+   "first_seconds": 0.003051450999919325,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 395442,
+   "samples_seconds": [
+    0.003051450999919325,
+    0.0031478679993597325,
+    0.0029276490004122024,
+    0.0032860930004972033,
+    0.0032577620004303753
+   ],
+   "warm_median_seconds": 0.003202814999895054,
+   "warm_min_seconds": 0.0029276490004122024
+  },
+  {
+   "backend": "numpy",
+   "case": "direct candidate: NumPy piecewise evaluation",
+   "first_seconds": 0.13208064200080116,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 395442,
+   "samples_seconds": [
+    0.13208064200080116,
+    0.09667924400127959,
+    0.09345714600021893,
+    0.0907964459984214,
+    0.0976377990009496
+   ],
+   "warm_median_seconds": 0.09506819500074926,
+   "warm_min_seconds": 0.0907964459984214
+  },
+  {
+   "backend": "numpy",
+   "case": "lookup candidate: tabulate the code domain, gather",
+   "first_seconds": 0.012269701999684912,
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "candidate",
+   "result": 395442,
+   "samples_seconds": [
+    0.012269701999684912,
+    0.011373129000276094,
+    0.010688657001082902,
+    0.01189248199989379,
+    0.014276818999860552
+   ],
+   "warm_median_seconds": 0.011632805500084942,
+   "warm_min_seconds": 0.010688657001082902
+  },
+  {
+   "backend": "cpu",
+   "case": "winner",
+   "params": {
+    "branches": 64,
+    "rows": 400000,
+    "scenario": "branches and selectivity",
+    "selectivity": 0.99
+   },
+   "phase": "summary",
+   "result": {
+    "agree": true,
+    "direct_s": 0.09506819500074926,
+    "lookup_s": 0.011632805500084942,
+    "plane_s": 0.0008431124997514416,
+    "scan_s": 0.003202814999895054,
+    "winner": "plane"
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "output spans",
+   "params": {
+    "output_limit": 2000,
+    "values": 1998
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "output spans",
+   "params": {
+    "output_limit": 2000,
+    "values": 1999
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "output spans",
+   "params": {
+    "output_limit": 2000,
+    "values": 2000
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "output spans",
+   "limit": 2000,
+   "message": "preimage: needs 2001 output, budget 2000",
+   "need": 2001,
+   "params": {
+    "output_limit": 2000,
+    "values": 2001
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.004965063000781811,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "output spans",
+   "limit": 2000,
+   "message": "preimage: needs 2002 output, budget 2000",
+   "need": 2002,
+   "params": {
+    "output_limit": 2000,
+    "values": 2002
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.005322393000824377,
+   "refused": true,
+   "resource": "output"
+  }
+ ],
+ "seconds": 11.627798771000016,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "IN values (one span each) at an output budget of 2000 spans",
+   "largest_admitted": 2000,
+   "smallest_refused": 2001
+  }
+ ]
+}

@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 2 |
-| planned | 33 |
-| in_progress | 28 |
+| partial | 1 |
+| planned | 32 |
+| in_progress | 30 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -3458,7 +3458,7 @@ Push conditions on derived values back to generators.
 
 ### PRE-001: Affine and monotone-piece preimages
 
-Status: **partial**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Transform predicates on derived values into exact generator intervals with integer rounding, sign and NULL guards.
 
@@ -3506,6 +3506,14 @@ Additional limits:
 - The law certificates cover the algebraic substitution of the codec; the integer rounding is proved by the exact computation and the exhaustive tests, not by a certificate; a branch whose coefficients leave int64 has none.
 - The direct check evaluates in int64 rationals: a row it cannot decide is reported (overflow), not checked.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `246664aa793bcecefac4cd954e6366a1a85271f8`.
+
+- tests: [results/math/PRE-001/tests_test_math_pre.json](results/math/PRE-001/tests_test_math_pre.json)
+- tests: [results/math/PRE-001/sanitized_test_math_pre.json](results/math/PRE-001/sanitized_test_math_pre.json)
+- benchmarks: [results/math/PRE-001/benchmark_cpu_math_pre_vm.json](results/math/PRE-001/benchmark_cpu_math_pre_vm.json)
 
 <a id="pre-002"></a>
 
@@ -4112,7 +4120,7 @@ Bounds, abstract interpretation and explicit approximation budgets.
 
 ### UNC-001: Intervals, affine forms and congruence reasoning
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Native abstract states propagate sound bounds, correlations, residues, nullness and exact-zero facts for pruning and overflow decisions.
 
@@ -4157,6 +4165,14 @@ Additional limits:
 - FND-007 has no inequality claim kind: interval bounds and pruning decisions are tied to the scope's record (freshness), not issued as certificates; law certificates need polynomial nodes over at most 8 columns and int64 coefficients.
 - MIN / MAX propagate NULL (unlike SQL LEAST / GREATEST); division and mod take constant divisors only.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `246664aa793bcecefac4cd954e6366a1a85271f8`.
+
+- tests: [results/math/UNC-001/tests_test_math_unc.json](results/math/UNC-001/tests_test_math_unc.json)
+- tests: [results/math/UNC-001/sanitized_test_math_unc.json](results/math/UNC-001/sanitized_test_math_unc.json)
+- benchmarks: [results/math/UNC-001/benchmark_cpu_math_unc_vm.json](results/math/UNC-001/benchmark_cpu_math_unc_vm.json)
 
 <a id="unc-002"></a>
 
