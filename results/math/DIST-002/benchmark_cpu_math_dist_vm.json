@@ -1,0 +1,4011 @@
+{
+ "argv": [
+  "--capability",
+  "DIST-002",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/DIST-002/benchmark_cpu_math_dist_vm.json"
+ ],
+ "capability": "DIST-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:16:18+00:00"
+ },
+ "notes": [
+  "DIST-002: requests reuse the retained prefix state: no scan of the rows per request (a DuckDB query scans its table each time). cpu = tr_dist_query (single-threaded binary searches), cuda = one work item per request (device runs only), numpy = complete reconstruction (np.sort once, then np.searchsorted / np.quantile / cumulative sums: floating quantiles, exact counts).",
+  "grid wall time 27.5 s"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0011593830004130723,
+   "params": {
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011593830004130723,
+    0.0008280199999717297,
+    0.0008160699999280041
+   ],
+   "warm_median_seconds": 0.0008220449999498669,
+   "warm_min_seconds": 0.0008160699999280041
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 2.9311000616871752e-05,
+   "params": {
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.9311000616871752e-05,
+    2.022700027737301e-05,
+    1.2751999747706577e-05
+   ],
+   "state_bytes": 488,
+   "support_entries": 8,
+   "warm_median_seconds": 1.6489500012539793e-05,
+   "warm_min_seconds": 1.2751999747706577e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy sort (reconstruction)",
+   "first_seconds": 0.000981638999292045,
+   "params": {
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000981638999292045,
+    0.0009290790003433358,
+    0.0004440890006662812
+   ],
+   "warm_median_seconds": 0.0006865840005048085,
+   "warm_min_seconds": 0.0004440890006662812
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.179199954203796e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.179199954203796e-05,
+    1.541399979032576e-05,
+    9.41800135478843e-06,
+    7.691000064369291e-06,
+    7.40999894333072e-06
+   ],
+   "warm_median_seconds": 8.55450070957886e-06,
+   "warm_min_seconds": 7.40999894333072e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0001768000001902692,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001768000001902692,
+    0.0001478770009271102,
+    5.045600119046867e-05,
+    3.949799975089263e-05,
+    3.9181999454740435e-05
+   ],
+   "warm_median_seconds": 4.497700047068065e-05,
+   "warm_min_seconds": 3.9181999454740435e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.004614761000993894,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004614761000993894,
+    0.002641544999278267
+   ],
+   "warm_median_seconds": 0.002641544999278267,
+   "warm_min_seconds": 0.002641544999278267
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0009859949987003347,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0009859949987003347,
+    0.0009215860009135213,
+    0.0008643520013720263
+   ],
+   "warm_median_seconds": 0.0008929690011427738,
+   "warm_min_seconds": 0.0008643520013720263
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.470699968806002e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.470699968806002e-05,
+    1.86910001502838e-05,
+    1.4792998626944609e-05,
+    1.4836999980616383e-05,
+    1.4242999895941466e-05
+   ],
+   "warm_median_seconds": 1.4814999303780496e-05,
+   "warm_min_seconds": 1.4242999895941466e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00016471900016767904,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016471900016767904,
+    9.229500028595794e-05,
+    7.218800055852626e-05,
+    8.503699973516632e-05,
+    8.297299973492045e-05
+   ],
+   "warm_median_seconds": 8.400499973504338e-05,
+   "warm_min_seconds": 7.218800055852626e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.2214366530006373,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2214366530006373,
+    0.18734768200010876
+   ],
+   "warm_median_seconds": 0.18734768200010876,
+   "warm_min_seconds": 0.18734768200010876
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0009556079985486576,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009556079985486576,
+    0.0009585380012140376,
+    0.00057795200154942,
+    0.0005966909993730951,
+    0.0005457440001919167
+   ],
+   "warm_median_seconds": 0.0005873215004612575,
+   "warm_min_seconds": 0.0005457440001919167
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.001220364998516743,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001220364998516743,
+    0.0011015820000466192,
+    0.001112113999624853,
+    0.0010459920013090596,
+    0.001175350000266917
+   ],
+   "warm_median_seconds": 0.0011068479998357361,
+   "warm_min_seconds": 0.0010459920013090596
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.022207523999895784,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.022207523999895784,
+    0.019821948000753764
+   ],
+   "warm_median_seconds": 0.019821948000753764,
+   "warm_min_seconds": 0.019821948000753764
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 7.921799988253042e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.921799988253042e-05,
+    1.462199907109607e-05,
+    1.028199949359987e-05,
+    9.71000008576084e-06,
+    1.0028999895439483e-05
+   ],
+   "warm_median_seconds": 1.0155499694519676e-05,
+   "warm_min_seconds": 9.71000008576084e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00022460400032286998,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022460400032286998,
+    0.00010065500100608915,
+    0.0001051460003509419,
+    7.3437000537524e-05,
+    6.788699829485267e-05
+   ],
+   "warm_median_seconds": 8.704600077180658e-05,
+   "warm_min_seconds": 6.788699829485267e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.002242681999632623,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002242681999632623,
+    0.002464490000420483
+   ],
+   "warm_median_seconds": 0.002464490000420483,
+   "warm_min_seconds": 0.002464490000420483
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0008840539994707797,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0008840539994707797,
+    0.0005613920002360828,
+    0.0004571389999910025
+   ],
+   "warm_median_seconds": 0.0005092655001135427,
+   "warm_min_seconds": 0.0004571389999910025
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.9679000363103114e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9679000363103114e-05,
+    1.3021999620832503e-05,
+    9.948998922482133e-06,
+    9.08599940885324e-06,
+    9.256000339519233e-06
+   ],
+   "warm_median_seconds": 9.602499631000683e-06,
+   "warm_min_seconds": 9.08599940885324e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00016456799858133309,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016456799858133309,
+    6.984699939494021e-05,
+    4.5217000661068596e-05,
+    4.3539999751374125e-05,
+    4.397200063976925e-05
+   ],
+   "warm_median_seconds": 4.459450065041892e-05,
+   "warm_min_seconds": 4.3539999751374125e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.2117612050005846,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2117612050005846,
+    0.21067789900007483
+   ],
+   "warm_median_seconds": 0.21067789900007483,
+   "warm_min_seconds": 0.21067789900007483
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0006179230003908742,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006179230003908742,
+    0.000639039999441593,
+    0.0005184299989196006,
+    0.0004523090010479791,
+    0.0004608449999068398
+   ],
+   "warm_median_seconds": 0.0004896374994132202,
+   "warm_min_seconds": 0.0004523090010479791
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0011559380000107922,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011559380000107922,
+    0.0010533550012041815,
+    0.0010635479993652552,
+    0.0010800719992403174,
+    0.0010411470011604251
+   ],
+   "warm_median_seconds": 0.0010584515002847183,
+   "warm_min_seconds": 0.0010411470011604251
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.016004727000108687,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016004727000108687,
+    0.014524632000757265
+   ],
+   "warm_median_seconds": 0.014524632000757265,
+   "warm_min_seconds": 0.014524632000757265
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.963899977563415e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.963899977563415e-05,
+    1.3102000593789853e-05,
+    3.507899964461103e-05,
+    1.6091000361484475e-05,
+    1.0857998859137297e-05
+   ],
+   "warm_median_seconds": 1.4596500477637164e-05,
+   "warm_min_seconds": 1.0857998859137297e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0037279959997249534,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0037279959997249534,
+    0.003498931999274646
+   ],
+   "warm_median_seconds": 0.003498931999274646,
+   "warm_min_seconds": 0.003498931999274646
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0018918969999504043,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018918969999504043,
+    0.0004920149985991884,
+    0.0003854910009977175,
+    0.00035391499841352925,
+    0.00037340800008678343
+   ],
+   "warm_median_seconds": 0.00037944950054225046,
+   "warm_min_seconds": 0.00035391499841352925
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0006310879998636665,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0006310879998636665,
+    0.0005279819997667801,
+    0.0004730929995275801
+   ],
+   "warm_median_seconds": 0.0005005374996471801,
+   "warm_min_seconds": 0.0004730929995275801
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.1952999304630794e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.1952999304630794e-05,
+    4.646399975172244e-05,
+    1.3966999176773243e-05,
+    1.0155999916605651e-05,
+    1.0015999578172341e-05
+   ],
+   "warm_median_seconds": 1.2061499546689447e-05,
+   "warm_min_seconds": 1.0015999578172341e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.36135983200074406,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.36135983200074406,
+    0.39376723199893604
+   ],
+   "warm_median_seconds": 0.39376723199893604,
+   "warm_min_seconds": 0.39376723199893604
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0022048990012990544,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0022048990012990544,
+    0.0018032890002359636,
+    0.001990153999940958,
+    0.0016161799994733883,
+    0.0014488190008705715
+   ],
+   "warm_median_seconds": 0.001709734499854676,
+   "warm_min_seconds": 0.0014488190008705715
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.000989694999589119,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000989694999589119,
+    0.0013695440011360915,
+    0.0009373539996886393,
+    0.0009396099994773977,
+    0.0008800980012892978
+   ],
+   "warm_median_seconds": 0.0009384819995830185,
+   "warm_min_seconds": 0.0008800980012892978
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one quantile_cont over a list)",
+   "first_seconds": 2.190970675999779,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.190970675999779,
+    2.5343099830006395
+   ],
+   "warm_median_seconds": 2.5343099830006395,
+   "warm_min_seconds": 2.5343099830006395
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0040036709997366415,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0040036709997366415,
+    0.003527678998580086,
+    0.0031785470000613714,
+    0.002964227000120445,
+    0.00300501899982919
+   ],
+   "warm_median_seconds": 0.0030917829999452806,
+   "warm_min_seconds": 0.002964227000120445
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 8.20360000943765e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.20360000943765e-05,
+    1.5495999832637608e-05,
+    9.429000783711672e-06,
+    9.716999556985684e-06,
+    8.11500103736762e-06
+   ],
+   "warm_median_seconds": 9.573000170348678e-06,
+   "warm_min_seconds": 8.11500103736762e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.4412999007618055e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4412999007618055e-05,
+    3.5590001061791554e-06,
+    2.12700069823768e-06,
+    3.6893001379212365e-05,
+    4.506999175646342e-06
+   ],
+   "warm_median_seconds": 4.032999640912749e-06,
+   "warm_min_seconds": 2.12700069823768e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0006142869988252642,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0006142869988252642,
+    0.0005259139998088358,
+    0.0004522119998000562
+   ],
+   "warm_median_seconds": 0.000489062999804446,
+   "warm_min_seconds": 0.0004522119998000562
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.2272999558481388e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2272999558481388e-05,
+    1.282800076296553e-05,
+    3.48190005752258e-05,
+    1.3916000170866027e-05,
+    1.0412999472464435e-05
+   ],
+   "warm_median_seconds": 1.3372000466915779e-05,
+   "warm_min_seconds": 1.0412999472464435e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 9.989998943638057e-06,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.989998943638057e-06,
+    2.8419999580364674e-06,
+    2.2549993445863947e-06,
+    2.26500014832709e-06,
+    2.2170006559463218e-06
+   ],
+   "warm_median_seconds": 2.2599997464567423e-06,
+   "warm_min_seconds": 2.2170006559463218e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0011262549996899907,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011262549996899907,
+    0.0011461520007287618,
+    0.000995590000457014,
+    0.0009351610005978728,
+    0.0007442900005116826
+   ],
+   "warm_median_seconds": 0.0009653755005274434,
+   "warm_min_seconds": 0.0007442900005116826
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 0.00010795300113386475,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 8"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010795300113386475,
+    5.811099981656298e-05,
+    4.9041998863685876e-05,
+    4.7521998567390256e-05,
+    4.664799962483812e-05
+   ],
+   "warm_median_seconds": 4.8281998715538066e-05,
+   "warm_min_seconds": 4.664799962483812e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0004663700001401594,
+   "params": {
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004663700001401594,
+    0.0004573949991026893,
+    0.0004614849985955516
+   ],
+   "warm_median_seconds": 0.00045943999884912046,
+   "warm_min_seconds": 0.0004573949991026893
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 1.4032000763108954e-05,
+   "params": {
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    1.4032000763108954e-05,
+    9.463999958825298e-06,
+    6.468999345088378e-06
+   ],
+   "state_bytes": 2728,
+   "support_entries": 64,
+   "warm_median_seconds": 7.966499651956838e-06,
+   "warm_min_seconds": 6.468999345088378e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy sort (reconstruction)",
+   "first_seconds": 0.000831745999676059,
+   "params": {
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000831745999676059,
+    0.0006259200017666444,
+    0.00042590900011418853
+   ],
+   "warm_median_seconds": 0.0005259145009404165,
+   "warm_min_seconds": 0.00042590900011418853
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 3.8740001400583424e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.8740001400583424e-05,
+    9.195000529871322e-06,
+    7.147000360419042e-06,
+    6.4300002122763544e-06,
+    6.5949989220825955e-06
+   ],
+   "warm_median_seconds": 6.870999641250819e-06,
+   "warm_min_seconds": 6.4300002122763544e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00013737500012211967,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013737500012211967,
+    5.8087000070372596e-05,
+    5.4940999689279124e-05,
+    4.182699922239408e-05,
+    4.174799869360868e-05
+   ],
+   "warm_median_seconds": 4.83839994558366e-05,
+   "warm_min_seconds": 4.174799869360868e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.002022044000113965,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002022044000113965,
+    0.0016706709993741242
+   ],
+   "warm_median_seconds": 0.0016706709993741242,
+   "warm_min_seconds": 0.0016706709993741242
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.000556846000108635,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.000556846000108635,
+    0.00046012100028747227,
+    0.00044293899918557145
+   ],
+   "warm_median_seconds": 0.00045152999973652186,
+   "warm_min_seconds": 0.00044293899918557145
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.592100099718664e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.592100099718664e-05,
+    1.4864999684505165e-05,
+    1.0726000255090185e-05,
+    9.116000001085922e-06,
+    9.31899921852164e-06
+   ],
+   "warm_median_seconds": 1.0022499736805912e-05,
+   "warm_min_seconds": 9.116000001085922e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00012543699995148927,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012543699995148927,
+    5.741200038755778e-05,
+    4.498899943428114e-05,
+    5.6096998378052376e-05,
+    4.511599945544731e-05
+   ],
+   "warm_median_seconds": 5.060649891674984e-05,
+   "warm_min_seconds": 4.498899943428114e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.16826629100069113,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.16826629100069113,
+    0.16901556700031506
+   ],
+   "warm_median_seconds": 0.16901556700031506,
+   "warm_min_seconds": 0.16901556700031506
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0008401510003750445,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008401510003750445,
+    0.0010354809983255109,
+    0.0007410729995172005,
+    0.0007258370005729375,
+    0.0006897050006955396
+   ],
+   "warm_median_seconds": 0.000733455000045069,
+   "warm_min_seconds": 0.0006897050006955396
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.001273100000616978,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001273100000616978,
+    0.001310677998844767,
+    0.0012498509986471618,
+    0.0011607389988057548,
+    0.0011373100005585002
+   ],
+   "warm_median_seconds": 0.0012052949987264583,
+   "warm_min_seconds": 0.0011373100005585002
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.014444574999288307,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014444574999288307,
+    0.01374838300034753
+   ],
+   "warm_median_seconds": 0.01374838300034753,
+   "warm_min_seconds": 0.01374838300034753
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 5.494799916050397e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.494799916050397e-05,
+    1.1239999366807751e-05,
+    8.156001058523543e-06,
+    7.1710001066094264e-06,
+    7.556000127806328e-06
+   ],
+   "warm_median_seconds": 7.856000593164936e-06,
+   "warm_min_seconds": 7.1710001066094264e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00021155300055397674,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021155300055397674,
+    0.00012357099876680877,
+    4.728600106318481e-05,
+    4.1479999708826654e-05,
+    4.127099964534864e-05
+   ],
+   "warm_median_seconds": 4.438300038600573e-05,
+   "warm_min_seconds": 4.127099964534864e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0019510880010784604,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019510880010784604,
+    0.0017270270000153687
+   ],
+   "warm_median_seconds": 0.0017270270000153687,
+   "warm_min_seconds": 0.0017270270000153687
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0006323119996523019,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0006323119996523019,
+    0.000493878998895525,
+    0.0004553099988697795
+   ],
+   "warm_median_seconds": 0.00047459449888265226,
+   "warm_min_seconds": 0.0004553099988697795
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.957600008812733e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.957600008812733e-05,
+    1.4080000255489722e-05,
+    1.089999932446517e-05,
+    1.044799864757806e-05,
+    1.0575000487733632e-05
+   ],
+   "warm_median_seconds": 1.0737499906099401e-05,
+   "warm_min_seconds": 1.044799864757806e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00014436300079978537,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014436300079978537,
+    6.421900070563424e-05,
+    4.85399996250635e-05,
+    4.638899918063544e-05,
+    6.030100121279247e-05
+   ],
+   "warm_median_seconds": 5.4420500418927986e-05,
+   "warm_min_seconds": 4.638899918063544e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.17306316699978197,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17306316699978197,
+    0.2003146420011035
+   ],
+   "warm_median_seconds": 0.2003146420011035,
+   "warm_min_seconds": 0.2003146420011035
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0013144670010660775,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013144670010660775,
+    0.0012016709988529328,
+    0.0007290909998118877,
+    0.0006770180007151794,
+    0.0006988810000621015
+   ],
+   "warm_median_seconds": 0.0007139859999369946,
+   "warm_min_seconds": 0.0006770180007151794
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0012967469992872793,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012967469992872793,
+    0.0012187009997433051,
+    0.0011753250000765547,
+    0.00111546700100007,
+    0.0010836190012923907
+   ],
+   "warm_median_seconds": 0.0011453960005383124,
+   "warm_min_seconds": 0.0010836190012923907
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.013062226000329247,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013062226000329247,
+    0.01341613299882738
+   ],
+   "warm_median_seconds": 0.01341613299882738,
+   "warm_min_seconds": 0.01341613299882738
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.6717999794054776e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.6717999794054776e-05,
+    1.0613999620545655e-05,
+    7.872000423958525e-06,
+    6.6350003180559725e-06,
+    6.575999577762559e-06
+   ],
+   "warm_median_seconds": 7.253500371007249e-06,
+   "warm_min_seconds": 6.575999577762559e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0029921440000180155,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0029921440000180155,
+    0.0027975460016023135
+   ],
+   "warm_median_seconds": 0.0027975460016023135,
+   "warm_min_seconds": 0.0027975460016023135
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00072919699960039,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00072919699960039,
+    0.0005118130011396715,
+    0.0004565480012388434,
+    0.0005007460003980668,
+    0.0005121279991726624
+   ],
+   "warm_median_seconds": 0.0005062795007688692,
+   "warm_min_seconds": 0.0004565480012388434
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.000573606999751064,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.000573606999751064,
+    0.00044062100096198265,
+    0.00044146799882582854
+   ],
+   "warm_median_seconds": 0.0004410444998939056,
+   "warm_min_seconds": 0.00044062100096198265
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.9254999390104786e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9254999390104786e-05,
+    1.5752000763313845e-05,
+    1.0970999937853776e-05,
+    1.0792000466608442e-05,
+    1.1337000614730641e-05
+   ],
+   "warm_median_seconds": 1.1154000276292209e-05,
+   "warm_min_seconds": 1.0792000466608442e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.3521671509988664,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.3521671509988664,
+    0.35993836099987675
+   ],
+   "warm_median_seconds": 0.35993836099987675,
+   "warm_min_seconds": 0.35993836099987675
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0015322020008170512,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015322020008170512,
+    0.00129414699949848,
+    0.001257299998542294,
+    0.0012125249995733611,
+    0.001258970998605946
+   ],
+   "warm_median_seconds": 0.00125813549857412,
+   "warm_min_seconds": 0.0012125249995733611
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0014993570002843626,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014993570002843626,
+    0.0018597529997350648,
+    0.0012753049995808396,
+    0.0012168810008006403,
+    0.0012427900001057424
+   ],
+   "warm_median_seconds": 0.001259047499843291,
+   "warm_min_seconds": 0.0012168810008006403
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one quantile_cont over a list)",
+   "first_seconds": 1.743863648000115,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.743863648000115,
+    1.735777390000294
+   ],
+   "warm_median_seconds": 1.735777390000294,
+   "warm_min_seconds": 1.735777390000294
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0037624300002789823,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0037624300002789823,
+    0.003326943999127252,
+    0.003260895999119384,
+    0.0033480460006103385,
+    0.00322939400030009
+   ],
+   "warm_median_seconds": 0.003293919999123318,
+   "warm_min_seconds": 0.00322939400030009
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 8.329899901582394e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.329899901582394e-05,
+    1.1984000593656674e-05,
+    8.214999979827553e-06,
+    6.46499938738998e-06,
+    5.7489996834192425e-06
+   ],
+   "warm_median_seconds": 7.339999683608767e-06,
+   "warm_min_seconds": 5.7489996834192425e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.1927000741707161e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1927000741707161e-05,
+    4.5050001062918454e-06,
+    3.6020010156789795e-06,
+    2.2580006771022454e-06,
+    1.960999725270085e-06
+   ],
+   "warm_median_seconds": 2.9300008463906124e-06,
+   "warm_min_seconds": 1.960999725270085e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0006395829987013713,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0006395829987013713,
+    0.0005013580012018792,
+    0.0004472540003916947
+   ],
+   "warm_median_seconds": 0.000474306000796787,
+   "warm_min_seconds": 0.0004472540003916947
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 2.746700010902714e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.746700010902714e-05,
+    1.5575000361423008e-05,
+    1.0961000953102484e-05,
+    9.905999831971712e-06,
+    1.0117000783793628e-05
+   ],
+   "warm_median_seconds": 1.0539000868448056e-05,
+   "warm_min_seconds": 9.905999831971712e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.0963000022456981e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0963000022456981e-05,
+    3.2610005291644484e-06,
+    2.2550011635757983e-06,
+    2.177999704144895e-06,
+    2.151000444428064e-06
+   ],
+   "warm_median_seconds": 2.2165004338603467e-06,
+   "warm_min_seconds": 2.151000444428064e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.001434522000636207,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001434522000636207,
+    0.0015480450001632562,
+    0.001345697999568074,
+    0.0013154690004739678,
+    0.0013412719999905676
+   ],
+   "warm_median_seconds": 0.0013434849997793208,
+   "warm_min_seconds": 0.0013154690004739678
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 0.00013775300067209173,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 64"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013775300067209173,
+    9.401700117450673e-05,
+    5.498999962583184e-05,
+    4.8182000682572834e-05,
+    5.701100053556729e-05
+   ],
+   "warm_median_seconds": 5.600050008069957e-05,
+   "warm_min_seconds": 4.8182000682572834e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0005848969994985964,
+   "params": {
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005848969994985964,
+    0.0005896460006624693,
+    0.0005406059990491485
+   ],
+   "warm_median_seconds": 0.0005651259998558089,
+   "warm_min_seconds": 0.0005406059990491485
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 3.8939000660320744e-05,
+   "params": {
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.8939000660320744e-05,
+    3.393299994058907e-05,
+    1.6040999980759807e-05
+   ],
+   "state_bytes": 41128,
+   "support_entries": 1024,
+   "warm_median_seconds": 2.498699996067444e-05,
+   "warm_min_seconds": 1.6040999980759807e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy sort (reconstruction)",
+   "first_seconds": 0.0010016819996963022,
+   "params": {
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010016819996963022,
+    0.0013479680001182714,
+    0.0009168790002149763
+   ],
+   "warm_median_seconds": 0.0011324235001666239,
+   "warm_min_seconds": 0.0009168790002149763
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 7.313599962799344e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.313599962799344e-05,
+    1.532500027678907e-05,
+    1.957600034074858e-05,
+    1.1473999620648101e-05,
+    9.478999345446937e-06
+   ],
+   "warm_median_seconds": 1.3399499948718585e-05,
+   "warm_min_seconds": 9.478999345446937e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0001792780003597727,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001792780003597727,
+    8.73120006872341e-05,
+    6.634999954258092e-05,
+    0.00010962600026687142,
+    8.198199975595344e-05
+   ],
+   "warm_median_seconds": 8.464700022159377e-05,
+   "warm_min_seconds": 6.634999954258092e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.002536870999392704,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002536870999392704,
+    0.0025994790012191515
+   ],
+   "warm_median_seconds": 0.0025994790012191515,
+   "warm_min_seconds": 0.0025994790012191515
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.001011809999909019,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.001011809999909019,
+    0.0008927990002121078,
+    0.000888521999513614
+   ],
+   "warm_median_seconds": 0.0008906604998628609,
+   "warm_min_seconds": 0.000888521999513614
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.920799983665347e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.920799983665347e-05,
+    2.2153999452712014e-05,
+    1.920300019264687e-05,
+    1.720200089039281e-05,
+    1.669000084802974e-05
+   ],
+   "warm_median_seconds": 1.820250054151984e-05,
+   "warm_min_seconds": 1.669000084802974e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00015916399934212677,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015916399934212677,
+    0.00014024300071469042,
+    8.170699948095717e-05,
+    7.059500057948753e-05,
+    9.705900083645247e-05
+   ],
+   "warm_median_seconds": 8.938300015870482e-05,
+   "warm_min_seconds": 7.059500057948753e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.21560770100040827,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.21560770100040827,
+    0.23108034200049588
+   ],
+   "warm_median_seconds": 0.23108034200049588,
+   "warm_min_seconds": 0.23108034200049588
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.001728708999507944,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001728708999507944,
+    0.0016179560007003602,
+    0.0010837540012289537,
+    0.0010399759994470514,
+    0.0010097320009663235
+   ],
+   "warm_median_seconds": 0.0010618650003380026,
+   "warm_min_seconds": 0.0010097320009663235
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0016448409987788182,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016448409987788182,
+    0.0014992190008342732,
+    0.001427161001629429,
+    0.001410402999681537,
+    0.0013655170005222317
+   ],
+   "warm_median_seconds": 0.001418782000655483,
+   "warm_min_seconds": 0.0013655170005222317
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.019784101999903214,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.019784101999903214,
+    0.015116327000214369
+   ],
+   "warm_median_seconds": 0.015116327000214369,
+   "warm_min_seconds": 0.015116327000214369
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.555700019816868e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.555700019816868e-05,
+    1.0155001291423105e-05,
+    7.0499991124961525e-06,
+    6.070000381441787e-06,
+    6.505999408545904e-06
+   ],
+   "warm_median_seconds": 6.777999260521028e-06,
+   "warm_min_seconds": 6.070000381441787e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0001962490005098516,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001962490005098516,
+    6.2876999436412e-05,
+    4.406399966683239e-05,
+    4.116800118936226e-05,
+    4.095999975106679e-05
+   ],
+   "warm_median_seconds": 4.261600042809732e-05,
+   "warm_min_seconds": 4.095999975106679e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0020380179994390346,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020380179994390346,
+    0.0017755790013325168
+   ],
+   "warm_median_seconds": 0.0017755790013325168,
+   "warm_min_seconds": 0.0017755790013325168
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0007013180002104491,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0007013180002104491,
+    0.0005370360013330355,
+    0.0004756480011565145
+   ],
+   "warm_median_seconds": 0.000506342001244775,
+   "warm_min_seconds": 0.0004756480011565145
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 3.1305000447900966e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.1305000447900966e-05,
+    1.580500065756496e-05,
+    1.3527000191970728e-05,
+    1.206399974762462e-05,
+    1.1616999472607858e-05
+   ],
+   "warm_median_seconds": 1.2795499969797675e-05,
+   "warm_min_seconds": 1.1616999472607858e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00016457300080219284,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016457300080219284,
+    6.881300032546278e-05,
+    5.0447000830899924e-05,
+    5.0709000788629055e-05,
+    4.4624999645748176e-05
+   ],
+   "warm_median_seconds": 5.057800080976449e-05,
+   "warm_min_seconds": 4.4624999645748176e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.17414930899940373,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17414930899940373,
+    0.17538885299836693
+   ],
+   "warm_median_seconds": 0.17538885299836693,
+   "warm_min_seconds": 0.17538885299836693
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0012720349986921065,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012720349986921065,
+    0.0011918909985979553,
+    0.0011173419989063405,
+    0.0010756339997897157,
+    0.0010462480004207464
+   ],
+   "warm_median_seconds": 0.001096487999348028,
+   "warm_min_seconds": 0.0010462480004207464
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.001598654000190436,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001598654000190436,
+    0.0014620820002164692,
+    0.001425903999916045,
+    0.0015068609991431003,
+    0.0014628760000050534
+   ],
+   "warm_median_seconds": 0.0014624790001107613,
+   "warm_min_seconds": 0.001425903999916045
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.013690744999621529,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013690744999621529,
+    0.017752998999640113
+   ],
+   "warm_median_seconds": 0.017752998999640113,
+   "warm_min_seconds": 0.017752998999640113
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 7.035499947960488e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.035499947960488e-05,
+    9.678999049356207e-06,
+    6.1290011217352e-06,
+    6.154999937280081e-06,
+    5.923999196966179e-06
+   ],
+   "warm_median_seconds": 6.142000529507641e-06,
+   "warm_min_seconds": 5.923999196966179e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.003886346999934176,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003886346999934176,
+    0.0037938840014248854
+   ],
+   "warm_median_seconds": 0.0037938840014248854,
+   "warm_min_seconds": 0.0037938840014248854
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.000769500999012962,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000769500999012962,
+    0.0005588730000454234,
+    0.00048786799925437663,
+    0.0004821370002900949,
+    0.00046309299978020135
+   ],
+   "warm_median_seconds": 0.00048500249977223575,
+   "warm_min_seconds": 0.00046309299978020135
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0009544349995849188,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0009544349995849188,
+    0.0006827540000813315,
+    0.0004904919987893663
+   ],
+   "warm_median_seconds": 0.0005866229994353489,
+   "warm_min_seconds": 0.0004904919987893663
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.171699947619345e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.171699947619345e-05,
+    2.183600008720532e-05,
+    1.6398000298067927e-05,
+    1.2821999916923232e-05,
+    1.1576999895623885e-05
+   ],
+   "warm_median_seconds": 1.461000010749558e-05,
+   "warm_min_seconds": 1.1576999895623885e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.3597975460015732,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.3597975460015732,
+    0.3480339230009122
+   ],
+   "warm_median_seconds": 0.3480339230009122,
+   "warm_min_seconds": 0.3480339230009122
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0015225440001813695,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015225440001813695,
+    0.0010614889997668797,
+    0.0010194599999522325,
+    0.0009802820004551904,
+    0.0010077050010295352
+   ],
+   "warm_median_seconds": 0.0010135825004908838,
+   "warm_min_seconds": 0.0009802820004551904
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0021827900000062073,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021827900000062073,
+    0.002905576999182813,
+    0.0029996350003784755,
+    0.0025190650012518745,
+    0.0024205260015150998
+   ],
+   "warm_median_seconds": 0.0027123210002173437,
+   "warm_min_seconds": 0.0024205260015150998
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one quantile_cont over a list)",
+   "first_seconds": 2.1870492240013846,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.1870492240013846,
+    1.6804332310002792
+   ],
+   "warm_median_seconds": 1.6804332310002792,
+   "warm_min_seconds": 1.6804332310002792
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0037880569998378633,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0037880569998378633,
+    0.0032199380002566613,
+    0.003208715001164819,
+    0.003248201999667799,
+    0.003110906000074465
+   ],
+   "warm_median_seconds": 0.0032143265007107402,
+   "warm_min_seconds": 0.003110906000074465
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 7.513400123571046e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.513400123571046e-05,
+    9.453000529902056e-06,
+    6.784999641240574e-06,
+    6.064999979571439e-06,
+    6.554999345098622e-06
+   ],
+   "warm_median_seconds": 6.669999493169598e-06,
+   "warm_min_seconds": 6.064999979571439e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.273300040338654e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.273300040338654e-05,
+    2.7759997465182096e-06,
+    2.1200012270128354e-06,
+    1.981999957934022e-06,
+    1.947999408002943e-06
+   ],
+   "warm_median_seconds": 2.0510005924734287e-06,
+   "warm_min_seconds": 1.947999408002943e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0007247519988595741,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0007247519988595741,
+    0.0006248320005397545,
+    0.0005953910003881902
+   ],
+   "warm_median_seconds": 0.0006101115004639723,
+   "warm_min_seconds": 0.0005953910003881902
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.7902000005706213e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7902000005706213e-05,
+    2.8745998861268163e-05,
+    2.0264000340830535e-05,
+    1.6798998331069015e-05,
+    1.4564999219146557e-05
+   ],
+   "warm_median_seconds": 1.8531499335949775e-05,
+   "warm_min_seconds": 1.4564999219146557e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.1811000149464235e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1811000149464235e-05,
+    3.2070001907413825e-06,
+    2.333999873371795e-06,
+    2.2890017135068774e-06,
+    2.1800005924887955e-06
+   ],
+   "warm_median_seconds": 2.311500793439336e-06,
+   "warm_min_seconds": 2.1800005924887955e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0027259689995844383,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0027259689995844383,
+    0.0027074700010416564,
+    0.0026927450016955845,
+    0.002700336999623687,
+    0.003056086001379299
+   ],
+   "warm_median_seconds": 0.0027039035003326717,
+   "warm_min_seconds": 0.0026927450016955845
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 0.0001943119987117825,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "support 1024"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001943119987117825,
+    0.00013456000124278944,
+    0.0001023659988277359,
+    8.743299986235797e-05,
+    8.74639990797732e-05
+   ],
+   "warm_median_seconds": 9.491499895375455e-05,
+   "warm_min_seconds": 8.743299986235797e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0008033350004552631,
+   "params": {
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008033350004552631,
+    0.0007375189998128917,
+    0.0008101410003291676
+   ],
+   "warm_median_seconds": 0.0007738300000710296,
+   "warm_min_seconds": 0.0007375189998128917
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 6.238000059965998e-05,
+   "params": {
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.238000059965998e-05,
+    4.664900006901007e-05,
+    1.9328999769641086e-05
+   ],
+   "state_bytes": 41128,
+   "support_entries": 1024,
+   "warm_median_seconds": 3.298899991932558e-05,
+   "warm_min_seconds": 1.9328999769641086e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy sort (reconstruction)",
+   "first_seconds": 0.001588736000485369,
+   "params": {
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001588736000485369,
+    0.0013798309992125724,
+    0.0009685390014055884
+   ],
+   "warm_median_seconds": 0.0011741850003090804,
+   "warm_min_seconds": 0.0009685390014055884
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.851400030427612e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.851400030427612e-05,
+    9.742001566337422e-06,
+    6.369000402628444e-06,
+    5.97200050833635e-06,
+    5.5870004871394485e-06
+   ],
+   "warm_median_seconds": 6.170500455482397e-06,
+   "warm_min_seconds": 5.5870004871394485e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00013480300003720913,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013480300003720913,
+    5.564200000662822e-05,
+    4.319199979363475e-05,
+    4.183100099908188e-05,
+    4.158999945502728e-05
+   ],
+   "warm_median_seconds": 4.2511500396358315e-05,
+   "warm_min_seconds": 4.158999945502728e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0020945610012859106,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020945610012859106,
+    0.0022692619986628415
+   ],
+   "warm_median_seconds": 0.0022692619986628415,
+   "warm_min_seconds": 0.0022692619986628415
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.000781490000008489,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.000781490000008489,
+    0.0005707140007871203,
+    0.0006196079993969761
+   ],
+   "warm_median_seconds": 0.0005951610000920482,
+   "warm_min_seconds": 0.0005707140007871203
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 3.171599928464275e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.171599928464275e-05,
+    1.558800067869015e-05,
+    1.1657999493763782e-05,
+    1.0489999112905934e-05,
+    1.0300000212737359e-05
+   ],
+   "warm_median_seconds": 1.1073999303334858e-05,
+   "warm_min_seconds": 1.0300000212737359e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00013623600170831196,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013623600170831196,
+    7.291200017789379e-05,
+    5.138100095791742e-05,
+    4.675199852499645e-05,
+    4.561400055536069e-05
+   ],
+   "warm_median_seconds": 4.906649974145694e-05,
+   "warm_min_seconds": 4.561400055536069e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.16728644099930534,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.16728644099930534,
+    0.16993434500000149
+   ],
+   "warm_median_seconds": 0.16993434500000149,
+   "warm_min_seconds": 0.16993434500000149
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0015287090009223903,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015287090009223903,
+    0.0021388229997683084,
+    0.0014451319984800648,
+    0.0014181490005285013,
+    0.0013712959989788942
+   ],
+   "warm_median_seconds": 0.001431640499504283,
+   "warm_min_seconds": 0.0013712959989788942
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0018900750001193956,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018900750001193956,
+    0.0019748330014408566,
+    0.0015820379994693212,
+    0.0016868140010046773,
+    0.001784189998943475
+   ],
+   "warm_median_seconds": 0.0017355019999740762,
+   "warm_min_seconds": 0.0015820379994693212
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.016539760999876307,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016539760999876307,
+    0.015135142999497475
+   ],
+   "warm_median_seconds": 0.015135142999497475,
+   "warm_min_seconds": 0.015135142999497475
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.436500007112045e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.436500007112045e-05,
+    9.134999345405959e-06,
+    6.7159999161958694e-06,
+    6.1589998949784786e-06,
+    5.787000191048719e-06
+   ],
+   "warm_median_seconds": 6.437499905587174e-06,
+   "warm_min_seconds": 5.787000191048719e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0002238710003439337,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002238710003439337,
+    7.941299918456934e-05,
+    4.575100138026755e-05,
+    4.3183999878237955e-05,
+    4.277299922250677e-05
+   ],
+   "warm_median_seconds": 4.4467500629252754e-05,
+   "warm_min_seconds": 4.277299922250677e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0021028249993833015,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021028249993833015,
+    0.001929585998368566
+   ],
+   "warm_median_seconds": 0.001929585998368566,
+   "warm_min_seconds": 0.001929585998368566
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0010021729995060014,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0010021729995060014,
+    0.0004885630005446728,
+    0.0006075460005376954
+   ],
+   "warm_median_seconds": 0.0005480545005411841,
+   "warm_min_seconds": 0.0004885630005446728
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 3.0450000849668868e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.0450000849668868e-05,
+    1.6506999600096606e-05,
+    1.3286000466905534e-05,
+    1.2475000403355807e-05,
+    1.2006999895675108e-05
+   ],
+   "warm_median_seconds": 1.288050043513067e-05,
+   "warm_min_seconds": 1.2006999895675108e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00020265999955881853,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00020265999955881853,
+    7.648300015716814e-05,
+    5.283599966787733e-05,
+    4.85420005134074e-05,
+    4.651899871532805e-05
+   ],
+   "warm_median_seconds": 5.0689000090642367e-05,
+   "warm_min_seconds": 4.651899871532805e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.18595839500085276,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.18595839500085276,
+    0.17673002900119172
+   ],
+   "warm_median_seconds": 0.17673002900119172,
+   "warm_min_seconds": 0.17673002900119172
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0017083259990613442,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017083259990613442,
+    0.0016290619987557875,
+    0.0011341259996697772,
+    0.0010542750005697599,
+    0.0010506790004001232
+   ],
+   "warm_median_seconds": 0.0010942005001197685,
+   "warm_min_seconds": 0.0010506790004001232
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0018960819998028455,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018960819998028455,
+    0.001454667000871268,
+    0.001520997000625357,
+    0.0013975300007587066,
+    0.0014140189996396657
+   ],
+   "warm_median_seconds": 0.001434343000255467,
+   "warm_min_seconds": 0.0013975300007587066
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.014007667999976547,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014007667999976547,
+    0.014231499000743497
+   ],
+   "warm_median_seconds": 0.014231499000743497,
+   "warm_min_seconds": 0.014231499000743497
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 5.885399878025055e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.885399878025055e-05,
+    9.859999408945441e-06,
+    7.381000614259392e-06,
+    6.755999493179843e-06,
+    5.738000254496001e-06
+   ],
+   "warm_median_seconds": 7.0685000537196174e-06,
+   "warm_min_seconds": 5.738000254496001e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0042499320006754715,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0042499320006754715,
+    0.003340066999953706
+   ],
+   "warm_median_seconds": 0.003340066999953706,
+   "warm_min_seconds": 0.003340066999953706
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0006897250004840316,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006897250004840316,
+    0.00042890999975497834,
+    0.00040022000030148774,
+    0.0004075739998370409,
+    0.0003474730001471471
+   ],
+   "warm_median_seconds": 0.0004038970000692643,
+   "warm_min_seconds": 0.0003474730001471471
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0006130830006441101,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0006130830006441101,
+    0.0005431459994724719,
+    0.0004988929995306535
+   ],
+   "warm_median_seconds": 0.0005210194995015627,
+   "warm_min_seconds": 0.0004988929995306535
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 4.227499994158279e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.227499994158279e-05,
+    2.1061001461930573e-05,
+    1.4417999409488402e-05,
+    1.2407999747665599e-05,
+    1.1907000953215174e-05
+   ],
+   "warm_median_seconds": 1.3412999578577e-05,
+   "warm_min_seconds": 1.1907000953215174e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.3177322049996292,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.3177322049996292,
+    0.31582080599946494
+   ],
+   "warm_median_seconds": 0.31582080599946494,
+   "warm_min_seconds": 0.31582080599946494
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.001237909998963005,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001237909998963005,
+    0.000989980000667856,
+    0.0010035860013886122,
+    0.0009643849989515729,
+    0.0009444410006835824
+   ],
+   "warm_median_seconds": 0.0009771824998097145,
+   "warm_min_seconds": 0.0009444410006835824
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.002161255999453715,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002161255999453715,
+    0.0025429460001760162,
+    0.0020334789987828117,
+    0.002082682000036584,
+    0.0019792189996223897
+   ],
+   "warm_median_seconds": 0.002058080499409698,
+   "warm_min_seconds": 0.0019792189996223897
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one quantile_cont over a list)",
+   "first_seconds": 1.6676419129998976,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.6676419129998976,
+    1.5547293179988628
+   ],
+   "warm_median_seconds": 1.5547293179988628,
+   "warm_min_seconds": 1.5547293179988628
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00427554799898644,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00427554799898644,
+    0.004623790000550798,
+    0.004315461999794934,
+    0.0037284009995346423,
+    0.004493453001487069
+   ],
+   "warm_median_seconds": 0.004404457500641001,
+   "warm_min_seconds": 0.0037284009995346423
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 8.545899981982075e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.545899981982075e-05,
+    1.2887001503258944e-05,
+    4.972299939254299e-05,
+    1.5224999515339732e-05,
+    1.1259999155299738e-05
+   ],
+   "warm_median_seconds": 1.4056000509299338e-05,
+   "warm_min_seconds": 1.1259999155299738e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.4747000022907741e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4747000022907741e-05,
+    3.909999577444978e-06,
+    3.3819997042883188e-06,
+    3.3200012694578618e-06,
+    3.2809984986670315e-06
+   ],
+   "warm_median_seconds": 3.3510004868730903e-06,
+   "warm_min_seconds": 3.2809984986670315e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0009218520008289488,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0009218520008289488,
+    0.0008558680001442553,
+    0.0008387819998461055
+   ],
+   "warm_median_seconds": 0.0008473249999951804,
+   "warm_min_seconds": 0.0008387819998461055
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.878600106574595e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.878600106574595e-05,
+    3.858299896819517e-05,
+    3.121499867120292e-05,
+    2.7478999982122332e-05,
+    2.224200034106616e-05
+   ],
+   "warm_median_seconds": 2.9346999326662626e-05,
+   "warm_min_seconds": 2.224200034106616e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.7455000488553196e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7455000488553196e-05,
+    3.3989999792538583e-06,
+    2.426000719424337e-06,
+    2.4510009097866714e-06,
+    2.2759995772503316e-06
+   ],
+   "warm_median_seconds": 2.4385008146055043e-06,
+   "warm_min_seconds": 2.2759995772503316e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0032780950004962506,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0032780950004962506,
+    0.0037146519989619264,
+    0.0035314800006744917,
+    0.00340908100042725,
+    0.0031037570006446913
+   ],
+   "warm_median_seconds": 0.003470280500550871,
+   "warm_min_seconds": 0.0031037570006446913
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 0.00011466700016171671,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "structural zeros (even values of 0..2046)"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011466700016171671,
+    7.554399962828029e-05,
+    8.25869992695516e-05,
+    7.2580000050948e-05,
+    7.113100036804099e-05
+   ],
+   "warm_median_seconds": 7.406199983961415e-05,
+   "warm_min_seconds": 7.113100036804099e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.005136996998771792,
+   "params": {
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005136996998771792,
+    0.003846257999612135,
+    0.0025743959995452315
+   ],
+   "warm_median_seconds": 0.003210326999578683,
+   "warm_min_seconds": 0.0025743959995452315
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 0.0022225400007300777,
+   "params": {
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0022225400007300777,
+    0.0029477190000761766,
+    0.0014244659996620612
+   ],
+   "state_bytes": 3025448,
+   "support_entries": 75632,
+   "warm_median_seconds": 0.002186092499869119,
+   "warm_min_seconds": 0.0014244659996620612
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy sort (reconstruction)",
+   "first_seconds": 0.0010548519985604798,
+   "params": {
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010548519985604798,
+    0.0009490840002399636,
+    0.0008587909997004317
+   ],
+   "warm_median_seconds": 0.0009039374999701977,
+   "warm_min_seconds": 0.0008587909997004317
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 5.559000055654906e-05,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.559000055654906e-05,
+    1.3963999663246796e-05,
+    1.0226000085822307e-05,
+    8.733999493415467e-06,
+    8.040000466280617e-06
+   ],
+   "warm_median_seconds": 9.479999789618887e-06,
+   "warm_min_seconds": 8.040000466280617e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00014643299982708413,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014643299982708413,
+    7.594700036861468e-05,
+    5.976399916107766e-05,
+    5.7577999541535974e-05,
+    6.016000043018721e-05
+   ],
+   "warm_median_seconds": 5.996199979563244e-05,
+   "warm_min_seconds": 5.7577999541535974e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0028451120015233755,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028451120015233755,
+    0.001949981999132433
+   ],
+   "warm_median_seconds": 0.001949981999132433,
+   "warm_min_seconds": 0.001949981999132433
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0044645879988820525,
+   "params": {
+    "kind": "cdf",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0044645879988820525,
+    0.0034187920009571826,
+    0.003784661999816308
+   ],
+   "warm_median_seconds": 0.003601727000386745,
+   "warm_min_seconds": 0.0034187920009571826
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.00011000300037267152,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011000300037267152,
+    5.077300011180341e-05,
+    2.3779999537509866e-05,
+    2.076499913528096e-05,
+    2.1267000192892738e-05
+   ],
+   "warm_median_seconds": 2.2523499865201302e-05,
+   "warm_min_seconds": 2.076499913528096e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00015497599997615907,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015497599997615907,
+    0.00011180199908267241,
+    7.45979996281676e-05,
+    6.447500163631048e-05,
+    6.336399928841274e-05
+   ],
+   "warm_median_seconds": 6.953650063223904e-05,
+   "warm_min_seconds": 6.336399928841274e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.2110181689986348,
+   "params": {
+    "kind": "cdf",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2110181689986348,
+    0.17349879699941084
+   ],
+   "warm_median_seconds": 0.17349879699941084,
+   "warm_min_seconds": 0.17349879699941084
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.003307940000013332,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003307940000013332,
+    0.0024795739991532173,
+    0.0019165300000167917,
+    0.001810080999348429,
+    0.0018012609998550033
+   ],
+   "warm_median_seconds": 0.0018633054996826104,
+   "warm_min_seconds": 0.0018012609998550033
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0015911880000203382,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015911880000203382,
+    0.0014664010013802908,
+    0.0016511819994775578,
+    0.0014831570006208494,
+    0.0014256840004236437
+   ],
+   "warm_median_seconds": 0.0014747790010005701,
+   "warm_min_seconds": 0.0014256840004236437
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.041738751000593766,
+   "params": {
+    "kind": "cdf",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.041738751000593766,
+    0.03304426099930424
+   ],
+   "warm_median_seconds": 0.03304426099930424,
+   "warm_min_seconds": 0.03304426099930424
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.669699905614834e-05,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.669699905614834e-05,
+    1.133399928221479e-05,
+    7.657999958610162e-06,
+    5.7539982663001865e-06,
+    5.6129993026843295e-06
+   ],
+   "warm_median_seconds": 6.705999112455174e-06,
+   "warm_min_seconds": 5.6129993026843295e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0005081999988760799,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005081999988760799,
+    0.00010730499889177736,
+    4.582799920171965e-05,
+    4.099400030099787e-05,
+    4.02409987145802e-05
+   ],
+   "warm_median_seconds": 4.341099975135876e-05,
+   "warm_min_seconds": 4.02409987145802e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0022793240004830295,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0022793240004830295,
+    0.0017694430007395567
+   ],
+   "warm_median_seconds": 0.0017694430007395567,
+   "warm_min_seconds": 0.0017694430007395567
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0047631219986215,
+   "params": {
+    "kind": "tail",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0047631219986215,
+    0.0034351970007264754,
+    0.004356933999588364
+   ],
+   "warm_median_seconds": 0.0038960655001574196,
+   "warm_min_seconds": 0.0034351970007264754
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.00011022199942090083,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011022199942090083,
+    5.043599958298728e-05,
+    2.34950002777623e-05,
+    1.547700048831757e-05,
+    1.3935999959358014e-05
+   ],
+   "warm_median_seconds": 1.9486000383039936e-05,
+   "warm_min_seconds": 1.3935999959358014e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.00018822699894371908,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00018822699894371908,
+    7.378900045296177e-05,
+    4.627699854609091e-05,
+    4.449799962458201e-05,
+    4.330400042817928e-05
+   ],
+   "warm_median_seconds": 4.538749908533646e-05,
+   "warm_min_seconds": 4.330400042817928e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.18416629999956058,
+   "params": {
+    "kind": "tail",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.18416629999956058,
+    0.21194033000028867
+   ],
+   "warm_median_seconds": 0.21194033000028867,
+   "warm_min_seconds": 0.21194033000028867
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.004134201999477227,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004134201999477227,
+    0.0038857569998071995,
+    0.0028079280000383733,
+    0.002727580998907797,
+    0.0027971099989372306
+   ],
+   "warm_median_seconds": 0.002802518999487802,
+   "warm_min_seconds": 0.002727580998907797
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0022113539998827036,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0022113539998827036,
+    0.0019977809988631634,
+    0.001873430999694392,
+    0.0018147829996451037,
+    0.0018669000000954838
+   ],
+   "warm_median_seconds": 0.001870165499894938,
+   "warm_min_seconds": 0.0018147829996451037
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (cumulative histogram + ASOF join)",
+   "first_seconds": 0.045924178999484866,
+   "params": {
+    "kind": "tail",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.045924178999484866,
+    0.04671318599866936
+   ],
+   "warm_median_seconds": 0.04671318599866936,
+   "warm_min_seconds": 0.04671318599866936
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 8.444400009466335e-05,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.444400009466335e-05,
+    1.4872000974719413e-05,
+    1.0853000276256353e-05,
+    1.0059999112854712e-05,
+    9.794999641599134e-06
+   ],
+   "warm_median_seconds": 1.0456499694555532e-05,
+   "warm_min_seconds": 9.794999641599134e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.0057056149998970795,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0057056149998970795,
+    0.004553095999654033
+   ],
+   "warm_median_seconds": 0.004553095999654033,
+   "warm_min_seconds": 0.004553095999654033
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0008803500004432863,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008803500004432863,
+    0.0007246059994940879,
+    0.0005514029999176273,
+    0.0005225120003160555,
+    0.0005985110001347493
+   ],
+   "warm_median_seconds": 0.0005749570000261883,
+   "warm_min_seconds": 0.0005225120003160555
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.005739329000789439,
+   "params": {
+    "kind": "quantile",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.005739329000789439,
+    0.0048628519998601405,
+    0.0046849589998601004
+   ],
+   "warm_median_seconds": 0.0047739054998601205,
+   "warm_min_seconds": 0.0046849589998601004
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.000161366999236634,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000161366999236634,
+    4.570800047076773e-05,
+    2.7010000849259086e-05,
+    2.2083000658312812e-05,
+    2.110399873345159e-05
+   ],
+   "warm_median_seconds": 2.454650075378595e-05,
+   "warm_min_seconds": 2.110399873345159e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one query each)",
+   "first_seconds": 0.43379475899928366,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.43379475899928366,
+    0.3779642690005858
+   ],
+   "warm_median_seconds": 0.3779642690005858,
+   "warm_min_seconds": 0.3779642690005858
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0009148139997705584,
+   "params": {
+    "kind": "quantile",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009148139997705584,
+    0.0006549949994223425,
+    0.0005551550002564909,
+    0.0005791089988633757,
+    0.0005273000006127404
+   ],
+   "warm_median_seconds": 0.0005671319995599333,
+   "warm_min_seconds": 0.0005273000006127404
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.003761062000194215,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003761062000194215,
+    0.0036483889998635277,
+    0.00339746300051047,
+    0.0031767639993631747,
+    0.0032017769990488887
+   ],
+   "warm_median_seconds": 0.0032996199997796793,
+   "warm_min_seconds": 0.0031767639993631747
+  },
+  {
+   "backend": "duckdb",
+   "case": "requests (one quantile_cont over a list)",
+   "first_seconds": 1.535481330998664,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.535481330998664,
+    1.377751100999376
+   ],
+   "warm_median_seconds": 1.377751100999376,
+   "warm_min_seconds": 1.377751100999376
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort)",
+   "first_seconds": 0.0032214189996011555,
+   "params": {
+    "kind": "quantile",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0032214189996011555,
+    0.0027428439989307662,
+    0.002599137000288465,
+    0.002493633999620215,
+    0.0025780260002647992
+   ],
+   "warm_median_seconds": 0.002588581500276632,
+   "warm_min_seconds": 0.002493633999620215
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 6.430499888665508e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.430499888665508e-05,
+    9.174000297207385e-06,
+    6.820000635343604e-06,
+    7.432998245349154e-06,
+    6.226999175851233e-06
+   ],
+   "warm_median_seconds": 7.126499440346379e-06,
+   "warm_min_seconds": 6.226999175851233e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 9.35500065679662e-06,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.35500065679662e-06,
+    2.6599991542752832e-06,
+    2.2849999368190765e-06,
+    2.071999915642664e-06,
+    1.965998308151029e-06
+   ],
+   "warm_median_seconds": 2.17849992623087e-06,
+   "warm_min_seconds": 1.965998308151029e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 request)",
+   "first_seconds": 0.0036762799991265638,
+   "params": {
+    "kind": "trimmed",
+    "requests": 1,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0036762799991265638,
+    0.0032717969988880213,
+    0.0032674409994797315
+   ],
+   "warm_median_seconds": 0.0032696189991838764,
+   "warm_min_seconds": 0.0032674409994797315
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.0001996609989873832,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001996609989873832,
+    5.9780000810860656e-05,
+    6.12599997111829e-05,
+    4.607199844031129e-05,
+    3.177800135745201e-05
+   ],
+   "warm_median_seconds": 5.292599962558597e-05,
+   "warm_min_seconds": 3.177800135745201e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 1.158800114353653e-05,
+   "params": {
+    "kind": "trimmed",
+    "requests": 100,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.158800114353653e-05,
+    3.5049997677560896e-06,
+    2.495999069651589e-06,
+    2.3510001483373344e-06,
+    2.392000169493258e-06
+   ],
+   "warm_median_seconds": 2.4439996195724234e-06,
+   "warm_min_seconds": 2.3510001483373344e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests",
+   "first_seconds": 0.006029619000400999,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006029619000400999,
+    0.005413457000031485,
+    0.0053416110004036454,
+    0.005324683999788249,
+    0.005392347000451991
+   ],
+   "warm_median_seconds": 0.005366979000427818,
+   "warm_min_seconds": 0.005324683999788249
+  },
+  {
+   "backend": "numpy",
+   "case": "requests (retained sort + cumsum)",
+   "first_seconds": 0.00010933299927273765,
+   "params": {
+    "kind": "trimmed",
+    "requests": 10000,
+    "rows": 100000,
+    "support": "near-row-sized support"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010933299927273765,
+    5.2460000006249174e-05,
+    4.8689000323065557e-05,
+    4.717899901152123e-05,
+    5.21889996889513e-05
+   ],
+   "warm_median_seconds": 5.043900000600843e-05,
+   "warm_min_seconds": 4.717899901152123e-05
+  }
+ ],
+ "seconds": 27.56407822899928,
+ "seed": 2026,
+ "thresholds": []
+}

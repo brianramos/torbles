@@ -1,0 +1,1970 @@
+{
+ "argv": [
+  "--capability",
+  "SPEC-002",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/SPEC-002/benchmark_cpu_math_spec_vm.json"
+ ],
+ "capability": "SPEC-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:41:57+00:00"
+ },
+ "notes": [
+  "rows=20000, k=3: cost 8 states, 3 passes, 12 butterflies, 128 bytes (independent of the rows)",
+  "rows=20000, k=6: cost 64 states, 6 passes, 192 butterflies, 1024 bytes (independent of the rows)",
+  "rows=20000, k=10: cost 1024 states, 10 passes, 5120 butterflies, 16384 bytes (independent of the rows)",
+  "rows=20000, k=12: cost 4096 states, 12 passes, 24576 butterflies, 65536 bytes (independent of the rows)",
+  "rows=20000, k=16: cost 65536 states, 16 passes, 524288 butterflies, 1048576 bytes (independent of the rows)",
+  "rows=20000, k=20: cost 1048576 states, 20 passes, 10485760 butterflies, 16777216 bytes (independent of the rows)",
+  "rows=200000, k=3: cost 8 states, 3 passes, 12 butterflies, 128 bytes (independent of the rows)",
+  "rows=200000, k=6: cost 64 states, 6 passes, 192 butterflies, 1024 bytes (independent of the rows)",
+  "rows=200000, k=10: cost 1024 states, 10 passes, 5120 butterflies, 16384 bytes (independent of the rows)",
+  "rows=200000, k=12: cost 4096 states, 12 passes, 24576 butterflies, 65536 bytes (independent of the rows)",
+  "rows=200000, k=16: cost 65536 states, 16 passes, 524288 butterflies, 1048576 bytes (independent of the rows)",
+  "rows=200000, k=20: cost 1048576 states, 20 passes, 10485760 butterflies, 16777216 bytes (independent of the rows)",
+  "k=12, m=1: truncation approximation=True, residual energy 206743296 of 2706743296, l2 error^2 = 807591/16",
+  "k=12, m=8: truncation approximation=True, residual energy 202504604 of 2706743296, l2 error^2 = 50626151/1024",
+  "k=12, m=32: truncation approximation=True, residual energy 193049896 of 2706743296, l2 error^2 = 24131237/512",
+  "Native CPU paths are single-threaded; values are exact 128-bit integers (the inverse exact dyadic rationals), the NumPy baseline int64. The transform cost is the full domain: 2^k states, k passes."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0003227279994462151,
+   "params": {
+    "conditions": 3,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003227279994462151,
+    0.00014086800001678057
+   ],
+   "warm_median_seconds": 0.00014086800001678057,
+   "warm_min_seconds": 0.00014086800001678057
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00020621399926312733,
+   "params": {
+    "conditions": 3,
+    "rows": 20000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "bytes": 128,
+    "normalization": "forward, unnormalized",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    0.00020621399926312733,
+    3.83850001526298e-05,
+    2.4537999706808478e-05,
+    1.8242999431095086e-05
+   ],
+   "warm_median_seconds": 2.4537999706808478e-05,
+   "warm_min_seconds": 1.8242999431095086e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 4.62160005554324e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 20000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "bytes": 128,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    4.62160005554324e-05,
+    3.493899930617772e-05,
+    1.770999915606808e-05
+   ],
+   "warm_median_seconds": 2.63244992311229e-05,
+   "warm_min_seconds": 1.770999915606808e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 4.994899973098654e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 20000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    4.994899973098654e-05,
+    3.8365000364137813e-05,
+    2.3143998987507075e-05
+   ],
+   "warm_median_seconds": 3.0754499675822444e-05,
+   "warm_min_seconds": 2.3143998987507075e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 6.205499994393904e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 20000,
+    "states": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.205499994393904e-05,
+    1.554500158817973e-05,
+    1.0933001249213703e-05,
+    1.0302999726263806e-05
+   ],
+   "warm_median_seconds": 1.0933001249213703e-05,
+   "warm_min_seconds": 1.0302999726263806e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 2.8016000214847736e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 20000,
+    "states": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8016000214847736e-05,
+    4.0049999370239675e-06,
+    2.0960014808224514e-06
+   ],
+   "warm_median_seconds": 3.0505007089232095e-06,
+   "warm_min_seconds": 2.0960014808224514e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0002627499998197891,
+   "params": {
+    "conditions": 6,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002627499998197891,
+    0.00014128899965726305
+   ],
+   "warm_median_seconds": 0.00014128899965726305,
+   "warm_min_seconds": 0.00014128899965726305
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00010923199988610577,
+   "params": {
+    "conditions": 6,
+    "rows": 20000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "bytes": 1024,
+    "normalization": "forward, unnormalized",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    0.00010923199988610577,
+    4.1139001041301526e-05,
+    2.107399996020831e-05,
+    1.7963999198400415e-05
+   ],
+   "warm_median_seconds": 2.107399996020831e-05,
+   "warm_min_seconds": 1.7963999198400415e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 7.701799950154964e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 20000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "bytes": 1024,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    7.701799950154964e-05,
+    2.933200084953569e-05,
+    1.9242999769630842e-05
+   ],
+   "warm_median_seconds": 2.4287500309583265e-05,
+   "warm_min_seconds": 1.9242999769630842e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 8.853600047586951e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 20000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    8.853600047586951e-05,
+    6.123499952082057e-05,
+    5.54510006622877e-05
+   ],
+   "warm_median_seconds": 5.834300009155413e-05,
+   "warm_min_seconds": 5.54510006622877e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 4.0828999772202224e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 20000,
+    "states": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.0828999772202224e-05,
+    2.2915999579709023e-05,
+    2.1052001102361828e-05,
+    1.981899913516827e-05
+   ],
+   "warm_median_seconds": 2.1052001102361828e-05,
+   "warm_min_seconds": 1.981899913516827e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 1.4139999620965682e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 20000,
+    "states": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4139999620965682e-05,
+    6.582000423804857e-06,
+    6.125001164036803e-06
+   ],
+   "warm_median_seconds": 6.35350079392083e-06,
+   "warm_min_seconds": 6.125001164036803e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.00023635899924556725,
+   "params": {
+    "conditions": 10,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00023635899924556725,
+    0.00021962100072414614
+   ],
+   "warm_median_seconds": 0.00021962100072414614,
+   "warm_min_seconds": 0.00021962100072414614
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00013414900058705825,
+   "params": {
+    "conditions": 10,
+    "rows": 20000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "bytes": 16384,
+    "normalization": "forward, unnormalized",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.00013414900058705825,
+    0.0001031259998853784,
+    6.82379995851079e-05,
+    6.606100032513496e-05
+   ],
+   "warm_median_seconds": 6.82379995851079e-05,
+   "warm_min_seconds": 6.606100032513496e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.0001235899999301182,
+   "params": {
+    "conditions": 10,
+    "rows": 20000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "bytes": 16384,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.0001235899999301182,
+    7.8242999734357e-05,
+    5.933000102231745e-05
+   ],
+   "warm_median_seconds": 6.878650037833722e-05,
+   "warm_min_seconds": 5.933000102231745e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.0008296199994219933,
+   "params": {
+    "conditions": 10,
+    "rows": 20000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.0008296199994219933,
+    0.0007103570005710935,
+    0.0007129000005079433
+   ],
+   "warm_median_seconds": 0.0007116285005395184,
+   "warm_min_seconds": 0.0007103570005710935
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 7.097299931047019e-05,
+   "params": {
+    "conditions": 10,
+    "rows": 20000,
+    "states": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.097299931047019e-05,
+    5.4214000556385145e-05,
+    5.43589994776994e-05,
+    5.1574999815784395e-05
+   ],
+   "warm_median_seconds": 5.4214000556385145e-05,
+   "warm_min_seconds": 5.1574999815784395e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 0.0014150730003166245,
+   "params": {
+    "conditions": 10,
+    "rows": 20000,
+    "states": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014150730003166245,
+    0.001144904001193936,
+    0.0006455110014940146
+   ],
+   "warm_median_seconds": 0.0008952075013439753,
+   "warm_min_seconds": 0.0006455110014940146
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0003012209999724291,
+   "params": {
+    "conditions": 12,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003012209999724291,
+    0.00026158000036957674
+   ],
+   "warm_median_seconds": 0.00026158000036957674,
+   "warm_min_seconds": 0.00026158000036957674
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.0003313389988761628,
+   "params": {
+    "conditions": 12,
+    "rows": 20000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "bytes": 65536,
+    "normalization": "forward, unnormalized",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.0003313389988761628,
+    0.00030552899988833815,
+    0.00028477900013967883,
+    0.00025625799935369287
+   ],
+   "warm_median_seconds": 0.00028477900013967883,
+   "warm_min_seconds": 0.00025625799935369287
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.00028173600003356114,
+   "params": {
+    "conditions": 12,
+    "rows": 20000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "bytes": 65536,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.00028173600003356114,
+    0.00028898799973831046,
+    0.0002640879993123235
+   ],
+   "warm_median_seconds": 0.000276537999525317,
+   "warm_min_seconds": 0.0002640879993123235
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.0031217930009006523,
+   "params": {
+    "conditions": 12,
+    "rows": 20000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.0031217930009006523,
+    0.0032671789995220024,
+    0.002907647000029101
+   ],
+   "warm_median_seconds": 0.0030874129997755517,
+   "warm_min_seconds": 0.002907647000029101
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00015093100046215113,
+   "params": {
+    "conditions": 12,
+    "rows": 20000,
+    "states": 4096
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015093100046215113,
+    0.00013623400081996806,
+    0.0001533170016045915,
+    0.00012536500071291812
+   ],
+   "warm_median_seconds": 0.00013623400081996806,
+   "warm_min_seconds": 0.00012536500071291812
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0004726689985545818,
+   "params": {
+    "conditions": 16,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004726689985545818,
+    0.00040712499867368024
+   ],
+   "warm_median_seconds": 0.00040712499867368024,
+   "warm_min_seconds": 0.00040712499867368024
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.005117152000821079,
+   "params": {
+    "conditions": 16,
+    "rows": 20000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 524288,
+    "bytes": 1048576,
+    "normalization": "forward, unnormalized",
+    "passes": 16,
+    "states": 65536
+   },
+   "samples_seconds": [
+    0.005117152000821079,
+    0.005490769000971341,
+    0.005590210999798728,
+    0.004987166999853798
+   ],
+   "warm_median_seconds": 0.005490769000971341,
+   "warm_min_seconds": 0.004987166999853798
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.004614575998857617,
+   "params": {
+    "conditions": 16,
+    "rows": 20000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 524288,
+    "bytes": 1048576,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 16,
+    "states": 65536
+   },
+   "samples_seconds": [
+    0.004614575998857617,
+    0.005050300000220886,
+    0.004583097999784513
+   ],
+   "warm_median_seconds": 0.0048166990000027,
+   "warm_min_seconds": 0.004583097999784513
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.04726139800004603,
+   "params": {
+    "conditions": 16,
+    "rows": 20000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.04726139800004603,
+    0.049791657000241685,
+    0.046309465000376804
+   ],
+   "warm_median_seconds": 0.048050561000309244,
+   "warm_min_seconds": 0.046309465000376804
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.0020059449998370837,
+   "params": {
+    "conditions": 16,
+    "rows": 20000,
+    "states": 65536
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020059449998370837,
+    0.0016639810000924626,
+    0.0017349900008412078,
+    0.0016776219999883324
+   ],
+   "warm_median_seconds": 0.0016776219999883324,
+   "warm_min_seconds": 0.0016639810000924626
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.006083148999096011,
+   "params": {
+    "conditions": 20,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006083148999096011,
+    0.0061643360004381975
+   ],
+   "warm_median_seconds": 0.0061643360004381975,
+   "warm_min_seconds": 0.0061643360004381975
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.2178080730009242,
+   "params": {
+    "conditions": 20,
+    "rows": 20000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 10485760,
+    "bytes": 16777216,
+    "normalization": "forward, unnormalized",
+    "passes": 20,
+    "states": 1048576
+   },
+   "samples_seconds": [
+    0.2178080730009242,
+    0.10794503900069685,
+    0.10901372599983006,
+    0.10420489699936297
+   ],
+   "warm_median_seconds": 0.10794503900069685,
+   "warm_min_seconds": 0.10420489699936297
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.14124206499946013,
+   "params": {
+    "conditions": 20,
+    "rows": 20000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 10485760,
+    "bytes": 16777216,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 20,
+    "states": 1048576
+   },
+   "samples_seconds": [
+    0.14124206499946013,
+    0.15353854000022693,
+    0.09006208000027982
+   ],
+   "warm_median_seconds": 0.12180031000025338,
+   "warm_min_seconds": 0.09006208000027982
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.9459137960002408,
+   "params": {
+    "conditions": 20,
+    "rows": 20000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.9459137960002408,
+    0.8137381020005705,
+    0.9309486229994945
+   ],
+   "warm_median_seconds": 0.8723433625000325,
+   "warm_min_seconds": 0.8137381020005705
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.061377255000479636,
+   "params": {
+    "conditions": 20,
+    "rows": 20000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.061377255000479636,
+    0.06041835900032311,
+    0.06227937399853545,
+    0.06420177099971625
+   ],
+   "warm_median_seconds": 0.06227937399853545,
+   "warm_min_seconds": 0.06041835900032311
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0010227429993392434,
+   "params": {
+    "conditions": 3,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010227429993392434,
+    0.000929911999264732
+   ],
+   "warm_median_seconds": 0.000929911999264732,
+   "warm_min_seconds": 0.000929911999264732
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 9.991199840442277e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 200000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "bytes": 128,
+    "normalization": "forward, unnormalized",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    9.991199840442277e-05,
+    2.35740008065477e-05,
+    2.031700023508165e-05,
+    1.5177000022958964e-05
+   ],
+   "warm_median_seconds": 2.031700023508165e-05,
+   "warm_min_seconds": 1.5177000022958964e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.00010633400052029174,
+   "params": {
+    "conditions": 3,
+    "rows": 200000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "bytes": 128,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    0.00010633400052029174,
+    2.427199979138095e-05,
+    1.656099993851967e-05
+   ],
+   "warm_median_seconds": 2.041649986495031e-05,
+   "warm_min_seconds": 1.656099993851967e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 5.1173999963793904e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 200000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    5.1173999963793904e-05,
+    2.1613001081277616e-05,
+    1.8729000657913275e-05
+   ],
+   "warm_median_seconds": 2.0171000869595446e-05,
+   "warm_min_seconds": 1.8729000657913275e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 5.858199983777013e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 200000,
+    "states": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.858199983777013e-05,
+    1.3488001059158705e-05,
+    1.1619000360951759e-05,
+    1.028400038194377e-05
+   ],
+   "warm_median_seconds": 1.1619000360951759e-05,
+   "warm_min_seconds": 1.028400038194377e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 1.2698999853455462e-05,
+   "params": {
+    "conditions": 3,
+    "rows": 200000,
+    "states": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2698999853455462e-05,
+    2.6380002964287996e-06,
+    1.884998710011132e-06
+   ],
+   "warm_median_seconds": 2.261499503219966e-06,
+   "warm_min_seconds": 1.884998710011132e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.001140385000326205,
+   "params": {
+    "conditions": 6,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001140385000326205,
+    0.0011242479995416943
+   ],
+   "warm_median_seconds": 0.0011242479995416943,
+   "warm_min_seconds": 0.0011242479995416943
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 9.721499918668997e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 200000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "bytes": 1024,
+    "normalization": "forward, unnormalized",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    9.721499918668997e-05,
+    2.8989999918849207e-05,
+    2.0494999262155034e-05,
+    1.750699993863236e-05
+   ],
+   "warm_median_seconds": 2.0494999262155034e-05,
+   "warm_min_seconds": 1.750699993863236e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 3.668699901027139e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 200000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "bytes": 1024,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    3.668699901027139e-05,
+    2.167000093322713e-05,
+    1.611700099601876e-05
+   ],
+   "warm_median_seconds": 1.8893500964622945e-05,
+   "warm_min_seconds": 1.611700099601876e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 9.922999925038312e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 200000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    9.922999925038312e-05,
+    8.939299914345611e-05,
+    8.206099846574944e-05
+   ],
+   "warm_median_seconds": 8.572699880460277e-05,
+   "warm_min_seconds": 8.206099846574944e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 4.040199928567745e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 200000,
+    "states": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.040199928567745e-05,
+    3.875099901051726e-05,
+    2.0561999917845242e-05,
+    1.9835000784951262e-05
+   ],
+   "warm_median_seconds": 2.0561999917845242e-05,
+   "warm_min_seconds": 1.9835000784951262e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 1.3760000001639128e-05,
+   "params": {
+    "conditions": 6,
+    "rows": 200000,
+    "states": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3760000001639128e-05,
+    4.446999810170382e-06,
+    3.883000317728147e-06
+   ],
+   "warm_median_seconds": 4.165000063949265e-06,
+   "warm_min_seconds": 3.883000317728147e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0018222019989480032,
+   "params": {
+    "conditions": 10,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0018222019989480032,
+    0.0018134120000468101
+   ],
+   "warm_median_seconds": 0.0018134120000468101,
+   "warm_min_seconds": 0.0018134120000468101
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00015900200014584698,
+   "params": {
+    "conditions": 10,
+    "rows": 200000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "bytes": 16384,
+    "normalization": "forward, unnormalized",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.00015900200014584698,
+    9.463599963055458e-05,
+    5.6976001360453665e-05,
+    4.9188000048161484e-05
+   ],
+   "warm_median_seconds": 5.6976001360453665e-05,
+   "warm_min_seconds": 4.9188000048161484e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 9.133700041275006e-05,
+   "params": {
+    "conditions": 10,
+    "rows": 200000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "bytes": 16384,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    9.133700041275006e-05,
+    9.620399941923097e-05,
+    7.291299880307633e-05
+   ],
+   "warm_median_seconds": 8.455849911115365e-05,
+   "warm_min_seconds": 7.291299880307633e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.0008575700012443122,
+   "params": {
+    "conditions": 10,
+    "rows": 200000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.0008575700012443122,
+    0.0007378050013358006,
+    0.0008519309994881041
+   ],
+   "warm_median_seconds": 0.0007948680004119524,
+   "warm_min_seconds": 0.0007378050013358006
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 8.394999895244837e-05,
+   "params": {
+    "conditions": 10,
+    "rows": 200000,
+    "states": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.394999895244837e-05,
+    5.4693000492989086e-05,
+    5.3627001761924475e-05,
+    5.248999877949245e-05
+   ],
+   "warm_median_seconds": 5.3627001761924475e-05,
+   "warm_min_seconds": 5.248999877949245e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "forward Walsh transform (dense Hadamard product)",
+   "first_seconds": 0.0008490060008625733,
+   "params": {
+    "conditions": 10,
+    "rows": 200000,
+    "states": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008490060008625733,
+    0.0007049020005069906,
+    0.0006942980016901856
+   ],
+   "warm_median_seconds": 0.0006996000010985881,
+   "warm_min_seconds": 0.0006942980016901856
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0022754060009901877,
+   "params": {
+    "conditions": 12,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0022754060009901877,
+    0.00209519499912858
+   ],
+   "warm_median_seconds": 0.00209519499912858,
+   "warm_min_seconds": 0.00209519499912858
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.0003583130001061363,
+   "params": {
+    "conditions": 12,
+    "rows": 200000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "bytes": 65536,
+    "normalization": "forward, unnormalized",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.0003583130001061363,
+    0.00030284199965535663,
+    0.0002637349989527138,
+    0.00027735199910239317
+   ],
+   "warm_median_seconds": 0.00027735199910239317,
+   "warm_min_seconds": 0.0002637349989527138
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.00034407800012559164,
+   "params": {
+    "conditions": 12,
+    "rows": 200000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "bytes": 65536,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.00034407800012559164,
+    0.00029933299992990214,
+    0.0002600959996925667
+   ],
+   "warm_median_seconds": 0.0002797144998112344,
+   "warm_min_seconds": 0.0002600959996925667
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.0031563720003759954,
+   "params": {
+    "conditions": 12,
+    "rows": 200000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.0031563720003759954,
+    0.002851552000720403,
+    0.0027915700011362787
+   ],
+   "warm_median_seconds": 0.002821561000928341,
+   "warm_min_seconds": 0.0027915700011362787
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.00016278600014629774,
+   "params": {
+    "conditions": 12,
+    "rows": 200000,
+    "states": 4096
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016278600014629774,
+    0.0001221229995280737,
+    0.00012785199942300096,
+    0.00011973999971814919
+   ],
+   "warm_median_seconds": 0.0001221229995280737,
+   "warm_min_seconds": 0.00011973999971814919
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.0028271009996387875,
+   "params": {
+    "conditions": 16,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0028271009996387875,
+    0.0029766440002276795
+   ],
+   "warm_median_seconds": 0.0029766440002276795,
+   "warm_min_seconds": 0.0029766440002276795
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.004742742999951588,
+   "params": {
+    "conditions": 16,
+    "rows": 200000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 524288,
+    "bytes": 1048576,
+    "normalization": "forward, unnormalized",
+    "passes": 16,
+    "states": 65536
+   },
+   "samples_seconds": [
+    0.004742742999951588,
+    0.004981066000254941,
+    0.005051968000771012,
+    0.005175549000341562
+   ],
+   "warm_median_seconds": 0.005051968000771012,
+   "warm_min_seconds": 0.004981066000254941
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.006054679999579093,
+   "params": {
+    "conditions": 16,
+    "rows": 200000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 524288,
+    "bytes": 1048576,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 16,
+    "states": 65536
+   },
+   "samples_seconds": [
+    0.006054679999579093,
+    0.005382908999308711,
+    0.0052895070002705324
+   ],
+   "warm_median_seconds": 0.005336207999789622,
+   "warm_min_seconds": 0.0052895070002705324
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.047877240998786874,
+   "params": {
+    "conditions": 16,
+    "rows": 200000,
+    "states": 65536
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.047877240998786874,
+    0.07245548699938809,
+    0.048005976001149975
+   ],
+   "warm_median_seconds": 0.06023073150026903,
+   "warm_min_seconds": 0.048005976001149975
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.001911144001496723,
+   "params": {
+    "conditions": 16,
+    "rows": 200000,
+    "states": 65536
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001911144001496723,
+    0.0016071259997261222,
+    0.0018422859993734164,
+    0.001963631000762689
+   ],
+   "warm_median_seconds": 0.0018422859993734164,
+   "warm_min_seconds": 0.0016071259997261222
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (state construction)",
+   "first_seconds": 0.018283696999787935,
+   "params": {
+    "conditions": 20,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.018283696999787935,
+    0.014133220000076108
+   ],
+   "warm_median_seconds": 0.014133220000076108,
+   "warm_min_seconds": 0.014133220000076108
+  },
+  {
+   "backend": "cpu",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.17253402699861908,
+   "params": {
+    "conditions": 20,
+    "rows": 200000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 10485760,
+    "bytes": 16777216,
+    "normalization": "forward, unnormalized",
+    "passes": 20,
+    "states": 1048576
+   },
+   "samples_seconds": [
+    0.17253402699861908,
+    0.147241283000767,
+    0.15005074700093246,
+    0.1331818149992614
+   ],
+   "warm_median_seconds": 0.147241283000767,
+   "warm_min_seconds": 0.1331818149992614
+  },
+  {
+   "backend": "cpu",
+   "case": "inverse Walsh transform",
+   "first_seconds": 0.14169302799928118,
+   "params": {
+    "conditions": 20,
+    "rows": 200000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 10485760,
+    "bytes": 16777216,
+    "normalization": "inverse, divided by 2^k",
+    "passes": 20,
+    "states": 1048576
+   },
+   "samples_seconds": [
+    0.14169302799928118,
+    0.13384826500077907,
+    0.11043327399966074
+   ],
+   "warm_median_seconds": 0.1221407695002199,
+   "warm_min_seconds": 0.11043327399966074
+  },
+  {
+   "backend": "cpu",
+   "case": "Parseval energies",
+   "first_seconds": 0.8050186879991088,
+   "params": {
+    "conditions": 20,
+    "rows": 200000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "result": true,
+   "samples_seconds": [
+    0.8050186879991088,
+    0.8650852640002995,
+    0.8799288990012428
+   ],
+   "warm_median_seconds": 0.8725070815007712,
+   "warm_min_seconds": 0.8650852640002995
+  },
+  {
+   "backend": "numpy",
+   "case": "forward Walsh transform",
+   "first_seconds": 0.06132399399939459,
+   "params": {
+    "conditions": 20,
+    "rows": 200000,
+    "states": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06132399399939459,
+    0.061720807001620415,
+    0.060589914000956924,
+    0.06628923599964764
+   ],
+   "warm_median_seconds": 0.061720807001620415,
+   "warm_min_seconds": 0.060589914000956924
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: direct sums over the cells",
+   "first_seconds": 0.00015721499948995188,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015721499948995188,
+    8.471399996778928e-05,
+    5.091599996376317e-05
+   ],
+   "warm_median_seconds": 6.781499996577622e-05,
+   "warm_min_seconds": 5.091599996376317e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: one full transform + lookups",
+   "first_seconds": 0.000289404000795912,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000289404000795912,
+    0.00025324500165879726,
+    0.00024564300110796466
+   ],
+   "warm_median_seconds": 0.00024944400138338096,
+   "warm_min_seconds": 0.00024564300110796466
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 8.436700045422185e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.436700045422185e-05,
+    3.52040005964227e-05,
+    2.2059999537304975e-05
+   ],
+   "warm_median_seconds": 2.863200006686384e-05,
+   "warm_min_seconds": 2.2059999537304975e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 9.388899889017921e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.388899889017921e-05,
+    3.3972999517573044e-05,
+    1.8344000636716373e-05
+   ],
+   "warm_median_seconds": 2.615850007714471e-05,
+   "warm_min_seconds": 1.8344000636716373e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.00021634900076605845,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021634900076605845,
+    0.00015009799972176552,
+    0.0001298930001212284
+   ],
+   "warm_median_seconds": 0.00013999549992149696,
+   "warm_min_seconds": 0.0001298930001212284
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 0.00011060299948439933,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011060299948439933,
+    2.6739999157143757e-05,
+    1.5996000001905486e-05
+   ],
+   "warm_median_seconds": 2.136799957952462e-05,
+   "warm_min_seconds": 1.5996000001905486e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.01398369299931801,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01398369299931801,
+    0.013823554001646698,
+    0.012196108998978161
+   ],
+   "warm_median_seconds": 0.01300983150031243,
+   "warm_min_seconds": 0.012196108998978161
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 0.00016395900092902593,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016395900092902593,
+    0.00012121699910494499,
+    8.415999946009833e-05
+   ],
+   "warm_median_seconds": 0.00010268849928252166,
+   "warm_min_seconds": 8.415999946009833e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "truncation to the largest coefficients (explicit approximation)",
+   "first_seconds": 0.004272231000868487,
+   "params": {
+    "conditions": 12,
+    "frequencies": 1
+   },
+   "phase": "run",
+   "result": {
+    "approximation": true,
+    "dropped": 4086,
+    "exact": false,
+    "k": 12,
+    "m": 1,
+    "nonzero": 4087,
+    "residual_energy": 206743296,
+    "residual_l1": 739916,
+    "states": 4096,
+    "total_energy": 2706743296
+   },
+   "samples_seconds": [
+    0.004272231000868487,
+    0.0036336369994387496,
+    0.004737793000458623
+   ],
+   "warm_median_seconds": 0.0041857149999486865,
+   "warm_min_seconds": 0.0036336369994387496
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: direct sums over the cells",
+   "first_seconds": 0.00022449599964602385,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022449599964602385,
+    0.000131986000269535,
+    0.00012176299969723914
+   ],
+   "warm_median_seconds": 0.00012687449998338707,
+   "warm_min_seconds": 0.00012176299969723914
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: one full transform + lookups",
+   "first_seconds": 0.0020607759997801622,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020607759997801622,
+    0.002184625000154483,
+    0.0021711159988626605
+   ],
+   "warm_median_seconds": 0.002177870499508572,
+   "warm_min_seconds": 0.0021711159988626605
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.0002736469996307278,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002736469996307278,
+    4.0372999137616716e-05,
+    2.834899896697607e-05
+   ],
+   "warm_median_seconds": 3.436099905229639e-05,
+   "warm_min_seconds": 2.834899896697607e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 7.749799988232553e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.749799988232553e-05,
+    1.8259999706060626e-05,
+    1.6400001186411828e-05
+   ],
+   "warm_median_seconds": 1.7330000446236227e-05,
+   "warm_min_seconds": 1.6400001186411828e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.0002031820004049223,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002031820004049223,
+    0.00012489700020523742,
+    0.00043473100049595814
+   ],
+   "warm_median_seconds": 0.0002798140003505978,
+   "warm_min_seconds": 0.00012489700020523742
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 6.71479992888635e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.71479992888635e-05,
+    2.7583999326452613e-05,
+    2.4210001356550492e-05
+   ],
+   "warm_median_seconds": 2.5897000341501553e-05,
+   "warm_min_seconds": 2.4210001356550492e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.011462233998827287,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011462233998827287,
+    0.011189740000190795,
+    0.010781782999401912
+   ],
+   "warm_median_seconds": 0.010985761499796354,
+   "warm_min_seconds": 0.010781782999401912
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 0.001429562998964684,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001429562998964684,
+    0.001066914999682922,
+    0.0009388689995830646
+   ],
+   "warm_median_seconds": 0.0010028919996329932,
+   "warm_min_seconds": 0.0009388689995830646
+  },
+  {
+   "backend": "cpu",
+   "case": "truncation to the largest coefficients (explicit approximation)",
+   "first_seconds": 0.0038328430000547087,
+   "params": {
+    "conditions": 12,
+    "frequencies": 8
+   },
+   "phase": "run",
+   "result": {
+    "approximation": true,
+    "dropped": 4079,
+    "exact": false,
+    "k": 12,
+    "m": 8,
+    "nonzero": 4087,
+    "residual_energy": 202504604,
+    "residual_l1": 734482,
+    "states": 4096,
+    "total_energy": 2706743296
+   },
+   "samples_seconds": [
+    0.0038328430000547087,
+    0.0037038800001027994,
+    0.0039410839999618474
+   ],
+   "warm_median_seconds": 0.0038224820000323234,
+   "warm_min_seconds": 0.0037038800001027994
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: direct sums over the cells",
+   "first_seconds": 0.0005394420004449785,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005394420004449785,
+    0.00041401999988011084,
+    0.0004423749996931292
+   ],
+   "warm_median_seconds": 0.00042819749978662003,
+   "warm_min_seconds": 0.00041401999988011084
+  },
+  {
+   "backend": "cpu",
+   "case": "new frequencies: one full transform + lookups",
+   "first_seconds": 0.009187891000692616,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009187891000692616,
+    0.00814289300069504,
+    0.008415021000473644
+   ],
+   "warm_median_seconds": 0.008278957000584342,
+   "warm_min_seconds": 0.00814289300069504
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.0001280270007555373,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001280270007555373,
+    9.020899960887618e-05,
+    4.423400059749838e-05
+   ],
+   "warm_median_seconds": 6.722150010318728e-05,
+   "warm_min_seconds": 4.423400059749838e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 7.349999941652641e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.349999941652641e-05,
+    1.897000038297847e-05,
+    1.5780000467202626e-05
+   ],
+   "warm_median_seconds": 1.7375000425090548e-05,
+   "warm_min_seconds": 1.5780000467202626e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.0002160439998988295,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002160439998988295,
+    0.00019426600010774564,
+    0.00014860100054647774
+   ],
+   "warm_median_seconds": 0.0001714335003271117,
+   "warm_min_seconds": 0.00014860100054647774
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 6.55919993732823e-05,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.55919993732823e-05,
+    4.266199903213419e-05,
+    4.072699994139839e-05
+   ],
+   "warm_median_seconds": 4.169449948676629e-05,
+   "warm_min_seconds": 4.072699994139839e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis evaluations (exact dyadic)",
+   "first_seconds": 0.012476582000090275,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012476582000090275,
+    0.014828886000032071,
+    0.012886183998489287
+   ],
+   "warm_median_seconds": 0.013857534999260679,
+   "warm_min_seconds": 0.012886183998489287
+  },
+  {
+   "backend": "numpy",
+   "case": "fixed-basis evaluations (integer sums)",
+   "first_seconds": 0.005781986999863875,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32,
+    "requests": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005781986999863875,
+    0.004495007999139489,
+    0.004922623000311432
+   ],
+   "warm_median_seconds": 0.0047088154997254605,
+   "warm_min_seconds": 0.004495007999139489
+  },
+  {
+   "backend": "cpu",
+   "case": "truncation to the largest coefficients (explicit approximation)",
+   "first_seconds": 0.00381053800083464,
+   "params": {
+    "conditions": 12,
+    "frequencies": 32
+   },
+   "phase": "run",
+   "result": {
+    "approximation": true,
+    "dropped": 4055,
+    "exact": false,
+    "k": 12,
+    "m": 32,
+    "nonzero": 4087,
+    "residual_energy": 193049896,
+    "residual_l1": 719432,
+    "states": 4096,
+    "total_energy": 2706743296
+   },
+   "samples_seconds": [
+    0.00381053800083464,
+    0.0037535020001087105,
+    0.003834719998849323
+   ],
+   "warm_median_seconds": 0.0037941109994790168,
+   "warm_min_seconds": 0.0037535020001087105
+  },
+  {
+   "backend": "cpu",
+   "case": "forward transform at a 2^16 tensor budget",
+   "first_seconds": 0.004182434000540525,
+   "params": {
+    "conditions": 16
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.004182434000540525
+   ],
+   "warm_median_seconds": 0.004182434000540525,
+   "warm_min_seconds": 0.004182434000540525
+  },
+  {
+   "backend": "cpu",
+   "case": "forward transform past a 2^16 tensor budget",
+   "limit": 65536,
+   "message": "Walsh spectrum: needs 131072 tensor, budget 65536",
+   "need": 131072,
+   "params": {
+    "conditions": 17
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.001158426999609219,
+   "refused": true,
+   "resource": "tensor"
+  }
+ ],
+ "seconds": 9.433952900000804,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "transform conditions (tensor 2^16)",
+   "largest_admitted": {
+    "conditions": 16
+   },
+   "smallest_refused": {
+    "conditions": 17
+   }
+  }
+ ]
+}

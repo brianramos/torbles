@@ -1,0 +1,3834 @@
+{
+ "argv": [
+  "--capability",
+  "RESP-002",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/RESP-002/benchmark_cpu_math_resp_vm.json"
+ ],
+ "capability": "RESP-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:18:41+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_resp.c over math_dist.c prefix states (single-threaded: two binary searches and exact 256-bit arithmetic per theta), cuda = one work item per theta (device runs only), numpy = one float64 pass over the rows per theta, duckdb = SUM over a cross join (DuckDB's own threads).",
+  "Construction (histogram, prefix state) is paid once; each later theta costs O(log breakpoints) with no scan of the rows. A single theta is cheaper as one direct pass (the one-shot records).",
+  "grid wall time 10.3 s"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.00028591399859578814,
+   "params": {
+    "breakpoints": 643,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00028591399859578814,
+    5.945100019744132e-05,
+    3.2980000469251536e-05
+   ],
+   "warm_median_seconds": 4.6215500333346426e-05,
+   "warm_min_seconds": 3.2980000469251536e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 3.285099955974147e-05,
+   "params": {
+    "breakpoints": 643,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.285099955974147e-05,
+    3.040899900952354e-05,
+    2.555900027800817e-05
+   ],
+   "state_bytes": 36176,
+   "warm_median_seconds": 2.7983999643765856e-05,
+   "warm_min_seconds": 2.555900027800817e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00018993600133399013,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00018993600133399013,
+    4.0838998756953515e-05,
+    1.955199877556879e-05,
+    1.1045000064768828e-05,
+    1.1001000530086458e-05
+   ],
+   "warm_median_seconds": 1.529849942016881e-05,
+   "warm_min_seconds": 1.1001000530086458e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 8.247900041169487e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.247900041169487e-05,
+    9.30299938772805e-06,
+    5.370999133447185e-06
+   ],
+   "warm_median_seconds": 7.336999260587618e-06,
+   "warm_min_seconds": 5.370999133447185e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.007365747000221745,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007365747000221745,
+    0.003706885001520277
+   ],
+   "warm_median_seconds": 0.003706885001520277,
+   "warm_min_seconds": 0.003706885001520277
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 6.911000127729494e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.911000127729494e-05,
+    1.5956000424921513e-05,
+    1.1557000107131898e-05,
+    1.1269001333857886e-05,
+    1.113600046664942e-05
+   ],
+   "warm_median_seconds": 1.1413000720494892e-05,
+   "warm_min_seconds": 1.113600046664942e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 6.044799920346122e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.044799920346122e-05,
+    3.130899858660996e-05,
+    3.0245999369071797e-05
+   ],
+   "warm_median_seconds": 3.077749897784088e-05,
+   "warm_min_seconds": 3.0245999369071797e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0021051050007372396,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021051050007372396,
+    0.002039846998741268
+   ],
+   "warm_median_seconds": 0.002039846998741268,
+   "warm_min_seconds": 0.002039846998741268
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 9.589600085746497e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.589600085746497e-05,
+    3.9676999222137965e-05,
+    3.167000068060588e-05,
+    2.8418000511010177e-05,
+    2.7027999749407172e-05
+   ],
+   "warm_median_seconds": 3.004400059580803e-05,
+   "warm_min_seconds": 2.7027999749407172e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0002684880000742851,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002684880000742851,
+    0.00038288500036287587,
+    0.00030376800168596674
+   ],
+   "warm_median_seconds": 0.0003433265010244213,
+   "warm_min_seconds": 0.00030376800168596674
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0025679919999674894,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025679919999674894,
+    0.002541066000048886
+   ],
+   "warm_median_seconds": 0.002541066000048886,
+   "warm_min_seconds": 0.002541066000048886
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.003944924999814248,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003944924999814248,
+    0.003464882998741814,
+    0.0031408100003318395,
+    0.0033002720010699704,
+    0.003074172000196995
+   ],
+   "warm_median_seconds": 0.003220541000700905,
+   "warm_min_seconds": 0.003074172000196995
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.026931951999358716,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026931951999358716,
+    0.02689600200028508
+   ],
+   "warm_median_seconds": 0.02689600200028508,
+   "warm_min_seconds": 0.02689600200028508
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.10552231899964681,
+   "params": {
+    "breakpoints": 643,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10552231899964681,
+    0.10740745899965987
+   ],
+   "warm_median_seconds": 0.10740745899965987,
+   "warm_min_seconds": 0.10740745899965987
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 9.679200047685299e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.679200047685299e-05,
+    1.6230000255745836e-05,
+    1.1267999070696533e-05,
+    9.351999324280769e-06,
+    9.274001058656722e-06
+   ],
+   "warm_median_seconds": 1.030999919748865e-05,
+   "warm_min_seconds": 9.274001058656722e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.00011698999878717586,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011698999878717586,
+    1.1250000170548446e-05,
+    6.7879991547670215e-06
+   ],
+   "warm_median_seconds": 9.018999662657734e-06,
+   "warm_min_seconds": 6.7879991547670215e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.00273965900123585,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00273965900123585,
+    0.0021791140006826026
+   ],
+   "warm_median_seconds": 0.0021791140006826026,
+   "warm_min_seconds": 0.0021791140006826026
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 9.948800106940325e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.948800106940325e-05,
+    3.463400025793817e-05,
+    1.4337001630337909e-05,
+    1.2210999557282776e-05,
+    1.057800000126008e-05
+   ],
+   "warm_median_seconds": 1.3274000593810342e-05,
+   "warm_min_seconds": 1.057800000126008e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0001207430013892008,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001207430013892008,
+    4.8952999350149184e-05,
+    4.721999903267715e-05
+   ],
+   "warm_median_seconds": 4.808649919141317e-05,
+   "warm_min_seconds": 4.721999903267715e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.002168027000152506,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002168027000152506,
+    0.0022584760008612648
+   ],
+   "warm_median_seconds": 0.0022584760008612648,
+   "warm_min_seconds": 0.0022584760008612648
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00013156299974070862,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013156299974070862,
+    4.2135001422138885e-05,
+    2.5827999706962146e-05,
+    2.1821999325766228e-05,
+    2.191299972764682e-05
+   ],
+   "warm_median_seconds": 2.3870499717304483e-05,
+   "warm_min_seconds": 2.1821999325766228e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0004903549997834489,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004903549997834489,
+    0.0005016159993829206,
+    0.0005120349997014273
+   ],
+   "warm_median_seconds": 0.0005068254995421739,
+   "warm_min_seconds": 0.0005016159993829206
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0028536870013340376,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028536870013340376,
+    0.0028273629995965166
+   ],
+   "warm_median_seconds": 0.0028273629995965166,
+   "warm_min_seconds": 0.0028273629995965166
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0026176810006290907,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026176810006290907,
+    0.0026154910010518506,
+    0.002498644000297645,
+    0.0024484379991918104,
+    0.0024461329994664993
+   ],
+   "warm_median_seconds": 0.0024735409997447277,
+   "warm_min_seconds": 0.0024461329994664993
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.06332357700011926,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06332357700011926,
+    0.04771703200094635
+   ],
+   "warm_median_seconds": 0.04771703200094635,
+   "warm_min_seconds": 0.04771703200094635
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.12015646799954993,
+   "params": {
+    "breakpoints": 643,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.12015646799954993,
+    0.10063218700088328
+   ],
+   "warm_median_seconds": 0.10063218700088328,
+   "warm_min_seconds": 0.10063218700088328
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 7.31149993953295e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.31149993953295e-05,
+    9.684999895398505e-06,
+    6.902000677655451e-06,
+    8.67000017024111e-06,
+    5.879999662283808e-06
+   ],
+   "warm_median_seconds": 7.78600042394828e-06,
+   "warm_min_seconds": 5.879999662283808e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 6.11850009590853e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.11850009590853e-05,
+    9.736000720295124e-06,
+    5.267998858471401e-06
+   ],
+   "warm_median_seconds": 7.501999789383262e-06,
+   "warm_min_seconds": 5.267998858471401e-06
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.002256459001728217,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002256459001728217,
+    0.002061998000499443
+   ],
+   "warm_median_seconds": 0.002061998000499443,
+   "warm_min_seconds": 0.002061998000499443
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 5.6368000514339656e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.6368000514339656e-05,
+    1.0185000064666383e-05,
+    7.828000889276154e-06,
+    8.023000191315077e-06,
+    6.623999070143327e-06
+   ],
+   "warm_median_seconds": 7.925500540295616e-06,
+   "warm_min_seconds": 6.623999070143327e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 6.566299998667091e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.566299998667091e-05,
+    3.618700065999292e-05,
+    6.28890011284966e-05
+   ],
+   "warm_median_seconds": 4.953800089424476e-05,
+   "warm_min_seconds": 3.618700065999292e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0019496499990054872,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019496499990054872,
+    0.002012412998738
+   ],
+   "warm_median_seconds": 0.002012412998738,
+   "warm_min_seconds": 0.002012412998738
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 8.777500079304446e-05,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.777500079304446e-05,
+    2.4040999051067047e-05,
+    1.546299972687848e-05,
+    1.4278999515227042e-05,
+    1.2852000509155914e-05
+   ],
+   "warm_median_seconds": 1.487099962105276e-05,
+   "warm_min_seconds": 1.2852000509155914e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0003898489994753618,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003898489994753618,
+    0.0003215060005459236,
+    0.0003132109995931387
+   ],
+   "warm_median_seconds": 0.00031735850006953115,
+   "warm_min_seconds": 0.0003132109995931387
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.002978267000798951,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002978267000798951,
+    0.0030659359999845037
+   ],
+   "warm_median_seconds": 0.0030659359999845037,
+   "warm_min_seconds": 0.0030659359999845037
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0018889980001404183,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018889980001404183,
+    0.0018168019996664952,
+    0.0017498689994681627,
+    0.0017176460005430272,
+    0.0017745350014592987
+   ],
+   "warm_median_seconds": 0.0017622020004637307,
+   "warm_min_seconds": 0.0017176460005430272
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.03286502199989627,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03286502199989627,
+    0.03345446599996649
+   ],
+   "warm_median_seconds": 0.03345446599996649,
+   "warm_min_seconds": 0.03345446599996649
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.2072173370015662,
+   "params": {
+    "breakpoints": 643,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2072173370015662,
+    0.1845508290007274
+   ],
+   "warm_median_seconds": 0.1845508290007274,
+   "warm_min_seconds": 0.1845508290007274
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.00043916399954468943,
+   "params": {
+    "breakpoints": 1024,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00043916399954468943,
+    0.0003663280003820546,
+    0.0003332960004627239
+   ],
+   "warm_median_seconds": 0.00034981200042238925,
+   "warm_min_seconds": 0.0003332960004627239
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 6.488500002888031e-05,
+   "params": {
+    "breakpoints": 1024,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.488500002888031e-05,
+    4.452499888429884e-05,
+    1.990899909287691e-05
+   ],
+   "state_bytes": 57512,
+   "warm_median_seconds": 3.2216998988587875e-05,
+   "warm_min_seconds": 1.990899909287691e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 5.684400093741715e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.684400093741715e-05,
+    1.2386999515001662e-05,
+    8.737999451113865e-06,
+    7.598000593134202e-06,
+    7.111000741133466e-06
+   ],
+   "warm_median_seconds": 8.168000022124033e-06,
+   "warm_min_seconds": 7.111000741133466e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0005095690012240084,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005095690012240084,
+    6.712200047331862e-05,
+    4.7215999074978754e-05
+   ],
+   "warm_median_seconds": 5.716899977414869e-05,
+   "warm_min_seconds": 4.7215999074978754e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.003920629000276676,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003920629000276676,
+    0.0026976819990522927
+   ],
+   "warm_median_seconds": 0.0026976819990522927,
+   "warm_min_seconds": 0.0026976819990522927
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 7.934600034786854e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.934600034786854e-05,
+    1.4389001080417074e-05,
+    9.02399915503338e-06,
+    7.538999852840789e-06,
+    7.822000043233857e-06
+   ],
+   "warm_median_seconds": 8.422999599133618e-06,
+   "warm_min_seconds": 7.538999852840789e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.000658598999507376,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000658598999507376,
+    0.00045388800026557874,
+    0.000800765999883879
+   ],
+   "warm_median_seconds": 0.0006273270000747289,
+   "warm_min_seconds": 0.00045388800026557874
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0081573120005487,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0081573120005487,
+    0.008426819998931023
+   ],
+   "warm_median_seconds": 0.008426819998931023,
+   "warm_min_seconds": 0.008426819998931023
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00010991199997079093,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010991199997079093,
+    3.463999928499106e-05,
+    5.013100053474773e-05,
+    2.7284999305265956e-05,
+    2.1012001525377855e-05
+   ],
+   "warm_median_seconds": 3.096249929512851e-05,
+   "warm_min_seconds": 2.1012001525377855e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.005807606999951531,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005807606999951531,
+    0.004793639998752042,
+    0.005148702999576926
+   ],
+   "warm_median_seconds": 0.004971171499164484,
+   "warm_min_seconds": 0.004793639998752042
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.04772377999870514,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04772377999870514,
+    0.049357211999449646
+   ],
+   "warm_median_seconds": 0.049357211999449646,
+   "warm_min_seconds": 0.049357211999449646
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0029390219988272293,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0029390219988272293,
+    0.003118694001386757,
+    0.0026026039995485917,
+    0.0027147129985678475,
+    0.0024501919997419463
+   ],
+   "warm_median_seconds": 0.0026586584990582196,
+   "warm_min_seconds": 0.0024501919997419463
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 1000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 5.360899922379758e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.360899922379758e-05,
+    9.823001164477319e-06,
+    6.520998795167543e-06,
+    5.976000466034748e-06,
+    6.129999746917747e-06
+   ],
+   "warm_median_seconds": 6.325499271042645e-06,
+   "warm_min_seconds": 5.976000466034748e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.00023483199947804678,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023483199947804678,
+    0.00013754199972026981,
+    0.00018973200167238247
+   ],
+   "warm_median_seconds": 0.00016363700069632614,
+   "warm_min_seconds": 0.00013754199972026981
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.0028886500003864057,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028886500003864057,
+    0.002974908000396681
+   ],
+   "warm_median_seconds": 0.002974908000396681,
+   "warm_min_seconds": 0.002974908000396681
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 7.865199950174429e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.865199950174429e-05,
+    1.3349999790079892e-05,
+    7.84700023359619e-06,
+    7.701000868109986e-06,
+    6.722000762238167e-06
+   ],
+   "warm_median_seconds": 7.774000550853088e-06,
+   "warm_min_seconds": 6.722000762238167e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0023764940015098546,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023764940015098546,
+    0.001381973001116421,
+    0.0013500949989975197
+   ],
+   "warm_median_seconds": 0.0013660340000569704,
+   "warm_min_seconds": 0.0013500949989975197
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.008500858999468619,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008500858999468619,
+    0.008199887999580824
+   ],
+   "warm_median_seconds": 0.008199887999580824,
+   "warm_min_seconds": 0.008199887999580824
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00010772700079542119,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010772700079542119,
+    2.6433999664732255e-05,
+    1.6879999748198316e-05,
+    1.521199919807259e-05,
+    1.3646000297740102e-05
+   ],
+   "warm_median_seconds": 1.6045999473135453e-05,
+   "warm_min_seconds": 1.3646000297740102e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.012633162001293385,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012633162001293385,
+    0.011772556999858352,
+    0.011541869000211591
+   ],
+   "warm_median_seconds": 0.011657213000034972,
+   "warm_min_seconds": 0.011541869000211591
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.05723097700138169,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05723097700138169,
+    0.05655656399903819
+   ],
+   "warm_median_seconds": 0.05655656399903819,
+   "warm_min_seconds": 0.05655656399903819
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0029550030012615025,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0029550030012615025,
+    0.0029377690007095225,
+    0.0027289819990983233,
+    0.002925572998719872,
+    0.002749863999270019
+   ],
+   "warm_median_seconds": 0.0028377184989949455,
+   "warm_min_seconds": 0.0027289819990983233
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 1000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 4.29579995397944e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.29579995397944e-05,
+    1.3093000234221108e-05,
+    1.1207999705220573e-05,
+    9.840001439442858e-06,
+    9.777000741451047e-06
+   ],
+   "warm_median_seconds": 1.0524000572331715e-05,
+   "warm_min_seconds": 9.777000741451047e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0003189510007359786,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003189510007359786,
+    0.00022683000133838505,
+    0.00018422699940856546
+   ],
+   "warm_median_seconds": 0.00020552850037347525,
+   "warm_min_seconds": 0.00018422699940856546
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.004095672000403283,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004095672000403283,
+    0.0038193259988474892
+   ],
+   "warm_median_seconds": 0.0038193259988474892,
+   "warm_min_seconds": 0.0038193259988474892
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 8.352399891009554e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.352399891009554e-05,
+    1.2847998732468113e-05,
+    8.153001544997096e-06,
+    8.487000741297379e-06,
+    7.639999239472672e-06
+   ],
+   "warm_median_seconds": 8.320001143147238e-06,
+   "warm_min_seconds": 7.639999239472672e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0015174429991020588,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015174429991020588,
+    0.001367588998618885,
+    0.0013621189991681604
+   ],
+   "warm_median_seconds": 0.0013648539988935227,
+   "warm_min_seconds": 0.0013621189991681604
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.015311477000068408,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015311477000068408,
+    0.01576866399955179
+   ],
+   "warm_median_seconds": 0.01576866399955179,
+   "warm_min_seconds": 0.01576866399955179
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00011489800090203062,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011489800090203062,
+    2.8569998903549276e-05,
+    1.6175001292140223e-05,
+    1.3251999916974455e-05,
+    1.195799995912239e-05
+   ],
+   "warm_median_seconds": 1.4713500604557339e-05,
+   "warm_min_seconds": 1.195799995912239e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.01689905000057479,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01689905000057479,
+    0.01701322299959429,
+    0.01665625399982673
+   ],
+   "warm_median_seconds": 0.01683473849971051,
+   "warm_min_seconds": 0.01665625399982673
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.13380674200016074,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.13380674200016074,
+    0.12933616500049538
+   ],
+   "warm_median_seconds": 0.12933616500049538,
+   "warm_min_seconds": 0.12933616500049538
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0029627830008394085,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0029627830008394085,
+    0.0025083370001084404,
+    0.002380653999352944,
+    0.0024129049998009577,
+    0.0019365120006114012
+   ],
+   "warm_median_seconds": 0.002396779499576951,
+   "warm_min_seconds": 0.0019365120006114012
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 1000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.004088917001354275,
+   "params": {
+    "breakpoints": 1024,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004088917001354275,
+    0.0037407950003398582,
+    0.0035903539992432343
+   ],
+   "warm_median_seconds": 0.0036655744997915463,
+   "warm_min_seconds": 0.0035903539992432343
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 0.00012471499940147623,
+   "params": {
+    "breakpoints": 1024,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012471499940147623,
+    5.094000152894296e-05,
+    4.991899913875386e-05
+   ],
+   "state_bytes": 57512,
+   "warm_median_seconds": 5.042950033384841e-05,
+   "warm_min_seconds": 4.991899913875386e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 9.30439982766984e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.30439982766984e-05,
+    1.880999843706377e-05,
+    1.0384001143393107e-05,
+    8.372000593226403e-06,
+    7.321001248783432e-06
+   ],
+   "warm_median_seconds": 9.378000868309755e-06,
+   "warm_min_seconds": 7.321001248783432e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.02849897100168164,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02849897100168164,
+    0.0017883939999592258,
+    0.0014117460013949312
+   ],
+   "warm_median_seconds": 0.0016000700006770785,
+   "warm_min_seconds": 0.0014117460013949312
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.00701424299950304,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00701424299950304,
+    0.005557776999921771
+   ],
+   "warm_median_seconds": 0.005557776999921771,
+   "warm_min_seconds": 0.005557776999921771
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 8.313499893120024e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.313499893120024e-05,
+    1.0740999641711824e-05,
+    8.224000339396298e-06,
+    7.72400017012842e-06,
+    7.316000846913084e-06
+   ],
+   "warm_median_seconds": 7.974000254762359e-06,
+   "warm_min_seconds": 7.316000846913084e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.010935566999251023,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010935566999251023,
+    0.00908330099991872,
+    0.009161644000414526
+   ],
+   "warm_median_seconds": 0.009122472500166623,
+   "warm_min_seconds": 0.00908330099991872
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.02753399099856324,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02753399099856324,
+    0.032009425000069314
+   ],
+   "warm_median_seconds": 0.032009425000069314,
+   "warm_min_seconds": 0.032009425000069314
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00010589300109131727,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010589300109131727,
+    5.306799903337378e-05,
+    7.87069984653499e-05,
+    2.2330001229420304e-05,
+    2.0213999960105866e-05
+   ],
+   "warm_median_seconds": 3.769900013139704e-05,
+   "warm_min_seconds": 2.0213999960105866e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.1055687529988063,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1055687529988063,
+    0.09556659500049136,
+    0.09390935900046316
+   ],
+   "warm_median_seconds": 0.09473797700047726,
+   "warm_min_seconds": 0.09390935900046316
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.271740463000242,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.271740463000242,
+    0.2794006250005623
+   ],
+   "warm_median_seconds": 0.2794006250005623,
+   "warm_min_seconds": 0.2794006250005623
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0033717440001055365,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033717440001055365,
+    0.0032645780011080205,
+    0.0024867770007404033,
+    0.0024553749990445795,
+    0.002510921000066446
+   ],
+   "warm_median_seconds": 0.0024988490004034247,
+   "warm_min_seconds": 0.0024553749990445795
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "squared",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 10000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 3.427700175961945e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.427700175961945e-05,
+    9.044999387697317e-06,
+    6.635998943238519e-06,
+    6.045000191079453e-06,
+    6.0229995142435655e-06
+   ],
+   "warm_median_seconds": 6.340499567158986e-06,
+   "warm_min_seconds": 6.0229995142435655e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.0359730860000127,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0359730860000127,
+    0.0031472440005018143,
+    0.002065908000076888
+   ],
+   "warm_median_seconds": 0.002606576000289351,
+   "warm_min_seconds": 0.002065908000076888
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.005380286998843076,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005380286998843076,
+    0.004896409998764284
+   ],
+   "warm_median_seconds": 0.004896409998764284,
+   "warm_min_seconds": 0.004896409998764284
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00010135800039279275,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010135800039279275,
+    2.149299871234689e-05,
+    1.1971998901572078e-05,
+    8.214999979827553e-06,
+    7.926999387564138e-06
+   ],
+   "warm_median_seconds": 1.0093499440699816e-05,
+   "warm_min_seconds": 7.926999387564138e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.01698364599906199,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01698364599906199,
+    0.016215980998822488,
+    0.016745225999329705
+   ],
+   "warm_median_seconds": 0.016480603499076096,
+   "warm_min_seconds": 0.016215980998822488
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.027243239001109032,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.027243239001109032,
+    0.0306102260001353
+   ],
+   "warm_median_seconds": 0.0306102260001353,
+   "warm_min_seconds": 0.0306102260001353
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00016288599908875767,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016288599908875767,
+    5.333099943527486e-05,
+    2.8982000003452413e-05,
+    2.49700005952036e-05,
+    2.1251998987281695e-05
+   ],
+   "warm_median_seconds": 2.6976000299328007e-05,
+   "warm_min_seconds": 2.1251998987281695e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.17602002199964772,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17602002199964772,
+    0.17334648999894853,
+    0.16440813500048534
+   ],
+   "warm_median_seconds": 0.16887731249971694,
+   "warm_min_seconds": 0.16440813500048534
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.2246482440004911,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2246482440004911,
+    0.23712699099996826
+   ],
+   "warm_median_seconds": 0.23712699099996826,
+   "warm_min_seconds": 0.23712699099996826
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.003255294999689795,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003255294999689795,
+    0.0028085989997634897,
+    0.002151787000912009,
+    0.0021573570011241827,
+    0.0021225799991952954
+   ],
+   "warm_median_seconds": 0.0021545720010180958,
+   "warm_min_seconds": 0.0021225799991952954
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "abs",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 10000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 4.336299934948329e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.336299934948329e-05,
+    1.3572998796007596e-05,
+    9.794999641599134e-06,
+    1.0065001333714463e-05,
+    8.692999472259544e-06
+   ],
+   "warm_median_seconds": 9.930000487656798e-06,
+   "warm_min_seconds": 8.692999472259544e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.003349777998664649,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003349777998664649,
+    0.0025599589989724336,
+    0.0016110560009110486
+   ],
+   "warm_median_seconds": 0.002085507499941741,
+   "warm_min_seconds": 0.0016110560009110486
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.008520651999788242,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008520651999788242,
+    0.007264104000569205
+   ],
+   "warm_median_seconds": 0.007264104000569205,
+   "warm_min_seconds": 0.007264104000569205
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 5.5173999498947524e-05,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.5173999498947524e-05,
+    1.1499998436192982e-05,
+    8.262999472208321e-06,
+    7.554999683634378e-06,
+    7.860000550863333e-06
+   ],
+   "warm_median_seconds": 8.061500011535827e-06,
+   "warm_min_seconds": 7.554999683634378e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.016528199999811477,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016528199999811477,
+    0.01627606300098705,
+    0.016765327000030084
+   ],
+   "warm_median_seconds": 0.016520695000508567,
+   "warm_min_seconds": 0.01627606300098705
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.07445618299971102,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07445618299971102,
+    0.07422834299904935
+   ],
+   "warm_median_seconds": 0.07422834299904935,
+   "warm_min_seconds": 0.07422834299904935
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.00010193600064667407,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010193600064667407,
+    5.249599962553475e-05,
+    2.2344000171869993e-05,
+    1.600299947313033e-05,
+    1.3632001355290413e-05
+   ],
+   "warm_median_seconds": 1.9173499822500162e-05,
+   "warm_min_seconds": 1.3632001355290413e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "first_seconds": 0.17480161499952374,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17480161499952374,
+    0.17460988400125643,
+    0.1671778899999481
+   ],
+   "warm_median_seconds": 0.17089388700060226,
+   "warm_min_seconds": 0.1671778899999481
+  },
+  {
+   "backend": "duckdb",
+   "case": "evaluate (cross join)",
+   "first_seconds": 0.6580067219983903,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 100,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.6580067219983903,
+    0.769379981999009
+   ],
+   "warm_median_seconds": 0.769379981999009,
+   "warm_min_seconds": 0.769379981999009
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate",
+   "first_seconds": 0.0027167779990122654,
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0027167779990122654,
+    0.0025827749996096827,
+    0.0018829529999493388,
+    0.0018899890001193853,
+    0.0018230700006824918
+   ],
+   "warm_median_seconds": 0.001886471000034362,
+   "warm_min_seconds": 0.0018230700006824918
+  },
+  {
+   "backend": "numpy",
+   "case": "evaluate (direct pass per theta)",
+   "params": {
+    "breakpoints": 1024,
+    "loss": "hinge",
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "skipped": "rows x thetas = 10000000000 > 2e8"
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0035494170006131753,
+   "params": {
+    "breakpoints": 2,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0035494170006131753,
+    0.0036047479989065323
+   ],
+   "warm_median_seconds": 0.0036047479989065323,
+   "warm_min_seconds": 0.0036047479989065323
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 1.9558001440600492e-05,
+   "params": {
+    "breakpoints": 2,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    1.9558001440600492e-05,
+    1.0595000276225619e-05
+   ],
+   "state_bytes": 280,
+   "warm_median_seconds": 1.0595000276225619e-05,
+   "warm_min_seconds": 1.0595000276225619e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0015989049989002524,
+   "params": {
+    "breakpoints": 2,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015989049989002524,
+    0.0015976040012901649,
+    0.001537491998533369
+   ],
+   "warm_median_seconds": 0.001567547999911767,
+   "warm_min_seconds": 0.001537491998533369
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 5.215300006966572e-05,
+   "params": {
+    "breakpoints": 2,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    5.215300006966572e-05,
+    1.601000076334458e-05,
+    9.130999387707561e-06
+   ],
+   "warm_median_seconds": 1.257050007552607e-05,
+   "warm_min_seconds": 9.130999387707561e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 9.836099889071193e-05,
+   "params": {
+    "breakpoints": 2,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    9.836099889071193e-05,
+    2.4137998480000533e-05
+   ],
+   "warm_median_seconds": 2.4137998480000533e-05,
+   "warm_min_seconds": 2.4137998480000533e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0036205969990987796,
+   "params": {
+    "breakpoints": 2,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0036205969990987796,
+    0.0035316209996381076
+   ],
+   "warm_median_seconds": 0.0035316209996381076,
+   "warm_min_seconds": 0.0035316209996381076
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0029272289993969025,
+   "params": {
+    "breakpoints": 2,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 291271.11111119203,
+   "samples_seconds": [
+    0.0029272289993969025,
+    0.0012457079992600484,
+    0.0010578629990050104
+   ],
+   "warm_median_seconds": 0.0011517854991325294,
+   "warm_min_seconds": 0.0010578629990050104
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0007871960006013978,
+   "params": {
+    "breakpoints": 2,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007871960006013978,
+    0.0007637290000275243,
+    0.0007542259991168976
+   ],
+   "warm_median_seconds": 0.0007589774995722109,
+   "warm_min_seconds": 0.0007542259991168976
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 5.687199882231653e-05,
+   "params": {
+    "breakpoints": 2,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    5.687199882231653e-05,
+    1.398899985360913e-05,
+    7.763001121929847e-06
+   ],
+   "warm_median_seconds": 1.0876000487769488e-05,
+   "warm_min_seconds": 7.763001121929847e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.00010138299876416568,
+   "params": {
+    "breakpoints": 2,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.00010138299876416568,
+    2.7834999855258502e-05
+   ],
+   "warm_median_seconds": 2.7834999855258502e-05,
+   "warm_min_seconds": 2.7834999855258502e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.003816720000031637,
+   "params": {
+    "breakpoints": 2,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.003816720000031637,
+    0.0037210390000836924
+   ],
+   "warm_median_seconds": 0.0037210390000836924,
+   "warm_min_seconds": 0.0037210390000836924
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.004406052999911481,
+   "params": {
+    "breakpoints": 2,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 524287.99999999994,
+   "samples_seconds": [
+    0.004406052999911481,
+    0.0021462730001076125,
+    0.001745949999531149
+   ],
+   "warm_median_seconds": 0.0019461114998193807,
+   "warm_min_seconds": 0.001745949999531149
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0007322300007217564,
+   "params": {
+    "breakpoints": 2,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007322300007217564,
+    0.0006965990014577983,
+    0.0006929610008228337
+   ],
+   "warm_median_seconds": 0.000694780001140316,
+   "warm_min_seconds": 0.0006929610008228337
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.692599966598209e-05,
+   "params": {
+    "breakpoints": 2,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    3.692599966598209e-05,
+    7.226999514386989e-06,
+    5.275000148685649e-06
+   ],
+   "warm_median_seconds": 6.250999831536319e-06,
+   "warm_min_seconds": 5.275000148685649e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.00010388600094302092,
+   "params": {
+    "breakpoints": 2,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 3,
+   "samples_seconds": [
+    0.00010388600094302092,
+    5.936299930908717e-05
+   ],
+   "warm_median_seconds": 5.936299930908717e-05,
+   "warm_min_seconds": 5.936299930908717e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.00368168900058663,
+   "params": {
+    "breakpoints": 2,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.00368168900058663,
+    0.003659428999526426
+   ],
+   "warm_median_seconds": 0.003659428999526426,
+   "warm_min_seconds": 0.003659428999526426
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0024038119991018903,
+   "params": {
+    "breakpoints": 2,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 174762.66666666672,
+   "samples_seconds": [
+    0.0024038119991018903,
+    0.0018350149985053577,
+    0.001708026000414975
+   ],
+   "warm_median_seconds": 0.0017715204994601663,
+   "warm_min_seconds": 0.001708026000414975
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.003452713999649859,
+   "params": {
+    "breakpoints": 16,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003452713999649859,
+    0.003428354999414296
+   ],
+   "warm_median_seconds": 0.003428354999414296,
+   "warm_min_seconds": 0.003428354999414296
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 1.918900125019718e-05,
+   "params": {
+    "breakpoints": 16,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    1.918900125019718e-05,
+    9.71000008576084e-06
+   ],
+   "state_bytes": 1064,
+   "warm_median_seconds": 9.71000008576084e-06,
+   "warm_min_seconds": 9.71000008576084e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.00156118700033403,
+   "params": {
+    "breakpoints": 16,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00156118700033403,
+    0.0014912280003045453,
+    0.001479168000514619
+   ],
+   "warm_median_seconds": 0.0014851980004095822,
+   "warm_min_seconds": 0.001479168000514619
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.9260999983525835e-05,
+   "params": {
+    "breakpoints": 16,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    3.9260999983525835e-05,
+    9.16700082598254e-06,
+    7.990998710738495e-06
+   ],
+   "warm_median_seconds": 8.578999768360518e-06,
+   "warm_min_seconds": 7.990998710738495e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 8.9032000687439e-05,
+   "params": {
+    "breakpoints": 16,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    8.9032000687439e-05,
+    1.8034001186606474e-05
+   ],
+   "warm_median_seconds": 1.8034001186606474e-05,
+   "warm_min_seconds": 1.8034001186606474e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.003421307999815326,
+   "params": {
+    "breakpoints": 16,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.003421307999815326,
+    0.003399575998628279
+   ],
+   "warm_median_seconds": 0.003399575998628279,
+   "warm_min_seconds": 0.003399575998628279
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.001816164000047138,
+   "params": {
+    "breakpoints": 16,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 27204721.77778216,
+   "samples_seconds": [
+    0.001816164000047138,
+    0.001159318000645726,
+    0.0009747570002218708
+   ],
+   "warm_median_seconds": 0.0010670375004337984,
+   "warm_min_seconds": 0.0009747570002218708
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0009426649994566105,
+   "params": {
+    "breakpoints": 16,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009426649994566105,
+    0.0009009309997054515,
+    0.0008491450007568346
+   ],
+   "warm_median_seconds": 0.0008750380002311431,
+   "warm_min_seconds": 0.0008491450007568346
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.762199958146084e-05,
+   "params": {
+    "breakpoints": 16,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    3.762199958146084e-05,
+    1.0214000212727115e-05,
+    7.5930001912638545e-06
+   ],
+   "warm_median_seconds": 8.903500201995485e-06,
+   "warm_min_seconds": 7.5930001912638545e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.0001662560007389402,
+   "params": {
+    "breakpoints": 16,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 17,
+   "samples_seconds": [
+    0.0001662560007389402,
+    8.836000051815063e-05
+   ],
+   "warm_median_seconds": 8.836000051815063e-05,
+   "warm_min_seconds": 8.836000051815063e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0035395049999351613,
+   "params": {
+    "breakpoints": 16,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0035395049999351613,
+    0.0035590229999797884
+   ],
+   "warm_median_seconds": 0.0035590229999797884,
+   "warm_min_seconds": 0.0035590229999797884
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0028517219998320797,
+   "params": {
+    "breakpoints": 16,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 4500138.666666666,
+   "samples_seconds": [
+    0.0028517219998320797,
+    0.0018691249988478376,
+    0.0016811579989735037
+   ],
+   "warm_median_seconds": 0.0017751414989106706,
+   "warm_min_seconds": 0.0016811579989735037
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0008472580011584796,
+   "params": {
+    "breakpoints": 16,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008472580011584796,
+    0.0008176789997378364,
+    0.0008050800006458303
+   ],
+   "warm_median_seconds": 0.0008113795001918334,
+   "warm_min_seconds": 0.0008050800006458303
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.0729999707546085e-05,
+   "params": {
+    "breakpoints": 16,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    3.0729999707546085e-05,
+    6.65700099489186e-06,
+    5.502999556483701e-06
+   ],
+   "warm_median_seconds": 6.08000027568778e-06,
+   "warm_min_seconds": 5.502999556483701e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.00016241299999819603,
+   "params": {
+    "breakpoints": 16,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 17,
+   "samples_seconds": [
+    0.00016241299999819603,
+    8.748999971430749e-05
+   ],
+   "warm_median_seconds": 8.748999971430749e-05,
+   "warm_min_seconds": 8.748999971430749e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0035008169998036465,
+   "params": {
+    "breakpoints": 16,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0035008169998036465,
+    0.0035311699994053924
+   ],
+   "warm_median_seconds": 0.0035311699994053924,
+   "warm_min_seconds": 0.0035311699994053924
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0045406939989334205,
+   "params": {
+    "breakpoints": 16,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 3386026.666666667,
+   "samples_seconds": [
+    0.0045406939989334205,
+    0.0021802439987368416,
+    0.0017400790002284339
+   ],
+   "warm_median_seconds": 0.0019601614994826377,
+   "warm_min_seconds": 0.0017400790002284339
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0034500549991207663,
+   "params": {
+    "breakpoints": 256,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0034500549991207663,
+    0.0035106509985780576
+   ],
+   "warm_median_seconds": 0.0035106509985780576,
+   "warm_min_seconds": 0.0035106509985780576
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 2.315299934707582e-05,
+   "params": {
+    "breakpoints": 256,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.315299934707582e-05,
+    1.4593000742024742e-05
+   ],
+   "state_bytes": 14504,
+   "warm_median_seconds": 1.4593000742024742e-05,
+   "warm_min_seconds": 1.4593000742024742e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.002041339999777847,
+   "params": {
+    "breakpoints": 256,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002041339999777847,
+    0.001988504998735152,
+    0.0019037519996345509
+   ],
+   "warm_median_seconds": 0.0019461284991848515,
+   "warm_min_seconds": 0.0019037519996345509
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.8051999581512064e-05,
+   "params": {
+    "breakpoints": 256,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    3.8051999581512064e-05,
+    8.810999133856967e-06,
+    6.625001333304681e-06
+   ],
+   "warm_median_seconds": 7.718000233580824e-06,
+   "warm_min_seconds": 6.625001333304681e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 9.334599963040091e-05,
+   "params": {
+    "breakpoints": 256,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    9.334599963040091e-05,
+    1.723600144032389e-05
+   ],
+   "warm_median_seconds": 1.723600144032389e-05,
+   "warm_min_seconds": 1.723600144032389e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0036316040004749084,
+   "params": {
+    "breakpoints": 256,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0036316040004749084,
+    0.0038075199990998954
+   ],
+   "warm_median_seconds": 0.0038075199990998954,
+   "warm_min_seconds": 0.0038075199990998954
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0017120920001616469,
+   "params": {
+    "breakpoints": 256,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 7590932935.112243,
+   "samples_seconds": [
+    0.0017120920001616469,
+    0.0011788600004365435,
+    0.000995739001155016
+   ],
+   "warm_median_seconds": 0.0010872995007957797,
+   "warm_min_seconds": 0.000995739001155016
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0016136379999807104,
+   "params": {
+    "breakpoints": 256,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016136379999807104,
+    0.0015655089991923887,
+    0.0014793779992032796
+   ],
+   "warm_median_seconds": 0.0015224434991978342,
+   "warm_min_seconds": 0.0014793779992032796
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.437099960341584e-05,
+   "params": {
+    "breakpoints": 256,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    4.437099960341584e-05,
+    9.556999430060387e-06,
+    7.794000339345075e-06
+   ],
+   "warm_median_seconds": 8.675499884702731e-06,
+   "warm_min_seconds": 7.794000339345075e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.001358742998490925,
+   "params": {
+    "breakpoints": 256,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 257,
+   "samples_seconds": [
+    0.001358742998490925,
+    0.0012559520000650082
+   ],
+   "warm_median_seconds": 0.0012559520000650082,
+   "warm_min_seconds": 0.0012559520000650082
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0037174860008235555,
+   "params": {
+    "breakpoints": 256,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0037174860008235555,
+    0.003644030999566894
+   ],
+   "warm_median_seconds": 0.003644030999566894,
+   "warm_min_seconds": 0.003644030999566894
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.003075499998885789,
+   "params": {
+    "breakpoints": 256,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 74391552.0,
+   "samples_seconds": [
+    0.003075499998885789,
+    0.0018305100002180552,
+    0.0017467479992774315
+   ],
+   "warm_median_seconds": 0.0017886289997477434,
+   "warm_min_seconds": 0.0017467479992774315
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.001476424000429688,
+   "params": {
+    "breakpoints": 256,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001476424000429688,
+    0.0015292509997379966,
+    0.001520314999652328
+   ],
+   "warm_median_seconds": 0.0015247829996951623,
+   "warm_min_seconds": 0.001520314999652328
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.0245000491268e-05,
+   "params": {
+    "breakpoints": 256,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    4.0245000491268e-05,
+    7.859000106691383e-06,
+    7.701999493292533e-06
+   ],
+   "warm_median_seconds": 7.780499799991958e-06,
+   "warm_min_seconds": 7.701999493292533e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.001385696001307224,
+   "params": {
+    "breakpoints": 256,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 257,
+   "samples_seconds": [
+    0.001385696001307224,
+    0.0017670200013526483
+   ],
+   "warm_median_seconds": 0.0017670200013526483,
+   "warm_min_seconds": 0.0017670200013526483
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.00390205599978799,
+   "params": {
+    "breakpoints": 256,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.00390205599978799,
+    0.004214657999909832
+   ],
+   "warm_median_seconds": 0.004214657999909832,
+   "warm_min_seconds": 0.004214657999909832
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0025892419998854166,
+   "params": {
+    "breakpoints": 256,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 59303253.333333336,
+   "samples_seconds": [
+    0.0025892419998854166,
+    0.0018202129995188443,
+    0.0017228850010724273
+   ],
+   "warm_median_seconds": 0.0017715490002956358,
+   "warm_min_seconds": 0.0017228850010724273
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.0037412099991342984,
+   "params": {
+    "breakpoints": 4096,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0037412099991342984,
+    0.0036293299999670126
+   ],
+   "warm_median_seconds": 0.0036293299999670126,
+   "warm_min_seconds": 0.0036293299999670126
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 7.266200009325985e-05,
+   "params": {
+    "breakpoints": 4096,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.266200009325985e-05,
+    7.368499973381404e-05
+   ],
+   "state_bytes": 229544,
+   "warm_median_seconds": 7.368499973381404e-05,
+   "warm_min_seconds": 7.368499973381404e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.0029396230002021184,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0029396230002021184,
+    0.002865550000933581,
+    0.0028032059999532066
+   ],
+   "warm_median_seconds": 0.002834378000443394,
+   "warm_min_seconds": 0.0028032059999532066
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.0598000850877725e-05,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    4.0598000850877725e-05,
+    9.015000614454038e-06,
+    9.413999578100629e-06
+   ],
+   "warm_median_seconds": 9.214500096277334e-06,
+   "warm_min_seconds": 9.015000614454038e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 9.308799963037018e-05,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    9.308799963037018e-05,
+    1.82939984370023e-05
+   ],
+   "warm_median_seconds": 1.82939984370023e-05,
+   "warm_min_seconds": 1.82939984370023e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.003786155999478069,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.003786155999478069,
+    0.003927559000658221
+   ],
+   "warm_median_seconds": 0.003927559000658221,
+   "warm_min_seconds": 0.003927559000658221
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0019552470002963673,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 1953971685148.731,
+   "samples_seconds": [
+    0.0019552470002963673,
+    0.0012322830007178709,
+    0.0010654609995981446
+   ],
+   "warm_median_seconds": 0.0011488720001580077,
+   "warm_min_seconds": 0.0010654609995981446
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.002547729000070831,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002547729000070831,
+    0.002478599999449216,
+    0.002393142000073567
+   ],
+   "warm_median_seconds": 0.0024358709997613914,
+   "warm_min_seconds": 0.002393142000073567
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.804300104093272e-05,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    3.804300104093272e-05,
+    9.453000529902056e-06,
+    7.41099938750267e-06
+   ],
+   "warm_median_seconds": 8.431999958702363e-06,
+   "warm_min_seconds": 7.41099938750267e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.022163837000334752,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 4097,
+   "samples_seconds": [
+    0.022163837000334752,
+    0.020886620000965195
+   ],
+   "warm_median_seconds": 0.020886620000965195,
+   "warm_min_seconds": 0.020886620000965195
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.003965758998674573,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.003965758998674573,
+    0.0038760119987273356
+   ],
+   "warm_median_seconds": 0.0038760119987273356,
+   "warm_min_seconds": 0.0038760119987273356
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.003236199001548812,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 1192871765.3333335,
+   "samples_seconds": [
+    0.003236199001548812,
+    0.0019480610008031363,
+    0.0017127649989561178
+   ],
+   "warm_median_seconds": 0.001830412999879627,
+   "warm_min_seconds": 0.0017127649989561178
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.002373665000050096,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002373665000050096,
+    0.002382716998909018,
+    0.0024045900008786703
+   ],
+   "warm_median_seconds": 0.002393653499893844,
+   "warm_min_seconds": 0.002382716998909018
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 3.9119999200920574e-05,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    3.9119999200920574e-05,
+    8.11600148153957e-06,
+    6.539999958476983e-06
+   ],
+   "warm_median_seconds": 7.328000720008276e-06,
+   "warm_min_seconds": 6.539999958476983e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "complete function (pieces)",
+   "first_seconds": 0.022142437999718823,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": 4097,
+   "samples_seconds": [
+    0.022142437999718823,
+    0.047549249000439886
+   ],
+   "warm_median_seconds": 0.047549249000439886,
+   "warm_min_seconds": 0.047549249000439886
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.005402021999543649,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.005402021999543649,
+    0.006122929000412114
+   ],
+   "warm_median_seconds": 0.006122929000412114,
+   "warm_min_seconds": 0.006122929000412114
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.003604988000006415,
+   "params": {
+    "breakpoints": 4096,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 954087680.0,
+   "samples_seconds": [
+    0.003604988000006415,
+    0.0020718659998237854,
+    0.0018391880003036931
+   ],
+   "warm_median_seconds": 0.0019555270000637393,
+   "warm_min_seconds": 0.0018391880003036931
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.006327369001155603,
+   "params": {
+    "breakpoints": 65536,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006327369001155603,
+    0.005098824000015156
+   ],
+   "warm_median_seconds": 0.005098824000015156,
+   "warm_min_seconds": 0.005098824000015156
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 0.0012257189991942141,
+   "params": {
+    "breakpoints": 65536,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012257189991942141,
+    0.0011920220003958093
+   ],
+   "state_bytes": 3670184,
+   "warm_median_seconds": 0.0011920220003958093,
+   "warm_min_seconds": 0.0011920220003958093
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.004799890999493073,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004799890999493073,
+    0.004350942999735707,
+    0.00412588700055494
+   ],
+   "warm_median_seconds": 0.004238415000145324,
+   "warm_min_seconds": 0.00412588700055494
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 5.069500002718996e-05,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    5.069500002718996e-05,
+    1.0791998647619039e-05,
+    9.252000381820835e-06
+   ],
+   "warm_median_seconds": 1.0021999514719937e-05,
+   "warm_min_seconds": 9.252000381820835e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.006445865999921807,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.006445865999921807,
+    0.007734594999419642
+   ],
+   "warm_median_seconds": 0.007734594999419642,
+   "warm_min_seconds": 0.007734594999419642
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0015579109985992545,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 500388505525435.6,
+   "samples_seconds": [
+    0.0015579109985992545,
+    0.0011658530002023326,
+    0.0009894289996736916
+   ],
+   "warm_median_seconds": 0.001077640999938012,
+   "warm_min_seconds": 0.0009894289996736916
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.004921913001453504,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004921913001453504,
+    0.004630835001080413,
+    0.0037720290001743706
+   ],
+   "warm_median_seconds": 0.004201432000627392,
+   "warm_min_seconds": 0.0037720290001743706
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.772700049215928e-05,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    4.772700049215928e-05,
+    1.083899951481726e-05,
+    7.873000868130475e-06
+   ],
+   "warm_median_seconds": 9.356000191473868e-06,
+   "warm_min_seconds": 7.873000868130475e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.006290882000030251,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.006290882000030251,
+    0.005955913000434521
+   ],
+   "warm_median_seconds": 0.005955913000434521,
+   "warm_min_seconds": 0.005955913000434521
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.004348382999523892,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 19088568778.666668,
+   "samples_seconds": [
+    0.004348382999523892,
+    0.0021152540011826204,
+    0.0017242619996977737
+   ],
+   "warm_median_seconds": 0.001919758000440197,
+   "warm_min_seconds": 0.0017242619996977737
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.004778529999384773,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004778529999384773,
+    0.00432406300024013,
+    0.0036982850015192525
+   ],
+   "warm_median_seconds": 0.0040111740008796914,
+   "warm_min_seconds": 0.0036982850015192525
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.4849000914837234e-05,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    4.4849000914837234e-05,
+    8.803999662632123e-06,
+    6.193999070092104e-06
+   ],
+   "warm_median_seconds": 7.4989993663621135e-06,
+   "warm_min_seconds": 6.193999070092104e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.006569913999555865,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.006569913999555865,
+    0.00584186900050554
+   ],
+   "warm_median_seconds": 0.00584186900050554,
+   "warm_min_seconds": 0.00584186900050554
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0033036280001397245,
+   "params": {
+    "breakpoints": 65536,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 15270645306.666668,
+   "samples_seconds": [
+    0.0033036280001397245,
+    0.0019430539996392326,
+    0.0017336749988317024
+   ],
+   "warm_median_seconds": 0.0018383644992354675,
+   "warm_min_seconds": 0.0017336749988317024
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "first_seconds": 0.025758623000001535,
+   "params": {
+    "breakpoints": 1048576,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.025758623000001535,
+    0.02663532199949259
+   ],
+   "warm_median_seconds": 0.02663532199949259,
+   "warm_min_seconds": 0.02663532199949259
+  },
+  {
+   "backend": "cpu",
+   "case": "prefix state (construction)",
+   "first_seconds": 0.03716865199930908,
+   "params": {
+    "breakpoints": 1048576,
+    "rows": 1048576
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03716865199930908,
+    0.03785575900110416
+   ],
+   "state_bytes": 58720424,
+   "warm_median_seconds": 0.03785575900110416,
+   "warm_min_seconds": 0.03785575900110416
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.009331133998784935,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009331133998784935,
+    0.007445074999850476,
+    0.006972950000999845
+   ],
+   "warm_median_seconds": 0.00720901250042516,
+   "warm_min_seconds": 0.006972950000999845
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 6.861099973320961e-05,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "point",
+   "samples_seconds": [
+    6.861099973320961e-05,
+    1.2283999240025878e-05,
+    8.029999662539922e-06
+   ],
+   "warm_median_seconds": 1.01569994512829e-05,
+   "warm_min_seconds": 8.029999662539922e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.04756912199991348,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.04756912199991348,
+    0.044223703000170644
+   ],
+   "warm_median_seconds": 0.044223703000170644,
+   "warm_min_seconds": 0.044223703000170644
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0013348890006454894,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "squared",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 1.281022061490167e+17,
+   "samples_seconds": [
+    0.0013348890006454894,
+    0.0009777699997357558,
+    0.000966153000263148
+   ],
+   "warm_median_seconds": 0.0009719614999994519,
+   "warm_min_seconds": 0.000966153000263148
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.008743272001083824,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008743272001083824,
+    0.006846050000604009,
+    0.006724070999553078
+   ],
+   "warm_median_seconds": 0.0067850605000785436,
+   "warm_min_seconds": 0.006724070999553078
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 5.083199903310742e-05,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "interval",
+   "samples_seconds": [
+    5.083199903310742e-05,
+    1.0063000445370562e-05,
+    7.521999577875249e-06
+   ],
+   "warm_median_seconds": 8.792500011622906e-06,
+   "warm_min_seconds": 7.521999577875249e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.0468884160000016,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0468884160000016,
+    0.04292092800096725
+   ],
+   "warm_median_seconds": 0.04292092800096725,
+   "warm_min_seconds": 0.04292092800096725
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.002698555999813834,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "abs",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 305419721842.0,
+   "samples_seconds": [
+    0.002698555999813834,
+    0.0016571529995417222,
+    0.0016969209991657408
+   ],
+   "warm_median_seconds": 0.0016770369993537315,
+   "warm_min_seconds": 0.0016571529995417222
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluate 10,000",
+   "first_seconds": 0.008621045999461785,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008621045999461785,
+    0.006806375000451226,
+    0.006243825999263208
+   ],
+   "warm_median_seconds": 0.006525100499857217,
+   "warm_min_seconds": 0.006243825999263208
+  },
+  {
+   "backend": "cpu",
+   "case": "minimizers",
+   "first_seconds": 4.5439001041813754e-05,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "run",
+   "result": "up",
+   "samples_seconds": [
+    4.5439001041813754e-05,
+    8.086999514489435e-06,
+    3.3038000765373e-05
+   ],
+   "warm_median_seconds": 2.0562500139931217e-05,
+   "warm_min_seconds": 8.086999514489435e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "one-shot (histogram + prefix + 1 theta)",
+   "first_seconds": 0.04766346300129953,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.04766346300129953,
+    0.04339244099901407
+   ],
+   "warm_median_seconds": 0.04339244099901407,
+   "warm_min_seconds": 0.04339244099901407
+  },
+  {
+   "backend": "numpy",
+   "case": "one-shot (one direct pass)",
+   "first_seconds": 0.0025213529988832306,
+   "params": {
+    "breakpoints": 1048576,
+    "loss": "hinge",
+    "rows": 1048576
+   },
+   "phase": "first",
+   "result": 244335567758.33334,
+   "samples_seconds": [
+    0.0025213529988832306,
+    0.0016873229997145245,
+    0.0016205280007852707
+   ],
+   "warm_median_seconds": 0.0016539255002498976,
+   "warm_min_seconds": 0.0016205280007852707
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (construction)",
+   "limit": 1048576,
+   "message": "histogram: needs 1048577 support, budget 1048576",
+   "need": 1048577,
+   "params": {
+    "breakpoints": 1048577,
+    "rows": 1048577
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.005174205000002985,
+   "refused": true,
+   "resource": "support"
+  }
+ ],
+ "seconds": 10.31627996699899,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget_support": 1048576,
+   "grid": "distinct breakpoints per group (support budget)",
+   "largest_admitted": {
+    "breakpoints": 1048576,
+    "rows": 1048576
+   },
+   "refused_resource": "support",
+   "smallest_refused": {
+    "breakpoints": 1048577,
+    "rows": 1048577
+   }
+  }
+ ]
+}

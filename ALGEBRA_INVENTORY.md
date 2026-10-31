@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 11 |
-| planned | 49 |
-| in_progress | 2 |
+| partial | 4 |
+| planned | 40 |
+| in_progress | 18 |
 | validated | 19 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -1337,7 +1337,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### RESP-002: Piecewise absolute and hinge loss curves
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Sorted histogram/prefix moments return complete absolute, hinge and squared-hinge loss functions over observed breakpoints.
 
@@ -1378,6 +1378,14 @@ Additional limits:
 
 - The piecewise function and minimizers are CPU; one direct pass is cheaper than building the state for a single request (measured).
 - At most 2^20 breakpoints per group with the default budget.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/RESP-002/tests_test_math_resp.json](results/math/RESP-002/tests_test_math_resp.json)
+- tests: [results/math/RESP-002/sanitized_test_math_resp.json](results/math/RESP-002/sanitized_test_math_resp.json)
+- benchmarks: [results/math/RESP-002/benchmark_cpu_math_resp_vm.json](results/math/RESP-002/benchmark_cpu_math_resp_vm.json)
 
 ## INV: Inverse queries
 
@@ -1579,7 +1587,7 @@ Distribution, count and path generating polynomials or formal series.
 
 ### GEN-001: Finite-support distribution generating polynomials
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Represent count/weight distributions as sparse or bounded dense generating polynomials; support coefficient extraction and moment operators.
 
@@ -1620,6 +1628,14 @@ Additional limits:
 
 - At most 2 variables; the device kernels take one variable, int64 inputs and 128-bit outputs (larger coefficients are CPU).
 - Powers multiply sequentially (quadratic, no FFT); the byte budget counts big-integer coefficients without allocator overhead.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/GEN-001/tests_test_math_gen.json](results/math/GEN-001/tests_test_math_gen.json)
+- tests: [results/math/GEN-001/sanitized_test_math_gen.json](results/math/GEN-001/sanitized_test_math_gen.json)
+- benchmarks: [results/math/GEN-001/benchmark_cpu_math_gen_vm.json](results/math/GEN-001/benchmark_cpu_math_gen_vm.json)
 
 <a id="gen-002"></a>
 
@@ -1666,7 +1682,7 @@ Histograms, tails, quantiles, entropy and information measures.
 
 ### DIST-001: Reusable scalar and joint histograms
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Native sparse/dense support states with counts/weights, explicit NULL/presence states and support budgets.
 
@@ -1712,11 +1728,19 @@ Additional limits:
 - Device sparse builds need the dense counting scratch over the value range to fit the budget (no device sort); merges, rollups, marginals and conversions are CPU.
 - At most 3 coordinates and 2^32-1 scope rows; the CPU sort path uses 128 bytes of scratch per row.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/DIST-001/tests_test_math_dist.json](results/math/DIST-001/tests_test_math_dist.json)
+- tests: [results/math/DIST-001/sanitized_test_math_dist.json](results/math/DIST-001/sanitized_test_math_dist.json)
+- benchmarks: [results/math/DIST-001/benchmark_cpu_math_dist_vm.json](results/math/DIST-001/benchmark_cpu_math_dist_vm.json)
+
 <a id="dist-002"></a>
 
 ### DIST-002: Prefix distribution calculus and exact quantiles
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Sorted histogram prefix counts/moments answer CDF, tails, quantiles, trimmed sums and range integrals.
 
@@ -1762,11 +1786,19 @@ Additional limits:
 - Weighted quantiles need nonnegative weights and treat each row as repeated by its weight in the column's stored integer units.
 - Prefix construction is CPU; results are exact rationals returned as (numerator, denominator).
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/DIST-002/tests_test_math_dist.json](results/math/DIST-002/tests_test_math_dist.json)
+- tests: [results/math/DIST-002/sanitized_test_math_dist.json](results/math/DIST-002/sanitized_test_math_dist.json)
+- benchmarks: [results/math/DIST-002/benchmark_cpu_math_dist_vm.json](results/math/DIST-002/benchmark_cpu_math_dist_vm.json)
+
 <a id="dist-003"></a>
 
 ### DIST-003: Entropy, mutual information and contingency transforms
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Compute information and contingency statistics on retained count support, preserving joint dependence and numerical precision.
 
@@ -1807,6 +1839,14 @@ Additional limits:
 
 - A group's total weight below 2^64; at most 3 coordinates; marginal tables, exact chi-square and request answers are CPU; no p-values; results in bits are enclosed as doubles only (exact bounds are in nats).
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/DIST-003/tests_test_math_info.json](results/math/DIST-003/tests_test_math_info.json)
+- tests: [results/math/DIST-003/sanitized_test_math_info.json](results/math/DIST-003/sanitized_test_math_info.json)
+- benchmarks: [results/math/DIST-003/benchmark_cpu_math_info_vm.json](results/math/DIST-003/benchmark_cpu_math_info_vm.json)
+
 ## PAIR: Pairwise statistics
 
 Distance, ranking and pairwise summaries without unconditional pair enumeration.
@@ -1815,7 +1855,7 @@ Distance, ranking and pairwise summaries without unconditional pair enumeration.
 
 ### PAIR-001: Sorted-distribution pairwise summaries
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Compute supported absolute-distance sums, weighted rank/AUC and one-dimensional distribution distances from sorted counts/prefix states.
 
@@ -1856,6 +1896,14 @@ Additional limits:
 
 - Each class's total mass below 2^64 (Cramer-von Mises needs a further size bound; overflow refused); KS two-sided only; with weights a self-pair is a weight unit paired with itself.
 - One thread per request: a request over near-row-sized support is long on the device.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/PAIR-001/tests_test_math_pair.json](results/math/PAIR-001/tests_test_math_pair.json)
+- tests: [results/math/PAIR-001/sanitized_test_math_pair.json](results/math/PAIR-001/sanitized_test_math_pair.json)
+- benchmarks: [results/math/PAIR-001/benchmark_cpu_math_pair_vm.json](results/math/PAIR-001/benchmark_cpu_math_pair_vm.json)
 
 <a id="pair-002"></a>
 
@@ -2249,7 +2297,7 @@ Benchmark cases:
 
 ### SPEC-002: Walsh spectra and parity correlations
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Exact Walsh-Hadamard transforms of bounded Boolean histograms expose parity and interaction coefficients.
 
@@ -2290,6 +2338,14 @@ Additional limits:
 - Correlations, truncation, evaluation and constant parities are CPU only.
 - Transforms are exact in 128 bits (refused beyond); Parseval and truncation energies must fit 256 bits.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/SPEC-002/tests_test_math_spec.json](results/math/SPEC-002/tests_test_math_spec.json)
+- tests: [results/math/SPEC-002/sanitized_test_math_spec.json](results/math/SPEC-002/sanitized_test_math_spec.json)
+- benchmarks: [results/math/SPEC-002/benchmark_cpu_math_spec_vm.json](results/math/SPEC-002/benchmark_cpu_math_spec_vm.json)
+
 ## MULTI: Multiscale analysis
 
 Hierarchy states, contrasts, adaptive refinement and localized changes.
@@ -2298,7 +2354,7 @@ Hierarchy states, contrasts, adaptive refinement and localized changes.
 
 ### MULTI-001: Hierarchy rollups and contrasts
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Use certified refinement maps for reusable coarse/fine counts, moments and Haar-like contrasts.
 
@@ -2344,6 +2400,14 @@ Additional limits:
 - Rollups and localized updates run on the CPU; contrasts are in logical units (the decimal scale is reported, not divided out).
 - Map bindings are exact copies of the id arrays for array scopes (memory proportional to rows).
 - After an update without new levels the maps are carried, not re-proven; re-certification rescans all rows.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/MULTI-001/tests_test_math_multi.json](results/math/MULTI-001/tests_test_math_multi.json)
+- tests: [results/math/MULTI-001/sanitized_test_math_multi.json](results/math/MULTI-001/sanitized_test_math_multi.json)
+- benchmarks: [results/math/MULTI-001/benchmark_cpu_math_multi_vm.json](results/math/MULTI-001/benchmark_cpu_math_multi_vm.json)
 
 <a id="multi-002"></a>
 
@@ -2546,7 +2610,7 @@ Predicate cofactors, signed/GF(2) finite differences and influence.
 
 ### BOOL-001: Predicate cofactors and finite differences
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Native Boolean cofactors produce XOR sensitivity or signed changes with an explicit encoded-variable or logical-feature domain.
 
@@ -2592,11 +2656,19 @@ Additional limits:
 - One measure over all selected rows (no per-group measures); conditions on exact-valued columns only (no string or date predicates); constants fit int64 rationals.
 - Difference order at most 20; the assignment domain at most 2^20 points with the default budget.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/BOOL-001/tests_test_math_bool.json](results/math/BOOL-001/tests_test_math_bool.json)
+- tests: [results/math/BOOL-001/sanitized_test_math_bool.json](results/math/BOOL-001/sanitized_test_math_bool.json)
+- benchmarks: [results/math/BOOL-001/benchmark_cpu_math_bool_vm.json](results/math/BOOL-001/benchmark_cpu_math_bool_vm.json)
+
 <a id="bool-002"></a>
 
 ### BOOL-002: Influence and predicate interactions
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Count dependency masks and bounded interactions under declared empirical or full-Boolean measures.
 
@@ -2637,6 +2709,14 @@ Additional limits:
 - No per-group or weighted measures.
 - With more than 20 conditions the uniform measure is refused by the default budget (measures=('empirical',) avoids it).
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/BOOL-002/tests_test_math_influence.json](results/math/BOOL-002/tests_test_math_influence.json)
+- tests: [results/math/BOOL-002/sanitized_test_math_influence.json](results/math/BOOL-002/sanitized_test_math_influence.json)
+- benchmarks: [results/math/BOOL-002/benchmark_cpu_math_influence_vm.json](results/math/BOOL-002/benchmark_cpu_math_influence_vm.json)
+
 ## LATTICE: Subset-lattice algebra
 
 Zeta/Mobius transforms, exclusive regions and inclusion-exclusion.
@@ -2645,7 +2725,7 @@ Zeta/Mobius transforms, exclusive regions and inclusion-exclusion.
 
 ### LATTICE-001: Bounded Boolean histogram state
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Group shared predicates into a bounded k-condition occupancy histogram with exact bag counts.
 
@@ -2685,11 +2765,19 @@ Additional limits:
 
 - One histogram per domain (no per-group histograms); at most 30 axes; on the device, histograms of more than 64 cells use one atomic per row.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/LATTICE-001/tests_test_math_lattice.json](results/math/LATTICE-001/tests_test_math_lattice.json)
+- tests: [results/math/LATTICE-001/sanitized_test_math_lattice.json](results/math/LATTICE-001/sanitized_test_math_lattice.json)
+- benchmarks: [results/math/LATTICE-001/benchmark_cpu_math_lattice_vm.json](results/math/LATTICE-001/benchmark_cpu_math_lattice_vm.json)
+
 <a id="lattice-002"></a>
 
 ### LATTICE-002: Zeta, Mobius and inclusion-exclusion transforms
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Transform occupancy counts into all intersections, exclusive regions and bounded coalition interactions.
 
@@ -2730,6 +2818,14 @@ Additional limits:
 - Direct coefficients, inclusion-exclusion counts and the big-integer carrier are CPU only.
 - Measured: answering 1 or 100 requests directly beats building the full transform at k = 16; the transform wins for all 2^k requests.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/LATTICE-002/tests_test_math_lattice.json](results/math/LATTICE-002/tests_test_math_lattice.json)
+- tests: [results/math/LATTICE-002/sanitized_test_math_lattice.json](results/math/LATTICE-002/sanitized_test_math_lattice.json)
+- benchmarks: [results/math/LATTICE-002/benchmark_cpu_math_lattice_vm.json](results/math/LATTICE-002/benchmark_cpu_math_lattice_vm.json)
+
 ## QUANT: Quantified queries
 
 Existential/universal predicates and category coverage.
@@ -2738,7 +2834,7 @@ Existential/universal predicates and category coverage.
 
 ### QUANT-001: Existential and universal group predicates
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Carry selected-row, qualifying-row and seen/unknown states to implement some/all/none conditions.
 
@@ -2783,11 +2879,19 @@ Additional limits:
 - Parent and child groupings must align (same key codecs and radices; checked from the key specs in Python).
 - A nullable parent key matches the child NULL group (IS NOT DISTINCT FROM semantics), declared and tested.
 
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/QUANT-001/tests_test_math_quant.json](results/math/QUANT-001/tests_test_math_quant.json)
+- tests: [results/math/QUANT-001/sanitized_test_math_quant.json](results/math/QUANT-001/sanitized_test_math_quant.json)
+- benchmarks: [results/math/QUANT-001/benchmark_cpu_math_quant_vm.json](results/math/QUANT-001/benchmark_cpu_math_quant_vm.json)
+
 <a id="quant-002"></a>
 
 ### QUANT-002: Relational division and required-category coverage
 
-Status: **planned**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Retain exact required/present category sets or bounded masks per group.
 
@@ -2827,6 +2931,14 @@ Additional limits:
 
 - A category is one group id of a single-key scope; multi-key, float, BLOB, date or timestamp categories are refused.
 - The sorted-set representation and merges are CPU only.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/QUANT-002/tests_test_math_quant.json](results/math/QUANT-002/tests_test_math_quant.json)
+- tests: [results/math/QUANT-002/sanitized_test_math_quant.json](results/math/QUANT-002/sanitized_test_math_quant.json)
+- benchmarks: [results/math/QUANT-002/benchmark_cpu_math_quant_vm.json](results/math/QUANT-002/benchmark_cpu_math_quant_vm.json)
 
 ## COUNT: Constraint counting
 
@@ -2919,7 +3031,7 @@ GF(2) dependencies, parity, ranks, codes and syndromes.
 
 ### FIELD-001: GF(2) vector and matrix primitives
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Native parity, rank, elimination, nullspaces and syndromes over packed bits with field laws separate from integer arithmetic.
 
@@ -2964,6 +3076,14 @@ Additional limits:
 
 - Dense Gauss-Jordan elimination only; rank, elimination and solving have no CUDA path.
 - Discovery handles at most 64 columns (63 variables and the constant); with NULLs, relations are exact on the complete rows only (holds is false).
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/FIELD-001/tests_test_math_field.json](results/math/FIELD-001/tests_test_math_field.json)
+- tests: [results/math/FIELD-001/sanitized_test_math_field.json](results/math/FIELD-001/sanitized_test_math_field.json)
+- benchmarks: [results/math/FIELD-001/benchmark_cpu_math_field_vm.json](results/math/FIELD-001/benchmark_cpu_math_field_vm.json)
 
 <a id="field-002"></a>
 
@@ -3704,7 +3824,7 @@ Signed changes, cross terms and maintained algebraic states.
 
 ### DELTA-001: Signed linear state updates
 
-Status: **partial**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Merge insert/delete/weight-change deltas into compatible counts and moment states with revision/proof invalidation.
 
@@ -3750,6 +3870,14 @@ Additional limits:
 - The nonnegativity check sees aggregates only: deleting a row that is absent but matches the group, validity and values of present rows cannot be detected.
 - The overflow proof is conservative (a net-zero swap of two large rows may be refused; a rebuild is the fallback); each update copies the whole state.
 - Bilinear (join) deltas are DELTA-002.
+
+Validation receipts:
+
+Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+
+- tests: [results/math/DELTA-001/tests_test_math_delta.json](results/math/DELTA-001/tests_test_math_delta.json)
+- tests: [results/math/DELTA-001/sanitized_test_math_delta.json](results/math/DELTA-001/sanitized_test_math_delta.json)
+- benchmarks: [results/math/DELTA-001/benchmark_cpu_math_delta_vm.json](results/math/DELTA-001/benchmark_cpu_math_delta_vm.json)
 
 <a id="delta-002"></a>
 

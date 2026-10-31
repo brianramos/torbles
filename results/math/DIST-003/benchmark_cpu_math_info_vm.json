@@ -1,0 +1,4033 @@
+{
+ "argv": [
+  "--capability",
+  "DIST-003",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/DIST-003/benchmark_cpu_math_info_vm.json"
+ ],
+ "capability": "DIST-003",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:21:40+00:00"
+ },
+ "notes": [
+  "cpu = math_info.c (single-threaded: the support from the histogram's states, the certified sums, the requests); cuda = math_info_gpu.cu (the per-cell terms and their exact 256-bit sums; device runs only); numpy = complete reconstruction from the rows per request in float64; duckdb = GROUP BY counts then the entropy sum in SQL (float64). Float baselines are checked inside the certified enclosures.",
+  "The histogram is the only pass over the rows (scans = 1); the information support and every request read the histogram's states (rows_scanned = 0). Requests cost O(1) each from the shared sums."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.00016343300012522377,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016343300012522377,
+    2.9827999242115766e-05
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "warm_median_seconds": 2.9827999242115766e-05,
+   "warm_min_seconds": 2.9827999242115766e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 4.7835999794187956e-05,
+   "joint_cells": 9,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    4.7835999794187956e-05,
+    3.386200114618987e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 464,
+   "table_cells": 10,
+   "warm_median_seconds": 3.386200114618987e-05,
+   "warm_min_seconds": 3.386200114618987e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.20999988616677e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.20999988616677e-05,
+    1.7856998965726234e-05,
+    1.3953000234323554e-05
+   ],
+   "warm_median_seconds": 1.5904999600024894e-05,
+   "warm_min_seconds": 1.3953000234323554e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.97999746282585e-07,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.97999746282585e-07
+   ],
+   "warm_median_seconds": 7.97999746282585e-07,
+   "warm_min_seconds": 7.97999746282585e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.0174000130500644e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.0174000130500644e-05,
+    2.546099858591333e-05,
+    2.1005998860346153e-05
+   ],
+   "warm_median_seconds": 2.3233498723129742e-05,
+   "warm_min_seconds": 2.1005998860346153e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.007386201999906916,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.007386201999906916
+   ],
+   "warm_median_seconds": 0.007386201999906916,
+   "warm_min_seconds": 0.007386201999906916
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020730260002892464,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020730260002892464,
+    0.002037105999988853,
+    0.001499793001130456
+   ],
+   "warm_median_seconds": 0.0017684495005596546,
+   "warm_min_seconds": 0.001499793001130456
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.006289257999014808,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 2.159744705119037,
+   "samples_seconds": [
+    0.006289257999014808,
+    0.002136303999577649,
+    0.0018934069994429592
+   ],
+   "warm_median_seconds": 0.002014855499510304,
+   "warm_min_seconds": 0.0018934069994429592
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 4.0131000787368976e-05,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.0131000787368976e-05,
+    2.4132001271937042e-05
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "warm_median_seconds": 2.4132001271937042e-05,
+   "warm_min_seconds": 2.4132001271937042e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 81,
+   "first_seconds": 5.983099981676787e-05,
+   "joint_cells": 81,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    5.983099981676787e-05,
+    4.634600009012502e-05
+   ],
+   "state_bytes": 456,
+   "support_bytes": 5864,
+   "table_cells": 100,
+   "warm_median_seconds": 4.634600009012502e-05,
+   "warm_min_seconds": 4.634600009012502e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.742599958262872e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.742599958262872e-05,
+    8.583001545048319e-06,
+    6.723999831592664e-06
+   ],
+   "warm_median_seconds": 7.653500688320491e-06,
+   "warm_min_seconds": 6.723999831592664e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.190010364865884e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.190010364865884e-07
+   ],
+   "warm_median_seconds": 7.190010364865884e-07,
+   "warm_min_seconds": 7.190010364865884e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.637600093497895e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.637600093497895e-05,
+    2.6273999537806958e-05,
+    2.368199966440443e-05
+   ],
+   "warm_median_seconds": 2.4977999601105694e-05,
+   "warm_min_seconds": 2.368199966440443e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.0061198349994811,
+   "params": {
+    "dims": 2,
+    "requests": 13,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.0061198349994811
+   ],
+   "warm_median_seconds": 0.0061198349994811,
+   "warm_min_seconds": 0.0061198349994811
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002013239000007161,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002013239000007161,
+    0.0023375630007649306,
+    0.0020616570000129286
+   ],
+   "warm_median_seconds": 0.0021996100003889296,
+   "warm_min_seconds": 0.0020616570000129286
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.0035723130004043924,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 4.308616110355151,
+   "samples_seconds": [
+    0.0035723130004043924,
+    0.0030215139995561913,
+    0.0019120020006084815
+   ],
+   "warm_median_seconds": 0.0024667580000823364,
+   "warm_min_seconds": 0.0019120020006084815
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 5.6210999900940806e-05,
+   "occupied": 517,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.6210999900940806e-05,
+    3.9507000110461377e-05
+   ],
+   "scans": 1,
+   "state_bytes": 17397,
+   "warm_median_seconds": 3.9507000110461377e-05,
+   "warm_min_seconds": 3.9507000110461377e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 1794,
+   "first_seconds": 0.0003114750015811296,
+   "joint_cells": 517,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0003114750015811296,
+    0.0002836520015989663
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 99312,
+   "table_cells": 788,
+   "warm_median_seconds": 0.0002836520015989663,
+   "warm_min_seconds": 0.0002836520015989663
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.30289983341936e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.30289983341936e-05,
+    4.649900074582547e-05,
+    1.0305000614607707e-05
+   ],
+   "warm_median_seconds": 2.8402000680216588e-05,
+   "warm_min_seconds": 1.0305000614607707e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.0004985000014130492,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.0004985000014130492
+   ],
+   "warm_median_seconds": 0.0004985000014130492,
+   "warm_min_seconds": 0.0004985000014130492
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.1713001337484457e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.1713001337484457e-05,
+    2.816199958033394e-05,
+    2.4529999791411683e-05
+   ],
+   "warm_median_seconds": 2.6345999685872812e-05,
+   "warm_min_seconds": 2.4529999791411683e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.005393610999817611,
+   "params": {
+    "dims": 3,
+    "requests": 9,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.005393610999817611
+   ],
+   "warm_median_seconds": 0.005393610999817611,
+   "warm_min_seconds": 0.005393610999817611
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0027587010008573998,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0027587010008573998,
+    0.0031899929999781307,
+    0.0026236490011797287
+   ],
+   "warm_median_seconds": 0.0029068210005789297,
+   "warm_min_seconds": 0.0026236490011797287
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.003611008000007132,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 6.109028128628063,
+   "samples_seconds": [
+    0.003611008000007132,
+    0.0026832349994947435,
+    0.0038994349997665267
+   ],
+   "warm_median_seconds": 0.003291334999630635,
+   "warm_min_seconds": 0.0026832349994947435
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 9.635099922888912e-05,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.635099922888912e-05,
+    3.273800030001439e-05
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "warm_median_seconds": 3.273800030001439e-05,
+   "warm_min_seconds": 3.273800030001439e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 4.3742000343627296e-05,
+   "joint_cells": 65,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    4.3742000343627296e-05,
+    3.655699947557878e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 1360,
+   "table_cells": 66,
+   "warm_median_seconds": 3.655699947557878e-05,
+   "warm_min_seconds": 3.655699947557878e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.585999861068558e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.585999861068558e-05,
+    1.3574999684351496e-05,
+    1.0857998859137297e-05
+   ],
+   "warm_median_seconds": 1.2216499271744397e-05,
+   "warm_min_seconds": 1.0857998859137297e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 8.389997674385086e-07,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.389997674385086e-07
+   ],
+   "warm_median_seconds": 8.389997674385086e-07,
+   "warm_min_seconds": 8.389997674385086e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 7.371300125669222e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.371300125669222e-05,
+    4.600500142259989e-05,
+    6.68520006001927e-05
+   ],
+   "warm_median_seconds": 5.642850101139629e-05,
+   "warm_min_seconds": 4.600500142259989e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.012022970000543864,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.012022970000543864
+   ],
+   "warm_median_seconds": 0.012022970000543864,
+   "warm_min_seconds": 0.012022970000543864
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0015674010010116035,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0015674010010116035,
+    0.002047882000624668,
+    0.0015365840008598752
+   ],
+   "warm_median_seconds": 0.0017922330007422715,
+   "warm_min_seconds": 0.0015365840008598752
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.003307098000732367,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 4.115693562381716,
+   "samples_seconds": [
+    0.003307098000732367,
+    0.002999211999849649,
+    0.0019094429990218487
+   ],
+   "warm_median_seconds": 0.002454327499435749,
+   "warm_min_seconds": 0.0019094429990218487
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 6.494499939435627e-05,
+   "occupied": 880,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.494499939435627e-05,
+    4.229399928590283e-05
+   ],
+   "scans": 1,
+   "state_bytes": 22336,
+   "warm_median_seconds": 4.229399928590283e-05,
+   "warm_min_seconds": 4.229399928590283e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 880,
+   "first_seconds": 0.00022260900004766881,
+   "joint_cells": 880,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.00022260900004766881,
+    0.00017786399985197932
+   ],
+   "state_bytes": 456,
+   "support_bytes": 58792,
+   "table_cells": 1011,
+   "warm_median_seconds": 0.00017786399985197932,
+   "warm_min_seconds": 0.00017786399985197932
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.898800059687346e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.898800059687346e-05,
+    8.916000297176652e-06,
+    7.217000529635698e-06
+   ],
+   "warm_median_seconds": 8.066500413406175e-06,
+   "warm_min_seconds": 7.217000529635698e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 8.759998308960348e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.759998308960348e-07
+   ],
+   "warm_median_seconds": 8.759998308960348e-07,
+   "warm_min_seconds": 8.759998308960348e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.8391999623854645e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.8391999623854645e-05,
+    2.6654999601305462e-05,
+    2.3950000468175858e-05
+   ],
+   "warm_median_seconds": 2.530250003474066e-05,
+   "warm_min_seconds": 2.3950000468175858e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.00341997400028049,
+   "params": {
+    "dims": 2,
+    "requests": 7,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.00341997400028049
+   ],
+   "warm_median_seconds": 0.00341997400028049,
+   "warm_min_seconds": 0.00341997400028049
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020252330014045583,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020252330014045583,
+    0.0024559339999541407,
+    0.0018714779998845188
+   ],
+   "warm_median_seconds": 0.0021637059999193298,
+   "warm_min_seconds": 0.0018714779998845188
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.003665878000902012,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 6.735120977922667,
+   "samples_seconds": [
+    0.003665878000902012,
+    0.002273265999974683,
+    0.003065490000153659
+   ],
+   "warm_median_seconds": 0.002669378000064171,
+   "warm_min_seconds": 0.002273265999974683
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.00016309199963870924,
+   "occupied": 996,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016309199963870924,
+    0.0001682050005911151
+   ],
+   "scans": 1,
+   "state_bytes": 33204,
+   "warm_median_seconds": 0.0001682050005911151,
+   "warm_min_seconds": 0.0001682050005911151
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 5578,
+   "first_seconds": 0.0007503489996452117,
+   "joint_cells": 996,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0007503489996452117,
+    0.0007268189983733464
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 328848,
+   "table_cells": 3782,
+   "warm_median_seconds": 0.0007268189983733464,
+   "warm_min_seconds": 0.0007268189983733464
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.137199903198052e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.137199903198052e-05,
+    8.160999641404487e-06,
+    6.221998773980886e-06
+   ],
+   "warm_median_seconds": 7.1914992076926865e-06,
+   "warm_min_seconds": 6.221998773980886e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.1640004231594503e-06,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.1640004231594503e-06
+   ],
+   "warm_median_seconds": 1.1640004231594503e-06,
+   "warm_min_seconds": 1.1640004231594503e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.8951000533415936e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.8951000533415936e-05,
+    2.7522999516804703e-05,
+    2.4037000912358053e-05
+   ],
+   "warm_median_seconds": 2.5780000214581378e-05,
+   "warm_min_seconds": 2.4037000912358053e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.005988537999655819,
+   "params": {
+    "dims": 3,
+    "requests": 11,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.005988537999655819
+   ],
+   "warm_median_seconds": 0.005988537999655819,
+   "warm_min_seconds": 0.005988537999655819
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002087889000904397,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002087889000904397,
+    0.0025253479998355033,
+    0.002068814999802271
+   ],
+   "warm_median_seconds": 0.002297081499818887,
+   "warm_min_seconds": 0.002068814999802271
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.003249785999287269,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 6.902210101537775,
+   "samples_seconds": [
+    0.003249785999287269,
+    0.002374531999521423,
+    0.0020883249999315012
+   ],
+   "warm_median_seconds": 0.002231428499726462,
+   "warm_min_seconds": 0.0020883249999315012
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 4.21879994974006e-05,
+   "occupied": 615,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.21879994974006e-05,
+    2.382400089118164e-05
+   ],
+   "scans": 1,
+   "state_bytes": 10791,
+   "warm_median_seconds": 2.382400089118164e-05,
+   "warm_min_seconds": 2.382400089118164e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 4.9964000936597586e-05,
+   "joint_cells": 615,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    4.9964000936597586e-05,
+    4.829699901165441e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 10160,
+   "table_cells": 616,
+   "warm_median_seconds": 4.829699901165441e-05,
+   "warm_min_seconds": 4.829699901165441e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.098499994142912e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.098499994142912e-05,
+    9.641000360716134e-06,
+    7.330001608352177e-06
+   ],
+   "warm_median_seconds": 8.485500984534156e-06,
+   "warm_min_seconds": 7.330001608352177e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.000620292001258349,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.000620292001258349
+   ],
+   "warm_median_seconds": 0.000620292001258349,
+   "warm_min_seconds": 0.000620292001258349
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.2666999686625786e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.2666999686625786e-05,
+    2.2387999706552364e-05,
+    2.0199000573484227e-05
+   ],
+   "warm_median_seconds": 2.1293500140018295e-05,
+   "warm_min_seconds": 2.0199000573484227e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.0091161229993304,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.0091161229993304
+   ],
+   "warm_median_seconds": 0.0091161229993304,
+   "warm_min_seconds": 0.0091161229993304
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002640828999574296,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002640828999574296,
+    0.003178249999109539,
+    0.0024661919997015502
+   ],
+   "warm_median_seconds": 0.0028222209994055447,
+   "warm_min_seconds": 0.0024661919997015502
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.00417155299874139,
+   "params": {
+    "dims": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 6.189133047994086,
+   "samples_seconds": [
+    0.00417155299874139,
+    0.003523540999594843,
+    0.002408987000308116
+   ],
+   "warm_median_seconds": 0.0029662639999514795,
+   "warm_min_seconds": 0.002408987000308116
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.000147315999129205,
+   "occupied": 996,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000147315999129205,
+    0.00012099500054318924
+   ],
+   "scans": 1,
+   "state_bytes": 25236,
+   "warm_median_seconds": 0.00012099500054318924,
+   "warm_min_seconds": 0.00012099500054318924
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 996,
+   "first_seconds": 0.00032509700031368993,
+   "joint_cells": 996,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.00032509700031368993,
+    0.0004148640000494197
+   ],
+   "state_bytes": 456,
+   "support_bytes": 83976,
+   "table_cells": 2237,
+   "warm_median_seconds": 0.0004148640000494197,
+   "warm_min_seconds": 0.0004148640000494197
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.910300049232319e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.910300049232319e-05,
+    1.2365999282337725e-05,
+    1.060499926097691e-05
+   ],
+   "warm_median_seconds": 1.1485499271657318e-05,
+   "warm_min_seconds": 1.060499926097691e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.0280000424245372e-06,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.0280000424245372e-06
+   ],
+   "warm_median_seconds": 1.0280000424245372e-06,
+   "warm_min_seconds": 1.0280000424245372e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 7.060999996610917e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.060999996610917e-05,
+    4.027099930681288e-05,
+    7.415599975502118e-05
+   ],
+   "warm_median_seconds": 5.7213499530917034e-05,
+   "warm_min_seconds": 4.027099930681288e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.006863312999485061,
+   "params": {
+    "dims": 2,
+    "requests": 10,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.006863312999485061
+   ],
+   "warm_median_seconds": 0.006863312999485061,
+   "warm_min_seconds": 0.006863312999485061
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0021328259990696097,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0021328259990696097,
+    0.0031339900015154853,
+    0.002907968999352306
+   ],
+   "warm_median_seconds": 0.0030209795004338957,
+   "warm_min_seconds": 0.002907968999352306
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.0034154269997088704,
+   "params": {
+    "dims": 2,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 6.902210101537775,
+   "samples_seconds": [
+    0.0034154269997088704,
+    0.0020623789987439523,
+    0.0022488160011562286
+   ],
+   "warm_median_seconds": 0.0021555974999500904,
+   "warm_min_seconds": 0.0020623789987439523
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.00016721999963920098,
+   "occupied": 1000,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016721999963920098,
+    0.00014087400086282287
+   ],
+   "scans": 1,
+   "state_bytes": 33336,
+   "warm_median_seconds": 0.00014087400086282287,
+   "warm_min_seconds": 0.00014087400086282287
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 5987,
+   "first_seconds": 0.0007531179999205051,
+   "joint_cells": 1000,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0007531179999205051,
+    0.0008181240009434987
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 381520,
+   "table_cells": 5847,
+   "warm_median_seconds": 0.0008181240009434987,
+   "warm_min_seconds": 0.0008181240009434987
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.1690998841659166e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.1690998841659166e-05,
+    9.20100137591362e-06,
+    7.026999810477719e-06
+   ],
+   "warm_median_seconds": 8.11400059319567e-06,
+   "warm_min_seconds": 7.026999810477719e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 9.57999873207882e-07,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    9.57999873207882e-07
+   ],
+   "warm_median_seconds": 9.57999873207882e-07,
+   "warm_min_seconds": 9.57999873207882e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.003100002591964e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.003100002591964e-05,
+    2.6301000616513193e-05,
+    2.463999953761231e-05
+   ],
+   "warm_median_seconds": 2.5470500077062752e-05,
+   "warm_min_seconds": 2.463999953761231e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.005750993999754428,
+   "params": {
+    "dims": 3,
+    "requests": 12,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.005750993999754428
+   ],
+   "warm_median_seconds": 0.005750993999754428,
+   "warm_min_seconds": 0.005750993999754428
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002034060000369209,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002034060000369209,
+    0.0024944649994722567,
+    0.001895966001029592
+   ],
+   "warm_median_seconds": 0.0021952155002509244,
+   "warm_min_seconds": 0.001895966001029592
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.0033066960004362045,
+   "params": {
+    "dims": 3,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 6.907755278982255,
+   "samples_seconds": [
+    0.0033066960004362045,
+    0.0020620739996957127,
+    0.001702895000562421
+   ],
+   "warm_median_seconds": 0.0018824845001290669,
+   "warm_min_seconds": 0.001702895000562421
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0004612240009009838,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004612240009009838,
+    0.00046295099855342414
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "warm_median_seconds": 0.00046295099855342414,
+   "warm_min_seconds": 0.00046295099855342414
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 3.147200004605111e-05,
+   "joint_cells": 9,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    3.147200004605111e-05,
+    2.0917999790981412e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 464,
+   "table_cells": 10,
+   "warm_median_seconds": 2.0917999790981412e-05,
+   "warm_min_seconds": 2.0917999790981412e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.943899901059922e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.943899901059922e-05,
+    1.0192999980063178e-05,
+    6.7969995143357664e-06
+   ],
+   "warm_median_seconds": 8.494999747199472e-06,
+   "warm_min_seconds": 6.7969995143357664e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 6.589998520212248e-07,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    6.589998520212248e-07
+   ],
+   "warm_median_seconds": 6.589998520212248e-07,
+   "warm_min_seconds": 6.589998520212248e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 2.8374000976327807e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    2.8374000976327807e-05,
+    2.2682999770040624e-05,
+    2.0278999727452174e-05
+   ],
+   "warm_median_seconds": 2.14809997487464e-05,
+   "warm_min_seconds": 2.0278999727452174e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.9317787679992762,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.9317787679992762
+   ],
+   "warm_median_seconds": 0.9317787679992762,
+   "warm_min_seconds": 0.9317787679992762
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0025665910015959525,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0025665910015959525,
+    0.0024822159994073445,
+    0.0016062119993875967
+   ],
+   "warm_median_seconds": 0.0020442139993974706,
+   "warm_min_seconds": 0.0016062119993875967
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.00471221699990565,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 2.1741953559171745,
+   "samples_seconds": [
+    0.00471221699990565,
+    0.0037875190009799553,
+    0.0033373919995938195
+   ],
+   "warm_median_seconds": 0.0035624555002868874,
+   "warm_min_seconds": 0.0033373919995938195
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0011852999996335711,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011852999996335711,
+    0.0012978380000276957
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "warm_median_seconds": 0.0012978380000276957,
+   "warm_min_seconds": 0.0012978380000276957
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 81,
+   "first_seconds": 0.00021123099941178225,
+   "joint_cells": 81,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.00021123099941178225,
+    0.0001589700004842598
+   ],
+   "state_bytes": 456,
+   "support_bytes": 5864,
+   "table_cells": 100,
+   "warm_median_seconds": 0.0001589700004842598,
+   "warm_min_seconds": 0.0001589700004842598
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.074299951957073e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.074299951957073e-05,
+    9.642999430070631e-06,
+    6.631000360357575e-06
+   ],
+   "warm_median_seconds": 8.136999895214103e-06,
+   "warm_min_seconds": 6.631000360357575e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.57998350309208e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.57998350309208e-07
+   ],
+   "warm_median_seconds": 7.57998350309208e-07,
+   "warm_min_seconds": 7.57998350309208e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.376700053398963e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.376700053398963e-05,
+    3.364099939062726e-05,
+    2.6013000024249777e-05
+   ],
+   "warm_median_seconds": 2.9826999707438517e-05,
+   "warm_min_seconds": 2.6013000024249777e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.8491494409990992,
+   "params": {
+    "dims": 2,
+    "requests": 13,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.8491494409990992
+   ],
+   "warm_median_seconds": 0.8491494409990992,
+   "warm_min_seconds": 0.8491494409990992
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.00305181600015203,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00305181600015203,
+    0.002734603000135394,
+    0.002710471000682446
+   ],
+   "warm_median_seconds": 0.00272253700040892,
+   "warm_min_seconds": 0.002710471000682446
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.00609340700066241,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 4.348242668857875,
+   "samples_seconds": [
+    0.00609340700066241,
+    0.004926168001475162,
+    0.004842641999857733
+   ],
+   "warm_median_seconds": 0.0048844050006664474,
+   "warm_min_seconds": 0.004842641999857733
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.00155484099923342,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00155484099923342,
+    0.0016044739986682544
+   ],
+   "scans": 1,
+   "state_bytes": 24393,
+   "warm_median_seconds": 0.0016044739986682544,
+   "warm_min_seconds": 0.0016044739986682544
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 2430,
+   "first_seconds": 0.0009376310008519795,
+   "joint_cells": 729,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0009376310008519795,
+    0.0009382240004924824
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 133232,
+   "table_cells": 1000,
+   "warm_median_seconds": 0.0009382240004924824,
+   "warm_min_seconds": 0.0009382240004924824
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.186800055729691e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.186800055729691e-05,
+    1.3952001609141007e-05,
+    9.506000424153171e-06
+   ],
+   "warm_median_seconds": 1.172900101664709e-05,
+   "warm_min_seconds": 9.506000424153171e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.970011211000383e-07,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.970011211000383e-07
+   ],
+   "warm_median_seconds": 7.970011211000383e-07,
+   "warm_min_seconds": 7.970011211000383e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 8.249199890997261e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.249199890997261e-05,
+    4.489999992074445e-05,
+    3.8854999729664996e-05
+   ],
+   "warm_median_seconds": 4.187749982520472e-05,
+   "warm_min_seconds": 3.8854999729664996e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.6046721239999897,
+   "params": {
+    "dims": 3,
+    "requests": 8,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.6046721239999897
+   ],
+   "warm_median_seconds": 0.6046721239999897,
+   "warm_min_seconds": 0.6046721239999897
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0021162020002520876,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0021162020002520876,
+    0.0020039379996887874,
+    0.0019718719995580614
+   ],
+   "warm_median_seconds": 0.0019879049996234244,
+   "warm_min_seconds": 0.0019718719995580614
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.0066883399995276704,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 6.5190006220577015,
+   "samples_seconds": [
+    0.0066883399995276704,
+    0.0049422560005041305,
+    0.00396645900036674
+   ],
+   "warm_median_seconds": 0.004454357500435435,
+   "warm_min_seconds": 0.00396645900036674
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0004611430013028439,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004611430013028439,
+    0.0004633089993149042
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "warm_median_seconds": 0.0004633089993149042,
+   "warm_min_seconds": 0.0004633089993149042
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 8.141000034811441e-05,
+   "joint_cells": 65,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    8.141000034811441e-05,
+    6.662299892923329e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 1360,
+   "table_cells": 66,
+   "warm_median_seconds": 6.662299892923329e-05,
+   "warm_min_seconds": 6.662299892923329e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.0254000850836746e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.0254000850836746e-05,
+    1.0288000339642167e-05,
+    7.458000254700892e-06
+   ],
+   "warm_median_seconds": 8.87300029717153e-06,
+   "warm_min_seconds": 7.458000254700892e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.048710644001403125,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.048710644001403125
+   ],
+   "warm_median_seconds": 0.048710644001403125,
+   "warm_min_seconds": 0.048710644001403125
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.7121000787010416e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.7121000787010416e-05,
+    2.3930999304866418e-05,
+    2.1161000404390506e-05
+   ],
+   "warm_median_seconds": 2.2545999854628462e-05,
+   "warm_min_seconds": 2.1161000404390506e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.2203784759985865,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.2203784759985865
+   ],
+   "warm_median_seconds": 1.2203784759985865,
+   "warm_min_seconds": 1.2203784759985865
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0025693530005810317,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0025693530005810317,
+    0.002640030001202831,
+    0.0023957329995027976
+   ],
+   "warm_median_seconds": 0.0025178815003528143,
+   "warm_min_seconds": 0.0023957329995027976
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.005223199001193279,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 4.148855977309469,
+   "samples_seconds": [
+    0.005223199001193279,
+    0.005188892999285599,
+    0.004527579001660342
+   ],
+   "warm_median_seconds": 0.004858236000472971,
+   "warm_min_seconds": 0.004527579001660342
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0009308299995609559,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009308299995609559,
+    0.0009172069985652342
+   ],
+   "scans": 1,
+   "state_bytes": 105961,
+   "warm_median_seconds": 0.0009172069985652342,
+   "warm_min_seconds": 0.0009172069985652342
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 4225,
+   "first_seconds": 0.0008502129985572537,
+   "joint_cells": 4225,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0008502129985572537,
+    0.0008013560000108555
+   ],
+   "state_bytes": 456,
+   "support_bytes": 272872,
+   "table_cells": 4356,
+   "warm_median_seconds": 0.0008013560000108555,
+   "warm_min_seconds": 0.0008013560000108555
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.8844000048120506e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.8844000048120506e-05,
+    9.147001037490554e-06,
+    6.325000867946073e-06
+   ],
+   "warm_median_seconds": 7.736000952718314e-06,
+   "warm_min_seconds": 6.325000867946073e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.400012691505253e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.400012691505253e-07
+   ],
+   "warm_median_seconds": 7.400012691505253e-07,
+   "warm_min_seconds": 7.400012691505253e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.5523000406101346e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.5523000406101346e-05,
+    3.3039999834727496e-05,
+    3.0283999876701273e-05
+   ],
+   "warm_median_seconds": 3.1661999855714384e-05,
+   "warm_min_seconds": 3.0283999876701273e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.8536814939998294,
+   "params": {
+    "dims": 2,
+    "requests": 13,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.8536814939998294
+   ],
+   "warm_median_seconds": 0.8536814939998294,
+   "warm_min_seconds": 0.8536814939998294
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002168866998545127,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002168866998545127,
+    0.0020092699996894225,
+    0.001952074000655557
+   ],
+   "warm_median_seconds": 0.00198067200017249,
+   "warm_min_seconds": 0.001952074000655557
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.006137919999673613,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 8.275827273975505,
+   "samples_seconds": [
+    0.006137919999673613,
+    0.0059491470001376,
+    0.004409811999721569
+   ],
+   "warm_median_seconds": 0.0051794794999295846,
+   "warm_min_seconds": 0.004409811999721569
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.007970823999130516,
+   "occupied": 81431,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007970823999130516,
+    0.0064372890010417905
+   ],
+   "scans": 1,
+   "state_bytes": 2687559,
+   "warm_median_seconds": 0.0064372890010417905,
+   "warm_min_seconds": 0.0064372890010417905
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 256968,
+   "first_seconds": 0.06499254100162943,
+   "joint_cells": 81431,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.06499254100162943,
+    0.06066600899976038
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 13843888,
+   "table_cells": 94302,
+   "warm_median_seconds": 0.06066600899976038,
+   "warm_min_seconds": 0.06066600899976038
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.895899969094899e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.895899969094899e-05,
+    9.435998435947113e-06,
+    7.0690002758055925e-06
+   ],
+   "warm_median_seconds": 8.252499355876353e-06,
+   "warm_min_seconds": 7.0690002758055925e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.750004442641512e-07,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.750004442641512e-07
+   ],
+   "warm_median_seconds": 7.750004442641512e-07,
+   "warm_min_seconds": 7.750004442641512e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.352700125309639e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.352700125309639e-05,
+    2.7887999749509618e-05,
+    2.5531999199301936e-05
+   ],
+   "warm_median_seconds": 2.6709999474405777e-05,
+   "warm_min_seconds": 2.5531999199301936e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.3357590049999999,
+   "params": {
+    "dims": 3,
+    "requests": 5,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.3357590049999999
+   ],
+   "warm_median_seconds": 0.3357590049999999,
+   "warm_min_seconds": 0.3357590049999999
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0032901380000112113,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0032901380000112113,
+    0.0030987679983809358,
+    0.0030727170014870353
+   ],
+   "warm_median_seconds": 0.0030857424999339855,
+   "warm_min_seconds": 0.0030727170014870353
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.015624867000951781,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 11.234416701112613,
+   "samples_seconds": [
+    0.015624867000951781,
+    0.011829919998490368,
+    0.011842833000628161
+   ],
+   "warm_median_seconds": 0.011836376499559265,
+   "warm_min_seconds": 0.011829919998490368
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0007998020009836182,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007998020009836182,
+    0.0007312079997063847
+   ],
+   "scans": 1,
+   "state_bytes": 17761,
+   "warm_median_seconds": 0.0007312079997063847,
+   "warm_min_seconds": 0.0007312079997063847
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 0.00013476999993145,
+   "joint_cells": 1025,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.00013476999993145,
+    0.00010156300049857236
+   ],
+   "state_bytes": 248,
+   "support_bytes": 16720,
+   "table_cells": 1026,
+   "warm_median_seconds": 0.00010156300049857236,
+   "warm_min_seconds": 0.00010156300049857236
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.802499956393149e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.802499956393149e-05,
+    1.673099905019626e-05,
+    1.1808999261120334e-05
+   ],
+   "warm_median_seconds": 1.4269999155658297e-05,
+   "warm_min_seconds": 1.1808999261120334e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.07245828099985374,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.07245828099985374
+   ],
+   "warm_median_seconds": 0.07245828099985374,
+   "warm_min_seconds": 0.07245828099985374
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 9.256100020138547e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    9.256100020138547e-05,
+    3.712299985636491e-05,
+    3.10180002998095e-05
+   ],
+   "warm_median_seconds": 3.407050007808721e-05,
+   "warm_min_seconds": 3.10180002998095e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.4458213329999126,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.4458213329999126
+   ],
+   "warm_median_seconds": 1.4458213329999126,
+   "warm_min_seconds": 1.4458213329999126
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002198457001213683,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002198457001213683,
+    0.001810210000257939,
+    0.002224857000328484
+   ],
+   "warm_median_seconds": 0.0020175335002932115,
+   "warm_min_seconds": 0.001810210000257939
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.005208263000895386,
+   "params": {
+    "dims": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 6.781587546649204,
+   "samples_seconds": [
+    0.005208263000895386,
+    0.003597451001041918,
+    0.003219262998754857
+   ],
+   "warm_median_seconds": 0.0034083569998983876,
+   "warm_min_seconds": 0.003219262998754857
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.03279992699935974,
+   "occupied": 88606,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03279992699935974,
+    0.025593510999897262
+   ],
+   "scans": 1,
+   "state_bytes": 2215486,
+   "warm_median_seconds": 0.025593510999897262,
+   "warm_min_seconds": 0.025593510999897262
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 88606,
+   "first_seconds": 0.02131551400088938,
+   "joint_cells": 88606,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.02131551400088938,
+    0.020787516001291806
+   ],
+   "state_bytes": 456,
+   "support_bytes": 5703976,
+   "table_cells": 90657,
+   "warm_median_seconds": 0.020787516001291806,
+   "warm_min_seconds": 0.020787516001291806
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.8728001022245735e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.8728001022245735e-05,
+    9.004001185530797e-06,
+    6.338999810395762e-06
+   ],
+   "warm_median_seconds": 7.67150049796328e-06,
+   "warm_min_seconds": 6.338999810395762e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 9.2699883680325e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    9.2699883680325e-07
+   ],
+   "warm_median_seconds": 9.2699883680325e-07,
+   "warm_min_seconds": 9.2699883680325e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.463400000531692e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.463400000531692e-05,
+    2.886199945351109e-05,
+    2.527699871279765e-05
+   ],
+   "warm_median_seconds": 2.706949908315437e-05,
+   "warm_min_seconds": 2.527699871279765e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.9280488130007143,
+   "params": {
+    "dims": 2,
+    "requests": 12,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.9280488130007143
+   ],
+   "warm_median_seconds": 0.9280488130007143,
+   "warm_min_seconds": 0.9280488130007143
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.003236366001146962,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.003236366001146962,
+    0.0030471560003206832,
+    0.0028037890006089583
+   ],
+   "warm_median_seconds": 0.0029254725004648208,
+   "warm_min_seconds": 0.0028037890006089583
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.013988651999170543,
+   "params": {
+    "dims": 2,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 11.292405415099637,
+   "samples_seconds": [
+    0.013988651999170543,
+    0.009751499999765656,
+    0.012999501001104363
+   ],
+   "warm_median_seconds": 0.01137550050043501,
+   "warm_min_seconds": 0.009751499999765656
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.031068246000359068,
+   "occupied": 99889,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.031068246000359068,
+    0.026568351000605617
+   ],
+   "scans": 1,
+   "state_bytes": 3296673,
+   "warm_median_seconds": 0.026568351000605617,
+   "warm_min_seconds": 0.026568351000605617
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 564910,
+   "first_seconds": 0.13851471599991783,
+   "joint_cells": 99889,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.13851471599991783,
+    0.11485387700122374
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 33007600,
+   "table_cells": 368208,
+   "warm_median_seconds": 0.11485387700122374,
+   "warm_min_seconds": 0.11485387700122374
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 7.582699981867336e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.582699981867336e-05,
+    1.1434000043664128e-05,
+    1.464300112274941e-05
+   ],
+   "warm_median_seconds": 1.3038500583206769e-05,
+   "warm_min_seconds": 1.1434000043664128e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.069993444019929e-07,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.069993444019929e-07
+   ],
+   "warm_median_seconds": 7.069993444019929e-07,
+   "warm_min_seconds": 7.069993444019929e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.693900129699614e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.693900129699614e-05,
+    2.8820999432355165e-05,
+    2.517000029911287e-05
+   ],
+   "warm_median_seconds": 2.699549986573402e-05,
+   "warm_min_seconds": 2.517000029911287e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 0.8679949280012806,
+   "params": {
+    "dims": 3,
+    "requests": 10,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.8679949280012806
+   ],
+   "warm_median_seconds": 0.8679949280012806,
+   "warm_min_seconds": 0.8679949280012806
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0029546710011345567,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0029546710011345567,
+    0.002686538000489236,
+    0.0028787259998352965
+   ],
+   "warm_median_seconds": 0.002782632000162266,
+   "warm_min_seconds": 0.002686538000489236
+  },
+  {
+   "backend": "duckdb",
+   "case": "joint entropy (DuckDB GROUP BY + sum)",
+   "first_seconds": 0.01389616900087276,
+   "params": {
+    "dims": 3,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 11.51117649854755,
+   "samples_seconds": [
+    0.01389616900087276,
+    0.009642957998948987,
+    0.01612224000018614
+   ],
+   "warm_median_seconds": 0.012882598999567563,
+   "warm_min_seconds": 0.009642957998948987
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0052782989987463225,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0052782989987463225,
+    0.005932385000050999
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "warm_median_seconds": 0.005932385000050999,
+   "warm_min_seconds": 0.005932385000050999
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 4.1260000216425397e-05,
+   "joint_cells": 9,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    4.1260000216425397e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 464,
+   "table_cells": 10,
+   "warm_median_seconds": 4.1260000216425397e-05,
+   "warm_min_seconds": 4.1260000216425397e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 8.092399912129622e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.092399912129622e-05,
+    1.103000067814719e-05,
+    6.233000021893531e-06
+   ],
+   "warm_median_seconds": 8.63150035002036e-06,
+   "warm_min_seconds": 6.233000021893531e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.3629996828967705e-06,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.3629996828967705e-06
+   ],
+   "warm_median_seconds": 1.3629996828967705e-06,
+   "warm_min_seconds": 1.3629996828967705e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.929900023853406e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.929900023853406e-05,
+    3.522400038491469e-05,
+    2.2139998691272922e-05
+   ],
+   "warm_median_seconds": 2.8681999538093805e-05,
+   "warm_min_seconds": 2.2139998691272922e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 11.952258338998945,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    11.952258338998945
+   ],
+   "warm_median_seconds": 11.952258338998945,
+   "warm_min_seconds": 11.952258338998945
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0016331229999195784,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0016331229999195784,
+    0.0016394540016335668,
+    0.0015255870002874872
+   ],
+   "warm_median_seconds": 0.001582520500960527,
+   "warm_min_seconds": 0.0015255870002874872
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.0072118449988920474,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0072118449988920474,
+    0.007440363999194233
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "warm_median_seconds": 0.007440363999194233,
+   "warm_min_seconds": 0.007440363999194233
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 81,
+   "first_seconds": 0.00014174900024954695,
+   "joint_cells": 81,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.00014174900024954695
+   ],
+   "state_bytes": 456,
+   "support_bytes": 5864,
+   "table_cells": 100,
+   "warm_median_seconds": 0.00014174900024954695,
+   "warm_min_seconds": 0.00014174900024954695
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.31240000075195e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.31240000075195e-05,
+    9.732000762596726e-06,
+    6.939000741112977e-06
+   ],
+   "warm_median_seconds": 8.335500751854852e-06,
+   "warm_min_seconds": 6.939000741112977e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 8.840015652822331e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.840015652822331e-07
+   ],
+   "warm_median_seconds": 8.840015652822331e-07,
+   "warm_min_seconds": 8.840015652822331e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.788199865084607e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.788199865084607e-05,
+    2.7104999389848672e-05,
+    2.468999991833698e-05
+   ],
+   "warm_median_seconds": 2.5897499654092826e-05,
+   "warm_min_seconds": 2.468999991833698e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 5.705784540001332,
+   "params": {
+    "dims": 2,
+    "requests": 7,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    5.705784540001332
+   ],
+   "warm_median_seconds": 5.705784540001332,
+   "warm_min_seconds": 5.705784540001332
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002020001000346383,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002020001000346383,
+    0.0020526019998214906,
+    0.0019632500006991904
+   ],
+   "warm_median_seconds": 0.0020079260002603405,
+   "warm_min_seconds": 0.0019632500006991904
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.010608184000375331,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010608184000375331,
+    0.01010308399963833
+   ],
+   "scans": 1,
+   "state_bytes": 24393,
+   "warm_median_seconds": 0.01010308399963833,
+   "warm_min_seconds": 0.01010308399963833
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 2430,
+   "first_seconds": 0.0012435190001269802,
+   "joint_cells": 729,
+   "params": {
+    "dims": 3,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0012435190001269802
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 133232,
+   "table_cells": 1000,
+   "warm_median_seconds": 0.0012435190001269802,
+   "warm_min_seconds": 0.0012435190001269802
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.843999835837167e-05,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.843999835837167e-05,
+    9.979001333704218e-06,
+    6.517999281641096e-06
+   ],
+   "warm_median_seconds": 8.248500307672657e-06,
+   "warm_min_seconds": 6.517999281641096e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 6.869995559100062e-07,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    6.869995559100062e-07
+   ],
+   "warm_median_seconds": 6.869995559100062e-07,
+   "warm_min_seconds": 6.869995559100062e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 7.303099846467376e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.303099846467376e-05,
+    3.113000093435403e-05,
+    2.6243998945574276e-05
+   ],
+   "warm_median_seconds": 2.8686999939964153e-05,
+   "warm_min_seconds": 2.6243998945574276e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 4.367924385998776,
+   "params": {
+    "dims": 3,
+    "requests": 4,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    4.367924385998776
+   ],
+   "warm_median_seconds": 4.367924385998776,
+   "warm_min_seconds": 4.367924385998776
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020907279995299177,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020907279995299177,
+    0.00222385800043412,
+    0.002695932998904027
+   ],
+   "warm_median_seconds": 0.0024598954996690736,
+   "warm_min_seconds": 0.00222385800043412
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.005631653999444097,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005631653999444097,
+    0.005297573001371347
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "warm_median_seconds": 0.005297573001371347,
+   "warm_min_seconds": 0.005297573001371347
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 9.481000051891897e-05,
+   "joint_cells": 65,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    9.481000051891897e-05
+   ],
+   "state_bytes": 248,
+   "support_bytes": 1360,
+   "table_cells": 66,
+   "warm_median_seconds": 9.481000051891897e-05,
+   "warm_min_seconds": 9.481000051891897e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.6400000175926834e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.6400000175926834e-05,
+    1.0231000487692654e-05,
+    7.1499998739454895e-06
+   ],
+   "warm_median_seconds": 8.690500180819072e-06,
+   "warm_min_seconds": 7.1499998739454895e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 6.930004019523039e-07,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    6.930004019523039e-07
+   ],
+   "warm_median_seconds": 6.930004019523039e-07,
+   "warm_min_seconds": 6.930004019523039e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.265900083235465e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.265900083235465e-05,
+    3.7065001379232854e-05,
+    2.2645999706583098e-05
+   ],
+   "warm_median_seconds": 2.9855500542907976e-05,
+   "warm_min_seconds": 2.2645999706583098e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 12.305040466999344,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    12.305040466999344
+   ],
+   "warm_median_seconds": 12.305040466999344,
+   "warm_min_seconds": 12.305040466999344
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0016358039993065177,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0016358039993065177,
+    0.0015832009994483087,
+    0.0014615649997722358
+   ],
+   "warm_median_seconds": 0.0015223829996102722,
+   "warm_min_seconds": 0.0014615649997722358
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.007466196000677883,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007466196000677883,
+    0.007330845000979025
+   ],
+   "scans": 1,
+   "state_bytes": 105961,
+   "warm_median_seconds": 0.007330845000979025,
+   "warm_min_seconds": 0.007330845000979025
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 4225,
+   "first_seconds": 0.0009609649987396551,
+   "joint_cells": 4225,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0009609649987396551
+   ],
+   "state_bytes": 456,
+   "support_bytes": 272872,
+   "table_cells": 4356,
+   "warm_median_seconds": 0.0009609649987396551,
+   "warm_min_seconds": 0.0009609649987396551
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 6.803199903515633e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.803199903515633e-05,
+    1.1101999916718341e-05,
+    8.385999535676092e-06
+   ],
+   "warm_median_seconds": 9.743999726197217e-06,
+   "warm_min_seconds": 8.385999535676092e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 8.469996828353032e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.469996828353032e-07
+   ],
+   "warm_median_seconds": 8.469996828353032e-07,
+   "warm_min_seconds": 8.469996828353032e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.7914000131422654e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.7914000131422654e-05,
+    2.778100133582484e-05,
+    2.4461998691549525e-05
+   ],
+   "warm_median_seconds": 2.6121500013687182e-05,
+   "warm_min_seconds": 2.4461998691549525e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 4.265985030000593,
+   "params": {
+    "dims": 2,
+    "requests": 6,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    4.265985030000593
+   ],
+   "warm_median_seconds": 4.265985030000593,
+   "warm_min_seconds": 4.265985030000593
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.002124896000168519,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.002124896000168519,
+    0.0020430700005817926,
+    0.0019408780008234316
+   ],
+   "warm_median_seconds": 0.001991974000702612,
+   "warm_min_seconds": 0.0019408780008234316
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.025851427999441512,
+   "occupied": 264561,
+   "params": {
+    "dims": 3,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.025851427999441512,
+    0.026187806999587337
+   ],
+   "scans": 1,
+   "state_bytes": 8730849,
+   "warm_median_seconds": 0.026187806999587337,
+   "warm_min_seconds": 0.026187806999587337
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 806358,
+   "first_seconds": 0.14889229599975806,
+   "joint_cells": 264561,
+   "params": {
+    "dims": 3,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.14889229599975806
+   ],
+   "state_bytes": 1064,
+   "support_bytes": 43144688,
+   "table_cells": 277432,
+   "warm_median_seconds": 0.14889229599975806,
+   "warm_min_seconds": 0.14889229599975806
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.000101349000033224,
+   "params": {
+    "dims": 3,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000101349000033224,
+    1.1207999705220573e-05,
+    7.360999006778002e-06
+   ],
+   "warm_median_seconds": 9.284499355999287e-06,
+   "warm_min_seconds": 7.360999006778002e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 1.1719985195668414e-06,
+   "params": {
+    "dims": 3,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.1719985195668414e-06
+   ],
+   "warm_median_seconds": 1.1719985195668414e-06,
+   "warm_min_seconds": 1.1719985195668414e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 4.215400076645892e-05,
+   "params": {
+    "dims": 3,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.215400076645892e-05,
+    2.824700095516164e-05,
+    2.3871998564573005e-05
+   ],
+   "warm_median_seconds": 2.6059499759867322e-05,
+   "warm_min_seconds": 2.3871998564573005e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.310608105000938,
+   "params": {
+    "dims": 3,
+    "requests": 7,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.310608105000938
+   ],
+   "warm_median_seconds": 7.310608105000938,
+   "warm_min_seconds": 7.310608105000938
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020824959992751246,
+   "params": {
+    "dims": 3,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020824959992751246,
+    0.0020074959993507946,
+    0.001937072000146145
+   ],
+   "warm_median_seconds": 0.00197228399974847,
+   "warm_min_seconds": 0.001937072000146145
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.00449977999960538,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00449977999960538,
+    0.004437645000507473
+   ],
+   "scans": 1,
+   "state_bytes": 17761,
+   "warm_median_seconds": 0.004437645000507473,
+   "warm_min_seconds": 0.004437645000507473
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 0,
+   "first_seconds": 0.0008552890012651915,
+   "joint_cells": 1025,
+   "params": {
+    "dims": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.0008552890012651915
+   ],
+   "state_bytes": 248,
+   "support_bytes": 16720,
+   "table_cells": 1026,
+   "warm_median_seconds": 0.0008552890012651915,
+   "warm_min_seconds": 0.0008552890012651915
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 8.01900005171774e-05,
+   "params": {
+    "dims": 1,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.01900005171774e-05,
+    1.0929999916697852e-05,
+    7.172999175963923e-06
+   ],
+   "warm_median_seconds": 9.051499546330888e-06,
+   "warm_min_seconds": 7.172999175963923e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 8.550014172215015e-07,
+   "params": {
+    "dims": 1,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.550014172215015e-07
+   ],
+   "warm_median_seconds": 8.550014172215015e-07,
+   "warm_min_seconds": 8.550014172215015e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 3.212400042684749e-05,
+   "params": {
+    "dims": 1,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.212400042684749e-05,
+    2.3103000785340555e-05,
+    2.0110001059947535e-05
+   ],
+   "warm_median_seconds": 2.1606500922644045e-05,
+   "warm_min_seconds": 2.0110001059947535e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 13.428666948000682,
+   "params": {
+    "dims": 1,
+    "requests": 20,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    13.428666948000682
+   ],
+   "warm_median_seconds": 13.428666948000682,
+   "warm_min_seconds": 13.428666948000682
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020553150006890064,
+   "params": {
+    "dims": 1,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020553150006890064,
+    0.001714183001240599,
+    0.0015093380006874213
+   ],
+   "warm_median_seconds": 0.0016117605009640101,
+   "warm_min_seconds": 0.0015093380006874213
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.04615971100065508,
+   "occupied": 607011,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04615971100065508,
+    0.03458684399993217
+   ],
+   "scans": 1,
+   "state_bytes": 15175611,
+   "warm_median_seconds": 0.03458684399993217,
+   "warm_min_seconds": 0.03458684399993217
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "contingency_cells": 607011,
+   "first_seconds": 0.1430668289995083,
+   "joint_cells": 607011,
+   "params": {
+    "dims": 2,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "rows_scanned": 0,
+   "samples_seconds": [
+    0.1430668289995083
+   ],
+   "state_bytes": 456,
+   "support_bytes": 38881896,
+   "table_cells": 609062,
+   "warm_median_seconds": 0.1430668289995083,
+   "warm_min_seconds": 0.1430668289995083
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 8.162000085576437e-05,
+   "params": {
+    "dims": 2,
+    "requests": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.162000085576437e-05,
+    1.130900091084186e-05,
+    7.072001608321443e-06
+   ],
+   "warm_median_seconds": 9.190501259581652e-06,
+   "warm_min_seconds": 7.072001608321443e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 9.619998309062794e-07,
+   "params": {
+    "dims": 2,
+    "requests": 0,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    9.619998309062794e-07
+   ],
+   "warm_median_seconds": 9.619998309062794e-07,
+   "warm_min_seconds": 9.619998309062794e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 5.934200089541264e-05,
+   "params": {
+    "dims": 2,
+    "requests": 100,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    5.934200089541264e-05,
+    2.930899972852785e-05,
+    2.503300129319541e-05
+   ],
+   "warm_median_seconds": 2.717100051086163e-05,
+   "warm_min_seconds": 2.503300129319541e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "entropy requests (reconstruction: np.unique per request)",
+   "first_seconds": 7.11374805199921,
+   "params": {
+    "dims": 2,
+    "requests": 8,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    7.11374805199921
+   ],
+   "warm_median_seconds": 7.11374805199921,
+   "warm_min_seconds": 7.11374805199921
+  },
+  {
+   "backend": "cpu",
+   "case": "requests from the shared support",
+   "first_seconds": 0.0020390720001159934,
+   "params": {
+    "dims": 2,
+    "requests": 10000,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0020390720001159934,
+    0.002001660999667365,
+    0.0019937500001105946
+   ],
+   "warm_median_seconds": 0.00199770549988898,
+   "warm_min_seconds": 0.0019937500001105946
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, one scan)",
+   "first_seconds": 0.32811046200004057,
+   "occupied": 992253,
+   "params": {
+    "dims": 3,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.32811046200004057,
+    0.3306096020005498
+   ],
+   "scans": 1,
+   "state_bytes": 32744685,
+   "warm_median_seconds": 0.3306096020005498,
+   "warm_min_seconds": 0.3306096020005498
+  },
+  {
+   "backend": "cpu",
+   "case": "information support + certified sums",
+   "limit": 268435456,
+   "message": "information support: needs 374578508 bytes, budget 268435456",
+   "need": 374578508,
+   "params": {
+    "dims": 3,
+    "first_stage": {
+     "bytes": 99225308,
+     "states": 992253,
+     "variables": 3
+    },
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.942312185999981,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "exact chi-square (FND-009 big rationals)",
+   "denominator_bits": 131,
+   "first_seconds": 0.0028955889993085293,
+   "params": {
+    "rows": 20000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028955889993085293,
+    0.00019990100008726586
+   ],
+   "warm_median_seconds": 0.00019990100008726586,
+   "warm_min_seconds": 0.00019990100008726586
+  },
+  {
+   "backend": "cpu",
+   "case": "exact chi-square (FND-009 big rationals)",
+   "denominator_bits": 393,
+   "first_seconds": 0.0005862549987796228,
+   "params": {
+    "rows": 20000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005862549987796228,
+    0.00045870000030845404
+   ],
+   "warm_median_seconds": 0.00045870000030845404,
+   "warm_min_seconds": 0.00045870000030845404
+  },
+  {
+   "backend": "cpu",
+   "case": "exact chi-square over the default bytes budget",
+   "limit": 1024,
+   "message": "exact chi_square: needs 22784 bytes, budget 1024",
+   "need": 22784,
+   "params": {
+    "support": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 5.96249992668163e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "near-row-sized support (support + sums)",
+   "first_seconds": 0.49571684599868604,
+   "joint_cells": 1000000,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.49571684599868604
+   ],
+   "support_bytes": 89174856,
+   "warm_median_seconds": 0.49571684599868604,
+   "warm_min_seconds": 0.49571684599868604
+  },
+  {
+   "backend": "cpu",
+   "case": "near-row-sized support: 10,000 requests",
+   "first_seconds": 0.001958790000571753,
+   "params": {
+    "requests": 10000,
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001958790000571753,
+    0.0019151120013702894,
+    0.001891260000775219
+   ],
+   "warm_median_seconds": 0.0019031860010727542,
+   "warm_min_seconds": 0.001891260000775219
+  },
+  {
+   "backend": "cpu",
+   "case": "structural zeros (even values)",
+   "first_seconds": 0.001571941000293009,
+   "params": {
+    "histogram_cells": 4096,
+    "repr": "sparse",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001571941000293009,
+    0.0015655450006306637
+   ],
+   "warm_median_seconds": 0.0015655450006306637,
+   "warm_min_seconds": 0.0015655450006306637
+  },
+  {
+   "backend": "cpu",
+   "case": "structural zeros (even values)",
+   "first_seconds": 0.001591367001310573,
+   "params": {
+    "histogram_cells": 8184,
+    "repr": "dense",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001591367001310573,
+    0.0016781680005806265
+   ],
+   "warm_median_seconds": 0.0016781680005806265,
+   "warm_min_seconds": 0.0016781680005806265
+  }
+ ],
+ "seconds": 84.9196271919991,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget_bytes": 268435456,
+   "grid": "information support under a 2^28-byte budget",
+   "largest_admitted": {
+    "bytes": 43144688,
+    "dims": 3,
+    "rows": 1000000,
+    "support": 64
+   },
+   "smallest_refused": {
+    "bytes": 374578508,
+    "dims": 3,
+    "first_stage": {
+     "bytes": 99225308,
+     "states": 992253,
+     "variables": 3
+    },
+    "resource": "bytes",
+    "rows": 1000000,
+    "support": 1024
+   }
+  }
+ ]
+}

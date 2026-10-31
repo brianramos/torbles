@@ -1,0 +1,3099 @@
+{
+ "argv": [
+  "--capability",
+  "DELTA-001",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/DELTA-001/benchmark_cpu_math_delta_vm.json"
+ ],
+ "capability": "DELTA-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:33:32+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_delta.c (single-threaded), cuda = math_delta_gpu.cu (device runs only), reconstruction = the FND-004 scope and bank of the updated rows (math_bank.c), duckdb = GROUP BY with SUM(weight * term) in HUGEINT over the updated bag (DuckDB's own threads).",
+  "An update costs the delta's rows times the terms plus one copy of the state's cells (groups x terms: the new state is an independent immutable object); it does not depend on the rows of the state. A reconstruction rescans every row. The initial build is timed apart from each update.",
+  "Group moves are a delete and an insert of the moved rows: a batch of k moves is 2k delta rows; the move frequency changes the touched groups, not the work per row.",
+  "Bilinear joins (one versus both changing sides of a join) belong to DELTA-002 (a later wave): DELTA-001 maintains linear (single-table) states, so the join cases of the inventory's second benchmark case are not measured here; the group-move frequency and the comparison of every update with complete reconstruction, refusals and rebuilds included, are."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.0008010090004972881,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008010090004972881,
+    0.00012278600115678273
+   ],
+   "warm_median_seconds": 0.00012278600115678273,
+   "warm_min_seconds": 0.00012278600115678273
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 0.00018232199909107294,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00018232199909107294,
+    0.0001667989999987185
+   ],
+   "warm_median_seconds": 0.0001667989999987185,
+   "warm_min_seconds": 0.0001667989999987185
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 0.0002459190000081435,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002459190000081435,
+    4.2162000681855716e-05
+   ],
+   "state_bytes": 31532,
+   "warm_median_seconds": 4.2162000681855716e-05,
+   "warm_min_seconds": 4.2162000681855716e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.021299981919583e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.021299981919583e-05,
+    5.233999945630785e-05,
+    4.2646001020330004e-05
+   ],
+   "warm_median_seconds": 4.749300023831893e-05,
+   "warm_min_seconds": 4.2646001020330004e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.0588000552379526e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0588000552379526e-05,
+    2.1031999494880438e-05,
+    1.2422999134287238e-05
+   ],
+   "warm_median_seconds": 1.6727499314583838e-05,
+   "warm_min_seconds": 1.2422999134287238e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0003338010010338621,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003338010010338621,
+    0.00023719199998595286
+   ],
+   "warm_median_seconds": 0.00023719199998595286,
+   "warm_min_seconds": 0.00023719199998595286
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.302700083120726e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.302700083120726e-05,
+    4.1152999983751215e-05,
+    3.4660000892472453e-05
+   ],
+   "warm_median_seconds": 3.7906500438111834e-05,
+   "warm_min_seconds": 3.4660000892472453e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.7821999790612608e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7821999790612608e-05,
+    1.4508999811368994e-05,
+    1.2395999874570407e-05
+   ],
+   "warm_median_seconds": 1.34524998429697e-05,
+   "warm_min_seconds": 1.2395999874570407e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0006930210001883097,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006930210001883097,
+    0.0003295360002084635
+   ],
+   "warm_median_seconds": 0.0003295360002084635,
+   "warm_min_seconds": 0.0003295360002084635
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00022808600078860763,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00022808600078860763,
+    0.00018243500016978942,
+    0.000141423999593826
+   ],
+   "warm_median_seconds": 0.00016192949988180771,
+   "warm_min_seconds": 0.000141423999593826
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.73920014075702e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.73920014075702e-05,
+    9.828499969444238e-05,
+    8.368799899471924e-05
+   ],
+   "warm_median_seconds": 9.098649934458081e-05,
+   "warm_min_seconds": 8.368799899471924e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0004439250005816575,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004439250005816575,
+    0.00030027699904167093
+   ],
+   "warm_median_seconds": 0.00030027699904167093,
+   "warm_min_seconds": 0.00030027699904167093
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013371294000535272,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013371294000535272,
+    0.0063597919997846475
+   ],
+   "warm_median_seconds": 0.0063597919997846475,
+   "warm_min_seconds": 0.0063597919997846475
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014898799963702913,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014898799963702913,
+    4.966899905411992e-05,
+    6.269699952099472e-05
+   ],
+   "warm_median_seconds": 5.618299928755732e-05,
+   "warm_min_seconds": 4.966899905411992e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.9877999875461683e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.9877999875461683e-05,
+    1.2443000741768628e-05,
+    9.585999578121118e-06
+   ],
+   "warm_median_seconds": 1.1014500159944873e-05,
+   "warm_min_seconds": 9.585999578121118e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00024034300076891668,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00024034300076891668,
+    0.00025235300017811824
+   ],
+   "warm_median_seconds": 0.00025235300017811824,
+   "warm_min_seconds": 0.00025235300017811824
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 6.011299956298899e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.011299956298899e-05,
+    3.871900116791949e-05,
+    3.1629999284632504e-05
+   ],
+   "warm_median_seconds": 3.5174500226275995e-05,
+   "warm_min_seconds": 3.1629999284632504e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.839200012909714e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.839200012909714e-05,
+    1.265299943042919e-05,
+    1.091499871108681e-05
+   ],
+   "warm_median_seconds": 1.1783999070758e-05,
+   "warm_min_seconds": 1.091499871108681e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00022686500051349867,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022686500051349867,
+    0.00019807900025625713
+   ],
+   "warm_median_seconds": 0.00019807900025625713,
+   "warm_min_seconds": 0.00019807900025625713
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00020589999985531904,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00020589999985531904,
+    0.00017344199841318186,
+    0.00013914000010117888
+   ],
+   "warm_median_seconds": 0.00015629099925718037,
+   "warm_min_seconds": 0.00013914000010117888
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.316400064562913e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.316400064562913e-05,
+    8.963499931269325e-05,
+    9.29729994822992e-05
+   ],
+   "warm_median_seconds": 9.130399939749623e-05,
+   "warm_min_seconds": 8.963499931269325e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0001387129996146541,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001387129996146541,
+    0.00010674100121832453
+   ],
+   "warm_median_seconds": 0.00010674100121832453,
+   "warm_min_seconds": 0.00010674100121832453
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.005518277999726706,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005518277999726706,
+    0.005609429999822169
+   ],
+   "warm_median_seconds": 0.005609429999822169,
+   "warm_min_seconds": 0.005609429999822169
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00010160700003325474,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010160700003325474,
+    4.719900061900262e-05,
+    3.332000051159412e-05
+   ],
+   "warm_median_seconds": 4.025950056529837e-05,
+   "warm_min_seconds": 3.332000051159412e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.8107999494532123e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8107999494532123e-05,
+    1.2405000234139152e-05,
+    9.877001502900384e-06
+   ],
+   "warm_median_seconds": 1.1141000868519768e-05,
+   "warm_min_seconds": 9.877001502900384e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0002219119996880181,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002219119996880181,
+    0.00022029199863027316
+   ],
+   "warm_median_seconds": 0.00022029199863027316,
+   "warm_min_seconds": 0.00022029199863027316
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.7068000387516804e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.7068000387516804e-05,
+    3.501099854474887e-05,
+    2.978899829031434e-05
+   ],
+   "warm_median_seconds": 3.2399998417531606e-05,
+   "warm_min_seconds": 2.978899829031434e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.7061999794095755e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7061999794095755e-05,
+    1.7017999198287725e-05,
+    1.1652999091893435e-05
+   ],
+   "warm_median_seconds": 1.433549914509058e-05,
+   "warm_min_seconds": 1.1652999091893435e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00028105300043534953,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00028105300043534953,
+    0.00022567700034414884
+   ],
+   "warm_median_seconds": 0.00022567700034414884,
+   "warm_min_seconds": 0.00022567700034414884
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00017961699995794334,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00017961699995794334,
+    0.00021816200023749843,
+    0.00017913900046551134
+   ],
+   "warm_median_seconds": 0.0001986505003515049,
+   "warm_min_seconds": 0.00017913900046551134
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.000102742998933536,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000102742998933536,
+    9.490600132266991e-05,
+    9.067200153367594e-05
+   ],
+   "warm_median_seconds": 9.278900142817292e-05,
+   "warm_min_seconds": 9.067200153367594e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0003065509990847204,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003065509990847204,
+    0.0003396219999558525
+   ],
+   "warm_median_seconds": 0.0003396219999558525,
+   "warm_min_seconds": 0.0003396219999558525
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.005157605999556836,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005157605999556836,
+    0.005345906000002287
+   ],
+   "warm_median_seconds": 0.005345906000002287,
+   "warm_min_seconds": 0.005345906000002287
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.949199971335474e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.949199971335474e-05,
+    4.4812999476562254e-05,
+    3.38100016961107e-05
+   ],
+   "warm_median_seconds": 3.931150058633648e-05,
+   "warm_min_seconds": 3.38100016961107e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.129800122929737e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.129800122929737e-05,
+    1.1665999409160577e-05,
+    9.231000149156898e-06
+   ],
+   "warm_median_seconds": 1.0448499779158738e-05,
+   "warm_min_seconds": 9.231000149156898e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0002498009998816997,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002498009998816997,
+    0.0002021510008489713
+   ],
+   "warm_median_seconds": 0.0002021510008489713,
+   "warm_min_seconds": 0.0002021510008489713
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 6.354900142468978e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.354900142468978e-05,
+    4.718200034403708e-05,
+    3.401200046937447e-05
+   ],
+   "warm_median_seconds": 4.0597000406705774e-05,
+   "warm_min_seconds": 3.401200046937447e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.0466999558266252e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0466999558266252e-05,
+    1.5011000868980773e-05,
+    1.3512999430531636e-05
+   ],
+   "warm_median_seconds": 1.4262000149756204e-05,
+   "warm_min_seconds": 1.3512999430531636e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.000286565000351402,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000286565000351402,
+    0.00020794699958059937
+   ],
+   "warm_median_seconds": 0.00020794699958059937,
+   "warm_min_seconds": 0.00020794699958059937
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0003263460002926877,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003263460002926877,
+    0.00034204799885628745,
+    0.0002877389997593127
+   ],
+   "warm_median_seconds": 0.0003148934993078001,
+   "warm_min_seconds": 0.0002877389997593127
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00017945900071936194,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017945900071936194,
+    0.0002054859996860614,
+    0.00018095099949277937
+   ],
+   "warm_median_seconds": 0.0001932184995894204,
+   "warm_min_seconds": 0.00018095099949277937
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0002525849995436147,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002525849995436147,
+    0.00021074600044812541
+   ],
+   "warm_median_seconds": 0.00021074600044812541,
+   "warm_min_seconds": 0.00021074600044812541
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.006836765000116429,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006836765000116429,
+    0.005796252999061835
+   ],
+   "warm_median_seconds": 0.005796252999061835,
+   "warm_min_seconds": 0.005796252999061835
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 5.052699998486787e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 1001, have 10",
+   "samples_seconds": [
+    5.052699998486787e-05,
+    1.743199936754536e-05,
+    1.3644999853568152e-05
+   ],
+   "warm_median_seconds": 1.5538499610556755e-05,
+   "warm_min_seconds": 1.3644999853568152e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.0033993770011875313,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0033993770011875313,
+    0.0033802690013544634
+   ],
+   "warm_median_seconds": 0.0033802690013544634,
+   "warm_min_seconds": 0.0033802690013544634
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 0.005712130001484184,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005712130001484184,
+    0.005719676999433432
+   ],
+   "warm_median_seconds": 0.005719676999433432,
+   "warm_min_seconds": 0.005719676999433432
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 0.00035976800063508563,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00035976800063508563,
+    0.0016782629991212161
+   ],
+   "state_bytes": 2122908,
+   "warm_median_seconds": 0.0016782629991212161,
+   "warm_min_seconds": 0.0016782629991212161
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00010527499944146257,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010527499944146257,
+    4.93930001539411e-05,
+    3.404999915801454e-05
+   ],
+   "warm_median_seconds": 4.172149965597782e-05,
+   "warm_min_seconds": 3.404999915801454e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.898700065794401e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.898700065794401e-05,
+    1.3452001439873129e-05,
+    9.997000233852305e-06
+   ],
+   "warm_median_seconds": 1.1724500836862717e-05,
+   "warm_min_seconds": 9.997000233852305e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.011655742999209906,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011655742999209906,
+    0.009888124999633874
+   ],
+   "warm_median_seconds": 0.009888124999633874,
+   "warm_min_seconds": 0.009888124999633874
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00015483599963772576,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015483599963772576,
+    4.9701000534696504e-05,
+    3.5091001336695626e-05
+   ],
+   "warm_median_seconds": 4.2396000935696065e-05,
+   "warm_min_seconds": 3.5091001336695626e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.2505999368149787e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2505999368149787e-05,
+    1.6908999896259047e-05,
+    1.1856000128318556e-05
+   ],
+   "warm_median_seconds": 1.4382500012288801e-05,
+   "warm_min_seconds": 1.1856000128318556e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.009356364000268513,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009356364000268513,
+    0.009882416001346428
+   ],
+   "warm_median_seconds": 0.009882416001346428,
+   "warm_min_seconds": 0.009882416001346428
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00023210600011225324,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00023210600011225324,
+    0.0001892119998956332,
+    0.00014931900113879237
+   ],
+   "warm_median_seconds": 0.00016926550051721279,
+   "warm_min_seconds": 0.00014931900113879237
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00013322300037543755,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013322300037543755,
+    0.00010979000035149511,
+    0.00016191699978662655
+   ],
+   "warm_median_seconds": 0.00013585350006906083,
+   "warm_min_seconds": 0.00010979000035149511
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00880091200087918,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00880091200087918,
+    0.009319086000687093
+   ],
+   "warm_median_seconds": 0.009319086000687093,
+   "warm_min_seconds": 0.009319086000687093
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.02080327299881901,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02080327299881901,
+    0.021331338999516447
+   ],
+   "warm_median_seconds": 0.021331338999516447,
+   "warm_min_seconds": 0.021331338999516447
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00010298099914507475,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010298099914507475,
+    4.245099989930168e-05,
+    3.333400127303321e-05
+   ],
+   "warm_median_seconds": 3.7892500586167444e-05,
+   "warm_min_seconds": 3.333400127303321e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.2095000531408004e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2095000531408004e-05,
+    1.2797001545550302e-05,
+    9.338999007013626e-06
+   ],
+   "warm_median_seconds": 1.1068000276281964e-05,
+   "warm_min_seconds": 9.338999007013626e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00917580200075463,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00917580200075463,
+    0.008864897001330974
+   ],
+   "warm_median_seconds": 0.008864897001330974,
+   "warm_min_seconds": 0.008864897001330974
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00010498499977984466,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010498499977984466,
+    4.653699943446554e-05,
+    3.242299862904474e-05
+   ],
+   "warm_median_seconds": 3.947999903175514e-05,
+   "warm_min_seconds": 3.242299862904474e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.6914000045508146e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.6914000045508146e-05,
+    1.8296999769518152e-05,
+    1.1277001249254681e-05
+   ],
+   "warm_median_seconds": 1.4787000509386417e-05,
+   "warm_min_seconds": 1.1277001249254681e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00875683500089508,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00875683500089508,
+    0.005816030999994837
+   ],
+   "warm_median_seconds": 0.005816030999994837,
+   "warm_min_seconds": 0.005816030999994837
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00016969199896266218,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016969199896266218,
+    0.00012182800128357485,
+    0.00010155900054087397
+   ],
+   "warm_median_seconds": 0.00011169350091222441,
+   "warm_min_seconds": 0.00010155900054087397
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 6.330600081128068e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.330600081128068e-05,
+    5.424499977380037e-05,
+    5.096299901197199e-05
+   ],
+   "warm_median_seconds": 5.260399939288618e-05,
+   "warm_min_seconds": 5.096299901197199e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.005673002000548877,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005673002000548877,
+    0.005533850000574603
+   ],
+   "warm_median_seconds": 0.005533850000574603,
+   "warm_min_seconds": 0.005533850000574603
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013095711999994819,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013095711999994819,
+    0.015838244999031303
+   ],
+   "warm_median_seconds": 0.015838244999031303,
+   "warm_min_seconds": 0.015838244999031303
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00011053100024582818,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011053100024582818,
+    4.433899994182866e-05,
+    2.9653001547558233e-05
+   ],
+   "warm_median_seconds": 3.699600074469345e-05,
+   "warm_min_seconds": 2.9653001547558233e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.117000076395925e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.117000076395925e-05,
+    1.076199987437576e-05,
+    7.067999831633642e-06
+   ],
+   "warm_median_seconds": 8.914999853004701e-06,
+   "warm_min_seconds": 7.067999831633642e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.005802943000162486,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005802943000162486,
+    0.0073182200012524845
+   ],
+   "warm_median_seconds": 0.0073182200012524845,
+   "warm_min_seconds": 0.0073182200012524845
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.762399945931975e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.762399945931975e-05,
+    3.173899858666118e-05,
+    2.7071000658906996e-05
+   ],
+   "warm_median_seconds": 2.940499962278409e-05,
+   "warm_min_seconds": 2.7071000658906996e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.241600122943055e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.241600122943055e-05,
+    1.2045000403304584e-05,
+    8.319999324157834e-06
+   ],
+   "warm_median_seconds": 1.018249986373121e-05,
+   "warm_min_seconds": 8.319999324157834e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.006031077000443474,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006031077000443474,
+    0.007986926999365096
+   ],
+   "warm_median_seconds": 0.007986926999365096,
+   "warm_min_seconds": 0.007986926999365096
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0001746220004861243,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001746220004861243,
+    0.00012450299982447177,
+    0.00010501100041437894
+   ],
+   "warm_median_seconds": 0.00011475700011942536,
+   "warm_min_seconds": 0.00010501100041437894
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.189000098151155e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.189000098151155e-05,
+    5.8538000303087756e-05,
+    5.339600102161057e-05
+   ],
+   "warm_median_seconds": 5.5967000662349164e-05,
+   "warm_min_seconds": 5.339600102161057e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.005853914000908844,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005853914000908844,
+    0.006251793000046746
+   ],
+   "warm_median_seconds": 0.006251793000046746,
+   "warm_min_seconds": 0.006251793000046746
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.015264507999745547,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015264507999745547,
+    0.01659411699984048
+   ],
+   "warm_median_seconds": 0.01659411699984048,
+   "warm_min_seconds": 0.01659411699984048
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00011409900071157608,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011409900071157608,
+    6.7928000134998e-05,
+    4.63760006823577e-05
+   ],
+   "warm_median_seconds": 5.715200040867785e-05,
+   "warm_min_seconds": 4.63760006823577e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.8351998480502516e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8351998480502516e-05,
+    1.5424999219249003e-05,
+    9.580000551068224e-06
+   ],
+   "warm_median_seconds": 1.2502499885158613e-05,
+   "warm_min_seconds": 9.580000551068224e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.009391616000357317,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009391616000357317,
+    0.009202446000927011
+   ],
+   "warm_median_seconds": 0.009202446000927011,
+   "warm_min_seconds": 0.009202446000927011
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 9.458800013817381e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.458800013817381e-05,
+    4.9536998631083407e-05,
+    3.757800004677847e-05
+   ],
+   "warm_median_seconds": 4.355749933893094e-05,
+   "warm_min_seconds": 3.757800004677847e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.8591000955202617e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8591000955202617e-05,
+    6.59969991829712e-05,
+    2.7333000616636127e-05
+   ],
+   "warm_median_seconds": 4.666499989980366e-05,
+   "warm_min_seconds": 2.7333000616636127e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00808232099916495,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00808232099916495,
+    0.008057869999902323
+   ],
+   "warm_median_seconds": 0.008057869999902323,
+   "warm_min_seconds": 0.008057869999902323
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00034470200080249924,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00034470200080249924,
+    0.0002850660002877703,
+    0.00023079799939296208
+   ],
+   "warm_median_seconds": 0.0002579319998403662,
+   "warm_min_seconds": 0.00023079799939296208
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00011728199933713768,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011728199933713768,
+    9.830199996940792e-05,
+    0.0001190350012620911
+   ],
+   "warm_median_seconds": 0.00010866850061574951,
+   "warm_min_seconds": 9.830199996940792e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.005546606000280008,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005546606000280008,
+    0.0061562530008814065
+   ],
+   "warm_median_seconds": 0.0061562530008814065,
+   "warm_min_seconds": 0.0061562530008814065
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013950951999504468,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013950951999504468,
+    0.012687231001109467
+   ],
+   "warm_median_seconds": 0.012687231001109467,
+   "warm_min_seconds": 0.012687231001109467
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 2.8528000257210806e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 100001, have 1503",
+   "samples_seconds": [
+    2.8528000257210806e-05,
+    2.090599991788622e-05,
+    9.202998626278713e-06
+   ],
+   "warm_median_seconds": 1.5054499272082467e-05,
+   "warm_min_seconds": 9.202998626278713e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.02921332500045537,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02921332500045537,
+    0.02635651199852873
+   ],
+   "warm_median_seconds": 0.02635651199852873,
+   "warm_min_seconds": 0.02635651199852873
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 0.03811798900096619,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03811798900096619,
+    0.04443156800152792
+   ],
+   "warm_median_seconds": 0.04443156800152792,
+   "warm_min_seconds": 0.04443156800152792
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 0.00495440799932112,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00495440799932112,
+    0.013085528998999507
+   ],
+   "state_bytes": 21135404,
+   "warm_median_seconds": 0.013085528998999507,
+   "warm_min_seconds": 0.013085528998999507
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00018027399892162066,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00018027399892162066,
+    3.515399839670863e-05,
+    2.3519000023952685e-05
+   ],
+   "warm_median_seconds": 2.9336499210330658e-05,
+   "warm_min_seconds": 2.3519000023952685e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.146099905075971e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.146099905075971e-05,
+    1.0859999747481197e-05,
+    6.628000846831128e-06
+   ],
+   "warm_median_seconds": 8.744000297156163e-06,
+   "warm_min_seconds": 6.628000846831128e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.14331167799900868,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.14331167799900868,
+    0.06894817800093733
+   ],
+   "warm_median_seconds": 0.06894817800093733,
+   "warm_min_seconds": 0.06894817800093733
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0001880609997897409,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001880609997897409,
+    3.875400034303311e-05,
+    2.614799996081274e-05
+   ],
+   "warm_median_seconds": 3.2451000151922926e-05,
+   "warm_min_seconds": 2.614799996081274e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.459900133544579e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.459900133544579e-05,
+    2.045700057351496e-05,
+    8.834000254864804e-06
+   ],
+   "warm_median_seconds": 1.4645500414189883e-05,
+   "warm_min_seconds": 8.834000254864804e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06914799700098229,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06914799700098229,
+    0.08488106799995876
+   ],
+   "warm_median_seconds": 0.08488106799995876,
+   "warm_min_seconds": 0.08488106799995876
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0002716269991651643,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002716269991651643,
+    0.00016225400031544268,
+    0.0001179430000775028
+   ],
+   "warm_median_seconds": 0.00014009850019647274,
+   "warm_min_seconds": 0.0001179430000775028
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 6.952500007173512e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.952500007173512e-05,
+    5.573499947786331e-05,
+    5.204999979468994e-05
+   ],
+   "warm_median_seconds": 5.3892499636276625e-05,
+   "warm_min_seconds": 5.204999979468994e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06809771400003228,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06809771400003228,
+    0.08255791500050691
+   ],
+   "warm_median_seconds": 0.08255791500050691,
+   "warm_min_seconds": 0.08255791500050691
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.15886891599984665,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.15886891599984665,
+    0.14671300200097903
+   ],
+   "warm_median_seconds": 0.14671300200097903,
+   "warm_min_seconds": 0.14671300200097903
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0001247630007128464,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001247630007128464,
+    3.2932999602053314e-05,
+    2.296899947396014e-05
+   ],
+   "warm_median_seconds": 2.7950999538006727e-05,
+   "warm_min_seconds": 2.296899947396014e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.056499943137169e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.056499943137169e-05,
+    1.0699000995373353e-05,
+    6.866999683552422e-06
+   ],
+   "warm_median_seconds": 8.783000339462887e-06,
+   "warm_min_seconds": 6.866999683552422e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06501067099998181,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06501067099998181,
+    0.06360297200080822
+   ],
+   "warm_median_seconds": 0.06360297200080822,
+   "warm_min_seconds": 0.06360297200080822
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00012616599997272715,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012616599997272715,
+    3.845900027954485e-05,
+    5.928000064159278e-05
+   ],
+   "warm_median_seconds": 4.8869500460568815e-05,
+   "warm_min_seconds": 3.845900027954485e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.7450001653051004e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.7450001653051004e-05,
+    1.4119999832473695e-05,
+    9.264000254916027e-06
+   ],
+   "warm_median_seconds": 1.1692000043694861e-05,
+   "warm_min_seconds": 9.264000254916027e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06532851700103492,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06532851700103492,
+    0.06329018699943845
+   ],
+   "warm_median_seconds": 0.06329018699943845,
+   "warm_min_seconds": 0.06329018699943845
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0002336529996682657,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002336529996682657,
+    0.0001569699998071883,
+    0.00014318700050353073
+   ],
+   "warm_median_seconds": 0.0001500785001553595,
+   "warm_min_seconds": 0.00014318700050353073
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 6.926599962753244e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.926599962753244e-05,
+    5.646700083161704e-05,
+    5.198799954087008e-05
+   ],
+   "warm_median_seconds": 5.422750018624356e-05,
+   "warm_min_seconds": 5.198799954087008e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06387849699967774,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06387849699967774,
+    0.06793902599929424
+   ],
+   "warm_median_seconds": 0.06793902599929424,
+   "warm_min_seconds": 0.06793902599929424
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.06915346299865632,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06915346299865632,
+    0.06783263999932387
+   ],
+   "warm_median_seconds": 0.06783263999932387,
+   "warm_min_seconds": 0.06783263999932387
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00013333199967746623,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00013333199967746623,
+    3.286799983470701e-05,
+    2.5067000024137087e-05
+   ],
+   "warm_median_seconds": 2.8967499929422047e-05,
+   "warm_min_seconds": 2.5067000024137087e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.241400034108665e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.241400034108665e-05,
+    1.1735000953194685e-05,
+    6.877000487293117e-06
+   ],
+   "warm_median_seconds": 9.306000720243901e-06,
+   "warm_min_seconds": 6.877000487293117e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.08300248200066562,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08300248200066562,
+    0.13069375400118588
+   ],
+   "warm_median_seconds": 0.13069375400118588,
+   "warm_min_seconds": 0.13069375400118588
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00019102999976894353,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00019102999976894353,
+    7.330799962801393e-05,
+    4.662500032281969e-05
+   ],
+   "warm_median_seconds": 5.996649997541681e-05,
+   "warm_min_seconds": 4.662500032281969e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.297500006738119e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.297500006738119e-05,
+    1.8762000763672404e-05,
+    1.3767001291853376e-05
+   ],
+   "warm_median_seconds": 1.626450102776289e-05,
+   "warm_min_seconds": 1.3767001291853376e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.09306500099955883,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.09306500099955883,
+    0.07097575300031167
+   ],
+   "warm_median_seconds": 0.07097575300031167,
+   "warm_min_seconds": 0.07097575300031167
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0002488329992047511,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002488329992047511,
+    0.0001425809987267712,
+    0.00014759300029254518
+   ],
+   "warm_median_seconds": 0.0001450869995096582,
+   "warm_min_seconds": 0.0001425809987267712
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.365300007222686e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.365300007222686e-05,
+    5.90109993936494e-05,
+    5.477800004882738e-05
+   ],
+   "warm_median_seconds": 5.689449972123839e-05,
+   "warm_min_seconds": 5.477800004882738e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06723749500088161,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06723749500088161,
+    0.10792803399999684
+   ],
+   "warm_median_seconds": 0.10792803399999684,
+   "warm_min_seconds": 0.10792803399999684
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.2538854499998706,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2538854499998706,
+    0.08664598499854037
+   ],
+   "warm_median_seconds": 0.08664598499854037,
+   "warm_min_seconds": 0.08664598499854037
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014988200018706266,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014988200018706266,
+    4.8720999984652735e-05,
+    3.498799924273044e-05
+   ],
+   "warm_median_seconds": 4.185449961369159e-05,
+   "warm_min_seconds": 3.498799924273044e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.633199983392842e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.633199983392842e-05,
+    1.473500014981255e-05,
+    1.88490012078546e-05
+   ],
+   "warm_median_seconds": 1.6792000678833574e-05,
+   "warm_min_seconds": 1.473500014981255e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.09280005199980224,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.09280005199980224,
+    0.09316540899999382
+   ],
+   "warm_median_seconds": 0.09316540899999382,
+   "warm_min_seconds": 0.09316540899999382
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0001587899987498531,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001587899987498531,
+    4.8166000851779245e-05,
+    0.0001714550016913563
+   ],
+   "warm_median_seconds": 0.00010981050127156777,
+   "warm_min_seconds": 4.8166000851779245e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.653999920061324e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.653999920061324e-05,
+    2.0297000446589664e-05,
+    1.37979986902792e-05
+   ],
+   "warm_median_seconds": 1.7047499568434432e-05,
+   "warm_min_seconds": 1.37979986902792e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.08941889200104924,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08941889200104924,
+    0.06457840899929579
+   ],
+   "warm_median_seconds": 0.06457840899929579,
+   "warm_min_seconds": 0.06457840899929579
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0004026160004286794,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004026160004286794,
+    0.0002501519993529655,
+    0.00019978299860667903
+   ],
+   "warm_median_seconds": 0.00022496749897982227,
+   "warm_min_seconds": 0.00019978299860667903
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00010913699952652678,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010913699952652678,
+    9.469099859416019e-05,
+    9.097200018004514e-05
+   ],
+   "warm_median_seconds": 9.283149938710267e-05,
+   "warm_min_seconds": 9.097200018004514e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.06269281599998067,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06269281599998067,
+    0.06357321799987403
+   ],
+   "warm_median_seconds": 0.06357321799987403,
+   "warm_min_seconds": 0.06357321799987403
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.06600195800092479,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06600195800092479,
+    0.09966538200023933
+   ],
+   "warm_median_seconds": 0.09966538200023933,
+   "warm_min_seconds": 0.09966538200023933
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 3.539300087140873e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 1000001, have 15674",
+   "samples_seconds": [
+    3.539300087140873e-05,
+    1.0613999620545655e-05,
+    8.513001375831664e-06
+   ],
+   "warm_median_seconds": 9.56350049818866e-06,
+   "warm_min_seconds": 8.513001375831664e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: overflow proof (net-zero swap at 31 * 2^122)",
+   "first_seconds": 1.48920007632114e-05,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "result": "refused: the overflow proof does not hold",
+   "samples_seconds": [
+    1.48920007632114e-05,
+    8.06299976829905e-06,
+    5.107000106363557e-06
+   ],
+   "warm_median_seconds": 6.584999937331304e-06,
+   "warm_min_seconds": 5.107000106363557e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "rebuild after the refusal",
+   "first_seconds": 7.131900019885506e-05,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.131900019885506e-05,
+    7.268399895110633e-05,
+    6.982400009292178e-05
+   ],
+   "warm_median_seconds": 7.125399952201406e-05,
+   "warm_min_seconds": 6.982400009292178e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00010544700126047246,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010544700126047246,
+    9.69359989539953e-05,
+    9.385599878442008e-05
+   ],
+   "warm_median_seconds": 9.539599886920769e-05,
+   "warm_min_seconds": 9.385599878442008e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.006132819999038475,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006132819999038475,
+    0.006105060998379486
+   ],
+   "warm_median_seconds": 0.006105060998379486,
+   "warm_min_seconds": 0.006105060998379486
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.94139991234988e-05,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.94139991234988e-05,
+    0.00012491199959185906,
+    9.872000009636395e-05
+   ],
+   "warm_median_seconds": 0.0001118159998441115,
+   "warm_min_seconds": 9.872000009636395e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.005450901999211055,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005450901999211055,
+    0.005540009999094764
+   ],
+   "warm_median_seconds": 0.005540009999094764,
+   "warm_min_seconds": 0.005540009999094764
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 0.00010178599950450007,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010178599950450007,
+    9.215399950335268e-05,
+    8.908299969334621e-05
+   ],
+   "warm_median_seconds": 9.061849959834944e-05,
+   "warm_min_seconds": 8.908299969334621e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0057229889989685034,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0057229889989685034,
+    0.005443068001113716
+   ],
+   "warm_median_seconds": 0.005443068001113716,
+   "warm_min_seconds": 0.005443068001113716
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.003724592999788001,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003724592999788001,
+    0.0037884200010012137
+   ],
+   "warm_median_seconds": 0.0037884200010012137,
+   "warm_min_seconds": 0.0037884200010012137
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 7.141200148907956e-05,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.141200148907956e-05,
+    4.0191000152844936e-05,
+    3.882100099872332e-05
+   ],
+   "warm_median_seconds": 3.950600057578413e-05,
+   "warm_min_seconds": 3.882100099872332e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.0978999600629322e-05,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0978999600629322e-05,
+    1.2730000889860094e-05,
+    8.676999641465954e-06
+   ],
+   "warm_median_seconds": 1.0703500265663024e-05,
+   "warm_min_seconds": 8.676999641465954e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.002693781998459599,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002693781998459599,
+    0.002481312001691549
+   ],
+   "warm_median_seconds": 0.002481312001691549,
+   "warm_min_seconds": 0.002481312001691549
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.002563432000897592,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002563432000897592,
+    0.002637519999552751
+   ],
+   "warm_median_seconds": 0.002637519999552751,
+   "warm_min_seconds": 0.002637519999552751
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 6.233099884411786e-05,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.233099884411786e-05,
+    3.6932999137206934e-05,
+    5.9844000134035014e-05
+   ],
+   "warm_median_seconds": 4.8388499635620974e-05,
+   "warm_min_seconds": 3.6932999137206934e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.1984000341035426e-05,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.1984000341035426e-05,
+    1.3454999134410173e-05,
+    9.502000466454774e-06
+   ],
+   "warm_median_seconds": 1.1478499800432473e-05,
+   "warm_min_seconds": 9.502000466454774e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0025316219998785527,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025316219998785527,
+    0.002459105999150779
+   ],
+   "warm_median_seconds": 0.002459105999150779,
+   "warm_min_seconds": 0.002459105999150779
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.0029103739998390665,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0029103739998390665,
+    0.002556945000833366
+   ],
+   "warm_median_seconds": 0.002556945000833366,
+   "warm_min_seconds": 0.002556945000833366
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.00022896500013303012,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00022896500013303012,
+    0.00016274500012514181,
+    0.00014176699914969504
+   ],
+   "warm_median_seconds": 0.00015225599963741843,
+   "warm_min_seconds": 0.00014176699914969504
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.053900117170997e-05,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.053900117170997e-05,
+    5.699400026060175e-05,
+    6.0877999203512445e-05
+   ],
+   "warm_median_seconds": 5.89359997320571e-05,
+   "warm_min_seconds": 5.699400026060175e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0025450060002185637,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025450060002185637,
+    0.0024754599999141647
+   ],
+   "warm_median_seconds": 0.0024754599999141647,
+   "warm_min_seconds": 0.0024754599999141647
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.0013362099998630583,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013362099998630583,
+    0.0013550460007536458,
+    0.0012847779998992337
+   ],
+   "warm_median_seconds": 0.0013199120003264397,
+   "warm_min_seconds": 0.0012847779998992337
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.3831000362406485e-05,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.3831000362406485e-05,
+    1.2933000107295811e-05,
+    8.678000085637905e-06
+   ],
+   "warm_median_seconds": 1.0805500096466858e-05,
+   "warm_min_seconds": 8.678000085637905e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.002525166999475914,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002525166999475914,
+    0.010090882000440615
+   ],
+   "warm_median_seconds": 0.010090882000440615,
+   "warm_min_seconds": 0.010090882000440615
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.0013366200000746176,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013366200000746176,
+    0.0013664149992109742,
+    0.0012899400007881923
+   ],
+   "warm_median_seconds": 0.0013281774999995832,
+   "warm_min_seconds": 0.0012899400007881923
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.7591999241849408e-05,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.7591999241849408e-05,
+    1.445900124963373e-05,
+    9.886000043479726e-06
+   ],
+   "warm_median_seconds": 1.2172500646556728e-05,
+   "warm_min_seconds": 9.886000043479726e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.002517311999326921,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002517311999326921,
+    0.002453765999234747
+   ],
+   "warm_median_seconds": 0.002453765999234747,
+   "warm_min_seconds": 0.002453765999234747
+  }
+ ],
+ "seconds": 4.152571540998906,
+ "seed": 2026,
+ "thresholds": []
+}

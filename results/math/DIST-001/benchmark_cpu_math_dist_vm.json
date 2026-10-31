@@ -1,0 +1,3128 @@
+{
+ "argv": [
+  "--capability",
+  "DIST-001",
+  "--out",
+  "/home/claude/release/torbles-math/results/math/DIST-001/benchmark_cpu_math_dist_vm.json"
+ ],
+ "capability": "DIST-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": false,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-10-31T14:14:09+00:00"
+ },
+ "notes": [
+  "DIST-001 backends: cpu = math_dist.c (single-threaded), cuda = math_dist_gpu.cu (device runs only), duckdb = GROUP BY with COUNT(*) over a registered DataFrame (DuckDB's own threads), numpy = np.unique(axis=0, return_counts=True) with NULL encoded as -1.",
+  "Every build scans the scope's rows once (scans = 1); a sparse state is counted in a dense scratch and compacted (strategy count, 2 passes over the scratch) or built by a stable merge sort of one entry per row (strategy sort). The scope (FND-004 snapshot) is built once per grid point and measured apart.",
+  "grid wall time 35.6 s"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0003868929998134263,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003868929998134263,
+    5.75319991185097e-05
+   ],
+   "warm_median_seconds": 5.75319991185097e-05,
+   "warm_min_seconds": 5.75319991185097e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.006507714000690612,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006507714000690612,
+    0.0013537940012611216,
+    0.0012890039997728309
+   ],
+   "warm_median_seconds": 0.0013213990005169762,
+   "warm_min_seconds": 0.0012890039997728309
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0005306889997882536,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 9,
+   "samples_seconds": [
+    0.0005306889997882536,
+    0.00034918799974548165,
+    0.0003272339999966789
+   ],
+   "warm_median_seconds": 0.0003382109998710803,
+   "warm_min_seconds": 0.0003272339999966789
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 3.997900057584047e-05,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    3.997900057584047e-05,
+    2.4562999897170812e-05,
+    1.630000042496249e-05
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "strategy": "count",
+   "warm_median_seconds": 2.043150016106665e-05,
+   "warm_min_seconds": 1.630000042496249e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 1.412900019204244e-05,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    1.412900019204244e-05,
+    1.3095999747747555e-05,
+    1.1187999916728586e-05
+   ],
+   "scans": 1,
+   "state_bytes": 392,
+   "strategy": "direct",
+   "warm_median_seconds": 1.214199983223807e-05,
+   "warm_min_seconds": 1.1187999916728586e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00013178900007915217,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00013178900007915217,
+    4.8580999646219425e-05
+   ],
+   "warm_median_seconds": 4.8580999646219425e-05,
+   "warm_min_seconds": 4.8580999646219425e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.002349866001168266,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002349866001168266,
+    0.002611804999105516,
+    0.001381385000058799
+   ],
+   "warm_median_seconds": 0.0019965949995821575,
+   "warm_min_seconds": 0.001381385000058799
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0007516080004279502,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 81,
+   "samples_seconds": [
+    0.0007516080004279502,
+    0.0006111299990152474,
+    0.00051765199896181
+   ],
+   "warm_median_seconds": 0.0005643909989885287,
+   "warm_min_seconds": 0.00051765199896181
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 3.9385000491165556e-05,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    3.9385000491165556e-05,
+    2.2454001737060025e-05,
+    1.9484999938867986e-05
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "strategy": "count",
+   "warm_median_seconds": 2.0969500837964006e-05,
+   "warm_min_seconds": 1.9484999938867986e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 1.7577998733031563e-05,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    1.7577998733031563e-05,
+    1.4228000509319827e-05,
+    1.422300010744948e-05
+   ],
+   "scans": 1,
+   "state_bytes": 968,
+   "strategy": "direct",
+   "warm_median_seconds": 1.4225500308384653e-05,
+   "warm_min_seconds": 1.422300010744948e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00014371200086316094,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014371200086316094,
+    6.728300104441587e-05
+   ],
+   "warm_median_seconds": 6.728300104441587e-05,
+   "warm_min_seconds": 6.728300104441587e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.002305976999195991,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002305976999195991,
+    0.001449388000764884,
+    0.0012427599995135097
+   ],
+   "warm_median_seconds": 0.0013460740001391969,
+   "warm_min_seconds": 0.0012427599995135097
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0007437009990098886,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 509,
+   "samples_seconds": [
+    0.0007437009990098886,
+    0.0006568540011357982,
+    0.000603460999627714
+   ],
+   "warm_median_seconds": 0.0006301575003817561,
+   "warm_min_seconds": 0.000603460999627714
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 509,
+   "first_seconds": 4.8550000428804196e-05,
+   "occupied": 509,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    4.8550000428804196e-05,
+    3.6769000871572644e-05,
+    2.967100044770632e-05
+   ],
+   "scans": 1,
+   "state_bytes": 17133,
+   "strategy": "count",
+   "warm_median_seconds": 3.322000065963948e-05,
+   "warm_min_seconds": 2.967100044770632e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 729,
+   "first_seconds": 1.7831000150181353e-05,
+   "occupied": 509,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    1.7831000150181353e-05,
+    1.6280000636470504e-05,
+    1.5363000784418546e-05
+   ],
+   "scans": 1,
+   "state_bytes": 6152,
+   "strategy": "direct",
+   "warm_median_seconds": 1.5821500710444525e-05,
+   "warm_min_seconds": 1.5363000784418546e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00016670900004100986,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016670900004100986,
+    4.0831000660546124e-05
+   ],
+   "warm_median_seconds": 4.0831000660546124e-05,
+   "warm_min_seconds": 4.0831000660546124e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.0026026750001619803,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026026750001619803,
+    0.0012440770005923696,
+    0.0010475909984961618
+   ],
+   "warm_median_seconds": 0.0011458339995442657,
+   "warm_min_seconds": 0.0010475909984961618
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0004954729993187357,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 65,
+   "samples_seconds": [
+    0.0004954729993187357,
+    0.0003785879998758901,
+    0.0004514049996942049
+   ],
+   "warm_median_seconds": 0.0004149964997850475,
+   "warm_min_seconds": 0.0003785879998758901
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 2.8634998670895584e-05,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    2.8634998670895584e-05,
+    1.905899989651516e-05,
+    1.3212000339990482e-05
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "strategy": "count",
+   "warm_median_seconds": 1.613550011825282e-05,
+   "warm_min_seconds": 1.3212000339990482e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 1.52770007844083e-05,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    1.52770007844083e-05,
+    1.1815000107162632e-05,
+    1.0922000001301058e-05
+   ],
+   "scans": 1,
+   "state_bytes": 840,
+   "strategy": "direct",
+   "warm_median_seconds": 1.1368500054231845e-05,
+   "warm_min_seconds": 1.0922000001301058e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00012418200094543863,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012418200094543863,
+    4.424599865160417e-05
+   ],
+   "warm_median_seconds": 4.424599865160417e-05,
+   "warm_min_seconds": 4.424599865160417e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.003399234999960754,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003399234999960754,
+    0.0023316879996855278,
+    0.001300607000302989
+   ],
+   "warm_median_seconds": 0.0018161474999942584,
+   "warm_min_seconds": 0.001300607000302989
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0006011500008753501,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 879,
+   "samples_seconds": [
+    0.0006011500008753501,
+    0.0008909110001695808,
+    0.0005876650011487072
+   ],
+   "warm_median_seconds": 0.000739288000659144,
+   "warm_min_seconds": 0.0005876650011487072
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 879,
+   "first_seconds": 6.019300053594634e-05,
+   "occupied": 879,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    6.019300053594634e-05,
+    6.111100083217025e-05,
+    3.666199881990906e-05
+   ],
+   "scans": 1,
+   "state_bytes": 22311,
+   "strategy": "count",
+   "warm_median_seconds": 4.888649982603965e-05,
+   "warm_min_seconds": 3.666199881990906e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 4225,
+   "first_seconds": 1.831599911383819e-05,
+   "occupied": 879,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    1.831599911383819e-05,
+    2.2927999452804215e-05,
+    1.5296000128728338e-05
+   ],
+   "scans": 1,
+   "state_bytes": 34120,
+   "strategy": "direct",
+   "warm_median_seconds": 1.9111999790766276e-05,
+   "warm_min_seconds": 1.5296000128728338e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00014036699940334074,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014036699940334074,
+    5.467799928737804e-05
+   ],
+   "warm_median_seconds": 5.467799928737804e-05,
+   "warm_min_seconds": 5.467799928737804e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.0032108640007209033,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0032108640007209033,
+    0.003004633999807993,
+    0.001607818001502892
+   ],
+   "warm_median_seconds": 0.0023062260006554425,
+   "warm_min_seconds": 0.001607818001502892
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0006769400006305659,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 997,
+   "samples_seconds": [
+    0.0006769400006305659,
+    0.0005421219993877457,
+    0.0005236920005700085
+   ],
+   "warm_median_seconds": 0.0005329069999788771,
+   "warm_min_seconds": 0.0005236920005700085
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 997,
+   "first_seconds": 0.0001963260001502931,
+   "occupied": 997,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 8,
+   "phase": "build",
+   "samples_seconds": [
+    0.0001963260001502931,
+    0.0001304199995502131,
+    0.00012599399997270666
+   ],
+   "scans": 1,
+   "state_bytes": 33237,
+   "strategy": "sort",
+   "warm_median_seconds": 0.00012820699976145988,
+   "warm_min_seconds": 0.00012599399997270666
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 274625,
+   "first_seconds": 0.0012119719995098421,
+   "occupied": 997,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0012119719995098421,
+    0.0016168940001080045,
+    0.0006650699997408083
+   ],
+   "scans": 1,
+   "state_bytes": 2197320,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0011409819999244064,
+   "warm_min_seconds": 0.0006650699997408083
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00015511899982811883,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015511899982811883,
+    4.623400127456989e-05
+   ],
+   "warm_median_seconds": 4.623400127456989e-05,
+   "warm_min_seconds": 4.623400127456989e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.002813664001223515,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002813664001223515,
+    0.002896203999625868,
+    0.0016751090006437153
+   ],
+   "warm_median_seconds": 0.0022856565001347917,
+   "warm_min_seconds": 0.0016751090006437153
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0008191540000552777,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 612,
+   "samples_seconds": [
+    0.0008191540000552777,
+    0.0006458880015998147,
+    0.0006666539993602782
+   ],
+   "warm_median_seconds": 0.0006562710004800465,
+   "warm_min_seconds": 0.0006458880015998147
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 612,
+   "first_seconds": 5.201999920245726e-05,
+   "occupied": 612,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 1024
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    5.201999920245726e-05,
+    4.3169000491616316e-05,
+    2.916799894592259e-05
+   ],
+   "scans": 1,
+   "state_bytes": 10740,
+   "strategy": "count",
+   "warm_median_seconds": 3.6168499718769453e-05,
+   "warm_min_seconds": 2.916799894592259e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1023,
+   "first_seconds": 5.754300036642235e-05,
+   "occupied": 612,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 1024
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    5.754300036642235e-05,
+    2.290799966431223e-05,
+    1.8912998712039553e-05
+   ],
+   "scans": 1,
+   "state_bytes": 8504,
+   "strategy": "direct",
+   "warm_median_seconds": 2.091049918817589e-05,
+   "warm_min_seconds": 1.8912998712039553e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00017178000052808784,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00017178000052808784,
+    6.448999920394272e-05
+   ],
+   "warm_median_seconds": 6.448999920394272e-05,
+   "warm_min_seconds": 6.448999920394272e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.003301736000139499,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003301736000139499,
+    0.0019451030002528569,
+    0.0016659520006214734
+   ],
+   "warm_median_seconds": 0.0018055275004371651,
+   "warm_min_seconds": 0.0016659520006214734
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0008124529995257035,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 996,
+   "samples_seconds": [
+    0.0008124529995257035,
+    0.0007309600005100947,
+    0.0006888090010761516
+   ],
+   "warm_median_seconds": 0.0007098845007931232,
+   "warm_min_seconds": 0.0006888090010761516
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 996,
+   "first_seconds": 0.00022769600036554039,
+   "occupied": 996,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 1024
+   },
+   "passes": 8,
+   "phase": "build",
+   "samples_seconds": [
+    0.00022769600036554039,
+    0.00016069900084403343,
+    0.00017250500059162732
+   ],
+   "scans": 1,
+   "state_bytes": 25236,
+   "strategy": "sort",
+   "warm_median_seconds": 0.00016660200071783038,
+   "warm_min_seconds": 0.00016069900084403343
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1049600 support, budget 1048576",
+   "need": 1049600,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.5447001462453045e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00014906100113876164,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014906100113876164,
+    5.4013000408303924e-05
+   ],
+   "warm_median_seconds": 5.4013000408303924e-05,
+   "warm_min_seconds": 5.4013000408303924e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.0033739470000000438,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033739470000000438,
+    0.002231861999462126,
+    0.0021181979991524713
+   ],
+   "warm_median_seconds": 0.0021750299993072986,
+   "warm_min_seconds": 0.0021181979991524713
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.000829419999718084,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 1000,
+   "samples_seconds": [
+    0.000829419999718084,
+    0.0008550800012017135,
+    0.0007822150000720285
+   ],
+   "warm_median_seconds": 0.000818647500636871,
+   "warm_min_seconds": 0.0007822150000720285
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1000,
+   "first_seconds": 0.00022721400091541,
+   "occupied": 1000,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000,
+    "support": 1024
+   },
+   "passes": 8,
+   "phase": "build",
+   "samples_seconds": [
+    0.00022721400091541,
+    0.00023590300042997114,
+    0.00021310500051185954
+   ],
+   "scans": 1,
+   "state_bytes": 33336,
+   "strategy": "sort",
+   "warm_median_seconds": 0.00022450400047091534,
+   "warm_min_seconds": 0.00021310500051185954
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1071644672 support, budget 1048576",
+   "need": 1071644672,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.8319998818915337e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0010529560004215455,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010529560004215455,
+    0.0014344629998959135
+   ],
+   "warm_median_seconds": 0.0014344629998959135,
+   "warm_min_seconds": 0.0014344629998959135
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.00408522600082506,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00408522600082506,
+    0.0034607199995662086,
+    0.002685565999854589
+   ],
+   "warm_median_seconds": 0.0030731429997103987,
+   "warm_min_seconds": 0.002685565999854589
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.06219573499947728,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 9,
+   "samples_seconds": [
+    0.06219573499947728,
+    0.06933994899918616,
+    0.04664658799993049
+   ],
+   "warm_median_seconds": 0.057993268499558326,
+   "warm_min_seconds": 0.04664658799993049
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 0.0006762370012438623,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0006762370012438623,
+    0.0005036799993831664,
+    0.000439978000940755
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "strategy": "count",
+   "warm_median_seconds": 0.0004718290001619607,
+   "warm_min_seconds": 0.000439978000940755
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 0.00045100100032868795,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.00045100100032868795,
+    0.00043543200081330724,
+    0.00047084099969652016
+   ],
+   "scans": 1,
+   "state_bytes": 392,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0004531365002549137,
+   "warm_min_seconds": 0.00043543200081330724
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0017760909995558904,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017760909995558904,
+    0.0024950490005721804
+   ],
+   "warm_median_seconds": 0.0024950490005721804,
+   "warm_min_seconds": 0.0024950490005721804
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.004444457999852602,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004444457999852602,
+    0.002702300000237301,
+    0.0023700279998593032
+   ],
+   "warm_median_seconds": 0.002536164000048302,
+   "warm_min_seconds": 0.0023700279998593032
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0665144649992726,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 81,
+   "samples_seconds": [
+    0.0665144649992726,
+    0.07077922300049977,
+    0.09215118599968264
+   ],
+   "warm_median_seconds": 0.0814652045000912,
+   "warm_min_seconds": 0.07077922300049977
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 0.0009582959992258111,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0009582959992258111,
+    0.0007939540009829216,
+    0.0006941459996596677
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "strategy": "count",
+   "warm_median_seconds": 0.0007440500003212946,
+   "warm_min_seconds": 0.0006941459996596677
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 0.0007057029997667996,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0007057029997667996,
+    0.0006914049990882631,
+    0.0007652650001546135
+   ],
+   "scans": 1,
+   "state_bytes": 968,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0007283349996214383,
+   "warm_min_seconds": 0.0006914049990882631
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.002846220000719768,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002846220000719768,
+    0.0034382539997750428
+   ],
+   "warm_median_seconds": 0.0034382539997750428,
+   "warm_min_seconds": 0.0034382539997750428
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.005073524000181351,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005073524000181351,
+    0.003396542999325902,
+    0.004405917999974918
+   ],
+   "warm_median_seconds": 0.00390123049965041,
+   "warm_min_seconds": 0.003396542999325902
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.09176551900054619,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 729,
+   "samples_seconds": [
+    0.09176551900054619,
+    0.10242530799951055,
+    0.09578394599884632
+   ],
+   "warm_median_seconds": 0.09910462699917844,
+   "warm_min_seconds": 0.09578394599884632
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 729,
+   "first_seconds": 0.0015791700006957399,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0015791700006957399,
+    0.00148733199966955,
+    0.0011745980009436607
+   ],
+   "scans": 1,
+   "state_bytes": 24393,
+   "strategy": "count",
+   "warm_median_seconds": 0.0013309650003066054,
+   "warm_min_seconds": 0.0011745980009436607
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 729,
+   "first_seconds": 0.0010807389990077354,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0010807389990077354,
+    0.001057241001035436,
+    0.0010513049983273959
+   ],
+   "scans": 1,
+   "state_bytes": 6152,
+   "strategy": "direct",
+   "warm_median_seconds": 0.001054272999681416,
+   "warm_min_seconds": 0.0010513049983273959
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0007594950002385303,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007594950002385303,
+    0.0008052880002651364
+   ],
+   "warm_median_seconds": 0.0008052880002651364,
+   "warm_min_seconds": 0.0008052880002651364
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.003116137000688468,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003116137000688468,
+    0.001972996000404237,
+    0.0020624449989554705
+   ],
+   "warm_median_seconds": 0.0020177204996798537,
+   "warm_min_seconds": 0.001972996000404237
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.0500767840003391,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 65,
+   "samples_seconds": [
+    0.0500767840003391,
+    0.06367274799958977,
+    0.07059117999961018
+   ],
+   "warm_median_seconds": 0.06713196399959998,
+   "warm_min_seconds": 0.06367274799958977
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 0.0005024479996791342,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0005024479996791342,
+    0.0004848749995289836,
+    0.0005771900014224229
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "strategy": "count",
+   "warm_median_seconds": 0.0005310325004757033,
+   "warm_min_seconds": 0.0004848749995289836
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 0.00047643499965488445,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.00047643499965488445,
+    0.0004363309999462217,
+    0.00046714700147276744
+   ],
+   "scans": 1,
+   "state_bytes": 840,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0004517390007094946,
+   "warm_min_seconds": 0.0004363309999462217
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0016797400003270013,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0016797400003270013,
+    0.0022674579995509703
+   ],
+   "warm_median_seconds": 0.0022674579995509703,
+   "warm_min_seconds": 0.0022674579995509703
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.005537510000067414,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005537510000067414,
+    0.0037565630009339657,
+    0.0035356579992367188
+   ],
+   "warm_median_seconds": 0.003646110500085342,
+   "warm_min_seconds": 0.0035356579992367188
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.08577498799968453,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 4225,
+   "samples_seconds": [
+    0.08577498799968453,
+    0.1030413820008107,
+    0.0958749910005281
+   ],
+   "warm_median_seconds": 0.0994581865006694,
+   "warm_min_seconds": 0.0958749910005281
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 4225,
+   "first_seconds": 0.0009801789983612252,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0009801789983612252,
+    0.0008033989997784374,
+    0.0007679190002818359
+   ],
+   "scans": 1,
+   "state_bytes": 105961,
+   "strategy": "count",
+   "warm_median_seconds": 0.0007856590000301367,
+   "warm_min_seconds": 0.0007679190002818359
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 4225,
+   "first_seconds": 0.0006645390003541252,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0006645390003541252,
+    0.0006853650011180434,
+    0.0007307569994736696
+   ],
+   "scans": 1,
+   "state_bytes": 34120,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0007080610002958565,
+   "warm_min_seconds": 0.0006853650011180434
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0027821429994219216,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0027821429994219216,
+    0.0032312990006175824
+   ],
+   "warm_median_seconds": 0.0032312990006175824,
+   "warm_min_seconds": 0.0032312990006175824
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.03361889999905543,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03361889999905543,
+    0.029866430999391014,
+    0.02926125800149748
+   ],
+   "warm_median_seconds": 0.029563844500444247,
+   "warm_min_seconds": 0.02926125800149748
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.1201981110007182,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 81627,
+   "samples_seconds": [
+    0.1201981110007182,
+    0.11474162599915871,
+    0.1119994159998896
+   ],
+   "warm_median_seconds": 0.11337052099952416,
+   "warm_min_seconds": 0.1119994159998896
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81627,
+   "first_seconds": 0.006079551998482202,
+   "occupied": 81627,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.006079551998482202,
+    0.006455024000388221,
+    0.005387571000028402
+   ],
+   "scans": 1,
+   "state_bytes": 2694027,
+   "strategy": "count",
+   "warm_median_seconds": 0.005921297500208311,
+   "warm_min_seconds": 0.005387571000028402
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 274625,
+   "first_seconds": 0.0021995019997120835,
+   "occupied": 81627,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0021995019997120835,
+    0.0023188929990283214,
+    0.001700568000160274
+   ],
+   "scans": 1,
+   "state_bytes": 2197320,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0020097304995942977,
+   "warm_min_seconds": 0.001700568000160274
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0012794119993486675,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012794119993486675,
+    0.0010008760000346228
+   ],
+   "warm_median_seconds": 0.0010008760000346228,
+   "warm_min_seconds": 0.0010008760000346228
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.004181934998996439,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004181934998996439,
+    0.002559210000981693,
+    0.0027394310000090627
+   ],
+   "warm_median_seconds": 0.002649320500495378,
+   "warm_min_seconds": 0.002559210000981693
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.07578387600005954,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 1025,
+   "samples_seconds": [
+    0.07578387600005954,
+    0.07136077799987106,
+    0.06717167200076801
+   ],
+   "warm_median_seconds": 0.06926622500031954,
+   "warm_min_seconds": 0.06717167200076801
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1025,
+   "first_seconds": 0.0005357500012905803,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 1024
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0005357500012905803,
+    0.000502685999890673,
+    0.0004454039990378078
+   ],
+   "scans": 1,
+   "state_bytes": 17761,
+   "strategy": "count",
+   "warm_median_seconds": 0.0004740449994642404,
+   "warm_min_seconds": 0.0004454039990378078
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1025,
+   "first_seconds": 0.00045350300024438184,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 1024
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.00045350300024438184,
+    0.00043617399933282286,
+    0.0004437550014699809
+   ],
+   "scans": 1,
+   "state_bytes": 8520,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0004399645004014019,
+   "warm_min_seconds": 0.00043617399933282286
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0017328949998045573,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017328949998045573,
+    0.0022053419997973833
+   ],
+   "warm_median_seconds": 0.0022053419997973833,
+   "warm_min_seconds": 0.0022053419997973833
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.039140336000855314,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.039140336000855314,
+    0.03885395100041933,
+    0.03501102699920011
+   ],
+   "warm_median_seconds": 0.03693248899980972,
+   "warm_min_seconds": 0.03501102699920011
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.10268447299858963,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 88713,
+   "samples_seconds": [
+    0.10268447299858963,
+    0.09427082399997744,
+    0.10741260400027386
+   ],
+   "warm_median_seconds": 0.10084171400012565,
+   "warm_min_seconds": 0.09427082399997744
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 88713,
+   "first_seconds": 0.03131429399945773,
+   "occupied": 88713,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 1024
+   },
+   "passes": 15,
+   "phase": "build",
+   "samples_seconds": [
+    0.03131429399945773,
+    0.02545317700059968,
+    0.02830317200096033
+   ],
+   "scans": 1,
+   "state_bytes": 2218161,
+   "strategy": "sort",
+   "warm_median_seconds": 0.026878174500780005,
+   "warm_min_seconds": 0.02545317700059968
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1050625 support, budget 1048576",
+   "need": 1050625,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.3106000046245754e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00277234700115514,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00277234700115514,
+    0.0024828299992805114
+   ],
+   "warm_median_seconds": 0.0024828299992805114,
+   "warm_min_seconds": 0.0024828299992805114
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.06216370400034066,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06216370400034066,
+    0.06445881299987377,
+    0.053320477998568094
+   ],
+   "warm_median_seconds": 0.05888964549922093,
+   "warm_min_seconds": 0.053320477998568094
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.08094063900171022,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 99875,
+   "samples_seconds": [
+    0.08094063900171022,
+    0.08016717300051823,
+    0.08012072800011083
+   ],
+   "warm_median_seconds": 0.08014395050031453,
+   "warm_min_seconds": 0.08012072800011083
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 99875,
+   "first_seconds": 0.02391105100105051,
+   "occupied": 99875,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 100000,
+    "support": 1024
+   },
+   "passes": 15,
+   "phase": "build",
+   "samples_seconds": [
+    0.02391105100105051,
+    0.02000881899948581,
+    0.023018027999569313
+   ],
+   "scans": 1,
+   "state_bytes": 3296211,
+   "strategy": "sort",
+   "warm_median_seconds": 0.021513423499527562,
+   "warm_min_seconds": 0.02000881899948581
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1076890625 support, budget 1048576",
+   "need": 1076890625,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.9209000786067918e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.006807067999034189,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006807067999034189,
+    0.009755904000485316
+   ],
+   "warm_median_seconds": 0.009755904000485316,
+   "warm_min_seconds": 0.009755904000485316
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.006975769998462056,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006975769998462056,
+    0.005548341001485824,
+    0.006098447998738266
+   ],
+   "warm_median_seconds": 0.005823394500112045,
+   "warm_min_seconds": 0.005548341001485824
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.5313738650002051,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 9,
+   "samples_seconds": [
+    0.5313738650002051,
+    0.5230931370006147,
+    0.5263649799999257
+   ],
+   "warm_median_seconds": 0.5247290585002702,
+   "warm_min_seconds": 0.5230931370006147
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 0.004831140000533196,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.004831140000533196,
+    0.005196109999815235,
+    0.004743002000395791
+   ],
+   "scans": 1,
+   "state_bytes": 489,
+   "strategy": "count",
+   "warm_median_seconds": 0.004969556000105513,
+   "warm_min_seconds": 0.004743002000395791
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 9,
+   "first_seconds": 0.004951906999849598,
+   "occupied": 9,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.004951906999849598,
+    0.004466379999939818,
+    0.004618099999788683
+   ],
+   "scans": 1,
+   "state_bytes": 392,
+   "strategy": "direct",
+   "warm_median_seconds": 0.00454223999986425,
+   "warm_min_seconds": 0.004466379999939818
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.015722556001492194,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.015722556001492194,
+    0.020477108000704902
+   ],
+   "warm_median_seconds": 0.020477108000704902,
+   "warm_min_seconds": 0.020477108000704902
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.011908522999874549,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011908522999874549,
+    0.009042884999871603,
+    0.0077425919989764225
+   ],
+   "warm_median_seconds": 0.008392738499424013,
+   "warm_min_seconds": 0.0077425919989764225
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.8164388309996866,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 81,
+   "samples_seconds": [
+    0.8164388309996866,
+    0.8131629930012423,
+    0.8643705340000452
+   ],
+   "warm_median_seconds": 0.8387667635006437,
+   "warm_min_seconds": 0.8131629930012423
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 0.007979164000062156,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.007979164000062156,
+    0.009157865000815946,
+    0.007862350999857881
+   ],
+   "scans": 1,
+   "state_bytes": 2361,
+   "strategy": "count",
+   "warm_median_seconds": 0.008510108000336913,
+   "warm_min_seconds": 0.007862350999857881
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 81,
+   "first_seconds": 0.0074590280000848,
+   "occupied": 81,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.0074590280000848,
+    0.007298295000509825,
+    0.007284280000021681
+   ],
+   "scans": 1,
+   "state_bytes": 968,
+   "strategy": "direct",
+   "warm_median_seconds": 0.007291287500265753,
+   "warm_min_seconds": 0.007284280000021681
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.033646046998910606,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.033646046998910606,
+    0.057158718000209774
+   ],
+   "warm_median_seconds": 0.057158718000209774,
+   "warm_min_seconds": 0.057158718000209774
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.01265652899928682,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01265652899928682,
+    0.011456985001132125,
+    0.01119196999934502
+   ],
+   "warm_median_seconds": 0.011324477500238572,
+   "warm_min_seconds": 0.01119196999934502
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 1.0767131480006356,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 8
+   },
+   "phase": "run",
+   "result": 729,
+   "samples_seconds": [
+    1.0767131480006356,
+    1.3579051929991692,
+    1.1271038869999757
+   ],
+   "warm_median_seconds": 1.2425045399995724,
+   "warm_min_seconds": 1.1271038869999757
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 729,
+   "first_seconds": 0.012031969999952707,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.012031969999952707,
+    0.012347927999144304,
+    0.012744181000016397
+   ],
+   "scans": 1,
+   "state_bytes": 24393,
+   "strategy": "count",
+   "warm_median_seconds": 0.01254605449958035,
+   "warm_min_seconds": 0.012347927999144304
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 729,
+   "first_seconds": 0.011798329000157537,
+   "occupied": 729,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 8
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.011798329000157537,
+    0.010532855998462765,
+    0.010293699000612833
+   ],
+   "scans": 1,
+   "state_bytes": 6152,
+   "strategy": "direct",
+   "warm_median_seconds": 0.010413277499537799,
+   "warm_min_seconds": 0.010293699000612833
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.008340075000887737,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008340075000887737,
+    0.009229703000528389
+   ],
+   "warm_median_seconds": 0.009229703000528389,
+   "warm_min_seconds": 0.009229703000528389
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.007151032001274871,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007151032001274871,
+    0.005472306000228855,
+    0.005502293999597896
+   ],
+   "warm_median_seconds": 0.005487299999913375,
+   "warm_min_seconds": 0.005472306000228855
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.6000823169997602,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 65,
+   "samples_seconds": [
+    0.6000823169997602,
+    0.5689554230011709,
+    0.5987396299988177
+   ],
+   "warm_median_seconds": 0.5838475264999943,
+   "warm_min_seconds": 0.5689554230011709
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 0.0046749119992455235,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.0046749119992455235,
+    0.004499743999986094,
+    0.004332185999373905
+   ],
+   "scans": 1,
+   "state_bytes": 1441,
+   "strategy": "count",
+   "warm_median_seconds": 0.00441596499968,
+   "warm_min_seconds": 0.004332185999373905
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 65,
+   "first_seconds": 0.004245580999850063,
+   "occupied": 65,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.004245580999850063,
+    0.005189812000025995,
+    0.0056854440008464735
+   ],
+   "scans": 1,
+   "state_bytes": 840,
+   "strategy": "direct",
+   "warm_median_seconds": 0.005437628000436234,
+   "warm_min_seconds": 0.005189812000025995
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.015457557999980054,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.015457557999980054,
+    0.01678875200013863
+   ],
+   "warm_median_seconds": 0.01678875200013863,
+   "warm_min_seconds": 0.01678875200013863
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.012704882999969414,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012704882999969414,
+    0.011423109999668668,
+    0.010276053000779939
+   ],
+   "warm_median_seconds": 0.010849581500224303,
+   "warm_min_seconds": 0.010276053000779939
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.9567220400003862,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 4225,
+   "samples_seconds": [
+    0.9567220400003862,
+    0.9417970049998985,
+    0.8850836520014127
+   ],
+   "warm_median_seconds": 0.9134403285006556,
+   "warm_min_seconds": 0.8850836520014127
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 4225,
+   "first_seconds": 0.007542584999100654,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.007542584999100654,
+    0.007631993001268711,
+    0.007195145000878256
+   ],
+   "scans": 1,
+   "state_bytes": 105961,
+   "strategy": "count",
+   "warm_median_seconds": 0.007413569001073483,
+   "warm_min_seconds": 0.007195145000878256
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 4225,
+   "first_seconds": 0.006936458999916795,
+   "occupied": 4225,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.006936458999916795,
+    0.006805494000218459,
+    0.0066368419993523275
+   ],
+   "scans": 1,
+   "state_bytes": 34120,
+   "strategy": "direct",
+   "warm_median_seconds": 0.0067211679997853935,
+   "warm_min_seconds": 0.0066368419993523275
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.024604456000815844,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.024604456000815844,
+    0.02973941300115257
+   ],
+   "warm_median_seconds": 0.02973941300115257,
+   "warm_min_seconds": 0.02973941300115257
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.1290234660009446,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1290234660009446,
+    0.13002803600102197,
+    0.13808725799935928
+   ],
+   "warm_median_seconds": 0.13405764700019063,
+   "warm_min_seconds": 0.13002803600102197
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 1.174299971999062,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "run",
+   "result": 264604,
+   "samples_seconds": [
+    1.174299971999062,
+    1.1356695470003615,
+    1.1286437440012378
+   ],
+   "warm_median_seconds": 1.1321566455007996,
+   "warm_min_seconds": 1.1286437440012378
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 264604,
+   "first_seconds": 0.030194048000339535,
+   "occupied": 264604,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.030194048000339535,
+    0.07143863999954192,
+    0.0411854840003798
+   ],
+   "scans": 1,
+   "state_bytes": 8732268,
+   "strategy": "count",
+   "warm_median_seconds": 0.05631206199996086,
+   "warm_min_seconds": 0.0411854840003798
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 274625,
+   "first_seconds": 0.02233297299972037,
+   "occupied": 264604,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 64
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.02233297299972037,
+    0.02267866900001536,
+    0.023989759998585214
+   ],
+   "scans": 1,
+   "state_bytes": 2197320,
+   "strategy": "direct",
+   "warm_median_seconds": 0.023334214499300288,
+   "warm_min_seconds": 0.02267866900001536
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.007446064000760089,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007446064000760089,
+    0.008649207999042119
+   ],
+   "warm_median_seconds": 0.008649207999042119,
+   "warm_min_seconds": 0.008649207999042119
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.009818745000302442,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009818745000302442,
+    0.008619759000794147,
+    0.006564375000380096
+   ],
+   "warm_median_seconds": 0.007592067000587122,
+   "warm_min_seconds": 0.006564375000380096
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 0.7310994259987638,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 1025,
+   "samples_seconds": [
+    0.7310994259987638,
+    0.6733920490005403,
+    0.6791890149997926
+   ],
+   "warm_median_seconds": 0.6762905320001664,
+   "warm_min_seconds": 0.6733920490005403
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1025,
+   "first_seconds": 0.004934884998874622,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.004934884998874622,
+    0.005255833000774146,
+    0.005063325999799417
+   ],
+   "scans": 1,
+   "state_bytes": 17761,
+   "strategy": "count",
+   "warm_median_seconds": 0.005159579500286782,
+   "warm_min_seconds": 0.005063325999799417
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 1025,
+   "first_seconds": 0.004573305001031258,
+   "occupied": 1025,
+   "params": {
+    "dims": 1,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "passes": 0,
+   "phase": "build",
+   "samples_seconds": [
+    0.004573305001031258,
+    0.004396099999212311,
+    0.00463940699955856
+   ],
+   "scans": 1,
+   "state_bytes": 8520,
+   "strategy": "direct",
+   "warm_median_seconds": 0.004517753499385435,
+   "warm_min_seconds": 0.004396099999212311
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.018847781999284052,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.018847781999284052,
+    0.016224650000367546
+   ],
+   "warm_median_seconds": 0.016224650000367546,
+   "warm_min_seconds": 0.016224650000367546
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.23816363500009174,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.23816363500009174,
+    0.2603853500004334,
+    0.235571389001052
+   ],
+   "warm_median_seconds": 0.2479783695007427,
+   "warm_min_seconds": 0.235571389001052
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 1.0664082350012904,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 606425,
+   "samples_seconds": [
+    1.0664082350012904,
+    0.93600607100052,
+    0.9861572110003181
+   ],
+   "warm_median_seconds": 0.961081641000419,
+   "warm_min_seconds": 0.93600607100052
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 606425,
+   "first_seconds": 0.05828218299939181,
+   "occupied": 606425,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.05828218299939181,
+    0.05575838900040253,
+    0.03568356300093001
+   ],
+   "scans": 1,
+   "state_bytes": 15160961,
+   "strategy": "count",
+   "warm_median_seconds": 0.04572097600066627,
+   "warm_min_seconds": 0.03568356300093001
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1050625 support, budget 1048576",
+   "need": 1050625,
+   "params": {
+    "dims": 2,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.0352999601745978e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.023391059999994468,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.023391059999994468,
+    0.0283267849990807
+   ],
+   "warm_median_seconds": 0.0283267849990807,
+   "warm_min_seconds": 0.0283267849990807
+  },
+  {
+   "backend": "duckdb",
+   "case": "histogram",
+   "first_seconds": 0.529494477001208,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.529494477001208,
+    0.4780550969990145,
+    0.5123504500006675
+   ],
+   "warm_median_seconds": 0.495202773499841,
+   "warm_min_seconds": 0.4780550969990145
+  },
+  {
+   "backend": "numpy",
+   "case": "histogram",
+   "first_seconds": 1.1947572370008857,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "run",
+   "result": 992350,
+   "samples_seconds": [
+    1.1947572370008857,
+    1.0659309580005356,
+    1.1042922390006424
+   ],
+   "warm_median_seconds": 1.085111598500589,
+   "warm_min_seconds": 1.0659309580005356
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "cells": 992350,
+   "first_seconds": 0.4570956400002615,
+   "occupied": 992350,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "passes": 18,
+   "phase": "build",
+   "samples_seconds": [
+    0.4570956400002615,
+    0.42427770500034967,
+    0.3862400380003237
+   ],
+   "scans": 1,
+   "state_bytes": 32747886,
+   "strategy": "sort",
+   "warm_median_seconds": 0.4052588715003367,
+   "warm_min_seconds": 0.3862400380003237
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram",
+   "limit": 1048576,
+   "message": "histogram: needs 1076890625 support, budget 1048576",
+   "need": 1076890625,
+   "params": {
+    "dims": 3,
+    "groups": 1,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.942300125141628e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram, 64 groups",
+   "cells": 261860,
+   "first_seconds": 0.019549640999684925,
+   "params": {
+    "dims": 2,
+    "groups": 64,
+    "repr": "sparse",
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.019549640999684925,
+    0.018406285000310163,
+    0.017902489000334754
+   ],
+   "state_bytes": 6547844,
+   "strategy": "count",
+   "warm_median_seconds": 0.01815438700032246,
+   "warm_min_seconds": 0.017902489000334754
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram, 64 groups",
+   "cells": 270400,
+   "first_seconds": 0.014197259999491507,
+   "params": {
+    "dims": 2,
+    "groups": 64,
+    "repr": "dense",
+    "rows": 1000000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014197259999491507,
+    0.01592417500069132,
+    0.014185880998411449
+   ],
+   "state_bytes": 2164024,
+   "strategy": "direct",
+   "warm_median_seconds": 0.015055027999551385,
+   "warm_min_seconds": 0.014185880998411449
+  },
+  {
+   "backend": "cpu",
+   "case": "near-row-sized support",
+   "first_seconds": 0.03754700399986177,
+   "occupied": 787166,
+   "params": {
+    "rows": 1000000,
+    "strategy": "count"
+   },
+   "passes": 2,
+   "phase": "build",
+   "samples_seconds": [
+    0.03754700399986177,
+    0.02904439699887007
+   ],
+   "state_bytes": 13382158,
+   "warm_median_seconds": 0.02904439699887007,
+   "warm_min_seconds": 0.02904439699887007
+  },
+  {
+   "backend": "cpu",
+   "case": "near-row-sized support",
+   "first_seconds": 0.3345727390005777,
+   "occupied": 787166,
+   "params": {
+    "rows": 1000000,
+    "strategy": "sort"
+   },
+   "passes": 18,
+   "phase": "build",
+   "samples_seconds": [
+    0.3345727390005777,
+    0.28335793999940506
+   ],
+   "state_bytes": 13382158,
+   "warm_median_seconds": 0.28335793999940506,
+   "warm_min_seconds": 0.28335793999940506
+  },
+  {
+   "backend": "duckdb",
+   "case": "near-row-sized support",
+   "first_seconds": 0.28998849900017376,
+   "params": {
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.28998849900017376,
+    0.3604012089999742
+   ],
+   "warm_median_seconds": 0.3604012089999742,
+   "warm_min_seconds": 0.3604012089999742
+  },
+  {
+   "backend": "cpu",
+   "case": "structural zeros (even values)",
+   "cells": 512,
+   "first_seconds": 0.006470561000242014,
+   "occupied": 512,
+   "params": {
+    "repr": "sparse",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006470561000242014,
+    0.0064721239996288205,
+    0.006377263000103994
+   ],
+   "state_bytes": 9040,
+   "warm_median_seconds": 0.006424693499866407,
+   "warm_min_seconds": 0.006377263000103994
+  },
+  {
+   "backend": "cpu",
+   "case": "structural zeros (even values)",
+   "cells": 1023,
+   "first_seconds": 0.0065520799998921575,
+   "occupied": 512,
+   "params": {
+    "repr": "dense",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0065520799998921575,
+    0.006409293000615435,
+    0.006470070000432315
+   ],
+   "state_bytes": 8504,
+   "warm_median_seconds": 0.006439681500523875,
+   "warm_min_seconds": 0.006409293000615435
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse -> dense",
+   "first_seconds": 0.004066342999067274,
+   "params": {
+    "cells": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004066342999067274,
+    0.006202509999639005,
+    0.00426130599953467
+   ],
+   "warm_median_seconds": 0.005231907999586838,
+   "warm_min_seconds": 0.00426130599953467
+  },
+  {
+   "backend": "cpu",
+   "case": "dense -> sparse",
+   "first_seconds": 0.004798756999662146,
+   "params": {
+    "cells": 1048576
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004798756999662146,
+    0.004692375001468463,
+    0.004576696999720298
+   ],
+   "warm_median_seconds": 0.00463453600059438,
+   "warm_min_seconds": 0.004576696999720298
+  },
+  {
+   "backend": "cpu",
+   "case": "sparse -> dense",
+   "limit": 1048576,
+   "message": "dense histogram: needs 1049600 support, budget 1048576",
+   "need": 1049600,
+   "params": {
+    "cells": 1049600
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.002081815000565257,
+   "refused": true,
+   "resource": "support"
+  }
+ ],
+ "seconds": 35.62583702600023,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget_support": 1048576,
+   "grid": "dense joint cells per group (support budget)",
+   "largest_admitted": {
+    "cells": 1048576
+   },
+   "smallest_refused": {
+    "cells": 1049600
+   }
+  }
+ ]
+}
