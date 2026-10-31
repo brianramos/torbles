@@ -2495,9 +2495,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_bool.c): predicate DAGs over k conditions (AND, OR, NOT, XOR, constants, shared subexpressions) on an explicit domain (the 2^k assignments, or native row predicates over FND-004 scope columns as bitmaps); cofactors, XOR derivatives, signed differences and mixed differences with their measures, under SQL three-valued logic (UNKNOWN rows counted separately, never as false).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_bool_gpu.cu: word-parallel evaluation of the DAG and its cofactors over row bitmaps with a validity word for UNKNOWN, popcount accumulation, equal to the CPU.
 
 Bounds:
 
@@ -2511,9 +2511,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_bool.c`
 - `torbles/math_bool.h`
+- `torbles/math_bool.c`
+- `torbles/math_bool_gpu.cu`
+- `torbles/math_bool.py`
 - `tests/test_math_bool.py`
+- `bench/benchmark_math_bool.py`
 
 Acceptance tests:
 
@@ -2524,6 +2527,11 @@ Benchmark cases:
 
 - Use predicate DAGs with 4/8/16 conditions and varying shared subexpressions; compare independent cofactor evaluation with shared-mask execution.
 - Measure signed and XOR first/mixed differences under uniform assignment and empirical row measures; include sparse support and NULL-conditioned scopes.
+
+Additional limits:
+
+- One measure over all selected rows (no per-group measures); conditions on exact-valued columns only (no string or date predicates); constants fit int64 rationals.
+- Difference order at most 20; the assignment domain at most 2^20 points with the default budget.
 
 <a id="bool-002"></a>
 
@@ -2821,9 +2829,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-009](#fnd-009)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_field.c): packed GF(2) vectors and matrices (parity, products, rank, reduced row echelon form, nullspace bases, solving with unique / none / affine-family answers, syndromes), kept separate from integer popcounts; parity dependencies among Boolean columns or bit planes of a scope found from a sample and verified exhaustively, with one-row near misses reported with their witness row.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_field_gpu.cu: batched syndromes and matrix-vector products over many vectors, and the exhaustive verification of a parity relation over all rows (violations and the smallest violating row), equal to the CPU.
 
 Bounds:
 
@@ -2837,9 +2845,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_field.c`
 - `torbles/math_field.h`
+- `torbles/math_field.c`
+- `torbles/math_field_gpu.cu`
+- `torbles/math_field.py`
 - `tests/test_math_field.py`
+- `bench/benchmark_math_field.py`
 
 Acceptance tests:
 
@@ -2850,6 +2861,11 @@ Benchmark cases:
 
 - Benchmark packed GF(2) matrices of 32/128/512 rows and columns at multiple ranks/densities; compare elimination, rank and syndrome operations separately.
 - Discover planted parity dependencies over 1k/100k/1M rows and one-row near misses; record candidate generation, exact verification and substitution time.
+
+Additional limits:
+
+- Dense Gauss-Jordan elimination only; rank, elimination and solving have no CUDA path.
+- Discovery handles at most 64 columns (63 variables and the constant); with NULLs, relations are exact on the complete rows only (holds is false).
 
 <a id="field-002"></a>
 

@@ -216,3 +216,5 @@ and their status is the inventory's.
 - [Quadratic minimizers](math/opt.md) (OPT-001): exact unique, nonunique, unbounded and box-constrained optima.
 - [Hierarchies](math/multi.md) (MULTI-001): certified refinement maps, exact per-level rollups, contrasts.
 - [Signed updates](math/delta.md) (DELTA-001): insert, delete, weight-change and move deltas on exact states.
+- [Predicate cofactors](math/bool.md) (BOOL-001): cofactors, XOR and signed differences under SQL three-valued logic.
+- [GF(2) primitives](math/field.md) (FIELD-001): packed elimination, nullspaces, syndromes, parity dependencies.
