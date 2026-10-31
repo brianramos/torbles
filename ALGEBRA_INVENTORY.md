@@ -3089,20 +3089,25 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [COUNT-001](#count-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_symcount.c, the exact L-limb arithmetic and the count functions inline in math_symcount.h): a decision-diagram builder (hash-consed reduced ordered BDD nodes over a declared order, iterative Shannon apply for AND / OR / XOR with a lossy computed table, node / apply-step / byte budgets checked at every growth and refused at the first node past the limit) and its immutable diagrams renumbered from the deepest level; BOOL-001 programs over k <= 64 variables compiled two-valued (one root) or three-valued (the TRUE and FALSE indicator functions under Kleene's connectives) under the natural, a given or the DFS first-appearance order; exact model counts and weighted model counts over the whole 2^k assignment universe (rational literal weights scaled to integers over per-variable common denominators, counts in L 64-bit limbs with the bound prod (a + b) < 2^(64 L) proven before counting, reduced to canonical rationals with FND-009 big integers), TRUE + FALSE + UNKNOWN = TOTAL; the first m TRUE or FALSE assignments in lexicographic order of the levels; a brute-force enumeration of the 2^k assignments (64 per word with BOOL-001's evaluator) for verification; a breadth-first bounded Shannon expansion with possible-value sets whose open branches give certified lower and upper bounds per class (exact when none is open); finite-domain factor systems (domains <= 2^16, scopes <= 31 variables, nonnegative rational tables scaled per factor, zeros as hard constraints) counted by variable elimination under a given, min-fill or min-degree order with the width (the largest joint table) checked first and its exact need reported, model counting by indicators, witnesses decoded without backtracking in lexicographic order of the reverse elimination order, and a factor brute force. Every result is labelled as a count of the declared assignment universe, distinct from COUNT-001's observed rows.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_symcount_gpu.cu: tr_mgpu_symcount_levels counts a compiled diagram with one launch per level from the deepest, one work item per node writing its exact L-limb weighted count into its own slot from its children's (the shared tr_symc_node_count, the skipped levels' weight sums multiplied in), then one work item per root; tr_mgpu_symcount_brute enumerates the 2^k assignments in work items over slices of 64-point words (BOOL-001's word evaluator, popcounts of the TRUE / FALSE / UNKNOWN words, the weights of the TRUE and FALSE assignments as H(word) times the low variables' weights) with local sums added by one 64-bit atomic per count and a multi-word atomic add per L-limb sum (exact modulo 2^(64 L), exact by the host's bound). The readbacks are adopted natively after consistency checks (tr_symc_dd_adopt, tr_symc_brute_adopt); raw words equal the CPU's bit for bit.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Compilation: variables = k (programs), circuit = every node the builder holds (a refusal names the first node past the limit), iterations = Shannon apply steps, bytes = the node, unique-table, computed-table and stack arrays at every growth.
+- Counts: circuit = diagram nodes, output = roots, bytes = nodes x L x 8 (CUDA: every device copy, the node values and the widest level's scratch); witnesses: output = m.
+- Brute force: variables = k, support = 2^k, circuit = program nodes, bytes (CUDA: per work item node words and sums); bounded search: iterations = max_evaluations (exact or certified bounds, never refused for a larger space), bytes = the branch queue.
+- Factors: variables = n, support = entries, tensor = the largest table; elimination: tensor = the width (exact need), iterations = the products, bytes = every message at L limbs per entry, output = 2 + witnesses; factor brute force: support = prod d_i.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_count.c`
-- `torbles/math_count.h`
-- `tests/test_math_count.py`
+- `torbles/math_symcount.h`
+- `torbles/math_symcount.c`
+- `torbles/math_symcount_gpu.cu`
+- `torbles/math_symcount.py`
+- `tests/test_math_symcount.py`
+- `bench/benchmark_math_symcount.py`
 
 Acceptance tests:
 
@@ -3113,6 +3118,13 @@ Benchmark cases:
 
 - Count and extract witnesses on 1k/100k/1M observed rows for structured and irregular predicates; distinguish the observed snapshot from the full assignment universe.
 - For symbolic counts use tiny brute-force-checked formulas and bounded larger circuits with variable order/width controls; report compilation size and budget refusals.
+
+Additional limits:
+
+- Programs over at most 64 variables (63 for the brute force); no complement edges, dynamic reordering or garbage collection inside one compilation: the node budget counts every node held, and the order is given or the DFS heuristic.
+- Weights are nonnegative exact rationals with int64 numerators and denominators (scaled per variable or factor below 2^126); a formula with dependent weights is counted as a factor system (CNF clauses as 0/1 tables), not as a weighted diagram.
+- The bounded search is breadth first in a fixed order without caching of equal residual formulas: its certified bounds can be loose; variable elimination, search and witness decoding run single-threaded on the CPU (the level count and the brute force have kernels).
+- Counts are of the declared universe only; statements about observed rows remain COUNT-001's certificates (no FND-007 certificate is emitted for a symbolic count).
 
 ## FIELD: Finite-field algebra
 
@@ -3835,20 +3847,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [PROV-001](#prov-001), [DELTA-002](#delta-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_explain.c; the propagation tr_expl_set and its update laws inline in math_explain.h): an immutable explanation state copied from a PROV-001 plan's cone (nothing re-derived from the sources) with reverse edges (one parent entry per child entry), the answers of every node, the cone node of every variable and the baseline under a declared base valuation (N multiplicities in unsigned 128 bits and B existence with PROV-001's shared evaluators, and the per-node support counts B needs); deletion propagation of change sets (deletions, restorations, multiplicities) visiting only the nodes above the changed tuples in increasing order through a min-heap with an early cutoff, PLUS by the linear law (old N minus the changed children's old values plus their new ones), TIMES by the product of the children's new values (DELTA-002's finite difference dA B + A dB + dA dB), B by counting maintenance of the true (OR) or false (AND) children, with per set every answer's N and B, an overflow status redone in B alone, the nodes recomputed and the answers changed; explanations relative to the base on COUNT-002's decision diagram of the answer's monotone lineage (absent sources FALSE for why, present ones TRUE for why-not): the lineage, the relevant sources (the support of the existence function), the counterfactual sources, the minimal sufficient sets (minimal models on the diagram, refused past max_sets), a smallest sufficient set, the minimal why-not restorations, with found / absent / present / underivable status; answer probabilities under independent tuple probabilities as exact rationals (the weighted count of the lineage diagram with (p, 1 - p): shared variables exact) within the diagram budget, or certified outward-rounded bounds on the DAG without compilation (exact independence on variable-disjoint children, Harris-FKG bounds for increasing events otherwise).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_explain_gpu.cu: tr_mgpu_explain_propagate runs one work item per change set with the shared tr_expl_set on its own scratch row (the min-heap, the PLUS / TIMES / counting update laws, the early cutoff) and its own rows of answers, status, nodes recomputed and answers changed, restoring the touched scratch entries so rows are clean for the next launch chunk (chunks within 64 MiB of scratch); the host checks the view, the change sets and the budget first; equal to the CPU byte for byte. Exact probabilities can count the lineage diagram with COUNT-002's level kernels (tr_mgpu_symcount_levels).
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- State: circuit = cone nodes, support = child entries, output = answers, bytes = the copies, reverse edges, answer lists and baseline.
+- Propagation: output = change sets x answers, bytes = the scratch (65 per cone node; CUDA: every device copy, the outputs and the scratch chunk).
+- Lineage diagrams: COUNT-002's builder (circuit = nodes held, iterations = apply steps, bytes); necessary sources: iterations = levels x diagram nodes; minimal sets: support = the set entries held, output = max_sets (refused, never truncated); probability bounds: bytes = the support bitsets and intervals.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_prov.c`
-- `torbles/math_prov.h`
-- `tests/test_math_prov.py`
+- `torbles/math_explain.h`
+- `torbles/math_explain.c`
+- `torbles/math_explain_gpu.cu`
+- `torbles/math_explain.py`
+- `tests/test_math_explain.py`
+- `bench/benchmark_math_explain.py`
 
 Acceptance tests:
 
@@ -3859,6 +3875,12 @@ Benchmark cases:
 
 - Use small joins with shared versus independent derivations and increasing duplicate multiplicities; record factorized DAG nodes, annotation bytes and evaluation time.
 - Compare 1/100/1,000 source-deletion or explanation requests against complete query reconstruction; include annotation-budget overflow and correlated derivations.
+
+Additional limits:
+
+- PROV-001's operators only (selection, union, equi-join, group-by; no aggregates other than multiplicities, no negation, outer joins or recursion); for a global group (always present) the existence explained and propagated is COUNT(*) > 0.
+- Probabilities assume independent source tuples; the exact path is bounded by the lineage diagram, whose size depends on the variable order (DFS first appearance by default); past it the bounds are certified but can be loose on heavily shared lineages.
+- Explanations and probability bounds are per answer and single-threaded on the CPU; minimal sets are enumerated explicitly from the diagram; propagation is batched on the device but each change set is sequential within its work item.
 
 ## ATTR: Attribution and repair
 

@@ -64,7 +64,9 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "lift", "residue", "null_encode", "multiply", "euclid", "solve", "inertia", "minimize", "roots", "crt",
     "ratrecon", "enclose", "coefficients", "differentiate", "predicate", "logic", "cofactor", "difference",
     "quantify", "test", "occupancy", "zeta", "mobius", "walsh", "rollup", "refine", "group", "update", "prefix",
-    "attribute"};
+    "attribute",
+    "compile", "model_count",
+    "propagate", "explain", "probability"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -77,7 +79,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "abstract state", "code set",
     "ideal",
     "moment tensors", "contraction plans",
-    "kernel features"};
+    "kernel features",
+    "decision diagram",
+    "explanation state"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -602,6 +606,24 @@ static const tr_reg_module modules[] = {
                    "tr_kernel_eval_get_view", "tr_kernel_query", "tr_kernel_view_device_bytes", "tr_kernel_free"},
      .cuda_entry = {"tr_mgpu_kernel_build", "tr_mgpu_kernel_upload", "tr_mgpu_kernel_query", "tr_mgpu_kernel_bytes",
                     "tr_mgpu_kernel_free"}},
+    {FAMILY(TR_REG_M_SYMCOUNT, "symcount", "symcount", "COUNT-002", "symbolic model counting"),
+     .state_kind = TR_REG_STATE_DECISION_DIAGRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BOOLEAN) | CB(KLEENE) | CB(COUNT) | CB(BIGINT) | CB(BIGQ),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_symc_compile", "tr_symc_mgr_apply", "tr_symc_dd_count", "tr_symc_dd_levels",
+                   "tr_symc_dd_adopt", "tr_symc_dd_witnesses", "tr_symc_brute", "tr_symc_brute_adopt",
+                   "tr_symc_search", "tr_symc_factors_create", "tr_symc_factors_count", "tr_symc_factors_brute"},
+     .cuda_entry = {"tr_mgpu_symcount_levels", "tr_mgpu_symcount_brute"}},
+    {FAMILY(TR_REG_M_EXPLAIN, "explain", "explain", "PROV-002", "explanations and deletion propagation"),
+     .state_kind = TR_REG_STATE_EXPLANATION, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BOOLEAN) | CB(COUNT) | CB(BIGQ) | CB(INTERVAL),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_BOUND,
+     .cpu_entry = {"tr_expl_create", "tr_expl_create_need", "tr_expl_get_view", "tr_expl_propagate",
+                   "tr_expl_propagate_need", "tr_expl_lineage", "tr_expl_explain", "tr_expl_probability_weights",
+                   "tr_expl_probability_bounds"},
+     .cuda_entry = {"tr_mgpu_explain_propagate"}},
 };
 #undef BUILTIN
 #undef FAMILY

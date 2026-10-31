@@ -220,7 +220,12 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_UPDATE = 55,         /* signed insert / delete / weight-change batches merged into a state */
        TR_OP_PREFIX = 56,         /* prefix sums over a sorted support */
        TR_OP_ATTRIBUTE = 57,      /* attribution indices: rational-weighted sums of a game's marginal contributions or Moebius coefficients */
-       TR_REG_OPERATORS = 58 };
+       TR_OP_COMPILE = 58,        /* a circuit compiled into a canonical decision diagram under a variable order */
+       TR_OP_MODEL_COUNT = 59,    /* the weighted number of models of a function over a declared assignment universe */
+       TR_OP_PROPAGATE = 60,      /* source changes propagated through a provenance DAG by the update laws of its semiring */
+       TR_OP_EXPLAIN = 61,        /* explanations of a monotone lineage: sufficient, necessary and why-not source sets */
+       TR_OP_PROBABILITY = 62,    /* the probability of a lineage under independent source tuples (a weighted model count) */
+       TR_REG_OPERATORS = 63 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -282,6 +287,11 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_UPDATE, 0, 0, TR_REG_FOLD | TR_LAW_INVERSE},
     {TR_OP_PREFIX, 0, 0, TR_REG_FOLD | TR_LAW_ORDERED},
     {TR_OP_ATTRIBUTE, 0, 0, TR_REG_FIELD | TR_LAW_CHAR0},
+    {TR_OP_COMPILE, 0, 0, TR_REG_LATTICE},
+    {TR_OP_MODEL_COUNT, 0, 0, TR_REG_RING},
+    {TR_OP_PROPAGATE, 0, 0, TR_REG_RING},
+    {TR_OP_EXPLAIN, 0, 0, TR_REG_LATTICE},
+    {TR_OP_PROBABILITY, 0, 0, TR_REG_RING},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -922,7 +932,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_TENSOR_STATE = 51,      /* TENSOR-001 sparse and factored moment tensors */
        TR_REG_M_TENSOR_CONTRACT = 52,   /* TENSOR-002 costed tensor contraction planning */
        TR_REG_M_KERNEL = 53,            /* KERNEL-001 exact finite-feature kernel embeddings */
-       TR_REG_M_END = 54 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_SYMCOUNT = 54,          /* COUNT-002 symbolic full-domain algebraic model counting */
+       TR_REG_M_EXPLAIN = 55,           /* PROV-002 explanation specialization and deletion propagation */
+       TR_REG_M_END = 56 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -965,7 +977,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_MOMENT_TENSOR = 41,     /* per group: dense, sparse or factored moment or count tensors */
        TR_REG_STATE_CONTRACTION_PLAN = 42,  /* costed contraction orders, step shapes, bytes, lifetimes */
        TR_REG_STATE_KERNEL_FEATURES = 43,   /* per group: a feature tensor, weight sums, self-pair terms */
-       TR_REG_STATE_KINDS = 44 };
+       TR_REG_STATE_DECISION_DIAGRAM = 44,  /* a reduced ordered BDD over a variable order (or the messages of an elimination) and its exact weighted counts */
+       TR_REG_STATE_EXPLANATION = 45,       /* a retained provenance cone with reverse edges and its baseline under a base valuation */
+       TR_REG_STATE_KINDS = 46 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1240,6 +1254,15 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_KERNEL, POWERS, INTEGER, TR__ALL), TR__I(TR_REG_M_KERNEL, HISTOGRAM, CODE, TR__ALL),
     TR__I(TR_REG_M_KERNEL, CONTRACT, BIGINT, TR__ALL), TR__I(TR_REG_M_KERNEL, SUBTRACT, BIGINT, TR__ALL),
     TR__I(TR_REG_M_KERNEL, MULTIPLY, BIGINT, TR__ALL), TR__I(TR_REG_M_KERNEL, DIVIDE, BIGQ, TR__ALL),
+    /* 54 COUNT-002 symbolic full-domain algebraic model counting */
+    TR__I(TR_REG_M_SYMCOUNT, COMPILE, BOOLEAN, TR__CPU), TR__I(TR_REG_M_SYMCOUNT, LOGIC, KLEENE, TR__ALL),
+    TR__I(TR_REG_M_SYMCOUNT, MODEL_COUNT, BIGINT, TR__ALL), TR__I(TR_REG_M_SYMCOUNT, MODEL_COUNT, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_SYMCOUNT, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_SYMCOUNT, MULTIPLY, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_SYMCOUNT, ORDER, BIGQ, TR__CPU),
+    /* 55 PROV-002 explanation specialization and deletion propagation */
+    TR__I(TR_REG_M_EXPLAIN, PROPAGATE, COUNT, TR__ALL), TR__I(TR_REG_M_EXPLAIN, PROPAGATE, BOOLEAN, TR__ALL),
+    TR__I(TR_REG_M_EXPLAIN, EXPLAIN, BOOLEAN, TR__CPU), TR__I(TR_REG_M_EXPLAIN, PROBABILITY, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_EXPLAIN, ENCLOSE, INTERVAL, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU
