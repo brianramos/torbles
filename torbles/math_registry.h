@@ -219,7 +219,8 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_GROUP = 54,          /* dense group ids of key codes */
        TR_OP_UPDATE = 55,         /* signed insert / delete / weight-change batches merged into a state */
        TR_OP_PREFIX = 56,         /* prefix sums over a sorted support */
-       TR_REG_OPERATORS = 57 };
+       TR_OP_ATTRIBUTE = 57,      /* attribution indices: rational-weighted sums of a game's marginal contributions or Moebius coefficients */
+       TR_REG_OPERATORS = 58 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -280,6 +281,7 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_GROUP, TR_REG_C_CODE, TR_REG_C_CODE, TR_LAW_EXACT},
     {TR_OP_UPDATE, 0, 0, TR_REG_FOLD | TR_LAW_INVERSE},
     {TR_OP_PREFIX, 0, 0, TR_REG_FOLD | TR_LAW_ORDERED},
+    {TR_OP_ATTRIBUTE, 0, 0, TR_REG_FIELD | TR_LAW_CHAR0},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -910,7 +912,8 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_PROV = 41,              /* PROV-001 factorized provenance payloads */
        TR_REG_M_BILINEAR = 42,          /* DELTA-002 bilinear/join and nonlinear update laws */
        TR_REG_M_ENV = 43,               /* ENV-001 univariate group envelopes */
-       TR_REG_M_END = 44 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_ATTR = 44,              /* ATTR-001 sparse interaction and contribution attribution */
+       TR_REG_M_END = 45 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -944,7 +947,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_PROVENANCE = 32,      /* a shared derivation DAG over source-tuple variables */
        TR_REG_STATE_JOIN_TERMS = 33,      /* per key and group: the side states of a bilinear join and its cross terms */
        TR_REG_STATE_ENVELOPE = 34,        /* the winning group per parameter piece and the exact breakpoints */
-       TR_REG_STATE_KINDS = 35 };
+       TR_REG_STATE_GAME = 35,              /* a declared cooperative game (coalition values or a provenance plan with players) and its Moebius support */
+       TR_REG_STATE_KINDS = 36 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1171,6 +1175,13 @@ static const tr_reg_impl tr_reg_impls[] = {
     /* 43 ENV-001 exact breakpoints (rational, or certified algebraic intervals) and lookups */
     TR__I(TR_REG_M_ENV, ORDER, BIGQ, TR__ALL), TR__I(TR_REG_M_ENV, EVAL, BIGQ, TR__ALL),
     TR__I(TR_REG_M_ENV, ROOTS, BIGQ, TR__CPU),
+    /* 44 ATTR-001 sparse interaction and contribution attribution */
+    TR__I(TR_REG_M_ATTR, EVAL, COUNT, TR__ALL), TR__I(TR_REG_M_ATTR, LOGIC, BOOLEAN, TR__ALL),
+    TR__I(TR_REG_M_ATTR, COFACTOR, KLEENE, TR__CPU), TR__I(TR_REG_M_ATTR, ZETA, INT128, TR__CPU),
+    TR__I(TR_REG_M_ATTR, MOBIUS, INT128, TR__CPU), TR__I(TR_REG_M_ATTR, MULTIPLY, INT128, TR__CPU),
+    TR__I(TR_REG_M_ATTR, FOLD, MOD128, TR__ALL), TR__I(TR_REG_M_ATTR, FOLD, INT128, TR__ALL),
+    TR__I(TR_REG_M_ATTR, ATTRIBUTE, BIGQ, TR__ALL), TR__I(TR_REG_M_ATTR, ORDER, INT128, TR__ALL),
+    TR__I(TR_REG_M_ATTR, ORDER, BIGQ, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU

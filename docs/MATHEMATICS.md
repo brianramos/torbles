@@ -233,3 +233,4 @@ and their status is the inventory's.
 - [Provenance](math/prov.md) (PROV-001): factorized derivations in the Boolean, counting and polynomial semirings.
 - [Bilinear updates](math/bilinear.md) (DELTA-002): exact join and matrix-product deltas with all cross terms.
 - [Group envelopes](math/env.md) (ENV-001): exact winning groups and breakpoints of affine/quadratic families.
+- [Sparse interaction and contribution attribution](math/attr.md) (ATTR-001): declared cooperative games over provenance (PROV-001), occupancy histograms (LATTICE-002), predicates (BOOL-001) or given values; exact Shapley, Banzhaf, Moebius, Shapley / Banzhaf interaction and Shapley-Taylor indices from sparse Moebius supports, with the sum identities checked; budgeted exploration and minimum explanation / repair search returning exact results or certified bounds with the explored states; the convention is part of every result and an attribution has no automatic causal interpretation.

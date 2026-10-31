@@ -63,14 +63,16 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "divide", "order", "powers", "contract", "histogram", "bits", "and", "popcount", "mark_cells", "verify", "empty",
     "lift", "residue", "null_encode", "multiply", "euclid", "solve", "inertia", "minimize", "roots", "crt",
     "ratrecon", "enclose", "coefficients", "differentiate", "predicate", "logic", "cofactor", "difference",
-    "quantify", "test", "occupancy", "zeta", "mobius", "walsh", "rollup", "refine", "group", "update", "prefix"};
+    "quantify", "test", "occupancy", "zeta", "mobius", "walsh", "rollup", "refine", "group", "update", "prefix",
+    "attribute"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
     "quadratic objective", "separated coefficients", "jet aggregates", "hierarchy", "maintained cells",
     "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
     "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial",
-    "certificate", "serialized record", "provenance dag", "join terms", "envelope"};
+    "certificate", "serialized record", "provenance dag", "join terms", "envelope",
+    "cooperative game"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -505,6 +507,15 @@ static const tr_reg_module modules[] = {
                    "tr_env_point_get", "tr_env_point_refine", "tr_env_lookup_create", "tr_env_lookup_eval",
                    "tr_env_need", "tr_env_lookup_need"},
      .cuda_entry = {"tr_mgpu_env_lookup"}},
+    {FAMILY(TR_REG_M_ATTR, "attr", "attr", "ATTR-001", "contribution attribution"),
+     .state_kind = TR_REG_STATE_GAME, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(COUNT) | CB(BOOLEAN) | CB(KLEENE) | CB(INT128) | CB(MOD128) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_IDEMPOTENT | TR_LAW_MUL_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_attr_game_prov", "tr_attr_game_lattice", "tr_attr_game_predicate", "tr_attr_game_table",
+                   "tr_attr_support_build", "tr_attr_support_values", "tr_attr_interactions", "tr_attr_values",
+                   "tr_attr_exhaustive", "tr_attr_explore", "tr_attr_search", "tr_attr_enum_need"},
+     .cuda_entry = {"tr_mgpu_attr_values", "tr_mgpu_attr_exhaustive", "tr_mgpu_attr_explore", "tr_mgpu_attr_search"}},
 };
 #undef BUILTIN
 #undef FAMILY

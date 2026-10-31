@@ -79,6 +79,7 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 41 | prov | factorized provenance payloads | PROV-001 | provenance dag | `tr_prov_evaluate` | `tr_mgpu_prov_evaluate` |
 | 42 | bilinear | bilinear/join and nonlinear update laws | DELTA-002 | join terms | `tr_bilin_join_update` | `tr_mgpu_bilin_cross`, `tr_mgpu_bilin_matrix` |
 | 43 | env | univariate group envelopes | ENV-001 | envelope | `tr_env_build` | `tr_mgpu_env_lookup` |
+| 44 | attr | contribution attribution | ATTR-001 | cooperative game | `tr_attr_game_prov` | `tr_mgpu_attr_values`, `tr_mgpu_attr_exhaustive`, `tr_mgpu_attr_explore`, `tr_mgpu_attr_search` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

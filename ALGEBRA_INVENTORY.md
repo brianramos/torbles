@@ -3716,20 +3716,25 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [PROV-001](#prov-001), [LATTICE-002](#lattice-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_attr.c, the shared drivers in math_attr.h): immutable games declared as 2^n exact int128 coalition values (given; LATTICE-002 zeta coalition values of a LATTICE-001 histogram for conjunctions and disjunctions; a BOOL-001 program evaluated word-parallel with the absent conditions replaced by declared constants under SQL three-valued logic) or as a PROV-001 plan with weights, a semiring (N multiplicities, B existence) and a player of every source variable (others fixed present or absent), with certified facts recorded at creation (exact range, monotonicity, a nonnegative Moebius sign for N with weights >= 0, a degree bound). Sparse Moebius supports: the multilinear expansion of the plan's cone over player sets (x^2 = x, players' variables merged, budgeted by per-node term bounds), inclusion-exclusion over the minimal witnesses for B, the LATTICE-002 fast Moebius transform for 2^n values, or declared terms. Exact 128-bit canonical rationals for Shapley and Banzhaf values, Moebius coefficients, Shapley and Banzhaf interaction indices and Shapley-Taylor indices up to an order (every unlisted set exactly zero), with the efficiency, Shapley-Taylor efficiency, Moebius-sum and reconstruction identities checked natively. Enumeration (n <= 62): coalition values, exhaustive weighted marginal contributions (numerators over n! and 2^(n-1), wrapping 128-bit sums made exact by a proven bound), bounded exploration of whole levels within max_coalitions (Moebius regime: exact small coefficients and certified bounds from the per-player unknown mass and the degree bound; range regime: certified widening per unexplored level and the monotone clamp), and minimum explanation / repair search by increasing size (found with exact size and multiplicity, none proven, or incomplete with certified bounds and the explored states). Overflow is reported, never wrapped; every budget is checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: math_attr_gpu.cu: tr_mgpu_attr_values evaluates many coalitions at once, one work item per coalition (a 0/1 valuation of the provenance cone with the shared tr_attr_eval, or a table lookup) into its own slot, in launch chunks within 64 MiB of scratch; tr_mgpu_attr_exhaustive enumerates every coalition in aligned slices of 64 masks, each slice summing its weighted marginal-contribution terms locally (one counter per low player, one for the high players whose membership is constant on the slice, one player-independent counter) and adding each with one tr_atomic_add_wide (exact modulo 2^128, exact because the host proves 2 n! bound < 2^127 and 2^n bound < 2^127 first); tr_mgpu_attr_explore and tr_mgpu_attr_search run the shared drivers of math_attr.h with the values kernel as their batch evaluator. Results equal the CPU bit for bit (emulated with a scrambled thread order in the tests); supports and interactions are CPU only.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Games: variables = players, tensor = 2^n values (predicate: x domain words), circuit = cone or program nodes, output = plan outputs, bytes = the object and scratch; table games n <= 24.
+- Supports: support = the per-node term bound of the expansion (sum / product of the children's, at most 2^(players reached)), degree, bytes = every memo bound and the largest raw product; witnesses: tensor = terms^2 + sum 2^w (checked before the products); transform: tensor = 2^n, iterations.
+- Indices: support = terms, output = players; interactions: tensor = output = the (set, term) candidates.
+- Enumeration: values output = coalitions; exhaustive iterations = 2^n (n <= 32); explore / search iterations = max_coalitions (a smaller space returns exact results, a larger one certified bounds, never a refusal), tensor = the Moebius inversion, output; CUDA bytes = every device copy, the accumulators and the scratch chunk.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_attr.c`
 - `torbles/math_attr.h`
+- `torbles/math_attr.c`
+- `torbles/math_attr_gpu.cu`
+- `torbles/math_attr.py`
 - `tests/test_math_attr.py`
+- `bench/benchmark_math_attr.py`
 
 Acceptance tests:
 
@@ -3740,6 +3745,15 @@ Benchmark cases:
 
 - Use 3/6/10/12 conditions with sparse versus dense interactions; compare supported contribution indices against exhaustive small coalition calculations.
 - Vary explanation/repair search budgets and minimum-solution multiplicities; retain incomplete cases with their certified bounds and actual explored states.
+
+Additional limits:
+
+- Coalitions of the enumeration paths are 64-bit masks (n <= 62; exhaustive n <= 32, table games n <= 24); the sparse support path takes up to 2^24 players but its indices are 128-bit rationals (an overflow is reported, never wrapped).
+- Provenance games inherit PROV-001's operators: selection, union, equi-join, group-by; values are multiplicity-weighted sums (COUNT, SUM with weights, existence counts), no MIN / MAX or negation.
+- Explore's bounds are certified, not tight: only provenance games in N (weights >= 0) have the Moebius regime; the range regime widens by the worst case over the certified range per unexplored level; levels are explored whole in a fixed order.
+- The minimum search explores levels in increasing size without pruning beyond the monotone extreme-value proof; the number of minimum solutions is exact only when the minimum level completes.
+- Supports, interactions and the Moebius inversion are single-threaded CPU code; the CUDA paths are coalition values, the exhaustive accumulation and the batch evaluation of explore and search.
+- No FND-007 certificate is emitted: the sum identities are checked natively and reported per result; FND-007's claim kinds are row relations of a scope or polynomial laws of at most 8 variables.
 
 <a id="attr-002"></a>
 
