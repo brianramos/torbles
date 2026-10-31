@@ -4398,8 +4398,8 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_count.c): constraint sets over one shared BOOL-001 predicate DAG (holds, implies A -> B, equivalence A <-> B, exclusion NOT (A AND B); per-constraint cones), observed domains (BOOL-001 condition bitmaps over the selected rows of an FND-004 scope, with an FND-007 record of the scope's identity, revision, exact selection, column encodings and NULL domains) and the 2^k assignment universe; exact satisfied / violated / UNKNOWN counts under SQL three-valued logic, every satisfying point (refused past the output budget with the exact need), the smallest violating points as witnesses, and a certificate (a snapshot of exactly the covered rows, or a law by enumeration) with the coverage of the support's assignments (complete rows, distinct observed assignments against 2^s), FND-007 freshness with exact staleness reasons, and an authorization that refuses universe statements while assignments were unobserved.",
+   "gpu": "CUDA kernels math_count_gpu.cu: the counts and the smallest violating point of every constraint (work items (constraint, word slice) evaluate the constraint's cone per 64-row word with bitwise three-valued logic, count with popcounts, add with one atomic per counter and an atomic minimum), and the bounded extraction of the satisfying and smallest violating points (per (constraint, chunk) counts in their own slots, their exclusive prefix on the host checked against the counts, then rank-addressed writes: one writer per output slot); the readback is adopted natively after consistency checks; equal to the CPU bit for bit.",
    "existing_evidence": [
     {
      "path": "torbles/alg.c",
@@ -4413,9 +4413,12 @@
     }
    ],
    "planned_files": [
-    "torbles/math_count.c",
     "torbles/math_count.h",
-    "tests/test_math_count.py"
+    "torbles/math_count.c",
+    "torbles/math_count_gpu.cu",
+    "torbles/math_count.py",
+    "tests/test_math_count.py",
+    "bench/benchmark_math_count.py"
    ],
    "acceptance_tests": [
     "Implication/equivalence violations match exhaustive mask evaluation.",
@@ -4425,7 +4428,11 @@
     "Count and extract witnesses on 1k/100k/1M observed rows for structured and irregular predicates; distinguish the observed snapshot from the full assignment universe.",
     "For symbolic counts use tiny brute-force-checked formulas and bounded larger circuits with variable order/width controls; report compilation size and budget refusals."
    ],
-   "limitations": [],
+   "limitations": [
+    "Counts over the observed selected rows, or by enumeration of at most 2^20 assignments with the default budget; symbolic (decision-diagram, weighted) counting is COUNT-002's.",
+    "One count over all selected rows (no per-group counts, no weights); conditions on exact-valued columns only (BOOL-001).",
+    "The certificate is COUNT-001's own type built on FND-007's record and staleness reasons (FND-007 has no claim kind for counts); it is not serialized; its coverage is computed on the host in both paths."
+   ],
    "validation": null
   },
   {
@@ -4591,13 +4598,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_parity.c): FIELD-001's discovery (sampled proposals, exhaustive verification, one-row near misses rejected with their witness rows) with every found relation turned into an FND-007 PARITY claim (its scope columns, bits with plane and base, the constant, the NULL policy) and certified as a snapshot (identity, revision, exact selection, column encodings, NULL domains); substitution of predicate circuits: the maximal pure XOR forms meeting a fresh certified relation are rewritten by adding the relation over GF(2) (a column that is the XOR of others becomes that XOR and vice versa), the cheaper form chosen by the columns and planes scanned, refused with FND-007's exact staleness reason after codec, NULL-mask or revision changes; exhaustive verification of the substituted predicate against the original on every selected row.",
+   "gpu": "CUDA kernel math_parity_gpu.cu: the verification of a substituted predicate against the original (one work item per 64-row word: both programs' value and valid bitmaps, their XOR, popcounts, one atomic per counter and an atomic minimum for the witness), equal to the CPU; the device discovery and certification use FIELD-001's tr_mgpu_field_discover and FND-007's tr_mgpu_cert_verify, adopted natively (tr_parity_adopt).",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_field.c",
-    "torbles/math_field.h",
-    "tests/test_math_field.py"
+    "torbles/math_parity.h",
+    "torbles/math_parity.c",
+    "torbles/math_parity_gpu.cu",
+    "torbles/math_parity.py",
+    "tests/test_math_parity.py",
+    "bench/benchmark_math_parity.py"
    ],
    "acceptance_tests": [
     "Recover planted parity relations and reject one-row near misses.",
@@ -4607,7 +4617,11 @@
     "Benchmark packed GF(2) matrices of 32/128/512 rows and columns at multiple ranks/densities; compare elimination, rank and syndrome operations separately.",
     "Discover planted parity dependencies over 1k/100k/1M rows and one-row near misses; record candidate generation, exact verification and substitution time."
    ],
-   "limitations": [],
+   "limitations": [
+    "Rewrites only XOR forms whose variables are disjoint, with one relation per call, greedily; the cost is the number of columns and planes scanned, not their widths.",
+    "The rewrite itself runs on the CPU; discovery inherits FIELD-001's limits (at most 64 columns, listwise over the complete rows).",
+    "Certificates record no dimension; a certificate that skipped NULL rows never authorizes a substitution."
+   ],
    "validation": null
   },
   {

@@ -913,7 +913,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_BILINEAR = 42,          /* DELTA-002 bilinear/join and nonlinear update laws */
        TR_REG_M_ENV = 43,               /* ENV-001 univariate group envelopes */
        TR_REG_M_ATTR = 44,              /* ATTR-001 sparse interaction and contribution attribution */
-       TR_REG_M_END = 45 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_COUNT = 45,             /* COUNT-001 observed-domain constraint counts and witnesses */
+       TR_REG_M_PARITY = 46,            /* FIELD-002 parity relationship discovery and substitution */
+       TR_REG_M_END = 47 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -948,7 +950,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_JOIN_TERMS = 33,      /* per key and group: the side states of a bilinear join and its cross terms */
        TR_REG_STATE_ENVELOPE = 34,        /* the winning group per parameter piece and the exact breakpoints */
        TR_REG_STATE_GAME = 35,              /* a declared cooperative game (coalition values or a provenance plan with players) and its Moebius support */
-       TR_REG_STATE_KINDS = 36 };
+       TR_REG_STATE_CONSTRAINT_COUNTS = 36, /* per constraint: TRUE / FALSE / UNKNOWN points, witnesses, rows covered */
+       TR_REG_STATE_PARITY_RELATIONS = 37,  /* certified parity relations, rewritten predicates */
+       TR_REG_STATE_KINDS = 38 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1182,6 +1186,15 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_ATTR, FOLD, MOD128, TR__ALL), TR__I(TR_REG_M_ATTR, FOLD, INT128, TR__ALL),
     TR__I(TR_REG_M_ATTR, ATTRIBUTE, BIGQ, TR__ALL), TR__I(TR_REG_M_ATTR, ORDER, INT128, TR__ALL),
     TR__I(TR_REG_M_ATTR, ORDER, BIGQ, TR__ALL),
+    /* 45 COUNT-001 observed-domain constraint counts and witnesses */
+    TR__I(TR_REG_M_COUNT, PREDICATE, INTEGER, TR__ALL), TR__I(TR_REG_M_COUNT, PREDICATE, RATIONAL, TR__ALL),
+    TR__I(TR_REG_M_COUNT, LOGIC, KLEENE, TR__ALL), TR__I(TR_REG_M_COUNT, POPCOUNT, ROWSET, TR__ALL),
+    TR__I(TR_REG_M_COUNT, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_COUNT, ORDER, COUNT, TR__ALL),
+    /* 46 FIELD-002 parity relationship discovery and substitution */
+    TR__I(TR_REG_M_PARITY, SOLVE, GF2, TR__CPU), TR__I(TR_REG_M_PARITY, BITS, CODE, TR__CPU),
+    TR__I(TR_REG_M_PARITY, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_PARITY, POLY_SUBSTITUTE, GF2, TR__CPU),
+    TR__I(TR_REG_M_PARITY, LOGIC, KLEENE, TR__ALL), TR__I(TR_REG_M_PARITY, POPCOUNT, ROWSET, TR__ALL),
+    TR__I(TR_REG_M_PARITY, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_PARITY, ORDER, COUNT, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU

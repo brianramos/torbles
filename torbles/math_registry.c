@@ -72,7 +72,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
     "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial",
     "certificate", "serialized record", "provenance dag", "join terms", "envelope",
-    "cooperative game"};
+    "cooperative game",
+    "constraint counts", "parity relations"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -516,6 +517,24 @@ static const tr_reg_module modules[] = {
                    "tr_attr_support_build", "tr_attr_support_values", "tr_attr_interactions", "tr_attr_values",
                    "tr_attr_exhaustive", "tr_attr_explore", "tr_attr_search", "tr_attr_enum_need"},
      .cuda_entry = {"tr_mgpu_attr_values", "tr_mgpu_attr_exhaustive", "tr_mgpu_attr_explore", "tr_mgpu_attr_search"}},
+    {FAMILY(TR_REG_M_COUNT, "count", "count", "COUNT-001", "observed-domain constraint counts"),
+     .state_kind = TR_REG_STATE_CONSTRAINT_COUNTS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(KLEENE) | CB(BOOLEAN) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_EXACT_COUNT | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_count_set_create", "tr_count_observe", "tr_count_observe_adopt", "tr_count_universe",
+                   "tr_count_run", "tr_count_counts_view", "tr_count_plan", "tr_count_adopt",
+                   "tr_count_answer_fresh", "tr_count_answer_authorize", "tr_count_run_need", "tr_count_domain_need"},
+     .cuda_entry = {"tr_mgpu_count_counts", "tr_mgpu_count_extract"}},
+    {FAMILY(TR_REG_M_PARITY, "parity", "parity", "FIELD-002", "parity discovery and substitution"),
+     .state_kind = TR_REG_STATE_PARITY_RELATIONS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(GF2) | CB(CODE) | CB(ROWSET) | CB(INTEGER) | CB(KLEENE) | CB(BOOLEAN) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_REG_LATTICE | TR_LAW_CHAR2 | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_parity_discover", "tr_parity_adopt", "tr_parity_claim", "tr_parity_discover_need",
+                   "tr_parity_found_certificate", "tr_parity_substitute", "tr_parity_rewrite_program",
+                   "tr_parity_verify", "tr_parity_verify_view", "tr_parity_verify_need"},
+     .cuda_entry = {"tr_mgpu_parity_verify"}},
 };
 #undef BUILTIN
 #undef FAMILY
