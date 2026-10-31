@@ -1,0 +1,820 @@
+/* FND-005: the native module and operator registry; see math_registry.h. SPDX-License-Identifier: Apache-2.0 */
+#include "math_registry.h"
+#include "math_modules.h"
+#include "torble.h"
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+extern void at_decode_column(const atable_t *, int, uint32_t *);
+
+_Static_assert(sizeof(tr_reg_refusal) == 32, "refusal ABI size");
+_Static_assert(sizeof(tr_reg_chain) == 56, "chain ABI size");
+_Static_assert(sizeof(tr_reg_request) == 384, "request ABI size");
+_Static_assert(sizeof(tr_reg_result) == 96, "result ABI size");
+_Static_assert(sizeof(tr_reg_explain) == 136, "explanation ABI size");
+_Static_assert(sizeof(tr_reg_state_info) == 104, "state info ABI size");
+_Static_assert(sizeof(tr_reg_candidate) == 376, "candidate ABI size");
+_Static_assert(sizeof(tr_reg_module) == 528, "module ABI size");
+_Static_assert(TR_REG_E_INVALID == TR_MATH_INVALID && TR_REG_E_MEMORY == TR_MATH_MEMORY &&
+               TR_REG_E_OVERFLOW == TR_MATH_OVERFLOW && TR_REG_E_BUDGET == TR_MATH_BUDGET &&
+               TR_REG_E_CARRIER == TR_MATH_CARRIER_ERROR && TR_REG_E_OPERATOR == TR_MATH_OPERATOR_ERROR, "codes");
+#define SAME(a, b) ((int)(a) == (int)(b))
+_Static_assert(SAME(TR_REG_C_INTEGER, TR_MATH_INTEGER) && SAME(TR_REG_C_RATIONAL, TR_MATH_RATIONAL) &&
+               SAME(TR_REG_C_BOOLEAN, TR_MATH_BOOLEAN) && SAME(TR_REG_C_GF2, TR_MATH_GF2), "carriers of math_domain.h");
+_Static_assert(SAME(TR_OP_POLY_ADD, TR_MATH_OP_ADD) && SAME(TR_OP_POLY_EVALUATE, TR_MATH_OP_EVALUATE) &&
+               SAME(TR_OP_BANK_REDUCE, TR_MATH_OP_REDUCE) && SAME(TR_REG_R_FORMAL, TR_MATH_MODULE_POLYNOMIAL) &&
+               SAME(TR_REG_R_MOMENTS, TR_MATH_MODULE_MOMENTS), "operators and modules of math_modules.h");
+#undef SAME
+
+/* ------------------------------------------------------------------ names */
+static const char *const carrier_names[TR_REG_CARRIERS] = {
+    "any", "integer", "rational", "boolean", "gf2", "count", "int128", "mod128", "interval", "float64", "minmax",
+    "code", "rowset"};
+static const char *const law_names[TR_REG_LAWS] = {
+    "associative", "commutative", "identity", "inverse", "distributive", "idempotent", "mul_idempotent", "ordered",
+    "division", "char0", "exact", "enclosure"};
+static const char *const operator_names[TR_REG_OPERATORS] = {
+    "none", "poly_add", "poly_sub", "poly_mul", "poly_pow", "poly_derivative", "poly_integrate", "poly_substitute",
+    "poly_evaluate", "bank_reduce", "convert", "eval", "fold", "merge", "scale_count", "distinct_fold", "subtract",
+    "divide", "order", "powers", "contract", "histogram", "bits", "and", "popcount", "mark_cells", "verify", "empty"};
+
+static int32_t copy_name(const char *s, char *out, int32_t cap) {
+    if (!out || cap <= 0) return TR_MATH_OK;
+    size_t n = strlen(s);
+    if (n >= (size_t)cap) n = (size_t)cap - 1;
+    memcpy(out, s, n); out[n] = 0;
+    return TR_MATH_OK;
+}
+int32_t tr_reg_carrier_info(int32_t carrier, uint32_t *laws, char *name, int32_t cap) {
+    if (carrier < 0 || carrier >= TR_REG_CARRIERS) return TR_MATH_INVALID;
+    if (laws) *laws = tr_reg_carrier_laws[carrier];
+    return copy_name(carrier_names[carrier], name, cap);
+}
+int32_t tr_reg_law_name(int32_t bit, char *name, int32_t cap) {
+    if (bit < 0 || bit >= TR_REG_LAWS) return TR_MATH_INVALID;
+    return copy_name(law_names[bit], name, cap);
+}
+int32_t tr_reg_operator_info(int32_t op, tr_reg_operator *out, char *name, int32_t cap) {
+    if (op < 1 || op >= TR_REG_OPERATORS) return TR_MATH_INVALID;
+    if (out) *out = tr_reg_operators[op];
+    return copy_name(operator_names[op], name, cap);
+}
+int32_t tr_reg_conversion_get(int32_t index, tr_reg_conversion *out) {
+    if (!out || index < 0 || index >= TR_REG_CONVERSIONS) return TR_MATH_INVALID;
+    *out = tr_reg_conversions[index];
+    return TR_MATH_OK;
+}
+int32_t tr_reg_chain_get(int32_t repr, int32_t slot, tr_reg_chain *out) {
+    if (!out || repr < 1 || repr >= TR_REG_REPRESENTATIONS || slot < 0 || slot > 2) return TR_MATH_INVALID;
+    *out = tr_reg_chains[repr][slot];
+    return TR_MATH_OK;
+}
+
+/* ------------------------------------------------------------------ module descriptors */
+#define CB(c) (1u << (c))
+#define OB(op) (UINT64_C(1) << (op))
+#define DATA_PROOFS (TR_PROOF_SCOPE | TR_PROOF_SNAPSHOT)
+/* cost coefficients per component, in the order WORDS, SCAN, CHAIN, COMBINE, CONSTRUCT, REUSE, FUSION, MATERIALIZE,
+ * TRANSFER, CPU_FINAL, GPU_FINAL, FIXED. CPU rates are hand-set estimates (relative units of about a nanosecond on
+ * the 2-core development machine), checked on held-out shapes by bench/benchmark_math_planner.py, which also fits
+ * replacements on its training shapes; CUDA rates are uncalibrated estimates for a discrete device (launch and
+ * synchronization in FIXED, PCIe copies in TRANSFER). FUSION is the fraction of the shared components' cost a fused
+ * pass saves. None of them is a time. */
+#define CUDA_RATES(chain, construct, gpu_final) {0.004, 0.01, chain, 2.0, construct, 0.6, 1.0, 0.05, 0.12, 1.2, gpu_final, 25000.0}
+static const tr_reg_module modules[TR_REG_MODULES - 1] = {
+    {.abi = TR_REG_ABI, .id = TR_REG_R_FORMAL, .representation = TR_REG_R_FORMAL, .state_kind = TR_REG_STATE_FORMAL,
+     .requests = TR_REG_REQ_FORMAL, .devices = TR_REG_ON_CPU, .nimpl = 8,
+     .carriers = CB(TR_REG_C_RATIONAL),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_DIVISION | TR_LAW_CHAR0 | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_DOMAIN,
+     .impl = {{TR_OP_POLY_ADD, TR_REG_C_RATIONAL}, {TR_OP_POLY_SUB, TR_REG_C_RATIONAL}, {TR_OP_POLY_MUL, TR_REG_C_RATIONAL},
+              {TR_OP_POLY_POW, TR_REG_C_RATIONAL}, {TR_OP_POLY_DERIVATIVE, TR_REG_C_RATIONAL},
+              {TR_OP_POLY_INTEGRATE, TR_REG_C_RATIONAL}, {TR_OP_POLY_SUBSTITUTE, TR_REG_C_RATIONAL},
+              {TR_OP_POLY_EVALUATE, TR_REG_C_RATIONAL}},
+     .cost = {{0, 0, 2.0, 0, 0, 0, 0, 0, 0, 0, 0, 200.0}, {0}},
+     .name = "checked rational polynomials", .capability = "FND-002",
+     .cpu_entry = {"tr_math_module_apply", "tr_math_module_evaluate"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_MOMENTS, .representation = TR_REG_R_MOMENTS, .state_kind = TR_REG_STATE_MOMENT_BANK,
+     .requests = TR_REG_REQ_MOMENTS, .devices = TR_REG_ON_CPU, .nimpl = 4,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_RATIONAL),
+     .laws_relied = TR_REG_RING | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = TR_PROOF_DOMAIN | TR_PROOF_SNAPSHOT | TR_PROOF_SCOPE,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_POWERS, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_INTEGER},
+              {TR_OP_BANK_REDUCE, TR_REG_C_RATIONAL}},
+     .cost = {{1.0, 1.5, 2.5, 0, 1.0, 0.5, 1.0, 0.05, 0, 2.0, 0, 20000.0}, {0}},
+     .name = "scalar integer moments", .capability = "FND-003",
+     .cpu_entry = {"tr_math_module_reduce", "tr_math_bank_create"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_CELLS, .representation = TR_REG_R_CELLS, .state_kind = TR_REG_STATE_CELL_BITMAP,
+     .requests = TR_REG_REQ_CELLS, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 3, .finalize = 2,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_ROWSET) | CB(TR_REG_C_COUNT),
+     .laws_relied = TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDEMPOTENT | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_CELL_DOMAIN,
+     .impl = {{TR_OP_MARK_CELLS, TR_REG_C_CODE}, {TR_OP_DISTINCT_FOLD, TR_REG_C_ROWSET}, {TR_OP_POPCOUNT, TR_REG_C_ROWSET}},
+     .cost = {{1.0, 1.5, 1.5, 0, 0.3, 0, 1.0, 0.05, 0, 0.5, 0, 300.0}, CUDA_RATES(0.02, 0.01, 0.01)},
+     .name = "distinct cell pre-pass", .capability = "FND-010",
+     .cpu_entry = {"tr_math_budget_count_cells"}, .cuda_entry = {"tr_mgpu_budgets_count_cells"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_VERIFY, .representation = TR_REG_R_VERIFY, .state_kind = TR_REG_STATE_EVIDENCE,
+     .requests = TR_REG_REQ_VERIFY, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 2,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_MINMAX),
+     .laws_relied = TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDENTITY | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_EXACT,
+     .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_CATALOG,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_VERIFY, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_COUNT},
+              {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_FOLD, TR_REG_C_MINMAX}, {TR_OP_MERGE, TR_REG_C_MINMAX}},
+     .cost = {{1.0, 1.2, 2.0, 0, 0, 0, 1.0, 0.05, 0, 1.0, 0, 300.0}, CUDA_RATES(0.02, 0.01, 0.01)},
+     .name = "relation verification", .capability = "DISC-001",
+     .cpu_entry = {"tr_reg_verify", "tr_disc_verify"}, .cuda_entry = {"tr_mgpu_registry_verify", "tr_mgpu_disc_verify"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_SCAN, .representation = TR_REG_R_SCAN, .state_kind = TR_REG_STATE_NONE,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 2,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+     .laws_relied = TR_REG_RING | TR_LAW_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT, .proofs = 0,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EVAL, TR_REG_C_INTEGER}, {TR_OP_FOLD, TR_REG_C_INT128},
+              {TR_OP_MERGE, TR_REG_C_INT128}, {TR_OP_FOLD, TR_REG_C_MINMAX}, {TR_OP_MERGE, TR_REG_C_MINMAX}},
+     .cost = {{0.6, 1.6, 2.2, 0, 0, 0, 1.0, 0.05, 0, 1.0, 0, 400.0}, CUDA_RATES(0.02, 0.01, 0.01)},
+     .name = "direct scan", .capability = "FND-005",
+     .cpu_entry = {"tr_reg_execute"}, .cuda_entry = {"tr_mgpu_registry_execute"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_HISTOGRAM, .representation = TR_REG_R_HISTOGRAM, .state_kind = TR_REG_STATE_HISTOGRAM,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 10, .finalize = 3,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+     .laws_relied = TR_REG_RING | TR_LAW_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_CELL_DOMAIN,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EVAL, TR_REG_C_INTEGER}, {TR_OP_HISTOGRAM, TR_REG_C_CODE},
+              {TR_OP_FOLD, TR_REG_C_COUNT}, {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_SCALE_COUNT, TR_REG_C_INT128},
+              {TR_OP_FOLD, TR_REG_C_INT128}, {TR_OP_MERGE, TR_REG_C_INT128}, {TR_OP_DISTINCT_FOLD, TR_REG_C_MINMAX},
+              {TR_OP_MERGE, TR_REG_C_MINMAX}},
+     .cost = {{0.6, 1.6, 1.8, 0, 0.35, 0.5, 1.0, 0.05, 0, 0.9, 0, 600.0}, CUDA_RATES(0.03, 0.01, 0.02)},
+     .name = "code histogram", .capability = "FND-005",
+     .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_POWER, .representation = TR_REG_R_POWER, .state_kind = TR_REG_STATE_POWER_SUMS,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 1,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_MOD128) | CB(TR_REG_C_INT128),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_POWERS, TR_REG_C_MOD128}, {TR_OP_FOLD, TR_REG_C_MOD128},
+              {TR_OP_MERGE, TR_REG_C_MOD128}, {TR_OP_CONTRACT, TR_REG_C_MOD128}, {TR_OP_CONVERT, TR_REG_C_INT128}},
+     .cost = {{0.6, 1.6, 2.4, 0, 1.0, 0.5, 1.0, 0.05, 0, 4.0, 0, 500.0}, CUDA_RATES(0.03, 0.01, 0.01)},
+     .name = "sparse power sums", .capability = "FND-005",
+     .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_BITPLANE, .representation = TR_REG_R_BITPLANE, .state_kind = TR_REG_STATE_PLANE_COUNTS,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU | TR_REG_ON_CUDA, .nimpl = 6, .finalize = 1,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_ROWSET) | CB(TR_REG_C_COUNT) | CB(TR_REG_C_MOD128) | CB(TR_REG_C_INT128),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_MUL_IDEMPOTENT | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN,
+     .impl = {{TR_OP_BITS, TR_REG_C_CODE}, {TR_OP_AND, TR_REG_C_ROWSET}, {TR_OP_POPCOUNT, TR_REG_C_ROWSET},
+              {TR_OP_MERGE, TR_REG_C_COUNT}, {TR_OP_CONTRACT, TR_REG_C_MOD128}, {TR_OP_CONVERT, TR_REG_C_INT128}},
+     .cost = {{0.6, 1.6, 0.5, 2.0, 1.0, 0.5, 1.0, 0.05, 0, 1.5, 0, 600.0}, CUDA_RATES(0.01, 0.01, 0.01)},
+     .name = "bit-plane factored counts", .capability = "FND-005",
+     .cpu_entry = {"tr_reg_execute", "tr_reg_state_build"}, .cuda_entry = {"tr_mgpu_registry_execute", "tr_mgpu_registry_state"}},
+    {.abi = TR_REG_ABI, .id = TR_REG_R_EMPTY, .representation = TR_REG_R_EMPTY, .state_kind = TR_REG_STATE_EMPTY_PROOF,
+     .requests = TR_REG_REQ_POLYSUM, .devices = TR_REG_ON_CPU, .nimpl = 3,
+     .carriers = CB(TR_REG_C_CODE) | CB(TR_REG_C_INTEGER) | CB(TR_REG_C_INT128) | CB(TR_REG_C_MINMAX),
+     .laws_relied = TR_LAW_IDENTITY, .laws_guaranteed = TR_LAW_EXACT, .proofs = TR_PROOF_EXACT_COUNT,
+     .impl = {{TR_OP_CONVERT, TR_REG_C_INTEGER}, {TR_OP_EMPTY, TR_REG_C_INT128}, {TR_OP_EMPTY, TR_REG_C_MINMAX}},
+     .cost = {{0.3, 0, 0, 0, 0, 0, 1.0, 0.05, 0, 0, 0, 200.0}, {0}},
+     .name = "proven empty selection", .capability = "FND-008",
+     .cpu_entry = {"tr_reg_execute"}},
+};
+
+/* operators implemented: the bits of the implementation list; for the two first-slice built-ins, the operator set of
+ * their validated table (math_modules.c), so the registry never claims more than tr_math_module_apply dispatches */
+static void describe(int32_t index, tr_reg_module *out) {
+    *out = modules[index];
+    out->operators = 0;
+    for (int32_t i = 0; i < out->nimpl; i++) out->operators |= OB(out->impl[i].op);
+    if (out->id == TR_REG_R_FORMAL || out->id == TR_REG_R_MOMENTS) {
+        for (int32_t i = 0; i < tr_math_module_count(); i++) {
+            tr_math_module_info info;
+            if (tr_math_module_get(i, &info) == TR_MATH_OK && info.id == out->id) out->operators = info.operators;
+        }
+    }
+}
+int32_t tr_reg_module_count(void) { return (int32_t)(sizeof modules / sizeof modules[0]); }
+int32_t tr_reg_module_get(int32_t index, tr_reg_module *out) {
+    if (!out || index < 0 || index >= tr_reg_module_count()) return TR_MATH_INVALID;
+    describe(index, out);
+    return TR_MATH_OK;
+}
+int32_t tr_reg_module_by_id(int32_t id, tr_reg_module *out) {
+    for (int32_t i = 0; i < tr_reg_module_count(); i++)
+        if (modules[i].id == id) return tr_reg_module_get(i, out);
+    return TR_MATH_INVALID;
+}
+int32_t tr_reg_find(int32_t op, int32_t carrier, int32_t devices) {
+    for (int32_t i = 0; i < tr_reg_module_count(); i++) {
+        if (!(modules[i].devices & devices)) continue;
+        for (int32_t k = 0; k < modules[i].nimpl; k++)
+            if (modules[i].impl[k].op == op && modules[i].impl[k].carrier == carrier) return modules[i].id;
+    }
+    return 0;
+}
+int32_t tr_reg_check_chain(const tr_reg_step *steps, int32_t n, int32_t input, int32_t contract, int32_t require_impl,
+                           int32_t *output, tr_reg_refusal *r) {
+    int32_t rc = tr_reg_check_laws(steps, n, input, contract, output, r);
+    if (rc || !require_impl) return rc;
+    for (int32_t i = 0; i < n; i++)
+        if (!tr_reg_find(steps[i].op, steps[i].carrier, TR_REG_ON_CPU | TR_REG_ON_CUDA))
+            return tr_reg_refuse(r, TR_REG_REFUSE_IMPLEMENTATION, TR_MATH_CARRIER_ERROR, i, steps[i].op,
+                                 steps[i].carrier, 0, 0, 0);
+    return TR_MATH_OK;
+}
+
+int32_t tr_reg_code_domain(const uint32_t *codes, uint64_t rows, uint64_t *ncodes, int32_t *width) {
+    if (!ncodes || !width || (rows && !codes)) return TR_MATH_INVALID;
+    uint32_t m = 0;
+    for (uint64_t i = 0; i < rows; i++) if (codes[i] > m) m = codes[i];
+    *ncodes = (uint64_t)m + 1;
+    *width = m ? 32 - __builtin_clz(m) : 0;
+    return TR_MATH_OK;
+}
+
+/* ------------------------------------------------------------------ engine columns */
+struct tr_reg_column_s {
+    uint64_t rows, revision, ncodes, bytes;
+    int64_t offset;
+    int32_t col, valid_col, width, reserved;
+    uint32_t *codes, *validity;
+};
+static void set_error(int32_t *error, int32_t code) { if (error) *error = code; }
+tr_reg_column *tr_reg_column_create(const atable_t *t, int32_t col, int32_t valid_col, int64_t offset,
+                                    const tr_math_budget *budget, tr_math_refusal *refusal, int32_t *error) {
+    tr_budget_none(refusal);
+    set_error(error, TR_MATH_OK);
+    if (!t || col < 0 || col >= t->k || valid_col < -1 || valid_col >= t->k || valid_col == col) {
+        set_error(error, TR_MATH_INVALID); return NULL;
+    }
+    if (t->width[col] > 32 || (valid_col >= 0 && t->width[valid_col] > 32)) { set_error(error, TR_MATH_UNSUPPORTED); return NULL; }
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    uint64_t bytes = tr_budget_add(tr_budget_mul(t->n, valid_col >= 0 ? 8 : 4), sizeof(struct tr_reg_column_s));
+    int32_t rc = tr_budget_check_one(budget, TR_BUDGET_BYTES, bytes, refusal);
+    if (rc) { set_error(error, rc); return NULL; }
+    tr_reg_column *c = calloc(1, sizeof *c);
+    size_t n = t->n ? (size_t)t->n : 1;
+    if (c) c->codes = malloc(n * sizeof *c->codes);
+    if (c && c->codes && valid_col >= 0) c->validity = malloc(n * sizeof *c->validity);
+    if (!c || !c->codes || (valid_col >= 0 && !c->validity)) { tr_reg_column_free(c); set_error(error, TR_MATH_MEMORY); return NULL; }
+    if (t->n) {
+        at_decode_column(t, col, c->codes);
+        if (valid_col >= 0) at_decode_column(t, valid_col, c->validity);
+    }
+    c->rows = t->n; c->revision = t->revision; c->offset = offset; c->col = col; c->valid_col = valid_col;
+    c->bytes = bytes;
+    tr_reg_code_domain(c->codes, c->rows, &c->ncodes, &c->width);
+    return c;
+}
+int32_t tr_reg_column_request(const tr_reg_column *c, const atable_t *t, tr_reg_request *r) {
+    if (!c || !t || !r) return TR_MATH_INVALID;
+    if (t->revision != c->revision || t->n != c->rows) return TR_MATH_STALE;
+    r->rows = c->rows; r->codes = c->codes; r->validity = c->validity; r->offset = c->offset;
+    r->ncodes = c->ncodes; r->width = c->width; r->source = (uint64_t)(uintptr_t)c; r->revision = c->revision;
+    return TR_MATH_OK;
+}
+uint64_t tr_reg_column_bytes(const tr_reg_column *c) { return c ? c->bytes : 0; }
+void tr_reg_column_free(tr_reg_column *c) {
+    if (!c) return;
+    free(c->codes); free(c->validity); free(c);
+}
+
+/* ------------------------------------------------------------------ states and the CPU executors */
+struct tr_reg_state_s {
+    tr_reg_state_info info;
+    uint64_t words, data_words, nsets;
+    uint64_t *selection;          /* the scope (a built or imported state only); NULL: every row */
+    uint32_t *sets;               /* BITPLANE plane sets */
+    uint64_t *data;               /* HISTOGRAM counts, POWER residues (lo, hi), BITPLANE counts */
+};
+static void state_release(struct tr_reg_state_s *s) { free(s->selection); free(s->sets); free(s->data); }
+static uint64_t effective(const tr_reg_request *r, uint64_t w) {
+    return (r->selected ? r->selected[w] : ~(uint64_t)0) & tr_reg_rowmask(r->rows, w);
+}
+static int32_t highest_bit(uint32_t m) { return m ? 31 - __builtin_clz(m) : -1; }
+
+/* scans the selected rows once for a state representation (or SCAN when st == NULL: res gets the fold). Flags:
+ * a code >= ncodes in a selected valid row (invalid), a checked evaluation outside int64 (overflow). */
+static int32_t scan_rows(const tr_reg_request *r, int32_t repr, struct tr_reg_state_s *st, tr_reg_result *res,
+                         tr_reg_explain *ex) {
+    uint64_t words = tr_reg_words(r), selected = 0, valid = 0, nulls = 0;
+    int invalid = 0, overflow = 0;
+    __int128 sum[TR_REG_POLYS] = {0, 0, 0, 0};
+    int64_t ext[TR_REG_POLYS];
+    for (int32_t j = 0; j < TR_REG_POLYS; j++) ext[j] = r->aggregate == TR_REG_MIN ? INT64_MAX : INT64_MIN;
+    tr_u128 power[TR_REG_DEGREE + 1];
+    int32_t top = st ? highest_bit(st->info.support) : -1, width = r->width;
+    for (int32_t k = 0; k <= TR_REG_DEGREE; k++) power[k] = 0;
+    for (uint64_t w = 0; w < words; w++) {
+        uint64_t m = effective(r, w), mvalid = 0, planes[32];
+        if (!m) continue;
+        if (repr == TR_REG_R_BITPLANE) for (int32_t j = 0; j < width; j++) planes[j] = 0;
+        while (m) {
+            int b = __builtin_ctzll(m);
+            m &= m - 1;
+            uint64_t row = w * 64 + (uint64_t)b;
+            selected++;
+            if (r->validity && !r->validity[row]) { nulls++; continue; }
+            valid++;
+            uint32_t c = r->codes[row];
+            if ((uint64_t)c >= r->ncodes) { invalid = 1; continue; }
+            int64_t x = (int64_t)((__int128)c + r->offset);
+            switch (repr) {
+            case TR_REG_R_SCAN:
+                for (int32_t j = 0; j < r->npolys; j++) {
+                    int64_t v;
+                    if (!tr_reg_eval(r->coef[j], r->degree[j], x, &v)) { overflow = 1; continue; }
+                    if (r->aggregate == TR_REG_SUM) sum[j] += v;
+                    else if (r->aggregate == TR_REG_MIN) { if (v < ext[j]) ext[j] = v; }
+                    else if (v > ext[j]) ext[j] = v;
+                }
+                break;
+            case TR_REG_R_HISTOGRAM: st->data[c]++; break;
+            case TR_REG_R_POWER: {
+                tr_u128 xr = (tr_u128)(__int128)x, p = 1;
+                for (int32_t k = 1; k <= top; k++) { p *= xr; if ((st->info.support >> k) & 1) power[k] += p; }
+                break;
+            }
+            case TR_REG_R_BITPLANE:
+                mvalid |= (uint64_t)1 << b;
+                for (uint32_t bits = c; bits; bits &= bits - 1) planes[__builtin_ctz(bits)] |= (uint64_t)1 << b;
+                break;
+            }
+        }
+        if (repr == TR_REG_R_BITPLANE && mvalid)
+            for (uint64_t s = 0; s < st->nsets; s++) {
+                uint64_t v = mvalid;
+                for (uint32_t S = st->sets[s]; S && v; S &= S - 1) v &= planes[__builtin_ctz(S)];
+                st->data[s] += (uint64_t)__builtin_popcountll(v);
+            }
+    }
+    if (ex) { ex->rows_scanned = selected; ex->words_scanned = words; }
+    res->selected = selected; res->valid = valid; res->nulls = nulls;
+    if (st) { st->info.selected = selected; st->info.valid = valid; st->info.nulls = nulls; }
+    if (repr == TR_REG_R_POWER) {
+        int32_t idx = 0;
+        for (int32_t k = 0; k <= TR_REG_DEGREE; k++) {
+            if (!((st->info.support >> k) & 1)) continue;
+            tr_u128 v = k == 0 ? (tr_u128)valid : power[k];
+            st->data[2 * idx] = (uint64_t)v; st->data[2 * idx + 1] = (uint64_t)(v >> 64);
+            idx++;
+        }
+    }
+    if (invalid) return TR_MATH_INVALID;
+    if (overflow) return TR_MATH_OVERFLOW;
+    if (repr == TR_REG_R_SCAN)
+        for (int32_t j = 0; j < r->npolys; j++)
+            res->value[j] = r->aggregate == TR_REG_SUM ? tr_reg_i128_of((tr_u128)sum[j]) : tr_reg_i128_of_i64(ext[j]);
+    return TR_MATH_OK;
+}
+
+/* allocates the arrays of a state representation (support/D resolved) */
+static int32_t state_alloc(const tr_reg_request *r, int32_t repr, uint32_t support, int32_t D, struct tr_reg_state_s *st) {
+    memset(st, 0, sizeof *st);
+    st->info.representation = repr; st->info.support = support; st->info.degree = D;
+    st->info.width = r->width; st->info.has_validity = r->validity != NULL;
+    st->info.rows = r->rows; st->info.ncodes = r->ncodes; st->info.offset = r->offset;
+    st->info.source = r->source; st->info.revision = r->revision;
+    st->words = tr_reg_words(r);
+    uint64_t elements = tr_reg_state_elements(r, repr, support, D);
+    st->info.elements = elements;
+    st->data_words = repr == TR_REG_R_POWER ? 2 * elements : elements;
+    st->info.bytes = st->data_words * 8;
+    st->data = calloc(st->data_words ? (size_t)st->data_words : 1, 8);
+    if (!st->data) return TR_MATH_MEMORY;
+    if (repr == TR_REG_R_BITPLANE) {
+        st->nsets = elements;
+        st->sets = malloc((size_t)(elements ? elements : 1) * sizeof *st->sets);
+        if (!st->sets) return TR_MATH_MEMORY;
+        tr_reg_plane_sets_fill(r->width, D, st->sets, elements);
+        st->info.bytes += elements * 4;
+    }
+    return TR_MATH_OK;
+}
+static int32_t contract(const tr_reg_request *r, const struct tr_reg_state_s *st, tr_reg_result *res, uint64_t *work) {
+    int32_t rc = TR_MATH_OK;
+    *work = 0;
+    if (st->info.representation == TR_REG_R_HISTOGRAM) rc = tr_reg_hist_contract(r, st->data, res, work);
+    else if (st->info.representation == TR_REG_R_POWER) tr_reg_power_contract(r, st->info.support, st->data, res);
+    else tr_reg_plane_contract(r, st->sets, st->data, st->nsets, res, work);
+    res->selected = st->info.selected; res->valid = st->info.valid; res->nulls = st->info.nulls;
+    return rc;
+}
+static uint32_t resolve_support(const tr_reg_request *r, uint32_t support) {
+    return (support ? support : tr_reg_support(r)) | 1u;
+}
+static int32_t resolve_degree(const tr_reg_request *r, int32_t D) { return D > 0 ? D : tr_reg_max_degree(r); }
+static int is_state_repr(int32_t repr) {
+    return repr == TR_REG_R_HISTOGRAM || repr == TR_REG_R_POWER || repr == TR_REG_R_BITPLANE;
+}
+/* a reused state suffices: same aggregate family, POWER exponents covered, BITPLANE degree covered */
+static int sufficient(const tr_reg_state_info *in, const tr_reg_request *r) {
+    if (in->representation == TR_REG_R_HISTOGRAM) return 1;
+    if (r->aggregate != TR_REG_SUM) return 0;
+    if (in->representation == TR_REG_R_POWER) return (tr_reg_support(r) & ~in->support) == 0;
+    return tr_reg_max_degree(r) <= in->degree;
+}
+static int32_t refuse_reg(tr_reg_explain *ex, int32_t kind, int32_t code) {
+    if (ex && ex->refusal.kind == TR_REG_REFUSE_NONE) tr_reg_refuse(&ex->refusal, kind, code, -1, 0, 0, 0, 0, 0);
+    return tr_reg_explain_refuse(ex, kind, code);
+}
+static int32_t kind_of(int32_t code) {
+    switch (code) {
+    case TR_MATH_INVALID: return TR_REG_REFUSE_INVALID;
+    case TR_MATH_MEMORY: return TR_REG_REFUSE_MEMORY;
+    case TR_MATH_OVERFLOW: return TR_REG_REFUSE_OVERFLOW;
+    case TR_MATH_BUDGET: return TR_REG_REFUSE_BUDGET;
+    case TR_MATH_STALE: return TR_REG_REFUSE_STALE;
+    case TR_MATH_DEVICE: return TR_REG_REFUSE_DEVICE;
+    default: return TR_REG_REFUSE_UNSUPPORTED;
+    }
+}
+/* the checks every CPU execution and state build makes before allocating */
+static int32_t precheck(const tr_reg_request *r, int32_t repr, tr_reg_explain *ex) {
+    tr_math_refusal kernel;
+    int32_t rc = tr_reg_request_check(r, &kernel);
+    if (rc) {
+        if (ex && rc == TR_MATH_BUDGET) ex->budget = kernel;
+        return refuse_reg(ex, kind_of(rc), rc);
+    }
+    if (repr < TR_REG_R_SCAN || repr > TR_REG_R_EMPTY) return refuse_reg(ex, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
+    tr_reg_refusal law;
+    rc = tr_reg_check_representation(repr, r, &law);
+    if (rc) {
+        if (ex) ex->refusal = law;
+        return tr_reg_explain_refuse(ex, law.kind, rc);
+    }
+    return TR_MATH_OK;
+}
+static int32_t budget_gate(const tr_math_budget *budget, const tr_math_need *need, tr_reg_explain *ex) {
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    tr_math_refusal refusal;
+    int32_t rc = tr_budget_check(budget, need, &refusal);
+    if (rc) {
+        if (ex) ex->budget = refusal;
+        return refuse_reg(ex, TR_REG_REFUSE_BUDGET, rc);
+    }
+    return TR_MATH_OK;
+}
+
+tr_reg_state *tr_reg_state_build(const tr_reg_request *r, int32_t repr, uint32_t support, int32_t D,
+                                 const tr_math_budget *budget, tr_reg_explain *ex, int32_t *error) {
+    tr_reg_explain_init(ex, repr, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    set_error(error, TR_MATH_OK);
+    int32_t rc = precheck(r, repr, ex);
+    if (!rc && !is_state_repr(repr)) rc = refuse_reg(ex, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
+    if (rc) { set_error(error, rc); return NULL; }
+    support = resolve_support(r, support); D = resolve_degree(r, D);
+    if (D > TR_REG_DEGREE || (repr == TR_REG_R_POWER && (support >> (TR_REG_DEGREE + 1)))) {
+        set_error(error, refuse_reg(ex, TR_REG_REFUSE_INVALID, TR_MATH_INVALID)); return NULL;
+    }
+    tr_math_need need;
+    tr_reg_need(r, repr, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 0, support, D, &need);
+    if (r->selected) need.need[TR_BUDGET_BYTES] = tr_budget_add(need.need[TR_BUDGET_BYTES], tr_budget_bitmap_bytes(r->rows));
+    rc = budget_gate(budget, &need, ex);
+    if (rc) { set_error(error, rc); return NULL; }
+    struct tr_reg_state_s *st = calloc(1, sizeof *st);
+    if (!st) { set_error(error, refuse_reg(ex, TR_REG_REFUSE_MEMORY, TR_MATH_MEMORY)); return NULL; }
+    rc = state_alloc(r, repr, support, D, st);
+    tr_reg_result scratch;
+    tr_reg_result_init(&scratch, r);
+    if (!rc) rc = scan_rows(r, repr, st, &scratch, ex);
+    if (!rc && r->selected) {
+        st->selection = malloc((size_t)(st->words ? st->words : 1) * 8);
+        if (!st->selection) rc = TR_MATH_MEMORY;
+        else for (uint64_t w = 0; w < st->words; w++) st->selection[w] = effective(r, w);
+        st->info.has_selection = 1;
+    }
+    if (rc) {
+        state_release(st); free(st);
+        set_error(error, refuse_reg(ex, kind_of(rc), rc)); return NULL;
+    }
+    if (ex) { ex->state_elements = st->info.elements; ex->state_bytes = st->info.bytes; ex->native_calls = 1; }
+    return st;
+}
+
+tr_reg_state *tr_reg_state_import(const tr_reg_request *r, const tr_reg_state_info *in, const void *raw, uint64_t bytes,
+                                  int32_t *error) {
+    set_error(error, TR_MATH_OK);
+    tr_math_refusal kernel;
+    if (!r || !in || (bytes && !raw) || tr_reg_request_check(r, &kernel) || !is_state_repr(in->representation) ||
+        in->rows != r->rows || in->ncodes != r->ncodes || in->width != r->width || in->offset != r->offset ||
+        in->source != r->source || in->revision != r->revision || in->has_validity != (r->validity != NULL) ||
+        in->degree < 0 || in->degree > TR_REG_DEGREE || (in->support >> (TR_REG_DEGREE + 1)) || !(in->support & 1) ||
+        in->selected != in->valid + in->nulls) {
+        set_error(error, TR_MATH_INVALID); return NULL;
+    }
+    struct tr_reg_state_s *st = calloc(1, sizeof *st);
+    if (!st) { set_error(error, TR_MATH_MEMORY); return NULL; }
+    int32_t rc = state_alloc(r, in->representation, in->support, in->degree, st);
+    if (!rc && (bytes != st->data_words * 8 || in->elements != st->info.elements)) rc = TR_MATH_INVALID;
+    if (!rc) {
+        memcpy(st->data, raw, (size_t)bytes);
+        uint64_t total = 0, first = st->data_words ? st->data[0] : 0;
+        if (in->representation == TR_REG_R_HISTOGRAM) for (uint64_t c = 0; c < r->ncodes; c++) total += st->data[c];
+        int consistent = in->representation == TR_REG_R_HISTOGRAM ? total == in->valid
+                       : in->representation == TR_REG_R_POWER ? first == in->valid && st->data[1] == 0
+                       : first == in->valid;
+        if (!consistent || in->selected != tr_reg_selected_count(r)) rc = TR_MATH_INVALID;
+    }
+    if (!rc && r->selected) {
+        st->selection = malloc((size_t)(st->words ? st->words : 1) * 8);
+        if (!st->selection) rc = TR_MATH_MEMORY;
+        else for (uint64_t w = 0; w < st->words; w++) st->selection[w] = effective(r, w);
+        st->info.has_selection = 1;
+    }
+    if (rc) { state_release(st); free(st); set_error(error, rc); return NULL; }
+    st->info.selected = in->selected; st->info.valid = in->valid; st->info.nulls = in->nulls;
+    return st;
+}
+int32_t tr_reg_state_size(const tr_reg_request *r, int32_t repr, uint32_t support, int32_t D, int32_t device,
+                          const tr_math_budget *budget, uint64_t *bytes, tr_math_refusal *refusal) {
+    tr_budget_none(refusal);
+    if (!bytes || !is_state_repr(repr) || (device != TR_REG_ON_CPU && device != TR_REG_ON_CUDA)) return TR_MATH_INVALID;
+    int32_t rc = tr_reg_request_check(r, refusal);
+    if (rc) return rc;
+    support = resolve_support(r, support); D = resolve_degree(r, D);
+    if (D > TR_REG_DEGREE || (support >> (TR_REG_DEGREE + 1))) return TR_MATH_INVALID;
+    tr_math_need need;
+    tr_reg_need(r, repr, device, TR_REG_FINAL_CPU, 0, support, D, &need);
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    if ((rc = tr_budget_check(budget, &need, refusal))) return rc;
+    *bytes = tr_reg_state_elements(r, repr, support, D) * (repr == TR_REG_R_POWER ? 16 : 8);
+    return TR_MATH_OK;
+}
+int32_t tr_reg_state_get_info(const tr_reg_state *st, tr_reg_state_info *out) {
+    if (!st || !out) return TR_MATH_INVALID;
+    *out = st->info;
+    return TR_MATH_OK;
+}
+int32_t tr_reg_state_raw(const tr_reg_state *st, void *out, uint64_t capacity) {
+    if (!st || (!out && st->data_words) || capacity < st->data_words * 8) return TR_MATH_INVALID;
+    if (st->data_words) memcpy(out, st->data, (size_t)(st->data_words * 8));
+    return TR_MATH_OK;
+}
+int32_t tr_reg_state_matches(const tr_reg_state *st, const tr_reg_request *r) {
+    if (!st || !r) return TR_MATH_INVALID;
+    const tr_reg_state_info *in = &st->info;
+    if (in->rows != r->rows || in->ncodes != r->ncodes || in->width != r->width || in->offset != r->offset ||
+        in->source != r->source || in->revision != r->revision || in->has_validity != (r->validity != NULL)) return 0;
+    for (uint64_t w = 0; w < st->words; w++) {
+        uint64_t mine = st->selection ? st->selection[w] : tr_reg_rowmask(r->rows, w);
+        if (mine != effective(r, w)) return 0;
+    }
+    return 1;
+}
+void tr_reg_state_free(tr_reg_state *st) {
+    if (!st) return;
+    state_release(st); free(st);
+}
+
+int32_t tr_reg_execute(const tr_reg_request *r, int32_t repr, const tr_reg_state *reuse, const tr_math_budget *budget,
+                       tr_reg_result *res, tr_reg_explain *ex) {
+    tr_reg_explain_init(ex, repr, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    if (!res) return refuse_reg(ex, TR_REG_REFUSE_INVALID, TR_MATH_INVALID);
+    int32_t rc = precheck(r, repr, ex);
+    if (rc) return rc;
+    tr_reg_result_init(res, r);
+    if (ex) ex->native_calls = 1;
+    if (reuse) {
+        const tr_reg_state_info *in = &reuse->info;
+        if (in->representation != repr || !is_state_repr(repr)) return refuse_reg(ex, TR_REG_REFUSE_INVALID, TR_MATH_INVALID);
+        if (tr_reg_state_matches(reuse, r) != 1) return refuse_reg(ex, TR_REG_REFUSE_STALE, TR_MATH_STALE);
+        if (!sufficient(in, r)) return refuse_reg(ex, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
+        tr_math_need need;
+        tr_reg_need(r, repr, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 1, in->support, in->degree, &need);
+        if ((rc = budget_gate(budget, &need, ex))) return rc;
+        if (repr != TR_REG_R_HISTOGRAM && !tr_reg_bound_ok(r, in->selected)) {
+            if (ex) tr_reg_refuse(&ex->refusal, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW, -1, TR_OP_CONVERT, TR_REG_C_INT128, 0,
+                                  TR_REG_C_MOD128, TR_REG_C_INT128);
+            return refuse_reg(ex, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW);
+        }
+        uint64_t work;
+        if (ex) { ex->reused = 1; ex->words_scanned = reuse->words; ex->state_elements = in->elements; ex->state_bytes = in->bytes; }
+        rc = contract(r, reuse, res, &work);
+        return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
+    }
+    if (repr == TR_REG_R_EMPTY) {
+        uint64_t n = tr_reg_selected_count(r);
+        if (ex) ex->words_scanned = tr_reg_words(r);
+        if (n) {
+            if (ex) tr_reg_refuse(&ex->refusal, TR_REG_REFUSE_PROOF, TR_MATH_UNSUPPORTED, -1, TR_OP_EMPTY, 0, 0, 0, 0);
+            return refuse_reg(ex, TR_REG_REFUSE_PROOF, TR_MATH_UNSUPPORTED);
+        }
+        return TR_MATH_OK;                                   /* zero sums, no rows (MIN/MAX: no value) */
+    }
+    uint32_t support = resolve_support(r, 0);
+    int32_t D = resolve_degree(r, 0);
+    tr_math_need need;
+    tr_reg_need(r, repr, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 0, support, D, &need);
+    if ((rc = budget_gate(budget, &need, ex))) return rc;
+    if ((repr == TR_REG_R_POWER || repr == TR_REG_R_BITPLANE) && !tr_reg_bound_ok(r, tr_reg_selected_count(r))) {
+        if (ex) tr_reg_refuse(&ex->refusal, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW, -1, TR_OP_CONVERT, TR_REG_C_INT128, 0,
+                              TR_REG_C_MOD128, TR_REG_C_INT128);
+        return refuse_reg(ex, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW);
+    }
+    if (repr == TR_REG_R_SCAN) {
+        rc = scan_rows(r, repr, NULL, res, ex);
+        return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
+    }
+    struct tr_reg_state_s st;
+    rc = state_alloc(r, repr, support, D, &st);
+    if (!rc) rc = scan_rows(r, repr, &st, res, ex);
+    uint64_t work = 0;
+    if (!rc) rc = contract(r, &st, res, &work);
+    if (ex) { ex->state_elements = st.info.elements; ex->state_bytes = st.info.bytes; }
+    state_release(&st);
+    return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
+}
+
+/* ------------------------------------------------------------------ candidates (the bounded search) */
+#define BIT(c) (1u << (c))
+#define SHARED_SCAN (BIT(TR_COST_WORDS) | BIT(TR_COST_SCAN) | BIT(TR_COST_FIXED) | BIT(TR_COST_TRANSFER))
+#define SHARED_STATE (SHARED_SCAN | BIT(TR_COST_CHAIN) | BIT(TR_COST_CONSTRUCT))
+static void candidate_init(tr_reg_candidate *c, int32_t repr, int32_t device, int32_t finalize, int32_t reuse, int32_t batch) {
+    memset(c, 0, sizeof *c);
+    c->module = repr; c->representation = repr; c->device = device; c->finalize = finalize;
+    c->reuse = reuse; c->batch = batch; c->valid = 1;
+    tr_reg_refusal_none(&c->refusal); tr_budget_none(&c->budget);
+}
+static void reject(tr_reg_candidate *c, int32_t kind, int32_t code) {
+    if (!c->valid) return;
+    c->valid = 0; c->code = code;
+    if (c->refusal.kind == TR_REG_REFUSE_NONE) tr_reg_refuse(&c->refusal, kind, code, -1, 0, 0, 0, 0, 0);
+}
+#define MUL tr_budget_mul
+#define ADD tr_budget_add
+/* the amounts of a representation's execution (see tr_reg_candidate; S the estimated selected rows) */
+static void amounts(tr_reg_candidate *c, const tr_reg_request *r, uint64_t S, uint32_t support, int32_t D) {
+    uint64_t W = tr_reg_words(r), k = (uint64_t)r->npolys, V = r->validity ? 2 : 1, T = tr_reg_terms(r);
+    uint64_t C = r->ncodes, O = S < C ? S : C, P = tr_reg_plane_sets(r->width, D), NW = S < W ? S : W;
+    uint64_t m = (uint64_t)tr_reg_popcount32(support), out = 16 * k + 24, *a = c->amount;
+    uint64_t setbits = 0, moebius = 0;
+    for (int32_t s = 0; s <= D && s <= r->width; s++)
+        setbits = ADD(setbits, MUL((uint64_t)s, tr_budget_binomial((uint64_t)r->width, (uint64_t)s)));
+    for (int32_t j = 0; j < r->npolys; j++)
+        moebius = ADD(moebius, MUL(tr_reg_plane_terms(r->width, r->degree[j]), (uint64_t)r->degree[j] + 1));
+    int cuda = c->device == TR_REG_ON_CUDA;
+    uint64_t in = tr_reg_input_bytes(r);
+    a[TR_COST_MATERIALIZE] = out;
+    if (c->reuse) {
+        a[TR_COST_REUSE] = W + 1;
+        a[TR_COST_FIXED] = 1;
+        if (c->representation == TR_REG_R_HISTOGRAM) a[TR_COST_CPU_FINAL] = ADD(MUL(k, C), MUL(O, T));
+        else if (c->representation == TR_REG_R_POWER) a[TR_COST_CPU_FINAL] = T;
+        else { a[TR_COST_CPU_FINAL] = MUL(k, P); a[TR_COST_COMBINE] = moebius; }
+        return;
+    }
+    switch (c->representation) {
+    case TR_REG_R_EMPTY:
+        a[TR_COST_WORDS] = W; a[TR_COST_FIXED] = 1;
+        return;
+    case TR_REG_R_SCAN:
+        a[TR_COST_CHAIN] = MUL(S, T);
+        c->shared = SHARED_SCAN;
+        if (cuda) { a[TR_COST_GPU_FINAL] = k; a[TR_COST_TRANSFER] = ADD(MUL(k, in), out + 16); }
+        else a[TR_COST_CPU_FINAL] = k;
+        break;
+    case TR_REG_R_HISTOGRAM:
+        a[TR_COST_CHAIN] = MUL(k, S); a[TR_COST_CONSTRUCT] = MUL(k, C);
+        c->shared = SHARED_STATE;
+        if (!cuda) a[TR_COST_CPU_FINAL] = ADD(MUL(k, C), MUL(O, T));
+        else if (c->finalize == TR_REG_FINAL_GPU) {
+            a[TR_COST_GPU_FINAL] = ADD(MUL(k, C), MUL(O, T)); a[TR_COST_TRANSFER] = ADD(MUL(k, in), out + 16);
+        } else {
+            a[TR_COST_CPU_FINAL] = ADD(MUL(k, C), MUL(O, T)); a[TR_COST_TRANSFER] = ADD(MUL(k, ADD(in, MUL(C, 8))), 24);
+        }
+        break;
+    case TR_REG_R_POWER:
+        a[TR_COST_CHAIN] = MUL(MUL(k, S), (uint64_t)(D > 0 ? D : 1)); a[TR_COST_CONSTRUCT] = MUL(k, m);
+        a[TR_COST_CPU_FINAL] = T;
+        c->shared = SHARED_STATE;
+        if (cuda) a[TR_COST_TRANSFER] = ADD(MUL(k, ADD(in, MUL(m, 16))), 24);
+        break;
+    case TR_REG_R_BITPLANE:
+        a[TR_COST_CHAIN] = MUL(k, ADD(MUL(S, (uint64_t)r->width), MUL(NW, setbits)));
+        a[TR_COST_CONSTRUCT] = MUL(k, P); a[TR_COST_COMBINE] = moebius; a[TR_COST_CPU_FINAL] = MUL(k, P);
+        c->shared = SHARED_STATE;
+        if (cuda) a[TR_COST_TRANSFER] = ADD(MUL(k, ADD(in, MUL(P, 12))), 24);
+        break;
+    }
+    a[TR_COST_WORDS] = MUL(k, W);
+    a[TR_COST_SCAN] = MUL(MUL(k, S), V);
+    a[TR_COST_FIXED] = cuda && c->representation == TR_REG_R_HISTOGRAM && c->finalize == TR_REG_FINAL_GPU ? 2 * k : k;
+    a[TR_COST_FUSION] = k - 1;
+}
+static void candidate_fill(tr_reg_candidate *c, const tr_reg_request *r, const tr_reg_state *cached, uint64_t S,
+                           uint64_t rows_bound, int32_t empty_proven) {
+    uint32_t support = resolve_support(r, 0);
+    int32_t D = resolve_degree(r, 0);
+    if (c->reuse && cached) { support = cached->info.support; D = cached->info.degree; }
+    tr_reg_refusal law;
+    int32_t rc = tr_reg_check_representation(c->representation, r, &law);
+    if (rc) { c->valid = 0; c->code = rc; c->refusal = law; }
+    if (c->representation == TR_REG_R_EMPTY && !empty_proven) {
+        if (c->valid) tr_reg_refuse(&c->refusal, TR_REG_REFUSE_PROOF, TR_MATH_UNSUPPORTED, -1, TR_OP_EMPTY, 0, 0, 0, 0);
+        reject(c, TR_REG_REFUSE_PROOF, TR_MATH_UNSUPPORTED);
+    }
+    if (c->reuse) {
+        if (tr_reg_state_matches(cached, r) != 1) reject(c, TR_REG_REFUSE_STALE, TR_MATH_STALE);
+        else if (!sufficient(&cached->info, r)) reject(c, TR_REG_REFUSE_UNSUPPORTED, TR_MATH_UNSUPPORTED);
+        else if (c->representation != TR_REG_R_HISTOGRAM && !tr_reg_bound_ok(r, cached->info.selected)) {
+            if (c->valid) tr_reg_refuse(&c->refusal, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW, -1, TR_OP_CONVERT,
+                                        TR_REG_C_INT128, 0, TR_REG_C_MOD128, TR_REG_C_INT128);
+            reject(c, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW);
+        }
+    } else if ((c->representation == TR_REG_R_POWER || c->representation == TR_REG_R_BITPLANE) && c->valid &&
+               !tr_reg_bound_ok(r, rows_bound)) {
+        tr_reg_refuse(&c->refusal, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW, -1, TR_OP_CONVERT, TR_REG_C_INT128, 0,
+                      TR_REG_C_MOD128, TR_REG_C_INT128);
+        reject(c, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW);
+    }
+    /* a plan admits SCAN and HISTOGRAM only when no checked evaluation can leave int64 over the code domain */
+    if ((c->representation == TR_REG_R_SCAN || c->representation == TR_REG_R_HISTOGRAM) && c->valid &&
+        !tr_reg_eval_bound_ok(r)) {
+        tr_reg_refuse(&c->refusal, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW, -1, TR_OP_EVAL, TR_REG_C_INTEGER, 0, 0, 0);
+        reject(c, TR_REG_REFUSE_BOUND, TR_MATH_OVERFLOW);
+    }
+    tr_reg_need(r, c->representation, c->device, c->finalize, c->reuse, support, D, &c->need);
+    amounts(c, r, S, support, D);
+}
+int32_t tr_reg_candidates(const tr_reg_request *r, const tr_reg_state *cached, int32_t devices, uint64_t estimate,
+                          uint64_t rows_bound, int32_t empty_proven, const tr_math_budget *budget, tr_reg_candidate *out,
+                          int32_t capacity, int32_t *count, tr_math_refusal *refusal) {
+    tr_budget_none(refusal);
+    if (!out || !count || capacity < 0) return TR_MATH_INVALID;
+    *count = 0;
+    tr_math_refusal kernel;
+    int32_t rc = tr_reg_request_check(r, &kernel);
+    if (rc) { if (refusal && rc == TR_MATH_BUDGET) *refusal = kernel; return rc; }
+    if (!(devices & TR_REG_ON_CPU) && !(devices & TR_REG_ON_CUDA)) return TR_MATH_INVALID;
+    if (cached && !is_state_repr(cached->info.representation)) return TR_MATH_INVALID;
+    int32_t plan[TR_REG_MAX_CANDIDATES][4], n = 0;    /* representation, device, finalize, reuse */
+#define PLAN(rp, dv, fn, ru) do { plan[n][0] = rp; plan[n][1] = dv; plan[n][2] = fn; plan[n][3] = ru; n++; } while (0)
+    if (devices & TR_REG_ON_CPU) {
+        PLAN(TR_REG_R_EMPTY, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 0);
+        for (int32_t rp = TR_REG_R_SCAN; rp <= TR_REG_R_BITPLANE; rp++) PLAN(rp, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 0);
+    }
+    if (cached) PLAN(cached->info.representation, TR_REG_ON_CPU, TR_REG_FINAL_CPU, 1);
+    if (devices & TR_REG_ON_CUDA) {
+        PLAN(TR_REG_R_SCAN, TR_REG_ON_CUDA, TR_REG_FINAL_GPU, 0);
+        PLAN(TR_REG_R_HISTOGRAM, TR_REG_ON_CUDA, TR_REG_FINAL_GPU, 0);
+        PLAN(TR_REG_R_HISTOGRAM, TR_REG_ON_CUDA, TR_REG_FINAL_CPU, 0);
+        PLAN(TR_REG_R_POWER, TR_REG_ON_CUDA, TR_REG_FINAL_CPU, 0);
+        PLAN(TR_REG_R_BITPLANE, TR_REG_ON_CUDA, TR_REG_FINAL_CPU, 0);
+    }
+#undef PLAN
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    if ((rc = tr_budget_check_one(budget, TR_BUDGET_ITERATIONS, (uint64_t)n, refusal))) return rc;
+    if (n > capacity) return TR_MATH_INVALID;
+    uint64_t S = estimate < r->rows ? estimate : r->rows;
+    for (int32_t i = 0; i < n; i++) {
+        candidate_init(&out[i], plan[i][0], plan[i][1], plan[i][2], plan[i][3], r->npolys);
+        candidate_fill(&out[i], r, cached, S, rows_bound, empty_proven);
+    }
+    *count = n;
+    return TR_MATH_OK;
+}
+
+/* ------------------------------------------------------------------ DISC-001 through the registry */
+int32_t tr_reg_verify(const tr_disc_view *v, int64_t scale, int64_t bias, tr_disc_evidence *e, tr_reg_explain *ex) {
+    tr_reg_explain_init(ex, TR_REG_R_VERIFY, TR_REG_DEV_CPU, TR_REG_FINAL_CPU);
+    int32_t rc = tr_disc_verify(v, scale, bias, e);
+    if (ex && v) { ex->rows_scanned = v->rows; ex->words_scanned = (v->rows + 63) / 64; ex->native_calls = 1; }
+    return rc ? refuse_reg(ex, kind_of(rc), rc) : TR_MATH_OK;
+}
+int32_t tr_reg_candidates_verify(const tr_disc_view *v, int32_t devices, const tr_math_budget *budget,
+                                 tr_reg_candidate *out, int32_t capacity, int32_t *count, tr_math_refusal *refusal) {
+    tr_budget_none(refusal);
+    if (!v || !out || !count || (v->arity != 1 && v->arity != 2) || !(devices & (TR_REG_ON_CPU | TR_REG_ON_CUDA)))
+        return TR_MATH_INVALID;
+    *count = 0;
+    int32_t n = ((devices & TR_REG_ON_CPU) != 0) + ((devices & TR_REG_ON_CUDA) != 0);
+    tr_math_budget dflt;
+    if (!budget) { tr_budget_default(&dflt); budget = &dflt; }
+    int32_t rc = tr_budget_check_one(budget, TR_BUDGET_ITERATIONS, (uint64_t)n, refusal);
+    if (rc) return rc;
+    if (n > capacity) return TR_MATH_INVALID;
+    uint64_t columns = (uint64_t)v->arity + 1, W = (v->rows + 63) / 64;
+    for (int32_t i = 0; i <= v->arity; i++) if (v->validity[i]) columns++;
+    int32_t at = 0;
+    for (int32_t dv = TR_REG_ON_CPU; dv <= TR_REG_ON_CUDA; dv <<= 1) {
+        if (!(devices & dv)) continue;
+        tr_reg_candidate *c = &out[at++];
+        candidate_init(c, TR_REG_R_VERIFY, dv, dv == TR_REG_ON_CUDA ? TR_REG_FINAL_GPU : TR_REG_FINAL_CPU, 0, 1);
+        for (int k = 0; k < TR_BUDGET_RESOURCES; k++) c->need.need[k] = 0;
+        c->need.need[TR_BUDGET_VARIABLES] = (uint64_t)v->arity + 1;
+        c->need.need[TR_BUDGET_OUTPUT] = 1;
+        c->amount[TR_COST_WORDS] = W;
+        c->amount[TR_COST_SCAN] = MUL(v->rows, columns);
+        c->amount[TR_COST_CHAIN] = v->used_count;
+        c->amount[TR_COST_MATERIALIZE] = sizeof(tr_disc_evidence);
+        c->amount[TR_COST_FIXED] = 1;
+        if (dv == TR_REG_ON_CUDA) {
+            c->need.need[TR_BUDGET_BYTES] = tr_disc_bytes(v);
+            c->amount[TR_COST_TRANSFER] = ADD(tr_disc_bytes(v), sizeof(tr_disc_evidence));
+            c->amount[TR_COST_GPU_FINAL] = 1;
+        } else c->amount[TR_COST_CPU_FINAL] = 1;
+    }
+    *count = n;
+    return TR_MATH_OK;
+}
