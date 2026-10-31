@@ -231,3 +231,5 @@ and their status is the inventory's.
 - [Persistence](math/persist.md) (FND-011): versioned, checksummed records of mathematical states.
 - [Convolutions and series](math/conv.md) (GEN-002): declared-independence products, per-key products, bounded walks.
 - [Provenance](math/prov.md) (PROV-001): factorized derivations in the Boolean, counting and polynomial semirings.
+- [Bilinear updates](math/bilinear.md) (DELTA-002): exact join and matrix-product deltas with all cross terms.
+- [Group envelopes](math/env.md) (ENV-001): exact winning groups and breakpoints of affine/quadratic families.

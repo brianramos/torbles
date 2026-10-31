@@ -70,7 +70,7 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "quadratic objective", "separated coefficients", "jet aggregates", "hierarchy", "maintained cells",
     "condition masks", "gf2 bits", "joint histogram", "prefix sums", "quantifier counts", "coverage",
     "occupancy histogram", "lattice vector", "walsh spectrum", "contingency tables", "generating polynomial",
-    "certificate", "serialized record", "provenance dag"};
+    "certificate", "serialized record", "provenance dag", "join terms", "envelope"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -486,6 +486,25 @@ static const tr_reg_module modules[] = {
                    "tr_prov_group", "tr_prov_plan_build", "tr_prov_evaluate", "tr_prov_expand", "tr_prov_witnesses",
                    "tr_prov_need"},
      .cuda_entry = {"tr_mgpu_prov_evaluate"}},
+    {FAMILY(TR_REG_M_BILINEAR, "bilinear", "bilinear", "DELTA-002", "bilinear/join and nonlinear update laws"),
+     .state_kind = TR_REG_STATE_JOIN_TERMS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(COUNT),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_bilin_join_build", "tr_bilin_join_update", "tr_bilin_join_finalize", "tr_bilin_cross_eval",
+                   "tr_bilin_matrix_delta", "tr_bilin_values_from_scope", "tr_bilin_values_apply",
+                   "tr_bilin_values_finalize", "tr_bilin_job_build", "tr_bilin_job_update", "tr_bilin_update_need",
+                   "tr_bilin_join_need"},
+     .cuda_entry = {"tr_mgpu_bilin_cross", "tr_mgpu_bilin_matrix"}},
+    {FAMILY(TR_REG_M_ENV, "env", "env", "ENV-001", "univariate group envelopes"),
+     .state_kind = TR_REG_STATE_ENVELOPE, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(QINTERVAL) | CB(RATIONAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_env_build", "tr_env_from_bank", "tr_env_from_polys", "tr_env_value", "tr_env_region_get",
+                   "tr_env_point_get", "tr_env_point_refine", "tr_env_lookup_create", "tr_env_lookup_eval",
+                   "tr_env_need", "tr_env_lookup_need"},
+     .cuda_entry = {"tr_mgpu_env_lookup"}},
 };
 #undef BUILTIN
 #undef FAMILY

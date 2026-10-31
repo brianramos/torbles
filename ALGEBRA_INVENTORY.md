@@ -3466,9 +3466,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [RESP-001](#resp-001), [INV-001](#inv-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_env.c): the lower or upper envelope of one affine or quadratic function per group over a parameter interval: the winning group per piece and exact breakpoints (rational, or certified isolating intervals via INV-001 for algebraic ones), with a declared tie policy, coincident pieces reported, empty groups never winning and unbounded intervals handled exactly.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_env_gpu.cu: batched exact lookups of the winning group at many parameter values, equal to the CPU.
 
 Bounds:
 
@@ -3477,9 +3477,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_env.c`
 - `torbles/math_env.h`
+- `torbles/math_env.c`
+- `torbles/math_env_gpu.cu`
+- `torbles/math_env.py`
 - `tests/test_math_env.py`
+- `bench/benchmark_math_env.py`
 
 Acceptance tests:
 
@@ -3490,6 +3493,11 @@ Benchmark cases:
 
 - Build 8/64/1,024 group functions and request 1/100/10,000 parameter values; compare an envelope build plus lookups with repeated all-group evaluation.
 - Vary coincident curves, breakpoint count and parameter dimension; report exact region/output size and over-budget region cases.
+
+Additional limits:
+
+- One parameter, degree at most 2; the build grows roughly with groups^2 when every group wins (budgeted).
+- The envelope is built on the CPU; irrational breakpoints are certified intervals refined on request; envelope values only at rational inputs.
 
 <a id="env-002"></a>
 
@@ -3923,9 +3931,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DELTA-001](#delta-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_bilinear.c, on DELTA-001 and FND-004): maintained per-key bilinear join states updated on either or both sides with all finite cross terms, Delta(AB) = Delta(A) B + A Delta(B) + Delta(A) Delta(B), exact with proven bounds; changing join multiplicities through the per-key states; nonlinear finalizers with their own retained state (per-value multiplicities for DISTINCT, the multiset or a rebuild for MIN/MAX, sufficient sums for ratios and variances); documented as finite differences of exact states, not derivatives.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernels math_bilinear_gpu.cu: batched exact cross-term updates per key with wide atomics, and the matrix-product delta, equal to the CPU.
 
 Bounds:
 
@@ -3934,9 +3942,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_delta.c`
-- `torbles/math_delta.h`
-- `tests/test_math_delta.py`
+- `torbles/math_bilinear.h`
+- `torbles/math_bilinear.c`
+- `torbles/math_bilinear_gpu.cu`
+- `torbles/math_bilinear.py`
+- `tests/test_math_bilinear.py`
+- `bench/benchmark_math_bilinear.py`
 
 Acceptance tests:
 
@@ -3947,6 +3958,11 @@ Benchmark cases:
 
 - Apply insert/delete/weight-change batches of 1/10/1,000 rows to 1k/100k/1M-row states; separate initial build from each maintained update.
 - Vary one versus both changing sides of bilinear joins and group-move frequency; compare every update with complete reconstruction, retaining rebuild/refusal cases.
+
+Additional limits:
+
+- Two-sided joins only, over dense key ids shared by both sides (no key dictionary); side states dense over keys x groups.
+- COUNT DISTINCT and MIN/MAX are maintained for single-table value states (a join result raises DomainError); the min/max-only state refuses with RebuildRequired when the last extreme is deleted.
 
 ## UNC: Certified uncertainty
 
