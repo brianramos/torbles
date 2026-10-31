@@ -898,7 +898,7 @@
    "id": "FND-010",
    "family_id": null,
    "title": "Search, representation and output budgets",
-   "status": "partial",
+   "status": "in_progress",
    "wave": "W0",
    "depends_on": [
     "FND-001"
@@ -943,7 +943,42 @@
     "The first-slice polynomial kernel keeps its fixed limits (8 variables, degree 8, 128 terms); the budget module states them (Budget.polynomial_kernel) and refuses at the same boundaries but does not replace them.",
     "Costs given to the representation choice are relative work units supplied by the calling capability, not measured times."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_budgets_gpu.cu": "8ad64d8b194b1b0831513cc16e83d6d3de74fd6c1bdf9f2d7957d411d0184e72",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "tests/test_math_budgets.py": "fba6eaad455a789c27142b8756527dc437a98817ecbe132c24b2aff223ec2a5c",
+     "bench/benchmark_math_budgets.py": "e68739b1e15401ff67a31ed28a8bad0bb1afb3a7f6287ef955aeb2e34a057c3e",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_cuda.h": "d50133264baa1e890c326145e92a5adfc54199dd01d63b63b39e3902517d8178",
+     "torbles/math_errors.py": "9adfd4ce00c2d2dcb658199dd701282b871c17a27e1be6d82fd73b61d563e368",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_num.h": "6cf2f8d8f0f57b50dd99be7bbec1aab41604443866480742ba01c1c0d7585aaa",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9"
+    },
+    "measured_runtime_commit": "5dcd0377d6c3efed9699ba287c82e491e7442c8a",
+    "tests": [
+     "results/math/FND-010/tests_test_math_budgets.json",
+     "results/math/FND-010/sanitized_test_math_budgets.json"
+    ],
+    "benchmarks": [
+     "results/math/FND-010/benchmark_cpu_math_budgets_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_budgets_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/FND-010/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/FND-010/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "FND-011",
@@ -996,7 +1031,7 @@
    "id": "FND-012",
    "family_id": null,
    "title": "Differential validation and benchmark gates",
-   "status": "partial",
+   "status": "in_progress",
    "wave": "W0",
    "depends_on": [],
    "scope": "Per-capability oracles, algebraic property checks, scope/NULL/bag/refusal tests and measured build/cold/reuse benchmarks. Existing suite remains a regression gate.",
@@ -1050,7 +1085,48 @@
    "limitations": [
     "The gate verifies that receipts exist, pass and match the measured sources; whether an oracle is independent of the implementation is reviewed per capability, not decided by the gate."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "tests/test_math_gates.py": "3538e9d40202f629d20034444fe7a530b8e4ff4ce8257df02f5126af17fe8d20",
+     "tests/test_mathematics.py": "b7d8e3bfd597bfb24778e7300951f7a50f385b80b19f569384074cb4e8290695",
+     "tests/mathematics_native_edges.c": "17772a422bb057dea492c3f2ac832d31cb8726b5009cf1771fabaf2ea85132da",
+     "tests/validate_mathematics_native.py": "710d958e0acf62f9de052e36eea523e26924e709f01d4ae5e300c908ceb61641",
+     "tests/sanitize_math.sh": "aa9dd633d8dee59273647cac24b5855e0932bb6f1a5a786f163868b8b10b1fad",
+     "torbles/math_core_gpu.cu": "61714efa0f6dde61679fa296e48d335b69e3adb46fb17bab9e277d4ead892067",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_errors.py": "9adfd4ce00c2d2dcb658199dd701282b871c17a27e1be6d82fd73b61d563e368",
+     "bench/validate_math.py": "e53323f4884f641e29e1867798490ecec685ace0a2624b64171af2a8ec372510",
+     "bench/render_algebra_inventory.py": "359ad0ce10821349b3c0306c257c22ac73b2402769bd9030078373f191908650",
+     "bench/math_bench.py": "3950a89ecc5744ef106aaed41f19a0e7308260d2598980a7d15bc11abd445826",
+     "bench/benchmark_math_gates.py": "b49e007b222b8b515c4eec47d986cb423e53be747ea71aa567f099401f21268d",
+     "bench/benchmark_mathematics.py": "7f083dccad50b397ed53c8b201c8f7e6bc1bde0ef96c3088556d9821676695f0",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_cuda.h": "d50133264baa1e890c326145e92a5adfc54199dd01d63b63b39e3902517d8178",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_num.h": "6cf2f8d8f0f57b50dd99be7bbec1aab41604443866480742ba01c1c0d7585aaa"
+    },
+    "measured_runtime_commit": "5dcd0377d6c3efed9699ba287c82e491e7442c8a",
+    "tests": [
+     "results/math/FND-012/tests_test_math_gates.json",
+     "results/math/FND-012/sanitized_test_math_gates.json"
+    ],
+    "benchmarks": [
+     "results/math/FND-012/benchmark_cpu_math_gates_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_core_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/FND-012/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/FND-012/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "FND-013",
@@ -3078,7 +3154,7 @@
    "id": "DISC-001",
    "family_id": "DISC",
    "title": "Existing bounded affine, sum and product discovery",
-   "status": "existing",
+   "status": "in_progress",
    "wave": "W0",
    "depends_on": [],
    "scope": "Current native exhaustive modules discover/probe affine, sum and product relations with bounded candidate budgets and snapshot evidence.",
@@ -3131,7 +3207,50 @@
     "The CUDA verifier copies one hypothesis's columns to the device per call; there is no device-resident catalog, and discovery (proposal enumeration) is CPU only.",
     "Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/relationships.h": "60777871222987cedcf109a761892b5827a777cc5d7369c5b10838a3e1b58449",
+     "torbles/relationships.c": "ecf0ab3fffba865f1997cfed30857ba18494eca885f6421187323e66e0d8915a",
+     "torbles/relationships_optimizer.c": "6d65b9f1902f012ba81415dc2e304983e45f518eea1617ed65228997fe7665a1",
+     "torbles/relationships.py": "e968f808aabf1ea797d831d1d8d04d32fe5e1a292b352a08ceca1995b0329c21",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_disc.c": "1b96066c950bd0cf42b8c7ca6389e9a773155cc9a7aeeeeac73dc122b5967b08",
+     "torbles/math_disc_gpu.cu": "52d59131febebee6b46f94842edf6f725b72d86f61a3b60f4154f2bd3d378f5f",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "tests/test_math_disc.py": "1b2a73d7012b07c83dac4dc5f058065865e769edd99f52a0220bae6ca3ee58ed",
+     "tests/test_relationships.py": "9d4a53f4c952f1028ec972a958798ee8cbe0e617b8b35de29894f3d6f1d20090",
+     "bench/benchmark_math_disc.py": "f5270b3e2b0ebb70dd8ea7a4255439d42f7f261cb199c3014df40c94847e08e2",
+     "torbles/torble.h": "9c8bff5f6d8b73425ae318c685ca29b48510b66ee30584f6190ea6e803fe077d",
+     "torbles/math_num.h": "6cf2f8d8f0f57b50dd99be7bbec1aab41604443866480742ba01c1c0d7585aaa",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_cuda.h": "d50133264baa1e890c326145e92a5adfc54199dd01d63b63b39e3902517d8178",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "9adfd4ce00c2d2dcb658199dd701282b871c17a27e1be6d82fd73b61d563e368",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9"
+    },
+    "measured_runtime_commit": "5dcd0377d6c3efed9699ba287c82e491e7442c8a",
+    "tests": [
+     "results/math/DISC-001/tests_test_math_disc.json",
+     "results/math/DISC-001/sanitized_test_math_disc.json"
+    ],
+    "benchmarks": [
+     "results/math/DISC-001/benchmark_cpu_math_disc_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_disc_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/DISC-001/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/DISC-001/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "DISC-002",

@@ -247,8 +247,8 @@ def main():
             raise SystemExit(f"unknown capability {cap}")
         results[cap] = validate(cap, by[cap], a.device, a.skip_bench)
         INVENTORY.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
+        subprocess.run([sys.executable, "bench/render_algebra_inventory.py"], cwd=ROOT, capture_output=True)
         print(f"{cap}: {'receipts written' if results[cap] else 'FAILED (see results/math/' + cap + ')'}; status {by[cap]['status']}", flush=True)
-    subprocess.run([sys.executable, "bench/render_algebra_inventory.py"], cwd=ROOT, capture_output=True)
     sys.exit(0 if all(results.values()) else 1)
 
 

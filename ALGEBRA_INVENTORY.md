@@ -12,10 +12,10 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 
 | Status | Capabilities |
 |---|---:|
-| existing | 1 |
-| partial | 18 |
+| existing | 0 |
+| partial | 16 |
 | planned | 56 |
-| in_progress | 0 |
+| in_progress | 3 |
 | validated | 6 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -691,7 +691,7 @@ Benchmark cases:
 
 ### FND-010: Search, representation and output budgets
 
-Status: **partial**. Delivery wave: **W0**.
+Status: **in_progress**. Delivery wave: **W0**.
 
 Every new module bounds variable count, degree, support, tensor size, circuit size, iteration count and output cardinality; fallbacks remain explicit and costed.
 
@@ -736,6 +736,14 @@ Additional limits:
 
 - The first-slice polynomial kernel keeps its fixed limits (8 variables, degree 8, 128 terms); the budget module states them (Budget.polynomial_kernel) and refuses at the same boundaries but does not replace them.
 - Costs given to the representation choice are relative work units supplied by the calling capability, not measured times.
+
+Validation receipts:
+
+Measured runtime: `5dcd0377d6c3efed9699ba287c82e491e7442c8a`.
+
+- tests: [results/math/FND-010/tests_test_math_budgets.json](results/math/FND-010/tests_test_math_budgets.json)
+- tests: [results/math/FND-010/sanitized_test_math_budgets.json](results/math/FND-010/sanitized_test_math_budgets.json)
+- benchmarks: [results/math/FND-010/benchmark_cpu_math_budgets_vm.json](results/math/FND-010/benchmark_cpu_math_budgets_vm.json)
 
 <a id="fnd-011"></a>
 
@@ -783,7 +791,7 @@ Benchmark cases:
 
 ### FND-012: Differential validation and benchmark gates
 
-Status: **partial**. Delivery wave: **W0**.
+Status: **in_progress**. Delivery wave: **W0**.
 
 Per-capability oracles, algebraic property checks, scope/NULL/bag/refusal tests and measured build/cold/reuse benchmarks. Existing suite remains a regression gate.
 
@@ -835,6 +843,14 @@ Benchmark cases:
 Additional limits:
 
 - The gate verifies that receipts exist, pass and match the measured sources; whether an oracle is independent of the implementation is reviewed per capability, not decided by the gate.
+
+Validation receipts:
+
+Measured runtime: `5dcd0377d6c3efed9699ba287c82e491e7442c8a`.
+
+- tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
+- tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
+- benchmarks: [results/math/FND-012/benchmark_cpu_math_gates_vm.json](results/math/FND-012/benchmark_cpu_math_gates_vm.json)
 
 <a id="fnd-013"></a>
 
@@ -2779,7 +2795,7 @@ Polynomial identities, conserved quantities and hidden coordinates.
 
 ### DISC-001: Existing bounded affine, sum and product discovery
 
-Status: **existing**. Delivery wave: **W0**.
+Status: **in_progress**. Delivery wave: **W0**.
 
 Current native exhaustive modules discover/probe affine, sum and product relations with bounded candidate budgets and snapshot evidence.
 
@@ -2830,6 +2846,14 @@ Additional limits:
 
 - The CUDA verifier copies one hypothesis's columns to the device per call; there is no device-resident catalog, and discovery (proposal enumeration) is CPU only.
 - Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor.
+
+Validation receipts:
+
+Measured runtime: `5dcd0377d6c3efed9699ba287c82e491e7442c8a`.
+
+- tests: [results/math/DISC-001/tests_test_math_disc.json](results/math/DISC-001/tests_test_math_disc.json)
+- tests: [results/math/DISC-001/sanitized_test_math_disc.json](results/math/DISC-001/sanitized_test_math_disc.json)
+- benchmarks: [results/math/DISC-001/benchmark_cpu_math_disc_vm.json](results/math/DISC-001/benchmark_cpu_math_disc_vm.json)
 
 <a id="disc-002"></a>
 

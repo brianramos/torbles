@@ -141,10 +141,14 @@ class Gates(unittest.TestCase):
         self.assertIn("129 support", str(err))
 
     def test_fnd012_first_slice_native_validators_still_pass(self):
-        for script in ("validate_mathematics_native.py",):
-            run = subprocess.run([sys.executable, str(ROOT / "tests" / script)], cwd=ROOT, capture_output=True,
-                                 text=True, timeout=1800)
-            self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-2000:])
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:   # the committed first-slice receipts are left untouched
+            for script in ("validate_mathematics_native.py",):
+                receipt = Path(tmp) / (script + ".json")
+                run = subprocess.run([sys.executable, str(ROOT / "tests" / script), "--receipt", str(receipt)],
+                                     cwd=ROOT, capture_output=True, text=True, timeout=1800)
+                self.assertEqual(run.returncode, 0, run.stdout[-2000:] + run.stderr[-2000:])
+                self.assertTrue(json.loads(receipt.read_text())["all_passed"])
 
     def test_fnd012_inventory_view_is_current(self):
         run = subprocess.run([sys.executable, str(ROOT / "bench" / "render_algebra_inventory.py"), "--check"],
