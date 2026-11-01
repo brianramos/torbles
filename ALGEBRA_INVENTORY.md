@@ -3630,9 +3630,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [DISC-002](#disc-002), [DELTA-001](#delta-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: tr_cons_tracker_make builds the exact DISC-002 Gram of an unweighted EXACT plan over a FND-004 scope, verifies up to 256 DISC-002 identities exhaustively and certifies the holding ones (FND-007 snapshots); tr_cons_job_make / tr_cons_job_run evaluate only the rows of a DELTA-001 delta: the Gram increment sum w m m^T over complete rows (each moment proven against 128 bits from the delta's extremes before anything is added) and, per identity, the checked / excluded / violating / undecided weights of inserted and deleted rows with the smallest violating row of each (W-word exact evaluation, W proven from the extremes); tr_cons_tracker_update adds them (a DELTA-001 companion state refuses deltas that do not apply and deletes of rows that are not there), certifies holding identities again after a DIFF bound to the new scope (the evidence is then that scope's exhaustive evidence by induction; tr_cert_adopt) and only holds them after other deltas; tr_cons_tracker_rebind is the complete recomputation. Per identity a persistence record (certified steps, runs, streak, the first failure's step, revision, violations and witness row with its values) and four evidence classes kept apart (declared, snapshot, stability, hypothesis); only a fresh snapshot authorizes an exact rewrite (tr_cons_authorize). tr_cons_conserve expands P = q(T(x)) - q(x) exactly: zero is a universal FND-007 RING_IDENTITY law, else a counterexample point from the Nullstellensatz grid; tr_cons_law_candidates / tr_cons_law_witnesses check P = 0 on the rows (snapshot certificate or the violating rows).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: tr_mgpu_cons_delta evaluates a job's delta rows on the device: work items (moment chunk, row slice) add the exact Gram increments with two-word atomics (tr_atomic_add_wide; the host proved the 128-bit bound), work items (identity chunk, row slice) evaluate every identity exactly (DISC-002's W-word evaluation) and add their evidence counters with integer atomics and the smallest violating inserted / deleted rows with atomic minima; no barriers or shared memory, results equal to tr_cons_job_run bit for bit, adopted by tr_cons_tracker_update after consistency checks.
 
 Bounds:
 
@@ -3641,9 +3641,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_disc.c`
-- `torbles/math_disc.h`
-- `tests/test_math_disc.py`
+- `torbles/math_conserve.h`
+- `torbles/math_conserve.c`
+- `torbles/math_conserve_gpu.cu`
+- `torbles/math_conserve.py`
+- `tests/test_math_conserve.py`
+- `bench/benchmark_math_conserve.py`
 
 Acceptance tests:
 
@@ -3654,6 +3657,15 @@ Benchmark cases:
 
 - Use 2/4/8 observed variables over 1k/100k/1M rows with planted affine/product/conservation relations plus one-row near misses; report proposal and exhaustive verification separately.
 - Vary candidate/basis degree budgets and revision stability; measure exact Gram/nullspace state growth and refusals rather than extrapolating unsupported bases.
+
+Additional limits:
+
+- plans are unweighted and EXACT (no modular or weighted Gram); at most 8 variables, 63 basis monomials (DISC-002) and 256 tracked identities
+- identities are certified again only on bound revisions (a DIFF of the current scope given with the new scope); ARRAYS and SCOPE deltas only hold them; a same-version table DIFF compares the selection only (DELTA-001)
+- the tracker re-verifies the identities it was given; new identities at a revision come from DISC-002's nullspace of the tracker's Gram (tr_cons_tracker_gram), not from the tracker
+- an identity whose evaluation needs more than 8 words on a delta is undecided until a rebind; a conservation counterexample search needs a grid evaluation within 8 words
+- transformations are polynomial maps (no division, no piecewise or conditional maps); a stability record states only what held on the revisions it lists
+- CUDA covers the delta evaluation only (certification, records and laws run on the CPU); it was run in the CPU emulation here, not on a physical GPU
 
 ## PRE: Preimage queries
 
@@ -4526,9 +4538,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-007](#fnd-007), [BOOL-001](#bool-001), [GEOM-001](#geom-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: tr_equiv_set_make hash-conses predicates (BOOL-001 conditions with reduced constants, at most 64 distinct, and nodes with ordered commutative operands: one shared DAG), canonical rational measures and queries, and reports the common subexpressions; tr_equiv_check_make / tr_equiv_check_run decide questions (predicate equivalence under FILTER or Kleene semantics, implication, measure equivalence under SQL or SKIP NULL semantics, query equivalence and containment) on every selected row of a FND-004 scope: the conditions once as BOOL-001 masks, each question's cone word-parallel, measures through GEOM-001's exact pair candidate P = D (f - g); tr_equiv_check_decide labels the verdicts SNAPSHOT (an FND-007 record of the scope; for measures the snapshot certificate of P = 0 adopted from the evidence) or REFUTED with the smallest differing row, reduces measure questions modulo relation certificates first (GEOM-001 complete Groebner basis: label RELATIONS with the derived certificate) and adopts device evidence only after consistency checks (counts, truth cells, the witness re-evaluated). tr_equiv_decide never reads rows: exhaustive enumeration of a declared product, or decision procedures (per NULL pattern, reduced ordered BDDs of the TRUE / FALSE sets and every cube of their difference checked for an integer point by bounds and Bellman-Ford difference constraints with branching; measures by exact normal forms, a FND-007 RING_IDENTITY law when P = 0, NULL-pattern mismatches and Nullstellensatz grids), every counterexample re-evaluated on a synthetic one-row scope; over-budget or unsupported questions are UNKNOWN with the reason. tr_equiv_authorize: universal always, snapshot only on the exact recorded scope, domain only on a scope inside the domain, relations as FND-007 authorizes. tr_equiv_family_run computes COUNT and exact SUM per query with one shared scan or one scan per query and counts the work actually done; tr_equiv_rewrite lowers a degree <= 2 integer measure to stored codes, runs relationships_optimizer.c's tr_optimize and lifts the result back exactly as a candidate to check.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: tr_mgpu_equiv_check runs a check's questions on the device: work items (question, word block) evaluate the question's cone on the BOOL-001 condition words (the masks themselves from tr_mgpu_bool_masks) with Kleene's connectives and, for measures, GEOM-001's exact W-word pair candidates at the rows both sides read, add their counters (checked, excluded, differing, undecided, NULL mismatches, NULL rows, nine truth cells) with integer atomics and the first witness with an atomic minimum (the minimum row id); no barriers or shared memory, evidence equal to tr_equiv_check_run bit for bit, adopted by tr_equiv_check_decide after consistency checks.
 
 Bounds:
 
@@ -4542,9 +4554,12 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_meta.c`
-- `torbles/math_meta.h`
-- `tests/test_math_meta.py`
+- `torbles/math_equiv.h`
+- `torbles/math_equiv.c`
+- `torbles/math_equiv_gpu.cu`
+- `torbles/math_equiv.py`
+- `tests/test_math_equiv.py`
+- `bench/benchmark_math_equiv.py`
 
 Acceptance tests:
 
@@ -4555,6 +4570,15 @@ Benchmark cases:
 
 - Compare families of 1/8/32/128 related queries with shared and disjoint filters/measures; report proof/common-subexpression construction and actual shared scans.
 - Use equivalent, one-row-different and universally-different query pairs; separate snapshot checking from universal proof search and retain unknown/budget-limited outcomes.
+
+Additional limits:
+
+- decide mode handles predicates over integer-range columns only (finite value sets need enumerate mode); BIT conditions and comparisons of columns of different scales are outside the difference-logic theory (unknown when a deciding cube needs them); at most 20 nullable columns per universal question; the BDD order is the condition order (no reordering: large predicates can reach the circuit budget and answer unknown)
+- measures are polynomials over logical integers; equivalence modulo relations is scoped to where the relation certificates hold (snapshot or derived certificates), never universal; query measures on cube boxes with column comparisons are unknown
+- representation limits: 64 distinct conditions per set, 4096 parts or questions, 128 cone nodes per question, measure pairs of one check over at most 8 columns and 256 pairs, evaluation widths up to 512 bits
+- families compute COUNT, present-measure counts and exact SUM only (no MIN / MAX / AVG / GROUP BY); the family runs, universal decisions and relation reductions run on the CPU only
+- the relationship optimizer bridge takes integer measures of degree <= 2 over catalog columns (tr_optimize's limits: 32 terms, 12 columns, 32-bit codes); relationships_stage.c (an executor transformation) is not used
+- snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU
 
 <a id="meta-002"></a>
 

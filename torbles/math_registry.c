@@ -96,7 +96,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "graph layout", "graph fixed point",
     "elimination",
     "cubical complex", "chain reduction",
-    "pairwise plans"};
+    "pairwise plans",
+    "tracker",
+    "query parts"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -790,6 +792,26 @@ static const tr_reg_module modules[] = {
                    "tr_pairplan_state_table_view", "tr_pairplan_state_free", "tr_pairplan_default_rates"},
      .cuda_entry = {"tr_mgpu_pairplan_upload", "tr_mgpu_pairplan_query", "tr_mgpu_pairplan_bytes",
                     "tr_mgpu_pairplan_free"}},
+    {FAMILY(TR_REG_M_CONSERVE, "conserve", "conserve", "DISC-003", "conservation across revisions"),
+     .state_kind = TR_REG_STATE_TRACKER, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INT128) | CB(INTEGER) | CB(COUNT) | CB(BOOLEAN),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_cons_tracker_make", "tr_cons_job_make", "tr_cons_job_run", "tr_cons_tracker_update",
+                   "tr_cons_tracker_rebind", "tr_cons_tracker_record", "tr_cons_tracker_classes",
+                   "tr_cons_authorize", "tr_cons_tracker_gram", "tr_cons_conserve", "tr_cons_law_candidates",
+                   "tr_cons_law_witnesses"},
+     .cuda_entry = {"tr_mgpu_cons_delta"}},
+    {FAMILY(TR_REG_M_EQUIV, "equiv", "equiv", "META-001", "scoped query equivalence"),
+     .state_kind = TR_REG_STATE_QUERY_PARTS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(KLEENE) | CB(BOOLEAN) | CB(ROWSET) | CB(COUNT) | CB(INTEGER) | CB(RATIONAL) | CB(BIGINT),
+     .laws_relied = TR_REG_FIELD | TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY | TR_PROOF_DOMAIN | TR_PROOF_CATALOG,
+     .cpu_entry = {"tr_equiv_set_make", "tr_equiv_check_make", "tr_equiv_check_run", "tr_equiv_check_decide",
+                   "tr_equiv_decide", "tr_equiv_authorize", "tr_equiv_family_run", "tr_equiv_rewrite",
+                   "tr_equiv_poly_from_math", "tr_equiv_result_get", "tr_equiv_result_point",
+                   "tr_equiv_result_certificate"},
+     .cuda_entry = {"tr_mgpu_equiv_check"}},
 };
 #undef BUILTIN
 #undef FAMILY
