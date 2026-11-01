@@ -939,7 +939,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_FOURIER = 56,           /* SPEC-001 fixed spectral basis states and phase actions */
        TR_REG_M_LINUPD = 57,            /* LIN-003 leave-group-out and low-rank model updates */
        TR_REG_M_PROB = 58,              /* PROB-001 small-support partition and likelihood functions */
-       TR_REG_M_END = 59 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_SYM_ACTION = 59,        /* SYM-001 closed-basis transformation actions */
+       TR_REG_M_SYM_SYMMETRY = 60,      /* SYM-002 certified data symmetries and orbits */
+       TR_REG_M_END = 61 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -987,7 +989,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_SPECTRAL_BASIS = 46,    /* per group: exact scaled bounds of the Fourier features of a fixed frequency set, rows, weight sums */
        TR_REG_STATE_SOLVED_SYSTEM = 47,     /* an exact solved system: A, b, its canonical solution set, A^-1, det(A), the last update's denominator */
        TR_REG_STATE_SUPPORT_MASSES = 48,    /* per group: the mass of every point of a declared finite support (zeros kept), N, rows */
-       TR_REG_STATE_KINDS = 49 };
+       TR_REG_STATE_BASIS_ACTION = 49,      /* a closed monomial basis, exact or interval action matrices, retained moments */
+       TR_REG_STATE_SYMMETRY = 50,          /* a declared group, its multiset evidence and scope record, orbit summaries */
+       TR_REG_STATE_KINDS = 51 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1287,6 +1291,14 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_PROB, CONTRACT, INT128, TR__ALL), TR__I(TR_REG_M_PROB, ENCLOSE, QINTERVAL, TR__ALL),
     TR__I(TR_REG_M_PROB, NORMALIZE, QINTERVAL, TR__ALL), TR__I(TR_REG_M_PROB, NORMALIZE, BIGQ, TR__CPU),
     TR__I(TR_REG_M_PROB, DIVIDE, BIGQ, TR__CPU), TR__I(TR_REG_M_PROB, ENCLOSE, INTERVAL, TR__CPU),
+    /* 59 SYM-001 closed-basis transformation actions */
+    TR__I(TR_REG_M_SYM_ACTION, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_SYM_ACTION, CONTRACT, INT128, TR__ALL),
+    TR__I(TR_REG_M_SYM_ACTION, DIVIDE, RATIONAL, TR__ALL), TR__I(TR_REG_M_SYM_ACTION, ENCLOSE, INTERVAL, TR__ALL),
+    TR__I(TR_REG_M_SYM_ACTION, POWERS, INTEGER, TR__CPU), TR__I(TR_REG_M_SYM_ACTION, EUCLID, BIGINT, TR__CPU),
+    /* 60 SYM-002 certified data symmetries and orbits */
+    TR__I(TR_REG_M_SYM_SYMMETRY, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_SYM_SYMMETRY, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_SYM_SYMMETRY, EVAL, INTEGER, TR__CPU), TR__I(TR_REG_M_SYM_SYMMETRY, SCALE_COUNT, INT128, TR__CPU),
+    TR__I(TR_REG_M_SYM_SYMMETRY, FOLD, INT128, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

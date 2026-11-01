@@ -2576,9 +2576,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [RESP-001](#resp-001), [TENSOR-001](#tensor-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_sym.c): a declared geometry (scope columns with a kind, NUMERIC or CATEGORICAL, and a unit label; decimal scales read from the FND-004 scope; nothing else inferred: an undeclared column, any metric operation on a categorical code, a rotation across units and a basis over a code are refused, DOMAIN_ERROR); transformations declared in value units with exact int64 rationals (translation, scaling, reflection, coordinate permutation, affine maps over named coordinates, rotations about a center by an exact rational point of the unit circle with c^2 + s^2 = 1 verified exactly, or by an angle in degrees: multiples of 90 exact, other angles certified enclosures of cos and sin from a Taylor series with its truncation bound in outward-rounded binary64 arithmetic) turned into maps in logical units (D A D^-1, D b with D = diag(10^scale), int128 rows (a x + b) / q reduced by their gcd, overflow refused) that compose exactly; monomial bases of up to 4096 terms of degree <= 8 over up to 32 coordinates (full, homogeneous or explicit); the action M_T (phi(T x) = M_T phi(x), hence moments(T(rows)) = M_T moments(rows)) by the exact multinomial expansion of every basis monomial, with closure decided and its witness (basis term, missing monomial) reported, as canonical int128 numerators over one common denominator (an index permutation for a coordinate permutation) or as interval enclosures; composition M_T M_S in 512-bit products reduced with FND-009 big integers, identity actions and exact equality; retained per-group moment states from FND-004 banks (JOINT, or SQL when every term is valid on every row) and TENSOR-001 LISTWISE moment tensors (with the constant: degree <= order; without: homogeneous), and batched requests (an action, a group, a basis term or an int64 functional, an optional mean over the constant term's moment) answered as exact 512-bit rationals or certified intervals by the evaluator shared with CUDA; budgets (variables, degree, support, tensor = nb^2, iterations = nb^3 for compositions, states, output, bytes) checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_sym_gpu.cu (tr_mgpu_sym_query): the retained moments, every action's matrix (and permutation index) and the functionals copied once per batch, then one work item per request running the shared evaluator tr_sym_eval_request (exact 512-bit two's complement products and sums of int128 numerators and moments, or outward-rounded interval products and sums with the explicit-fma helpers of FND-009, in the CPU's order), one output slot per request; equal to the CPU bit for bit.
 
 Bounds:
 
@@ -2587,9 +2587,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_sym.c`
 - `torbles/math_sym.h`
+- `torbles/math_sym.c`
+- `torbles/math_sym_gpu.cu`
+- `torbles/math_sym.py`
 - `tests/test_math_sym.py`
+- `bench/benchmark_math_sym.py`
 
 Acceptance tests:
 
@@ -2600,6 +2603,12 @@ Benchmark cases:
 
 - Use polynomial translations, declared 2D rotations and feature permutations on bases of 3/6/15/32 states; compare direct transformed-row evaluation with basis actions.
 - Vary transformation requests 1/100/10,000 and certified orbit sizes 2/4/8/16; include one broken-multiplicity example that must invalidate orbit reuse.
+
+Additional limits:
+
+- Exact entries are int128 numerators over one int128 denominator: a large translation at a high degree, or many compositions, are refused (OverflowError), not widened to big rationals.
+- Only rotations by angles that are not multiples of 90 degrees are approximate: binary64 interval enclosures (53-bit endpoints, no multiprecision); their closure is decided structurally (an entry enclosure that is not exactly [0, 0] counts as a monomial of the image), so a basis closed only through an exact cancellation is refused.
+- States are FND-004 banks (degree <= 4) and TENSOR-001 LISTWISE moment tensors (degree <= 8) without per-entry counts; NULL handling is listwise; the action construction and composition run on the CPU, single-threaded.
 
 <a id="sym-002"></a>
 
@@ -2613,9 +2622,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [SYM-001](#sym-001), [FND-007](#fnd-007)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_sym.c): declared groups of up to 16 generators that map the integer domain into itself (SYM-001 maps integral in logical units and invertible, det A != 0 decided exactly by elimination modulo 2^61 - 1 and fraction-free Bareiss in int128; e.g. coordinate permutations, reflections, rotations by multiples of 90 degrees) or value permutations of one coordinate (a bijection of finitely many values); the support of a scope (the sorted distinct tuples of every declared coordinate over the selected rows with multiplicities and smallest rows, NULL coordinates skipped or forbidden) with an FND-007 record of the scope; exhaustive exact verification that every generator preserves the multiset (mult(g(v)) = mult(v) for every support tuple, images computed exactly in int128 and found by binary search) with per-generator evidence (rows, tuples, violating rows, missing orbit members, broken multiplicities, the smallest violating row, its tuple, kind and image multiplicity); a certificate of FND-007 kind snapshot only when every generator holds, its freshness by FND-007's exact record comparison; orbit summaries under a fresh certificate (union-find, the smallest tuple as representative, sizes and multiplicities); polynomial SUM and COUNT queries proven invariant as laws (p o g = p by the exact expansion of p(A x + b); equal substitutions for every moved value) and evaluated once per orbit, non-invariant queries refused (DOMAIN_ERROR with the generator), and the exhaustive evaluation over every selected row as the check; budgets checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_sym_gpu.cu (tr_mgpu_sym_verify): the sorted support, multiplicities, first rows and the generators copied to the device; work items (generator, tuple slice) map each tuple exactly (tr_sym_image), find its image by binary search of the sorted tuples (exact comparisons, no hashing), compare multiplicities (tr_sym_check_tuple), add one atomic per counter and take the smallest violating row by an atomic minimum; the host finishes the evidence (tr_sym_evidence_finish) and tr_sym_adopt checks it before certifying; equal to the CPU bit for bit.
 
 Bounds:
 
@@ -2624,9 +2633,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_sym.c`
 - `torbles/math_sym.h`
+- `torbles/math_sym.c`
+- `torbles/math_sym_gpu.cu`
+- `torbles/math_sym.py`
 - `tests/test_math_sym.py`
+- `bench/benchmark_math_sym.py`
 
 Acceptance tests:
 
@@ -2637,6 +2649,12 @@ Benchmark cases:
 
 - Use polynomial translations, declared 2D rotations and feature permutations on bases of 3/6/15/32 states; compare direct transformed-row evaluation with basis actions.
 - Vary transformation requests 1/100/10,000 and certified orbit sizes 2/4/8/16; include one broken-multiplicity example that must invalidate orbit reuse.
+
+Additional limits:
+
+- Invariance under the reduction is a sufficient condition (polynomial identity under each generator): an invariant predicate of a non-invariant polynomial (x^2 - y^2 = 0 under a quarter turn, c = 3 under a value permutation fixing 3) is refused.
+- Orbits are those of the generated group on the observed support; generators must be integral, invertible maps or value permutations (no interval or non-integral maps); NULL coordinates are skipped or forbidden, not a category of their own.
+- The support sort, the orbit union-find, the invariance proofs and the queries on representatives run on the CPU, single-threaded; only the verification has a CUDA kernel.
 
 ## DYN: Repeated dynamics
 

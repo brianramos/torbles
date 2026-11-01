@@ -94,6 +94,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 56 | fourier | fixed spectral basis | SPEC-001 | spectral basis | `tr_fourier_plan_create` | `tr_mgpu_fourier_sums` |
 | 57 | lin.update | leave-group-out and low-rank updates | LIN-003 | solved system | `tr_linupd_fit` | `tr_mgpu_linupd_logo` |
 | 58 | prob | partition and likelihood functions | PROB-001 | support masses | `tr_prob_support_create` | `tr_mgpu_prob_sums` |
+| 59 | sym.action | closed-basis transformation actions | SYM-001 | basis actions | `tr_sym_geometry_make` | `tr_mgpu_sym_query` |
+| 60 | sym.symmetry | certified symmetries and orbits | SYM-002 | symmetry certificates | `tr_sym_group_create` | `tr_mgpu_sym_verify` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

@@ -85,7 +85,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "explanation state",
     "spectral basis",
     "solved system",
-    "support masses"};
+    "support masses",
+    "basis actions", "symmetry certificates"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -655,6 +656,24 @@ static const tr_reg_module modules[] = {
                    "tr_prob_stats_require", "tr_prob_plan_create", "tr_prob_sums", "tr_prob_finish", "tr_prob_exact",
                    "tr_prob_plan_need", "tr_prob_stats_need", "tr_prob_ln_bounds"},
      .cuda_entry = {"tr_mgpu_prob_sums"}},
+    {FAMILY(TR_REG_M_SYM_ACTION, "sym.action", "sym", "SYM-001", "closed-basis transformation actions"),
+     .state_kind = TR_REG_STATE_BASIS_ACTION, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(INT128) | CB(BIGINT) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_sym_geometry_make", "tr_sym_basis_full", "tr_sym_basis_create", "tr_sym_map_make",
+                   "tr_sym_map_compose", "tr_sym_action_make", "tr_sym_action_compose", "tr_sym_action_identity",
+                   "tr_sym_action_equal", "tr_sym_state_from_bank", "tr_sym_state_from_tensor", "tr_sym_query"},
+     .cuda_entry = {"tr_mgpu_sym_query"}},
+    {FAMILY(TR_REG_M_SYM_SYMMETRY, "sym.symmetry", "sym", "SYM-002", "certified symmetries and orbits"),
+     .state_kind = TR_REG_STATE_SYMMETRY, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(COUNT) | CB(CODE),
+     .laws_relied = TR_REG_RING | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_EXACT_COUNT | TR_PROOF_NULL_POLICY | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_sym_group_create", "tr_sym_support_build", "tr_sym_verify_view", "tr_sym_certify",
+                   "tr_sym_adopt", "tr_sym_cert_fresh", "tr_sym_orbits_build", "tr_sym_poly_invariant",
+                   "tr_sym_orbit_query", "tr_sym_rows_query"},
+     .cuda_entry = {"tr_mgpu_sym_verify"}},
 };
 #undef BUILTIN
 #undef FAMILY
