@@ -1,0 +1,83 @@
+{
+ "guide": [
+  {"page": "topo.md", "title": "Declared occupancy complexes, homology and persistence", "capabilities": "TOPO-001, TOPO-002",
+   "summary": "cubical complexes from declared integer coordinate columns (never the storage order): cells, signed incidences, Euler counts, boundary cells, star / link counts and the dual graph; boundary matrices reduced over a declared field (GF(2) also through FIELD-001, GF(p), Q exactly) for ranks, Betti numbers, cycle bases and the persistence of bounded filtrations with a declared tie rule, d o d = 0 checked on the CPU and in CUDA."}
+ ],
+ "inventory": {
+  "TOPO-001": {
+   "planned_files": ["torbles/math_topo.h", "torbles/math_topo.c", "torbles/math_topo_gpu.cu", "torbles/math_topo.py",
+                     "tests/test_math_topo.py", "bench/benchmark_math_topo.py"],
+   "cpu": "Native C (math_topo.c) over an FND-004 scope: a declared grid (2 or 3 integer coordinate columns read as exact logical values, decimal and repeated coordinates refused; an extent of top cells per axis; 4 / 8 or 6 / 18 / 26 dual-graph adjacency; an optional value column). Selected rows inside the extent occupy closed unit top cells (NULL coordinates and rows outside the extent counted apart, duplicates collapsed); the complex is their closure, enumerated over the Khalimsky grid of the extent: cells per dimension in a canonical order (increasing linear index of the declared coordinates), their anchors and axes, the 2k signed faces of every k-cell (product orientation, d o d = 0 over Z), the exact Euler characteristic, the boundary cells of the union (a subcomplex) and their Euler characteristic, per-cell local invariants (star counts per dimension, link counts and link Euler characteristic, boundary flag, dual degree of top cells), the dual graph (edges, union-find components labelled by their smallest top cell, adjacent pairs), the per-top-cell extremes of the value column, the Euler counts without the complex, and an FND-007 record of the scope (coordinate and value columns, exact selection) with exact staleness reasons (a scope over other columns is refused: columns). A device build is adopted after a full validation (canonical occupancy, increasing cells of their dimension inside the complex, every face at its slot with its sign, every lower cell a face, row accounting). Budgets (variables, states = positions, output = cells, tensor = incidences, bytes) are checked before allocation; the data-dependent ones after the occupancy scan, before the arrays exist.",
+   "gpu": "CUDA kernels math_topo_gpu.cu: tr_mgpu_topo_counts (one work item per row slice: occupancy by atomic OR, row accounting per thread added once; one per candidate slice: cells and boundary cells per dimension, local counts added once) and tr_mgpu_topo_build (occupancy, per-position value extremes by atomic min / max, per-chunk cell counts of 256 candidates in their own slots, their exclusive prefix on the host, cells written in increasing order with one writer per slot, incidences one work item per cell by binary search, top-cell values), adopted natively by tr_topo_adopt; tr_mgpu_topo_local (one work item per cell into its own slot, totals by atomics). They run the inline functions of math_topo.h, so they equal the CPU bit for bit (emulated with a scrambled thread order in the tests). Compiled with nvcc for sm_80 and verified in the emulation only; not yet run on a device.",
+   "budgets": ["Scan (Euler counts, a build's first phase): variables = grid dimension (2 or 3), states = top-cell positions of the declared extent, bytes = the occupancy, rank-directory and valued bitmaps (CUDA: + the selection and column copies), checked before allocation.",
+               "Build: output = cells, tensor = signed incidences, bytes = the complex (8 per cell, 5 per incidence, 16 per top cell with a value column) and its FND-007 record, checked after the occupancy scan and before the arrays exist; CUDA: the device copies, then the adopted complex.",
+               "Local invariants, dual graph and boundary exports budget their outputs (cells, labels and pairs, entries); at most 2^28 top-cell positions (UnsupportedError past it)."],
+   "limitations": ["The extent is dense: states = top-cell positions, at most 2^28; the cells are enumerated by scanning every candidate of the Khalimsky grid (no sparse enumeration for huge sparse extents).",
+                   "Unit cells of integer coordinates only (no declared spacing, no decimal coordinates, no periodic / toroidal boundary conditions); one complex per scope (no per-group complexes).",
+                   "Union-find components, boundary-matrix export and value extremes run on the CPU; the CPU paths are single-threaded.",
+                   "The complex is tied to its scope through an FND-007 record (freshness with exact reasons); FND-007 has no claim kind for complexes, so no certificate is issued.",
+                   "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."]
+  },
+  "TOPO-002": {
+   "planned_files": ["torbles/math_topo.h", "torbles/math_topo.c", "torbles/math_topo_gpu.cu", "torbles/math_topo.py",
+                     "tests/test_math_topo.py", "bench/benchmark_math_topo.py"],
+   "cpu": "Native C (math_topo.c): the boundary matrices d_k of a TOPO-001 complex (signed coordinates over Z, residues mod p, or FIELD-001 packed GF(2) matrices) or of an explicit integral chain complex (up to 7 dimensions, d_{k-1} d_k = 0 verified over Z at creation); d o d = 0 checked over Z and GF(2) from the stored incidences (violations and smallest violating cell per dimension); over a declared field: GF(2) (ranks through FIELD-001's tr_field_rank of the packed matrices, or the sparse reduction), GF(p) for a verified prime 3 <= p < 2^62 (FND-009 Barrett arithmetic), Q exactly (fraction-free reduction with primitive integer columns, entries checked to fit int64 with 128-bit intermediates, refused past it). The standard column reduction gives ranks, Betti numbers b_k = n_k - rank d_k - rank d_{k+1} and, with V tracking, a basis of H_k as k-cycles (H_1 as edge cycles; GF(p) generator coefficient 1, Q primitive with a positive generator). Persistence of an explicitly bounded filtration: top cells enter at the first declared threshold admitting the value column's minimum (sublevel) or maximum (superlevel), or at explicit levels (per top cell, or per cell of a chain, validated as a filtration); lower cells with their earliest coface; cells past the last level never enter. The total order is (level, dimension, index) with a declared tie rule (index increasing or decreasing); pairs (dimension, birth and death levels and cells, zero-length counted) and essential classes are sorted canonically; Betti numbers at every level. Budgets: states = cells, tensor = boundary entries (packed: n_{k-1} n_k), support = levels, iterations = column additions and bytes = every column held, checked deterministically during the reduction (a refusal returns nothing), output after it.",
+   "gpu": "CUDA kernel math_topo_gpu.cu: tr_mgpu_topo_dd, the batched boundary-composition check d_{k-1} d_k = 0 over Z and over GF(2) (one work item per k-cell of every dimension 2 .. dim, counts by atomics, the smallest violating cell by atomic minimum), equal to tr_topo_check_view bit for bit (emulated with a scrambled thread order, including corrupted incidences). The column reductions (ranks, cycle bases, persistence) run on the CPU only. Compiled with nvcc for sm_80 and verified in the emulation only; not yet run on a device.",
+   "budgets": ["Homology and persistence: states = cells (the boundary matrix's rows and columns), tensor = boundary entries (packed GF(2): the largest n_{k-1} n_k), support = filtration levels (1 for homology), bytes = the fixed arrays, checked before allocation.",
+               "During the reduction: iterations = column additions and bytes = every reduced column, V column and scratch buffer held, refused deterministically at the first step or allocation past the limit (nothing is returned); output = pairs, essential classes, cycle classes and entries, checked before the result is written.",
+               "Explicit chain complexes: states = cells, tensor = entries, bytes = the copies and the d o d scratch; at most 7 dimensions and 2^32 cells or entries per dimension; GF(p) needs a verified prime p < 2^62."],
+   "limitations": ["The reduction is the plain standard algorithm (no clearing / twist, no cohomology, no apparent pairs), single-threaded and CPU only; the packed GF(2) path is dense (n_{k-1} n_k bits, refused past the tensor budget).",
+                   "Q entries are bounded by int64 (with 128-bit intermediates): a larger entry is refused (OverflowError), never wrapped; integral homology (torsion coefficients, Smith normal form) is not computed.",
+                   "Cycle representatives are the reduction's V columns (cycles, not shortest or simple cycles); persistence returns pairs and levels, no representative cycles per pair.",
+                   "Filtrations are lower-star style on the top cells of a complex (or explicit levels); FND-007 has no claim kind for homology, so results are tied to the complex's FND-007 record rather than issued as certificates.",
+                   "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {"name": "CUBICAL_COMPLEX", "label": "cubical complex", "comment": "occupancy, cells, signed incidences of a declared grid"},
+   {"name": "CHAIN_REDUCTION", "label": "chain reduction", "comment": "ranks, Betti numbers, cycles, persistence pairs"}
+  ],
+  "new_operators": [
+   {"name": "BOUNDARY", "label": "boundary", "comment": "signed incidences of a chain complex (d o d = 0)",
+    "requires": "TR_REG_RING | TR_LAW_INVERSE", "input": null, "output": null},
+   {"name": "HOMOLOGY", "label": "homology", "comment": "ranks, Betti numbers and cycle bases over a field",
+    "requires": "TR_REG_FIELD", "input": null, "output": null},
+   {"name": "PERSISTENCE", "label": "persistence", "comment": "pairs of a bounded filtration by column reduction",
+    "requires": "TR_REG_FIELD", "input": null, "output": null}
+  ],
+  "modules": [
+   {"enum": "TOPO_COMPLEX", "key": "topo.complex", "family": "topo", "capability": "TOPO-001",
+    "name": "declared occupancy complexes", "comment": "declared occupancy complexes and local topology",
+    "state": "CUBICAL_COMPLEX", "state_label": "cubical complex", "devices": "BOTH", "finalize": 1,
+    "carriers": ["INTEGER", "CODE", "ROWSET", "COUNT"],
+    "laws_relied": "TR_REG_RING | TR_LAW_INVERSE | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_CELL_DOMAIN | TR_PROOF_EXACT_COUNT | TR_PROOF_NULL_POLICY | TR_PROOF_IDENTITY",
+    "cpu_entry": ["tr_topo_build", "tr_topo_adopt", "tr_topo_count", "tr_topo_scan_needs", "tr_topo_build_needs",
+                  "tr_topo_get_info", "tr_topo_cells", "tr_topo_local_get", "tr_topo_adjacency_get", "tr_topo_values",
+                  "tr_topo_fresh", "tr_topo_equal"],
+    "cuda_entry": ["tr_mgpu_topo_counts", "tr_mgpu_topo_build", "tr_mgpu_topo_local"],
+    "impl": [["CONVERT", "INTEGER", "ALL"], ["MARK_CELLS", "CODE", "ALL"], ["DISTINCT_FOLD", "ROWSET", "ALL"],
+             ["POPCOUNT", "ROWSET", "ALL"], ["FOLD", "COUNT", "ALL"], ["ORDER", "COUNT", "ALL"],
+             ["BOUNDARY", "INTEGER", "ALL"], ["ORDER", "INTEGER", "ALL"]]},
+   {"enum": "TOPO_HOMOLOGY", "key": "topo.homology", "family": "topo", "capability": "TOPO-002",
+    "name": "bounded cycles, homology, persistence", "comment": "bounded cycles, homology and persistence",
+    "state": "CHAIN_REDUCTION", "state_label": "chain reduction", "devices": "BOTH", "finalize": 1,
+    "carriers": ["INTEGER", "GF2", "GFP", "RATIONAL", "COUNT"],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_PRIME | TR_PROOF_BOUND | TR_PROOF_IDENTITY",
+    "cpu_entry": ["tr_topo_check", "tr_topo_check_view", "tr_topo_boundary", "tr_topo_boundary_packed",
+                  "tr_topo_chain_create", "tr_topo_reduce_need", "tr_topo_homology_build", "tr_topo_homology_classes",
+                  "tr_topo_persistence_build", "tr_topo_persistence_pairs", "tr_topo_persistence_betti",
+                  "tr_topo_persistence_levels"],
+    "cuda_entry": ["tr_mgpu_topo_dd"],
+    "impl": [["BOUNDARY", "INTEGER", "ALL"], ["BOUNDARY", "GF2", "ALL"], ["VERIFY", "INTEGER", "ALL"],
+             ["FOLD", "COUNT", "ALL"], ["RESIDUE", "GFP", "CPU"], ["SOLVE", "GF2", "CPU"],
+             ["HOMOLOGY", "GF2", "CPU"], ["HOMOLOGY", "GFP", "CPU"], ["HOMOLOGY", "RATIONAL", "CPU"],
+             ["PERSISTENCE", "GF2", "CPU"], ["PERSISTENCE", "GFP", "CPU"], ["PERSISTENCE", "RATIONAL", "CPU"],
+             ["ORDER", "INTEGER", "CPU"]]}
+  ]
+ }
+}
