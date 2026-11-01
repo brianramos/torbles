@@ -1,0 +1,6087 @@
+{
+ "argv": [
+  "--capability",
+  "UNC-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/UNC-002/benchmark_cpu_math_approx_vm.json"
+ ],
+ "capability": "UNC-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "6ff26a49d485b3aad9a0daa2606659900a2c2a09",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": false,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "0ab1ece34b00f24a290677c0385c78b9be076a936a466a1afd62cd4c5bd34012",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "cce7e0f0e59db9e9f9295e5fbaf1beae7e3a7abaa1611c9b251a8fd34f490701"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T02:01:29+00:00"
+ },
+ "notes": [
+  "case 2: 0 (function, degree, budget) cases whose measured error is within the budget but whose certified bound is not: refused (NotConvergedError), never reported as certified",
+  "CPU = native libalg; CUDA timings only with --device (an emulated run is never timed as CUDA); the approximate filter decides groups by the binary64 UNC-001 proof of the approximating polynomial with its certified error and the other rows by their certified enclosure; DuckDB's EXP is binary64 and uncertified (a speed baseline, not an oracle)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0010010509977291804,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010010509977291804,
+    0.0006116990007285494,
+    0.0003267600004619453
+   ],
+   "warm_median_seconds": 0.0004692295005952474,
+   "warm_min_seconds": 0.0003267600004619453
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0024509799986844882,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0024509799986844882,
+    0.00087931599773583,
+    0.0008327499999722932
+   ],
+   "warm_median_seconds": 0.0008560329988540616,
+   "warm_min_seconds": 0.0008327499999722932
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0010924679991148878,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 198,
+    "groups_none": 198,
+    "groups_unknown": 4,
+    "rows_evaluated": 400,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.0010924679991148878,
+    0.0010137899989786092,
+    0.0010149590016226284,
+    0.0010162939979636576,
+    0.000994124999124324
+   ],
+   "warm_median_seconds": 0.0010143745003006188,
+   "warm_min_seconds": 0.000994124999124324
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.00750056700053392,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.00750056700053392,
+    0.007804278000548948,
+    0.010980391001794487
+   ],
+   "warm_median_seconds": 0.009392334501171717,
+   "warm_min_seconds": 0.007804278000548948
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.014959542000724468,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.639975,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 14401,
+    "proof_groups_all": 100,
+    "proof_groups_none": 100,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 12814
+   },
+   "samples_seconds": [
+    0.014959542000724468,
+    0.0105814639973687,
+    0.014377838000655174,
+    0.010120691000338411,
+    0.010113722000824055
+   ],
+   "warm_median_seconds": 0.010351077498853556,
+   "warm_min_seconds": 0.010113722000824055
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.017560587999469135,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.017560587999469135,
+    0.02274196900179959,
+    0.02150688099936815
+   ],
+   "warm_median_seconds": 0.02212442500058387,
+   "warm_min_seconds": 0.02150688099936815
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.009186788000079105,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.009186788000079105,
+    0.011660800002573524,
+    0.006436050000047544,
+    0.006299654000031296,
+    0.0065988529968308285
+   ],
+   "warm_median_seconds": 0.006517451498439186,
+   "warm_min_seconds": 0.006299654000031296
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.016726103000110015,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.016726103000110015,
+    0.016351604997907998,
+    0.016742636002163636
+   ],
+   "warm_median_seconds": 0.016547120500035817,
+   "warm_min_seconds": 0.016351604997907998
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.025902477998897666,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.025902477998897666,
+    0.03307476700138068,
+    0.037372644001152366,
+    0.029623115999129368,
+    0.08678299299936043
+   ],
+   "warm_median_seconds": 0.03522370550126652,
+   "warm_min_seconds": 0.029623115999129368
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.05931100599991623,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.05931100599991623,
+    0.059548966000875225,
+    0.06905291600196506
+   ],
+   "warm_median_seconds": 0.06430094100142014,
+   "warm_min_seconds": 0.059548966000875225
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.06280093700115685,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.06280093700115685,
+    0.07639082700188737,
+    0.07661941399783245,
+    0.09494493199963472,
+    0.06829813999866019
+   ],
+   "warm_median_seconds": 0.07650512049985991,
+   "warm_min_seconds": 0.06829813999866019
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.00796852700295858,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.00796852700295858,
+    0.006908594001288293,
+    0.0036465230004978366
+   ],
+   "warm_median_seconds": 0.005277558500893065,
+   "warm_min_seconds": 0.0036465230004978366
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.004602688997692894,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": 19983,
+   "samples_seconds": [
+    0.004602688997692894,
+    0.001878355997178005,
+    0.0012533070002973545,
+    0.0012631639983737841,
+    0.001524777999293292
+   ],
+   "warm_median_seconds": 0.001393970998833538,
+   "warm_min_seconds": 0.0012533070002973545
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0005146100011188537,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005146100011188537,
+    0.0004265709976607468,
+    0.00038236000182223506
+   ],
+   "warm_median_seconds": 0.00040446549974149093,
+   "warm_min_seconds": 0.00038236000182223506
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0012488350002968218,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012488350002968218,
+    0.0010230420011794195,
+    0.001053222000336973
+   ],
+   "warm_median_seconds": 0.0010381320007581962,
+   "warm_min_seconds": 0.0010230420011794195
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0023479859992221463,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 98,
+    "groups_none": 102,
+    "groups_unknown": 200,
+    "rows_evaluated": 20000,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.0023479859992221463,
+    0.0023374550000880845,
+    0.0022581119992537424,
+    0.0022570780020032544,
+    0.0021565960014413577
+   ],
+   "warm_median_seconds": 0.0022575950006284984,
+   "warm_min_seconds": 0.0021565960014413577
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.007767251998302527,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.007767251998302527,
+    0.008010093999473611,
+    0.007758047002425883
+   ],
+   "warm_median_seconds": 0.007884070500949747,
+   "warm_min_seconds": 0.007758047002425883
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.009047242001543054,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 91,
+    "decided_fraction": 0.384825,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 30900,
+    "fallback_rows_undecided": 24607,
+    "proof_groups_all": 42,
+    "proof_groups_none": 49,
+    "proof_groups_unknown": 309,
+    "rows_proven": 9100,
+    "rows_true": 7416
+   },
+   "samples_seconds": [
+    0.009047242001543054,
+    0.0208790209981089,
+    0.016470032001961954,
+    0.021049119997769594,
+    0.015333076000388246
+   ],
+   "warm_median_seconds": 0.018674526500035427,
+   "warm_min_seconds": 0.015333076000388246
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.015736627003207104,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.015736627003207104,
+    0.018841593999241013,
+    0.01689619700118783
+   ],
+   "warm_median_seconds": 0.01786889550021442,
+   "warm_min_seconds": 0.01689619700118783
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.013614288000098895,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.013614288000098895,
+    0.010613553000439424,
+    0.010189485001319554,
+    0.022291935001703678,
+    0.027738417997170473
+   ],
+   "warm_median_seconds": 0.01645274400107155,
+   "warm_min_seconds": 0.010189485001319554
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.047205098999256734,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.047205098999256734,
+    0.0436213350003527,
+    0.04321774900017772
+   ],
+   "warm_median_seconds": 0.04341954200026521,
+   "warm_min_seconds": 0.04321774900017772
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.05162995799764758,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.05162995799764758,
+    0.03698846100087394,
+    0.041352910000568954,
+    0.03302454599906923,
+    0.033044945001165615
+   ],
+   "warm_median_seconds": 0.03501670300101978,
+   "warm_min_seconds": 0.03302454599906923
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.042647597001632676,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.042647597001632676,
+    0.023165156999311876,
+    0.022232570001506247
+   ],
+   "warm_median_seconds": 0.02269886350040906,
+   "warm_min_seconds": 0.022232570001506247
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.031996873000025516,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.031996873000025516,
+    0.030561830000806367,
+    0.03284926999913296,
+    0.06305712399989716,
+    0.07519880800100509
+   ],
+   "warm_median_seconds": 0.04795319699951506,
+   "warm_min_seconds": 0.030561830000806367
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.003945667001971742,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.003945667001971742,
+    0.005190927000512602,
+    0.0036669319997599814
+   ],
+   "warm_median_seconds": 0.004428929500136292,
+   "warm_min_seconds": 0.0036669319997599814
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.0016838219999044668,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": 18985,
+   "samples_seconds": [
+    0.0016838219999044668,
+    0.0013986759986437391,
+    0.0012371080010780133,
+    0.0012467919987102505,
+    0.0012656300023081712
+   ],
+   "warm_median_seconds": 0.0012562110005092109,
+   "warm_min_seconds": 0.0012371080010780133
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0005412969985627569,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005412969985627569,
+    0.0004709940003522206,
+    0.0004774470035044942
+   ],
+   "warm_median_seconds": 0.0004742205019283574,
+   "warm_min_seconds": 0.0004709940003522206
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.00098515799982124,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "scenario": "interval threshold"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00098515799982124,
+    0.0010250220002490096,
+    0.001164487999631092
+   ],
+   "warm_median_seconds": 0.0010947549999400508,
+   "warm_min_seconds": 0.0010250220002490096
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0033747820016287733,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 1,
+    "groups_none": 3,
+    "groups_unknown": 396,
+    "rows_evaluated": 39600,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.0033747820016287733,
+    0.0035678669992194045,
+    0.0036811770005442668,
+    0.0034681479992286768,
+    0.003400382000108948
+   ],
+   "warm_median_seconds": 0.0035180074992240407,
+   "warm_min_seconds": 0.003400382000108948
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.008046525999816367,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.008046525999816367,
+    0.008319787997606909,
+    0.0073609099999885075
+   ],
+   "warm_median_seconds": 0.007840348998797708,
+   "warm_min_seconds": 0.0073609099999885075
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.009346194001409458,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 1,
+    "decided_fraction": 0.157325,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39900,
+    "fallback_rows_undecided": 33707,
+    "proof_groups_all": 0,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 399,
+    "rows_proven": 100,
+    "rows_true": 3123
+   },
+   "samples_seconds": [
+    0.009346194001409458,
+    0.009489590000157477,
+    0.009427912998944521,
+    0.00970996799878776,
+    0.013700814000912942
+   ],
+   "warm_median_seconds": 0.009599778999472619,
+   "warm_min_seconds": 0.009427912998944521
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.022083619001932675,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.022083619001932675,
+    0.01757506200010539,
+    0.017673755002761027
+   ],
+   "warm_median_seconds": 0.01762440850143321,
+   "warm_min_seconds": 0.01757506200010539
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.03003061400158913,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.03003061400158913,
+    0.028985095999814803,
+    0.029114818000380183,
+    0.029548043999966467,
+    0.03224602400223375
+   ],
+   "warm_median_seconds": 0.029331431000173325,
+   "warm_min_seconds": 0.028985095999814803
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.02559105299951625,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.02559105299951625,
+    0.02229002700187266,
+    0.014058268996450352
+   ],
+   "warm_median_seconds": 0.018174147999161505,
+   "warm_min_seconds": 0.014058268996450352
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.019282406999991508,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.019282406999991508,
+    0.01910903299722122,
+    0.019534967999788933,
+    0.019209443002182525,
+    0.03576750099819037
+   ],
+   "warm_median_seconds": 0.01937220550098573,
+   "warm_min_seconds": 0.01910903299722122
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.04510327900061384,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.04510327900061384,
+    0.04321124200214399,
+    0.03787796199685545
+   ],
+   "warm_median_seconds": 0.04054460199949972,
+   "warm_min_seconds": 0.03787796199685545
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.03743498900075792,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.03743498900075792,
+    0.029891104000853375,
+    0.04582967099850066,
+    0.06009670699859271,
+    0.05218822900133091
+   ],
+   "warm_median_seconds": 0.049008949999915785,
+   "warm_min_seconds": 0.029891104000853375
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0039874889989732765,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0039874889989732765,
+    0.0038145239996083546,
+    0.0037854250003874768
+   ],
+   "warm_median_seconds": 0.0037999744999979157,
+   "warm_min_seconds": 0.0037854250003874768
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.001718395000352757,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "interval threshold"
+   },
+   "phase": "baseline",
+   "result": 18258,
+   "samples_seconds": [
+    0.001718395000352757,
+    0.0012915119987155776,
+    0.0016700649975973647,
+    0.0013576989986177068,
+    0.0013791990022582468
+   ],
+   "warm_median_seconds": 0.0013684490004379768,
+   "warm_min_seconds": 0.0012915119987155776
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0004268440025043674,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004268440025043674,
+    0.0005563480008277111,
+    0.0004616859987436328
+   ],
+   "warm_median_seconds": 0.0005090169997856719,
+   "warm_min_seconds": 0.0004616859987436328
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.001175277000584174,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001175277000584174,
+    0.001011054999253247,
+    0.001085980999050662
+   ],
+   "warm_median_seconds": 0.0010485179991519544,
+   "warm_min_seconds": 0.001011054999253247
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0013365739978326019,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 198,
+    "groups_none": 198,
+    "groups_unknown": 4,
+    "rows_evaluated": 400,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.0013365739978326019,
+    0.0012678769999183714,
+    0.0011844530017697252,
+    0.0011585450010898057,
+    0.001328979000390973
+   ],
+   "warm_median_seconds": 0.0012261650008440483,
+   "warm_min_seconds": 0.0011585450010898057
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.01861103400005959,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.01861103400005959,
+    0.01793298499978846,
+    0.016224674000113737
+   ],
+   "warm_median_seconds": 0.017078829499951098,
+   "warm_min_seconds": 0.016224674000113737
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.01537910700062639,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.639975,
+    "error_used": 0.00929382670743478,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 14401,
+    "proof_groups_all": 100,
+    "proof_groups_none": 100,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 12814
+   },
+   "samples_seconds": [
+    0.01537910700062639,
+    0.013615685002150713,
+    0.010491236997040687,
+    0.014607298999180784,
+    0.006283792998146964
+   ],
+   "warm_median_seconds": 0.0120534609995957,
+   "warm_min_seconds": 0.006283792998146964
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.010001036996982293,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.010001036996982293,
+    0.011166616997797973,
+    0.010348175001126947
+   ],
+   "warm_median_seconds": 0.01075739599946246,
+   "warm_min_seconds": 0.010348175001126947
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.006428427001083037,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 2.828514293506579e-05,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.006428427001083037,
+    0.006197012000484392,
+    0.006735039001796395,
+    0.006747956002072897,
+    0.006265634001465514
+   ],
+   "warm_median_seconds": 0.0065003365016309544,
+   "warm_min_seconds": 0.006197012000484392
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.02856313599841087,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.02856313599841087,
+    0.030019565998372855,
+    0.021028355000453303
+   ],
+   "warm_median_seconds": 0.02552396049941308,
+   "warm_min_seconds": 0.021028355000453303
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.015123143999517197,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 7.296649872805129e-11,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.015123143999517197,
+    0.014964267000323161,
+    0.015291122999769868,
+    0.015714239998487756,
+    0.01756865500283311
+   ],
+   "warm_median_seconds": 0.015502681499128812,
+   "warm_min_seconds": 0.014964267000323161
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.06756036699880497,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.06756036699880497,
+    0.03915767000216874,
+    0.029373340999882203
+   ],
+   "warm_median_seconds": 0.03426550550102547,
+   "warm_min_seconds": 0.029373340999882203
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.06614715199975763,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.999175,
+    "error_used": 3.719383960193596e-11,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 33,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19983
+   },
+   "samples_seconds": [
+    0.06614715199975763,
+    0.05934170899854507,
+    0.07829932000095141,
+    0.06069483600003878,
+    0.05702404499970726
+   ],
+   "warm_median_seconds": 0.060018272499291925,
+   "warm_min_seconds": 0.05702404499970726
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0035759509992203675,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": "binary64",
+    "error": 3.720350659507179e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0035759509992203675,
+    0.00385263499993016,
+    0.0035961629982921295
+   ],
+   "warm_median_seconds": 0.003724398999111145,
+   "warm_min_seconds": 0.0035961629982921295
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.0017230630000995006,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": 19983,
+   "samples_seconds": [
+    0.0017230630000995006,
+    0.0012695040022663306,
+    0.0012972730000910815,
+    0.0012109839990444016,
+    0.001226481999765383
+   ],
+   "warm_median_seconds": 0.0012479930010158569,
+   "warm_min_seconds": 0.0012109839990444016
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0005794789976789616,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005794789976789616,
+    0.0005326640020939521,
+    0.0004930920003971551
+   ],
+   "warm_median_seconds": 0.0005128780012455536,
+   "warm_min_seconds": 0.0004930920003971551
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0010763419995782897,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010763419995782897,
+    0.0010264759985147975,
+    0.0012501829987741075
+   ],
+   "warm_median_seconds": 0.0011383294986444525,
+   "warm_min_seconds": 0.0010264759985147975
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.002250315999845043,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 98,
+    "groups_none": 102,
+    "groups_unknown": 200,
+    "rows_evaluated": 20000,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.002250315999845043,
+    0.0035798409990093205,
+    0.0023031010023260023,
+    0.0020922860021528322,
+    0.0022538720004376955
+   ],
+   "warm_median_seconds": 0.002278486501381849,
+   "warm_min_seconds": 0.0020922860021528322
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.008155193001584848,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.008155193001584848,
+    0.008084593999228673,
+    0.00753862300189212
+   ],
+   "warm_median_seconds": 0.007811608500560396,
+   "warm_min_seconds": 0.00753862300189212
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.008426701999269426,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 91,
+    "decided_fraction": 0.384825,
+    "error_used": 0.00929382670743478,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 30900,
+    "fallback_rows_undecided": 24607,
+    "proof_groups_all": 42,
+    "proof_groups_none": 49,
+    "proof_groups_unknown": 309,
+    "rows_proven": 9100,
+    "rows_true": 7416
+   },
+   "samples_seconds": [
+    0.008426701999269426,
+    0.012225160000525648,
+    0.021858691001398256,
+    0.01761886200256413,
+    0.01706586499858531
+   ],
+   "warm_median_seconds": 0.01734236350057472,
+   "warm_min_seconds": 0.012225160000525648
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.013542806002078578,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.013542806002078578,
+    0.012599384001077851,
+    0.009376203001011163
+   ],
+   "warm_median_seconds": 0.010987793501044507,
+   "warm_min_seconds": 0.009376203001011163
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.009475069000473013,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 2.828514293506579e-05,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.009475069000473013,
+    0.01109477399950265,
+    0.010098407001351006,
+    0.02150964300017222,
+    0.020937607001542347
+   ],
+   "warm_median_seconds": 0.016016190500522498,
+   "warm_min_seconds": 0.010098407001351006
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.034851877000619425,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.034851877000619425,
+    0.03466862899949774,
+    0.027153242997883353
+   ],
+   "warm_median_seconds": 0.030910935998690547,
+   "warm_min_seconds": 0.027153242997883353
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.032699618001061026,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 7.296649872805129e-11,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.032699618001061026,
+    0.035247159998107236,
+    0.03769333499803906,
+    0.03499710500182118,
+    0.03422131400293438
+   ],
+   "warm_median_seconds": 0.03512213249996421,
+   "warm_min_seconds": 0.03422131400293438
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.05224672799886321,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.05224672799886321,
+    0.029542012998717837,
+    0.025325539001642028
+   ],
+   "warm_median_seconds": 0.027433776000179932,
+   "warm_min_seconds": 0.025325539001642028
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.04818570899806218,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.961375,
+    "error_used": 3.719383960193596e-11,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 1545,
+    "proof_groups_all": 98,
+    "proof_groups_none": 102,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 18985
+   },
+   "samples_seconds": [
+    0.04818570899806218,
+    0.07710159400085104,
+    0.06942880299902754,
+    0.06487997699878179,
+    0.056321905001823325
+   ],
+   "warm_median_seconds": 0.06715438999890466,
+   "warm_min_seconds": 0.056321905001823325
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.003771051997318864,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": "binary64",
+    "error": 3.720350659507179e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.003771051997318864,
+    0.0034373159978713375,
+    0.0034411650012771133
+   ],
+   "warm_median_seconds": 0.0034392404995742254,
+   "warm_min_seconds": 0.0034373159978713375
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.0015355120012827683,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": 18985,
+   "samples_seconds": [
+    0.0015355120012827683,
+    0.0012099910018150695,
+    0.0011228059993300121,
+    0.001485193999542389,
+    0.0012149750000389758
+   ],
+   "warm_median_seconds": 0.0012124830009270227,
+   "warm_min_seconds": 0.0011228059993300121
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0005052749984315597,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005052749984315597,
+    0.0005577219999395311,
+    0.0004346980022091884
+   ],
+   "warm_median_seconds": 0.0004962100010743598,
+   "warm_min_seconds": 0.0004346980022091884
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0009645470017858315,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009645470017858315,
+    0.0009348359999421518,
+    0.0008997860022645909
+   ],
+   "warm_median_seconds": 0.0009173110011033714,
+   "warm_min_seconds": 0.0008997860022645909
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0034010340023087338,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 1,
+    "groups_none": 3,
+    "groups_unknown": 396,
+    "rows_evaluated": 39600,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.0034010340023087338,
+    0.003184668003086699,
+    0.0033836670008895453,
+    0.003217438999854494,
+    0.0031661249995522667
+   ],
+   "warm_median_seconds": 0.0032010535014705965,
+   "warm_min_seconds": 0.0031661249995522667
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.007545548996858997,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.007545548996858997,
+    0.016894614000193542,
+    0.014922800000931602
+   ],
+   "warm_median_seconds": 0.015908707000562572,
+   "warm_min_seconds": 0.014922800000931602
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.01640430499901413,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826707434779,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 1,
+    "decided_fraction": 0.157325,
+    "error_used": 0.00929382670743478,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39900,
+    "fallback_rows_undecided": 33707,
+    "proof_groups_all": 0,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 399,
+    "rows_proven": 100,
+    "rows_true": 3123
+   },
+   "samples_seconds": [
+    0.01640430499901413,
+    0.009688046000519535,
+    0.009067945000424515,
+    0.016212540002015885,
+    0.015533524998318171
+   ],
+   "warm_median_seconds": 0.012610785499418853,
+   "warm_min_seconds": 0.009067945000424515
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.025947842001187382,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.025947842001187382,
+    0.017720866002491675,
+    0.02176627299922984
+   ],
+   "warm_median_seconds": 0.019743569500860758,
+   "warm_min_seconds": 0.017720866002491675
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.02217393200044171,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.8285142935065416e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 2.828514293506579e-05,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.02217393200044171,
+    0.01232447999791475,
+    0.012235988997417735,
+    0.012190481997095048,
+    0.011301264999929117
+   ],
+   "warm_median_seconds": 0.012213235497256392,
+   "warm_min_seconds": 0.011301264999929117
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.011910137996892445,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.011910137996892445,
+    0.01428202799797873,
+    0.013776673000393203
+   ],
+   "warm_median_seconds": 0.014029350499185966,
+   "warm_min_seconds": 0.013776673000393203
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.035425237998424564,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 7.296649760208231e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 7.296649872805129e-11,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.035425237998424564,
+    0.03671230799955083,
+    0.040433218997350195,
+    0.01800889300284325,
+    0.018293815999641083
+   ],
+   "warm_median_seconds": 0.027503061999595957,
+   "warm_min_seconds": 0.01800889300284325
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.020808037999813678,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.020808037999813678,
+    0.02227715900153271,
+    0.021192938002059236
+   ],
+   "warm_median_seconds": 0.021735048501795973,
+   "warm_min_seconds": 0.021192938002059236
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.0627464159988449,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 3.719383764497964e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.921375,
+    "error_used": 3.719383960193596e-11,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 3145,
+    "proof_groups_all": 1,
+    "proof_groups_none": 3,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 18258
+   },
+   "samples_seconds": [
+    0.0627464159988449,
+    0.06306760700317682,
+    0.05978839199815411,
+    0.062410339996858966,
+    0.05926634600109537
+   ],
+   "warm_median_seconds": 0.06109936599750654,
+   "warm_min_seconds": 0.05926634600109537
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0034894799973699264,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": "binary64",
+    "error": 3.720350659507179e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0034894799973699264,
+    0.0035294720000820234,
+    0.0034736540001176763
+   ],
+   "warm_median_seconds": 0.00350156300009985,
+   "warm_min_seconds": 0.0034736540001176763
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.001387547999911476,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "correlated cancellation"
+   },
+   "phase": "baseline",
+   "result": 18258,
+   "samples_seconds": [
+    0.001387547999911476,
+    0.005439591997856041,
+    0.0012406470013957005,
+    0.0011998809968645219,
+    0.005326194001099793
+   ],
+   "warm_median_seconds": 0.003283420501247747,
+   "warm_min_seconds": 0.0011998809968645219
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0006194429988681804,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006194429988681804,
+    0.0003824900013569277,
+    0.0003671390004456043
+   ],
+   "warm_median_seconds": 0.000374814500901266,
+   "warm_min_seconds": 0.0003671390004456043
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.008939187999203568,
+   "params": {
+    "ambiguous": 0.01,
+    "groups": 400,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008939187999203568,
+    0.0008437599972239695,
+    0.0007978419998835307
+   ],
+   "warm_median_seconds": 0.0008208009985537501,
+   "warm_min_seconds": 0.0007978419998835307
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0012714490003418177,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 198,
+    "groups_none": 198,
+    "groups_unknown": 4,
+    "rows_evaluated": 400,
+    "rows_proven": 39600,
+    "rows_true": 19932
+   },
+   "samples_seconds": [
+    0.0012714490003418177,
+    0.005328504998033168,
+    0.0012372460005281027,
+    0.0011505900001793634,
+    0.0012247970007592812
+   ],
+   "warm_median_seconds": 0.001231021500643692,
+   "warm_min_seconds": 0.0011505900001793634
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.01561761400080286,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.01561761400080286,
+    0.015708490998804336,
+    0.015694173001975287
+   ],
+   "warm_median_seconds": 0.01570133200038981,
+   "warm_min_seconds": 0.015694173001975287
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.003997914998763008,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 0.9934,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 264,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19800
+   },
+   "samples_seconds": [
+    0.003997914998763008,
+    0.008156839998264331,
+    0.008131866001349408,
+    0.008418825000262586,
+    0.008987951998278731
+   ],
+   "warm_median_seconds": 0.008287832499263459,
+   "warm_min_seconds": 0.008131866001349408
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.022727561001374852,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.022727561001374852,
+    0.020796142998733558,
+    0.021899150997342076
+   ],
+   "warm_median_seconds": 0.021347646998037817,
+   "warm_min_seconds": 0.020796142998733558
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.010639123000146355,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 1.0,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19932
+   },
+   "samples_seconds": [
+    0.010639123000146355,
+    0.01438311800302472,
+    0.00649187700037146,
+    0.014457834997301688,
+    0.0063553559994034
+   ],
+   "warm_median_seconds": 0.01043749750169809,
+   "warm_min_seconds": 0.0063553559994034
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0160241430021415,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0160241430021415,
+    0.013493460999598028,
+    0.013521363001927966
+   ],
+   "warm_median_seconds": 0.013507412000762997,
+   "warm_min_seconds": 0.013493460999598028
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.034064199000567896,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 1.0,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19932
+   },
+   "samples_seconds": [
+    0.034064199000567896,
+    0.02139223199992557,
+    0.02538603499851888,
+    0.017026994999469025,
+    0.017053542000212474
+   ],
+   "warm_median_seconds": 0.019222887000069022,
+   "warm_min_seconds": 0.017026994999469025
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.025181180997606134,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.025181180997606134,
+    0.03824634599732235,
+    0.04795771600038279
+   ],
+   "warm_median_seconds": 0.04310203099885257,
+   "warm_min_seconds": 0.03824634599732235
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.0809026549977716,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 396,
+    "decided_fraction": 1.0,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 396,
+    "fallback_rows_evaluated": 400,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 198,
+    "proof_groups_none": 198,
+    "proof_groups_unknown": 4,
+    "rows_proven": 39600,
+    "rows_true": 19932
+   },
+   "samples_seconds": [
+    0.0809026549977716,
+    0.060803454001870705,
+    0.037913641001068754,
+    0.07024070599800325,
+    0.06869226900016656
+   ],
+   "warm_median_seconds": 0.06474786150101863,
+   "warm_min_seconds": 0.037913641001068754
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.004088706999027636,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.004088706999027636,
+    0.007906981998530682,
+    0.017306631998508237
+   ],
+   "warm_median_seconds": 0.01260680699851946,
+   "warm_min_seconds": 0.007906981998530682
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.007949101000122027,
+   "params": {
+    "ambiguous": 0.01,
+    "ambiguous_groups": 4,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": 19932,
+   "samples_seconds": [
+    0.007949101000122027,
+    0.00515566600006423,
+    0.001286617000005208,
+    0.0012561740004457533,
+    0.013384714999119751
+   ],
+   "warm_median_seconds": 0.0032211415000347188,
+   "warm_min_seconds": 0.0012561740004457533
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0005048239981988445,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005048239981988445,
+    0.0005208619986660779,
+    0.0008411570015596226
+   ],
+   "warm_median_seconds": 0.0006810095001128502,
+   "warm_min_seconds": 0.0005208619986660779
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0053399949974846095,
+   "params": {
+    "ambiguous": 0.5,
+    "groups": 400,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0053399949974846095,
+    0.0010647100025380496,
+    0.0009974280001188163
+   ],
+   "warm_median_seconds": 0.001031069001328433,
+   "warm_min_seconds": 0.0009974280001188163
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.0064562089974060655,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 102,
+    "groups_none": 98,
+    "groups_unknown": 200,
+    "rows_evaluated": 20000,
+    "rows_proven": 20000,
+    "rows_true": 16847
+   },
+   "samples_seconds": [
+    0.0064562089974060655,
+    0.0023918229999253526,
+    0.006402802999218693,
+    0.006392535000486532,
+    0.0023636999976588413
+   ],
+   "warm_median_seconds": 0.004392179000205942,
+   "warm_min_seconds": 0.0023636999976588413
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.023682596001890488,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.023682596001890488,
+    0.008351379001396708,
+    0.0077848389992141165
+   ],
+   "warm_median_seconds": 0.008068109000305412,
+   "warm_min_seconds": 0.0077848389992141165
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.007392033003270626,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 0.66905,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 13238,
+    "proof_groups_all": 102,
+    "proof_groups_none": 98,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 10200
+   },
+   "samples_seconds": [
+    0.007392033003270626,
+    0.007417247001285432,
+    0.015426237001520349,
+    0.011040456000046106,
+    0.018002338001679163
+   ],
+   "warm_median_seconds": 0.013233346500783227,
+   "warm_min_seconds": 0.007417247001285432
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.01009688599879155,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.01009688599879155,
+    0.009990113001549616,
+    0.010002975999668706
+   ],
+   "warm_median_seconds": 0.009996544500609161,
+   "warm_min_seconds": 0.009990113001549616
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.01056516999960877,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 1.0,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 102,
+    "proof_groups_none": 98,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 16847
+   },
+   "samples_seconds": [
+    0.01056516999960877,
+    0.01460465399941313,
+    0.012927196999953594,
+    0.019699688997206977,
+    0.014748888999747578
+   ],
+   "warm_median_seconds": 0.014676771499580354,
+   "warm_min_seconds": 0.012927196999953594
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.03049478899993119,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.03049478899993119,
+    0.032361571000365075,
+    0.021791025003039977
+   ],
+   "warm_median_seconds": 0.027076298001702526,
+   "warm_min_seconds": 0.021791025003039977
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.022523513001942774,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 1.0,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 102,
+    "proof_groups_none": 98,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 16847
+   },
+   "samples_seconds": [
+    0.022523513001942774,
+    0.022023002999048913,
+    0.022121974001493072,
+    0.028697355999611318,
+    0.057467331000225386
+   ],
+   "warm_median_seconds": 0.025409665000552195,
+   "warm_min_seconds": 0.022023002999048913
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.04431824399944162,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.04431824399944162,
+    0.05294220500218216,
+    0.044617825999011984
+   ],
+   "warm_median_seconds": 0.048780015500597074,
+   "warm_min_seconds": 0.044617825999011984
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.08060456300154328,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 200,
+    "decided_fraction": 1.0,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 200,
+    "fallback_rows_evaluated": 20000,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 102,
+    "proof_groups_none": 98,
+    "proof_groups_unknown": 200,
+    "rows_proven": 20000,
+    "rows_true": 16847
+   },
+   "samples_seconds": [
+    0.08060456300154328,
+    0.08584564299962949,
+    0.04222537099849433,
+    0.047983674998249626,
+    0.05109738100145478
+   ],
+   "warm_median_seconds": 0.0495405279998522,
+   "warm_min_seconds": 0.04222537099849433
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0034356649994151667,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0034356649994151667,
+    0.0036872849996143486,
+    0.0039773069984221365
+   ],
+   "warm_median_seconds": 0.0038322959990182426,
+   "warm_min_seconds": 0.0036872849996143486
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.001503157000115607,
+   "params": {
+    "ambiguous": 0.5,
+    "ambiguous_groups": 200,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": 16847,
+   "samples_seconds": [
+    0.001503157000115607,
+    0.001116784998885123,
+    0.0010180139979638625,
+    0.0011717899978975765,
+    0.0010304959978384431
+   ],
+   "warm_median_seconds": 0.001073640498361783,
+   "warm_min_seconds": 0.0010180139979638625
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: scope",
+   "first_seconds": 0.0004990919987903908,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004990919987903908,
+    0.0004047580005135387,
+    0.00034056900040013716
+   ],
+   "warm_median_seconds": 0.00037266350045683794,
+   "warm_min_seconds": 0.00034056900040013716
+  },
+  {
+   "backend": "cpu",
+   "case": "state construction: abstract inputs",
+   "first_seconds": 0.0009213039993483108,
+   "params": {
+    "ambiguous": 0.99,
+    "groups": 400,
+    "scenario": "modular constraint"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009213039993483108,
+    0.0009531809992040507,
+    0.0009226389993273187
+   ],
+   "warm_median_seconds": 0.0009379099992656847,
+   "warm_min_seconds": 0.0009226389993273187
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: exact UNC-001 filter of x > 1/2",
+   "first_seconds": 0.003198987997166114,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": {
+    "groups_all": 3,
+    "groups_none": 1,
+    "groups_unknown": 396,
+    "rows_evaluated": 39600,
+    "rows_proven": 400,
+    "rows_true": 13442
+   },
+   "samples_seconds": [
+    0.003198987997166114,
+    0.0030986420024419203,
+    0.0032171989987546112,
+    0.0031385649999720044,
+    0.0034728190003079362
+   ],
+   "warm_median_seconds": 0.003177881999363308,
+   "warm_min_seconds": 0.0030986420024419203
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.007270856996910879,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.007270856996910879,
+    0.007192352000856772,
+    0.00735106299907784
+   ],
+   "warm_median_seconds": 0.007271707499967306,
+   "warm_min_seconds": 0.007192352000856772
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.014209125001798384,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 2,
+    "error": 0.009293826670240942,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 0.340375,
+    "error_used": 0.009293826670240942,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 26385,
+    "proof_groups_all": 3,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 300
+   },
+   "samples_seconds": [
+    0.014209125001798384,
+    0.020003278001240687,
+    0.017158230999484658,
+    0.022053788998164237,
+    0.027003985000192188
+   ],
+   "warm_median_seconds": 0.021028533499702462,
+   "warm_min_seconds": 0.017158230999484658
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.016289967999910004,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.016289967999910004,
+    0.016473233001306653,
+    0.021137840001756558
+   ],
+   "warm_median_seconds": 0.018805536501531606,
+   "warm_min_seconds": 0.016473233001306653
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.025646936999692116,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 4,
+    "error": 2.828510574122777e-05,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 1.0,
+    "error_used": 2.8285105741228146e-05,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 3,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 13442
+   },
+   "samples_seconds": [
+    0.025646936999692116,
+    0.025852507998934016,
+    0.02205820900053368,
+    0.024804698998195818,
+    0.021480756000528345
+   ],
+   "warm_median_seconds": 0.02343145399936475,
+   "warm_min_seconds": 0.021480756000528345
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.021828338998602703,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.021828338998602703,
+    0.018278040002769558,
+    0.020698775002529146
+   ],
+   "warm_median_seconds": 0.019488407502649352,
+   "warm_min_seconds": 0.018278040002769558
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.041463665998890065,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 8,
+    "error": 3.577265995710322e-11,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 1.0,
+    "error_used": 3.577266108307219e-11,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 3,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 13442
+   },
+   "samples_seconds": [
+    0.041463665998890065,
+    0.026363894001406152,
+    0.027033378999476554,
+    0.02925718700134894,
+    0.03610015999947791
+   ],
+   "warm_median_seconds": 0.028145283000412746,
+   "warm_min_seconds": 0.026363894001406152
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.04447321099723922,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.04447321099723922,
+    0.0402508859988302,
+    0.03969212900119601
+   ],
+   "warm_median_seconds": 0.039971507500013104,
+   "warm_min_seconds": 0.03969212900119601
+  },
+  {
+   "backend": "cpu",
+   "case": "approximate filter: proof + fallback",
+   "first_seconds": 0.10156461400038097,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": 16,
+    "error": 5.491174056497321e-25,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "filter",
+   "result": {
+    "approx_groups_decided": 4,
+    "decided_fraction": 1.0,
+    "error_used": 1.9569568636328827e-18,
+    "exact_groups_decided": 4,
+    "fallback_rows_evaluated": 39600,
+    "fallback_rows_undecided": 0,
+    "proof_groups_all": 3,
+    "proof_groups_none": 1,
+    "proof_groups_unknown": 396,
+    "rows_proven": 400,
+    "rows_true": 13442
+   },
+   "samples_seconds": [
+    0.10156461400038097,
+    0.09550648000004003,
+    0.04799793400161434,
+    0.059469064999575494,
+    0.0821037259993318
+   ],
+   "warm_median_seconds": 0.07078639549945365,
+   "warm_min_seconds": 0.04799793400161434
+  },
+  {
+   "backend": "cpu",
+   "case": "baseline: certified row evaluation of every row",
+   "first_seconds": 0.0038120599965623114,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "degree": "binary64",
+    "error": 9.668950092694021e-15,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "samples_seconds": [
+    0.0038120599965623114,
+    0.0034629459987627342,
+    0.003119029999652412
+   ],
+   "warm_median_seconds": 0.003290987999207573,
+   "warm_min_seconds": 0.003119029999652412
+  },
+  {
+   "backend": "duckdb",
+   "case": "baseline: DuckDB binary64 EXP (uncertified)",
+   "first_seconds": 0.0015980409989424516,
+   "params": {
+    "ambiguous": 0.99,
+    "ambiguous_groups": 396,
+    "groups": 400,
+    "rows": 40000,
+    "scenario": "modular constraint"
+   },
+   "phase": "baseline",
+   "result": 13442,
+   "samples_seconds": [
+    0.0015980409989424516,
+    0.001215685002534883,
+    0.00822720699943602,
+    0.0011465459974715486,
+    0.0011795140017056838
+   ],
+   "warm_median_seconds": 0.0011975995021202834,
+   "warm_min_seconds": 0.0011465459974715486
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00018414399892208166,
+   "params": {
+    "bits": 8,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00018414399892208166,
+    0.00011040499884984456,
+    8.449800225207582e-05
+   ],
+   "warm_median_seconds": 9.745150055096019e-05,
+   "warm_min_seconds": 8.449800225207582e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 8,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 0.00343082488136866,
+    "holds": true,
+    "measured": 0.0025591746054312078,
+    "ratio": 1.3405982046272236
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.004148676001932472,
+   "params": {
+    "bits": 16,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004148676001932472,
+    0.00015279299987014383,
+    0.00010113399912370369
+   ],
+   "warm_median_seconds": 0.00012696349949692376,
+   "warm_min_seconds": 0.00010113399912370369
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 16,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 2.1314698413807215e-05,
+    "holds": true,
+    "measured": 1.567697173930556e-05,
+    "ratio": 1.3596183477429291
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 9.222899825545028e-05,
+   "params": {
+    "bits": 24,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.222899825545028e-05,
+    0.00010583499897620641,
+    7.90880003478378e-05
+   ],
+   "warm_median_seconds": 9.24614996620221e-05,
+   "warm_min_seconds": 7.90880003478378e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 24,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 1.2583854368607893e-07,
+    "holds": true,
+    "measured": 7.486159828544785e-08,
+    "ratio": 1.6809491991642442
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00011044900020351633,
+   "params": {
+    "bits": 32,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011044900020351633,
+    9.61500008997973e-05,
+    9.922099707182497e-05
+   ],
+   "warm_median_seconds": 9.768549898581114e-05,
+   "warm_min_seconds": 9.61500008997973e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 32,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 6.473357547845236e-10,
+    "holds": true,
+    "measured": 4.656612873077393e-10,
+    "ratio": 1.390142948165502
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00011865900160046294,
+   "params": {
+    "bits": 48,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011865900160046294,
+    8.578099732403643e-05,
+    7.676699897274375e-05
+   ],
+   "warm_median_seconds": 8.127399814839009e-05,
+   "warm_min_seconds": 7.676699897274375e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 48,
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 1.1662811735248381e-14,
+    "holds": true,
+    "measured": 5.015989259977975e-15,
+    "ratio": 2.3251269352398083
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "exact",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 8.069916314595686e-18,
+    "holds": true,
+    "measured": 8.069916314595686e-18,
+    "ratio": 1.0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "binary64",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 7.36850485345704e-15,
+    "holds": true,
+    "measured": 2.361556818882804e-17,
+    "ratio": 312.01895268998453
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 8.093400174402632e-05,
+   "params": {
+    "bits": 8,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.093400174402632e-05,
+    6.285299969022162e-05,
+    6.560100155184045e-05
+   ],
+   "warm_median_seconds": 6.422700062103104e-05,
+   "warm_min_seconds": 6.285299969022162e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 8,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 0.004911693266303916,
+    "holds": true,
+    "measured": 0.00390625,
+    "ratio": 1.2573934761738026
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 7.843599814805202e-05,
+   "params": {
+    "bits": 16,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.843599814805202e-05,
+    6.765800208086148e-05,
+    6.22669977019541e-05
+   ],
+   "warm_median_seconds": 6.496249989140779e-05,
+   "warm_min_seconds": 6.22669977019541e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 16,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 3.3302702575787554e-05,
+    "holds": true,
+    "measured": 2.3783556592733934e-05,
+    "ratio": 1.400240642981117
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 7.38990020181518e-05,
+   "params": {
+    "bits": 24,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.38990020181518e-05,
+    6.894800026202574e-05,
+    6.371299969032407e-05
+   ],
+   "warm_median_seconds": 6.63304999761749e-05,
+   "warm_min_seconds": 6.371299969032407e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 24,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 1.5112019720463712e-07,
+    "holds": true,
+    "measured": 9.190053313901555e-08,
+    "ratio": 1.6443886889757378
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 8.169399734470062e-05,
+   "params": {
+    "bits": 32,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.169399734470062e-05,
+    7.695800013607368e-05,
+    7.288200140465051e-05
+   ],
+   "warm_median_seconds": 7.49200007703621e-05,
+   "warm_min_seconds": 7.288200140465051e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 32,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 6.011566954733051e-10,
+    "holds": true,
+    "measured": 3.407706478412242e-10,
+    "ratio": 1.7641093776169448
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 8.274799984064884e-05,
+   "params": {
+    "bits": 48,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.274799984064884e-05,
+    7.786499918438494e-05,
+    7.298399941646494e-05
+   ],
+   "warm_median_seconds": 7.542449930042494e-05,
+   "warm_min_seconds": 7.298399941646494e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 48,
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 2.0446438653200932e-11,
+    "holds": true,
+    "measured": 2.042810365310288e-11,
+    "ratio": 1.0008975380392329
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "exact",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 2.0434826404258867e-11,
+    "holds": true,
+    "measured": 2.0434564634209207e-11,
+    "ratio": 1.0000128101603507
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "binary64",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 3.495020498254111e-11,
+    "holds": true,
+    "measured": 2.0437239574289112e-11,
+    "ratio": 1.710123564168123
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00014835900219623,
+   "params": {
+    "bits": 8,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014835900219623,
+    0.00010077099796035327,
+    8.830899969325401e-05
+   ],
+   "warm_median_seconds": 9.453999882680364e-05,
+   "warm_min_seconds": 8.830899969325401e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 8,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 0.005007703136815222,
+    "holds": true,
+    "measured": 0.0047650731743183045,
+    "ratio": 1.05091841271286
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00010796099741128273,
+   "params": {
+    "bits": 16,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010796099741128273,
+    0.00010385499990661629,
+    8.713899660506286e-05
+   ],
+   "warm_median_seconds": 9.549699825583957e-05,
+   "warm_min_seconds": 8.713899660506286e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 16,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 4.2537503033559634e-05,
+    "holds": true,
+    "measured": 2.878891214458473e-05,
+    "ratio": 1.4775654884049187
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00010894000297412276,
+   "params": {
+    "bits": 24,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010894000297412276,
+    0.00011382500088075176,
+    0.0002596969970909413
+   ],
+   "warm_median_seconds": 0.00018676099898584653,
+   "warm_min_seconds": 0.00011382500088075176
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 24,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 1.292780165730838e-07,
+    "holds": true,
+    "measured": 5.930272592649485e-08,
+    "ratio": 2.179967523471394
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00011669400191749446,
+   "params": {
+    "bits": 32,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011669400191749446,
+    0.00010123399988515303,
+    9.177000174531713e-05
+   ],
+   "warm_median_seconds": 9.650200081523508e-05,
+   "warm_min_seconds": 9.177000174531713e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 32,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 8.930071723402959e-10,
+    "holds": true,
+    "measured": 5.94476231986596e-10,
+    "ratio": 1.5021747284262006
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "quantization",
+   "first_seconds": 0.00011527999959071167,
+   "params": {
+    "bits": 48,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011527999959071167,
+    0.00011449700105004013,
+    0.00010124099935637787
+   ],
+   "warm_median_seconds": 0.000107869000203209,
+   "warm_min_seconds": 0.00010124099935637787
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": 48,
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 3.088073373406172e-14,
+    "holds": true,
+    "measured": 2.1399363339205848e-14,
+    "ratio": 1.4430678728411055
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "exact",
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 1.779741368213372e-14,
+    "holds": true,
+    "measured": 1.772387263704405e-14,
+    "ratio": 1.0041492650390618
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "certified vs measured (coefficient precision)",
+   "params": {
+    "bits": "binary64",
+    "degree": 14,
+    "function": "sin"
+   },
+   "phase": "proof",
+   "result": {
+    "certified": 2.9186124425297144e-14,
+    "holds": true,
+    "measured": 1.771813027916546e-14,
+    "ratio": 1.6472462932286238
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 9.044800026458688e-05,
+   "params": {
+    "method": "cross",
+    "rank": 1,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 122.71457132996971,
+    "failure": 0.0,
+    "frobenius_bound": 145.04697198674404,
+    "frobenius_exact": 145.04697198674404,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 121.17153673583962,
+    "spectral_bound": 145.04697198674404
+   },
+   "samples_seconds": [
+    9.044800026458688e-05,
+    6.4744999690447e-05,
+    5.1314000302227214e-05
+   ],
+   "warm_median_seconds": 5.802949999633711e-05,
+   "warm_min_seconds": 5.1314000302227214e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.000668452001264086,
+   "params": {
+    "method": "sketch",
+    "rank": 1,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 122.71457132996971,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 472.9373431181325,
+    "frobenius_exact": 127.58770087466485,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 121.17153673583962,
+    "spectral_bound": 472.9373431181325
+   },
+   "samples_seconds": [
+    0.000668452001264086,
+    0.0007047059989417903,
+    0.0006839340021542739
+   ],
+   "warm_median_seconds": 0.0006943200005480321,
+   "warm_min_seconds": 0.0006839340021542739
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0001070910002454184,
+   "params": {
+    "method": "cross",
+    "rank": 2,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 19.399090230557004,
+    "failure": 0.0,
+    "frobenius_bound": 41.394580840231185,
+    "frobenius_exact": 41.394580840231185,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 19.388029852138864,
+    "spectral_bound": 41.394580840231185
+   },
+   "samples_seconds": [
+    0.0001070910002454184,
+    6.616899918299168e-05,
+    5.345699901226908e-05
+   ],
+   "warm_median_seconds": 5.981299909763038e-05,
+   "warm_min_seconds": 5.345699901226908e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0008239989983849227,
+   "params": {
+    "method": "sketch",
+    "rank": 2,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 19.399090230557004,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 412.17139208131476,
+    "frobenius_exact": 108.50823346703267,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 19.388029852138864,
+    "spectral_bound": 412.17139208131476
+   },
+   "samples_seconds": [
+    0.0008239989983849227,
+    0.0007993039980647154,
+    0.000799777997599449
+   ],
+   "warm_median_seconds": 0.0007995409978320822,
+   "warm_min_seconds": 0.0007993039980647154
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 4.74560001748614e-05,
+   "params": {
+    "method": "cross",
+    "rank": 3,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.6549810881731493,
+    "failure": 0.0,
+    "frobenius_bound": 1.2994611948523491,
+    "frobenius_exact": 1.2994611948523493,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 0.556060091359351,
+    "spectral_bound": 1.2994611948523491
+   },
+   "samples_seconds": [
+    4.74560001748614e-05,
+    4.4978998630540445e-05,
+    4.3138999899383634e-05
+   ],
+   "warm_median_seconds": 4.405899926496204e-05,
+   "warm_min_seconds": 4.3138999899383634e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0009065039994311519,
+   "params": {
+    "method": "sketch",
+    "rank": 3,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.6549810881731493,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 8.27725144726878,
+    "frobenius_exact": 2.0910778750959658,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 0.556060091359351,
+    "spectral_bound": 8.27725144726878
+   },
+   "samples_seconds": [
+    0.0009065039994311519,
+    0.0009046140003192704,
+    0.00097299600020051
+   ],
+   "warm_median_seconds": 0.0009388050002598902,
+   "warm_min_seconds": 0.0009046140003192704
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 4.750399966724217e-05,
+   "params": {
+    "method": "cross",
+    "rank": 5,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 4.420131338202187e-15,
+    "failure": 0.0,
+    "frobenius_bound": 0.0,
+    "frobenius_exact": 0.0,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 4.420131338202187e-15,
+    "spectral_bound": 0.0
+   },
+   "samples_seconds": [
+    4.750399966724217e-05,
+    4.214200089336373e-05,
+    4.0277001971844584e-05
+   ],
+   "warm_median_seconds": 4.1209501432604156e-05,
+   "warm_min_seconds": 4.0277001971844584e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0007387060031760484,
+   "params": {
+    "method": "sketch",
+    "rank": 5,
+    "size": 6
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 4.420131338202187e-15,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 0.0,
+    "frobenius_exact": 0.0,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 4.420131338202187e-15,
+    "spectral_bound": 0.0
+   },
+   "samples_seconds": [
+    0.0007387060031760484,
+    0.000739565999538172,
+    0.0007789840019540861
+   ],
+   "warm_median_seconds": 0.0007592750007461291,
+   "warm_min_seconds": 0.000739565999538172
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0001684059971012175,
+   "params": {
+    "method": "cross",
+    "rank": 1,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 482.8914572496447,
+    "failure": 0.0,
+    "frobenius_bound": 549.111079990709,
+    "frobenius_exact": 549.111079990709,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 342.74152965497757,
+    "spectral_bound": 549.111079990709
+   },
+   "samples_seconds": [
+    0.0001684059971012175,
+    0.0001645600023039151,
+    0.0001863489997049328
+   ],
+   "warm_median_seconds": 0.00017545450100442395,
+   "warm_min_seconds": 0.0001645600023039151
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.002196011999330949,
+   "params": {
+    "method": "sketch",
+    "rank": 1,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 482.8914572496447,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 1799.013494053362,
+    "frobenius_exact": 554.537923216667,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 342.74152965497757,
+    "spectral_bound": 1799.013494053362
+   },
+   "samples_seconds": [
+    0.002196011999330949,
+    0.002233646002423484,
+    0.0023738670024613384
+   ],
+   "warm_median_seconds": 0.002303756502442411,
+   "warm_min_seconds": 0.002233646002423484
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.00021844000002602115,
+   "params": {
+    "method": "cross",
+    "rank": 2,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 340.16525885876644,
+    "failure": 0.0,
+    "frobenius_bound": 428.7488092339105,
+    "frobenius_exact": 428.7488092339105,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 265.86408279837246,
+    "spectral_bound": 428.7488092339105
+   },
+   "samples_seconds": [
+    0.00021844000002602115,
+    0.0014091930024733301,
+    0.004257109001628123
+   ],
+   "warm_median_seconds": 0.0028331510020507267,
+   "warm_min_seconds": 0.0014091930024733301
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.007441177000146126,
+   "params": {
+    "method": "sketch",
+    "rank": 2,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 340.16525885876644,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 1360.8481416780137,
+    "frobenius_exact": 437.55601832971547,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 265.86408279837246,
+    "spectral_bound": 1360.8481416780137
+   },
+   "samples_seconds": [
+    0.007441177000146126,
+    0.0074064789987460244,
+    0.0028366780024953187
+   ],
+   "warm_median_seconds": 0.0051215785006206715,
+   "warm_min_seconds": 0.0028366780024953187
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.00019484300355543382,
+   "params": {
+    "method": "cross",
+    "rank": 3,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 212.1996531859365,
+    "failure": 0.0,
+    "frobenius_bound": 302.6036372449662,
+    "frobenius_exact": 302.6036372449662,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 152.487555873307,
+    "spectral_bound": 302.6036372449662
+   },
+   "samples_seconds": [
+    0.00019484300355543382,
+    0.00018191900016972795,
+    0.00017147399921668693
+   ],
+   "warm_median_seconds": 0.00017669649969320744,
+   "warm_min_seconds": 0.00017147399921668693
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.007381352999800583,
+   "params": {
+    "method": "sketch",
+    "rank": 3,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 212.1996531859365,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 1198.0600022848873,
+    "frobenius_exact": 333.55735966079584,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 152.487555873307,
+    "spectral_bound": 1198.0600022848873
+   },
+   "samples_seconds": [
+    0.007381352999800583,
+    0.0073495060023560654,
+    0.012353897000139114
+   ],
+   "warm_median_seconds": 0.00985170150124759,
+   "warm_min_seconds": 0.0073495060023560654
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.00024212800053646788,
+   "params": {
+    "method": "cross",
+    "rank": 6,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 2.076561815671976,
+    "failure": 0.0,
+    "frobenius_bound": 4.897419809508918,
+    "frobenius_exact": 4.897419809508918,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 1.4118866535123495,
+    "spectral_bound": 4.897419809508918
+   },
+   "samples_seconds": [
+    0.00024212800053646788,
+    0.0003455820005910937,
+    0.0002838159998646006
+   ],
+   "warm_median_seconds": 0.00031469900022784714,
+   "warm_min_seconds": 0.0002838159998646006
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.021546533000218915,
+   "params": {
+    "method": "sketch",
+    "rank": 6,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 2.076561815671976,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 27.877735538005343,
+    "frobenius_exact": 8.589101921778958,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 1.4118866535123495,
+    "spectral_bound": 27.877735538005343
+   },
+   "samples_seconds": [
+    0.021546533000218915,
+    0.013148182999429991,
+    0.006082653999328613
+   ],
+   "warm_median_seconds": 0.009615418499379302,
+   "warm_min_seconds": 0.006082653999328613
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.00019349599824636243,
+   "params": {
+    "method": "cross",
+    "rank": 11,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.13192054663820718,
+    "failure": 0.0,
+    "frobenius_bound": 0.3781800296875953,
+    "frobenius_exact": 0.3781800296875953,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 0.13192054663820718,
+    "spectral_bound": 0.3781800296875953
+   },
+   "samples_seconds": [
+    0.00019349599824636243,
+    0.00017380999997840263,
+    0.00016946799951256253
+   ],
+   "warm_median_seconds": 0.00017163899974548258,
+   "warm_min_seconds": 0.00016946799951256253
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.011975317996984813,
+   "params": {
+    "method": "sketch",
+    "rank": 11,
+    "size": 12
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.13192054663820718,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 2.3002564123085447,
+    "frobenius_exact": 0.5421756358704037,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 0.13192054663820718,
+    "spectral_bound": 2.3002564123085447
+   },
+   "samples_seconds": [
+    0.011975317996984813,
+    0.011608246000832878,
+    0.018717246999585768
+   ],
+   "warm_median_seconds": 0.015162746500209323,
+   "warm_min_seconds": 0.011608246000832878
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.00485958799981745,
+   "params": {
+    "method": "cross",
+    "rank": 1,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 1659.7284534584307,
+    "failure": 0.0,
+    "frobenius_bound": 1928.936126505148,
+    "frobenius_exact": 1928.936126505148,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 945.1355614723094,
+    "spectral_bound": 1928.936126505148
+   },
+   "samples_seconds": [
+    0.00485958799981745,
+    0.0008832460007397458,
+    0.0006601280001632404
+   ],
+   "warm_median_seconds": 0.0007716870004514931,
+   "warm_min_seconds": 0.0006601280001632404
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.021532562001084443,
+   "params": {
+    "method": "sketch",
+    "rank": 1,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 1659.7284534584307,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 6004.10190820635,
+    "frobenius_exact": 1749.2257568105429,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 945.1355614723094,
+    "spectral_bound": 6004.10190820635
+   },
+   "samples_seconds": [
+    0.021532562001084443,
+    0.011015963998943334,
+    0.01057275099810795
+   ],
+   "warm_median_seconds": 0.010794357498525642,
+   "warm_min_seconds": 0.01057275099810795
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0009010989997477736,
+   "params": {
+    "method": "cross",
+    "rank": 2,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 1364.3376816829243,
+    "failure": 0.0,
+    "frobenius_bound": 1677.6905762103472,
+    "frobenius_exact": 1677.6905762103472,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 755.0889015716436,
+    "spectral_bound": 1677.6905762103472
+   },
+   "samples_seconds": [
+    0.0009010989997477736,
+    0.000817544998426456,
+    0.000805912000942044
+   ],
+   "warm_median_seconds": 0.00081172849968425,
+   "warm_min_seconds": 0.000805912000942044
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.01338979600041057,
+   "params": {
+    "method": "sketch",
+    "rank": 2,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 1364.3376816829243,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 5785.630901953361,
+    "frobenius_exact": 1722.258553057655,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 755.0889015716436,
+    "spectral_bound": 5785.630901953361
+   },
+   "samples_seconds": [
+    0.01338979600041057,
+    0.012728502999379998,
+    0.011845486998936394
+   ],
+   "warm_median_seconds": 0.012286994999158196,
+   "warm_min_seconds": 0.011845486998936394
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0010303599992766976,
+   "params": {
+    "method": "cross",
+    "rank": 6,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 688.920438906177,
+    "failure": 0.0,
+    "frobenius_bound": 1168.6431376994071,
+    "frobenius_exact": 1168.6431376994071,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 401.20905461764744,
+    "spectral_bound": 1168.6431376994071
+   },
+   "samples_seconds": [
+    0.0010303599992766976,
+    0.001070611000614008,
+    0.0010018510001827963
+   ],
+   "warm_median_seconds": 0.001036231000398402,
+   "warm_min_seconds": 0.0010018510001827963
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.06432502000097884,
+   "params": {
+    "method": "sketch",
+    "rank": 6,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 688.920438906177,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 3384.361321033384,
+    "frobenius_exact": 1101.808606363812,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 401.20905461764744,
+    "spectral_bound": 3384.361321033384
+   },
+   "samples_seconds": [
+    0.06432502000097884,
+    0.047615498002414824,
+    0.026371228999778396
+   ],
+   "warm_median_seconds": 0.03699336350109661,
+   "warm_min_seconds": 0.026371228999778396
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.001279254000110086,
+   "params": {
+    "method": "cross",
+    "rank": 12,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 2.4864233724359512,
+    "failure": 0.0,
+    "frobenius_bound": 8.477734324876545,
+    "frobenius_exact": 8.477734324876545,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 1.1650185209450081,
+    "spectral_bound": 8.477734324876545
+   },
+   "samples_seconds": [
+    0.001279254000110086,
+    0.0014815940012340434,
+    0.001313958997343434
+   ],
+   "warm_median_seconds": 0.0013977764992887387,
+   "warm_min_seconds": 0.001313958997343434
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.06407216099978541,
+   "params": {
+    "method": "sketch",
+    "rank": 12,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 2.4864233724359512,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 185.09806810333944,
+    "frobenius_exact": 68.52520718994306,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 1.1650185209450081,
+    "spectral_bound": 185.09806810333944
+   },
+   "samples_seconds": [
+    0.06407216099978541,
+    0.05676119700001436,
+    0.10661525300020003
+   ],
+   "warm_median_seconds": 0.0816882250001072,
+   "warm_min_seconds": 0.05676119700001436
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.0019057870013057254,
+   "params": {
+    "method": "cross",
+    "rank": 23,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.07331287013751296,
+    "failure": 0.0,
+    "frobenius_bound": 0.3242538810673298,
+    "frobenius_exact": 0.3242538810673298,
+    "holds": true,
+    "label": "certified",
+    "sigma_k_plus_1": 0.07331287013751296,
+    "spectral_bound": 0.3242538810673298
+   },
+   "samples_seconds": [
+    0.0019057870013057254,
+    0.0012686750014836434,
+    0.0011785340029746294
+   ],
+   "warm_median_seconds": 0.0012236045022291364,
+   "warm_min_seconds": 0.0011785340029746294
+  },
+  {
+   "backend": "cpu",
+   "case": "low-rank approximation",
+   "first_seconds": 0.269312792999699,
+   "params": {
+    "method": "sketch",
+    "rank": 23,
+    "size": 24
+   },
+   "phase": "build",
+   "result": {
+    "best_rank_k_frobenius": 0.07331287013751296,
+    "failure": 0.036072306664217076,
+    "frobenius_bound": 2.204990373986668,
+    "frobenius_exact": 0.5802888182863593,
+    "holds": true,
+    "label": "probabilistic",
+    "sigma_k_plus_1": 0.07331287013751296,
+    "spectral_bound": 2.204990373986668
+   },
+   "samples_seconds": [
+    0.269312792999699,
+    0.1854543699992064,
+    0.242750089000765
+   ],
+   "warm_median_seconds": 0.2141022294999857,
+   "warm_min_seconds": 0.1854543699992064
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 2,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.009293826670240942,
+    "certified": false,
+    "measured": 0.009293826670221168,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 2,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.009293826670240942,
+    "certified": false,
+    "measured": 0.009293826670221168,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 2,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.009293826670240942,
+    "certified": false,
+    "measured": 0.009293826670221168,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 2,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.009293826670240942,
+    "certified": false,
+    "measured": 0.009293826670221168,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 2,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.009293826670240942,
+    "certified": false,
+    "measured": 0.009293826670221168,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 4,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.828510574122777e-05,
+    "certified": true,
+    "measured": 2.828510574122775e-05
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 4,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.828510574122777e-05,
+    "certified": false,
+    "measured": 2.828510574122775e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 4,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.828510574122777e-05,
+    "certified": false,
+    "measured": 2.828510574122775e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 4,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.828510574122777e-05,
+    "certified": false,
+    "measured": 2.828510574122775e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 4,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.828510574122777e-05,
+    "certified": false,
+    "measured": 2.828510574122775e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 8,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.577265995710322e-11,
+    "certified": true,
+    "measured": 3.577265995710322e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 8,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.577265995710322e-11,
+    "certified": true,
+    "measured": 3.577265995710322e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 8,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.577265995710322e-11,
+    "certified": true,
+    "measured": 3.577265995710322e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 8,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.577265995710322e-11,
+    "certified": false,
+    "measured": 3.577265995710322e-11,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 8,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.577265995710322e-11,
+    "certified": false,
+    "measured": 3.577265995710322e-11,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 8.069916314595686e-18,
+    "certified": true,
+    "measured": 8.069916314595686e-18
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 8.069916314595686e-18,
+    "certified": true,
+    "measured": 8.069916314595686e-18
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 8.069916314595686e-18,
+    "certified": true,
+    "measured": 8.069916314595686e-18
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 8.069916314595686e-18,
+    "certified": true,
+    "measured": 8.069916314595686e-18
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 12,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 8.069916314595686e-18,
+    "certified": true,
+    "measured": 8.069916314595686e-18
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 16,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 5.491174056497321e-25,
+    "certified": true,
+    "measured": 5.491174056497321e-25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 16,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 5.491174056497321e-25,
+    "certified": true,
+    "measured": 5.491174056497321e-25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 16,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 5.491174056497321e-25,
+    "certified": true,
+    "measured": 5.491174056497321e-25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 16,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 5.491174056497321e-25,
+    "certified": true,
+    "measured": 5.491174056497321e-25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 16,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 5.491174056497321e-25,
+    "certified": true,
+    "measured": 5.491174056497321e-25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 24,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.911040675852579e-40,
+    "certified": true,
+    "measured": 1.911040675852579e-40
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 24,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.911040675852579e-40,
+    "certified": true,
+    "measured": 1.911040675852579e-40
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 24,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.911040675852579e-40,
+    "certified": true,
+    "measured": 1.911040675852579e-40
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 24,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.911040675852579e-40,
+    "certified": true,
+    "measured": 1.911040675852579e-40
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 24,
+    "function": "exp"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.911040675852579e-40,
+    "certified": true,
+    "measured": 1.911040675852579e-40
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 2,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0038707134834670667,
+    "certified": false,
+    "measured": 0.003869842590537543,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 2,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0038707134834670667,
+    "certified": false,
+    "measured": 0.003869842590537543,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 2,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0038707134834670667,
+    "certified": false,
+    "measured": 0.003869842590537543,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 2,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0038707134834670667,
+    "certified": false,
+    "measured": 0.003869842590537543,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 2,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0038707134834670667,
+    "certified": false,
+    "measured": 0.003869842590537543,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 4,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.945715188664624e-05,
+    "certified": true,
+    "measured": 6.944620180341321e-05
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 4,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.945715188664624e-05,
+    "certified": false,
+    "measured": 6.944620180341321e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 4,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.945715188664624e-05,
+    "certified": false,
+    "measured": 6.944620180341321e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 4,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.945715188664624e-05,
+    "certified": false,
+    "measured": 6.944620180341321e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 4,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.945715188664624e-05,
+    "certified": false,
+    "measured": 6.944620180341321e-05,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 8,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.387141644388624e-08,
+    "certified": true,
+    "measured": 3.386971559102625e-08
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 8,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.387141644388624e-08,
+    "certified": true,
+    "measured": 3.386971559102625e-08
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 8,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.387141644388624e-08,
+    "certified": false,
+    "measured": 3.386971559102625e-08,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 8,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.387141644388624e-08,
+    "certified": false,
+    "measured": 3.386971559102625e-08,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 8,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.387141644388624e-08,
+    "certified": false,
+    "measured": 3.386971559102625e-08,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.0434826404258867e-11,
+    "certified": true,
+    "measured": 2.0434564634209207e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.0434826404258867e-11,
+    "certified": true,
+    "measured": 2.0434564634209207e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.0434826404258867e-11,
+    "certified": true,
+    "measured": 2.0434564634209207e-11
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.0434826404258867e-11,
+    "certified": false,
+    "measured": 2.0434564634209207e-11,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 12,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 2.0434826404258867e-11,
+    "certified": false,
+    "measured": 2.0434564634209207e-11,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 16,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.3584252385995737e-14,
+    "certified": true,
+    "measured": 1.3584212251087133e-14
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 16,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.3584252385995737e-14,
+    "certified": true,
+    "measured": 1.3584212251087133e-14
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 16,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.3584252385995737e-14,
+    "certified": true,
+    "measured": 1.3584212251087133e-14
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 16,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.3584252385995737e-14,
+    "certified": true,
+    "measured": 1.3584212251087133e-14
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 16,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 1.3584252385995737e-14,
+    "certified": false,
+    "measured": 1.3584212251087133e-14,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 24,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.966608372713837e-21,
+    "certified": true,
+    "measured": 6.960466742284807e-21
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 24,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.966608372713837e-21,
+    "certified": true,
+    "measured": 6.960466742284807e-21
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 24,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.966608372713837e-21,
+    "certified": true,
+    "measured": 6.960466742284807e-21
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 24,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.966608372713837e-21,
+    "certified": true,
+    "measured": 6.960466742284807e-21
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 24,
+    "function": "log"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 6.966608372713837e-21,
+    "certified": true,
+    "measured": 6.960466742284807e-21
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 2,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.12695944451182445,
+    "certified": false,
+    "measured": 0.12340202550247145,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 2,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.12695944451182445,
+    "certified": false,
+    "measured": 0.12340202550247145,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 2,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.12695944451182445,
+    "certified": false,
+    "measured": 0.12340202550247145,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 2,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.12695944451182445,
+    "certified": false,
+    "measured": 0.12340202550247145,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 2,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.12695944451182445,
+    "certified": false,
+    "measured": 0.12340202550247145,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 4,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0036720464897078086,
+    "certified": false,
+    "measured": 0.003589103767061701,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 4,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0036720464897078086,
+    "certified": false,
+    "measured": 0.003589103767061701,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 4,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0036720464897078086,
+    "certified": false,
+    "measured": 0.003589103767061701,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 4,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0036720464897078086,
+    "certified": false,
+    "measured": 0.003589103767061701,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 4,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 0.0036720464897078086,
+    "certified": false,
+    "measured": 0.003589103767061701,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 8,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.94271099310152e-07,
+    "certified": true,
+    "measured": 3.9087467080829607e-07
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 8,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.94271099310152e-07,
+    "certified": true,
+    "measured": 3.9087467080829607e-07
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 8,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.94271099310152e-07,
+    "certified": false,
+    "measured": 3.9087467080829607e-07,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 8,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.94271099310152e-07,
+    "certified": false,
+    "measured": 3.9087467080829607e-07,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 8,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 3.94271099310152e-07,
+    "certified": false,
+    "measured": 3.9087467080829607e-07,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 12,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 7.358760953711092e-12,
+    "certified": true,
+    "measured": 7.3192650740308e-12
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 12,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 7.358760953711092e-12,
+    "certified": true,
+    "measured": 7.3192650740308e-12
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 12,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 7.358760953711092e-12,
+    "certified": true,
+    "measured": 7.3192650740308e-12
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 12,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 7.358760953711092e-12,
+    "certified": false,
+    "measured": 7.3192650740308e-12,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 12,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 7.358760953711092e-12,
+    "certified": false,
+    "measured": 7.3192650740308e-12,
+    "unproved": false
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 16,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 4.105168222087924e-17,
+    "certified": true,
+    "measured": 4.091648338387908e-17
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 16,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 4.105168222087924e-17,
+    "certified": true,
+    "measured": 4.091648338387908e-17
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 16,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 4.105168222087924e-17,
+    "certified": true,
+    "measured": 4.091648338387908e-17
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 16,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 4.105168222087924e-17,
+    "certified": true,
+    "measured": 4.091648338387908e-17
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 16,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 4.105168222087924e-17,
+    "certified": true,
+    "measured": 4.091648338387908e-17
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-3",
+    "degree": 24,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 9.498692943725626e-29,
+    "certified": true,
+    "measured": 9.483461563543777e-29
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-6",
+    "degree": 24,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 9.498692943725626e-29,
+    "certified": true,
+    "measured": 9.483461563543777e-29
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-9",
+    "degree": 24,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 9.498692943725626e-29,
+    "certified": true,
+    "measured": 9.483461563543777e-29
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-12",
+    "degree": 24,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 9.498692943725626e-29,
+    "certified": true,
+    "measured": 9.483461563543777e-29
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "error budget",
+   "params": {
+    "budget": "1e-15",
+    "degree": 24,
+    "function": "cos"
+   },
+   "phase": "proof",
+   "result": {
+    "bound": 9.498692943725626e-29,
+    "certified": true,
+    "measured": 9.483461563543777e-29
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "unproved cases",
+   "params": {},
+   "phase": "summary",
+   "unproved": []
+  },
+  {
+   "backend": "cpu",
+   "case": "series degree",
+   "params": {
+    "degree": 10,
+    "degree_limit": 12
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "series degree",
+   "params": {
+    "degree": 11,
+    "degree_limit": 12
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "series degree",
+   "params": {
+    "degree": 12,
+    "degree_limit": 12
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "series degree",
+   "limit": 12,
+   "message": "exp series: needs 13 degree, budget 12",
+   "need": 13,
+   "params": {
+    "degree": 13,
+    "degree_limit": 12
+   },
+   "phase": "refusal",
+   "refusal_seconds": 8.211600288632326e-05,
+   "refused": true,
+   "resource": "degree"
+  },
+  {
+   "backend": "cpu",
+   "case": "series degree",
+   "limit": 12,
+   "message": "exp series: needs 14 degree, budget 12",
+   "need": 14,
+   "params": {
+    "degree": 14,
+    "degree_limit": 12
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.191900006844662e-05,
+   "refused": true,
+   "resource": "degree"
+  },
+  {
+   "backend": "cpu",
+   "case": "CUDA device bytes of a row evaluation",
+   "params": {
+    "bytes_limit": 103120,
+    "rows": 4032
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "CUDA device bytes of a row evaluation",
+   "params": {
+    "bytes_limit": 103120,
+    "rows": 4064
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "CUDA device bytes of a row evaluation",
+   "params": {
+    "bytes_limit": 103120,
+    "rows": 4096
+   },
+   "phase": "refusal",
+   "refused": false
+  },
+  {
+   "backend": "cpu",
+   "case": "CUDA device bytes of a row evaluation",
+   "limit": 103120,
+   "message": "approximate evaluation on the device: needs 103928 bytes, budget 103120",
+   "need": 103928,
+   "params": {
+    "bytes_limit": 103120,
+    "rows": 4128
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.693500159191899e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "CUDA device bytes of a row evaluation",
+   "limit": 103120,
+   "message": "approximate evaluation on the device: needs 104728 bytes, budget 103120",
+   "need": 104728,
+   "params": {
+    "bytes_limit": 103120,
+    "rows": 4160
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.994100213982165e-05,
+   "refused": true,
+   "resource": "bytes"
+  }
+ ],
+ "seconds": 11.705051480999828,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "series degree at degree budget 12",
+   "largest_admitted": 12,
+   "smallest_refused": 13
+  },
+  {
+   "grid": "rows at a CUDA device-copy budget of 103120 bytes",
+   "largest_admitted": 4096,
+   "smallest_refused": 4128
+  }
+ ]
+}

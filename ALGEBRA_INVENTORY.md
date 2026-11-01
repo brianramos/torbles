@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 1 |
-| planned | 25 |
-| in_progress | 37 |
+| planned | 21 |
+| in_progress | 41 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -1481,7 +1481,7 @@ Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 ### INV-002: Constrained minimal interventions
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Find bounded parameter or feature interventions that attain a target while respecting declared linear/convex constraints and an explicit cost.
 
@@ -1525,6 +1525,14 @@ Additional limits:
 - The L0 cost enumerates supports (2^n, budgeted) and the L1 / Linf uniqueness test costs 2n further exact LPs, which is slow at n = 16.
 - Aggregates shift one feature with one comparison predicate and support COUNT, SUM and AVG; changes at irrational roots are reported as isolating intervals.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `6ff26a49d485b3aad9a0daa2606659900a2c2a09`.
+
+- tests: [results/math/INV-002/tests_test_math_interv.json](results/math/INV-002/tests_test_math_interv.json)
+- tests: [results/math/INV-002/sanitized_test_math_interv.json](results/math/INV-002/sanitized_test_math_interv.json)
+- benchmarks: [results/math/INV-002/benchmark_cpu_math_interv_vm.json](results/math/INV-002/benchmark_cpu_math_interv_vm.json)
 
 ## OPT: Optimization
 
@@ -1589,7 +1597,7 @@ Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 ### OPT-002: Bounded convex and polynomial optimization
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Use supported convex structure or bounded certified search on small polynomial systems; report feasibility and optimality evidence.
 
@@ -1634,6 +1642,14 @@ Additional limits:
 - With equality constraints a witness exists only where a dyadic box corner or midpoint satisfies them exactly; otherwise feasibility stays unknown and upper is absent.
 - The one-variable method's INV-001 evaluations are refused past the iteration budget instead of returning an incomplete result.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `6ff26a49d485b3aad9a0daa2606659900a2c2a09`.
+
+- tests: [results/math/OPT-002/tests_test_math_polyopt.json](results/math/OPT-002/tests_test_math_polyopt.json)
+- tests: [results/math/OPT-002/sanitized_test_math_polyopt.json](results/math/OPT-002/sanitized_test_math_polyopt.json)
+- benchmarks: [results/math/OPT-002/benchmark_cpu_math_polyopt_vm.json](results/math/OPT-002/benchmark_cpu_math_polyopt_vm.json)
 
 ## GEN: Generating functions
 
@@ -2563,7 +2579,7 @@ Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
 
 ### MULTI-002: Adaptive refinement and change localization
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Refine hierarchy regions only where exact or permitted approximate bounds require more detail.
 
@@ -2607,6 +2623,14 @@ Additional limits:
 - Localized updates carry the maps (status carried): a row inserted into a leaf is assumed to share the leaf's parent; a delete of a row that is not there but matches present rows is not detectable (DELTA-001); extrema after deletions are enclosures until a rebuild.
 - A localized update copies the old state's arrays before patching the affected regions (memory and copy time proportional to the state; the rollup work proportional to the affected paths); a rebuild reports changes only when every level keeps its group count.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `6ff26a49d485b3aad9a0daa2606659900a2c2a09`.
+
+- tests: [results/math/MULTI-002/tests_test_math_refine.json](results/math/MULTI-002/tests_test_math_refine.json)
+- tests: [results/math/MULTI-002/sanitized_test_math_refine.json](results/math/MULTI-002/sanitized_test_math_refine.json)
+- benchmarks: [results/math/MULTI-002/benchmark_cpu_math_refine_vm.json](results/math/MULTI-002/benchmark_cpu_math_refine_vm.json)
 
 ## SYM: Symmetry queries
 
@@ -4431,7 +4455,7 @@ Measured runtime: `246664aa793bcecefac4cd954e6366a1a85271f8`.
 
 ### UNC-002: Explicit approximation and error certificates
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Approximate transforms carry declared norms, assumptions, error budgets and deterministic/randomized provenance.
 
@@ -4477,6 +4501,14 @@ Additional limits:
 - Compositions need the inner range plus its error inside the outer interval and an internal degree <= 256; products are truncated to degree 64 with a truncation term.
 - FND-007 relationship snapshots need scaled integer coefficients (degree <= 16, decimal scales sx n + sy <= 18); they are approximate claims with a tolerance, never exact laws.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `6ff26a49d485b3aad9a0daa2606659900a2c2a09`.
+
+- tests: [results/math/UNC-002/tests_test_math_approx.json](results/math/UNC-002/tests_test_math_approx.json)
+- tests: [results/math/UNC-002/sanitized_test_math_approx.json](results/math/UNC-002/sanitized_test_math_approx.json)
+- benchmarks: [results/math/UNC-002/benchmark_cpu_math_approx_vm.json](results/math/UNC-002/benchmark_cpu_math_approx_vm.json)
 
 ## META: Queries about queries
 
