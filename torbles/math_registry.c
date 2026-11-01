@@ -86,7 +86,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "spectral basis",
     "solved system",
     "support masses",
-    "basis actions", "symmetry certificates"};
+    "basis actions", "symmetry certificates",
+    "approximation",
+    "refinement state"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -674,6 +676,24 @@ static const tr_reg_module modules[] = {
                    "tr_sym_adopt", "tr_sym_cert_fresh", "tr_sym_orbits_build", "tr_sym_poly_invariant",
                    "tr_sym_orbit_query", "tr_sym_rows_query"},
      .cuda_entry = {"tr_mgpu_sym_verify"}},
+    {FAMILY(TR_REG_M_APPROX, "approx", "approx", "UNC-002", "explicit approximations"),
+     .state_kind = TR_REG_STATE_APPROXIMATION, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(BIGINT) | CB(QINTERVAL) | CB(INTERVAL) | CB(FLOAT64) | CB(INT128) | CB(COUNT) | CB(RATIONAL) | CB(KLEENE) | CB(ROWSET),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_approx_series", "tr_approx_poly", "tr_approx_lowrank", "tr_approx_add", "tr_approx_mul",
+                   "tr_approx_compose", "tr_approx_quantize", "tr_approx_float", "tr_approx_eval_rows",
+                   "tr_approx_filter", "tr_approx_authorize_exact", "tr_approx_relation"},
+     .cuda_entry = {"tr_mgpu_approx_eval"}},
+    {FAMILY(TR_REG_M_REFINE, "refine", "refine", "MULTI-002", "adaptive refinement, localized updates"),
+     .state_kind = TR_REG_STATE_REFINEMENT, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(COUNT) | CB(INT128) | CB(BIGINT) | CB(RATIONAL) | CB(QINTERVAL) | CB(KLEENE) | CB(ROWSET),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_REFINEMENT | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_refine_build", "tr_refine_begin", "tr_refine_supply", "tr_refine_run", "tr_refine_get_answer",
+                   "tr_refine_eval_bounds", "tr_refine_fine", "tr_refine_update_state", "tr_refine_update_prepare",
+                   "tr_refine_update_rollup", "tr_refine_update_finish", "tr_refine_get_changes"},
+     .cuda_entry = {"tr_mgpu_refine_bounds", "tr_mgpu_refine_rollup"}},
 };
 #undef BUILTIN
 #undef FAMILY

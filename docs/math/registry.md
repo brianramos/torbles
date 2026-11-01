@@ -96,6 +96,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 58 | prob | partition and likelihood functions | PROB-001 | support masses | `tr_prob_support_create` | `tr_mgpu_prob_sums` |
 | 59 | sym.action | closed-basis transformation actions | SYM-001 | basis actions | `tr_sym_geometry_make` | `tr_mgpu_sym_query` |
 | 60 | sym.symmetry | certified symmetries and orbits | SYM-002 | symmetry certificates | `tr_sym_group_create` | `tr_mgpu_sym_verify` |
+| 61 | approx | explicit approximations | UNC-002 | approximation | `tr_approx_series` | `tr_mgpu_approx_eval` |
+| 62 | refine | adaptive refinement, localized updates | MULTI-002 | refinement state | `tr_refine_build` | `tr_mgpu_refine_bounds`, `tr_mgpu_refine_rollup` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

@@ -3925,13 +3925,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native refinement states of a MULTI-001 hierarchy: per level the exact FND-004 cells (rows, per term count and 128-bit sum), the UNC-001 abstract input of every group and column (rows, present values, min, max, gcd of differences) built from the leaves' scope and rolled up exactly along the maps, the parent and children links, and the DELTA-001 maintained state of the leaves (nonnegative measure). Requests on a target level: THRESHOLD A op T, RATIO A / D op T (decided as q A - p D op 0 with the operator flipped where D < 0, D = 0 undefined) and TOPK (largest or smallest, ties by the smaller id), A and D integer combinations of up to four SUM / COUNT / ROWS atoms of the basis. Region bounds: the atoms are split into validity classes (SQL term column sets, listwise, every row; one merged class when every atom is valid on every row of the region); per class the exact total E of the region, its valid rows n and the per-row interval [elo, ehi] of the class expression from UNC-001's exact abstract evaluation (affine forms cancel correlated terms) give every present descendant max_k min(k ehi, E - (n - k) elo) above and the symmetric bound below, evaluated exactly in 256-bit integers at the endpoints and the crossing; infinite sides are kept. Waves run coarse to fine in increasing group id: ALL / NONE regions are final, TOPK prunes regions whose upper bound is below the k-th largest witness (lower bounds and the means of the regions' present target descendants), the others are expanded up to an expansion limit, past which they are UNRESOLVED with their bounds; target groups are exact (TRUE / FALSE / UNDEFINED, TOPK IN / OUT with certain ranks, or UNRESOLVED). The entries partition the present target groups; the answer and unresolved bitmaps are their descendants. The complete fine-grain answer of the same request is the baseline. Change localization: DELTA-001 applies a signed delta to the leaves (compatibility, overflow proof, nonnegative promise); each touched leaf's exact change (rows, counts, 192-bit sums, present values, inserted extremes and gcd, deleted multiplicity) is summed into its ancestors only, level by level, the new state checked bit for bit against DELTA-001's cells at level 0, every changed region reported with its exact change, extrema after deletions kept as enclosures (not tight), maps carried; a delta of another schema, an overflow refusal or a leaf that becomes present without a parent falls back to a complete rebuild from new levels (maps certified; for a new group the rebuilt leaves must equal the old ones plus the delta) or is refused; a contradicted nonnegative promise is refused with DELTA-001's violation. Budgets (support, variables, circuit, iterations, output, states, bytes) are checked before allocation and cover the UNC-001 and DELTA-001 steps.",
+   "gpu": "tr_mgpu_refine_bounds: the host gathers the cells and inputs of a wave's regions; one work item per region evaluates the inline tr_refine_region_bound (exact 256-bit integers, the UNC-001 exact abstract evaluation of each class expression in the item's own slots of a device scratch, chunks of 1024 regions per launch) and writes its own output slot. tr_mgpu_refine_rollup: one launch per level, one work item per affected region summing its affected children's exact changes (128-bit counts, 192-bit sums, present counts, inserted extremes and gcd) into its own slots; the host adopts it after a per-level conservation check. No atomics or barriers: every result is a function of its inputs only. The host validates every index the kernels follow and budgets the device copies. Equal to the CPU bit for bit (tested in the emulation with scrambled thread order); compiled with nvcc for sm_80 without warnings; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_multi.c",
-    "torbles/math_multi.h",
-    "tests/test_math_multi.py"
+    "torbles/math_refine.h",
+    "torbles/math_refine.c",
+    "torbles/math_refine_gpu.cu",
+    "torbles/math_refine.py",
+    "tests/test_math_refine.py",
+    "bench/benchmark_math_refine.py"
    ],
    "acceptance_tests": [
     "Compare adaptive results with complete fine-grain states on small trees.",
@@ -3941,7 +3944,14 @@
     "Use balanced and skew hierarchies with 2/4/8 levels, groups 8/64/1,024 and repeated coarse/fine requests; report retained state bytes and rollup/refinement work.",
     "Compare localized changes in 1%/10%/all hierarchy leaves with complete reconstruction, including cases where adaptive refinement provides no gain."
    ],
-   "limitations": [],
+   "limitations": [
+    "Region bounds use per-column UNC-001 inputs (no joint information between columns) and a descendant may hold a single row of its region, so lower bounds are weak: gains come from heavy-hitter thresholds and top-k with k at most the heavy regions; uniform data or a median threshold expands almost every region (measured: more work than the fine-grain answer).",
+    "Aggregates are integer combinations of at most four SUM / COUNT / ROWS atoms per side (AVG through RATIO); no MIN / MAX, distinct or quantile requests; the decisions run on the host and tr_refine_supply trusts the bounds it is given (tr_refine_eval_bounds or tr_mgpu_refine_bounds).",
+    "Nonnegative multiplicities only: a signed measure is refused (the bounds count rows).",
+    "Localized updates carry the maps (status carried): a row inserted into a leaf is assumed to share the leaf's parent; a delete of a row that is not there but matches present rows is not detectable (DELTA-001); extrema after deletions are enclosures until a rebuild.",
+    "A localized update copies the old state's arrays before patching the affected regions (memory and copy time proportional to the state; the rollup work proportional to the affected paths); a rebuild reports changes only when every level keeps its group count.",
+    "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {
@@ -6694,13 +6704,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native immutable approximation objects that record the declared norm (absolute, relative, L2, Frobenius, spectral, max entry), the assumptions (domain interval, derivative and Lipschitz bounds, certified range, independence of random probes, no overflow), the error budget, the error spent term by term (kind, the id of the approximation it came from, scaled or not; the error is their exact sum) and the provenance (deterministic, or randomized with the seed and the failure probability, label probabilistic). Series of exp, log, sin, cos, sqrt and 1/x on [a, b] with exact rational endpoints: Taylor coefficients at the midpoint enclosed in 224-bit dyadic interval arithmetic (argument reduction and squaring / double angles, log by atanh, sqrt by integer square roots), the Lagrange remainder (and the integral form for log, sqrt, 1/x), then either monomials in t = (x - mid) / rad or Chebyshev economization of a Taylor series of degree min(n + 24, 2n + 8) with the dropped coefficients added; representatives on 192-bit dyadics with the enclosure radius added; certified range, relative bound when the function has no zero, L2 bound. Exact polynomials; sums (errors add), scalings, products (|f| e_g + |g| e_f + e_f e_g, truncation past degree 64 as its own term) and compositions (the inner range widened by its error must lie in the outer interval; L_outer e_inner + e_outer) never drop a term; quantization of the coefficients to multiples of 2^-bits with the induced error; binary64 coefficients in x with the coefficient rounding, the Horner bound gamma_2n sum |a_j| B^j and an underflow term. Low rank of integer matrices up to 64 x 64: cross approximation by fraction-free Bareiss elimination with complete pivoting (the exact Schur complement residual: exact Frobenius square, Frobenius, min(F, sqrt(norm1 norminf)) spectral, max-entry bounds; exact factorization at full rank) and a seeded Rademacher sketch with exact rational projection whose Frobenius bound 2 max_i ||E w_i|| holds except with probability (13/16)^probes. A requested error budget that the certified bound exceeds is refused (TR_MATH_NOT_CONVERGED), never reported as certified. Per-row evaluation over an FND-004 scope column (binary64 enclosure of x checked inside the domain, interval Clenshaw or Horner with the coefficient enclosures widened by the error and clamped to the range; NULL, out-of-domain and unselected rows reported apart) with exact group sums of floor / ceil of the enclosures in 2^-F units in 128 bits after an overflow proof; approximate predicates f(x) op T over a UNC-001 state (groups decided ALL / NONE by the binary64 UNC-001 proof of the polynomial with dyadic coefficients and the threshold moved by the error, the other rows by their enclosure, undecidable rows counted undecided in their own bitmap); tr_approx_authorize_exact always refuses with the FND-007 reason approximate (statistical for a probabilistic label); FND-007 snapshot certificates of the approximate relationship y ~ p(x) as a POLYNOMIAL claim with a tolerance (certified error, coefficient rounding, data tolerance), which FND-007 refuses to authorize. Budgets (degree, support, tensor, iterations, output, bytes) are checked before allocation.",
+   "gpu": "tr_mgpu_approx_eval: one work item per 64-row word evaluates each selected row with the inline row evaluator of math_approx.h (the binary64 enclosure of x, interval Clenshaw / Horner with the coefficient enclosures, the certified error and range clamp; or the binary64 Horner value with its bound), writes the rows' own output slots, and adds floor(lo 2^F) and ceil(hi 2^F) of its rows into a local 128-bit accumulator per run of equal group ids, flushed with the two-word 128-bit atomic add (counts with 64-bit atomics), so the sums do not depend on the order of the threads; the host proves the sums fit, validates the view and budgets the device copies before launching. Equal to the CPU bit for bit (tested in the emulation with scrambled thread order); compiled with nvcc for sm_80 without warnings; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_unc.c",
-    "torbles/math_unc.h",
-    "tests/test_math_unc.py"
+    "torbles/math_approx.h",
+    "torbles/math_approx.c",
+    "torbles/math_approx_gpu.cu",
+    "torbles/math_approx.py",
+    "tests/test_math_approx.py",
+    "bench/benchmark_math_approx.py"
    ],
    "acceptance_tests": [
     "Measured small-oracle error satisfies the advertised applicable bound.",
@@ -6710,7 +6723,16 @@
     "Use correlated cancellation, interval thresholds and modular constraints with 1%/50%/99% ambiguous regions; report proof/pruning work and concrete fallback work separately.",
     "Vary coefficient precision, approximation rank and error budget; compare certified bounds with exhaustive small or high-precision oracles and record unproved cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "Functions are exp, log, sin, cos, sqrt, 1/x and exact polynomials of one variable on a bounded rational interval (|a|, |b| <= 1024 for exp, sin, cos); no other special functions and no multivariate approximations.",
+    "Chebyshev series are economized Taylor expansions at the midpoint, not best (minimax) approximations; near a singularity (log or 1/x close to 0, long intervals of sin / cos) the certified bound may exceed a budget the true error meets, which is refused.",
+    "Coefficient representatives are 192-bit dyadics: certified errors do not go below about 2^-190 times the coefficients' size.",
+    "Low-rank methods are exact methods for small integer matrices (up to 64 x 64): cross approximation is not the optimal SVD truncation, the spectral bound is min(F, sqrt(norm1 norminf)), and the sketch bound is probabilistic (a conservative Paley-Zygmund argument), labelled so and never certified.",
+    "The approximate filter runs on the CPU and proves series only (the binary64 form is evaluated per row); rows whose binary64 enclosure of x leaves the domain (a non-dyadic endpoint) are refused as out of domain.",
+    "Compositions need the inner range plus its error inside the outer interval and an internal degree <= 256; products are truncated to degree 64 with a truncation term.",
+    "FND-007 relationship snapshots need scaled integer coefficients (degree <= 16, decimal scales sx n + sy <= 18); they are approximate claims with a tolerance, never exact laws.",
+    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {
