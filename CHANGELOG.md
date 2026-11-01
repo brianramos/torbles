@@ -234,7 +234,12 @@ table joined twice in SQL, from the third statement on. A copy now belongs to on
 that array or its table is released, and a query whose joined table was closed raises `TableClosedError` on every
 engine instead of answering from its compiled plan. The emulated GPU now makes the same copies, so the tests on the
 CPU cover this. Last, a BETWEEN on a 32-bit column shifted by 32 bits in the CPU engine, which is undefined in C
-(UndefinedBehaviorSanitizer found it); the bound is tested first now.
+(UndefinedBehaviorSanitizer found it); the bound is tested first now. Preparing the review's rerun found one more
+wrong answer on the engine API: in the default join mode, a GROUP BY on a dimension attribute read the attribute from
+the foreign key's planes as if the key were stored most significant bit first, so through a key that a hand-built
+table stores the other way (`refs=` without `msb=`) its bits came back reversed, giving wrong sums and counts without
+an error, or an IndexError. The loaders store every foreign key most significant bit first, so SQL was not affected.
+Such keys are now looked up, as the other join modes did.
 
 Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`
