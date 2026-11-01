@@ -3,37 +3,37 @@
   "--capability",
   "DIST-001",
   "--out",
-  "/home/claude/release/torbles-math/results/math/DIST-001/benchmark_cpu_math_dist_vm.json"
+  "/home/claude/release/torbles-val/results/math/DIST-001/benchmark_cpu_math_dist_vm.json"
  ],
  "capability": "DIST-001",
  "device": null,
  "device_run": false,
  "machine": {
-  "commit": "85e58b523446b835f1f9d4c462e6a43402704d06",
+  "commit": "05105bc67eebc80f5ed6a7d44eae1fffe7214898",
   "cores": 2,
   "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
-  "dirty_worktree": false,
+  "dirty_worktree": true,
   "host": "vm",
   "libraries": {
-   "torbles/libalg.so": "8c4f3851d773849024b8b8c88cb3d8032f2b13c2fb20d96b2c96233c986c565c",
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
    "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
-   "torbles/libmathgpu_emu.so": "737f3fe80051c88a3bde095ba7ab2c98f5b6974bc723718d8d2169a205447d45"
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
   },
   "numpy": "2.5.3",
   "python": "3.13.18",
-  "when": "2026-10-31T14:14:09+00:00"
+  "when": "2026-11-01T20:34:28+00:00"
  },
  "notes": [
   "DIST-001 backends: cpu = math_dist.c (single-threaded), cuda = math_dist_gpu.cu (device runs only), duckdb = GROUP BY with COUNT(*) over a registered DataFrame (DuckDB's own threads), numpy = np.unique(axis=0, return_counts=True) with NULL encoded as -1.",
   "Every build scans the scope's rows once (scans = 1); a sparse state is counted in a dense scratch and compacted (strategy count, 2 passes over the scratch) or built by a stable merge sort of one entry per row (strategy sort). The scope (FND-004 snapshot) is built once per grid point and measured apart.",
-  "grid wall time 35.6 s"
+  "grid wall time 131.7 s"
  ],
  "quick": false,
  "records": [
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0003868929998134263,
+   "first_seconds": 0.007854614999814657,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -42,16 +42,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0003868929998134263,
-    5.75319991185097e-05
+    0.007854614999814657,
+    0.00010862700037250761
    ],
-   "warm_median_seconds": 5.75319991185097e-05,
-   "warm_min_seconds": 5.75319991185097e-05
+   "warm_median_seconds": 0.00010862700037250761,
+   "warm_min_seconds": 0.00010862700037250761
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.006507714000690612,
+   "first_seconds": 0.04400218400041922,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -60,17 +60,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.006507714000690612,
-    0.0013537940012611216,
-    0.0012890039997728309
+    0.04400218400041922,
+    0.002278220999869518,
+    0.0011549820010259282
    ],
-   "warm_median_seconds": 0.0013213990005169762,
-   "warm_min_seconds": 0.0012890039997728309
+   "warm_median_seconds": 0.001716601500447723,
+   "warm_min_seconds": 0.0011549820010259282
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0005306889997882536,
+   "first_seconds": 0.022871392999149975,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -80,18 +80,18 @@
    "phase": "run",
    "result": 9,
    "samples_seconds": [
-    0.0005306889997882536,
-    0.00034918799974548165,
-    0.0003272339999966789
+    0.022871392999149975,
+    0.0004565530016407138,
+    0.00037465400055225473
    ],
-   "warm_median_seconds": 0.0003382109998710803,
-   "warm_min_seconds": 0.0003272339999966789
+   "warm_median_seconds": 0.00041560350109648425,
+   "warm_min_seconds": 0.00037465400055225473
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 3.997900057584047e-05,
+   "first_seconds": 0.001648544999625301,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -103,21 +103,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    3.997900057584047e-05,
-    2.4562999897170812e-05,
-    1.630000042496249e-05
+    0.001648544999625301,
+    5.208099901210517e-05,
+    1.8090000594384037e-05
    ],
    "scans": 1,
    "state_bytes": 489,
    "strategy": "count",
-   "warm_median_seconds": 2.043150016106665e-05,
-   "warm_min_seconds": 1.630000042496249e-05
+   "warm_median_seconds": 3.50854998032446e-05,
+   "warm_min_seconds": 1.8090000594384037e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 1.412900019204244e-05,
+   "first_seconds": 1.5171999621088617e-05,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -129,20 +129,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    1.412900019204244e-05,
-    1.3095999747747555e-05,
-    1.1187999916728586e-05
+    1.5171999621088617e-05,
+    1.3224000213085674e-05,
+    1.2625998351722956e-05
    ],
    "scans": 1,
    "state_bytes": 392,
    "strategy": "direct",
-   "warm_median_seconds": 1.214199983223807e-05,
-   "warm_min_seconds": 1.1187999916728586e-05
+   "warm_median_seconds": 1.2924999282404315e-05,
+   "warm_min_seconds": 1.2625998351722956e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00013178900007915217,
+   "first_seconds": 0.00016273999972327147,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -151,16 +151,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00013178900007915217,
-    4.8580999646219425e-05
+    0.00016273999972327147,
+    5.721700108551886e-05
    ],
-   "warm_median_seconds": 4.8580999646219425e-05,
-   "warm_min_seconds": 4.8580999646219425e-05
+   "warm_median_seconds": 5.721700108551886e-05,
+   "warm_min_seconds": 5.721700108551886e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.002349866001168266,
+   "first_seconds": 0.002389617000517319,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -169,17 +169,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.002349866001168266,
-    0.002611804999105516,
-    0.001381385000058799
+    0.002389617000517319,
+    0.0021716640003432985,
+    0.0010943180004687747
    ],
-   "warm_median_seconds": 0.0019965949995821575,
-   "warm_min_seconds": 0.001381385000058799
+   "warm_median_seconds": 0.0016329910004060366,
+   "warm_min_seconds": 0.0010943180004687747
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0007516080004279502,
+   "first_seconds": 0.024808180000036373,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -189,18 +189,18 @@
    "phase": "run",
    "result": 81,
    "samples_seconds": [
-    0.0007516080004279502,
-    0.0006111299990152474,
-    0.00051765199896181
+    0.024808180000036373,
+    0.0006279910012381151,
+    0.0005946599994786084
    ],
-   "warm_median_seconds": 0.0005643909989885287,
-   "warm_min_seconds": 0.00051765199896181
+   "warm_median_seconds": 0.0006113255003583618,
+   "warm_min_seconds": 0.0005946599994786084
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 3.9385000491165556e-05,
+   "first_seconds": 5.393999890657142e-05,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -212,21 +212,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    3.9385000491165556e-05,
-    2.2454001737060025e-05,
-    1.9484999938867986e-05
+    5.393999890657142e-05,
+    2.4595998183940537e-05,
+    2.4793000193312764e-05
    ],
    "scans": 1,
    "state_bytes": 2361,
    "strategy": "count",
-   "warm_median_seconds": 2.0969500837964006e-05,
-   "warm_min_seconds": 1.9484999938867986e-05
+   "warm_median_seconds": 2.469449918862665e-05,
+   "warm_min_seconds": 2.4595998183940537e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 1.7577998733031563e-05,
+   "first_seconds": 1.7472000763518736e-05,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -238,20 +238,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    1.7577998733031563e-05,
-    1.4228000509319827e-05,
-    1.422300010744948e-05
+    1.7472000763518736e-05,
+    1.4495999494101852e-05,
+    1.3347000276553445e-05
    ],
    "scans": 1,
    "state_bytes": 968,
    "strategy": "direct",
-   "warm_median_seconds": 1.4225500308384653e-05,
-   "warm_min_seconds": 1.422300010744948e-05
+   "warm_median_seconds": 1.3921499885327648e-05,
+   "warm_min_seconds": 1.3347000276553445e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00014371200086316094,
+   "first_seconds": 0.00020317900089139584,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -260,16 +260,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00014371200086316094,
-    6.728300104441587e-05
+    0.00020317900089139584,
+    6.871099867566954e-05
    ],
-   "warm_median_seconds": 6.728300104441587e-05,
-   "warm_min_seconds": 6.728300104441587e-05
+   "warm_median_seconds": 6.871099867566954e-05,
+   "warm_min_seconds": 6.871099867566954e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.002305976999195991,
+   "first_seconds": 0.014728099000421935,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -278,17 +278,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.002305976999195991,
-    0.001449388000764884,
-    0.0012427599995135097
+    0.014728099000421935,
+    0.0025017690004460746,
+    0.012909851999211241
    ],
-   "warm_median_seconds": 0.0013460740001391969,
-   "warm_min_seconds": 0.0012427599995135097
+   "warm_median_seconds": 0.007705810499828658,
+   "warm_min_seconds": 0.0025017690004460746
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0007437009990098886,
+   "first_seconds": 0.0007795719993737293,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -298,18 +298,18 @@
    "phase": "run",
    "result": 509,
    "samples_seconds": [
-    0.0007437009990098886,
-    0.0006568540011357982,
-    0.000603460999627714
+    0.0007795719993737293,
+    0.0006626400008826749,
+    0.0006474920010077767
    ],
-   "warm_median_seconds": 0.0006301575003817561,
-   "warm_min_seconds": 0.000603460999627714
+   "warm_median_seconds": 0.0006550660009452258,
+   "warm_min_seconds": 0.0006474920010077767
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 509,
-   "first_seconds": 4.8550000428804196e-05,
+   "first_seconds": 5.667199911840726e-05,
    "occupied": 509,
    "params": {
     "dims": 3,
@@ -321,21 +321,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    4.8550000428804196e-05,
-    3.6769000871572644e-05,
-    2.967100044770632e-05
+    5.667199911840726e-05,
+    3.793900032178499e-05,
+    2.8719001420540735e-05
    ],
    "scans": 1,
    "state_bytes": 17133,
    "strategy": "count",
-   "warm_median_seconds": 3.322000065963948e-05,
-   "warm_min_seconds": 2.967100044770632e-05
+   "warm_median_seconds": 3.332900087116286e-05,
+   "warm_min_seconds": 2.8719001420540735e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 729,
-   "first_seconds": 1.7831000150181353e-05,
+   "first_seconds": 1.723300010780804e-05,
    "occupied": 509,
    "params": {
     "dims": 3,
@@ -347,20 +347,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    1.7831000150181353e-05,
-    1.6280000636470504e-05,
-    1.5363000784418546e-05
+    1.723300010780804e-05,
+    1.601999974809587e-05,
+    1.4346998796099797e-05
    ],
    "scans": 1,
    "state_bytes": 6152,
    "strategy": "direct",
-   "warm_median_seconds": 1.5821500710444525e-05,
-   "warm_min_seconds": 1.5363000784418546e-05
+   "warm_median_seconds": 1.5183499272097833e-05,
+   "warm_min_seconds": 1.4346998796099797e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00016670900004100986,
+   "first_seconds": 0.00014288599959400017,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -369,16 +369,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00016670900004100986,
-    4.0831000660546124e-05
+    0.00014288599959400017,
+    3.455600017332472e-05
    ],
-   "warm_median_seconds": 4.0831000660546124e-05,
-   "warm_min_seconds": 4.0831000660546124e-05
+   "warm_median_seconds": 3.455600017332472e-05,
+   "warm_min_seconds": 3.455600017332472e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.0026026750001619803,
+   "first_seconds": 0.002163277998988633,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -387,17 +387,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.0026026750001619803,
-    0.0012440770005923696,
-    0.0010475909984961618
+    0.002163277998988633,
+    0.0142569170002389,
+    0.0011080060012318427
    ],
-   "warm_median_seconds": 0.0011458339995442657,
-   "warm_min_seconds": 0.0010475909984961618
+   "warm_median_seconds": 0.007682461500735371,
+   "warm_min_seconds": 0.0011080060012318427
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0004954729993187357,
+   "first_seconds": 0.0005194820005272049,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -407,18 +407,18 @@
    "phase": "run",
    "result": 65,
    "samples_seconds": [
-    0.0004954729993187357,
-    0.0003785879998758901,
-    0.0004514049996942049
+    0.0005194820005272049,
+    0.0004190480012766784,
+    0.004564405000564875
    ],
-   "warm_median_seconds": 0.0004149964997850475,
-   "warm_min_seconds": 0.0003785879998758901
+   "warm_median_seconds": 0.0024917265009207767,
+   "warm_min_seconds": 0.0004190480012766784
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 2.8634998670895584e-05,
+   "first_seconds": 3.3009999242494814e-05,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -430,21 +430,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    2.8634998670895584e-05,
-    1.905899989651516e-05,
-    1.3212000339990482e-05
+    3.3009999242494814e-05,
+    1.907700061565265e-05,
+    1.308799983235076e-05
    ],
    "scans": 1,
    "state_bytes": 1441,
    "strategy": "count",
-   "warm_median_seconds": 1.613550011825282e-05,
-   "warm_min_seconds": 1.3212000339990482e-05
+   "warm_median_seconds": 1.6082500224001706e-05,
+   "warm_min_seconds": 1.308799983235076e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 1.52770007844083e-05,
+   "first_seconds": 1.3623999620904215e-05,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -456,20 +456,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    1.52770007844083e-05,
-    1.1815000107162632e-05,
-    1.0922000001301058e-05
+    1.3623999620904215e-05,
+    1.1608000932028517e-05,
+    1.02319991128752e-05
    ],
    "scans": 1,
    "state_bytes": 840,
    "strategy": "direct",
-   "warm_median_seconds": 1.1368500054231845e-05,
-   "warm_min_seconds": 1.0922000001301058e-05
+   "warm_median_seconds": 1.0920000022451859e-05,
+   "warm_min_seconds": 1.02319991128752e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00012418200094543863,
+   "first_seconds": 0.0001509869998699287,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -478,16 +478,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00012418200094543863,
-    4.424599865160417e-05
+    0.0001509869998699287,
+    4.922100015392061e-05
    ],
-   "warm_median_seconds": 4.424599865160417e-05,
-   "warm_min_seconds": 4.424599865160417e-05
+   "warm_median_seconds": 4.922100015392061e-05,
+   "warm_min_seconds": 4.922100015392061e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.003399234999960754,
+   "first_seconds": 0.00498708700069983,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -496,17 +496,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.003399234999960754,
-    0.0023316879996855278,
-    0.001300607000302989
+    0.00498708700069983,
+    0.018614336999235093,
+    0.0014637000003858702
    ],
-   "warm_median_seconds": 0.0018161474999942584,
-   "warm_min_seconds": 0.001300607000302989
+   "warm_median_seconds": 0.010039018499810481,
+   "warm_min_seconds": 0.0014637000003858702
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0006011500008753501,
+   "first_seconds": 0.0006784500001231208,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -516,18 +516,18 @@
    "phase": "run",
    "result": 879,
    "samples_seconds": [
-    0.0006011500008753501,
-    0.0008909110001695808,
-    0.0005876650011487072
+    0.0006784500001231208,
+    0.0006080570001358865,
+    0.0005803000003652414
    ],
-   "warm_median_seconds": 0.000739288000659144,
-   "warm_min_seconds": 0.0005876650011487072
+   "warm_median_seconds": 0.000594178500250564,
+   "warm_min_seconds": 0.0005803000003652414
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 879,
-   "first_seconds": 6.019300053594634e-05,
+   "first_seconds": 0.00010267099969496485,
    "occupied": 879,
    "params": {
     "dims": 2,
@@ -539,21 +539,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    6.019300053594634e-05,
-    6.111100083217025e-05,
-    3.666199881990906e-05
+    0.00010267099969496485,
+    5.3605999710271135e-05,
+    3.44320014846744e-05
    ],
    "scans": 1,
    "state_bytes": 22311,
    "strategy": "count",
-   "warm_median_seconds": 4.888649982603965e-05,
-   "warm_min_seconds": 3.666199881990906e-05
+   "warm_median_seconds": 4.401900059747277e-05,
+   "warm_min_seconds": 3.44320014846744e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 4225,
-   "first_seconds": 1.831599911383819e-05,
+   "first_seconds": 1.9205999706173316e-05,
    "occupied": 879,
    "params": {
     "dims": 2,
@@ -565,20 +565,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    1.831599911383819e-05,
-    2.2927999452804215e-05,
-    1.5296000128728338e-05
+    1.9205999706173316e-05,
+    2.3471999156754464e-05,
+    1.6728999980841763e-05
    ],
    "scans": 1,
    "state_bytes": 34120,
    "strategy": "direct",
-   "warm_median_seconds": 1.9111999790766276e-05,
-   "warm_min_seconds": 1.5296000128728338e-05
+   "warm_median_seconds": 2.0100499568798114e-05,
+   "warm_min_seconds": 1.6728999980841763e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00014036699940334074,
+   "first_seconds": 0.00015286699999705888,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -587,16 +587,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00014036699940334074,
-    5.467799928737804e-05
+    0.00015286699999705888,
+    5.108299956191331e-05
    ],
-   "warm_median_seconds": 5.467799928737804e-05,
-   "warm_min_seconds": 5.467799928737804e-05
+   "warm_median_seconds": 5.108299956191331e-05,
+   "warm_min_seconds": 5.108299956191331e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.0032108640007209033,
+   "first_seconds": 0.01469771300071443,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -605,17 +605,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.0032108640007209033,
-    0.003004633999807993,
-    0.001607818001502892
+    0.01469771300071443,
+    0.0023618289997102693,
+    0.0065712760006135795
    ],
-   "warm_median_seconds": 0.0023062260006554425,
-   "warm_min_seconds": 0.001607818001502892
+   "warm_median_seconds": 0.004466552500161924,
+   "warm_min_seconds": 0.0023618289997102693
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0006769400006305659,
+   "first_seconds": 0.0007132929986255476,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -625,18 +625,18 @@
    "phase": "run",
    "result": 997,
    "samples_seconds": [
-    0.0006769400006305659,
-    0.0005421219993877457,
-    0.0005236920005700085
+    0.0007132929986255476,
+    0.0005608789997495478,
+    0.0005726050003431737
    ],
-   "warm_median_seconds": 0.0005329069999788771,
-   "warm_min_seconds": 0.0005236920005700085
+   "warm_median_seconds": 0.0005667420000463608,
+   "warm_min_seconds": 0.0005608789997495478
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 997,
-   "first_seconds": 0.0001963260001502931,
+   "first_seconds": 0.00020415000108187087,
    "occupied": 997,
    "params": {
     "dims": 3,
@@ -648,21 +648,21 @@
    "passes": 8,
    "phase": "build",
    "samples_seconds": [
-    0.0001963260001502931,
-    0.0001304199995502131,
-    0.00012599399997270666
+    0.00020415000108187087,
+    0.00013777999993180856,
+    0.00014905500029271934
    ],
    "scans": 1,
    "state_bytes": 33237,
    "strategy": "sort",
-   "warm_median_seconds": 0.00012820699976145988,
-   "warm_min_seconds": 0.00012599399997270666
+   "warm_median_seconds": 0.00014341750011226395,
+   "warm_min_seconds": 0.00013777999993180856
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 274625,
-   "first_seconds": 0.0012119719995098421,
+   "first_seconds": 0.0010984060008922825,
    "occupied": 997,
    "params": {
     "dims": 3,
@@ -674,20 +674,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0012119719995098421,
-    0.0016168940001080045,
-    0.0006650699997408083
+    0.0010984060008922825,
+    0.001190087999930256,
+    0.0006510210005217232
    ],
    "scans": 1,
    "state_bytes": 2197320,
    "strategy": "direct",
-   "warm_median_seconds": 0.0011409819999244064,
-   "warm_min_seconds": 0.0006650699997408083
+   "warm_median_seconds": 0.0009205545002259896,
+   "warm_min_seconds": 0.0006510210005217232
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00015511899982811883,
+   "first_seconds": 0.00013700599993171636,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -696,16 +696,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00015511899982811883,
-    4.623400127456989e-05
+    0.00013700599993171636,
+    3.66000003850786e-05
    ],
-   "warm_median_seconds": 4.623400127456989e-05,
-   "warm_min_seconds": 4.623400127456989e-05
+   "warm_median_seconds": 3.66000003850786e-05,
+   "warm_min_seconds": 3.66000003850786e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.002813664001223515,
+   "first_seconds": 0.0024344339999515796,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -714,17 +714,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.002813664001223515,
-    0.002896203999625868,
-    0.0016751090006437153
+    0.0024344339999515796,
+    0.011300293999738642,
+    0.0012176510008430341
    ],
-   "warm_median_seconds": 0.0022856565001347917,
-   "warm_min_seconds": 0.0016751090006437153
+   "warm_median_seconds": 0.006258972500290838,
+   "warm_min_seconds": 0.0012176510008430341
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0008191540000552777,
+   "first_seconds": 0.0005709979996026959,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -734,18 +734,18 @@
    "phase": "run",
    "result": 612,
    "samples_seconds": [
-    0.0008191540000552777,
-    0.0006458880015998147,
-    0.0006666539993602782
+    0.0005709979996026959,
+    0.008574232999308151,
+    0.00046815799942123704
    ],
-   "warm_median_seconds": 0.0006562710004800465,
-   "warm_min_seconds": 0.0006458880015998147
+   "warm_median_seconds": 0.004521195499364694,
+   "warm_min_seconds": 0.00046815799942123704
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 612,
-   "first_seconds": 5.201999920245726e-05,
+   "first_seconds": 3.971600017393939e-05,
    "occupied": 612,
    "params": {
     "dims": 1,
@@ -757,21 +757,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    5.201999920245726e-05,
-    4.3169000491616316e-05,
-    2.916799894592259e-05
+    3.971600017393939e-05,
+    3.14820008497918e-05,
+    1.7187998309964314e-05
    ],
    "scans": 1,
    "state_bytes": 10740,
    "strategy": "count",
-   "warm_median_seconds": 3.6168499718769453e-05,
-   "warm_min_seconds": 2.916799894592259e-05
+   "warm_median_seconds": 2.4334999579878058e-05,
+   "warm_min_seconds": 1.7187998309964314e-05
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1023,
-   "first_seconds": 5.754300036642235e-05,
+   "first_seconds": 1.209499896503985e-05,
    "occupied": 612,
    "params": {
     "dims": 1,
@@ -783,20 +783,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    5.754300036642235e-05,
-    2.290799966431223e-05,
-    1.8912998712039553e-05
+    1.209499896503985e-05,
+    1.2426000466803089e-05,
+    1.0354000551160425e-05
    ],
    "scans": 1,
    "state_bytes": 8504,
    "strategy": "direct",
-   "warm_median_seconds": 2.091049918817589e-05,
-   "warm_min_seconds": 1.8912998712039553e-05
+   "warm_median_seconds": 1.1390000508981757e-05,
+   "warm_min_seconds": 1.0354000551160425e-05
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00017178000052808784,
+   "first_seconds": 0.00014769400149816647,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -805,16 +805,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00017178000052808784,
-    6.448999920394272e-05
+    0.00014769400149816647,
+    5.635900015477091e-05
    ],
-   "warm_median_seconds": 6.448999920394272e-05,
-   "warm_min_seconds": 6.448999920394272e-05
+   "warm_median_seconds": 5.635900015477091e-05,
+   "warm_min_seconds": 5.635900015477091e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.003301736000139499,
+   "first_seconds": 0.002443183000650606,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -823,17 +823,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.003301736000139499,
-    0.0019451030002528569,
-    0.0016659520006214734
+    0.002443183000650606,
+    0.01688279399968451,
+    0.003934394999305368
    ],
-   "warm_median_seconds": 0.0018055275004371651,
-   "warm_min_seconds": 0.0016659520006214734
+   "warm_median_seconds": 0.010408594499494939,
+   "warm_min_seconds": 0.003934394999305368
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0008124529995257035,
+   "first_seconds": 0.0006739620002917945,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -843,18 +843,18 @@
    "phase": "run",
    "result": 996,
    "samples_seconds": [
-    0.0008124529995257035,
-    0.0007309600005100947,
-    0.0006888090010761516
+    0.0006739620002917945,
+    0.0005067609999969136,
+    0.0005040989999542944
    ],
-   "warm_median_seconds": 0.0007098845007931232,
-   "warm_min_seconds": 0.0006888090010761516
+   "warm_median_seconds": 0.000505429999975604,
+   "warm_min_seconds": 0.0005040989999542944
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 996,
-   "first_seconds": 0.00022769600036554039,
+   "first_seconds": 0.00020130699886067305,
    "occupied": 996,
    "params": {
     "dims": 2,
@@ -866,15 +866,15 @@
    "passes": 8,
    "phase": "build",
    "samples_seconds": [
-    0.00022769600036554039,
-    0.00016069900084403343,
-    0.00017250500059162732
+    0.00020130699886067305,
+    0.00012110900024708826,
+    0.00012672699995164294
    ],
    "scans": 1,
    "state_bytes": 25236,
    "strategy": "sort",
-   "warm_median_seconds": 0.00016660200071783038,
-   "warm_min_seconds": 0.00016069900084403343
+   "warm_median_seconds": 0.0001239180000993656,
+   "warm_min_seconds": 0.00012110900024708826
   },
   {
    "backend": "cpu",
@@ -890,14 +890,14 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 2.5447001462453045e-05,
+   "refusal_seconds": 4.423900099936873e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00014906100113876164,
+   "first_seconds": 0.00015722600073786452,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -906,16 +906,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00014906100113876164,
-    5.4013000408303924e-05
+    0.00015722600073786452,
+    5.9830001191585325e-05
    ],
-   "warm_median_seconds": 5.4013000408303924e-05,
-   "warm_min_seconds": 5.4013000408303924e-05
+   "warm_median_seconds": 5.9830001191585325e-05,
+   "warm_min_seconds": 5.9830001191585325e-05
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.0033739470000000438,
+   "first_seconds": 0.0026072780001413776,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -924,17 +924,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.0033739470000000438,
-    0.002231861999462126,
-    0.0021181979991524713
+    0.0026072780001413776,
+    0.011072833000071114,
+    0.009839973999987706
    ],
-   "warm_median_seconds": 0.0021750299993072986,
-   "warm_min_seconds": 0.0021181979991524713
+   "warm_median_seconds": 0.01045640350002941,
+   "warm_min_seconds": 0.009839973999987706
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.000829419999718084,
+   "first_seconds": 0.0006608759995287983,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -944,18 +944,18 @@
    "phase": "run",
    "result": 1000,
    "samples_seconds": [
-    0.000829419999718084,
-    0.0008550800012017135,
-    0.0007822150000720285
+    0.0006608759995287983,
+    0.0004988269993191352,
+    0.000520203000633046
    ],
-   "warm_median_seconds": 0.000818647500636871,
-   "warm_min_seconds": 0.0007822150000720285
+   "warm_median_seconds": 0.0005095149999760906,
+   "warm_min_seconds": 0.0004988269993191352
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1000,
-   "first_seconds": 0.00022721400091541,
+   "first_seconds": 0.00019738900118682068,
    "occupied": 1000,
    "params": {
     "dims": 3,
@@ -967,15 +967,15 @@
    "passes": 8,
    "phase": "build",
    "samples_seconds": [
-    0.00022721400091541,
-    0.00023590300042997114,
-    0.00021310500051185954
+    0.00019738900118682068,
+    0.00012127099944336805,
+    0.00011777100007748231
    ],
    "scans": 1,
    "state_bytes": 33336,
    "strategy": "sort",
-   "warm_median_seconds": 0.00022450400047091534,
-   "warm_min_seconds": 0.00021310500051185954
+   "warm_median_seconds": 0.00011952099976042518,
+   "warm_min_seconds": 0.00011777100007748231
   },
   {
    "backend": "cpu",
@@ -991,14 +991,14 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 2.8319998818915337e-05,
+   "refusal_seconds": 1.9545999748515896e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0010529560004215455,
+   "first_seconds": 0.0008578739998483798,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1007,16 +1007,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0010529560004215455,
-    0.0014344629998959135
+    0.0008578739998483798,
+    0.0010592809994705021
    ],
-   "warm_median_seconds": 0.0014344629998959135,
-   "warm_min_seconds": 0.0014344629998959135
+   "warm_median_seconds": 0.0010592809994705021,
+   "warm_min_seconds": 0.0010592809994705021
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.00408522600082506,
+   "first_seconds": 0.01414461000058509,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1025,17 +1025,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.00408522600082506,
-    0.0034607199995662086,
-    0.002685565999854589
+    0.01414461000058509,
+    0.0032585329990979517,
+    0.009990307999032666
    ],
-   "warm_median_seconds": 0.0030731429997103987,
-   "warm_min_seconds": 0.002685565999854589
+   "warm_median_seconds": 0.006624420499065309,
+   "warm_min_seconds": 0.0032585329990979517
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.06219573499947728,
+   "first_seconds": 0.1792341469990788,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1045,18 +1045,18 @@
    "phase": "run",
    "result": 9,
    "samples_seconds": [
-    0.06219573499947728,
-    0.06933994899918616,
-    0.04664658799993049
+    0.1792341469990788,
+    0.1500421059990913,
+    0.19457522800075822
    ],
-   "warm_median_seconds": 0.057993268499558326,
-   "warm_min_seconds": 0.04664658799993049
+   "warm_median_seconds": 0.17230866699992475,
+   "warm_min_seconds": 0.1500421059990913
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 0.0006762370012438623,
+   "first_seconds": 0.0005022040004405426,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -1068,21 +1068,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0006762370012438623,
-    0.0005036799993831664,
-    0.000439978000940755
+    0.0005022040004405426,
+    0.00043815299977723043,
+    0.000415750999309239
    ],
    "scans": 1,
    "state_bytes": 489,
    "strategy": "count",
-   "warm_median_seconds": 0.0004718290001619607,
-   "warm_min_seconds": 0.000439978000940755
+   "warm_median_seconds": 0.0004269519995432347,
+   "warm_min_seconds": 0.000415750999309239
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 0.00045100100032868795,
+   "first_seconds": 0.0004401139995025005,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -1094,20 +1094,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.00045100100032868795,
-    0.00043543200081330724,
-    0.00047084099969652016
+    0.0004401139995025005,
+    0.012560924000354134,
+    0.0005012649999116547
    ],
    "scans": 1,
    "state_bytes": 392,
    "strategy": "direct",
-   "warm_median_seconds": 0.0004531365002549137,
-   "warm_min_seconds": 0.00043543200081330724
+   "warm_median_seconds": 0.006531094500132895,
+   "warm_min_seconds": 0.0005012649999116547
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0017760909995558904,
+   "first_seconds": 0.0015846789992792765,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1116,16 +1116,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0017760909995558904,
-    0.0024950490005721804
+    0.0015846789992792765,
+    0.014161674000206403
    ],
-   "warm_median_seconds": 0.0024950490005721804,
-   "warm_min_seconds": 0.0024950490005721804
+   "warm_median_seconds": 0.014161674000206403,
+   "warm_min_seconds": 0.014161674000206403
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.004444457999852602,
+   "first_seconds": 0.015795041999808745,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1134,17 +1134,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.004444457999852602,
-    0.002702300000237301,
-    0.0023700279998593032
+    0.015795041999808745,
+    0.027827485999296186,
+    0.03550573899883602
    ],
-   "warm_median_seconds": 0.002536164000048302,
-   "warm_min_seconds": 0.0023700279998593032
+   "warm_median_seconds": 0.031666612499066105,
+   "warm_min_seconds": 0.027827485999296186
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0665144649992726,
+   "first_seconds": 0.30197948299974087,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1154,18 +1154,18 @@
    "phase": "run",
    "result": 81,
    "samples_seconds": [
-    0.0665144649992726,
-    0.07077922300049977,
-    0.09215118599968264
+    0.30197948299974087,
+    0.28124768899942865,
+    0.2400681920007628
    ],
-   "warm_median_seconds": 0.0814652045000912,
-   "warm_min_seconds": 0.07077922300049977
+   "warm_median_seconds": 0.2606579405000957,
+   "warm_min_seconds": 0.2400681920007628
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 0.0009582959992258111,
+   "first_seconds": 0.0008457210005872184,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -1177,21 +1177,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0009582959992258111,
-    0.0007939540009829216,
-    0.0006941459996596677
+    0.0008457210005872184,
+    0.000695222999638645,
+    0.0006709770004817983
    ],
    "scans": 1,
    "state_bytes": 2361,
    "strategy": "count",
-   "warm_median_seconds": 0.0007440500003212946,
-   "warm_min_seconds": 0.0006941459996596677
+   "warm_median_seconds": 0.0006831000000602216,
+   "warm_min_seconds": 0.0006709770004817983
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 0.0007057029997667996,
+   "first_seconds": 0.012741192000248702,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -1203,20 +1203,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0007057029997667996,
-    0.0006914049990882631,
-    0.0007652650001546135
+    0.012741192000248702,
+    0.0007236060009745415,
+    0.0006951619998289971
    ],
    "scans": 1,
    "state_bytes": 968,
    "strategy": "direct",
-   "warm_median_seconds": 0.0007283349996214383,
-   "warm_min_seconds": 0.0006914049990882631
+   "warm_median_seconds": 0.0007093840004017693,
+   "warm_min_seconds": 0.0006951619998289971
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.002846220000719768,
+   "first_seconds": 0.0025534630003676284,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1225,16 +1225,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.002846220000719768,
-    0.0034382539997750428
+    0.0025534630003676284,
+    0.0188632930003223
    ],
-   "warm_median_seconds": 0.0034382539997750428,
-   "warm_min_seconds": 0.0034382539997750428
+   "warm_median_seconds": 0.0188632930003223,
+   "warm_min_seconds": 0.0188632930003223
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.005073524000181351,
+   "first_seconds": 0.01653382599943143,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1243,17 +1243,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.005073524000181351,
-    0.003396542999325902,
-    0.004405917999974918
+    0.01653382599943143,
+    0.01655310699970869,
+    0.027638080000542686
    ],
-   "warm_median_seconds": 0.00390123049965041,
-   "warm_min_seconds": 0.003396542999325902
+   "warm_median_seconds": 0.022095593500125688,
+   "warm_min_seconds": 0.01655310699970869
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.09176551900054619,
+   "first_seconds": 0.3741646970011061,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1263,18 +1263,18 @@
    "phase": "run",
    "result": 729,
    "samples_seconds": [
-    0.09176551900054619,
-    0.10242530799951055,
-    0.09578394599884632
+    0.3741646970011061,
+    0.34705281399874366,
+    0.3216954630006512
    ],
-   "warm_median_seconds": 0.09910462699917844,
-   "warm_min_seconds": 0.09578394599884632
+   "warm_median_seconds": 0.33437413849969744,
+   "warm_min_seconds": 0.3216954630006512
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 729,
-   "first_seconds": 0.0015791700006957399,
+   "first_seconds": 0.0012142690011387458,
    "occupied": 729,
    "params": {
     "dims": 3,
@@ -1286,21 +1286,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0015791700006957399,
-    0.00148733199966955,
-    0.0011745980009436607
+    0.0012142690011387458,
+    0.009157587999652606,
+    0.000995913000224391
    ],
    "scans": 1,
    "state_bytes": 24393,
    "strategy": "count",
-   "warm_median_seconds": 0.0013309650003066054,
-   "warm_min_seconds": 0.0011745980009436607
+   "warm_median_seconds": 0.005076750499938498,
+   "warm_min_seconds": 0.000995913000224391
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 729,
-   "first_seconds": 0.0010807389990077354,
+   "first_seconds": 0.0009282409992010798,
    "occupied": 729,
    "params": {
     "dims": 3,
@@ -1312,20 +1312,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0010807389990077354,
-    0.001057241001035436,
-    0.0010513049983273959
+    0.0009282409992010798,
+    0.001010138999845367,
+    0.0090130959997623
    ],
    "scans": 1,
    "state_bytes": 6152,
    "strategy": "direct",
-   "warm_median_seconds": 0.001054272999681416,
-   "warm_min_seconds": 0.0010513049983273959
+   "warm_median_seconds": 0.005011617499803833,
+   "warm_min_seconds": 0.001010138999845367
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0007594950002385303,
+   "first_seconds": 0.0011898339998879237,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1334,16 +1334,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0007594950002385303,
-    0.0008052880002651364
+    0.0011898339998879237,
+    0.008863995999490726
    ],
-   "warm_median_seconds": 0.0008052880002651364,
-   "warm_min_seconds": 0.0008052880002651364
+   "warm_median_seconds": 0.008863995999490726,
+   "warm_min_seconds": 0.008863995999490726
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.003116137000688468,
+   "first_seconds": 0.014864925000438234,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1352,17 +1352,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.003116137000688468,
-    0.001972996000404237,
-    0.0020624449989554705
+    0.014864925000438234,
+    0.00299448399891844,
+    0.010201650999078993
    ],
-   "warm_median_seconds": 0.0020177204996798537,
-   "warm_min_seconds": 0.001972996000404237
+   "warm_median_seconds": 0.0065980674989987165,
+   "warm_min_seconds": 0.00299448399891844
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.0500767840003391,
+   "first_seconds": 0.17530042600083107,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1372,18 +1372,18 @@
    "phase": "run",
    "result": 65,
    "samples_seconds": [
-    0.0500767840003391,
-    0.06367274799958977,
-    0.07059117999961018
+    0.17530042600083107,
+    0.17592533600145543,
+    0.16238955600056215
    ],
-   "warm_median_seconds": 0.06713196399959998,
-   "warm_min_seconds": 0.06367274799958977
+   "warm_median_seconds": 0.1691574460010088,
+   "warm_min_seconds": 0.16238955600056215
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 0.0005024479996791342,
+   "first_seconds": 0.008581218999097473,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -1395,21 +1395,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0005024479996791342,
-    0.0004848749995289836,
-    0.0005771900014224229
+    0.008581218999097473,
+    0.0005085529992356896,
+    0.00042625800051609986
    ],
    "scans": 1,
    "state_bytes": 1441,
    "strategy": "count",
-   "warm_median_seconds": 0.0005310325004757033,
-   "warm_min_seconds": 0.0004848749995289836
+   "warm_median_seconds": 0.00046740549987589475,
+   "warm_min_seconds": 0.00042625800051609986
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 0.00047643499965488445,
+   "first_seconds": 0.00040990500019688625,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -1421,20 +1421,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.00047643499965488445,
-    0.0004363309999462217,
-    0.00046714700147276744
+    0.00040990500019688625,
+    0.00041668000085337553,
+    0.00040401100159215275
    ],
    "scans": 1,
    "state_bytes": 840,
    "strategy": "direct",
-   "warm_median_seconds": 0.0004517390007094946,
-   "warm_min_seconds": 0.0004363309999462217
+   "warm_median_seconds": 0.00041034550122276414,
+   "warm_min_seconds": 0.00040401100159215275
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0016797400003270013,
+   "first_seconds": 0.009947557000486995,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1443,16 +1443,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0016797400003270013,
-    0.0022674579995509703
+    0.009947557000486995,
+    0.002197270001488505
    ],
-   "warm_median_seconds": 0.0022674579995509703,
-   "warm_min_seconds": 0.0022674579995509703
+   "warm_median_seconds": 0.002197270001488505,
+   "warm_min_seconds": 0.002197270001488505
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.005537510000067414,
+   "first_seconds": 0.012973630999113084,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1461,17 +1461,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.005537510000067414,
-    0.0037565630009339657,
-    0.0035356579992367188
+    0.012973630999113084,
+    0.016987660999802756,
+    0.010755661000075634
    ],
-   "warm_median_seconds": 0.003646110500085342,
-   "warm_min_seconds": 0.0035356579992367188
+   "warm_median_seconds": 0.013871660999939195,
+   "warm_min_seconds": 0.010755661000075634
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.08577498799968453,
+   "first_seconds": 0.2749937429998681,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1481,18 +1481,18 @@
    "phase": "run",
    "result": 4225,
    "samples_seconds": [
-    0.08577498799968453,
-    0.1030413820008107,
-    0.0958749910005281
+    0.2749937429998681,
+    0.2624646730000677,
+    0.27881726099985826
    ],
-   "warm_median_seconds": 0.0994581865006694,
-   "warm_min_seconds": 0.0958749910005281
+   "warm_median_seconds": 0.270640966999963,
+   "warm_min_seconds": 0.2624646730000677
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 4225,
-   "first_seconds": 0.0009801789983612252,
+   "first_seconds": 0.000894468999831588,
    "occupied": 4225,
    "params": {
     "dims": 2,
@@ -1504,21 +1504,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0009801789983612252,
-    0.0008033989997784374,
-    0.0007679190002818359
+    0.000894468999831588,
+    0.009044337999512209,
+    0.0008848349989420967
    ],
    "scans": 1,
    "state_bytes": 105961,
    "strategy": "count",
-   "warm_median_seconds": 0.0007856590000301367,
-   "warm_min_seconds": 0.0007679190002818359
+   "warm_median_seconds": 0.004964586499227153,
+   "warm_min_seconds": 0.0008848349989420967
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 4225,
-   "first_seconds": 0.0006645390003541252,
+   "first_seconds": 0.0007585169987578411,
    "occupied": 4225,
    "params": {
     "dims": 2,
@@ -1530,20 +1530,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0006645390003541252,
-    0.0006853650011180434,
-    0.0007307569994736696
+    0.0007585169987578411,
+    0.000718250001227716,
+    0.0006955440003366675
    ],
    "scans": 1,
    "state_bytes": 34120,
    "strategy": "direct",
-   "warm_median_seconds": 0.0007080610002958565,
-   "warm_min_seconds": 0.0006853650011180434
+   "warm_median_seconds": 0.0007068970007821918,
+   "warm_min_seconds": 0.0006955440003366675
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0027821429994219216,
+   "first_seconds": 0.0029614620016218396,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1552,16 +1552,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0027821429994219216,
-    0.0032312990006175824
+    0.0029614620016218396,
+    0.010574341999017633
    ],
-   "warm_median_seconds": 0.0032312990006175824,
-   "warm_min_seconds": 0.0032312990006175824
+   "warm_median_seconds": 0.010574341999017633,
+   "warm_min_seconds": 0.010574341999017633
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.03361889999905543,
+   "first_seconds": 0.08739359500032151,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1570,17 +1570,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.03361889999905543,
-    0.029866430999391014,
-    0.02926125800149748
+    0.08739359500032151,
+    0.09626162299900898,
+    0.09750852899924212
    ],
-   "warm_median_seconds": 0.029563844500444247,
-   "warm_min_seconds": 0.02926125800149748
+   "warm_median_seconds": 0.09688507599912555,
+   "warm_min_seconds": 0.09626162299900898
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.1201981110007182,
+   "first_seconds": 0.3434108950004884,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1590,18 +1590,18 @@
    "phase": "run",
    "result": 81627,
    "samples_seconds": [
-    0.1201981110007182,
-    0.11474162599915871,
-    0.1119994159998896
+    0.3434108950004884,
+    0.32938763800120796,
+    0.3709820000003674
    ],
-   "warm_median_seconds": 0.11337052099952416,
-   "warm_min_seconds": 0.1119994159998896
+   "warm_median_seconds": 0.3501848190007877,
+   "warm_min_seconds": 0.32938763800120796
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81627,
-   "first_seconds": 0.006079551998482202,
+   "first_seconds": 0.02955875299994659,
    "occupied": 81627,
    "params": {
     "dims": 3,
@@ -1613,21 +1613,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.006079551998482202,
-    0.006455024000388221,
-    0.005387571000028402
+    0.02955875299994659,
+    0.016849024999828544,
+    0.01603768900167779
    ],
    "scans": 1,
    "state_bytes": 2694027,
    "strategy": "count",
-   "warm_median_seconds": 0.005921297500208311,
-   "warm_min_seconds": 0.005387571000028402
+   "warm_median_seconds": 0.016443357000753167,
+   "warm_min_seconds": 0.01603768900167779
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 274625,
-   "first_seconds": 0.0021995019997120835,
+   "first_seconds": 0.013230061000285787,
    "occupied": 81627,
    "params": {
     "dims": 3,
@@ -1639,20 +1639,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0021995019997120835,
-    0.0023188929990283214,
-    0.001700568000160274
+    0.013230061000285787,
+    0.0019745160007005325,
+    0.0016368880005757092
    ],
    "scans": 1,
    "state_bytes": 2197320,
    "strategy": "direct",
-   "warm_median_seconds": 0.0020097304995942977,
-   "warm_min_seconds": 0.001700568000160274
+   "warm_median_seconds": 0.0018057020006381208,
+   "warm_min_seconds": 0.0016368880005757092
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0012794119993486675,
+   "first_seconds": 0.0008644230001664255,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1661,16 +1661,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0012794119993486675,
-    0.0010008760000346228
+    0.0008644230001664255,
+    0.0007661390009161551
    ],
-   "warm_median_seconds": 0.0010008760000346228,
-   "warm_min_seconds": 0.0010008760000346228
+   "warm_median_seconds": 0.0007661390009161551,
+   "warm_min_seconds": 0.0007661390009161551
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.004181934998996439,
+   "first_seconds": 0.007279787001607474,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1679,17 +1679,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.004181934998996439,
-    0.002559210000981693,
-    0.0027394310000090627
+    0.007279787001607474,
+    0.007759195999824442,
+    0.011936732998947264
    ],
-   "warm_median_seconds": 0.002649320500495378,
-   "warm_min_seconds": 0.002559210000981693
+   "warm_median_seconds": 0.009847964499385853,
+   "warm_min_seconds": 0.007759195999824442
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.07578387600005954,
+   "first_seconds": 0.193098628998996,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1699,18 +1699,18 @@
    "phase": "run",
    "result": 1025,
    "samples_seconds": [
-    0.07578387600005954,
-    0.07136077799987106,
-    0.06717167200076801
+    0.193098628998996,
+    0.19711140700019314,
+    0.24077106600088882
    ],
-   "warm_median_seconds": 0.06926622500031954,
-   "warm_min_seconds": 0.06717167200076801
+   "warm_median_seconds": 0.21894123650054098,
+   "warm_min_seconds": 0.19711140700019314
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1025,
-   "first_seconds": 0.0005357500012905803,
+   "first_seconds": 0.0006117409993748879,
    "occupied": 1025,
    "params": {
     "dims": 1,
@@ -1722,21 +1722,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0005357500012905803,
-    0.000502685999890673,
-    0.0004454039990378078
+    0.0006117409993748879,
+    0.000473039999633329,
+    0.0004507429985096678
    ],
    "scans": 1,
    "state_bytes": 17761,
    "strategy": "count",
-   "warm_median_seconds": 0.0004740449994642404,
-   "warm_min_seconds": 0.0004454039990378078
+   "warm_median_seconds": 0.0004618914990714984,
+   "warm_min_seconds": 0.0004507429985096678
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1025,
-   "first_seconds": 0.00045350300024438184,
+   "first_seconds": 0.00042652500087569933,
    "occupied": 1025,
    "params": {
     "dims": 1,
@@ -1748,20 +1748,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.00045350300024438184,
-    0.00043617399933282286,
-    0.0004437550014699809
+    0.00042652500087569933,
+    0.008565947000533924,
+    0.0004908940009045182
    ],
    "scans": 1,
    "state_bytes": 8520,
    "strategy": "direct",
-   "warm_median_seconds": 0.0004399645004014019,
-   "warm_min_seconds": 0.00043617399933282286
+   "warm_median_seconds": 0.004528420500719221,
+   "warm_min_seconds": 0.0004908940009045182
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.0017328949998045573,
+   "first_seconds": 0.00985665200096264,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1770,16 +1770,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0017328949998045573,
-    0.0022053419997973833
+    0.00985665200096264,
+    0.00231783799972618
    ],
-   "warm_median_seconds": 0.0022053419997973833,
-   "warm_min_seconds": 0.0022053419997973833
+   "warm_median_seconds": 0.00231783799972618,
+   "warm_min_seconds": 0.00231783799972618
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.039140336000855314,
+   "first_seconds": 0.14821597700029088,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1788,17 +1788,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.039140336000855314,
-    0.03885395100041933,
-    0.03501102699920011
+    0.14821597700029088,
+    0.13886418599940953,
+    0.15828286800024216
    ],
-   "warm_median_seconds": 0.03693248899980972,
-   "warm_min_seconds": 0.03501102699920011
+   "warm_median_seconds": 0.14857352699982584,
+   "warm_min_seconds": 0.13886418599940953
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.10268447299858963,
+   "first_seconds": 0.2761583380015509,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -1808,18 +1808,18 @@
    "phase": "run",
    "result": 88713,
    "samples_seconds": [
-    0.10268447299858963,
-    0.09427082399997744,
-    0.10741260400027386
+    0.2761583380015509,
+    0.2702113499999541,
+    0.2956450319998112
    ],
-   "warm_median_seconds": 0.10084171400012565,
-   "warm_min_seconds": 0.09427082399997744
+   "warm_median_seconds": 0.28292819099988264,
+   "warm_min_seconds": 0.2702113499999541
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 88713,
-   "first_seconds": 0.03131429399945773,
+   "first_seconds": 0.07481283800007077,
    "occupied": 88713,
    "params": {
     "dims": 2,
@@ -1831,15 +1831,15 @@
    "passes": 15,
    "phase": "build",
    "samples_seconds": [
-    0.03131429399945773,
-    0.02545317700059968,
-    0.02830317200096033
+    0.07481283800007077,
+    0.05149793200143904,
+    0.06817417800084513
    ],
    "scans": 1,
    "state_bytes": 2218161,
    "strategy": "sort",
-   "warm_median_seconds": 0.026878174500780005,
-   "warm_min_seconds": 0.02545317700059968
+   "warm_median_seconds": 0.059836055001142086,
+   "warm_min_seconds": 0.05149793200143904
   },
   {
    "backend": "cpu",
@@ -1855,14 +1855,14 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 3.3106000046245754e-05,
+   "refusal_seconds": 2.684299943211954e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.00277234700115514,
+   "first_seconds": 0.0023858690001361538,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1871,16 +1871,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.00277234700115514,
-    0.0024828299992805114
+    0.0023858690001361538,
+    0.011164999999891734
    ],
-   "warm_median_seconds": 0.0024828299992805114,
-   "warm_min_seconds": 0.0024828299992805114
+   "warm_median_seconds": 0.011164999999891734,
+   "warm_min_seconds": 0.011164999999891734
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.06216370400034066,
+   "first_seconds": 0.23107645500022045,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1889,17 +1889,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.06216370400034066,
-    0.06445881299987377,
-    0.053320477998568094
+    0.23107645500022045,
+    0.19107334100044682,
+    0.200182364000284
    ],
-   "warm_median_seconds": 0.05888964549922093,
-   "warm_min_seconds": 0.053320477998568094
+   "warm_median_seconds": 0.1956278525003654,
+   "warm_min_seconds": 0.19107334100044682
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.08094063900171022,
+   "first_seconds": 0.32013780899978883,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -1909,18 +1909,18 @@
    "phase": "run",
    "result": 99875,
    "samples_seconds": [
-    0.08094063900171022,
-    0.08016717300051823,
-    0.08012072800011083
+    0.32013780899978883,
+    0.34076316799837514,
+    0.2703366069999902
    ],
-   "warm_median_seconds": 0.08014395050031453,
-   "warm_min_seconds": 0.08012072800011083
+   "warm_median_seconds": 0.30554988749918266,
+   "warm_min_seconds": 0.2703366069999902
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 99875,
-   "first_seconds": 0.02391105100105051,
+   "first_seconds": 0.08182613200006017,
    "occupied": 99875,
    "params": {
     "dims": 3,
@@ -1932,15 +1932,15 @@
    "passes": 15,
    "phase": "build",
    "samples_seconds": [
-    0.02391105100105051,
-    0.02000881899948581,
-    0.023018027999569313
+    0.08182613200006017,
+    0.06894526399992174,
+    0.07908574999964912
    ],
    "scans": 1,
    "state_bytes": 3296211,
    "strategy": "sort",
-   "warm_median_seconds": 0.021513423499527562,
-   "warm_min_seconds": 0.02000881899948581
+   "warm_median_seconds": 0.07401550699978543,
+   "warm_min_seconds": 0.06894526399992174
   },
   {
    "backend": "cpu",
@@ -1956,14 +1956,14 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 2.9209000786067918e-05,
+   "refusal_seconds": 2.797699926304631e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.006807067999034189,
+   "first_seconds": 0.02860783299911418,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1972,16 +1972,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.006807067999034189,
-    0.009755904000485316
+    0.02860783299911418,
+    0.034596273999341065
    ],
-   "warm_median_seconds": 0.009755904000485316,
-   "warm_min_seconds": 0.009755904000485316
+   "warm_median_seconds": 0.034596273999341065,
+   "warm_min_seconds": 0.034596273999341065
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.006975769998462056,
+   "first_seconds": 0.024970996000774903,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -1990,17 +1990,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.006975769998462056,
-    0.005548341001485824,
-    0.006098447998738266
+    0.024970996000774903,
+    0.035313218999363016,
+    0.028066160000889795
    ],
-   "warm_median_seconds": 0.005823394500112045,
-   "warm_min_seconds": 0.005548341001485824
+   "warm_median_seconds": 0.031689689500126406,
+   "warm_min_seconds": 0.028066160000889795
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.5313738650002051,
+   "first_seconds": 2.049462990999018,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2010,18 +2010,18 @@
    "phase": "run",
    "result": 9,
    "samples_seconds": [
-    0.5313738650002051,
-    0.5230931370006147,
-    0.5263649799999257
+    2.049462990999018,
+    2.126280761000089,
+    2.0865541549992486
    ],
-   "warm_median_seconds": 0.5247290585002702,
-   "warm_min_seconds": 0.5230931370006147
+   "warm_median_seconds": 2.106417457999669,
+   "warm_min_seconds": 2.0865541549992486
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 0.004831140000533196,
+   "first_seconds": 0.02477358200121671,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -2033,21 +2033,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.004831140000533196,
-    0.005196109999815235,
-    0.004743002000395791
+    0.02477358200121671,
+    0.012549416998808738,
+    0.012527439001132734
    ],
    "scans": 1,
    "state_bytes": 489,
    "strategy": "count",
-   "warm_median_seconds": 0.004969556000105513,
-   "warm_min_seconds": 0.004743002000395791
+   "warm_median_seconds": 0.012538427999970736,
+   "warm_min_seconds": 0.012527439001132734
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 9,
-   "first_seconds": 0.004951906999849598,
+   "first_seconds": 0.015219323000565055,
    "occupied": 9,
    "params": {
     "dims": 1,
@@ -2059,20 +2059,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.004951906999849598,
-    0.004466379999939818,
-    0.004618099999788683
+    0.015219323000565055,
+    0.01226519199917675,
+    0.013485097000739188
    ],
    "scans": 1,
    "state_bytes": 392,
    "strategy": "direct",
-   "warm_median_seconds": 0.00454223999986425,
-   "warm_min_seconds": 0.004466379999939818
+   "warm_median_seconds": 0.012875144499957969,
+   "warm_min_seconds": 0.01226519199917675
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.015722556001492194,
+   "first_seconds": 0.0595583770009398,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2081,16 +2081,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.015722556001492194,
-    0.020477108000704902
+    0.0595583770009398,
+    0.06607989199983422
    ],
-   "warm_median_seconds": 0.020477108000704902,
-   "warm_min_seconds": 0.020477108000704902
+   "warm_median_seconds": 0.06607989199983422,
+   "warm_min_seconds": 0.06607989199983422
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.011908522999874549,
+   "first_seconds": 0.06045156300024246,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2099,17 +2099,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.011908522999874549,
-    0.009042884999871603,
-    0.0077425919989764225
+    0.06045156300024246,
+    0.05593610100004298,
+    0.05708081100056006
    ],
-   "warm_median_seconds": 0.008392738499424013,
-   "warm_min_seconds": 0.0077425919989764225
+   "warm_median_seconds": 0.05650845600030152,
+   "warm_min_seconds": 0.05593610100004298
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.8164388309996866,
+   "first_seconds": 2.996909269000753,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2119,18 +2119,18 @@
    "phase": "run",
    "result": 81,
    "samples_seconds": [
-    0.8164388309996866,
-    0.8131629930012423,
-    0.8643705340000452
+    2.996909269000753,
+    2.9917768470004376,
+    2.8107834290003666
    ],
-   "warm_median_seconds": 0.8387667635006437,
-   "warm_min_seconds": 0.8131629930012423
+   "warm_median_seconds": 2.901280138000402,
+   "warm_min_seconds": 2.8107834290003666
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 0.007979164000062156,
+   "first_seconds": 0.03850224999951024,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -2142,21 +2142,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.007979164000062156,
-    0.009157865000815946,
-    0.007862350999857881
+    0.03850224999951024,
+    0.03269795599953795,
+    0.02946741100095096
    ],
    "scans": 1,
    "state_bytes": 2361,
    "strategy": "count",
-   "warm_median_seconds": 0.008510108000336913,
-   "warm_min_seconds": 0.007862350999857881
+   "warm_median_seconds": 0.031082683500244457,
+   "warm_min_seconds": 0.02946741100095096
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 81,
-   "first_seconds": 0.0074590280000848,
+   "first_seconds": 0.023726617999273003,
    "occupied": 81,
    "params": {
     "dims": 2,
@@ -2168,20 +2168,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.0074590280000848,
-    0.007298295000509825,
-    0.007284280000021681
+    0.023726617999273003,
+    0.017372566000631195,
+    0.02322187599929748
    ],
    "scans": 1,
    "state_bytes": 968,
    "strategy": "direct",
-   "warm_median_seconds": 0.007291287500265753,
-   "warm_min_seconds": 0.007284280000021681
+   "warm_median_seconds": 0.020297220999964338,
+   "warm_min_seconds": 0.017372566000631195
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.033646046998910606,
+   "first_seconds": 0.22629161000077147,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2190,16 +2190,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.033646046998910606,
-    0.057158718000209774
+    0.22629161000077147,
+    0.20508072299890046
    ],
-   "warm_median_seconds": 0.057158718000209774,
-   "warm_min_seconds": 0.057158718000209774
+   "warm_median_seconds": 0.20508072299890046,
+   "warm_min_seconds": 0.20508072299890046
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.01265652899928682,
+   "first_seconds": 0.0725208730000304,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2208,17 +2208,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.01265652899928682,
-    0.011456985001132125,
-    0.01119196999934502
+    0.0725208730000304,
+    0.07305885899950226,
+    0.06691223199959495
    ],
-   "warm_median_seconds": 0.011324477500238572,
-   "warm_min_seconds": 0.01119196999934502
+   "warm_median_seconds": 0.06998554549954861,
+   "warm_min_seconds": 0.06691223199959495
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 1.0767131480006356,
+   "first_seconds": 3.2938405999993847,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2228,18 +2228,18 @@
    "phase": "run",
    "result": 729,
    "samples_seconds": [
-    1.0767131480006356,
-    1.3579051929991692,
-    1.1271038869999757
+    3.2938405999993847,
+    3.7170738370004983,
+    3.733173340999201
    ],
-   "warm_median_seconds": 1.2425045399995724,
-   "warm_min_seconds": 1.1271038869999757
+   "warm_median_seconds": 3.7251235889998497,
+   "warm_min_seconds": 3.7170738370004983
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 729,
-   "first_seconds": 0.012031969999952707,
+   "first_seconds": 0.05422807799914153,
    "occupied": 729,
    "params": {
     "dims": 3,
@@ -2251,21 +2251,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.012031969999952707,
-    0.012347927999144304,
-    0.012744181000016397
+    0.05422807799914153,
+    0.03492474700033199,
+    0.03810828899986518
    ],
    "scans": 1,
    "state_bytes": 24393,
    "strategy": "count",
-   "warm_median_seconds": 0.01254605449958035,
-   "warm_min_seconds": 0.012347927999144304
+   "warm_median_seconds": 0.036516518000098586,
+   "warm_min_seconds": 0.03492474700033199
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 729,
-   "first_seconds": 0.011798329000157537,
+   "first_seconds": 0.054246621000856976,
    "occupied": 729,
    "params": {
     "dims": 3,
@@ -2277,20 +2277,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.011798329000157537,
-    0.010532855998462765,
-    0.010293699000612833
+    0.054246621000856976,
+    0.026893013999142568,
+    0.03013503399961337
    ],
    "scans": 1,
    "state_bytes": 6152,
    "strategy": "direct",
-   "warm_median_seconds": 0.010413277499537799,
-   "warm_min_seconds": 0.010293699000612833
+   "warm_median_seconds": 0.02851402399937797,
+   "warm_min_seconds": 0.026893013999142568
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.008340075000887737,
+   "first_seconds": 0.04172486300012679,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2299,16 +2299,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.008340075000887737,
-    0.009229703000528389
+    0.04172486300012679,
+    0.03461129999959667
    ],
-   "warm_median_seconds": 0.009229703000528389,
-   "warm_min_seconds": 0.009229703000528389
+   "warm_median_seconds": 0.03461129999959667,
+   "warm_min_seconds": 0.03461129999959667
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.007151032001274871,
+   "first_seconds": 0.07998884500011627,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2317,17 +2317,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.007151032001274871,
-    0.005472306000228855,
-    0.005502293999597896
+    0.07998884500011627,
+    0.03337630300120509,
+    0.06662656699882064
    ],
-   "warm_median_seconds": 0.005487299999913375,
-   "warm_min_seconds": 0.005472306000228855
+   "warm_median_seconds": 0.05000143500001286,
+   "warm_min_seconds": 0.03337630300120509
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.6000823169997602,
+   "first_seconds": 2.290557735999755,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2337,18 +2337,18 @@
    "phase": "run",
    "result": 65,
    "samples_seconds": [
-    0.6000823169997602,
-    0.5689554230011709,
-    0.5987396299988177
+    2.290557735999755,
+    2.208064379999996,
+    2.286960488998375
    ],
-   "warm_median_seconds": 0.5838475264999943,
-   "warm_min_seconds": 0.5689554230011709
+   "warm_median_seconds": 2.2475124344991855,
+   "warm_min_seconds": 2.208064379999996
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 0.0046749119992455235,
+   "first_seconds": 0.016387607000069693,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -2360,21 +2360,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.0046749119992455235,
-    0.004499743999986094,
-    0.004332185999373905
+    0.016387607000069693,
+    0.024577797999882023,
+    0.012458107001293683
    ],
    "scans": 1,
    "state_bytes": 1441,
    "strategy": "count",
-   "warm_median_seconds": 0.00441596499968,
-   "warm_min_seconds": 0.004332185999373905
+   "warm_median_seconds": 0.018517952500587853,
+   "warm_min_seconds": 0.012458107001293683
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 65,
-   "first_seconds": 0.004245580999850063,
+   "first_seconds": 0.03637070499826223,
    "occupied": 65,
    "params": {
     "dims": 1,
@@ -2386,20 +2386,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.004245580999850063,
-    0.005189812000025995,
-    0.0056854440008464735
+    0.03637070499826223,
+    0.015926509000564693,
+    0.013820846999806236
    ],
    "scans": 1,
    "state_bytes": 840,
    "strategy": "direct",
-   "warm_median_seconds": 0.005437628000436234,
-   "warm_min_seconds": 0.005189812000025995
+   "warm_median_seconds": 0.014873678000185464,
+   "warm_min_seconds": 0.013820846999806236
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.015457557999980054,
+   "first_seconds": 0.06063801500022237,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2408,16 +2408,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.015457557999980054,
-    0.01678875200013863
+    0.06063801500022237,
+    0.2148238110003149
    ],
-   "warm_median_seconds": 0.01678875200013863,
-   "warm_min_seconds": 0.01678875200013863
+   "warm_median_seconds": 0.2148238110003149,
+   "warm_min_seconds": 0.2148238110003149
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.012704882999969414,
+   "first_seconds": 0.12146829899938894,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2426,17 +2426,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.012704882999969414,
-    0.011423109999668668,
-    0.010276053000779939
+    0.12146829899938894,
+    0.05685794000055466,
+    0.05965354600084538
    ],
-   "warm_median_seconds": 0.010849581500224303,
-   "warm_min_seconds": 0.010276053000779939
+   "warm_median_seconds": 0.05825574300070002,
+   "warm_min_seconds": 0.05685794000055466
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.9567220400003862,
+   "first_seconds": 3.2658481310008938,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2446,18 +2446,18 @@
    "phase": "run",
    "result": 4225,
    "samples_seconds": [
-    0.9567220400003862,
-    0.9417970049998985,
-    0.8850836520014127
+    3.2658481310008938,
+    3.2712586489997193,
+    3.339293910001288
    ],
-   "warm_median_seconds": 0.9134403285006556,
-   "warm_min_seconds": 0.8850836520014127
+   "warm_median_seconds": 3.3052762795005037,
+   "warm_min_seconds": 3.2712586489997193
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 4225,
-   "first_seconds": 0.007542584999100654,
+   "first_seconds": 0.023871892000897788,
    "occupied": 4225,
    "params": {
     "dims": 2,
@@ -2469,21 +2469,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.007542584999100654,
-    0.007631993001268711,
-    0.007195145000878256
+    0.023871892000897788,
+    0.030057493000640534,
+    0.02389639799912402
    ],
    "scans": 1,
    "state_bytes": 105961,
    "strategy": "count",
-   "warm_median_seconds": 0.007413569001073483,
-   "warm_min_seconds": 0.007195145000878256
+   "warm_median_seconds": 0.026976945499882277,
+   "warm_min_seconds": 0.02389639799912402
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 4225,
-   "first_seconds": 0.006936458999916795,
+   "first_seconds": 0.026045250000606757,
    "occupied": 4225,
    "params": {
     "dims": 2,
@@ -2495,20 +2495,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.006936458999916795,
-    0.006805494000218459,
-    0.0066368419993523275
+    0.026045250000606757,
+    0.026939711000522948,
+    0.024904423000407405
    ],
    "scans": 1,
    "state_bytes": 34120,
    "strategy": "direct",
-   "warm_median_seconds": 0.0067211679997853935,
-   "warm_min_seconds": 0.0066368419993523275
+   "warm_median_seconds": 0.025922067000465177,
+   "warm_min_seconds": 0.024904423000407405
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.024604456000815844,
+   "first_seconds": 0.1802854159996059,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2517,16 +2517,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.024604456000815844,
-    0.02973941300115257
+    0.1802854159996059,
+    0.0935773959990911
    ],
-   "warm_median_seconds": 0.02973941300115257,
-   "warm_min_seconds": 0.02973941300115257
+   "warm_median_seconds": 0.0935773959990911,
+   "warm_min_seconds": 0.0935773959990911
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.1290234660009446,
+   "first_seconds": 0.6279506760001823,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2535,17 +2535,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.1290234660009446,
-    0.13002803600102197,
-    0.13808725799935928
+    0.6279506760001823,
+    0.6518845709997549,
+    0.7514604709995183
    ],
-   "warm_median_seconds": 0.13405764700019063,
-   "warm_min_seconds": 0.13002803600102197
+   "warm_median_seconds": 0.7016725209996366,
+   "warm_min_seconds": 0.6518845709997549
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 1.174299971999062,
+   "first_seconds": 4.649930395999036,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2555,18 +2555,18 @@
    "phase": "run",
    "result": 264604,
    "samples_seconds": [
-    1.174299971999062,
-    1.1356695470003615,
-    1.1286437440012378
+    4.649930395999036,
+    4.299174358000528,
+    4.203419434999887
    ],
-   "warm_median_seconds": 1.1321566455007996,
-   "warm_min_seconds": 1.1286437440012378
+   "warm_median_seconds": 4.251296896500207,
+   "warm_min_seconds": 4.203419434999887
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 264604,
-   "first_seconds": 0.030194048000339535,
+   "first_seconds": 0.11119344799953979,
    "occupied": 264604,
    "params": {
     "dims": 3,
@@ -2578,21 +2578,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.030194048000339535,
-    0.07143863999954192,
-    0.0411854840003798
+    0.11119344799953979,
+    0.12126081799942767,
+    0.11864722099926439
    ],
    "scans": 1,
    "state_bytes": 8732268,
    "strategy": "count",
-   "warm_median_seconds": 0.05631206199996086,
-   "warm_min_seconds": 0.0411854840003798
+   "warm_median_seconds": 0.11995401949934603,
+   "warm_min_seconds": 0.11864722099926439
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 274625,
-   "first_seconds": 0.02233297299972037,
+   "first_seconds": 0.1038978020005743,
    "occupied": 264604,
    "params": {
     "dims": 3,
@@ -2604,20 +2604,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.02233297299972037,
-    0.02267866900001536,
-    0.023989759998585214
+    0.1038978020005743,
+    0.08804418100044131,
+    0.09529687400026887
    ],
    "scans": 1,
    "state_bytes": 2197320,
    "strategy": "direct",
-   "warm_median_seconds": 0.023334214499300288,
-   "warm_min_seconds": 0.02267866900001536
+   "warm_median_seconds": 0.09167052750035509,
+   "warm_min_seconds": 0.08804418100044131
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.007446064000760089,
+   "first_seconds": 0.040030770000157645,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2626,16 +2626,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.007446064000760089,
-    0.008649207999042119
+    0.040030770000157645,
+    0.02816822999920987
    ],
-   "warm_median_seconds": 0.008649207999042119,
-   "warm_min_seconds": 0.008649207999042119
+   "warm_median_seconds": 0.02816822999920987,
+   "warm_min_seconds": 0.02816822999920987
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.009818745000302442,
+   "first_seconds": 0.06036757400033821,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2644,17 +2644,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.009818745000302442,
-    0.008619759000794147,
-    0.006564375000380096
+    0.06036757400033821,
+    0.05713520000062999,
+    0.07055303300148807
    ],
-   "warm_median_seconds": 0.007592067000587122,
-   "warm_min_seconds": 0.006564375000380096
+   "warm_median_seconds": 0.06384411650105903,
+   "warm_min_seconds": 0.05713520000062999
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 0.7310994259987638,
+   "first_seconds": 2.7083414749995427,
    "params": {
     "dims": 1,
     "groups": 1,
@@ -2664,18 +2664,18 @@
    "phase": "run",
    "result": 1025,
    "samples_seconds": [
-    0.7310994259987638,
-    0.6733920490005403,
-    0.6791890149997926
+    2.7083414749995427,
+    2.6286772469993593,
+    2.6463023370015435
    ],
-   "warm_median_seconds": 0.6762905320001664,
-   "warm_min_seconds": 0.6733920490005403
+   "warm_median_seconds": 2.6374897920004514,
+   "warm_min_seconds": 2.6286772469993593
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1025,
-   "first_seconds": 0.004934884998874622,
+   "first_seconds": 0.027007554001102108,
    "occupied": 1025,
    "params": {
     "dims": 1,
@@ -2687,21 +2687,21 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.004934884998874622,
-    0.005255833000774146,
-    0.005063325999799417
+    0.027007554001102108,
+    0.008970749000582146,
+    0.026798803999554366
    ],
    "scans": 1,
    "state_bytes": 17761,
    "strategy": "count",
-   "warm_median_seconds": 0.005159579500286782,
-   "warm_min_seconds": 0.005063325999799417
+   "warm_median_seconds": 0.017884776500068256,
+   "warm_min_seconds": 0.008970749000582146
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 1025,
-   "first_seconds": 0.004573305001031258,
+   "first_seconds": 0.04157171499900869,
    "occupied": 1025,
    "params": {
     "dims": 1,
@@ -2713,20 +2713,20 @@
    "passes": 0,
    "phase": "build",
    "samples_seconds": [
-    0.004573305001031258,
-    0.004396099999212311,
-    0.00463940699955856
+    0.04157171499900869,
+    0.01226823099932517,
+    0.02659234299972013
    ],
    "scans": 1,
    "state_bytes": 8520,
    "strategy": "direct",
-   "warm_median_seconds": 0.004517753499385435,
-   "warm_min_seconds": 0.004396099999212311
+   "warm_median_seconds": 0.01943028699952265,
+   "warm_min_seconds": 0.01226823099932517
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.018847781999284052,
+   "first_seconds": 0.06112483499964583,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2735,16 +2735,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.018847781999284052,
-    0.016224650000367546
+    0.06112483499964583,
+    0.12298247900071146
    ],
-   "warm_median_seconds": 0.016224650000367546,
-   "warm_min_seconds": 0.016224650000367546
+   "warm_median_seconds": 0.12298247900071146,
+   "warm_min_seconds": 0.12298247900071146
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.23816363500009174,
+   "first_seconds": 1.3032155590008188,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2753,17 +2753,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.23816363500009174,
-    0.2603853500004334,
-    0.235571389001052
+    1.3032155590008188,
+    1.16178003099958,
+    1.241900708000685
    ],
-   "warm_median_seconds": 0.2479783695007427,
-   "warm_min_seconds": 0.235571389001052
+   "warm_median_seconds": 1.2018403695001325,
+   "warm_min_seconds": 1.16178003099958
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 1.0664082350012904,
+   "first_seconds": 3.550319195999691,
    "params": {
     "dims": 2,
     "groups": 1,
@@ -2773,18 +2773,18 @@
    "phase": "run",
    "result": 606425,
    "samples_seconds": [
-    1.0664082350012904,
-    0.93600607100052,
-    0.9861572110003181
+    3.550319195999691,
+    3.2505538999994315,
+    3.464966645999084
    ],
-   "warm_median_seconds": 0.961081641000419,
-   "warm_min_seconds": 0.93600607100052
+   "warm_median_seconds": 3.3577602729992577,
+   "warm_min_seconds": 3.2505538999994315
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 606425,
-   "first_seconds": 0.05828218299939181,
+   "first_seconds": 0.13339077999989968,
    "occupied": 606425,
    "params": {
     "dims": 2,
@@ -2796,15 +2796,15 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.05828218299939181,
-    0.05575838900040253,
-    0.03568356300093001
+    0.13339077999989968,
+    0.12945731400031946,
+    0.1420345759997872
    ],
    "scans": 1,
    "state_bytes": 15160961,
    "strategy": "count",
-   "warm_median_seconds": 0.04572097600066627,
-   "warm_min_seconds": 0.03568356300093001
+   "warm_median_seconds": 0.13574594500005333,
+   "warm_min_seconds": 0.12945731400031946
   },
   {
    "backend": "cpu",
@@ -2820,14 +2820,14 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 3.0352999601745978e-05,
+   "refusal_seconds": 4.6954000936239026e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "scope",
-   "first_seconds": 0.023391059999994468,
+   "first_seconds": 0.09386146499855386,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2836,16 +2836,16 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.023391059999994468,
-    0.0283267849990807
+    0.09386146499855386,
+    0.1315049109998654
    ],
-   "warm_median_seconds": 0.0283267849990807,
-   "warm_min_seconds": 0.0283267849990807
+   "warm_median_seconds": 0.1315049109998654,
+   "warm_min_seconds": 0.1315049109998654
   },
   {
    "backend": "duckdb",
    "case": "histogram",
-   "first_seconds": 0.529494477001208,
+   "first_seconds": 2.5774963530002424,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2854,17 +2854,17 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.529494477001208,
-    0.4780550969990145,
-    0.5123504500006675
+    2.5774963530002424,
+    2.2481776240001636,
+    2.4654413829994155
    ],
-   "warm_median_seconds": 0.495202773499841,
-   "warm_min_seconds": 0.4780550969990145
+   "warm_median_seconds": 2.3568095034997896,
+   "warm_min_seconds": 2.2481776240001636
   },
   {
    "backend": "numpy",
    "case": "histogram",
-   "first_seconds": 1.1947572370008857,
+   "first_seconds": 4.5678933409999445,
    "params": {
     "dims": 3,
     "groups": 1,
@@ -2874,18 +2874,18 @@
    "phase": "run",
    "result": 992350,
    "samples_seconds": [
-    1.1947572370008857,
-    1.0659309580005356,
-    1.1042922390006424
+    4.5678933409999445,
+    4.002799273001074,
+    3.843585205000636
    ],
-   "warm_median_seconds": 1.085111598500589,
-   "warm_min_seconds": 1.0659309580005356
+   "warm_median_seconds": 3.923192239000855,
+   "warm_min_seconds": 3.843585205000636
   },
   {
    "backend": "cpu",
    "case": "histogram",
    "cells": 992350,
-   "first_seconds": 0.4570956400002615,
+   "first_seconds": 1.0040828329983924,
    "occupied": 992350,
    "params": {
     "dims": 3,
@@ -2897,15 +2897,15 @@
    "passes": 18,
    "phase": "build",
    "samples_seconds": [
-    0.4570956400002615,
-    0.42427770500034967,
-    0.3862400380003237
+    1.0040828329983924,
+    1.007964351998453,
+    1.0934796130004543
    ],
    "scans": 1,
    "state_bytes": 32747886,
    "strategy": "sort",
-   "warm_median_seconds": 0.4052588715003367,
-   "warm_min_seconds": 0.3862400380003237
+   "warm_median_seconds": 1.0507219824994536,
+   "warm_min_seconds": 1.007964351998453
   },
   {
    "backend": "cpu",
@@ -2921,7 +2921,7 @@
     "support": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 2.942300125141628e-05,
+   "refusal_seconds": 5.36619991180487e-05,
    "refused": true,
    "resource": "support"
   },
@@ -2929,7 +2929,7 @@
    "backend": "cpu",
    "case": "histogram, 64 groups",
    "cells": 261860,
-   "first_seconds": 0.019549640999684925,
+   "first_seconds": 0.06961603999843646,
    "params": {
     "dims": 2,
     "groups": 64,
@@ -2939,20 +2939,20 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.019549640999684925,
-    0.018406285000310163,
-    0.017902489000334754
+    0.06961603999843646,
+    0.07401069800107507,
+    0.06368229899999278
    ],
    "state_bytes": 6547844,
    "strategy": "count",
-   "warm_median_seconds": 0.01815438700032246,
-   "warm_min_seconds": 0.017902489000334754
+   "warm_median_seconds": 0.06884649850053393,
+   "warm_min_seconds": 0.06368229899999278
   },
   {
    "backend": "cpu",
    "case": "histogram, 64 groups",
    "cells": 270400,
-   "first_seconds": 0.014197259999491507,
+   "first_seconds": 0.05482695600039733,
    "params": {
     "dims": 2,
     "groups": 64,
@@ -2962,19 +2962,19 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.014197259999491507,
-    0.01592417500069132,
-    0.014185880998411449
+    0.05482695600039733,
+    0.0526495399990381,
+    0.06125255000006291
    ],
    "state_bytes": 2164024,
    "strategy": "direct",
-   "warm_median_seconds": 0.015055027999551385,
-   "warm_min_seconds": 0.014185880998411449
+   "warm_median_seconds": 0.056951044999550504,
+   "warm_min_seconds": 0.0526495399990381
   },
   {
    "backend": "cpu",
    "case": "near-row-sized support",
-   "first_seconds": 0.03754700399986177,
+   "first_seconds": 0.1263536030000978,
    "occupied": 787166,
    "params": {
     "rows": 1000000,
@@ -2983,17 +2983,17 @@
    "passes": 2,
    "phase": "build",
    "samples_seconds": [
-    0.03754700399986177,
-    0.02904439699887007
+    0.1263536030000978,
+    0.10741216300084488
    ],
    "state_bytes": 13382158,
-   "warm_median_seconds": 0.02904439699887007,
-   "warm_min_seconds": 0.02904439699887007
+   "warm_median_seconds": 0.10741216300084488,
+   "warm_min_seconds": 0.10741216300084488
   },
   {
    "backend": "cpu",
    "case": "near-row-sized support",
-   "first_seconds": 0.3345727390005777,
+   "first_seconds": 1.0700970370016876,
    "occupied": 787166,
    "params": {
     "rows": 1000000,
@@ -3002,33 +3002,33 @@
    "passes": 18,
    "phase": "build",
    "samples_seconds": [
-    0.3345727390005777,
-    0.28335793999940506
+    1.0700970370016876,
+    1.0738136899999517
    ],
    "state_bytes": 13382158,
-   "warm_median_seconds": 0.28335793999940506,
-   "warm_min_seconds": 0.28335793999940506
+   "warm_median_seconds": 1.0738136899999517,
+   "warm_min_seconds": 1.0738136899999517
   },
   {
    "backend": "duckdb",
    "case": "near-row-sized support",
-   "first_seconds": 0.28998849900017376,
+   "first_seconds": 1.0965812429985817,
    "params": {
     "rows": 1000000
    },
    "phase": "run",
    "samples_seconds": [
-    0.28998849900017376,
-    0.3604012089999742
+    1.0965812429985817,
+    1.1598986219996732
    ],
-   "warm_median_seconds": 0.3604012089999742,
-   "warm_min_seconds": 0.3604012089999742
+   "warm_median_seconds": 1.1598986219996732,
+   "warm_min_seconds": 1.1598986219996732
   },
   {
    "backend": "cpu",
    "case": "structural zeros (even values)",
    "cells": 512,
-   "first_seconds": 0.006470561000242014,
+   "first_seconds": 0.011376382999515045,
    "occupied": 512,
    "params": {
     "repr": "sparse",
@@ -3036,19 +3036,19 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.006470561000242014,
-    0.0064721239996288205,
-    0.006377263000103994
+    0.011376382999515045,
+    0.009393954000188387,
+    0.01054276400100207
    ],
    "state_bytes": 9040,
-   "warm_median_seconds": 0.006424693499866407,
-   "warm_min_seconds": 0.006377263000103994
+   "warm_median_seconds": 0.009968359000595228,
+   "warm_min_seconds": 0.009393954000188387
   },
   {
    "backend": "cpu",
    "case": "structural zeros (even values)",
    "cells": 1023,
-   "first_seconds": 0.0065520799998921575,
+   "first_seconds": 0.011383093000404187,
    "occupied": 512,
    "params": {
     "repr": "dense",
@@ -3056,45 +3056,45 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0065520799998921575,
-    0.006409293000615435,
-    0.006470070000432315
+    0.011383093000404187,
+    0.011530591000337154,
+    0.003192398000464891
    ],
    "state_bytes": 8504,
-   "warm_median_seconds": 0.006439681500523875,
-   "warm_min_seconds": 0.006409293000615435
+   "warm_median_seconds": 0.007361494500401022,
+   "warm_min_seconds": 0.003192398000464891
   },
   {
    "backend": "cpu",
    "case": "sparse -> dense",
-   "first_seconds": 0.004066342999067274,
+   "first_seconds": 0.011205266000615666,
    "params": {
     "cells": 1048576
    },
    "phase": "run",
    "samples_seconds": [
-    0.004066342999067274,
-    0.006202509999639005,
-    0.00426130599953467
+    0.011205266000615666,
+    0.010169617000428843,
+    0.004483494001760846
    ],
-   "warm_median_seconds": 0.005231907999586838,
-   "warm_min_seconds": 0.00426130599953467
+   "warm_median_seconds": 0.007326555501094845,
+   "warm_min_seconds": 0.004483494001760846
   },
   {
    "backend": "cpu",
    "case": "dense -> sparse",
-   "first_seconds": 0.004798756999662146,
+   "first_seconds": 0.007579806999274297,
    "params": {
     "cells": 1048576
    },
    "phase": "run",
    "samples_seconds": [
-    0.004798756999662146,
-    0.004692375001468463,
-    0.004576696999720298
+    0.007579806999274297,
+    0.01760158099932596,
+    0.00325970599988068
    ],
-   "warm_median_seconds": 0.00463453600059438,
-   "warm_min_seconds": 0.004576696999720298
+   "warm_median_seconds": 0.01043064349960332,
+   "warm_min_seconds": 0.00325970599988068
   },
   {
    "backend": "cpu",
@@ -3106,12 +3106,12 @@
     "cells": 1049600
    },
    "phase": "refusal",
-   "refusal_seconds": 0.002081815000565257,
+   "refusal_seconds": 0.01093622900043556,
    "refused": true,
    "resource": "support"
   }
  ],
- "seconds": 35.62583702600023,
+ "seconds": 131.74412777100042,
  "seed": 2026,
  "thresholds": [
   {
