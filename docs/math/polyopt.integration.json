@@ -1,0 +1,43 @@
+{
+ "guide": [
+  {"page": "polyopt.md", "title": "Bounded convex and polynomial optimization", "capabilities": "OPT-002",
+   "summary": "exact convex QPs and LPs under general linear constraints (Bland simplex, primal active set) with verified KKT multipliers, Farkas certificates, rays and decided uniqueness; indefinite QPs decided on affine sets or by recession rays, else handed to a certified best-first branch and bound over a box that encloses the global minimum of small polynomial problems in [lower, upper] with an exact witness, an explicit incomplete result past its budget, leaf certificates of infeasibility, and box enclosures on the CPU and in CUDA."}
+ ],
+ "inventory": {
+  "OPT-002": {
+   "planned_files": ["torbles/math_polyopt.h", "torbles/math_polyopt.c", "torbles/math_polyopt_gpu.cu",
+                     "torbles/math_polyopt.py", "tests/test_math_polyopt.py", "bench/benchmark_math_polyopt.py"],
+   "cpu": "Native exact optimization in FND-009 big rationals. Convex problems: minimize x^T H x / 2 + g^T x + c0 (H symmetric PSD, decided by LIN-002's exact inertia; H = 0 an LP) subject to A x <= b, E x = e and per-variable bounds (either side optional), declared for n <= 8 (representation 64 variables, 256 rows), also from an OPT-001 objective (matrices, a LIN-001 moment state, a first-slice polynomial). LPs by a tableau simplex over x = u - v with slacks, phase 1 with artificials and Bland's rule; QPs by a primal active-set method from the phase-1 vertex with exact equality-constrained steps (LIN-002 solves, zero-curvature descent directions from LIN-002's inconsistency certificate), ratio tests and smallest-index drops, its step budget refused as NOT_CONVERGED. Every answer is verified exactly before it is returned: OPTIMAL with multipliers satisfying stationarity, feasibility and complementary slackness, uniqueness decided (2n LPs over the optimal set, skipped when H is definite or every nonbasic reduced cost is positive) and a second optimal point when not unique; INFEASIBLE with a Farkas certificate; UNBOUNDED with a feasible anchor and a recession ray of negative curvature or of zero curvature and negative rate. An indefinite H: on an affine feasible set the reduced Hessian N^T H N decides it exactly (a curvature ray, or the convex reduced problem's optimum or rate ray); otherwise a negative direction of N^T H N or an LP ray that is a recession direction certifies unboundedness; otherwise a bounded feasible polyhedron of dimension <= 4 after exact elimination of the equalities is handed to the branch and bound (box from 2 dim LPs); else UNSUPPORTED. Polynomial problems (n <= 4, degree <= 8 per variable, dense size <= 256 per polynomial, <= 64 constraints <=, >=, =, a finite rational box): certified best-first branch and bound over dyadic boxes; batches of boxes enclosed by the natural interval extension intersected with the centered form in FND-009 outward-rounded arithmetic; boxes pruned only when a constraint is proven violated, the lower bound exceeds the incumbent, or it cannot improve the incumbent by more than the tolerance; incumbents exact (box corners and midpoints whose constraints hold exactly); the answer is [lower, upper] with upper attained exactly at a feasible witness, COMPLETE only within the declared tolerance, else INCOMPLETE with the reason (node budget, time limit, depth limit); infeasibility certified by leaf boxes each violating a constraint on its enclosure; one-variable unconstrained problems by INV-001's roots of the derivative. Budgets (variables, degree, support, tensor, iterations, output, bytes) are checked before allocation.",
+   "gpu": "tr_mgpu_polyopt_boxes: one work item per box of a branch-and-bound batch evaluates the enclosures of the objective and of every constraint (natural interval extension and centered form, FND-009's contraction-safe directed double operations) and writes its own output slot (status keep / infeasible / bound, the objective enclosure, the violated constraint, whether the box is inside every constraint); it runs the inline functions of math_polyopt.h, so it equals the CPU's tr_polyopt_boxes bit for bit, and backend='cuda' sends every batch of the search to it with the same answers. The simplex, the active set, the uniqueness and hand-off LPs, the exact incumbents and the search control stay on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
+   "limitations": ["Exact big-rational pivots: the convex method is meant for n <= 8 variables and tens of rows; the uniqueness test costs 2n further LPs.",
+                   "An indefinite QP over an unbounded polyhedron is decided only when the feasible set is affine or a recession direction of negative curvature is found (the reduced Hessian's negative direction or an LP ray); otherwise it is refused (copositivity is not decided).",
+                   "Indefinite QPs are handed to the branch and bound only when bounded and of dimension <= 4 after the equalities; larger ones are refused.",
+                   "The branch and bound is exponential in n and log(1/tolerance) and uses first-order enclosures (no relaxations): tight tolerances on flat or degenerate minima end incomplete with certified bounds.",
+                   "With equality constraints a witness exists only where a dyadic box corner or midpoint satisfies them exactly; otherwise feasibility stays unknown and upper is absent.",
+                   "The one-variable method's INV-001 evaluations are refused past the iteration budget instead of returning an incomplete result.",
+                   "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {"name": "PROGRAM", "label": "optimization program", "comment": "an objective with linear or polynomial constraints and bounds"}
+  ],
+  "modules": [
+   {"enum": "POLYOPT", "key": "polyopt", "family": "polyopt", "capability": "OPT-002",
+    "name": "convex and polynomial optimization", "comment": "exact QPs and LPs, certified branch and bound",
+    "state": "PROGRAM", "state_label": "optimization program", "devices": "BOTH", "finalize": 1,
+    "carriers": ["BIGQ", "INTERVAL", "QINTERVAL"],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "TR_PROOF_DOMAIN | TR_PROOF_BOUND",
+    "cpu_entry": ["tr_polyopt_qp_create", "tr_polyopt_qp_from_quad", "tr_polyopt_qp_solve", "tr_polyopt_qp_value",
+                  "tr_polyopt_poly_create", "tr_polyopt_poly_value", "tr_polyopt_boxes", "tr_polyopt_minimize",
+                  "tr_polyopt_result_get_info", "tr_polyopt_result_part", "tr_polyopt_result_leaf",
+                  "tr_polyopt_result_free"],
+    "cuda_entry": ["tr_mgpu_polyopt_boxes"],
+    "impl": [["MINIMIZE", "BIGQ", "CPU"], ["SOLVE", "BIGQ", "CPU"], ["INERTIA", "BIGQ", "CPU"],
+             ["ROOTS", "BIGQ", "CPU"], ["EVAL", "BIGQ", "CPU"], ["ORDER", "BIGQ", "CPU"],
+             ["ENCLOSE", "INTERVAL", "ALL"]]}
+  ]
+ }
+}
