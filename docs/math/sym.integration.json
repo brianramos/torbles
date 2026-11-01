@@ -1,0 +1,196 @@
+{
+ "guide": [
+  {
+   "page": "sym.md",
+   "title": "Closed-basis actions and certified symmetries",
+   "capabilities": "SYM-001, SYM-002",
+   "summary": "exact action matrices M_T with moments(T(rows)) = M_T moments(rows) on monomial bases closed under declared translations, rotations (exact rational points of the unit circle, or certified interval enclosures), scalings, affine maps and feature permutations, applied to retained FND-004 banks and TENSOR-001 tensors without rescanning, composed and checked against the identity; only declared coordinates and units are used (codes have no metric); multiset-preserving symmetries of declared groups verified exactly on every row and certified as FND-007 snapshots with witness rows, orbit summaries and invariant queries on representatives checked against exhaustive evaluation, non-invariant queries refused; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "SYM-001": {
+   "planned_files": [
+    "torbles/math_sym.h",
+    "torbles/math_sym.c",
+    "torbles/math_sym_gpu.cu",
+    "torbles/math_sym.py",
+    "tests/test_math_sym.py",
+    "bench/benchmark_math_sym.py"
+   ],
+   "cpu": "Native C (math_sym.c): a declared geometry (scope columns with a kind, NUMERIC or CATEGORICAL, and a unit label; decimal scales read from the FND-004 scope; nothing else inferred: an undeclared column, any metric operation on a categorical code, a rotation across units and a basis over a code are refused, DOMAIN_ERROR); transformations declared in value units with exact int64 rationals (translation, scaling, reflection, coordinate permutation, affine maps over named coordinates, rotations about a center by an exact rational point of the unit circle with c^2 + s^2 = 1 verified exactly, or by an angle in degrees: multiples of 90 exact, other angles certified enclosures of cos and sin from a Taylor series with its truncation bound in outward-rounded binary64 arithmetic) turned into maps in logical units (D A D^-1, D b with D = diag(10^scale), int128 rows (a x + b) / q reduced by their gcd, overflow refused) that compose exactly; monomial bases of up to 4096 terms of degree <= 8 over up to 32 coordinates (full, homogeneous or explicit); the action M_T (phi(T x) = M_T phi(x), hence moments(T(rows)) = M_T moments(rows)) by the exact multinomial expansion of every basis monomial, with closure decided and its witness (basis term, missing monomial) reported, as canonical int128 numerators over one common denominator (an index permutation for a coordinate permutation) or as interval enclosures; composition M_T M_S in 512-bit products reduced with FND-009 big integers, identity actions and exact equality; retained per-group moment states from FND-004 banks (JOINT, or SQL when every term is valid on every row) and TENSOR-001 LISTWISE moment tensors (with the constant: degree <= order; without: homogeneous), and batched requests (an action, a group, a basis term or an int64 functional, an optional mean over the constant term's moment) answered as exact 512-bit rationals or certified intervals by the evaluator shared with CUDA; budgets (variables, degree, support, tensor = nb^2, iterations = nb^3 for compositions, states, output, bytes) checked before allocation.",
+   "gpu": "CUDA kernel math_sym_gpu.cu (tr_mgpu_sym_query): the retained moments, every action's matrix (and permutation index) and the functionals copied once per batch, then one work item per request running the shared evaluator tr_sym_eval_request (exact 512-bit two's complement products and sums of int128 numerators and moments, or outward-rounded interval products and sums with the explicit-fma helpers of FND-009, in the CPU's order), one output slot per request; equal to the CPU bit for bit.",
+   "limitations": [
+    "Exact entries are int128 numerators over one int128 denominator: a large translation at a high degree, or many compositions, are refused (OverflowError), not widened to big rationals.",
+    "Only rotations by angles that are not multiples of 90 degrees are approximate: binary64 interval enclosures (53-bit endpoints, no multiprecision); their closure is decided structurally (an entry enclosure that is not exactly [0, 0] counts as a monomial of the image), so a basis closed only through an exact cancellation is refused.",
+    "States are FND-004 banks (degree <= 4) and TENSOR-001 LISTWISE moment tensors (degree <= 8) without per-entry counts; NULL handling is listwise; the action construction and composition run on the CPU, single-threaded."
+   ]
+  },
+  "SYM-002": {
+   "planned_files": [
+    "torbles/math_sym.h",
+    "torbles/math_sym.c",
+    "torbles/math_sym_gpu.cu",
+    "torbles/math_sym.py",
+    "tests/test_math_sym.py",
+    "bench/benchmark_math_sym.py"
+   ],
+   "cpu": "Native C (math_sym.c): declared groups of up to 16 generators that map the integer domain into itself (SYM-001 maps integral in logical units and invertible, det A != 0 decided exactly by elimination modulo 2^61 - 1 and fraction-free Bareiss in int128; e.g. coordinate permutations, reflections, rotations by multiples of 90 degrees) or value permutations of one coordinate (a bijection of finitely many values); the support of a scope (the sorted distinct tuples of every declared coordinate over the selected rows with multiplicities and smallest rows, NULL coordinates skipped or forbidden) with an FND-007 record of the scope; exhaustive exact verification that every generator preserves the multiset (mult(g(v)) = mult(v) for every support tuple, images computed exactly in int128 and found by binary search) with per-generator evidence (rows, tuples, violating rows, missing orbit members, broken multiplicities, the smallest violating row, its tuple, kind and image multiplicity); a certificate of FND-007 kind snapshot only when every generator holds, its freshness by FND-007's exact record comparison; orbit summaries under a fresh certificate (union-find, the smallest tuple as representative, sizes and multiplicities); polynomial SUM and COUNT queries proven invariant as laws (p o g = p by the exact expansion of p(A x + b); equal substitutions for every moved value) and evaluated once per orbit, non-invariant queries refused (DOMAIN_ERROR with the generator), and the exhaustive evaluation over every selected row as the check; budgets checked before allocation.",
+   "gpu": "CUDA kernel math_sym_gpu.cu (tr_mgpu_sym_verify): the sorted support, multiplicities, first rows and the generators copied to the device; work items (generator, tuple slice) map each tuple exactly (tr_sym_image), find its image by binary search of the sorted tuples (exact comparisons, no hashing), compare multiplicities (tr_sym_check_tuple), add one atomic per counter and take the smallest violating row by an atomic minimum; the host finishes the evidence (tr_sym_evidence_finish) and tr_sym_adopt checks it before certifying; equal to the CPU bit for bit.",
+   "limitations": [
+    "Invariance under the reduction is a sufficient condition (polynomial identity under each generator): an invariant predicate of a non-invariant polynomial (x^2 - y^2 = 0 under a quarter turn, c = 3 under a value permutation fixing 3) is refused.",
+    "Orbits are those of the generated group on the observed support; generators must be integral, invertible maps or value permutations (no interval or non-integral maps); NULL coordinates are skipped or forbidden, not a category of their own.",
+    "The support sort, the orbit union-find, the invariance proofs and the queries on representatives run on the CPU, single-threaded; only the verification has a CUDA kernel."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "BASIS_ACTION",
+    "label": "basis actions",
+    "comment": "a closed monomial basis, exact or interval action matrices, retained moments"
+   },
+   {
+    "name": "SYMMETRY",
+    "label": "symmetry certificates",
+    "comment": "a declared group, its multiset evidence and scope record, orbit summaries"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "SYM_ACTION",
+    "key": "sym.action",
+    "family": "sym",
+    "capability": "SYM-001",
+    "name": "closed-basis transformation actions",
+    "comment": "closed-basis transformation actions",
+    "state": "BASIS_ACTION",
+    "state_label": "basis actions",
+    "devices": "BOTH",
+    "finalize": 3,
+    "carriers": [
+     "INTEGER",
+     "RATIONAL",
+     "INT128",
+     "BIGINT",
+     "INTERVAL"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_sym_geometry_make",
+     "tr_sym_basis_full",
+     "tr_sym_basis_create",
+     "tr_sym_map_make",
+     "tr_sym_map_compose",
+     "tr_sym_action_make",
+     "tr_sym_action_compose",
+     "tr_sym_action_identity",
+     "tr_sym_action_equal",
+     "tr_sym_state_from_bank",
+     "tr_sym_state_from_tensor",
+     "tr_sym_query"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_sym_query"
+    ],
+    "impl": [
+     [
+      "MULTIPLY",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "CONTRACT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "DIVIDE",
+      "RATIONAL",
+      "ALL"
+     ],
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "EUCLID",
+      "BIGINT",
+      "CPU"
+     ]
+    ]
+   },
+   {
+    "enum": "SYM_SYMMETRY",
+    "key": "sym.symmetry",
+    "family": "sym",
+    "capability": "SYM-002",
+    "name": "certified symmetries and orbits",
+    "comment": "certified data symmetries and orbits",
+    "state": "SYMMETRY",
+    "state_label": "symmetry certificates",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INTEGER",
+     "INT128",
+     "COUNT",
+     "CODE"
+    ],
+    "laws_relied": "TR_REG_RING | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_EXACT_COUNT | TR_PROOF_NULL_POLICY | TR_PROOF_IDENTITY",
+    "cpu_entry": [
+     "tr_sym_group_create",
+     "tr_sym_support_build",
+     "tr_sym_verify_view",
+     "tr_sym_certify",
+     "tr_sym_adopt",
+     "tr_sym_cert_fresh",
+     "tr_sym_orbits_build",
+     "tr_sym_poly_invariant",
+     "tr_sym_orbit_query",
+     "tr_sym_rows_query"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_sym_verify"
+    ],
+    "impl": [
+     [
+      "VERIFY",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "EVAL",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "SCALE_COUNT",
+      "INT128",
+      "CPU"
+     ],
+     [
+      "FOLD",
+      "INT128",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
