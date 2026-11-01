@@ -941,7 +941,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
+Measured runtime: `bd11f2574eba6b2f7e4b89bc36bcb4b4e416a37f`.
 
 - tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
 - tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
