@@ -111,7 +111,26 @@ def sparse_of(a):
 
 
 def einsum(spec, *arrays):
-    return np.einsum(spec, *[np.asarray(a, dtype=object) for a in arrays])
+    """an exact einsum over Python ints (object arrays): NumPy's from 1.25, which first contracts object arrays;
+    before it, the same sum formed here over every index assignment"""
+    arrays = [np.asarray(a, dtype=object) for a in arrays]
+    if np.lib.NumpyVersion(np.__version__) >= "1.25.0":
+        return np.einsum(spec, *arrays)
+    ins, out = spec.split("->")
+    ins = ins.split(",")
+    size = {ch: n for lab, a in zip(ins, arrays) for ch, n in zip(lab, a.shape)}
+    labels = sorted(size)
+    res = np.zeros([size[ch] for ch in out], dtype=object) if out else 0
+    for vals in itertools.product(*[range(size[ch]) for ch in labels]):
+        at = dict(zip(labels, vals))
+        term = 1
+        for lab, a in zip(ins, arrays):
+            term = term * a[tuple(at[ch] for ch in lab)]
+        if out:
+            res[tuple(at[ch] for ch in out)] += term
+        else:
+            res += term
+    return res
 
 
 class Base(unittest.TestCase):

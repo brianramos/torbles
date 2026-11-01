@@ -8,7 +8,7 @@ Oracles, independent of the implementation and written here: the tiny-graph refe
 (dictionary, canonical edges, adjacency entries, dense adjacency matrices of Python ints / Fractions), dense products
 in every semiring, Python BFS, adjacency-matrix powers for walk counts, Bellman-Ford with a lexicographic hop count
 and Floyd-Warshall for paths, x^T L x with a dense Laplacian, exact Fraction PageRank by Gaussian elimination, the
-stated binary64 contracts replayed with math.fma / math.nextafter, NumPy (PageRank and eigenvectors, at stated
+stated binary64 contracts replayed with a fused multiply-add (fma below) / math.nextafter, NumPy (PageRank and eigenvectors, at stated
 tolerances), edge-list degree counts, DuckDB GROUP BY and recursive CTEs (reachability, bounded walk counts). Every native
 result is also computed on the CUDA path (emulated here with TORBLES_EMU_SCRAMBLE=1, a scrambled thread order) and
 compared for equality. Seeds are fixed.
@@ -37,6 +37,14 @@ INF = float("inf")
 
 
 # ---------------------------------------------------------------------- the declared semantics, by hand
+
+def fma(a, b, c):
+    """a * b + c rounded once: math.fma from Python 3.13; before it, the exact sum of Fractions rounded to the nearest
+    double (CPython's int / int division is correctly rounded), the same value for finite operands"""
+    if hasattr(math, "fma"):
+        return math.fma(a, b, c)
+    return float(Fraction(a) * Fraction(b) + Fraction(c))
+
 
 def cuda_label():
     """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
@@ -418,8 +426,8 @@ class Graph(unittest.TestCase):
                         for u, c, _ in terms[v]:
                             # RN(RN(m w) / RN(D)) of the logical weight (EDGE), RN(m) (ONE), 1 (DISTINCT)
                             cf = float(int(Fraction(c) * D)) / float(D) if mode == "edge" else float(c)
-                            acc = math.fma(cf, fx[u], acc)
-                            mag = up(math.fma(abs(cf), abs(fx[u]), mag))
+                            acc = fma(cf, fx[u], acc)
+                            mag = up(fma(abs(cf), abs(fx[u]), mag))
                         k = len(terms[v])
                         gamma = up(float(k + 4) / float((1 << 53) - (k + 4)))
                         err = up(gamma * mag) if k else 0.0
@@ -998,7 +1006,7 @@ class Graph(unittest.TestCase):
             G.energy({1: 1})
 
     def replica_pagerank(self, G, d, tol, max_iter, teleport=None, start=None):
-        """the stated binary64 iteration, replayed with math.fma (forward)"""
+        """the stated binary64 iteration, replayed with fma (forward)"""
         n = G.n
         inn, out = G.adjacency("in"), G.adjacency("out")
         Wu = [sum(out["multiplicity"][e] * out["weights"][e] * G.denominator for e in
@@ -1016,13 +1024,13 @@ class Graph(unittest.TestCase):
         for k in range(1, max_iter + 1):
             D = blocked([r[u] if Wu[u] == 0 else 0.0 for u in range(n)])
             S = blocked(r)
-            tele = math.fma(d, D, (1.0 - d) * S) / t
+            tele = fma(d, D, (1.0 - d) * S) / t
             rn = []
             for v in range(n):
                 acc = 0.0
                 for e in range(inn["offsets"][v], inn["offsets"][v + 1]):
-                    acc = math.fma(coef[e], r[inn["neighbors"][e]], acc)
-                rn.append(math.fma(d, acc, tele if v in T else 0.0))
+                    acc = fma(coef[e], r[inn["neighbors"][e]], acc)
+                rn.append(fma(d, acc, tele if v in T else 0.0))
             delta = blocked([abs(a - b) for a, b in zip(rn, r)])
             r = rn
             if delta <= tol:

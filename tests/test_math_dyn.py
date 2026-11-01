@@ -821,7 +821,7 @@ class Powers(Base):
         res = np.zeros(len(pr2) * nb * nb, dtype=np.uint64)
         gpu.run("tr_mgpu_dyn_powmod", C.byref(mv2), res.ctypes.data, C.byref(Budget().raw), C.byref(r), refusal=r)
         bad = res.copy()
-        bad[(len(pr2) - 1) * nb * nb + 3] ^= 1                    # one residue of the check prime corrupted
+        bad[(len(pr2) - 1) * nb * nb + 3] ^= np.uint64(1)         # one residue of the check prime corrupted
         err, ref = C.c_int32(), dyn._Refusal()
         h = dyn._call("tr_dyn_power_adopt", K._open(), n, pr2, len(pr2), bad.ctypes.data, 1, C.byref(Budget().raw),
                       C.byref(ref), C.byref(err))
