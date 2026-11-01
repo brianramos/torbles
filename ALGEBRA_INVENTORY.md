@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 0 |
 | planned | 0 |
-| in_progress | 17 |
-| validated | 64 |
+| in_progress | 21 |
+| validated | 60 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -2267,7 +2267,7 @@ Sparse/factored moment tensors and contraction planning.
 
 ### TENSOR-001: Sparse and factored moment tensors
 
-Status: **validated**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Retain declared multi-index states without forcing dense Cartesian expansion.
 
@@ -2284,14 +2284,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_tensor.h](torbles/math_tensor.h)
-- [torbles/math_tensor.c](torbles/math_tensor.c)
-- [torbles/math_tensor_gpu.cu](torbles/math_tensor_gpu.cu)
-- [torbles/math_tensor.py](torbles/math_tensor.py)
-- [tests/test_math_tensor.py](tests/test_math_tensor.py)
-- [bench/benchmark_math_tensor.py](bench/benchmark_math_tensor.py)
+- `torbles/math_tensor.h`
+- `torbles/math_tensor.c`
+- `torbles/math_tensor_gpu.cu`
+- `torbles/math_tensor.py`
+- `tests/test_math_tensor.py`
+- `bench/benchmark_math_tensor.py`
 
 Acceptance tests:
 
@@ -2322,7 +2322,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### TENSOR-002: Costed contraction planning
 
-Status: **validated**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Choose variable/contraction order, kernel, intermediate shape and materialization lifetime for bounded tensor networks.
 
@@ -2339,14 +2339,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_tensor.h](torbles/math_tensor.h)
-- [torbles/math_tensor.c](torbles/math_tensor.c)
-- [torbles/math_tensor_gpu.cu](torbles/math_tensor_gpu.cu)
-- [torbles/math_tensor.py](torbles/math_tensor.py)
-- [tests/test_math_tensor.py](tests/test_math_tensor.py)
-- [bench/benchmark_math_tensor.py](bench/benchmark_math_tensor.py)
+- `torbles/math_tensor.h`
+- `torbles/math_tensor.c`
+- `torbles/math_tensor_gpu.cu`
+- `torbles/math_tensor.py`
+- `tests/test_math_tensor.py`
+- `bench/benchmark_math_tensor.py`
 
 Acceptance tests:
 
@@ -2850,7 +2850,7 @@ Finite closed observables and repeated operator application.
 
 ### DYN-001: Finite closed-observable dynamics
 
-Status: **validated**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Represent declared dynamics as a matrix action on a basis proven closed under composition.
 
@@ -2867,14 +2867,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_dyn.h](torbles/math_dyn.h)
-- [torbles/math_dyn.c](torbles/math_dyn.c)
-- [torbles/math_dyn_gpu.cu](torbles/math_dyn_gpu.cu)
-- [torbles/math_dyn.py](torbles/math_dyn.py)
-- [tests/test_math_dyn.py](tests/test_math_dyn.py)
-- [bench/benchmark_math_dyn.py](bench/benchmark_math_dyn.py)
+- `torbles/math_dyn.h`
+- `torbles/math_dyn.c`
+- `torbles/math_dyn_gpu.cu`
+- `torbles/math_dyn.py`
+- `tests/test_math_dyn.py`
+- `bench/benchmark_math_dyn.py`
 
 Acceptance tests:
 
@@ -2905,7 +2905,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### DYN-002: Repeated operator powers and semigroups
 
-Status: **validated**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Evaluate many steps, selected recurrences or parameterized evolution from retained finite operators.
 
@@ -2922,14 +2922,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_dyn.h](torbles/math_dyn.h)
-- [torbles/math_dyn.c](torbles/math_dyn.c)
-- [torbles/math_dyn_gpu.cu](torbles/math_dyn_gpu.cu)
-- [torbles/math_dyn.py](torbles/math_dyn.py)
-- [tests/test_math_dyn.py](tests/test_math_dyn.py)
-- [bench/benchmark_math_dyn.py](bench/benchmark_math_dyn.py)
+- `torbles/math_dyn.h`
+- `torbles/math_dyn.c`
+- `torbles/math_dyn_gpu.cu`
+- `torbles/math_dyn.py`
+- `tests/test_math_dyn.py`
+- `bench/benchmark_math_dyn.py`
 
 Acceptance tests:
 
