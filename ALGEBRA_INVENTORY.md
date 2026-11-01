@@ -2580,7 +2580,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
+Measured runtime: `8358e4267690aa03c05b5cc6dfefce61b10204b0`.
 
 - tests: [results/math/SPEC-002/tests_test_math_spec.json](results/math/SPEC-002/tests_test_math_spec.json)
 - tests: [results/math/SPEC-002/sanitized_test_math_spec.json](results/math/SPEC-002/sanitized_test_math_spec.json)
@@ -4095,7 +4095,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+Measured runtime: `8358e4267690aa03c05b5cc6dfefce61b10204b0`.
 
 - tests: [results/math/GRAPH-001/tests_test_math_graph.json](results/math/GRAPH-001/tests_test_math_graph.json)
 - tests: [results/math/GRAPH-001/sanitized_test_math_graph.json](results/math/GRAPH-001/sanitized_test_math_graph.json)
@@ -4150,7 +4150,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+Measured runtime: `8358e4267690aa03c05b5cc6dfefce61b10204b0`.
 
 - tests: [results/math/GRAPH-002/tests_test_math_graph.json](results/math/GRAPH-002/tests_test_math_graph.json)
 - tests: [results/math/GRAPH-002/sanitized_test_math_graph.json](results/math/GRAPH-002/sanitized_test_math_graph.json)
@@ -4925,7 +4925,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+Measured runtime: `8358e4267690aa03c05b5cc6dfefce61b10204b0`.
 
 - tests: [results/math/TOPO-001/tests_test_math_topo.json](results/math/TOPO-001/tests_test_math_topo.json)
 - tests: [results/math/TOPO-001/sanitized_test_math_topo.json](results/math/TOPO-001/sanitized_test_math_topo.json)
@@ -4982,7 +4982,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+Measured runtime: `8358e4267690aa03c05b5cc6dfefce61b10204b0`.
 
 - tests: [results/math/TOPO-002/tests_test_math_topo.json](results/math/TOPO-002/tests_test_math_topo.json)
 - tests: [results/math/TOPO-002/sanitized_test_math_topo.json](results/math/TOPO-002/sanitized_test_math_topo.json)
