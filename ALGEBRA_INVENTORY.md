@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 0 |
 | planned | 0 |
-| in_progress | 14 |
-| validated | 67 |
+| in_progress | 17 |
+| validated | 64 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -584,7 +584,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
+Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
 
 - tests: [results/math/FND-006/tests_test_math_fused_reduce.json](results/math/FND-006/tests_test_math_fused_reduce.json)
 - tests: [results/math/FND-006/sanitized_test_math_fused_reduce.json](results/math/FND-006/sanitized_test_math_fused_reduce.json)
@@ -1859,7 +1859,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### DIST-002: Prefix distribution calculus and exact quantiles
 
-Status: **validated**. Delivery wave: **W2**.
+Status: **in_progress**. Delivery wave: **W2**.
 
 Sorted histogram prefix counts/moments answer CDF, tails, quantiles, trimmed sums and range integrals.
 
@@ -1881,14 +1881,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/algq.py](torbles/algq.py): Existing dominance and range lowerings are reusable building blocks.
 - [torbles/sqlfuncs.py](torbles/sqlfuncs.py): Existing SQL percentile/quantile finalizers; shared native prefix-state API remains planned.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_dist.h](torbles/math_dist.h)
-- [torbles/math_dist.c](torbles/math_dist.c)
-- [torbles/math_dist_gpu.cu](torbles/math_dist_gpu.cu)
-- [torbles/math_dist.py](torbles/math_dist.py)
-- [tests/test_math_dist.py](tests/test_math_dist.py)
-- [bench/benchmark_math_dist.py](bench/benchmark_math_dist.py)
+- `torbles/math_dist.h`
+- `torbles/math_dist.c`
+- `torbles/math_dist_gpu.cu`
+- `torbles/math_dist.py`
+- `tests/test_math_dist.py`
+- `bench/benchmark_math_dist.py`
 
 Acceptance tests:
 
@@ -4150,7 +4150,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### GRAPH-002: Bounded fixed points, paths and graph energies
 
-Status: **validated**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Add reachability, bounded path counts, selected shortest-path semirings and iterative energies with explicit termination/iteration rules.
 
@@ -4167,14 +4167,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_graph.h](torbles/math_graph.h)
-- [torbles/math_graph.c](torbles/math_graph.c)
-- [torbles/math_graph_gpu.cu](torbles/math_graph_gpu.cu)
-- [torbles/math_graph.py](torbles/math_graph.py)
-- [tests/test_math_graph.py](tests/test_math_graph.py)
-- [bench/benchmark_math_graph.py](bench/benchmark_math_graph.py)
+- `torbles/math_graph.h`
+- `torbles/math_graph.c`
+- `torbles/math_graph_gpu.cu`
+- `torbles/math_graph.py`
+- `tests/test_math_graph.py`
+- `bench/benchmark_math_graph.py`
 
 Acceptance tests:
 
@@ -4993,7 +4993,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### TOPO-002: Bounded cycles, homology and persistence
 
-Status: **validated**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Add boundary matrices, cycle/rank calculations and explicitly bounded filtrations with a declared coefficient field.
 
@@ -5011,14 +5011,14 @@ Bounds:
 - During the reduction: iterations = column additions and bytes = every reduced column, V column and scratch buffer held, refused deterministically at the first step or allocation past the limit (nothing is returned); output = pairs, essential classes, cycle classes and entries, checked before the result is written.
 - Explicit chain complexes: states = cells, tensor = entries, bytes = the copies and the d o d scratch; at most 7 dimensions and 2^32 cells or entries per dimension; GF(p) needs a verified prime p < 2^62.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_topo.h](torbles/math_topo.h)
-- [torbles/math_topo.c](torbles/math_topo.c)
-- [torbles/math_topo_gpu.cu](torbles/math_topo_gpu.cu)
-- [torbles/math_topo.py](torbles/math_topo.py)
-- [tests/test_math_topo.py](tests/test_math_topo.py)
-- [bench/benchmark_math_topo.py](bench/benchmark_math_topo.py)
+- `torbles/math_topo.h`
+- `torbles/math_topo.c`
+- `torbles/math_topo_gpu.cu`
+- `torbles/math_topo.py`
+- `tests/test_math_topo.py`
+- `bench/benchmark_math_topo.py`
 
 Acceptance tests:
 
