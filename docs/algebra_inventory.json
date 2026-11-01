@@ -5311,13 +5311,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native generator selection, reconstructions, local elimination forms, row checks and costs over an FND-004 scope and GEOM-001 relations (up to 16 FND-007 certificates over at most 8 variables). A generator set G has a reconstruction x = f_x(G) for every eliminated variable exactly when, under lex with the eliminated variables first, GEOM-001's reduced Groebner basis reduces x into Q[G] (the elimination property); f_x is that normal form and its FND-007 derived certificate D (x - f_x) = sum D h_k r_k is GEOM-001's reduction certificate. Two modes: one elimination under a given lex sequence (one solve), or a bounded search by increasing size over every subset of the relation variables in lexicographic order (variables in no relation always generators), one completion per set, ranked by a declared priority (total, scan, work, bits; ties to the earliest) among the sets of the minimum size; a set whose completion passes the degree or support budget, GEOM-001's per-solve limit or int64 is recorded as undecided (with its refusal) and the search goes on, minimality claimed only when every smaller set was decided. A reconstruction is kept only when its row check holds: on every selected row the target column and the reconstruction are evaluated exactly in W <= 8 64-bit words under a bound proven from the scope's extremes (DISC-002's evaluation), with SQL NULL propagation (null_lost / null_extra NULL-domain mismatches), value mismatches, the target column's range (below, above, both ends attained) and the smallest mismatching row of each kind. Costs are measured on the scope: widths from max - min of the present values plus a validity plane, scan = ceil(N / 64) x widths read, work = N x (terms + multiplications) x words from the actual bit length of every evaluated row, a generator set's storage plus its reconstructions, each column's read path (reconstruct only when strictly cheaper than its stored scan). Local elimination forms of a query q: q as written, every substitution of a nonempty set of the eliminated variables q reads (GEOM-001 division by their reconstruction certificates, certified by FND-007 at depth 2) and optionally the normal form under the selection's elimination ideal; each checked against q on every row and costed on its own integer form, the cheapest admissible chosen and ties kept by the direct form, so a term explosion or cost regression keeps q. Budgets: iterations = solves (refused at the limit + 1), degree and support bound every completion and reduction (an order selection refused, a form rejected with its refusal), variables, output and bytes checked before allocation.",
+   "gpu": "tr_mgpu_elim_check: work items (a chunk of 8 pairs, a row slice of at least 64 selection words) run the inline tr_elim_pair_row shared with the CPU on each selected row of their slice for every pair of their chunk: the target's and the form's NULL domains, their exact W-word integer forms under the bound the host proved, the form against the target column's range; they count locally and add one atomic per nonzero counter, the smallest mismatching rows by atomic minimum and the largest bit lengths by atomic maximum, so the results (and the first mismatching row) do not depend on the order threads run in and equal tr_elim_check_view bit for bit. The host validates the pair view (its structure and the view's extremes within the magnitudes the bounds were proven for) and budgets the device copies before launching. Selection, completion, reduction and certification run on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_geom.c",
-    "torbles/math_geom.h",
-    "tests/test_math_geom.py"
+    "torbles/math_elim.h",
+    "torbles/math_elim.c",
+    "torbles/math_elim_gpu.cu",
+    "torbles/math_elim.py",
+    "tests/test_math_elim.py",
+    "bench/benchmark_math_elim.py"
    ],
    "acceptance_tests": [
     "Reconstruction covers every supported variable and preserves ranges/NULL domains.",
@@ -5327,7 +5330,15 @@
     "Use small relation components with 2/4/8 variables, degrees 1/2/3 and sparse/dense certificates; separate discovery, certificate checking and reduction.",
     "Compare direct expressions with alternative generator/elimination forms using actual resulting bit widths and scans; retain term-explosion and cost-regression cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "Reconstructions are polynomials in the generators (no rational, algebraic or implicit reconstructions); a column that is only algebraic over the others stays a generator.",
+    "The search is exponential in the number of variables (at most 255 sets for 8) and its lex completions grow quickly: with dense or implicitization-like sets many are undecided under the budget or int64, and minimality is then not claimed.",
+    "Coefficients are GEOM-001's int64 rationals (no arbitrary precision); a reconstruction or form past int64 is undecided or unclaimable, never rounded.",
+    "A reconstruction is exact where its relations hold: a snapshot relation makes it exact on that snapshot's rows only (FND-007 staleness applies).",
+    "Costs are relative work units of the bit-plane engine measured on one scope (widths, scans, word counts), not a planner's timing model.",
+    "The CUDA kernel covers the batched row checks; selection, completion, reduction and certification run on the CPU.",
+    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {
@@ -5722,13 +5733,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native exact preimages over PRE-001's codec (logical = code + offset, value = logical / 10^scale, codes over the declared domain) and predicates (y op c, c an int64 rational, or y IN up to 4096 values). Polynomial maps of degree <= 16 with rational coefficients: the integer polynomial N(L) = K p(L / 10^scale) in FND-009 big integers, its critical points (the real roots of N') isolated by INV-001's Sturm sequences and refined to width 1, the integers between them strictly monotone pieces, and on each piece two binary searches with exact big-integer evaluations give the level sets (intervals; the exact integer roots for equality; every IN value through the same pieces). Power and polynomial residues (sum c_i x^i) mod m, 1 <= m <= 2^62: the solutions per prime power of m (trial division, each prime power enumerated up to 2^24 residues) combined by the CRT for equality and IN, every residue enumerated for the other operators (m <= 2^24). Affine residues (a x + b) mod m: the linear congruences solved by gcd and modular inverses, residue classes of the period m / gcd(a, m). GF(2) bit maps XOR / AND / OR with a constant on the w low bits of logical - base (FIELD-001's bit variables): the images of the dyadic blocks of {y op c} as Boolean cubes of the stored code, or residue runs mod 2^(H+1) when the base is not the code's. Results are unions of one representation: sorted disjoint intervals (finite sets as points), residue classes of one period (a domain no larger than the period as intervals) or disjoint cubes; residues of a power-of-two period convert to low-bit cubes for bit-plane programs. Past the output budget (branches), the iterations or bytes budget or a representation limit the set falls back to a lookup bitmap (residues mod the period or the domain's codes, at most 2^26 bits, computed exactly) or to the direct exact evaluation of the predicate (polynomials in W <= 8 words under a bound proven over the domain, residues in 128-bit modular arithmetic), never dropping a solution; fallback none refuses with the exceeded resource. Each polynomial or periodic set carries an FND-007 LAW certificate of its transformation (the codec substitution, the periodicity identities) when its coefficients fit int64. The scan marks the selected rows whose present value's code is in the set and can evaluate the original predicate on every row and count mismatches; the verification checks every code of a domain of at most 2^26 codes against the direct predicate. A NULL value never satisfies.",
+   "gpu": "tr_mgpu_preimg_scan: one work item per 64-row selection word evaluates membership of each present row's code (interval binary search, residue runs, cubes, a lookup bitmap or the direct predicate, the inline functions of math_preimg.h shared with the CPU), optionally the direct predicate and its comparison, writes its own bitmap word and adds its counts with one atomic each, the smallest mismatching and undecided rows by atomic minimum. tr_mgpu_preimg_verify: one work item per 64 codes of the domain counts codes, members, true codes and mismatches with one atomic each and keeps the smallest mismatching code by atomic minimum. No barrier, no shared memory; results equal the CPU's bit for bit. The host validates the set's view and budgets the device copies before launching; the set itself is built on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_pre.c",
-    "torbles/math_pre.h",
-    "tests/test_math_pre.py"
+    "torbles/math_preimg.h",
+    "torbles/math_preimg.c",
+    "torbles/math_preimg_gpu.cu",
+    "torbles/math_preimg.py",
+    "tests/test_math_preimg.py",
+    "bench/benchmark_math_preimg.py"
    ],
    "acceptance_tests": [
     "Compare all preimages with exhaustive small integer domains for squares/moduli/periods.",
@@ -5738,7 +5752,14 @@
     "Use affine positive/negative slopes, monotone pieces, squares and residue maps over bounded integer domains; compare all predicate boundaries with direct evaluation.",
     "Vary preimage branch counts 1/4/16/64 and predicate selectivity; compare transformed plane predicates with the correct direct/lookup candidate and retain losing cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "Periodic and bit maps are defined on integer domains only (scale 0); polynomial maps have degree <= 16 and int64 rational coefficients and thresholds.",
+    "Composite moduli are factored by trial division and prime powers enumerated up to 2^24 residues; past that (or past the CRT class limit) the set falls back to a lookup or the direct evaluation.",
+    "Residues of a period that is not a power of two have no bit-plane program: the lookup or the direct evaluation is the candidate; a plane program is limited to 1024 engine instructions.",
+    "The exhaustive verification covers domains of at most 2^26 codes with values within int64.",
+    "Branch construction, critical-point isolation and certificates run on the CPU; CUDA covers the scan and the verification.",
+    "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {

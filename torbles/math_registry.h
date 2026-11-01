@@ -951,7 +951,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_POLYOPT = 64,           /* OPT-002 exact QPs and LPs, certified branch and bound */
        TR_REG_M_GRAPH_LAYOUT = 65,      /* GRAPH-001 graph layouts, degrees, frontiers and semiring products */
        TR_REG_M_GRAPH_PATHS = 66,       /* GRAPH-002 reachability, bounded walk counts, paths with cycle refusal, energies */
-       TR_REG_M_END = 67 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_ELIM = 67,              /* GEOM-002 generator sets, reconstructions, local forms */
+       TR_REG_M_PREIMG = 68,            /* PRE-002 roots, residues, bit cubes, fallbacks */
+       TR_REG_M_END = 69 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1007,7 +1009,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_PROGRAM = 54,           /* an objective with linear or polynomial constraints and bounds */
        TR_REG_STATE_GRAPH_LAYOUT = 55,      /* a vertex dictionary, CSR / CSC entries with multiplicities, canonical edges and incidence lists of a snapshot */
        TR_REG_STATE_GRAPH_FIXPOINT = 56,    /* reach sets and levels, bounded walk tables, path trees and certified iterates of a layout */
-       TR_REG_STATE_KINDS = 57 };
+       TR_REG_STATE_ELIMINATION = 57,       /* generators, certified reconstructions, row checks */
+       TR_REG_STATE_KINDS = 58 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1344,6 +1347,16 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_GRAPH_PATHS, MULTIPLY, BIGINT, TR__ALL), TR__I(TR_REG_M_GRAPH_PATHS, ORDER, BIGINT, TR__ALL),
     TR__I(TR_REG_M_GRAPH_PATHS, RELAX, MINMAX, TR__ALL), TR__I(TR_REG_M_GRAPH_PATHS, FOLD, BIGINT, TR__ALL),
     TR__I(TR_REG_M_GRAPH_PATHS, ENCLOSE, INTERVAL, TR__CPU),
+    /* 67 GEOM-002 generator sets, reconstructions, local forms */
+    TR__I(TR_REG_M_ELIM, DIVIDE, RATIONAL, TR__CPU), TR__I(TR_REG_M_ELIM, POLY_SUB, RATIONAL, TR__CPU),
+    TR__I(TR_REG_M_ELIM, POLY_SUBSTITUTE, RATIONAL, TR__CPU), TR__I(TR_REG_M_ELIM, EVAL, INTEGER, TR__ALL),
+    TR__I(TR_REG_M_ELIM, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_ELIM, ORDER, INTEGER, TR__ALL),
+    TR__I(TR_REG_M_ELIM, FOLD, COUNT, TR__ALL),
+    /* 68 PRE-002 roots, residues, bit cubes, fallbacks */
+    TR__I(TR_REG_M_PREIMG, ROOTS, BIGQ, TR__CPU), TR__I(TR_REG_M_PREIMG, EVAL, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_PREIMG, EUCLID, INTEGER, TR__CPU), TR__I(TR_REG_M_PREIMG, RESIDUE, INTEGER, TR__ALL),
+    TR__I(TR_REG_M_PREIMG, BITS, CODE, TR__CPU), TR__I(TR_REG_M_PREIMG, ORDER, CODE, TR__ALL),
+    TR__I(TR_REG_M_PREIMG, PREDICATE, RATIONAL, TR__ALL), TR__I(TR_REG_M_PREIMG, FOLD, COUNT, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU

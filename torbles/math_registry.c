@@ -92,7 +92,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "refinement state",
     "intervention plan",
     "optimization program",
-    "graph layout", "graph fixed point"};
+    "graph layout", "graph fixed point",
+    "elimination"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -737,6 +738,25 @@ static const tr_reg_module modules[] = {
                    "tr_graph_energy", "tr_graph_pagerank", "tr_graph_power", "tr_graph_rationals"},
      .cuda_entry = {"tr_mgpu_graph_reach", "tr_mgpu_graph_closure", "tr_mgpu_graph_walks", "tr_mgpu_graph_paths",
                     "tr_mgpu_graph_energy", "tr_mgpu_graph_pagerank", "tr_mgpu_graph_power"}},
+    {FAMILY(TR_REG_M_ELIM, "elim", "elim", "GEOM-002", "bounded elimination and generators"),
+     .state_kind = TR_REG_STATE_ELIMINATION, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(RATIONAL) | CB(INTEGER) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_elim_select", "tr_elim_selection_get_info", "tr_elim_selection_candidates",
+                   "tr_elim_selection_form", "tr_elim_selection_certify", "tr_elim_selection_pairs",
+                   "tr_elim_pairs_make", "tr_elim_check_view", "tr_elim_cost_of", "tr_elim_choose",
+                   "tr_elim_forms_make", "tr_elim_forms_certify"},
+     .cuda_entry = {"tr_mgpu_elim_check"}},
+    {FAMILY(TR_REG_M_PREIMG, "preimg", "preimg", "PRE-002", "roots, residues and periodic preimages"),
+     .state_kind = TR_REG_STATE_CODE_SET, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(BIGINT) | CB(QINTERVAL) | CB(CODE) | CB(RATIONAL) | CB(INTEGER) | CB(GF2) | CB(KLEENE) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_preimg_preimage", "tr_preimg_set_get_info", "tr_preimg_set_branches",
+                   "tr_preimg_set_contains", "tr_preimg_set_get_view", "tr_preimg_set_lookup", "tr_preimg_set_cubes",
+                   "tr_preimg_set_certificate", "tr_preimg_scan", "tr_preimg_verify"},
+     .cuda_entry = {"tr_mgpu_preimg_scan", "tr_mgpu_preimg_verify"}},
 };
 #undef BUILTIN
 #undef FAMILY

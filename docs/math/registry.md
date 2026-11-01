@@ -102,6 +102,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 64 | polyopt | convex and polynomial optimization | OPT-002 | optimization program | `tr_polyopt_qp_create` | `tr_mgpu_polyopt_boxes` |
 | 65 | graph.layout | declared graph layouts | GRAPH-001 | graph layout | `tr_graph_layout_build` | `tr_mgpu_graph_degrees`, `tr_mgpu_graph_expand`, `tr_mgpu_graph_spmv` |
 | 66 | graph.paths | bounded fixed points, paths and energies | GRAPH-002 | graph fixed point | `tr_graph_reach` | `tr_mgpu_graph_reach`, `tr_mgpu_graph_closure`, `tr_mgpu_graph_walks`, `tr_mgpu_graph_paths`, `tr_mgpu_graph_energy`, `tr_mgpu_graph_pagerank`, `tr_mgpu_graph_power` |
+| 67 | elim | bounded elimination and generators | GEOM-002 | elimination | `tr_elim_select` | `tr_mgpu_elim_check` |
+| 68 | preimg | roots, residues and periodic preimages | PRE-002 | code set | `tr_preimg_preimage` | `tr_mgpu_preimg_scan`, `tr_mgpu_preimg_verify` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated
