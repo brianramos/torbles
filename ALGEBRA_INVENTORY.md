@@ -3918,20 +3918,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [ENV-001](#env-001), [INV-002](#inv-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_region.c; the lookup functions inline in math_region.h): for groups whose functions are affine in a parameter vector of dimension d = 1..4 with exact rational coefficients (FND-009 big rationals), over a declared box with up to 64 further linear rows (P nonempty with an interior, decided by an exact OPT-002 LP), identical functions merged into classes; a kd-tree candidate index on a dyadic lattice with exact corner bounds and pairwise-difference pruning; per candidate class the region R_c = {theta in P : f_c <= f_c' for every c'} computed exactly from its index neighbours (Q_c = R_c whenever R_c is nonempty) by the double description method in homogeneous integer coordinates with the combinatorial adjacency test: nonempty regions of full or lower dimension with exact vertices, irredundant primitive integer inequalities and implicit equalities (exact ranks), the sources of every facet (box faces, rows, the classes tied along it), and each region's exact LP evidence (OPT-002 simplex: the maximum margin and its point) checked against the enumeration; vertices deduplicated with their tied classes and walls; boundaries (wall, cell, inner) with the classes tied on them; a declared tie policy (smallest or largest member group) names the winner; the maximizer by negation. Point location of many values (int64 arrays or big rationals) by the kd-tree, by every region's description or by every class, all exact through residues modulo INV-001's verified primes with Garner signs and a proven bound. Quadratic coefficients are refused unless the explicit piecewise-linear contract is declared: per cell an affine function with an exact remainder enclosure |q - L| <= eps, the largest eps checked against the declared error budget, the result labelled approximate (an exact use refused through FND-007). Budgets are checked before allocation or counted exactly and refused at limit + 1; nothing is truncated.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: math_region_gpu.cu: tr_mgpu_region_locate copies a lookup job's view (the classes' residues, the kd-tree, the regions' inequalities, the cells) to the device and answers one parameter value per work item with the same inline tr_region_answer_one as the CPU (index, regions or all modes: status, kind, cell, tied classes, winner, class, region), each into its own output slots, so the answers do not depend on the order of the threads and equal the CPU bit for bit (emulated with a scrambled thread order in the tests); the output and device-byte budgets are checked on the host before launching. The region build is CPU only.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Build, before allocation: variables = d, degree (1, or 2 under the contract), states = cells x groups, bytes = the function tables.
+- Build, counted exactly and refused at limit + 1 with that need (nothing partial, never truncated): output = nonempty regions, support = region-vertex incidences, circuit = index nodes, iterations = index nodes + clipping steps + LP pivots, bytes = the tables as they grow.
+- Lookups: output = values, bytes = the job (CUDA: plus every device copy, checked together before launching).
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_env.c`
-- `torbles/math_env.h`
-- `tests/test_math_env.py`
+- `torbles/math_region.h`
+- `torbles/math_region.c`
+- `torbles/math_region_gpu.cu`
+- `torbles/math_region.py`
+- `tests/test_math_region.py`
+- `bench/benchmark_math_region.py`
 
 Acceptance tests:
 
@@ -3942,6 +3946,13 @@ Benchmark cases:
 
 - Build 8/64/1,024 group functions and request 1/100/10,000 parameter values; compare an envelope build plus lookups with repeated all-group evaluation.
 - Vary coincident curves, breakpoint count and parameter dimension; report exact region/output size and over-budget region cases.
+
+Additional limits:
+
+- Affine functions in d <= 4 only; curved (quadratic) regions exist only as the labelled piecewise-linear approximation with a certified error, never as exact regions.
+- The build is single-threaded CPU code whose work grows with the regions, their vertices and their index neighbours (measured: 1,024 tangent planes in d = 2 about 11 s, 64 in d = 4 about 6 s on the 2-core development machine); the CUDA path is point location only.
+- At most 64 rows besides the box, a certifying LP of at most 255 rows, lookup values within 64 moduli (about 3,900 bits).
+- No FND-007 certificate kind describes a region: the LP evidence and the vertex enumeration are cross-checked natively, and FND-007 is used to refuse the exact use of an approximate result.
 
 ## GRAPH: Graph and fixed-point queries
 
@@ -4244,20 +4255,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [ATTR-001](#attr-001), [INV-002](#inv-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_repair.c; the evaluators, bounds and search drivers inline in math_repair.h): immutable subset problems over at most 62 elements with an exact feasibility test per subset: hitting sets of inclusion-minimal masks (declared; the minimal difference sets of the distinct three-valued or SQL-selection patterns of two row sets of a BOOL-001 domain, or of a program's selected and other points: minimal distinguishing sets and membership explanations; the minimal failure sets of a conjunction's rejected points: keep sets whose complements are jointly redundant), a BOOL-001 program with the conditions outside S at declared baseline constants that must select exactly the same points (SQL three-valued logic, the exact count of differing points), an ATTR-001 game (v(S) or v(P - S) against an exact threshold), or deletions of declared rows under COUNT(*), COUNT, SUM or AVG targets with SQL NULL semantics (exact 128-bit sums, magnitude bounds proven at construction). Searches over positive exact rational costs scaled to integers: exhaustive in increasing (cost, mask) order, or best-first branch and bound with admissible bounds (a disjoint-mask packing for hitting sets, the exactly rounded fractional relaxation for deletions) and sound pruning only, in index, cost or exact ATTR-001 Shapley / Banzhaf order; results found (the exact minimum, every tie counted and listed up to a limit), none (proven) or incomplete when the declared state budget stops the search (proven lower and upper bounds, multiplicity bounds when the minimum is known, explored states and open nodes). Redundancy of every allowed condition with exact counts and witness rows. Continuous repairs through INV-002: value edits by its exact LP or projection, single-threshold changes by its aggregate state, the new constants computed natively.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: math_repair_gpu.cu: tr_mgpu_repair_eval evaluates a batch of candidate subsets, one work item per candidate writing its exact counts and value into its own slot (hitting masks, word-parallel BOOL-001 programs in three-valued logic with baselines, ATTR-001 game values, deletion aggregates); tr_mgpu_repair_scan marks the feasible candidates by atomic OR, takes the smallest feasible cost by atomic minimum and then the ties of that cost by atomic OR; tr_mgpu_repair_search runs the shared exhaustive and branch-and-bound drivers of math_repair.h with these kernels as its evaluators. Results do not depend on the order of the threads and equal the CPU bit for bit (emulated with a scrambled thread order in the tests); the output and device-byte budgets are checked on the host before launching. Continuous repairs and the ATTR-001 orders are CPU only.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Problems: variables = elements; tensor = pattern pairs (separations, explanations); support = the masks kept (declared masks: the copy before minimization); circuit = program nodes; bytes = the copies.
+- Evaluation: output = candidates, bytes (CUDA: every device copy and the scratch chunk).
+- Search: iterations = max_states (a larger space gives an incomplete result with proven bounds, never a refusal), output = max_solutions, bytes = the frontier, the batches and the sorted order; Shapley / Banzhaf orders add ATTR-001's needs. Redundancy: output = elements x (1 + witnesses). Thresholds: variables = conditions, output = changeable conditions.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_attr.c`
-- `torbles/math_attr.h`
-- `tests/test_math_attr.py`
+- `torbles/math_repair.h`
+- `torbles/math_repair.c`
+- `torbles/math_repair_gpu.cu`
+- `torbles/math_repair.py`
+- `tests/test_math_repair.py`
+- `bench/benchmark_math_repair.py`
 
 Acceptance tests:
 
@@ -4268,6 +4283,13 @@ Benchmark cases:
 
 - Use 3/6/10/12 conditions with sparse versus dense interactions; compare supported contribution indices against exhaustive small coalition calculations.
 - Vary explanation/repair search budgets and minimum-solution multiplicities; retain incomplete cases with their certified bounds and actual explored states.
+
+Additional limits:
+
+- Subsets are 64-bit masks: at most 62 elements; a weighted exhaustive search sorts its 2^m subsets (m <= 20).
+- The search is exponential in the worst case: admissible bounds exist for hitting sets and linear deletion targets only; circuits, games and != targets branch with the generic bound (the cheapest undecided element), so large ones end incomplete under a state budget, with proven bounds.
+- Continuous repairs (value edits, threshold changes) are CPU only, through INV-002, and change one declared threshold at a time; the CUDA path is the batched candidate evaluation and scan.
+- No FND-007 certificate kind is emitted for minimality: optimality is proven by the exhaustive order or by the bounds and redundancy by exact counts; every result is algebraic, never causal.
 
 ## PROB: Probability and inference
 

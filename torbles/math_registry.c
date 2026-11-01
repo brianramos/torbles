@@ -70,7 +70,8 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "normalize",
     "fixpoint", "relax",
     "boundary", "homology", "persistence",
-    "eliminate"};
+    "eliminate",
+    "subset_search"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -104,7 +105,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "approximate kernel features",
     "transfer operators", "operator powers",
     "fused outputs",
-    "query program"};
+    "query program",
+    "parameter regions",
+    "subset problem"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -875,6 +878,25 @@ static const tr_reg_module modules[] = {
                    "tr_prog_snapshot_compare", "tr_prog_final_view_get", "tr_prog_final_need", "tr_prog_query_get",
                    "tr_prog_measure_get", "tr_prog_output_get", "tr_prog_get_info", "tr_prog_reduce_plan"},
      .cuda_entry = {"tr_mgpu_program_finalize", "tr_mgpu_program_run"}},
+    {FAMILY(TR_REG_M_REGION, "region", "region", "ENV-002", "multivariate parameter regions"),
+     .state_kind = TR_REG_STATE_PARAMETER_REGIONS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(BIGINT) | CB(GFP) | CB(QINTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_PRIME,
+     .cpu_entry = {"tr_region_build", "tr_region_from_polys", "tr_region_need", "tr_region_get_info",
+                   "tr_region_region_get", "tr_region_vertex_get", "tr_region_boundary_get",
+                   "tr_region_lookup_create", "tr_region_lookup_create_q64", "tr_region_lookup_eval",
+                   "tr_region_lookup_need", "tr_region_authorize"},
+     .cuda_entry = {"tr_mgpu_region_locate"}},
+    {FAMILY(TR_REG_M_REPAIR, "repair", "repair", "ATTR-002", "explanation and repair search"),
+     .state_kind = TR_REG_STATE_SUBSET_PROBLEM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(COUNT) | CB(BOOLEAN) | CB(KLEENE) | CB(ROWSET) | CB(INT128) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_IDEMPOTENT | TR_LAW_MUL_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_repair_masks", "tr_repair_separate", "tr_repair_explain", "tr_repair_keep",
+                   "tr_repair_program", "tr_repair_game", "tr_repair_delete", "tr_repair_prepare",
+                   "tr_repair_search", "tr_repair_redundancy", "tr_repair_edit", "tr_repair_threshold"},
+     .cuda_entry = {"tr_mgpu_repair_eval", "tr_mgpu_repair_scan", "tr_mgpu_repair_search"}},
 };
 #undef BUILTIN
 #undef FAMILY
