@@ -13,9 +13,9 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | Status | Capabilities |
 |---|---:|
 | existing | 0 |
-| partial | 1 |
-| planned | 17 |
-| in_progress | 45 |
+| partial | 0 |
+| planned | 16 |
+| in_progress | 47 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -3643,7 +3643,7 @@ Measured runtime: `2e0e328cf05243328e3a4e64b529f54463387459`.
 
 ### DISC-003: Conservation and stability across revisions
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Track scoped invariants across declared transformations/updates, recording persistence separately from snapshot truth or predictive evidence.
 
@@ -3687,6 +3687,14 @@ Additional limits:
 - an identity whose evaluation needs more than 8 words on a delta is undecided until a rebind; a conservation counterexample search needs a grid evaluation within 8 words
 - transformations are polynomial maps (no division, no piecewise or conditional maps); a stability record states only what held on the revisions it lists
 - CUDA covers the delta evaluation only (certification, records and laws run on the CPU); it was run in the CPU emulation here, not on a physical GPU
+
+Validation receipts:
+
+Measured runtime: `3833d4d1d856591a0f2080e9ecb42e5545209163`.
+
+- tests: [results/math/DISC-003/tests_test_math_conserve.json](results/math/DISC-003/tests_test_math_conserve.json)
+- tests: [results/math/DISC-003/sanitized_test_math_conserve.json](results/math/DISC-003/sanitized_test_math_conserve.json)
+- benchmarks: [results/math/DISC-003/benchmark_cpu_math_conserve_vm.json](results/math/DISC-003/benchmark_cpu_math_conserve_vm.json)
 
 ## PRE: Preimage queries
 
@@ -4589,7 +4597,7 @@ Equivalence, implication, containment and shared query-family computation.
 
 ### META-001: Scoped query equivalence and counterexamples
 
-Status: **partial**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Prove supported equivalence/implication/containment on a declared snapshot or universal domain, or return concrete counterexamples.
 
@@ -4638,6 +4646,14 @@ Additional limits:
 - families compute COUNT, present-measure counts and exact SUM only (no MIN / MAX / AVG / GROUP BY); the family runs, universal decisions and relation reductions run on the CPU only
 - the relationship optimizer bridge takes integer measures of degree <= 2 over catalog columns (tr_optimize's limits: 32 terms, 12 columns, 32-bit codes); relationships_stage.c (an executor transformation) is not used
 - snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU
+
+Validation receipts:
+
+Measured runtime: `3833d4d1d856591a0f2080e9ecb42e5545209163`.
+
+- tests: [results/math/META-001/tests_test_math_equiv.json](results/math/META-001/tests_test_math_equiv.json)
+- tests: [results/math/META-001/sanitized_test_math_equiv.json](results/math/META-001/sanitized_test_math_equiv.json)
+- benchmarks: [results/math/META-001/benchmark_cpu_math_equiv_vm.json](results/math/META-001/benchmark_cpu_math_equiv_vm.json)
 
 <a id="meta-002"></a>
 

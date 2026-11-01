@@ -1,0 +1,1554 @@
+{
+ "argv": [
+  "--capability",
+  "DISC-003",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/DISC-003/benchmark_cpu_math_conserve_vm.json"
+ ],
+ "capability": "DISC-003",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "3833d4d1d856591a0f2080e9ecb42e5545209163",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": false,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "6c3f938e892da725d1898ca04f0fa2015d070b5c11c6c096a47293267127df1a",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "74c278ad7657c1d8412980a12194694f48ee2cbc1598bf7914089d42b38e4d05"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T03:29:27+00:00"
+ },
+ "notes": [
+  "k=2 rows=1000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=2 rows=1000: after the conserving revision certified 1, failed 0",
+  "k=4 rows=1000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=4 rows=1000: after the conserving revision certified 1, failed 0",
+  "k=8 rows=1000: 2 identities tracked (a + 3*y - 3*s + 7; x + y - s); certified 2",
+  "k=8 rows=1000: after the conserving revision certified 2, failed 0",
+  "k=2 rows=100000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=2 rows=100000: after the conserving revision certified 1, failed 0",
+  "k=4 rows=100000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=4 rows=100000: after the conserving revision certified 1, failed 0",
+  "k=8 rows=100000: 2 identities tracked (a + 3*y - 3*s + 7; x + y - s); certified 2",
+  "k=8 rows=100000: after the conserving revision certified 2, failed 0",
+  "k=2 rows=1000000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=2 rows=1000000: after the conserving revision certified 1, failed 0",
+  "k=4 rows=1000000: 1 identities tracked (3*x - a - 7); certified 1",
+  "k=4 rows=1000000: after the conserving revision certified 1, failed 0",
+  "k=8 rows=1000000: 2 identities tracked (a + 3*y - 3*s + 7; x + y - s); certified 2",
+  "k=8 rows=1000000: after the conserving revision certified 2, failed 0",
+  "stability of a + 3*y - 3*s + 7: status failed, certified at 3 steps, runs [(0, 2)], streak 0, first failure (3, 'inserted')",
+  "stability of x + y - s: status failed, certified at 3 steps, runs [(0, 2)], streak 0, first failure (3, 'inserted')",
+  "degree 1: basis 5, Gram moments 15, tracker bytes 644820",
+  "degree 2: basis 15, Gram moments 70, tracker bytes 646520",
+  "degree 3: basis 35, Gram moments 210, tracker bytes 650760",
+  "z = x y at degree 2: certified",
+  "x' = x + t, y' = y - t conserves x + y: True (law certificate)",
+  "x' = x + t does not conserve x^2 + y^2: counterexample {'point': {'x': 0, 'y': 0, 't': 1}, 'value': 1}",
+  "Timings: first = the first execution, warm = the median of the others; the CUDA path is timed only with --device on an actual device. DuckDB and rebind are full rescans of the new revision."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.014887009001540719,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.014887009001540719,
+    0.0008836710003379267,
+    0.0005802630003017839
+   ],
+   "warm_median_seconds": 0.0007319670003198553,
+   "warm_min_seconds": 0.0005802630003017839
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.0003181690008204896,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003181690008204896,
+    0.0001598090020706877,
+    9.580500045558438e-05
+   ],
+   "warm_median_seconds": 0.00012780700126313604,
+   "warm_min_seconds": 9.580500045558438e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.00016013599815778434,
+   "params": {
+    "changed_rows": 1,
+    "degree": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016013599815778434,
+    3.758799721254036e-05,
+    2.9794999136356637e-05
+   ],
+   "warm_median_seconds": 3.36914981744485e-05,
+   "warm_min_seconds": 2.9794999136356637e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 5.262800186756067e-05,
+   "params": {
+    "degree": 1,
+    "delta_rows": 2,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.262800186756067e-05,
+    3.74529990949668e-05,
+    3.080899841734208e-05
+   ],
+   "warm_median_seconds": 3.413099875615444e-05,
+   "warm_min_seconds": 3.080899841734208e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 8.841499948175624e-05,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.841499948175624e-05,
+    8.26680006866809e-05,
+    8.95589982974343e-05
+   ],
+   "warm_median_seconds": 8.61134994920576e-05,
+   "warm_min_seconds": 8.26680006866809e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.11083632100053364,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.11083632100053364,
+    0.06041945800097892,
+    0.0681507330009481
+   ],
+   "warm_median_seconds": 0.06428509550096351,
+   "warm_min_seconds": 0.06041945800097892
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.0008124300002236851,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 250,
+    "planted_row": 250,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.0008124300002236851
+   ],
+   "warm_median_seconds": 0.0008124300002236851,
+   "warm_min_seconds": 0.0008124300002236851
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.0009111360013775993,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.0009111360013775993,
+    0.008964628999819979,
+    0.0008835439984977711
+   ],
+   "warm_median_seconds": 0.004924086499158875,
+   "warm_min_seconds": 0.0008835439984977711
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.000207500001124572,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000207500001124572,
+    0.00017011299860314466,
+    0.00015514700135099702
+   ],
+   "warm_median_seconds": 0.00016262999997707084,
+   "warm_min_seconds": 0.00015514700135099702
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 7.113000174285844e-05,
+   "params": {
+    "changed_rows": 1,
+    "degree": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.113000174285844e-05,
+    7.688500045333058e-05,
+    4.7066001570783556e-05
+   ],
+   "warm_median_seconds": 6.197550101205707e-05,
+   "warm_min_seconds": 4.7066001570783556e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 4.624799839803018e-05,
+   "params": {
+    "degree": 1,
+    "delta_rows": 0,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.624799839803018e-05,
+    3.2361000194214284e-05,
+    3.0223000067053363e-05
+   ],
+   "warm_median_seconds": 3.1292000130633824e-05,
+   "warm_min_seconds": 3.0223000067053363e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.00014590299906558357,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014590299906558357,
+    0.0001583480006956961,
+    0.00016761500228312798
+   ],
+   "warm_median_seconds": 0.00016298150148941204,
+   "warm_min_seconds": 0.0001583480006956961
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.06945377999727498,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.06945377999727498,
+    0.07203440599914757,
+    0.06204780099869822
+   ],
+   "warm_median_seconds": 0.0670411034989229,
+   "warm_min_seconds": 0.06204780099869822
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.0006863829985377379,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 193,
+    "planted_row": 193,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.0006863829985377379
+   ],
+   "warm_median_seconds": 0.0006863829985377379,
+   "warm_min_seconds": 0.0006863829985377379
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.001333019998128293,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.001333019998128293,
+    0.0011966550009674393,
+    0.00927542199860909
+   ],
+   "warm_median_seconds": 0.005236038499788265,
+   "warm_min_seconds": 0.0011966550009674393
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.0004342159991210792,
+   "params": {
+    "degree": 1,
+    "identities": 2,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004342159991210792,
+    0.0003695460000017192,
+    0.0003878070019709412
+   ],
+   "warm_median_seconds": 0.0003786765009863302,
+   "warm_min_seconds": 0.0003695460000017192
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.00011141499999212101,
+   "params": {
+    "changed_rows": 1,
+    "degree": 1,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011141499999212101,
+    0.00016471500202897005,
+    8.285299918497913e-05
+   ],
+   "warm_median_seconds": 0.0001237840006069746,
+   "warm_min_seconds": 8.285299918497913e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 9.037800191435963e-05,
+   "params": {
+    "degree": 1,
+    "delta_rows": 2,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.037800191435963e-05,
+    6.455200127675198e-05,
+    5.923800199525431e-05
+   ],
+   "warm_median_seconds": 6.189500163600314e-05,
+   "warm_min_seconds": 5.923800199525431e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.00036072500006412156,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00036072500006412156,
+    0.0004109799992875196,
+    0.0003548880013113376
+   ],
+   "warm_median_seconds": 0.0003829340002994286,
+   "warm_min_seconds": 0.0003548880013113376
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.07759229399744072,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.07759229399744072,
+    0.06284019899976556,
+    0.07315861700044479
+   ],
+   "warm_median_seconds": 0.06799940800010518,
+   "warm_min_seconds": 0.06284019899976556
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.0007911050015536603,
+   "params": {
+    "degree": 1,
+    "rows": 1000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": {
+    "failed": 2,
+    "located": 257,
+    "planted_row": 257,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.0007911050015536603
+   ],
+   "warm_median_seconds": 0.0007911050015536603,
+   "warm_min_seconds": 0.0007911050015536603
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.043916646998695796,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.043916646998695796,
+    0.04499280600066413,
+    0.043233745000179624
+   ],
+   "warm_median_seconds": 0.04411327550042188,
+   "warm_min_seconds": 0.043233745000179624
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.03149398499954259,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03149398499954259,
+    0.027617230000032578,
+    0.023293686001125025
+   ],
+   "warm_median_seconds": 0.0254554580005788,
+   "warm_min_seconds": 0.023293686001125025
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.010837797999556642,
+   "params": {
+    "changed_rows": 100,
+    "degree": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010837797999556642,
+    0.02220974000010756,
+    0.002574709000327857
+   ],
+   "warm_median_seconds": 0.012392224500217708,
+   "warm_min_seconds": 0.002574709000327857
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.021651954000844853,
+   "params": {
+    "degree": 1,
+    "delta_rows": 182,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.021651954000844853,
+    0.0016829260021040682,
+    0.0015767650002089795
+   ],
+   "warm_median_seconds": 0.0016298455011565238,
+   "warm_min_seconds": 0.0015767650002089795
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.01795873999799369,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01795873999799369,
+    0.03228347799813491,
+    0.03135738399942056
+   ],
+   "warm_median_seconds": 0.03182043099877774,
+   "warm_min_seconds": 0.03135738399942056
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.19344465500034858,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.19344465500034858,
+    0.11605683299785596,
+    0.06086946100185742
+   ],
+   "warm_median_seconds": 0.08846314699985669,
+   "warm_min_seconds": 0.06086946100185742
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.09055009999792674,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 79688,
+    "planted_row": 79688,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.09055009999792674
+   ],
+   "warm_median_seconds": 0.09055009999792674,
+   "warm_min_seconds": 0.09055009999792674
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.05905198500113329,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.05905198500113329,
+    0.0587983110017376,
+    0.06713991300057387
+   ],
+   "warm_median_seconds": 0.06296911200115574,
+   "warm_min_seconds": 0.0587983110017376
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.04813371999989613,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04813371999989613,
+    0.05673599500005366,
+    0.049308567999105435
+   ],
+   "warm_median_seconds": 0.05302228149957955,
+   "warm_min_seconds": 0.049308567999105435
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.022624858997005504,
+   "params": {
+    "changed_rows": 100,
+    "degree": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.022624858997005504,
+    0.023551346999738598,
+    0.0125630069996987
+   ],
+   "warm_median_seconds": 0.01805717699971865,
+   "warm_min_seconds": 0.0125630069996987
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.002568199000961613,
+   "params": {
+    "degree": 1,
+    "delta_rows": 190,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002568199000961613,
+    0.010083678000228247,
+    0.0021024970010330435
+   ],
+   "warm_median_seconds": 0.006093087500630645,
+   "warm_min_seconds": 0.0021024970010330435
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.04816282400133787,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04816282400133787,
+    0.045377802998700645,
+    0.04821368600096321
+   ],
+   "warm_median_seconds": 0.046795744499831926,
+   "warm_min_seconds": 0.045377802998700645
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.10571749199880287,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.10571749199880287,
+    0.09560666100151138,
+    0.05631756100046914
+   ],
+   "warm_median_seconds": 0.07596211100099026,
+   "warm_min_seconds": 0.05631756100046914
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.04176862700114725,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 55417,
+    "planted_row": 55417,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.04176862700114725
+   ],
+   "warm_median_seconds": 0.04176862700114725,
+   "warm_min_seconds": 0.04176862700114725
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.12541746799979592,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.12541746799979592,
+    0.1578304009999556,
+    0.11788481599796796
+   ],
+   "warm_median_seconds": 0.13785760849896178,
+   "warm_min_seconds": 0.11788481599796796
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.10800412600292475,
+   "params": {
+    "degree": 1,
+    "identities": 2,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.10800412600292475,
+    0.10742742799993721,
+    0.13435890600158018
+   ],
+   "warm_median_seconds": 0.1208931670007587,
+   "warm_min_seconds": 0.10742742799993721
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.03917341000123997,
+   "params": {
+    "changed_rows": 100,
+    "degree": 1,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03917341000123997,
+    0.047550756000418914,
+    0.025073681001231307
+   ],
+   "warm_median_seconds": 0.03631221850082511,
+   "warm_min_seconds": 0.025073681001231307
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.026044594000268262,
+   "params": {
+    "degree": 1,
+    "delta_rows": 194,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026044594000268262,
+    0.014873007999995025,
+    0.022302463999949396
+   ],
+   "warm_median_seconds": 0.01858773599997221,
+   "warm_min_seconds": 0.014873007999995025
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.13028922399826115,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.13028922399826115,
+    0.1253958560009778,
+    0.12909177499750513
+   ],
+   "warm_median_seconds": 0.12724381549924146,
+   "warm_min_seconds": 0.1253958560009778
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.1014047099997697,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.1014047099997697,
+    0.1600005840009544,
+    0.07606657199721667
+   ],
+   "warm_median_seconds": 0.11803357799908554,
+   "warm_min_seconds": 0.07606657199721667
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.057456242000625934,
+   "params": {
+    "degree": 1,
+    "rows": 100000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": {
+    "failed": 2,
+    "located": 86979,
+    "planted_row": 86979,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.057456242000625934
+   ],
+   "warm_median_seconds": 0.057456242000625934,
+   "warm_min_seconds": 0.057456242000625934
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.6575743460016383,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.6575743460016383
+   ],
+   "warm_median_seconds": 0.6575743460016383,
+   "warm_min_seconds": 0.6575743460016383
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.25498395999966306,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.25498395999966306
+   ],
+   "warm_median_seconds": 0.25498395999966306,
+   "warm_min_seconds": 0.25498395999966306
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.15298629899916705,
+   "params": {
+    "changed_rows": 1000,
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.15298629899916705,
+    0.17848299899924314,
+    0.10079989999940153
+   ],
+   "warm_median_seconds": 0.13964144949932233,
+   "warm_min_seconds": 0.10079989999940153
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.06035680399872945,
+   "params": {
+    "degree": 1,
+    "delta_rows": 1824,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06035680399872945,
+    0.05097957000180031,
+    0.07261490000018966
+   ],
+   "warm_median_seconds": 0.06179723500099499,
+   "warm_min_seconds": 0.05097957000180031
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.25270478399761487,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.25270478399761487
+   ],
+   "warm_median_seconds": 0.25270478399761487,
+   "warm_min_seconds": 0.25270478399761487
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.19913875300335349,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.19913875300335349
+   ],
+   "warm_median_seconds": 0.19913875300335349,
+   "warm_min_seconds": 0.19913875300335349
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.3493769060005434,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 2
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 480398,
+    "planted_row": 480398,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.3493769060005434
+   ],
+   "warm_median_seconds": 0.3493769060005434,
+   "warm_min_seconds": 0.3493769060005434
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 0.8174085629980254,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "first",
+   "samples_seconds": [
+    0.8174085629980254
+   ],
+   "warm_median_seconds": 0.8174085629980254,
+   "warm_min_seconds": 0.8174085629980254
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 0.46009925899852533,
+   "params": {
+    "degree": 1,
+    "identities": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.46009925899852533
+   ],
+   "warm_median_seconds": 0.46009925899852533,
+   "warm_min_seconds": 0.46009925899852533
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.25747651900019264,
+   "params": {
+    "changed_rows": 1000,
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.25747651900019264,
+    0.26813623500129324,
+    0.20105705199966906
+   ],
+   "warm_median_seconds": 0.23459664350048115,
+   "warm_min_seconds": 0.20105705199966906
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.11398297699997784,
+   "params": {
+    "degree": 1,
+    "delta_rows": 1838,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.11398297699997784,
+    0.08121499399931054,
+    0.10375968700100202
+   ],
+   "warm_median_seconds": 0.09248734050015628,
+   "warm_min_seconds": 0.08121499399931054
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 0.3822099729986803,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.3822099729986803
+   ],
+   "warm_median_seconds": 0.3822099729986803,
+   "warm_min_seconds": 0.3822099729986803
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.1688974179996876,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.1688974179996876
+   ],
+   "warm_median_seconds": 0.1688974179996876,
+   "warm_min_seconds": 0.1688974179996876
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.41089981100230943,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 4
+   },
+   "phase": "run",
+   "result": {
+    "failed": 1,
+    "located": 718349,
+    "planted_row": 718349,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.41089981100230943
+   ],
+   "warm_median_seconds": 0.41089981100230943,
+   "warm_min_seconds": 0.41089981100230943
+  },
+  {
+   "backend": "cpu",
+   "case": "proposal (DISC-002 discovery)",
+   "first_seconds": 1.5657500679990335,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "first",
+   "samples_seconds": [
+    1.5657500679990335
+   ],
+   "warm_median_seconds": 1.5657500679990335,
+   "warm_min_seconds": 1.5657500679990335
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build (Gram + exhaustive verification + certificates)",
+   "first_seconds": 1.4449090489979426,
+   "params": {
+    "degree": 1,
+    "identities": 2,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    1.4449090489979426
+   ],
+   "warm_median_seconds": 1.4449090489979426,
+   "warm_min_seconds": 1.4449090489979426
+  },
+  {
+   "backend": "cpu",
+   "case": "delta (DELTA-001 diff of two revisions)",
+   "first_seconds": 0.5225683099997696,
+   "params": {
+    "changed_rows": 1000,
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.5225683099997696,
+    0.5598925470003451,
+    0.4009692469990114
+   ],
+   "warm_median_seconds": 0.4804308969996782,
+   "warm_min_seconds": 0.4009692469990114
+  },
+  {
+   "backend": "cpu",
+   "case": "incremental update (conserving revision)",
+   "first_seconds": 0.2219100010006514,
+   "params": {
+    "degree": 1,
+    "delta_rows": 1786,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2219100010006514,
+    0.2699751039981493,
+    0.2483282200009853
+   ],
+   "warm_median_seconds": 0.2591516619995673,
+   "warm_min_seconds": 0.2483282200009853
+  },
+  {
+   "backend": "cpu",
+   "case": "complete recomputation (rebind: Gram + exhaustive verification)",
+   "first_seconds": 1.22878120599853,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.22878120599853
+   ],
+   "warm_median_seconds": 1.22878120599853,
+   "warm_min_seconds": 1.22878120599853
+  },
+  {
+   "backend": "duckdb",
+   "case": "full rescan of the identities",
+   "first_seconds": 0.35772384200026863,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.35772384200026863
+   ],
+   "warm_median_seconds": 0.35772384200026863,
+   "warm_min_seconds": 0.35772384200026863
+  },
+  {
+   "backend": "cpu",
+   "case": "perturbation (one-row near miss: witness)",
+   "first_seconds": 0.6278872090006189,
+   "params": {
+    "degree": 1,
+    "rows": 1000000,
+    "variables": 8
+   },
+   "phase": "run",
+   "result": {
+    "failed": 2,
+    "located": 382285,
+    "planted_row": 382285,
+    "witness_source": "inserted"
+   },
+   "samples_seconds": [
+    0.6278872090006189
+   ],
+   "warm_median_seconds": 0.6278872090006189,
+   "warm_min_seconds": 0.6278872090006189
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.03243267400102923,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03243267400102923
+   ],
+   "warm_median_seconds": 0.03243267400102923,
+   "warm_min_seconds": 0.03243267400102923
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.019467740999971284,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.019467740999971284
+   ],
+   "warm_median_seconds": 0.019467740999971284,
+   "warm_min_seconds": 0.019467740999971284
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.014932459998817649,
+   "params": {
+    "kind": "perturb",
+    "rows": 50000,
+    "step": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014932459998817649
+   ],
+   "warm_median_seconds": 0.014932459998817649,
+   "warm_min_seconds": 0.014932459998817649
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.013243116001831368,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013243116001831368
+   ],
+   "warm_median_seconds": 0.013243116001831368,
+   "warm_min_seconds": 0.013243116001831368
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.017306330999417696,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017306330999417696
+   ],
+   "warm_median_seconds": 0.017306330999417696,
+   "warm_min_seconds": 0.017306330999417696
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.01730365099865594,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01730365099865594
+   ],
+   "warm_median_seconds": 0.01730365099865594,
+   "warm_min_seconds": 0.01730365099865594
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.013608848003059393,
+   "params": {
+    "kind": "perturb",
+    "rows": 50000,
+    "step": 7
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013608848003059393
+   ],
+   "warm_median_seconds": 0.013608848003059393,
+   "warm_min_seconds": 0.013608848003059393
+  },
+  {
+   "backend": "cpu",
+   "case": "revision lineage step",
+   "first_seconds": 0.017304865999903996,
+   "params": {
+    "kind": "conserve",
+    "rows": 50000,
+    "step": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017304865999903996
+   ],
+   "warm_median_seconds": 0.017304865999903996,
+   "warm_min_seconds": 0.017304865999903996
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker state per basis degree",
+   "first_seconds": 0.015767608001624467,
+   "params": {
+    "basis": 5,
+    "degree": 1,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.015767608001624467
+   ],
+   "warm_median_seconds": 0.015767608001624467,
+   "warm_min_seconds": 0.015767608001624467
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker state per basis degree",
+   "first_seconds": 0.025665983001090353,
+   "params": {
+    "basis": 15,
+    "degree": 2,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.025665983001090353
+   ],
+   "warm_median_seconds": 0.025665983001090353,
+   "warm_min_seconds": 0.025665983001090353
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker state per basis degree",
+   "first_seconds": 0.05389765099971555,
+   "params": {
+    "basis": 35,
+    "degree": 3,
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05389765099971555
+   ],
+   "warm_median_seconds": 0.05389765099971555,
+   "warm_min_seconds": 0.05389765099971555
+  },
+  {
+   "backend": "cpu",
+   "case": "tracker build under a bytes budget",
+   "limit": 161630,
+   "message": "tracker: needs 643428 bytes, budget 161630",
+   "need": 643428,
+   "params": {
+    "degree": 2,
+    "limit": 161630,
+    "rows": 20000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.013099045998387737,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "product relation tracked at degree 2",
+   "first_seconds": 0.011725003998435568,
+   "params": {
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011725003998435568
+   ],
+   "warm_median_seconds": 0.011725003998435568,
+   "warm_min_seconds": 0.011725003998435568
+  },
+  {
+   "backend": "cpu",
+   "case": "conservation law (symbolic: q(T(x)) - q(x) = 0)",
+   "first_seconds": 0.00015331200120272115,
+   "params": {},
+   "phase": "first",
+   "samples_seconds": [
+    0.00015331200120272115,
+    5.0988001021323726e-05,
+    4.9088997911894694e-05,
+    4.618700040737167e-05,
+    3.2486001146025956e-05
+   ],
+   "warm_median_seconds": 4.763799915963318e-05,
+   "warm_min_seconds": 3.2486001146025956e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "non-conserved transformation (Nullstellensatz counterexample)",
+   "first_seconds": 5.9680998674593866e-05,
+   "params": {},
+   "phase": "first",
+   "samples_seconds": [
+    5.9680998674593866e-05,
+    3.6261997593101114e-05,
+    3.098500019405037e-05,
+    2.8108999686082825e-05,
+    2.947500252048485e-05
+   ],
+   "warm_median_seconds": 3.023000135726761e-05,
+   "warm_min_seconds": 2.8108999686082825e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "conservation law on the data (snapshot certificate)",
+   "first_seconds": 0.1164114029998018,
+   "params": {
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "certificate_code": 0,
+    "holds": true,
+    "label": "snapshot",
+    "status": "verified",
+    "violations": 0
+   },
+   "samples_seconds": [
+    0.1164114029998018,
+    0.12159502999929828,
+    0.11210026299886522
+   ],
+   "warm_median_seconds": 0.11684764649908175,
+   "warm_min_seconds": 0.11210026299886522
+  },
+  {
+   "backend": "cpu",
+   "case": "non-conserved law on the data (witness rows)",
+   "first_seconds": 0.10666001700155903,
+   "params": {
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "certificate": null,
+    "certificate_code": -6,
+    "holds": false,
+    "label": "snapshot",
+    "status": "rejected",
+    "violations": 189399
+   },
+   "samples_seconds": [
+    0.10666001700155903,
+    0.10602267600188497,
+    0.12137522299963166
+   ],
+   "warm_median_seconds": 0.11369894950075832,
+   "warm_min_seconds": 0.10602267600188497
+  }
+ ],
+ "seconds": 21.973714714997186,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "basis degree (representation: 63 monomials)",
+   "largest_admitted": {
+    "basis": 35,
+    "bytes": 650760,
+    "degree": 3,
+    "moments": 210
+   },
+   "reason": "tracker: outside the capability's declared scope",
+   "smallest_refused": {
+    "basis": 70,
+    "degree": 4
+   }
+  },
+  {
+   "grid": "tracker bytes (degree 2, 4 variables)",
+   "largest_admitted": {
+    "bytes_used": 646520
+   },
+   "smallest_refused": {
+    "limit": 161630,
+    "need": 643428,
+    "resource": "bytes"
+   }
+  }
+ ]
+}

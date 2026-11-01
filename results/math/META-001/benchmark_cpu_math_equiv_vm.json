@@ -1,0 +1,1277 @@
+{
+ "argv": [
+  "--capability",
+  "META-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/META-001/benchmark_cpu_math_equiv_vm.json"
+ ],
+ "capability": "META-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "3833d4d1d856591a0f2080e9ecb42e5545209163",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "6c3f938e892da725d1898ca04f0fa2015d070b5c11c6c096a47293267127df1a",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "74c278ad7657c1d8412980a12194694f48ee2cbc1598bf7914089d42b38e4d05"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T03:45:09+00:00"
+ },
+ "notes": [
+  "shared family of 1: 8 distinct conditions, 16 DAG nodes (3 shared by several filters), 1 distinct filters, 1 distinct measures, 1 distinct queries",
+  "shared family of 8: 8 distinct conditions, 16 DAG nodes (3 shared by several filters), 8 distinct filters, 4 distinct measures, 8 distinct queries",
+  "shared family of 32: 8 distinct conditions, 16 DAG nodes (3 shared by several filters), 8 distinct filters, 4 distinct measures, 8 distinct queries",
+  "shared family of 128: 8 distinct conditions, 16 DAG nodes (3 shared by several filters), 8 distinct filters, 4 distinct measures, 8 distinct queries",
+  "disjoint family of 1: 2 distinct conditions, 3 DAG nodes (0 shared by several filters), 1 distinct filters, 1 distinct measures, 1 distinct queries",
+  "disjoint family of 8: 9 distinct conditions, 17 DAG nodes (1 shared by several filters), 8 distinct filters, 8 distinct measures, 8 distinct queries",
+  "disjoint family of 32: 33 distinct conditions, 65 DAG nodes (1 shared by several filters), 32 distinct filters, 32 distinct measures, 32 distinct queries",
+  "disjoint family of 128: 36 distinct conditions, 164 DAG nodes (36 shared by several filters), 128 distinct filters, 128 distinct measures, 128 distinct queries",
+  "snapshot vs universal on the universally-different pairs: proven/snapshot vs refuted/domain ; proven/snapshot vs refuted/domain ; proven/snapshot vs refuted/domain ",
+  "Timings: first = the first execution, warm = the median of the others; the CUDA path is timed only with --device on an actual device. Shared and separate runs give identical answers (asserted)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.001127384999563219,
+   "params": {
+    "family": "shared",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001127384999563219,
+    0.00042728100015665404,
+    0.0003727950024767779
+   ],
+   "warm_median_seconds": 0.00040003800131671596,
+   "warm_min_seconds": 0.0003727950024767779
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.018615304998093052,
+   "params": {
+    "family": "shared",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 1600000,
+    "measure_rows": 108457,
+    "node_words": 9375,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.018615304998093052,
+    0.023900776002847124,
+    0.03853046299991547
+   ],
+   "warm_median_seconds": 0.031215619501381298,
+   "warm_min_seconds": 0.023900776002847124
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.02360487800251576,
+   "params": {
+    "family": "shared",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 400000,
+    "measure_rows": 108457,
+    "node_words": 9375,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.02360487800251576,
+    0.020819025998207508,
+    0.01371303699852433
+   ],
+   "warm_median_seconds": 0.01726603149836592,
+   "warm_min_seconds": 0.01371303699852433
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.07558528300069156,
+   "params": {
+    "family": "shared",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.07558528300069156,
+    0.053606580000632675,
+    0.049050731999159325
+   ],
+   "warm_median_seconds": 0.051328655999896,
+   "warm_min_seconds": 0.049050731999159325
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.04900117099896306,
+   "params": {
+    "family": "shared",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.04900117099896306,
+    0.04906449200279894,
+    0.04698459599967464
+   ],
+   "warm_median_seconds": 0.04802454400123679,
+   "warm_min_seconds": 0.04698459599967464
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.004760684001666959,
+   "params": {
+    "family": "shared",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004760684001666959,
+    0.00022359600188792683,
+    0.00020737599697895348
+   ],
+   "warm_median_seconds": 0.00021548599943344016,
+   "warm_min_seconds": 0.00020737599697895348
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.058953096999175614,
+   "params": {
+    "family": "shared",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 1600000,
+    "measure_rows": 576838,
+    "node_words": 50000,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.058953096999175614,
+    0.06317001699790126,
+    0.059704752999095945
+   ],
+   "warm_median_seconds": 0.0614373849984986,
+   "warm_min_seconds": 0.059704752999095945
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.09386902899859706,
+   "params": {
+    "family": "shared",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 3200000,
+    "measure_rows": 906648,
+    "node_words": 75000,
+    "scans": 8
+   },
+   "samples_seconds": [
+    0.09386902899859706,
+    0.08972326400180464,
+    0.09553778199915541
+   ],
+   "warm_median_seconds": 0.09263052300048003,
+   "warm_min_seconds": 0.08972326400180464
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.16719423800168443,
+   "params": {
+    "family": "shared",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.16719423800168443,
+    0.14722073299708427,
+    0.1436209780003992
+   ],
+   "warm_median_seconds": 0.14542085549874173,
+   "warm_min_seconds": 0.1436209780003992
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.17975237499922514,
+   "params": {
+    "family": "shared",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 8,
+   "samples_seconds": [
+    0.17975237499922514,
+    0.18417720700017526,
+    0.1820151550018636
+   ],
+   "warm_median_seconds": 0.18309618100101943,
+   "warm_min_seconds": 0.1820151550018636
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.000750741997762816,
+   "params": {
+    "family": "shared",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000750741997762816,
+    0.00023670300288358703,
+    0.0004539119981927797
+   ],
+   "warm_median_seconds": 0.0003453075005381834,
+   "warm_min_seconds": 0.00023670300288358703
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.06561354199948255,
+   "params": {
+    "family": "shared",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 1600000,
+    "measure_rows": 576838,
+    "node_words": 50000,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.06561354199948255,
+    0.064276887998858,
+    0.0629886169990641
+   ],
+   "warm_median_seconds": 0.06363275249896105,
+   "warm_min_seconds": 0.0629886169990641
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.34694433500044397,
+   "params": {
+    "family": "shared",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 12800000,
+    "measure_rows": 3626592,
+    "node_words": 300000,
+    "scans": 32
+   },
+   "samples_seconds": [
+    0.34694433500044397,
+    0.36874147100024857,
+    0.36971768500006874
+   ],
+   "warm_median_seconds": 0.36922957800015865,
+   "warm_min_seconds": 0.36874147100024857
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.17742896399795427,
+   "params": {
+    "family": "shared",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.17742896399795427
+   ],
+   "warm_median_seconds": 0.17742896399795427,
+   "warm_min_seconds": 0.17742896399795427
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.4631743199970515,
+   "params": {
+    "family": "shared",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.4631743199970515
+   ],
+   "warm_median_seconds": 0.4631743199970515,
+   "warm_min_seconds": 0.4631743199970515
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.0008253890009655152,
+   "params": {
+    "family": "shared",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008253890009655152,
+    0.0002903000022342894,
+    0.0002928610010712873
+   ],
+   "warm_median_seconds": 0.00029158050165278837,
+   "warm_min_seconds": 0.0002903000022342894
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.0705742710015329,
+   "params": {
+    "family": "shared",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 1600000,
+    "measure_rows": 576838,
+    "node_words": 50000,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.0705742710015329
+   ],
+   "warm_median_seconds": 0.0705742710015329,
+   "warm_min_seconds": 0.0705742710015329
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 1.8582173909999256,
+   "params": {
+    "family": "shared",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 51200000,
+    "measure_rows": 14506368,
+    "node_words": 1200000,
+    "scans": 128
+   },
+   "samples_seconds": [
+    1.8582173909999256
+   ],
+   "warm_median_seconds": 1.8582173909999256,
+   "warm_min_seconds": 1.8582173909999256
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.35101507999934256,
+   "params": {
+    "family": "shared",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.35101507999934256
+   ],
+   "warm_median_seconds": 0.35101507999934256,
+   "warm_min_seconds": 0.35101507999934256
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 3.151408638997964,
+   "params": {
+    "family": "shared",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    3.151408638997964
+   ],
+   "warm_median_seconds": 3.151408638997964,
+   "warm_min_seconds": 3.151408638997964
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.0006182180004543625,
+   "params": {
+    "family": "disjoint",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006182180004543625,
+    6.14159980614204e-05,
+    4.845999865210615e-05
+   ],
+   "warm_median_seconds": 5.4937998356763273e-05,
+   "warm_min_seconds": 4.845999865210615e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.01581904400154599,
+   "params": {
+    "family": "disjoint",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 400000,
+    "measure_rows": 57220,
+    "node_words": 9375,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.01581904400154599,
+    0.013871341998310527,
+    0.01793969400023343
+   ],
+   "warm_median_seconds": 0.01590551799927198,
+   "warm_min_seconds": 0.013871341998310527
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.01374302000112948,
+   "params": {
+    "family": "disjoint",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 400000,
+    "measure_rows": 57220,
+    "node_words": 9375,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.01374302000112948,
+    0.022106118998635793,
+    0.013719230999413412
+   ],
+   "warm_median_seconds": 0.017912674999024603,
+   "warm_min_seconds": 0.013719230999413412
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.07795227099995827,
+   "params": {
+    "family": "disjoint",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.07795227099995827,
+    0.11929243600025075,
+    0.09190783499798272
+   ],
+   "warm_median_seconds": 0.10560013549911673,
+   "warm_min_seconds": 0.09190783499798272
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.11992948199986131,
+   "params": {
+    "family": "disjoint",
+    "queries": 1,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.11992948199986131,
+    0.0891792490001535,
+    0.14068535400292603
+   ],
+   "warm_median_seconds": 0.11493230150153977,
+   "warm_min_seconds": 0.0891792490001535
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.0010822690019267611,
+   "params": {
+    "family": "disjoint",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010822690019267611,
+    0.0005028099985793233,
+    0.0003632949992606882
+   ],
+   "warm_median_seconds": 0.00043305249892000575,
+   "warm_min_seconds": 0.0003632949992606882
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.08524143400063622,
+   "params": {
+    "family": "disjoint",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 1800000,
+    "measure_rows": 444063,
+    "node_words": 53125,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.08524143400063622,
+    0.0826006179995602,
+    0.09776158000022406
+   ],
+   "warm_median_seconds": 0.09018109899989213,
+   "warm_min_seconds": 0.0826006179995602
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.1434153439986403,
+   "params": {
+    "family": "disjoint",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 3200000,
+    "measure_rows": 444063,
+    "node_words": 75000,
+    "scans": 8
+   },
+   "samples_seconds": [
+    0.1434153439986403,
+    0.09669062700049835,
+    0.11508061399945291
+   ],
+   "warm_median_seconds": 0.10588562049997563,
+   "warm_min_seconds": 0.09669062700049835
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 0.24836729699745774,
+   "params": {
+    "family": "disjoint",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 16,
+   "samples_seconds": [
+    0.24836729699745774,
+    0.1681692079982895,
+    0.27608174299894017
+   ],
+   "warm_median_seconds": 0.22212547549861483,
+   "warm_min_seconds": 0.1681692079982895
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.2100746670002991,
+   "params": {
+    "family": "disjoint",
+    "queries": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 8,
+   "samples_seconds": [
+    0.2100746670002991,
+    0.17787036399749923,
+    0.3037887120008236
+   ],
+   "warm_median_seconds": 0.2408295379991614,
+   "warm_min_seconds": 0.17787036399749923
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.0013444360010907985,
+   "params": {
+    "family": "disjoint",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013444360010907985,
+    0.0008314549995702691,
+    0.004878620002273237
+   ],
+   "warm_median_seconds": 0.0028550375009217532,
+   "warm_min_seconds": 0.0008314549995702691
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.2908442379994085,
+   "params": {
+    "family": "disjoint",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 6600000,
+    "measure_rows": 1587715,
+    "node_words": 203125,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.2908442379994085,
+    0.31611868899926776,
+    0.39410047400087933
+   ],
+   "warm_median_seconds": 0.35510958150007355,
+   "warm_min_seconds": 0.31611868899926776
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 0.5447797790002369,
+   "params": {
+    "family": "disjoint",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 12800000,
+    "measure_rows": 1587715,
+    "node_words": 300000,
+    "scans": 32
+   },
+   "samples_seconds": [
+    0.5447797790002369,
+    0.55922994499997,
+    0.5529239119969134
+   ],
+   "warm_median_seconds": 0.5560769284984417,
+   "warm_min_seconds": 0.5529239119969134
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 1.1643315349974728,
+   "params": {
+    "family": "disjoint",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    1.1643315349974728
+   ],
+   "warm_median_seconds": 1.1643315349974728,
+   "warm_min_seconds": 1.1643315349974728
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 0.8796434560026682,
+   "params": {
+    "family": "disjoint",
+    "queries": 32,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.8796434560026682
+   ],
+   "warm_median_seconds": 0.8796434560026682,
+   "warm_min_seconds": 0.8796434560026682
+  },
+  {
+   "backend": "cpu",
+   "case": "set construction (common subexpressions)",
+   "first_seconds": 0.008625668000604492,
+   "params": {
+    "family": "disjoint",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008625668000604492,
+    0.007784914996591397,
+    0.011753186998248566
+   ],
+   "warm_median_seconds": 0.009769050997419981,
+   "warm_min_seconds": 0.007784914996591397
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (shared scans)",
+   "first_seconds": 0.8622291299980134,
+   "params": {
+    "family": "disjoint",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 7200000,
+    "measure_rows": 8244331,
+    "node_words": 512500,
+    "scans": 1
+   },
+   "samples_seconds": [
+    0.8622291299980134
+   ],
+   "warm_median_seconds": 0.8622291299980134,
+   "warm_min_seconds": 0.8622291299980134
+  },
+  {
+   "backend": "cpu",
+   "case": "family run (separate scans)",
+   "first_seconds": 2.053236827003275,
+   "params": {
+    "family": "disjoint",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "condition_rows": 51200000,
+    "measure_rows": 8244331,
+    "node_words": 1200000,
+    "scans": 128
+   },
+   "samples_seconds": [
+    2.053236827003275
+   ],
+   "warm_median_seconds": 2.053236827003275,
+   "warm_min_seconds": 2.053236827003275
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one multi-aggregate query",
+   "first_seconds": 11.10420934799913,
+   "params": {
+    "family": "disjoint",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    11.10420934799913
+   ],
+   "warm_median_seconds": 11.10420934799913,
+   "warm_min_seconds": 11.10420934799913
+  },
+  {
+   "backend": "duckdb",
+   "case": "family as one query per member",
+   "first_seconds": 3.651299774999643,
+   "params": {
+    "family": "disjoint",
+    "queries": 128,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    3.651299774999643
+   ],
+   "warm_median_seconds": 3.651299774999643,
+   "warm_min_seconds": 3.651299774999643
+  },
+  {
+   "backend": "cpu",
+   "case": "snapshot check",
+   "first_seconds": 0.07127903099899413,
+   "params": {
+    "pairs": "equivalent",
+    "questions": 4,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "proven snapshot witness=None",
+    "q1": "proven snapshot witness=None",
+    "q2": "proven snapshot witness=None",
+    "q3": "proven snapshot witness=None"
+   },
+   "samples_seconds": [
+    0.07127903099899413,
+    0.06625454199820524,
+    0.07409863200155087
+   ],
+   "warm_median_seconds": 0.07017658699987805,
+   "warm_min_seconds": 0.06625454199820524
+  },
+  {
+   "backend": "duckdb",
+   "case": "snapshot check (differing rows)",
+   "first_seconds": 0.046884908002539305,
+   "params": {
+    "note": "the SQL-expressible questions only",
+    "pairs": "equivalent",
+    "questions": 4,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "(0, None)",
+    "q1": "(0, None)",
+    "q2": "(0, None)"
+   },
+   "samples_seconds": [
+    0.046884908002539305,
+    0.03597899799933657,
+    0.03989236199777224
+   ],
+   "warm_median_seconds": 0.037935679998554406,
+   "warm_min_seconds": 0.03597899799933657
+  },
+  {
+   "backend": "cpu",
+   "case": "universal proof search (decide)",
+   "first_seconds": 0.0006975600008445326,
+   "params": {
+    "pairs": "equivalent",
+    "questions": 4,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "proven domain bdd None",
+    "q1": "proven domain bdd None",
+    "q2": "proven universal normal form None",
+    "q3": "proven domain bdd None"
+   },
+   "samples_seconds": [
+    0.0006975600008445326,
+    8.354099918506108e-05,
+    6.2193998019211e-05
+   ],
+   "warm_median_seconds": 7.286749860213604e-05,
+   "warm_min_seconds": 6.2193998019211e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universal by exhaustive enumeration (small box)",
+   "first_seconds": 0.00012528899969765916,
+   "params": {
+    "pairs": "equivalent",
+    "points": 25830,
+    "questions": 4,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "proven domain None",
+    "q1": "proven domain None",
+    "q2": "proven domain None",
+    "q3": "proven domain None"
+   },
+   "samples_seconds": [
+    0.00012528899969765916
+   ],
+   "warm_median_seconds": 0.00012528899969765916,
+   "warm_min_seconds": 0.00012528899969765916
+  },
+  {
+   "backend": "cpu",
+   "case": "snapshot check",
+   "first_seconds": 0.06734023700118996,
+   "params": {
+    "pairs": "one-row-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "refuted snapshot witness=100000",
+    "q1": "refuted snapshot witness=100000",
+    "q2": "refuted snapshot witness=100000"
+   },
+   "samples_seconds": [
+    0.06734023700118996,
+    0.06303233899961924,
+    0.07405585599917686
+   ],
+   "warm_median_seconds": 0.06854409749939805,
+   "warm_min_seconds": 0.06303233899961924
+  },
+  {
+   "backend": "duckdb",
+   "case": "snapshot check (differing rows)",
+   "first_seconds": 0.010653134999301983,
+   "params": {
+    "note": "the SQL-expressible questions only",
+    "pairs": "one-row-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "(1, 100000)"
+   },
+   "samples_seconds": [
+    0.010653134999301983,
+    0.012384413999825483,
+    0.011605715000769123
+   ],
+   "warm_median_seconds": 0.011995064500297303,
+   "warm_min_seconds": 0.011605715000769123
+  },
+  {
+   "backend": "cpu",
+   "case": "universal proof search (decide)",
+   "first_seconds": 0.0006264980002015363,
+   "params": {
+    "pairs": "one-row-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "refuted domain bdd None",
+    "q1": "refuted domain bdd None",
+    "q2": "refuted domain bdd None"
+   },
+   "samples_seconds": [
+    0.0006264980002015363,
+    0.004257058000803227,
+    9.293000039178878e-05
+   ],
+   "warm_median_seconds": 0.0021749940005975077,
+   "warm_min_seconds": 9.293000039178878e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universal by exhaustive enumeration (small box)",
+   "first_seconds": 0.00011342200014041737,
+   "params": {
+    "pairs": "one-row-different",
+    "points": 25830,
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "refuted domain None",
+    "q1": "refuted domain None",
+    "q2": "refuted domain None"
+   },
+   "samples_seconds": [
+    0.00011342200014041737
+   ],
+   "warm_median_seconds": 0.00011342200014041737,
+   "warm_min_seconds": 0.00011342200014041737
+  },
+  {
+   "backend": "cpu",
+   "case": "snapshot check",
+   "first_seconds": 0.09593930800110684,
+   "params": {
+    "pairs": "universally-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "proven snapshot witness=None",
+    "q1": "proven snapshot witness=None",
+    "q2": "proven snapshot witness=None"
+   },
+   "samples_seconds": [
+    0.09593930800110684,
+    0.0937715809996007,
+    0.09658644699811703
+   ],
+   "warm_median_seconds": 0.09517901399885886,
+   "warm_min_seconds": 0.0937715809996007
+  },
+  {
+   "backend": "duckdb",
+   "case": "snapshot check (differing rows)",
+   "first_seconds": 0.07991809599843691,
+   "params": {
+    "note": "the SQL-expressible questions only",
+    "pairs": "universally-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "(0, None)",
+    "q1": "(0, None)"
+   },
+   "samples_seconds": [
+    0.07991809599843691,
+    0.03600739299872657,
+    0.019152438999299193
+   ],
+   "warm_median_seconds": 0.027579915999012883,
+   "warm_min_seconds": 0.019152438999299193
+  },
+  {
+   "backend": "cpu",
+   "case": "universal proof search (decide)",
+   "first_seconds": 0.0007369639970420394,
+   "params": {
+    "pairs": "universally-different",
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "refuted domain grid None",
+    "q1": "refuted domain grid None",
+    "q2": "refuted domain bdd None"
+   },
+   "samples_seconds": [
+    0.0007369639970420394,
+    0.0001165529974969104,
+    0.00011691399777191691
+   ],
+   "warm_median_seconds": 0.00011673349763441365,
+   "warm_min_seconds": 0.0001165529974969104
+  },
+  {
+   "backend": "cpu",
+   "case": "universal by exhaustive enumeration (small box)",
+   "first_seconds": 0.0010202539997408167,
+   "params": {
+    "pairs": "universally-different",
+    "points": 25830,
+    "questions": 3,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": {
+    "q0": "refuted domain None",
+    "q1": "refuted domain None",
+    "q2": "proven domain None"
+   },
+   "samples_seconds": [
+    0.0010202539997408167
+   ],
+   "warm_median_seconds": 0.0010202539997408167,
+   "warm_min_seconds": 0.0010202539997408167
+  },
+  {
+   "backend": "cpu",
+   "case": "unknown outcome: bit (outside the theory)",
+   "first_seconds": 3.03599881590344e-06,
+   "params": {},
+   "phase": "result",
+   "result": {
+    "limit": null,
+    "need": null,
+    "resource": null,
+    "verdict": "unknown",
+    "why": "unsupported"
+   },
+   "samples_seconds": [
+    3.03599881590344e-06
+   ],
+   "warm_median_seconds": 3.03599881590344e-06,
+   "warm_min_seconds": 3.03599881590344e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "unknown outcome: finite value set in decide mode",
+   "first_seconds": 1.4409997675102204e-06,
+   "params": {},
+   "phase": "result",
+   "result": {
+    "limit": null,
+    "need": null,
+    "resource": null,
+    "verdict": "unknown",
+    "why": "unsupported"
+   },
+   "samples_seconds": [
+    1.4409997675102204e-06
+   ],
+   "warm_median_seconds": 1.4409997675102204e-06,
+   "warm_min_seconds": 1.4409997675102204e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "unknown outcome: enumeration past its support budget",
+   "first_seconds": 1.1629999789875e-06,
+   "params": {},
+   "phase": "result",
+   "result": {
+    "limit": 20000,
+    "need": 20301,
+    "resource": "support",
+    "verdict": "unknown",
+    "why": "budget"
+   },
+   "samples_seconds": [
+    1.1629999789875e-06
+   ],
+   "warm_median_seconds": 1.1629999789875e-06,
+   "warm_min_seconds": 1.1629999789875e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "unknown outcome: BDD past its circuit budget",
+   "first_seconds": 7.009984983596951e-07,
+   "params": {},
+   "phase": "result",
+   "result": {
+    "limit": 3,
+    "need": 4,
+    "resource": "circuit",
+    "verdict": "unknown",
+    "why": "budget"
+   },
+   "samples_seconds": [
+    7.009984983596951e-07
+   ],
+   "warm_median_seconds": 7.009984983596951e-07,
+   "warm_min_seconds": 7.009984983596951e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "batched snapshot check",
+   "first_seconds": 0.07356328699825099,
+   "params": {
+    "questions": 8,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 8,
+   "samples_seconds": [
+    0.07356328699825099,
+    0.06300971599921468,
+    0.07426901199869462
+   ],
+   "warm_median_seconds": 0.06863936399895465,
+   "warm_min_seconds": 0.06300971599921468
+  },
+  {
+   "backend": "cpu",
+   "case": "batched snapshot check",
+   "first_seconds": 0.1343534070001624,
+   "params": {
+    "questions": 64,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.1343534070001624,
+    0.15949794500193093,
+    0.15872031600156333
+   ],
+   "warm_median_seconds": 0.15910913050174713,
+   "warm_min_seconds": 0.15872031600156333
+  },
+  {
+   "backend": "cpu",
+   "case": "batched snapshot check",
+   "first_seconds": 0.4145770889990672,
+   "params": {
+    "questions": 256,
+    "rows": 200000
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.4145770889990672,
+    0.4232589650018781,
+    0.4793811919989821
+   ],
+   "warm_median_seconds": 0.4513200785004301,
+   "warm_min_seconds": 0.4232589650018781
+  }
+ ],
+ "seconds": 44.36505203500201,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "universal question: enumeration past its support budget",
+   "largest_admitted": null,
+   "smallest_refused": {
+    "limit": 20000,
+    "need": 20301,
+    "resource": "support"
+   }
+  },
+  {
+   "grid": "universal question: BDD past its circuit budget",
+   "largest_admitted": null,
+   "smallest_refused": {
+    "limit": 3,
+    "need": 4,
+    "resource": "circuit"
+   }
+  }
+ ]
+}
