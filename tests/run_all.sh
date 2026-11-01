@@ -56,6 +56,10 @@ run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu p
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py
+echo "== release review 2026-11-01: regression tests (R01 also in CI: tests/check_min_deps.py on the wheel)"
+run "SQL casts, overflow, collations, null-safe joins" python3 tests/check_review_sql.py
+run "engine API NULL aggregates, SQL of every measure"  python3 tests/check_review_api.py
+run "native table lifetimes, empty tables"            python3 -m unittest discover -s tests -p test_review_native.py
 run "array algebra vs row by row and DuckDB"     python3 tests/check_arrays.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_arrays.py 250 6
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_arrays.py 250 8
