@@ -155,8 +155,33 @@ x)^2) into a polynomial in its parameters, which is then evaluated, differentiat
 Typed domain descriptors and a native module registry dispatch the operators, and a bounded LRU cache reuses a snapshot
 for an equivalent scope (the same predicate, columns, codecs, source revision and row membership) with no aggregate
 query on a hit: in the prototype's synthetic benchmark, five constructions over a million rows took 0.82 ms instead of
-15.6. DECIMAL, NULL-able, 64-bit and grouped moments, and the other families, are not implemented yet. Code that does
-not import the module is unaffected; `docs/MATHEMATICS.md` describes the API and its exact scope.
+15.6. These snapshots take non-NULL integer columns only; the scopes and moment banks below lift that.
+`docs/MATHEMATICS.md` describes the API and its exact scope.
+
+The other 75 capabilities of that inventory followed, each in the same form: native C states and transforms, a CUDA
+kernel, an opt-in Python module that only marshals arguments, and a page under `docs/math/` with its exact scope,
+budgets and refusals (`docs/MATHEMATICS.md` links every page; `ALGEBRA_INVENTORY.md` records where each capability
+stands). The shared foundations are scopes and grouped moment banks over the selected rows (DECIMAL, NULL-able and
+64-bit columns, SQL or listwise NULL handling, exact rollups and a state cache), big-integer, rational, modular and
+interval carriers, resource budgets with exact size formulas, owned handles with ABI checks, a module registry that
+checks laws and carriers, a costed planner, certificates that keep snapshot facts apart from universal laws and
+hypotheses, persistence, and fused multi-output reductions. On them sit calculus and jets, response and loss curves,
+inverse answers and minimal interventions, quadratic, convex and polynomial optimization with KKT or interval
+certificates, exact and modular linear algebra with leave-group-out and low-rank updates, polynomial identity discovery
+with certified ideal reduction and elimination, histograms, quantiles, entropies and pairwise statistics, generating
+functions and convolutions, Walsh and Fourier bases with approximate spectral kernels, hierarchies with adaptive
+refinement, Boolean predicates, lattices, group quantifiers and GF(2) parity, counting over the observed rows and over a
+declared domain, exact preimages of derived predicates, envelopes and parameter regions, provenance with explanations
+and deletion propagation, attribution and repair search, finite probability models and factorized inference, moment
+tensors with costed contraction, symmetries and closed-observable dynamics, graph paths and fixed points, cubical
+homology and persistence, interval and approximation error certificates, and query equivalence with whole query families
+compiled into one program. Every answer is exact or carries a stated enclosure or error bound, and a request past a
+declared budget is refused, not approximated. Each capability's tests compare its CUDA path, emulated with the thread
+order scrambled, with the CPU result bit for bit, and run again under AddressSanitizer and UndefinedBehaviorSanitizer;
+its kernels compile with nvcc for sm_80 (780 tests in all). Twelve of the 75, foundations and early families, have been
+measured on the RTX 5090 laptop and are validated, like the first slice; the other 63 carry these CPU receipts and
+become validated once `python bench/validate_math.py --device --all-ready` has run on the GPU. Code that does not import
+these modules is unaffected, and the engine's regression (114 checks) passes unchanged.
 
 Correctness
 - `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
