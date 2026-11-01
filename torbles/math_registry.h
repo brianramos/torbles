@@ -226,7 +226,9 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_EXPLAIN = 61,        /* explanations of a monotone lineage: sufficient, necessary and why-not source sets */
        TR_OP_PROBABILITY = 62,    /* the probability of a lineage under independent source tuples (a weighted model count) */
        TR_OP_NORMALIZE = 63,      /* normalizers, log-likelihoods, gradients and Hessians of a declared finite-support model from retained masses */
-       TR_REG_OPERATORS = 64 };
+       TR_OP_FIXPOINT = 64,       /* the least fixed point of a monotone frontier iteration within a declared round bound */
+       TR_OP_RELAX = 65,          /* path relaxations in an ordered idempotent semiring ((min, +), (max, +)) with improving-cycle refusal */
+       TR_REG_OPERATORS = 66 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -294,6 +296,8 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_EXPLAIN, 0, 0, TR_REG_LATTICE},
     {TR_OP_PROBABILITY, 0, 0, TR_REG_RING},
     {TR_OP_NORMALIZE, 0, 0, TR_REG_FOLD},
+    {TR_OP_FIXPOINT, 0, 0, TR_REG_LATTICE},
+    {TR_OP_RELAX, 0, 0, TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -945,7 +949,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_REFINE = 62,            /* MULTI-002 coarse-to-fine bounds, localized rollups */
        TR_REG_M_INTERV = 63,            /* INV-002 minimal-cost changes attaining a target, algebraic only */
        TR_REG_M_POLYOPT = 64,           /* OPT-002 exact QPs and LPs, certified branch and bound */
-       TR_REG_M_END = 65 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_GRAPH_LAYOUT = 65,      /* GRAPH-001 graph layouts, degrees, frontiers and semiring products */
+       TR_REG_M_GRAPH_PATHS = 66,       /* GRAPH-002 reachability, bounded walk counts, paths with cycle refusal, energies */
+       TR_REG_M_END = 67 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -999,7 +1005,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_REFINEMENT = 52,        /* per level: cells, abstract inputs and links; maintained leaves */
        TR_REG_STATE_INTERVENTION = 53,      /* grid plans (residues, cost order) and shift aggregates (prefix sums) */
        TR_REG_STATE_PROGRAM = 54,           /* an objective with linear or polynomial constraints and bounds */
-       TR_REG_STATE_KINDS = 55 };
+       TR_REG_STATE_GRAPH_LAYOUT = 55,      /* a vertex dictionary, CSR / CSC entries with multiplicities, canonical edges and incidence lists of a snapshot */
+       TR_REG_STATE_GRAPH_FIXPOINT = 56,    /* reach sets and levels, bounded walk tables, path trees and certified iterates of a layout */
+       TR_REG_STATE_KINDS = 57 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1326,6 +1334,16 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_POLYOPT, INERTIA, BIGQ, TR__CPU), TR__I(TR_REG_M_POLYOPT, ROOTS, BIGQ, TR__CPU),
     TR__I(TR_REG_M_POLYOPT, EVAL, BIGQ, TR__CPU), TR__I(TR_REG_M_POLYOPT, ORDER, BIGQ, TR__CPU),
     TR__I(TR_REG_M_POLYOPT, ENCLOSE, INTERVAL, TR__ALL),
+    /* 65 GRAPH-001 graph layouts, degrees, frontiers and semiring products */
+    TR__I(TR_REG_M_GRAPH_LAYOUT, ORDER, INTEGER, TR__CPU), TR__I(TR_REG_M_GRAPH_LAYOUT, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_LAYOUT, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_GRAPH_LAYOUT, LOGIC, BOOLEAN, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_LAYOUT, MULTIPLY, GF2, TR__ALL), TR__I(TR_REG_M_GRAPH_LAYOUT, DISTINCT_FOLD, MINMAX, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_LAYOUT, ENCLOSE, INTERVAL, TR__ALL), TR__I(TR_REG_M_GRAPH_LAYOUT, POPCOUNT, ROWSET, TR__ALL),
+    /* 66 GRAPH-002 reachability, bounded walk counts, paths with cycle refusal, energies */
+    TR__I(TR_REG_M_GRAPH_PATHS, FIXPOINT, BOOLEAN, TR__ALL), TR__I(TR_REG_M_GRAPH_PATHS, FIXPOINT, ROWSET, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_PATHS, MULTIPLY, BIGINT, TR__ALL), TR__I(TR_REG_M_GRAPH_PATHS, ORDER, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_PATHS, RELAX, MINMAX, TR__ALL), TR__I(TR_REG_M_GRAPH_PATHS, FOLD, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_GRAPH_PATHS, ENCLOSE, INTERVAL, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

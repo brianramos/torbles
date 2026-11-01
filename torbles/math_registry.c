@@ -67,7 +67,8 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "attribute",
     "compile", "model_count",
     "propagate", "explain", "probability",
-    "normalize"};
+    "normalize",
+    "fixpoint", "relax"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -90,7 +91,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "approximation",
     "refinement state",
     "intervention plan",
-    "optimization program"};
+    "optimization program",
+    "graph layout", "graph fixed point"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -716,6 +718,25 @@ static const tr_reg_module modules[] = {
                    "tr_polyopt_result_get_info", "tr_polyopt_result_part", "tr_polyopt_result_leaf",
                    "tr_polyopt_result_free"},
      .cuda_entry = {"tr_mgpu_polyopt_boxes"}},
+    {FAMILY(TR_REG_M_GRAPH_LAYOUT, "graph.layout", "graph", "GRAPH-001", "declared graph layouts"),
+     .state_kind = TR_REG_STATE_GRAPH_LAYOUT, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(COUNT) | CB(INT128) | CB(BOOLEAN) | CB(GF2) | CB(MINMAX) | CB(INTERVAL) | CB(ROWSET),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_CHAR2 | TR_LAW_ENCLOSURE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_graph_layout_build", "tr_graph_layout_need", "tr_graph_layout_get_view",
+                   "tr_graph_layout_ids", "tr_graph_layout_same", "tr_graph_layout_fresh",
+                   "tr_graph_layout_incidence", "tr_graph_degrees", "tr_graph_expand", "tr_graph_spmv",
+                   "tr_graph_gf2_matrix", "tr_graph_need"},
+     .cuda_entry = {"tr_mgpu_graph_degrees", "tr_mgpu_graph_expand", "tr_mgpu_graph_spmv"}},
+    {FAMILY(TR_REG_M_GRAPH_PATHS, "graph.paths", "graph", "GRAPH-002", "bounded fixed points, paths and energies"),
+     .state_kind = TR_REG_STATE_GRAPH_FIXPOINT, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BOOLEAN) | CB(ROWSET) | CB(COUNT) | CB(BIGINT) | CB(MINMAX) | CB(INT128) | CB(INTERVAL) | CB(INTEGER),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_ENCLOSURE | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_graph_reach", "tr_graph_closure", "tr_graph_walks_need", "tr_graph_walks", "tr_graph_paths",
+                   "tr_graph_energy", "tr_graph_pagerank", "tr_graph_power", "tr_graph_rationals"},
+     .cuda_entry = {"tr_mgpu_graph_reach", "tr_mgpu_graph_closure", "tr_mgpu_graph_walks", "tr_mgpu_graph_paths",
+                    "tr_mgpu_graph_energy", "tr_mgpu_graph_pagerank", "tr_mgpu_graph_power"}},
 };
 #undef BUILTIN
 #undef FAMILY

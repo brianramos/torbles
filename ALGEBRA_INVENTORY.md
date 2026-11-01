@@ -3819,9 +3819,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FIELD-001](#field-001), [LIN-001](#lin-001)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_graph.c; contracts and the per-vertex pulls shared with CUDA in math_graph.h): immutable layouts built from the selected edge rows of an FND-004 scope (table or arrays; key columns of one decimal scale, an optional weight column with a declared unit, Fraction weights put on their least common denominator natively; NULL endpoints or weights skipped and counted, or refused; an optional vertex scope adds isolated vertices). The vertex dictionary is the radix-sorted distinct keys (dense id = rank); canonical edges carry multiplicities (deduplication declared, with refuse / min / max / sum weight combination; loops kept or dropped; an undirected edge appears in both directions and a self-loop once); CSR and CSC are built by stable counting sorts, with the canonical edge list and the vertex-incidence lists (oriented incidence roles). The identity is the declaration, the exact FND-004 descriptors (snapshot revision included) and the dictionary, compared byte for byte; a stale layout is refused natively and every state of another identity is refused. Exact degrees (out / in / total / loops in multiplicity, weight and distinct modes, checked int128), one-step frontier expansion with exclusion, neighborhood aggregates, and pull products y = A^T x or A x over declared semirings: counting (+, x) in checked int128, Boolean (or, and), GF(2) (equal to FIELD-001's matvec of the exported packed A mod 2), (min, +) and (max, +) in checked int64 units of the weight denominator, binary64 (+, x) as a fixed-order fma accumulation with a rigorous per-vertex a priori error bound; NULL inputs contribute no term and validity is reported. Budgets (layout bytes, support, states, output; tensor, output and bytes per request) are checked before allocation.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: math_graph_gpu.cu: degrees and every semiring product with one work item per vertex running the shared inline pull (entries in their stored order) into its own output slot (Boolean / GF(2) words by atomic OR, an overflow by atomic minimum, the binary64 coefficients computed on the host and copied); frontier expansion with one work item per frontier word pushing by atomic OR, the count by atomic add. Device copies are budgeted; results equal the CPU's bit for bit (scrambled emulation in the tests). Compiled with nvcc for sm_80; not yet run on a device.
 
 Bounds:
 
@@ -3830,9 +3830,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_graph.c`
 - `torbles/math_graph.h`
+- `torbles/math_graph.c`
+- `torbles/math_graph_gpu.cu`
+- `torbles/math_graph.py`
 - `tests/test_math_graph.py`
+- `bench/benchmark_math_graph.py`
 
 Acceptance tests:
 
@@ -3843,6 +3846,13 @@ Benchmark cases:
 
 - Use chain, star, disconnected and cyclic graphs with 1k/100k/1M edges; record adjacency/incidence build separately from frontier and reduction iterations.
 - Vary frontier density and bounded path length 1/4/16/32; compare supported semirings with small exact graph oracles and retain nontermination/overflow refusals.
+
+Additional limits:
+
+- The layout build (key sort, CSR / CSC, incidence lists) runs on the CPU only, single-threaded; a device entry copies the forms it reads on every call (no device-resident layout).
+- Keys are exact-valued integer or decimal columns (no string keys); one graph per scope (a grouped scope is refused); at most 2^32 - 2 vertices and 2^32 - 1 entries.
+- The binary64 products carry an a priori error bound for exact double inputs, not an enclosure; GF(2) products of weights need integral weights.
+- No FND-007 claim kind states graph facts, so layouts and products emit no certificates.
 
 <a id="graph-002"></a>
 
@@ -3856,9 +3866,9 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [GRAPH-001](#graph-001), [GEN-002](#gen-002)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C on GRAPH-001 layouts: reachability R* / R+ from a source set with BFS levels and the rounds to the fixed point (a max_rounds bound refuses with NotConverged), the transitive closure per source (64 sources per lane word, FIELD-001 rows); walk counts w_(l+1) = A^T w_l over multiplicities for lengths <= L as exact unsigned multiword integers sized by a declared bound (every row, total, length total and the grand total checked, the first violation reported), the unbounded count only when no cycle is reachable from the sources (Kahn's order on the reachable part, else NoSolution); synchronous frontier Bellman-Ford in (min, +) / (max, +) with checked int64 sums, where a change in round n is reported with the improving cycle extracted from the round predecessors and its weight (Unbounded), and Dijkstra with lexicographic (distance, hops) keys for nonnegative weights, both giving the same canonical hops and predecessors; the exact Dirichlet energy x^T L x in 320-bit arithmetic over the canonical edges; PageRank (dangling and teleport sets, damping in (0, 1]) and power iteration in binary64 with fixed blocked sums and explicit fma, stopping at the declared tolerance or refusing at the iteration cap (NotConverged), with rigorous outward-rounded a posteriori bounds (||r - r*||_1, residual norms, an eigenvalue radius for undirected layouts).
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: math_graph_gpu.cu: reach, closure, walk counts and Bellman-Ford as one launch sequence per round or step (candidates from atomic touch counters, the shared pull per candidate into its own slot, then the commit; violations and witnesses by atomic minimum, walk length totals by exact multiword atomic adds, the host reading each round's counters); the energy by edge slices with 320-bit local sums and multiword atomic adds; PageRank / power iteration with block sums (one work item per block), their total (one work item) and the per-vertex pull update each iteration. The certificates, the walk horizon and the cycle extraction run on the host. Results and statistics equal the CPU's bit for bit (scrambled emulation in the tests). Compiled with nvcc for sm_80; not yet run on a device.
 
 Bounds:
 
@@ -3867,9 +3877,12 @@ Bounds:
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_graph.c`
 - `torbles/math_graph.h`
+- `torbles/math_graph.c`
+- `torbles/math_graph_gpu.cu`
+- `torbles/math_graph.py`
 - `tests/test_math_graph.py`
+- `bench/benchmark_math_graph.py`
 
 Acceptance tests:
 
@@ -3880,6 +3893,13 @@ Benchmark cases:
 
 - Use chain, star, disconnected and cyclic graphs with 1k/100k/1M edges; record adjacency/incidence build separately from frontier and reduction iterations.
 - Vary frontier density and bounded path length 1/4/16/32; compare supported semirings with small exact graph oracles and retain nontermination/overflow refusals.
+
+Additional limits:
+
+- Dijkstra and the iteration certificates run on the CPU only; Bellman-Ford rounds are synchronous and every device round reads its counters back to the host.
+- Walk counts count walks (multiplicities, not weights; weighted path sums are GRAPH-001's count and tropical products); bounds of at most 2048 bits; an unbounded count needs no reachable cycle at all (finiteness is not refined per vertex).
+- PageRank and power iteration are binary64 with a posteriori bounds; damping 1 gives no bound (inf); power iteration needs nonnegative weights and converges only with a dominant eigenvalue.
+- No FND-007 claim kind states graph facts: a refused cycle carries its own witness (vertices and weight) and paths their predecessor tree.
 
 ## PROV: Provenance
 
