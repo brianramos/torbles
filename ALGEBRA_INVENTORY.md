@@ -4982,7 +4982,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
+Measured runtime: `9cbd66c23f0be917df846a52c361a9fd5e3848c8`.
 
 - tests: [results/math/TOPO-001/tests_test_math_topo.json](results/math/TOPO-001/tests_test_math_topo.json)
 - tests: [results/math/TOPO-001/sanitized_test_math_topo.json](results/math/TOPO-001/sanitized_test_math_topo.json)
@@ -5040,7 +5040,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
+Measured runtime: `9cbd66c23f0be917df846a52c361a9fd5e3848c8`.
 
 - tests: [results/math/TOPO-002/tests_test_math_topo.json](results/math/TOPO-002/tests_test_math_topo.json)
 - tests: [results/math/TOPO-002/sanitized_test_math_topo.json](results/math/TOPO-002/sanitized_test_math_topo.json)
