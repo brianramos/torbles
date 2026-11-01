@@ -1,0 +1,126 @@
+{
+ "guide": [
+  {
+   "page": "pairplan.md",
+   "title": "Structured pairwise query planning",
+   "capabilities": "PAIR-002",
+   "summary": "pairwise statistics sum over a declared pair set (ordered or unordered, self-pairs in or out, within a group or between two) of w_i w_j k(x_i, x_j) answered exactly by the cheapest admissible of support aggregation (multiplicities, CPU and CUDA), KERNEL-001 finite features, PAIR-001 sorted prefixes and bounded direct pairs (CPU and CUDA), each costed through FND-008; an arbitrary similarity keeps a costed direct plan within the pair budget or is refused, never approximated."
+  }
+ ],
+ "inventory": {
+  "PAIR-002": {
+   "planned_files": [
+    "torbles/math_pairplan.h",
+    "torbles/math_pairplan.c",
+    "torbles/math_pairplan_gpu.cu",
+    "torbles/math_pairplan.py",
+    "tests/test_math_pairplan.py",
+    "bench/benchmark_math_pairplan.py"
+   ],
+   "cpu": "Native C (math_pairplan.c): pairwise statistics S = sum over a declared pair set of w_i w_j k(x_i, x_j) over the elements of FND-004 scope groups (selected rows with a present weight; listwise, or NULL a category for the delta kernel), with the pair set exact (within one group: ordered or unordered pairs, self-pairs included or excluded; between two groups: each cross pair once, or both orientations), the weighted pair count P and optional means S / P; kernels |x - y| (L1), Mann-Whitney [x > y] + 1/2 [x = y], KERNEL-001's polynomial, monomial and delta kernels, declared similarity tables (symmetric or not, a default elsewhere), L-infinity bands and squared distances; RBF, Laplace and other kernels without an exact value refused, never approximated. tr_pairplan_make plans a batch: an exact profile (per group n, sum w, sum |w|, sum w^2, from one scope pass or a retained table), up to seven candidates (support aggregation and direct pairs on the CPU and CUDA, KERNEL-001 finite features dense and sparse, PAIR-001 sorted prefix), each with its validity (unsupported structure, negative weight masses, unproven magnitude bound), its budget needs (iterations = kernel evaluations: the declared pair budget; support, states, output, bytes, device bytes) and exact amounts per FND-008 cost component under a stated work model, costed and budget-checked by tr_planner_choose with the family's rates; the cheapest admissible candidate runs, forces run exactly their match or refuse, a plan without an admissible candidate is refused with its evidence. Support aggregation sorts the elements into distinct value tuples with multiplicity m, W = sum w and Q = sum w^2 and weights a diagonal entry pair by W^2 - Q, W^2 or (W^2 -+ Q) / 2; direct pairs evaluate the same exact evaluator over one entry per row; the feature and prefix strategies issue KERNEL-001 SUM and PAIR-001 ABS / Mann-Whitney requests with the corrections their conventions need. Every strategy returns the same exact num / den in 1024-bit words after a magnitude proof (bits of sum |w| per side plus the kernel's bound <= 1020; requests proven within 126 bits are summed in 128-bit words, the same integers); retained support, rows, prefix and feature states are reused with exact sizes.",
+   "gpu": "CUDA kernels math_pairplan_gpu.cu: a support or rows table uploaded once (tr_mgpu_pairplan_upload), then per batch (tr_mgpu_pairplan_query) one work item per (request, 32 x 32 tile of entry pairs) running the shared tr_pairplan_tile (128- or 1024-bit sums as on the CPU) into a local 1024-bit sum added to the request's accumulator with a sixteen-word atomic carry chain (exact modulo 2^1024, hence exact under the host's magnitude proof), visits and overflow flags by atomics, then one work item per request running the shared tr_pairplan_finish (pair counts, means); the host checks every request and the budget (output, iterations, device bytes) before copying; equal to the CPU evaluation bit for bit.",
+   "limitations": [
+    "Planned statistics are sums over pairs of w_i w_j k(x_i, x_j): PAIR-001's distribution distances (KS, 1-Wasserstein, Cramer-von Mises) are not pair sums and stay PAIR-001's own API; no FND-007 certificate is issued (the capability computes values, it proves no data relation).",
+    "The finite-feature and sorted-prefix strategies run on the CPU only (their CUDA paths remain KERNEL-001's and PAIR-001's own APIs); support tables are sorted on the host for both devices.",
+    "Distinct supports in a plan without a retained state are exact upper bounds (min of the elements and the cells of the value box); the rates are hand-set relative estimates, not calibrated times, and the work model's per-evaluation operation counts are stated, not measured.",
+    "At most 8 feature columns; Mann-Whitney over one column; an unordered pair set needs a symmetric kernel (refused per request otherwise); results are limited to 1024 bits (an unprovable magnitude rejects the support and direct candidates); the sorted prefix needs nonnegative weights and class masses below 2^64.",
+    "The CUDA tile kernel uses 255 registers with a 576-byte stack frame and register spills (1024-bit arithmetic); its work items are tiles, so a single small request has little parallelism; the CPU loops are single-threaded."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "PAIR_PLAN",
+    "label": "pairwise plans",
+    "comment": "costed pair strategies, support tables with multiplicities"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "PAIR_PLAN",
+    "key": "pair.plan",
+    "family": "pairplan",
+    "capability": "PAIR-002",
+    "name": "structured pairwise query planning",
+    "comment": "structured pairwise query planning",
+    "state": "PAIR_PLAN",
+    "state_label": "pairwise plans",
+    "devices": "BOTH",
+    "finalize": 2,
+    "carriers": [
+     "INTEGER",
+     "INT128",
+     "BIGINT",
+     "BIGQ",
+     "COUNT"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_pairplan_make",
+     "tr_pairplan_plan_get_info",
+     "tr_pairplan_plan_get",
+     "tr_pairplan_plan_kernel_view",
+     "tr_pairplan_plan_free",
+     "tr_pairplan_execute",
+     "tr_pairplan_eval_table",
+     "tr_pairplan_retain",
+     "tr_pairplan_state_get_info",
+     "tr_pairplan_state_table_view",
+     "tr_pairplan_state_free",
+     "tr_pairplan_default_rates"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_pairplan_upload",
+     "tr_mgpu_pairplan_query",
+     "tr_mgpu_pairplan_bytes",
+     "tr_mgpu_pairplan_free"
+    ],
+    "impl": [
+     [
+      "FOLD",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "MERGE",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "SCALE_COUNT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "SUBTRACT",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "ALL"
+     ],
+     [
+      "ORDER",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "CONTRACT",
+      "BIGINT",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
