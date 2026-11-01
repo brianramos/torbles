@@ -1383,8 +1383,8 @@ typedef struct {
     branch br[TR_EQUIV_MAX_CONDITIONS];
     int32_t outside, infeasible;
 } theory;
-static __int128 fdiv(__int128 a, __int128 d) { __int128 q = a / d; if (a % d != 0 && ((a < 0) != (d < 0))) q--; return q; }
-static __int128 cdiv(__int128 a, __int128 d) { return -fdiv(-a, d); }
+static __int128 floor_div128(__int128 a, __int128 d) { __int128 q = a / d; if (a % d != 0 && ((a < 0) != (d < 0))) q--; return q; }
+static __int128 cdiv(__int128 a, __int128 d) { return -floor_div128(-a, d); }
 static __int128 p10(int32_t s) { __int128 p = 1; for (int32_t i = 0; i < s; i++) p *= 10; return p; }
 static void lower(theory *T, int32_t x, __int128 v) { if (v > T->L[x]) T->L[x] = v; }
 static void upper(theory *T, int32_t x, __int128 v) { if (v < T->U[x]) T->U[x] = v; }
@@ -1421,12 +1421,12 @@ static void lit_add(const uctx *u, theory *T, const tr_bool_condition *c, int po
     case TR_BOOL_LT: case TR_BOOL_LE: case TR_BOOL_GT: case TR_BOOL_GE:
         if (!pol) op = op == TR_BOOL_LT ? TR_BOOL_GE : op == TR_BOOL_LE ? TR_BOOL_GT : op == TR_BOOL_GT ? TR_BOOL_LE : TR_BOOL_LT;
         if (op == TR_BOOL_LT) upper(T, x, cdiv(K0, d0) - 1);
-        else if (op == TR_BOOL_LE) upper(T, x, fdiv(K0, d0));
-        else if (op == TR_BOOL_GT) lower(T, x, fdiv(K0, d0) + 1);
+        else if (op == TR_BOOL_LE) upper(T, x, floor_div128(K0, d0));
+        else if (op == TR_BOOL_GT) lower(T, x, floor_div128(K0, d0) + 1);
         else lower(T, x, cdiv(K0, d0));
         return;
     case TR_BOOL_BETWEEN: {
-        __int128 lo = cdiv(K0, d0), hi = fdiv((__int128)c->num[1] * P, c->den[1]);
+        __int128 lo = cdiv(K0, d0), hi = floor_div128((__int128)c->num[1] * P, c->den[1]);
         if (pol) { lower(T, x, lo); upper(T, x, hi); }
         else if (lo <= hi) T->br[T->nbr++] = (branch){2, x, -1, 0, lo, hi};
         return;
