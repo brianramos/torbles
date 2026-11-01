@@ -435,8 +435,13 @@ class Database:
         if self.con is None:
             raise RuntimeError("no source to run the SQL on: pass con= (a DuckDB connection holding the source tables) to torbles.load")
         rows = self.con.execute(q.sql()).fetchall()
-        if q.keys: return {tuple(r[:-1]): r[-1] for r in rows}
-        return rows[0][0] if rows else None
+        na = len(q._sql_aggs())                       # the aggregate's columns, last in each row
+        ext = getattr(q, "_ext", None) is not None
+        def val(a):
+            if ext: return None if a[0] is None and a[1] is None else algq.MinMax(a)     # MIN / MAX of nothing: None
+            return tuple(a) if na > 1 else a[0]
+        if q.keys: return {tuple(r[:-na]): val(r[-na:]) for r in rows}
+        return val(rows[0][-na:]) if rows else None
 
     def verify(self, q, engine="alg"):
         """(equal, torbles result, source result): the query on torbles and its SQL on the source"""

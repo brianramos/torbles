@@ -240,7 +240,16 @@ _RESERVED = set("""
 def _ident(name):
     """an SQL identifier: as is when plain, else double-quoted"""
     return name if _re.fullmatch(r"[a-z_][a-z0-9_]*", name) and name not in _RESERVED else '"' + name.replace('"', '""') + '"'
-def _qc(col): return f"{_ident(col.table.name)}.{_ident(col.name)}"
+def _valid_base(table, name):
+    """the column whose validity plane is column `name` of table (its c#v), or None"""
+    for c, v in (getattr(table, "nullable", None) or {}).items():
+        if v == name: return c
+    return None
+def _qc(col):
+    """a column in the source's SQL; a validity plane is not a source column: it is the test that its column is not NULL"""
+    base = _valid_base(col.table, col.name)
+    if base is not None: return f"({_qc(Col(col.table, base))} IS NOT NULL)"
+    return f"{_ident(col.table.name)}.{_ident(col.name)}"
 class Col(Expr):
     def __init__(self, table, name): self.table, self.name = table, name
     def codec(self): return getattr(self.table, "codecs", {}).get(self.name)
@@ -249,8 +258,11 @@ class Col(Expr):
         SQL's three-valued logic)"""
         vc = getattr(self.table, "nullable", {}).get(self.name)
         if vc is None: return p
-        q = BoolOp("AND", Cmp(Col(self.table, vc), "EQ", 1), p)
-        q.sql = getattr(p, "sql", None)
+        v = Cmp(Col(self.table, vc), "EQ", 1)
+        q = BoolOp("AND", v, p)
+        # the SQL says so too: the comparison alone is UNKNOWN on a NULL row, which NOT keeps (the engine's FALSE does not)
+        s = getattr(p, "sql", None)
+        q.sql = None if s is None else f"({pred_sql(v)} AND {s})"
         return q
     def _cmp(self, op, v): return self._valid(self._cmp0(op, v))
     def _cmp0(self, op, v):
@@ -281,12 +293,12 @@ class Col(Expr):
     def isin(self, vals):
         vals = list(vals)
         if not vals: raise ValueError("isin() needs at least one value")
-        p = self == vals[0]
-        for v in vals[1:]: p = p | (self == v)
+        p = self._cmp0("EQ", vals[0])
+        for v in vals[1:]: p = p | self._cmp0("EQ", v)
         cd = self.codec()
         if cd is not None:
             p.sql = f"{_qc(self)} IN ({', '.join(cd.literal(v) for v in vals)})"
-        return p
+        return self._valid(p)                          # (one validity term for the whole list, as in its SQL)
     def startswith(self, prefix):
         """string prefix match: one interval of the sorted dictionary"""
         cd = self.codec()
@@ -986,8 +998,16 @@ def compile_pred(p, table, prog):
     elif isinstance(p, BoolOp): compile_pred(p.l, table, prog); compile_pred(p.r, table, prog); prog.append(PInstr(P[p.op], 0, 0, 0))
     elif isinstance(p, Not): compile_pred(p.x, table, prog); prog.append(PInstr(P["NOT"], 0, 0, 0))
     else: raise TypeError(p)
+_OPF = dict(EQ=lambda a, b: a == b, NE=lambda a, b: a != b, LT=lambda a, b: a < b, LE=lambda a, b: a <= b,
+            GT=lambda a, b: a > b, GE=lambda a, b: a >= b)
 def pred_sql(p):
     if getattr(p, "sql", None): return p.sql
+    if isinstance(p, (Cmp, Between)):
+        base = _valid_base(p.col.table, p.col.name)
+        if base is not None:                       # on a validity plane (codes 0 / 1): its column IS [NOT] NULL
+            hold = tuple(c for c in (0, 1) if (p.a <= c <= p.b if isinstance(p, Between) else _OPF[p.op](c, p.v)))
+            b = _qc(Col(p.col.table, base))
+            return {(1,): f"{b} IS NOT NULL", (0,): f"{b} IS NULL", (0, 1): "TRUE", (): "FALSE"}[hold]
     if isinstance(p, Cmp): return f"{_qc(p.col)} {dict(EQ='=', NE='<>', LT='<', LE='<=', GT='>', GE='>=')[p.op]} {p.v}"
     if isinstance(p, Between): return f"{_qc(p.col)} BETWEEN {p.a} AND {p.b}"
     if isinstance(p, BoolOp): return f"({pred_sql(p.l)} {p.op} {pred_sql(p.r)})"
@@ -1000,6 +1020,21 @@ def expr_sql(e):
         f = _frac(e.raw); from decimal import Decimal as _D
         return format(_D(f.numerator) / _D(f.denominator), "f")
     return f"({expr_sql(e.l)} {e.op} {expr_sql(e.r)})"
+def _requires(p, table, vc):
+    """does predicate p hold only on rows where validity plane vc of table is 1? (by its form: a conjunct vc = 1, or
+    every disjunct requiring it, as a comparison on a nullable column or db.sql's IS NOT NULL give)"""
+    if isinstance(p, Cmp):
+        return p.col.table is table and p.col.name == vc and ((p.op == "EQ" and p.v == 1) or (p.op == "GE" and p.v == 1) or (p.op == "GT" and p.v == 0))
+    if isinstance(p, Between): return p.col.table is table and p.col.name == vc and p.a >= 1
+    if isinstance(p, BoolOp) and p.op == "AND": return _requires(p.l, table, vc) or _requires(p.r, table, vc)
+    if isinstance(p, BoolOp) and p.op == "OR": return _requires(p.l, table, vc) and _requires(p.r, table, vc)
+    return False
+def _expr_cols(e, out=None):
+    """the columns an expression reads"""
+    out = [] if out is None else out
+    if isinstance(e, Col): out.append(e)
+    elif isinstance(e, Arith): _expr_cols(e.l, out); _expr_cols(e.r, out)
+    return out
 
 def dominance(M, H, nb):
     """sum over x < t of M[:, x] H[:, t] (a matrix: fact groups x dimension groups), by the comparator polynomial
@@ -1126,7 +1161,7 @@ def _exact_dec(v, scale):
 def copy_query(q):
     import copy
     c = copy.copy(q); c._plan_cache = {}
-    for a in ("_codeq", "_lowered_measure", "_fq"):
+    for a in ("_codeq", "_lowered_measure", "_fq", "_observed"):
         if a in c.__dict__: del c.__dict__[a]
     return c
 
@@ -1207,13 +1242,17 @@ class Query:
         self.rjoin = (dim, x, lo, hi); self.rjoin_sql = (op, y); return self
     def where(self, p): self.pred = p if self.pred is None else (self.pred & p); return self
     def group_by(self, *cols): self.keys = list(cols); return self
-    def sum(self, e): self.measure = e; self._ext = None; return self
-    def count(self): self.measure = None; self._ext = None; return self
+    # Aggregates skip NULLs as in SQL: SUM, MIN / MAX and COUNT(e) read the rows where every column of their argument is
+    # not NULL; a group is there when it has rows, so one whose argument is NULL on all of them gives None (COUNT(e): 0).
+    def sum(self, e): self.measure = e; self._ext = None; self._count = None; return self
+    def count(self, e=None):
+        """COUNT(*), or with a column (or an expression) COUNT(e): the rows where it is not NULL"""
+        self.measure = None; self._ext = None; self._count = e if e is None or isinstance(e, Expr) else Const(e); return self
     def minmax(self, col):
         """MIN and MAX of a fact column per group, by plane elimination: run() gives (min, max), or {key: (min, max)}"""
         if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
         if col.name in getattr(self.fact, "wide", {}): raise ValueError(f"{col.name}: MIN / MAX of a self-extending column")
-        self.measure = None; self._ext = col; return self
+        self.measure = None; self._ext = col; self._count = None; return self
     def rank_codes(self, col, ranks, engine="alg", bits=8):
         """Rank selection on the planes: the codes at the given 0-based ranks (ascending) among the codes of fact column
         col on the rows that pass the filters and joins (NULL rows left out), without reading any row. Radix selection
@@ -1280,11 +1319,20 @@ class Query:
         q = copy_query(self); q.keys = []; q.measure = None; q._ext = None; q._rows = True
         return q._run_codes("plain" if engine == "plain" else "alg")
 
+    def _sql_aggs(self):
+        """the aggregate in SQL, one expression per column of its value: SUM(e) (and COUNT(e) for a (sum, count)
+        result), MIN(c) and MAX(c), COUNT(e) or COUNT(*)"""
+        ext, cnt = getattr(self, "_ext", None), getattr(self, "_count", None)
+        if ext is not None: c = expr_sql(ext); return [f"MIN({c})", f"MAX({c})"]
+        if self.measure is not None:
+            m = expr_sql(self.measure)
+            return [f"SUM({m})"] + ([f"COUNT({m})"] if getattr(self, "_both", False) else [])
+        return [f"COUNT({expr_sql(cnt)})" if cnt is not None else "COUNT(*)"]
+
     def sql(self):
         keys = [expr_sql(k) for k in self.keys]
-        agg = f"SUM({expr_sql(self.measure)})" if self.measure is not None else "COUNT(*)"
         F = _ident(self.fact.name)
-        s = f"SELECT {', '.join(keys + [agg])} FROM {F}"
+        s = f"SELECT {', '.join(keys + self._sql_aggs())} FROM {F}"
         for dim, fk in self.joins.items(): s += f" JOIN {_ident(dim.name)} ON {F}.{_ident(fk)} = {_ident(dim.name)}.{_ident(getattr(dim, 'pk', None) or 'id')}"
         if getattr(self, "rjoin", None) is not None:
             dim, x, lo, hi = self.rjoin
@@ -1303,8 +1351,11 @@ class Query:
         dpreds = [c for c in conjuncts(self.pred) if tables_of(c) == {dim}]
         others = [c for c in conjuncts(self.pred) if tables_of(c) != {dim}]
         fkeys = [k for k in self.keys if k.table is not dim]
-        sel = [f"{expr_sql(k)} AS k{i}" for i, k in enumerate(fkeys)] + [f"{expr_sql(x)} AS kx",
-               (f"SUM({expr_sql(self.measure)})" if self.measure is not None else "COUNT(*)") + " AS v"]
+        aggs = self._sql_aggs()
+        sel = [f"{expr_sql(k)} AS k{i}" for i, k in enumerate(fkeys)] + [f"{expr_sql(x)} AS kx"] + [f"{a} AS v{i}" for i, a in enumerate(aggs)]
+        # the partial aggregates combine: extremes by MIN / MAX, sums and counts by SUM (a count of no pair is 0)
+        if getattr(self, "_ext", None) is not None: outer = ["MIN(m.v0)", "MAX(m.v1)"]
+        else: outer = [f"SUM(m.v{i})" if a.startswith("SUM(") else f"COALESCE(SUM(m.v{i}), 0)" for i, a in enumerate(aggs)]
         F = _ident(self.fact.name)
         inner = f"SELECT {', '.join(sel)} FROM {F}"
         for d, fk in self.joins.items(): inner += f" JOIN {_ident(d.name)} ON {F}.{_ident(fk)} = {_ident(d.name)}.{_ident(getattr(d, 'pk', None) or 'id')}"
@@ -1315,7 +1366,7 @@ class Query:
         else: on = f"m.kx >= {expr_sql(lo)}" if lo is not None else f"m.kx <= {expr_sql(hi)}"
         it = iter(range(len(fkeys)))
         keys = [expr_sql(k) if k.table is dim else f"m.k{next(it)}" for k in self.keys]
-        s = f"WITH m AS ({inner}) SELECT {', '.join(keys + ['SUM(m.v)'])} FROM m JOIN {_ident(dim.name)} ON {on}"
+        s = f"WITH m AS ({inner}) SELECT {', '.join(keys + outer)} FROM m JOIN {_ident(dim.name)} ON {on}"
         if dpreds: s += " WHERE " + " AND ".join(pred_sql(c) for c in dpreds)
         if keys: s += " GROUP BY " + ", ".join(keys)
         return s
@@ -1555,6 +1606,8 @@ class Query:
                 if hasattr(q, a): setattr(self, a, getattr(q, a))
             pos = [first[x] for x in ids]
             return {tuple(k[p] for p in pos): v for k, v in r.items()}
+        need = self._null_terms()
+        if need: return self._run_observed(engine, need)
         try:
             if not getattr(self, "_codes", False) and self._typed():
                 return self._run_typed(engine)
@@ -1563,6 +1616,61 @@ class Query:
             why = _bridge_reason(self, e)
             if why is None: raise
             return self._run_bridge(engine, why)
+
+    def _null_terms(self):
+        """the validity planes (table, column) of the nullable columns the aggregate reads (SUM's measure, MIN / MAX's
+        column, COUNT(e)'s argument; an expression is NULL where any of its columns is) that the filter does not already
+        require: the rows where one is 0 are not observations of the aggregate"""
+        e = self.measure if self.measure is not None else getattr(self, "_ext", None)
+        if e is None:
+            e = getattr(self, "_count", None)
+            rdim = self.rjoin[0] if getattr(self, "rjoin", None) is not None else None
+            for c in _expr_cols(e):                  # (COUNT(e) reads nothing else of these tables: SUM would fail here too)
+                if c.table is not self.fact and c.table not in self.joins and c.table is not rdim:
+                    raise ValueError(f"{c.table.name} is not joined")
+        out = []
+        for c in _expr_cols(e):
+            vc = getattr(c.table, "nullable", {}).get(c.name)
+            if vc is None or any(t is c.table and v == vc for t, v in out): continue
+            if self.pred is not None and _requires(self.pred, c.table, vc): continue
+            out.append((c.table, vc))
+        return out
+
+    def _run_observed(self, engine, need):
+        """An aggregate over nullable columns reads only its observations, the rows where the validity planes `need` are
+        1, while the groups stay those of the rows that pass the filter: a WHERE on the validity alone would drop a group
+        whose argument is NULL on every row, which SQL keeps with a NULL aggregate (COUNT(e): 0). So two engine queries,
+        each an ordinary one: the aggregate under the filter AND the validity (no NULL placeholder is summed, compared or
+        counted), and with GROUP BY the groups, COUNT(*) under the filter alone; every group of the first is a group of
+        the second (its rows are among them), the others get the aggregate of no observation."""
+        objs = (self.pred, self.measure, getattr(self, "_ext", None), getattr(self, "_count", None), getattr(self, "rjoin", None)) \
+            + tuple(self.keys) + tuple(self.joins)
+        key = (tuple(self.joins.values()), self.join_mode, getattr(self, "_both", False), getattr(self, "range_mode", "auto"),
+               tuple(vc for _, vc in need))
+        c = self.__dict__.get("_observed")
+        if c is None or c["key"] != key or len(c["objs"]) != len(objs) or any(a is not b for a, b in zip(c["objs"], objs)):
+            vp = self.pred                                   # (kept, so that the queries reuse their compiled plans)
+            for t, vc in need:
+                v = Cmp(Col(t, vc), "EQ", 1)
+                vp = v if vp is None else BoolOp("AND", vp, v)
+            obs = copy_query(self); obs.pred = vp
+            pres = None
+            if self.keys:
+                pres = copy_query(self); pres.measure = None; pres._ext = None; pres._count = None; pres._both = False
+            c = self._observed = dict(key=key, objs=objs, obs=obs, pres=pres)
+        obs, pres = c["obs"], c["pres"]
+        r = obs.run(engine)
+        for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "range_path", "scanned", "delta_rows",
+                  "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms", "stage_plan", "stage_plan_ms"):
+            if hasattr(obs, a): setattr(self, a, getattr(obs, a))
+        if pres is None: return r
+        groups = pres.run(engine)
+        if getattr(self, "_ext", None) is not None or self.measure is not None:
+            none = (None, 0) if getattr(self, "_both", False) and self.measure is not None else None
+        else: none = 0                                       # COUNT(e)
+        out = {g: (r[g] if g in r else none) for g in groups}
+        for g, v in r.items(): out.setdefault(g, v)
+        return out
 
     def _run_bridge(self, engine, why):
         """The histogram bridge: SUM(m) = sum over the values v of some columns H of m(v) restricted to the rows with
@@ -1684,9 +1792,9 @@ class Query:
         """run() with GROUP BY keys, the groups as columns: a Groups of the keys' codes, validity and codecs (decode them
         only for the rows needed) and one value per group, as run() gives it"""
         ids = [(id(k.table), k.name) if isinstance(k, Col) else id(k) for k in self.keys]
-        if self.keys and len(set(ids)) == len(ids) and not getattr(self, "_codes", False) and self._typed():
+        if self.keys and len(set(ids)) == len(ids) and not getattr(self, "_codes", False) and self._typed() and not self._null_terms():
             try: return self._run_typed(engine, columns=True)
-            except (TypeError, OverflowError): pass          # the bridges: through run()
+            except (TypeError, OverflowError): pass          # the bridges and NULL-skipping aggregates: through run()
         r = self.run(engine)
         keys = list(r.keys())
         cols = list(zip(*keys)) if keys else [[] for _ in self.keys]
@@ -2295,6 +2403,8 @@ class Query:
         bit j and differ at it, which pairs the even blocks of size 2^j of M with the odd blocks of H (dominance())."""
         dim, x, lo, hi = self.rjoin
         if not (isinstance(x, Col) and x.table is self.fact): raise ValueError("the range join's x must be a fact column")
+        if getattr(self, "_ext", None) is not None: raise ValueError("MIN / MAX over a range or inequality join: not supported")
+        both = getattr(self, "_both", False) and self.measure is not None      # (sum, count) per group
         dpreds = [c for c in conjuncts(self.pred) if tables_of(c) == {dim}]
         others = [c for c in conjuncts(self.pred) if tables_of(c) != {dim}]
         fkeys = [k for k in self.keys if k.table is not dim]; dkeys = [k for k in self.keys if k.table is dim]
@@ -2350,11 +2460,12 @@ class Query:
             vc = D(Dc, tot_c, hi_t) - (D(Dc, tot_c, lov) if lov is not None else 0)
             Rs = np.zeros(len(gu), object); Rc = np.zeros(len(gu), np.int64)
             np.add.at(Rs, ginv, vs.astype(object)); np.add.at(Rc, ginv, vc)
-            out = {tuple(gu[g].tolist()): (int(Rs[g]) if self.measure is not None else int(Rc[g])) for g in range(len(gu)) if Rc[g] > 0}
+            out = {tuple(gu[g].tolist()): ((int(Rs[g]), int(Rc[g])) if both else int(Rs[g]) if self.measure is not None else int(Rc[g]))
+                   for g in range(len(gu)) if Rc[g] > 0}
             if self.keys: return out
             tc = int(Rc.sum())
             if self.measure is None: return tc
-            return int(Rs.sum()) if tc else None
+            return (int(Rs.sum()) if tc else None, tc) if both else int(Rs.sum()) if tc else None
         inner.keys = fkeys + [x]; inner._raw = True
         km_, ms_, mc_ = inner._run_codes(engine); self.device, self.kernel_ms = inner.device, inner.kernel_ms
         # fact side: (k, x) -> (sum, count)
@@ -2380,11 +2491,11 @@ class Query:
                 if Rc[a, g] > 0:
                     fk_, dk_ = iter(ku[a].tolist()), iter(gu[g].tolist())
                     key = tuple(next(dk_) if k.table is dim else next(fk_) for k in self.keys)
-                    out[key] = int(Rs[a, g]) if self.measure is not None else int(Rc[a, g])
+                    out[key] = (int(Rs[a, g]), int(Rc[a, g])) if both else int(Rs[a, g]) if self.measure is not None else int(Rc[a, g])
         if self.keys: return out
         tot_c = int(Rc.sum()) if Rc.size else 0
         if self.measure is None: return tot_c
-        return int(Rs.sum()) if tot_c else None
+        return (int(Rs.sum()) if tot_c else None, tot_c) if both else int(Rs.sum()) if tot_c else None
 
     def _bilinear(self):
         e = self.measure
@@ -2394,6 +2505,7 @@ class Query:
         if self.keys:
             a = getattr(getattr(self, "last_plan", None), "agg", None)
             return {A_POLYG: "mask split + popcounts", A_MM: "AND-popcount matrix product"}.get(a, "general")
+        if getattr(self, "_ext", None) is not None: return "MIN / MAX (plane elimination)"
         if self.measure is None: return "count (popcount)"
         if self._linear(self.measure) is not None: return "linear (popcount algebra)"
         if self._bilinear(): return "bilinear (popcount algebra)"

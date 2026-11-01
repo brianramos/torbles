@@ -97,7 +97,9 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
   and past 128 bits through the histogram bridge (below).
 - **NULLs** are stored as a validity plane next to the column, so `IS NULL` is a plane and SQL's three-valued logic
   runs on the engine; a NULL or unmatched foreign key never joins. `fill_nulls={"t.col": value}` replaces NULLs at
-  load instead. In the engine-level API a comparison with a NULL is FALSE and a NULL groups under `None`.
+  load instead. In the engine-level API a comparison with a NULL is FALSE and a NULL groups under `None`; aggregates
+  skip NULLs as in SQL, so a group whose argument is NULL on every row is there with SUM, MIN and MAX `None` and
+  `count(col)` 0.
   Unsupported column types (LIST, STRUCT, MAP, INTERVAL, ...) are skipped with a note.
 - **Key design.** For every referenced table, torbles finds the longest chain of functional dependencies among its
   low-cardinality columns (on the full data), ranks each level within its parent and stores
@@ -142,7 +144,7 @@ engine query.
 The typed API is built on the engine's own API (`torbles/algq.py`), which works on uint32 columns and hand-made keys:
 
 - `Table(name, columns, msb=, refs=, extend=, virtual=)`, `Surrogate(w, s_of_row)`
-- `Query(fact).join(dim, fk).where(pred).group_by(...).sum(expr) / .count()`
+- `Query(fact).join(dim, fk).where(pred).group_by(...).sum(expr) / .count() / .count(col) / .minmax(col)`
 - `.join_range(dim, x, lo, hi)` and `.join_ineq(dim, x, op, y)`
 - `set_threads(n)` (default: all cores), `set_build_threads(n)`, `set_groupby("mm" | "split")`, `gpu_mm("word" | "popc" | "mma")`
 
