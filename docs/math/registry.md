@@ -104,6 +104,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 66 | graph.paths | bounded fixed points, paths and energies | GRAPH-002 | graph fixed point | `tr_graph_reach` | `tr_mgpu_graph_reach`, `tr_mgpu_graph_closure`, `tr_mgpu_graph_walks`, `tr_mgpu_graph_paths`, `tr_mgpu_graph_energy`, `tr_mgpu_graph_pagerank`, `tr_mgpu_graph_power` |
 | 67 | elim | bounded elimination and generators | GEOM-002 | elimination | `tr_elim_select` | `tr_mgpu_elim_check` |
 | 68 | preimg | roots, residues and periodic preimages | PRE-002 | code set | `tr_preimg_preimage` | `tr_mgpu_preimg_scan`, `tr_mgpu_preimg_verify` |
+| 69 | topo.complex | declared occupancy complexes | TOPO-001 | cubical complex | `tr_topo_build` | `tr_mgpu_topo_counts`, `tr_mgpu_topo_build`, `tr_mgpu_topo_local` |
+| 70 | topo.homology | bounded cycles, homology, persistence | TOPO-002 | chain reduction | `tr_topo_check` | `tr_mgpu_topo_dd` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

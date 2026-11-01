@@ -228,7 +228,10 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_NORMALIZE = 63,      /* normalizers, log-likelihoods, gradients and Hessians of a declared finite-support model from retained masses */
        TR_OP_FIXPOINT = 64,       /* the least fixed point of a monotone frontier iteration within a declared round bound */
        TR_OP_RELAX = 65,          /* path relaxations in an ordered idempotent semiring ((min, +), (max, +)) with improving-cycle refusal */
-       TR_REG_OPERATORS = 66 };
+       TR_OP_BOUNDARY = 66,       /* signed incidences of a chain complex (d o d = 0) */
+       TR_OP_HOMOLOGY = 67,       /* ranks, Betti numbers and cycle bases over a field */
+       TR_OP_PERSISTENCE = 68,    /* pairs of a bounded filtration by column reduction */
+       TR_REG_OPERATORS = 69 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -298,6 +301,9 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_NORMALIZE, 0, 0, TR_REG_FOLD},
     {TR_OP_FIXPOINT, 0, 0, TR_REG_LATTICE},
     {TR_OP_RELAX, 0, 0, TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED},
+    {TR_OP_BOUNDARY, 0, 0, TR_REG_RING | TR_LAW_INVERSE},
+    {TR_OP_HOMOLOGY, 0, 0, TR_REG_FIELD},
+    {TR_OP_PERSISTENCE, 0, 0, TR_REG_FIELD},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -953,7 +959,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_GRAPH_PATHS = 66,       /* GRAPH-002 reachability, bounded walk counts, paths with cycle refusal, energies */
        TR_REG_M_ELIM = 67,              /* GEOM-002 generator sets, reconstructions, local forms */
        TR_REG_M_PREIMG = 68,            /* PRE-002 roots, residues, bit cubes, fallbacks */
-       TR_REG_M_END = 69 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_TOPO_COMPLEX = 69,      /* TOPO-001 declared occupancy complexes and local topology */
+       TR_REG_M_TOPO_HOMOLOGY = 70,     /* TOPO-002 bounded cycles, homology and persistence */
+       TR_REG_M_END = 71 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1010,7 +1018,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_GRAPH_LAYOUT = 55,      /* a vertex dictionary, CSR / CSC entries with multiplicities, canonical edges and incidence lists of a snapshot */
        TR_REG_STATE_GRAPH_FIXPOINT = 56,    /* reach sets and levels, bounded walk tables, path trees and certified iterates of a layout */
        TR_REG_STATE_ELIMINATION = 57,       /* generators, certified reconstructions, row checks */
-       TR_REG_STATE_KINDS = 58 };
+       TR_REG_STATE_CUBICAL_COMPLEX = 58,   /* occupancy, cells, signed incidences of a declared grid */
+       TR_REG_STATE_CHAIN_REDUCTION = 59,   /* ranks, Betti numbers, cycles, persistence pairs */
+       TR_REG_STATE_KINDS = 60 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1357,6 +1367,19 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_PREIMG, EUCLID, INTEGER, TR__CPU), TR__I(TR_REG_M_PREIMG, RESIDUE, INTEGER, TR__ALL),
     TR__I(TR_REG_M_PREIMG, BITS, CODE, TR__CPU), TR__I(TR_REG_M_PREIMG, ORDER, CODE, TR__ALL),
     TR__I(TR_REG_M_PREIMG, PREDICATE, RATIONAL, TR__ALL), TR__I(TR_REG_M_PREIMG, FOLD, COUNT, TR__ALL),
+    /* 69 TOPO-001 declared occupancy complexes and local topology */
+    TR__I(TR_REG_M_TOPO_COMPLEX, CONVERT, INTEGER, TR__ALL), TR__I(TR_REG_M_TOPO_COMPLEX, MARK_CELLS, CODE, TR__ALL),
+    TR__I(TR_REG_M_TOPO_COMPLEX, DISTINCT_FOLD, ROWSET, TR__ALL), TR__I(TR_REG_M_TOPO_COMPLEX, POPCOUNT, ROWSET, TR__ALL),
+    TR__I(TR_REG_M_TOPO_COMPLEX, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_TOPO_COMPLEX, ORDER, COUNT, TR__ALL),
+    TR__I(TR_REG_M_TOPO_COMPLEX, BOUNDARY, INTEGER, TR__ALL), TR__I(TR_REG_M_TOPO_COMPLEX, ORDER, INTEGER, TR__ALL),
+    /* 70 TOPO-002 bounded cycles, homology and persistence */
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, BOUNDARY, INTEGER, TR__ALL), TR__I(TR_REG_M_TOPO_HOMOLOGY, BOUNDARY, GF2, TR__ALL),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, VERIFY, INTEGER, TR__ALL), TR__I(TR_REG_M_TOPO_HOMOLOGY, FOLD, COUNT, TR__ALL),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, RESIDUE, GFP, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, SOLVE, GF2, TR__CPU),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, HOMOLOGY, GF2, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, HOMOLOGY, GFP, TR__CPU),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, HOMOLOGY, RATIONAL, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, GF2, TR__CPU),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, GFP, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, RATIONAL, TR__CPU),
+    TR__I(TR_REG_M_TOPO_HOMOLOGY, ORDER, INTEGER, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

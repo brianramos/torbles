@@ -68,7 +68,8 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "compile", "model_count",
     "propagate", "explain", "probability",
     "normalize",
-    "fixpoint", "relax"};
+    "fixpoint", "relax",
+    "boundary", "homology", "persistence"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -93,7 +94,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "intervention plan",
     "optimization program",
     "graph layout", "graph fixed point",
-    "elimination"};
+    "elimination",
+    "cubical complex", "chain reduction"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -757,6 +759,25 @@ static const tr_reg_module modules[] = {
                    "tr_preimg_set_contains", "tr_preimg_set_get_view", "tr_preimg_set_lookup", "tr_preimg_set_cubes",
                    "tr_preimg_set_certificate", "tr_preimg_scan", "tr_preimg_verify"},
      .cuda_entry = {"tr_mgpu_preimg_scan", "tr_mgpu_preimg_verify"}},
+    {FAMILY(TR_REG_M_TOPO_COMPLEX, "topo.complex", "topo", "TOPO-001", "declared occupancy complexes"),
+     .state_kind = TR_REG_STATE_CUBICAL_COMPLEX, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(CODE) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_RING | TR_LAW_INVERSE | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_CELL_DOMAIN | TR_PROOF_EXACT_COUNT | TR_PROOF_NULL_POLICY | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_topo_build", "tr_topo_adopt", "tr_topo_count", "tr_topo_scan_needs", "tr_topo_build_needs",
+                   "tr_topo_get_info", "tr_topo_cells", "tr_topo_local_get", "tr_topo_adjacency_get",
+                   "tr_topo_values", "tr_topo_fresh", "tr_topo_equal"},
+     .cuda_entry = {"tr_mgpu_topo_counts", "tr_mgpu_topo_build", "tr_mgpu_topo_local"}},
+    {FAMILY(TR_REG_M_TOPO_HOMOLOGY, "topo.homology", "topo", "TOPO-002", "bounded cycles, homology, persistence"),
+     .state_kind = TR_REG_STATE_CHAIN_REDUCTION, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(GF2) | CB(GFP) | CB(RATIONAL) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_PRIME | TR_PROOF_BOUND | TR_PROOF_IDENTITY,
+     .cpu_entry = {"tr_topo_check", "tr_topo_check_view", "tr_topo_boundary", "tr_topo_boundary_packed",
+                   "tr_topo_chain_create", "tr_topo_reduce_need", "tr_topo_homology_build",
+                   "tr_topo_homology_classes", "tr_topo_persistence_build", "tr_topo_persistence_pairs",
+                   "tr_topo_persistence_betti", "tr_topo_persistence_levels"},
+     .cuda_entry = {"tr_mgpu_topo_dd"}},
 };
 #undef BUILTIN
 #undef FAMILY
