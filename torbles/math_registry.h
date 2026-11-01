@@ -231,7 +231,8 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_BOUNDARY = 66,       /* signed incidences of a chain complex (d o d = 0) */
        TR_OP_HOMOLOGY = 67,       /* ranks, Betti numbers and cycle bases over a field */
        TR_OP_PERSISTENCE = 68,    /* pairs of a bounded filtration by column reduction */
-       TR_REG_OPERATORS = 69 };
+       TR_OP_ELIMINATE = 69,      /* sum-product and max-product variable elimination of a factor graph along a costed order (exact messages) */
+       TR_REG_OPERATORS = 70 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -304,6 +305,7 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_BOUNDARY, 0, 0, TR_REG_RING | TR_LAW_INVERSE},
     {TR_OP_HOMOLOGY, 0, 0, TR_REG_FIELD},
     {TR_OP_PERSISTENCE, 0, 0, TR_REG_FIELD},
+    {TR_OP_ELIMINATE, 0, 0, TR_REG_RING | TR_LAW_ORDERED},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -964,7 +966,8 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_PAIR_PLAN = 71,         /* PAIR-002 structured pairwise query planning */
        TR_REG_M_CONSERVE = 72,          /* DISC-003 incremental identity evidence, records, laws */
        TR_REG_M_EQUIV = 73,             /* META-001 snapshot and universal proofs, counterexamples */
-       TR_REG_M_END = 74 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_FACTOR = 74,            /* PROB-002 factorized probabilistic inference over bounded factor graphs */
+       TR_REG_M_END = 75 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1026,7 +1029,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_PAIR_PLAN = 60,         /* costed pair strategies, support tables with multiplicities */
        TR_REG_STATE_TRACKER = 61,           /* a Gram kept current under signed deltas, identity evidence and persistence records */
        TR_REG_STATE_QUERY_PARTS = 62,       /* hash-consed predicates (a shared condition DAG), canonical measures and queries */
-       TR_REG_STATE_KINDS = 63 };
+       TR_REG_STATE_FACTOR_GRAPH = 63,      /* a factor graph over declared finite supports: scaled exact tables, data sources, costed elimination programs and their message arenas */
+       TR_REG_STATE_KINDS = 64 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1402,6 +1406,10 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_EQUIV, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_EQUIV, TEST, COUNT, TR__ALL),
     TR__I(TR_REG_M_EQUIV, POLY_SUB, RATIONAL, TR__CPU), TR__I(TR_REG_M_EQUIV, DIVIDE, RATIONAL, TR__CPU),
     TR__I(TR_REG_M_EQUIV, FOLD, BIGINT, TR__CPU),
+    /* 74 PROB-002 factorized probabilistic inference over bounded factor graphs */
+    TR__I(TR_REG_M_FACTOR, ELIMINATE, BIGINT, TR__ALL), TR__I(TR_REG_M_FACTOR, MULTIPLY, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_FACTOR, ORDER, BIGINT, TR__ALL), TR__I(TR_REG_M_FACTOR, MODEL_COUNT, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_FACTOR, NORMALIZE, BIGQ, TR__CPU), TR__I(TR_REG_M_FACTOR, DIVIDE, BIGQ, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

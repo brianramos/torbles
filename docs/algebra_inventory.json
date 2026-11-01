@@ -6680,13 +6680,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_factor.c; the elimination step tr_factor_cell inline in math_factor.h): factor graphs of n <= 4096 variables with declared finite supports (1..2^16 logical values or the NULL category, distinct, with a decimal scale) and factors over scopes of <= 31 variables built from explicit nonnegative rationals, one group of a dense or sparse TENSOR-001 tensor (count axes mapped by value with equal scales, index axes by index; a nonzero cell outside the declared values refused with the factor, axis and value), a PROB-001 categorical model with one request's weights or exact probabilities (support points mapped by value, every other cell 0) or one group of PROB-001 retained statistics; each factor scaled to integers over the lcm of its denominators (< 2^126); data factors record their scope's source (GEN-002's rule) and two of one source are admitted only under a covering GEN-002 independence declaration (refused otherwise with the pair, the source digest and the reason). Query shapes (kept variables in order, evidence variables, sum / max / k-best, R requests) are planned by simulating bucket elimination for each candidate order (an exact dynamic program over the subsets of the eliminated variables, at most 14 by default and 64 free variables, minimizing the total joint cells among the orders whose every step fits the degree / tensor / support budgets and proving infeasibility for every order otherwise; min-fill, min-degree, min-weight, weighted min-fill, natural, reverse and a given order), each on the CPU or the device, with exact per-candidate width (the induced width), largest joint table, largest intermediate table, products, arena, host and device bytes and limbs, costed by component and chosen by FND-008's tr_planner_choose (the cheapest admissible, the first on a tie; a force runs exactly its candidate or refuses); refusals carry the evidence of every candidate, whether they are proven for every order (the DP or a minor-min-width / first-step / output lower bound past its limit) and the exact minima or lower bounds of width, joint and support. Programs run every step as dense messages in a per-request arena: sums (and, for max, the maxima, the minimum index reaching them and the number of maximizing completions) of products of operand entries over the eliminated variable's values in exact L-limb integers (COUNT-002's arithmetic; L proven from the factors' maxima and the domain sizes), evidence by per-request base offsets; answers are adopted natively from the CPU or device arena: Z_e and Z_e / D, P(e) = Z_e / Z from the retained normalizer, marginal tables P(q | e) over any kept variables, conditional tables P(q | r, e) (undefined where P(r | e) = 0), the maximum weight, its probability, the exact number of maximizers and every tied maximizer (decoded through the tight values, sorted lexicographically, refused past the output budget with the exact count), and the k best by lists of the top k with ties per message cell decoded through backpointers (canonical order: weight decreasing, then lexicographic; the ties beyond k counted); all values canonical rationals with FND-009 big integers. Alternative backends of the weighted model count Z_e: COUNT-002's variable elimination and brute force over the restricted tables, a COUNT-002 decision diagram of the parameter encoding of binary graphs counted with literal weights, and TENSOR-002's costed contraction of the dense scaled tables.",
+   "gpu": "CUDA kernel math_factor_gpu.cu: tr_mgpu_factor_eliminate runs an elimination program with one launch per step (later steps read earlier messages) and one work item per (request, output cell) evaluating the shared tr_factor_cell into its own slots: exact L-limb sums of the products of 128-bit scaled input entries and L-limb messages over the eliminated variable's values and, for max programs, the maximum, its minimum index (argmax ties broken by the minimum index) and the count of maximizing completions; no atomics on values (an overflow flag by atomic OR, excluded by the host's L proof), 7 L words of local scratch per item (L <= 16 on the device, else the CUDA candidate is rejected); the host checks the program, every request's evidence bases and the budget (bytes = every device copy, states = R x arena) before allocating; the raw arena equals the CPU's bit for bit in any thread order and is adopted by the same native answer code.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_prob.c",
-    "torbles/math_prob.h",
-    "tests/test_math_prob.py"
+    "torbles/math_factor.h",
+    "torbles/math_factor.c",
+    "torbles/math_factor_gpu.cu",
+    "torbles/math_factor.py",
+    "tests/test_math_factor.py",
+    "bench/benchmark_math_factor.py"
    ],
    "acceptance_tests": [
     "Compare tiny correlated graphs with exhaustive joint enumeration.",
@@ -6696,7 +6699,16 @@
     "Use support sizes 8/64/1,024 and 1/100/10,000 parameter requests; compare retained partition/likelihood states with repeated support enumeration.",
     "For factorized inference vary graph size and elimination width on brute-force-checked tiny instances and bounded larger models; report intermediate support and precision."
    ],
-   "limitations": [],
+   "limitations": [
+    "Factors are exact nonnegative rational tables (explicit, count tensors, categorical models, retained masses): exponential-family factors (certified enclosures) are refused, and requests past every budget are refused, never answered with certified bounds or an extrapolation.",
+    "The exact subset DP that proves a refusal for every order runs for at most 14 eliminated variables by default (dp_limit up to 24) and 64 free variables, within the iterations budget; beyond it the heuristic candidates may miss an order that fits, and a refusal is then proven only when a lower bound (minor-min-width treewidth bound, the first step's table, the output table) exceeds its limit.",
+    "Refusals report FND-008's first over-budget candidate (resource, need, limit); the plan evidence lists every candidate's needs, and the minima are exact only when the DP ran.",
+    "Every message of a program is kept in the arena (the decoders read them): memory is the whole arena per request; the CPU loops are single-threaded; the CUDA kernel holds at most 16 limbs (1024-bit values) per work item.",
+    "Evidence fixes one declared value per observed variable (no soft evidence); the maximum and the k best are over every unobserved variable (no marginal MAP); the k best and every decode run on the CPU.",
+    "Data factors take one group's state; the independence declaration is the caller's statement, never verified against the data; products of PROB-001 statistics are refused as factors.",
+    "Alternative backends are bounded by their own capabilities: the decision diagram needs binary variables and at most 64 program variables (variables plus parameters), TENSOR-002 at most 8 tables over 16 variables with scopes of 8 and every contraction step's bound below 2^127, COUNT-002 elimination int64 rational entries.",
+    "Cost rates are hand-set relative estimates (not calibrated); the CUDA timings need --device on an actual GPU."
+   ],
    "validation": null
   },
   {

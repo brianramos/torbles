@@ -69,7 +69,8 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "propagate", "explain", "probability",
     "normalize",
     "fixpoint", "relax",
-    "boundary", "homology", "persistence"};
+    "boundary", "homology", "persistence",
+    "eliminate"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -98,7 +99,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "cubical complex", "chain reduction",
     "pairwise plans",
     "tracker",
-    "query parts"};
+    "query parts",
+    "factor graph"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -812,6 +814,16 @@ static const tr_reg_module modules[] = {
                    "tr_equiv_poly_from_math", "tr_equiv_result_get", "tr_equiv_result_point",
                    "tr_equiv_result_certificate"},
      .cuda_entry = {"tr_mgpu_equiv_check"}},
+    {FAMILY(TR_REG_M_FACTOR, "factor", "factor", "PROB-002", "factorized inference"),
+     .state_kind = TR_REG_STATE_FACTOR_GRAPH, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(COUNT) | CB(RATIONAL) | CB(BIGINT) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN,
+     .cpu_entry = {"tr_factor_graph_create", "tr_factor_plan_create", "tr_factor_prog_create",
+                   "tr_factor_prog_bases", "tr_factor_eliminate", "tr_factor_answer_create", "tr_factor_kbest",
+                   "tr_factor_alternative", "tr_factor_plan_get", "tr_factor_prog_need", "tr_factor_graph_table",
+                   "tr_factor_answer_value"},
+     .cuda_entry = {"tr_mgpu_factor_eliminate"}},
 };
 #undef BUILTIN
 #undef FAMILY
