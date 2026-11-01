@@ -6,8 +6,8 @@ persistence) over engine tables and explicit chain complexes (torbles/math_topo.
 
 Oracles, independent of the implementation: hand-enumerated cells, incidences and Euler counts of tiny grids; a
 Python enumeration of the closure of the occupied cells (Khalimsky coordinates) with the product orientation;
-Gaussian elimination written here over GF(2) (Python ints as bit rows), GF(p) and Q (Fractions); networkx components
-of the dual graph; brute-force star counts and boundary flags; a Python standard column reduction for persistence
+Gaussian elimination written here over GF(2) (Python ints as bit rows), GF(p) and Q (Fractions); the components of
+the dual graph by a graph search written here; brute-force star counts and boundary flags; a Python standard column reduction for persistence
 pairs, and the persistent Betti numbers beta_k^{i,j} = rank[Z_k(K_i) | B_k(K_j)] - rank B_k(K_j) computed by ranks
 alone. Every native result is also computed on the CUDA path (emulated here with TORBLES_EMU_SCRAMBLE=1, a scrambled
 thread order) and compared for equality. Seeds are fixed.
@@ -19,7 +19,6 @@ import unittest
 from fractions import Fraction
 from math import prod
 
-import networkx as nx
 import numpy as np
 import pandas as pd
 
@@ -333,9 +332,40 @@ def oracle_local(oc):
     return out
 
 
+class DualGraph:
+    """an undirected simple graph on the occupied top cells, with its edges and connected components (a depth-first
+    search): the oracle of the dual-graph adjacency"""
+
+    def __init__(self, nodes):
+        self.adj = {p: set() for p in nodes}
+
+    def add_edge(self, p, q):
+        self.adj[p].add(q)
+        self.adj[q].add(p)
+
+    def number_of_edges(self):
+        return sum(len(v) for v in self.adj.values()) // 2
+
+    def edges(self):
+        return [(p, q) for p in self.adj for q in self.adj[p] if p < q]
+
+    def connected_components(self):
+        left, out = set(self.adj), []
+        while left:
+            start = left.pop()
+            comp, stack = {start}, [start]
+            while stack:
+                for q in self.adj[stack.pop()]:
+                    if q in left:
+                        left.discard(q)
+                        comp.add(q)
+                        stack.append(q)
+            out.append(comp)
+        return out
+
+
 def dual_graph(occ, d, adjacency):
-    G = nx.Graph()
-    G.add_nodes_from(occ)
+    G = DualGraph(occ)
     for p in occ:
         for off in itertools.product((-1, 0, 1), repeat=d):
             nz = sum(1 for o in off if o)
@@ -524,7 +554,7 @@ class Topo(unittest.TestCase):
         cx = mt.Complex.build(scope_of(db), grid_of((3, 3)))
         self.assertEqual((cx.counts, cx.euler, cx.rows["outside_rows"]), ([0, 0, 0], 0, 1))
 
-    def test_topo001_adjacency_components_match_networkx(self):
+    def test_topo001_adjacency_components_match_a_graph_search(self):
         rng = random.Random(1202)
         for trial in range(8):
             d = 2 if trial < 5 else 3
@@ -535,11 +565,11 @@ class Topo(unittest.TestCase):
             for adjacency in mt.ADJACENCY[d]:
                 a = cx.adjacency(adjacency, pairs=True)
                 G = dual_graph(occ, d, adjacency)
-                self.assertEqual((a["edges"], a["components"]), (G.number_of_edges(), nx.number_connected_components(G)))
+                self.assertEqual((a["edges"], a["components"]), (G.number_of_edges(), len(G.connected_components())))
                 index = {tuple((x - 1) // 2 for x in c): i for i, c in enumerate(tops)}
                 want = sorted(tuple(sorted((index[p], index[q]))) for p, q in G.edges())
                 self.assertEqual([tuple(p) for p in a["pairs"].tolist()], want)
-                for comp in nx.connected_components(G):
+                for comp in G.connected_components():
                     ids = sorted(index[p] for p in comp)
                     self.assertEqual({int(a["labels"][i]) for i in ids}, {ids[0]})
             # with 8 / 26 adjacency the components are exactly H_0 of the union

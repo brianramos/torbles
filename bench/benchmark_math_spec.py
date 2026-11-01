@@ -9,7 +9,7 @@ Case 1 (the full 2^k domain): k = 3 / 6 / 10 / 12 / 16 / 20 conditions (3 / 6 / 
 independent bit conditions over 20k and 200k rows (the row count changes the scan, never the transform): the
 histogram (state construction), the forward transform and the inverse (first and warm), each with its reported cost
 (2^k states, k passes, k 2^(k-1) butterflies, bytes) and normalization, Parseval's identity, and the baselines NumPy
-(an int64 fast Walsh-Hadamard transform in vectorized passes) and SciPy (the dense Sylvester-Hadamard matrix product,
+(an int64 fast Walsh-Hadamard transform in vectorized passes, and the dense Sylvester-Hadamard matrix product for
 k <= 10). Every baseline's spectrum is compared with the native one.
 Case 2 (fixed frequency sets): on a k = 12 histogram, frequency sets of 1 / 8 / 32 subsets: their construction as new
 frequencies (direct sums over the 2^k cells, no full transform) against one full transform and lookups; then 1 / 100
@@ -39,6 +39,14 @@ def table(rng, rows):
 
 def conditions(k):
     return [mb.condition(f"u{i % 2}", "bit", i // 2) for i in range(k)]
+
+
+def sylvester_hadamard(n):
+    """the Sylvester Hadamard matrix of order n = 2^k, H_2n = [[H, H], [H, -H]] (what scipy.linalg.hadamard builds)"""
+    H = np.ones((1, 1), dtype=np.int64)
+    while H.shape[0] < n:
+        H = np.block([[H, H], [H, -H]])
+    return H
 
 
 def numpy_fwht(v):
@@ -90,12 +98,11 @@ def case_domain(bench, rng):
             if got.tolist() != f["spectrum"]:
                 raise SystemExit(f"NumPy disagrees at k={k}")
             if k <= 10:
-                from scipy.linalg import hadamard
-                H = hadamard(1 << k, dtype=np.int64)
-                dense = bench.measure("forward Walsh transform (dense Hadamard product)", "scipy",
+                H = sylvester_hadamard(1 << k)
+                dense = bench.measure("forward Walsh transform (dense Hadamard product)", "numpy",
                                       lambda: H @ vec.astype(np.int64), repeats=3, **p)
                 if dense.tolist() != f["spectrum"]:
-                    raise SystemExit(f"SciPy disagrees at k={k}")
+                    raise SystemExit(f"the dense Hadamard product disagrees at k={k}")
             bench.note(f"rows={rows}, k={k}: cost {f['cost']['states']} states, {f['cost']['passes']} passes, "
                        f"{f['cost']['butterflies']} butterflies, {f['cost']['bytes']} bytes (independent of the rows)")
 

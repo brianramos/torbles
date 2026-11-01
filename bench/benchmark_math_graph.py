@@ -11,7 +11,8 @@ adjacency / incidence build (dictionary, CSR, CSC, canonical edges, incidence li
 iterations on the built layout: one-step frontier expansion at densities 0.1% / 10% / 50%, the semiring products
 (count, bool, min_plus, float), degrees, reachability from one vertex (its rounds), shortest paths and PageRank.
 Baselines: SciPy sparse (COO -> CSR build, A^T x, csgraph breadth-first order and Dijkstra), NumPy (bincount degrees,
-a vectorized PageRank power iteration to the same tolerance).
+a vectorized PageRank power iteration to the same tolerance). SciPy is not a declared dependency: without it the SciPy
+baselines, their cross-checks and the PageRank baseline (which uses SciPy's sparse product) are skipped and noted.
 Case 2 (bounded path lengths 1 / 4 / 16 / 32): walk counts from one vertex on the cyclic, star and disconnected graphs
 (100k edges; 1k with --quick) under a declared bound; the semirings, reachability and bounded walk counts of a small
 graph compared with exact oracles written here (Python ints / Fractions over the edge list, DuckDB recursive CTEs).
@@ -25,6 +26,12 @@ import random
 from fractions import Fraction
 
 import numpy as np
+
+try:
+    import scipy.sparse as sp
+    import scipy.sparse.csgraph as cg
+except ImportError:                                               # not a declared dependency: baselines skipped
+    sp = cg = None
 
 from math_bench import Bench
 from torbles import math_bank as mbk
@@ -54,7 +61,6 @@ def shape(kind, m, rng):
 
 
 def scipy_csr(src, dst, n, data=None):
-    import scipy.sparse as sp
     return sp.coo_matrix((np.ones(len(src)) if data is None else data, (src, dst)), shape=(n, n)).tocsr()
 
 
@@ -95,10 +101,11 @@ def case_shapes(bench):
                                                edges=info["edges"], layout_bytes=info["bytes"])
             n = G.n
             ids = np.searchsorted(np.array(G.keys(), dtype=np.int64), src), np.searchsorted(np.array(G.keys()), dst)
-            bench.measure("adjacency build (COO -> CSR)", "scipy", lambda: scipy_csr(ids[0], ids[1], n), repeats=rep,
-                          phase="build", **p)
-            A = scipy_csr(ids[0], ids[1], n)
-            AT = A.T.tocsr()
+            if sp is not None:
+                bench.measure("adjacency build (COO -> CSR)", "scipy", lambda: scipy_csr(ids[0], ids[1], n),
+                              repeats=rep, phase="build", **p)
+                A = scipy_csr(ids[0], ids[1], n)
+                AT = A.T.tocsr()
             # frontier expansion at three densities
             for dens in (0.001, 0.1, 0.5):
                 mask = rng.random(n) < dens
@@ -106,11 +113,12 @@ def case_shapes(bench):
                 for backend in bench.backends():
                     got = bench.measure("frontier expansion", backend, lambda: G.expand(F, backend=backend).count,
                                         repeats=5, density=dens, **p)
-                ref = bench.measure("frontier expansion (A^T x > 0)", "scipy",
-                                    lambda: int(np.count_nonzero(AT @ mask.astype(np.float64))), repeats=5,
-                                    density=dens, **p)
-                if got != ref:
-                    raise SystemExit(f"expansion disagrees with SciPy: {kind} {m} {dens}")
+                if sp is not None:
+                    ref = bench.measure("frontier expansion (A^T x > 0)", "scipy",
+                                        lambda: int(np.count_nonzero(AT @ mask.astype(np.float64))), repeats=5,
+                                        density=dens, **p)
+                    if got != ref:
+                        raise SystemExit(f"expansion disagrees with SciPy: {kind} {m} {dens}")
             x = rng.integers(-5, 6, n, dtype=np.int64)
             xf = rng.random(n)
             for sr, xv in (("count", x), ("bool", x > 0), ("min_plus", x), ("float", xf)):
@@ -119,10 +127,11 @@ def case_shapes(bench):
                                   lambda: G.spmv(xv, sr, weights="one", backend=backend).array.shape[0], repeats=5,
                                   semiring=sr, **p)
             cnt = G.spmv(x, "count", weights="one").array[:, 0]
-            ref = bench.measure("semiring product (count): A^T x", "scipy", lambda: AT @ x, repeats=5,
-                                semiring="count", **p)
-            if not np.array_equal(cnt, ref.astype(np.int64)):
-                raise SystemExit(f"count product disagrees with SciPy: {kind} {m}")
+            if sp is not None:
+                ref = bench.measure("semiring product (count): A^T x", "scipy", lambda: AT @ x, repeats=5,
+                                    semiring="count", **p)
+                if not np.array_equal(cnt, ref.astype(np.int64)):
+                    raise SystemExit(f"count product disagrees with SciPy: {kind} {m}")
             for backend in bench.backends():
                 deg = bench.measure("degrees (in)", backend, lambda: G.degrees("in", backend=backend).array[:, 0],
                                     repeats=5, **p)
@@ -136,12 +145,12 @@ def case_shapes(bench):
                 rr = bench.measure("reachability from one vertex (fixed point)", backend,
                                    lambda: G.reach(S, backend=backend), repeats=2, **p)
                 bench.records[-1]["result"] = dict(rounds=rr["rounds"], reached=rr["reached_count"])
-            import scipy.sparse.csgraph as cg
-            order = bench.measure("reachability (breadth-first order)", "scipy",
-                                  lambda: cg.breadth_first_order(A, start, directed=True, return_predecessors=False),
-                                  repeats=2, **p)
-            if len(order) != rr["reached_count"]:
-                raise SystemExit("reachability disagrees with SciPy")
+            if sp is not None:
+                order = bench.measure("reachability (breadth-first order)", "scipy",
+                                      lambda: cg.breadth_first_order(A, start, directed=True,
+                                                                     return_predecessors=False), repeats=2, **p)
+                if len(order) != rr["reached_count"]:
+                    raise SystemExit("reachability disagrees with SciPy")
             for alg in ("dijkstra", "bellman_ford"):
                 for backend in bench.backends():
                     if backend == "cuda" and alg == "dijkstra":
@@ -150,29 +159,31 @@ def case_shapes(bench):
                                        lambda: G.paths(S, algorithm=alg if backend == "cpu" else "auto",
                                                        backend=backend), repeats=2, algorithm=alg, **p)
                     bench.records[-1]["result"] = dict(rounds=pr["rounds"], reached=pr["reached_count"])
-            # SciPy sums duplicate COO entries: keep the lightest parallel edge (the shortest-path semantics), and a
-            # tiny positive offset keeps zero weights as stored edges
-            o = np.lexsort((w, ids[1], ids[0]))
-            first = np.ones(len(o), dtype=bool)
-            first[1:] = (ids[0][o][1:] != ids[0][o][:-1]) | (ids[1][o][1:] != ids[1][o][:-1])
-            sel = o[first]
-            Aw = scipy_csr(ids[0][sel], ids[1][sel], n, data=w[sel].astype(np.float64) + 1e-300)
-            dj = bench.measure("shortest paths (Dijkstra)", "scipy",
-                               lambda: cg.dijkstra(Aw, directed=True, indices=start), repeats=2, **p)
-            mine = G.paths(S)["distance"]
-            if any((v is None) != (not np.isfinite(r)) or (v is not None and abs(v - r) > 1e-6)
-                   for v, r in zip(mine, dj)):
-                raise SystemExit("shortest paths disagree with SciPy")
+            if sp is not None:
+                # SciPy sums duplicate COO entries: keep the lightest parallel edge (the shortest-path semantics), and
+                # a tiny positive offset keeps zero weights as stored edges
+                o = np.lexsort((w, ids[1], ids[0]))
+                first = np.ones(len(o), dtype=bool)
+                first[1:] = (ids[0][o][1:] != ids[0][o][:-1]) | (ids[1][o][1:] != ids[1][o][:-1])
+                sel = o[first]
+                Aw = scipy_csr(ids[0][sel], ids[1][sel], n, data=w[sel].astype(np.float64) + 1e-300)
+                dj = bench.measure("shortest paths (Dijkstra)", "scipy",
+                                   lambda: cg.dijkstra(Aw, directed=True, indices=start), repeats=2, **p)
+                mine = G.paths(S)["distance"]
+                if any((v is None) != (not np.isfinite(r)) or (v is not None and abs(v - r) > 1e-6)
+                       for v, r in zip(mine, dj)):
+                    raise SystemExit("shortest paths disagree with SciPy")
             for backend in bench.backends():
                 prk = bench.measure("PageRank (d = 0.85, tol 1e-10)", backend,
                                     lambda: G.pagerank(0.85, tol=1e-10, max_iter=1000, backend=backend),
                                     repeats=2, **p)
                 bench.records[-1]["result"] = dict(iterations=prk["iterations"], bound=prk["bound"])
-            Apr = scipy_csr(ids[0], ids[1], n, data=w.astype(np.float64))   # transition weights m w (summed)
-            nr, nk = bench.measure("PageRank (sparse power iteration)", "numpy",
-                                   lambda: numpy_pagerank(Apr, 0.85, 1e-10, 1000), repeats=2, **p)
-            if np.abs(nr - prk["rank"]).sum() > 1e-8:
-                raise SystemExit("PageRank disagrees with NumPy")
+            if sp is not None:
+                Apr = scipy_csr(ids[0], ids[1], n, data=w.astype(np.float64))   # transition weights m w (summed)
+                nr, nk = bench.measure("PageRank (sparse power iteration)", "numpy",
+                                       lambda: numpy_pagerank(Apr, 0.85, 1e-10, 1000), repeats=2, **p)
+                if np.abs(nr - prk["rank"]).sum() > 1e-8:
+                    raise SystemExit("PageRank disagrees with NumPy")
             for backend in bench.backends():
                 bench.measure("Dirichlet energy (exact)", backend, lambda: G.energy(x, backend=backend), repeats=3, **p)
 
@@ -308,6 +319,10 @@ def case_refusals(bench):
 
 def main():
     bench = Bench.from_args("GRAPH-001", __doc__)
+    if sp is None:
+        bench.note("SciPy is not installed: the SciPy baselines (CSR build, frontier expansion, count product, "
+                   "breadth-first order, Dijkstra) and the sparse PageRank baseline are skipped with their "
+                   "cross-checks; the exact oracles of case 2 and of tests/test_math_graph.py still apply")
     case_shapes(bench)
     case_lengths(bench)
     case_refusals(bench)

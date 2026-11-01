@@ -9,7 +9,7 @@ Oracles, independent of the implementation and written here: the tiny-graph refe
 in every semiring, Python BFS, adjacency-matrix powers for walk counts, Bellman-Ford with a lexicographic hop count
 and Floyd-Warshall for paths, x^T L x with a dense Laplacian, exact Fraction PageRank by Gaussian elimination, the
 stated binary64 contracts replayed with math.fma / math.nextafter, NumPy (PageRank and eigenvectors, at stated
-tolerances), networkx degrees, DuckDB GROUP BY and recursive CTEs (reachability, bounded walk counts). Every native
+tolerances), edge-list degree counts, DuckDB GROUP BY and recursive CTEs (reachability, bounded walk counts). Every native
 result is also computed on the CUDA path (emulated here with TORBLES_EMU_SCRAMBLE=1, a scrambled thread order) and
 compared for equality. Seeds are fixed.
 """
@@ -316,25 +316,23 @@ class Graph(unittest.TestCase):
                             want_inc[v].append((e, "head"))
                     self.assertEqual(G.incidence(), want_inc, tag)
 
-    def test_graph001_degree_conventions_against_networkx(self):
-        import networkx as nx
+    def test_graph001_degree_conventions_against_edge_counts(self):
         rng = random.Random(1002)
         for _ in range(5):
             src, dst, _w = random_multigraph(rng, 7, 12)
             G = mg.Layout.from_edges(src, dst)
-            D = nx.MultiDiGraph()
-            D.add_edges_from(zip(src, dst))
             keys = G.keys()
-            self.assertEqual(G.degrees("out").values, [D.out_degree(k) for k in keys])
-            self.assertEqual(G.degrees("in").values, [D.in_degree(k) for k in keys])
-            self.assertEqual(G.degrees("total").values, [D.degree(k) for k in keys])
+            out_deg = [sum(1 for s in src if s == k) for k in keys]      # edge ends counted on the edge list
+            in_deg = [sum(1 for t in dst if t == k) for k in keys]
+            loops = [sum(1 for s, t in zip(src, dst) if s == t == k) for k in keys]
+            self.assertEqual(G.degrees("out").values, out_deg)
+            self.assertEqual(G.degrees("in").values, in_deg)
+            self.assertEqual(G.degrees("total").values, [a + b for a, b in zip(out_deg, in_deg)])
             U = mg.Layout.from_edges(src, dst, directed=False)
-            M = nx.MultiGraph()
-            M.add_edges_from(zip(src, dst))
-            # networkx counts a self-loop twice (the handshake degree); the layout's row sum counts it once
+            # the handshake degree counts every edge end, a self-loop twice; the layout's row sum counts it once
             tot, lp = U.degrees("total").values, U.degrees("loops").values
-            self.assertEqual([t + l for t, l in zip(tot, lp)], [M.degree(k) for k in keys])
-            self.assertEqual(lp, [nx.number_of_selfloops(M.subgraph([k])) for k in keys])
+            self.assertEqual([t + l for t, l in zip(tot, lp)], [a + b for a, b in zip(out_deg, in_deg)])
+            self.assertEqual(lp, loops)
 
     def test_graph001_dedup_weight_combination_is_declared(self):
         src, dst, w = [1, 1, 1, 2, 2], [2, 2, 2, 1, 3], [4, -1, 4, 7, 2]

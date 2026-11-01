@@ -11,7 +11,8 @@ tiled hollow shells in 3D: one hole / cavity per tile). Reported separately: the
 table), the Euler counts alone (mt.counts), the complex with its cells and incidences (first and warm), then the
 local invariants (star / link counts, boundary flags), the dual graph and the boundary-composition check on the built
 complex. Baseline: NumPy (the cells per dimension from shifted ORs of the occupancy array) and SciPy (ndimage.label
-components with 8 / 26 connectivity); both are compared with the native counts.
+components with 8 / 26 connectivity); both are compared with the native counts. SciPy is not a declared dependency:
+without it the ndimage.label baseline is skipped and noted (the known components of the patterns still check).
 Case 2 (homology and persistence): the same holes patterns at four sizes (2D 32^2 .. 192^2, 3D 8^3 .. 24^3: the
 boundary-matrix size), each field
 (GF(2) by the reduction and through FIELD-001's packed matrices, GF(2^61 - 1), Q), the H_1 (H_2) representatives,
@@ -27,7 +28,10 @@ import itertools
 
 import numpy as np
 import pandas as pd
-from scipy import ndimage
+try:
+    from scipy import ndimage
+except ImportError:                                               # not a declared dependency: that baseline skipped
+    ndimage = None
 
 from math_bench import Bench
 import torbles
@@ -120,14 +124,18 @@ def complexes_case(bench, rng):
                 assert dd["z"]["holds"] and dd["gf2"]["holds"]
             bench.measure("numpy cells (baseline)", "numpy", lambda: numpy_cells(occ), repeats=3, phase="run", **params)
             adj = bench.measure("dual graph components", "cpu", lambda: cx.adjacency(), repeats=3, phase="run", **params)
-            structure = np.ones((3,) * occ.ndim, dtype=bool)
-            comps = bench.measure("scipy ndimage.label (baseline)", "scipy",
-                                  lambda: ndimage.label(occ, structure=structure)[1], repeats=3, phase="run", **params)
-            assert adj["components"] == comps
+            comps = None
+            if ndimage is not None:
+                structure = np.ones((3,) * occ.ndim, dtype=bool)
+                comps = bench.measure("scipy ndimage.label (baseline)", "scipy",
+                                      lambda: ndimage.label(occ, structure=structure)[1], repeats=3, phase="run",
+                                      **params)
+                assert adj["components"] == comps
             if known is not None:
                 assert adj["components"] == known[0]
             summary(bench, "complex summary", params, cells=cx.counts, euler=cx.euler, components=adj["components"],
-                    boundary=loc["totals"]["boundary"], numpy_cells=want, scipy_components=int(comps))
+                    boundary=loc["totals"]["boundary"], numpy_cells=want,
+                    scipy_components=None if comps is None else int(comps))
             cx.close()
 
 
@@ -230,6 +238,9 @@ def main():
     bench.note("CUDA timings only with --device; the column reductions (homology, persistence) run on the CPU only.")
     bench.note("Baselines: NumPy shifted ORs for the cells per dimension, SciPy ndimage.label for the components; "
                "both checked equal to the native counts. Known Betti numbers: holes per tile of the patterns.")
+    if ndimage is None:
+        bench.note("SciPy is not installed: the ndimage.label baseline was skipped (components checked against the "
+                   "patterns' known counts where they are known).")
     bench.write()
 
 
