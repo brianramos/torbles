@@ -1,0 +1,212 @@
+{
+ "guide": [
+  {
+   "page": "dyn.md",
+   "title": "Closed-observable dynamics and operator powers",
+   "capabilities": "DYN-001, DYN-002",
+   "summary": "declared affine and polynomial dynamics x' = F(x) on SYM-001's declared coordinates as exact transfer operators K on monomial bases proven closed under F (phi(F(x)) = K phi(x), SYM-001's action matrices for affine maps, an exact expansion for polynomial ones, non-closure refused with its witness), truncation only under an explicit box contract with certified dropped-term bounds and labelled approximate; retained FND-004 / TENSOR-001 moment states evolved for t steps without touching rows (stepping, exact repeated squaring, or modular powers with CRT and a check prime) and checked against explicit row evolution; exact powers K^n, semigroup identities, characteristic polynomials and minimal recurrences with fast terms, convex mixtures and polynomial parameters, certified floating powers refused as unstable past their tolerance; coefficient growth, step counts and outputs budgeted; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "DYN-001": {
+   "planned_files": [
+    "torbles/math_dyn.h",
+    "torbles/math_dyn.c",
+    "torbles/math_dyn_gpu.cu",
+    "torbles/math_dyn.py",
+    "tests/test_math_dyn.py",
+    "bench/benchmark_math_dyn.py"
+   ],
+   "cpu": "Native C (math_dyn.c): declared dynamics x' = F(x) on the n declared coordinates of a SYM-001 geometry in logical units: exact affine maps (SYM-001 maps: translations, scalings, reflections, permutations, affine maps, rotations by exact rational points of the unit circle or multiples of 90 degrees, compositions; interval and value maps refused) and polynomial maps (per output coordinate a sum of exact int64-rational terms in value units of total degree <= 8, optionally polynomial of degree <= 8 in one declared parameter, converted exactly to logical units with one int128 denominator per coordinate; categorical coordinates neither read nor written); the transfer operator K on a SYM-001 monomial basis with phi(F(x)) = K phi(x), hence moments(F(rows)) = K moments(rows): SYM-001's tr_sym_action_make for affine maps, an exact int128 expansion of every prod_i F_i(x)^a_i for polynomial ones, closure decided exactly and completely with the witness (basis term, missing monomial) of the first non-closed term, canonical int128 numerators over one denominator; truncation only under an explicit contract (a declared box bounding every coordinate the basis' evolution reads: the kept terms, the certified bound eps_a = sum of |c| prod max(|lo|, |hi|)^b over the dropped terms as exact FND-009 rationals, F-invariance of the box decided by exact rational interval arithmetic), labelled approximate (UNC-002's label value 5), refused by tr_dyn_authorize_exact (FND-007 reason approximate) and by every exact use; evolution of retained SYM-001 states (FND-004 banks, TENSOR-001 moment tensors; the operator's scope, basis and exact geometry) for t steps without touching rows: integer numerators N^t m_0 over D^t by stepping, exact repeated squaring or modular residues with Chinese remaindering within the proven bound ||N||_inf^t max|m_0| and a check prime (every method the same integers, AUTO by estimated costs: each method's structural work, sparsity included, times unit costs fitted to timed runs), truncated evolutions with the certified componentwise bound E_t = |K^| E_(t-1) + W eps under checked premises (unweighted state, the state's scope with its selected extremes inside the box, F-invariance for more than one step); the explicit exact row evolution of every selected complete row as the reference (one common denominator per step); one exact 512-bit step K m_g per group (SYM-001's evaluator); budgets (variables, degree, support, tensor = (p + 1) nb^2, iterations = steps, output, states, bytes from proven bit bounds) checked before allocation.",
+   "gpu": "CUDA kernel math_dyn_gpu.cu (tr_mgpu_dyn_apply): the operators' int128 numerators and every group's int128 moments copied once, then one work item per (operator, group, basis row) running tr_dyn_apply_entry (SYM-001's 512-bit row evaluator tr_sym_row_exact), one output slot per entry; equal to tr_dyn_apply_view_eval bit for bit. Multi-step evolutions on the device use DYN-002's modular kernels.",
+   "limitations": [
+    "Exact transfer operators are int128 numerators over an int128 denominator (SYM-001's limit); a large expansion coefficient is refused (OverflowError), not widened.",
+    "The truncation bound is a worst case over the declared box (often far above the actual error), needs an unweighted state and certifies one step unless the box is proven F-invariant; parametric maps cannot be truncated.",
+    "The native row evolution of a nonlinear map shares one denominator Q_(t+1) = L Q_t^d, so its proven bound grows doubly exponentially and long nonlinear row evolutions are refused; the closure expansion, the truncation bounds and every big-integer product run on the CPU, single-threaded."
+   ]
+  },
+  "DYN-002": {
+   "planned_files": [
+    "torbles/math_dyn.h",
+    "torbles/math_dyn.c",
+    "torbles/math_dyn_gpu.cu",
+    "torbles/math_dyn.py",
+    "tests/test_math_dyn.py",
+    "bench/benchmark_math_dyn.py"
+   ],
+   "cpu": "Native C (math_dyn.c): exact powers K^n of transfer operators as integer numerators N^n over D^n (K^0 = I) by exact repeated squaring in big integers (sign-magnitude limb vectors with positive and negative accumulators, every capacity from the proven bound ||N^n||_max <= ||N||_inf^n) or by residues modulo LIN-002's primes in [2^61, 2^62) with Garner's Chinese remaindering within that bound and the check of every entry modulo a further prime (device residues adopted only after the check), AUTO by estimated costs (structural work, sparsity included, times fitted unit costs); composition and exact equality by cross products; semigroup identities K^0 = I, K^1 = K, K^m K^n = K^(m+n) verified exactly; the exact characteristic polynomial from chi_N modulo primes (Hessenberg reduction and its recurrence) reconstructed within the Hadamard bound C(nb, k) ||N||_inf^k and checked; recurrences of s_t = c^T K^t v (c int64, v a state group's moments or int128 values): the characteristic recurrence, or the minimal one by Berlekamp-Massey over FND-009 rationals on 2 nb terms (integral by Gauss, checked, verified on every computed term), any term s_T by square and multiply of x^T modulo the recurrence polynomial in Z[x]; parameterized evolution: convex mixtures sum w_j K_j (exact weights >= 0 summing to 1: the expected moments of random map choices), operators polynomial in a declared parameter evolved as polynomials in it (stepping) and substituted at exact rationals; floating powers K^n and K^n m_g in outward-rounded binary64 interval arithmetic from tight enclosures, every value with a rigorous bound, refused as unstable (NOT_CONVERGED, with the exponent certified and the error) when the bound exceeds the declared absolute or relative tolerance or leaves the double range; budgets (iterations = the step count, output, bytes from the proven coefficient growth, tensor, support) checked before allocation.",
+   "gpu": "CUDA kernels math_dyn_gpu.cu (tr_mgpu_dyn_powmod, tr_mgpu_dyn_evolvemod): the operators' numerators reduced modulo every prime on the device (one work item per (operator, prime, entry)), the binary exponentiation driven by the host with one launch per product (one work item per (operator, prime, entry) running tr_dyn_mulmod_entry), then the moments of every group reduced and multiplied (one work item per (operator, prime, group, row) running tr_dyn_applymod_entry); every output slot has one writer, so the residues equal tr_dyn_powmod_view_eval / tr_dyn_evolvemod_view_eval bit for bit; the host reconstructs and checks them (tr_dyn_power_adopt, tr_dyn_evolution_adopt).",
+   "limitations": [
+    "Big-integer products are schoolbook (no Karatsuba or FFT) and the a priori bound ||N||_inf^n can be far above the actual sizes (cancellations are not foreseen), so some exact powers are refused by the bytes budget that would fit; the CRT, the characteristic polynomial, Berlekamp-Massey and the polynomial reduction run on the CPU, single-threaded; Garner's O(k^2) reconstruction makes CPU modular powers slower than squaring except for dense operators at large exponents with few groups, and AUTO's unit costs are estimates fitted on one machine.",
+    "Floating powers are binary64 interval enclosures only (no multiprecision): the wrapping effect makes the bounds of non-normal or expanding operators grow, which the contract reports as unstable rather than returning them.",
+    "Parametric evolutions step (no squaring of polynomial matrices) and have no CUDA path; mixtures need convex rational weights over one basis; truncated operators have no powers, recurrences or device path."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "TRANSFER_OPERATOR",
+    "label": "transfer operators",
+    "comment": "a closed basis, the exact transfer matrix of declared dynamics (or a certified truncation), evolved moments"
+   },
+   {
+    "name": "OPERATOR_POWERS",
+    "label": "operator powers",
+    "comment": "exact powers N^n / D^n, modular residues, characteristic and minimal recurrences, float bounds"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "DYN_OPERATOR",
+    "key": "dyn.operator",
+    "family": "dyn",
+    "capability": "DYN-001",
+    "name": "closed-observable dynamics",
+    "comment": "finite closed-observable dynamics",
+    "state": "TRANSFER_OPERATOR",
+    "state_label": "transfer operators",
+    "devices": "BOTH",
+    "finalize": 3,
+    "carriers": [
+     "INTEGER",
+     "RATIONAL",
+     "INT128",
+     "BIGINT",
+     "BIGQ"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_dyn_map_from_sym",
+     "tr_dyn_map_polynomial",
+     "tr_dyn_operator_make",
+     "tr_dyn_operator_need",
+     "tr_dyn_operator_check_geometry",
+     "tr_dyn_authorize_exact",
+     "tr_dyn_evolve",
+     "tr_dyn_rows_evolve",
+     "tr_dyn_apply_view_eval",
+     "tr_dyn_evolution_authorize_exact",
+     "tr_dyn_need",
+     "tr_dyn_export"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_dyn_apply"
+    ],
+    "impl": [
+     [
+      "MULTIPLY",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "CONTRACT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "POLY_MUL",
+      "RATIONAL",
+      "CPU"
+     ],
+     [
+      "EVAL",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "MULTIPLY",
+      "BIGINT",
+      "CPU"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "CPU"
+     ]
+    ]
+   },
+   {
+    "enum": "DYN_POWERS",
+    "key": "dyn.powers",
+    "family": "dyn",
+    "capability": "DYN-002",
+    "name": "operator powers and recurrences",
+    "comment": "repeated operator powers and semigroups",
+    "state": "OPERATOR_POWERS",
+    "state_label": "operator powers",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INTEGER",
+     "RATIONAL",
+     "INT128",
+     "BIGINT",
+     "BIGQ",
+     "GFP",
+     "INTERVAL"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_PRIME",
+    "cpu_entry": [
+     "tr_dyn_power_make",
+     "tr_dyn_power_adopt",
+     "tr_dyn_power_compose",
+     "tr_dyn_power_equal",
+     "tr_dyn_semigroup",
+     "tr_dyn_powmod_view_eval",
+     "tr_dyn_evolvemod_view_eval",
+     "tr_dyn_evolution_adopt",
+     "tr_dyn_charpoly",
+     "tr_dyn_recurrence_make",
+     "tr_dyn_recurrence_term",
+     "tr_dyn_float_power"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_dyn_powmod",
+     "tr_mgpu_dyn_evolvemod"
+    ],
+    "impl": [
+     [
+      "RESIDUE",
+      "GFP",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "GFP",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "GFP",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "BIGINT",
+      "CPU"
+     ],
+     [
+      "CRT",
+      "GFP",
+      "CPU"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
