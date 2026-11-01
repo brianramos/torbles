@@ -101,7 +101,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "tracker",
     "query parts",
     "factor graph",
-    "approximate kernel features"};
+    "approximate kernel features",
+    "transfer operators", "operator powers"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -834,6 +835,25 @@ static const tr_reg_module modules[] = {
                    "tr_kapprox_query", "tr_kapprox_need", "tr_kapprox_generate", "tr_kapprox_save",
                    "tr_kapprox_load", "tr_kapprox_fresh", "tr_kapprox_authorize_exact", "tr_kapprox_get_info"},
      .cuda_entry = {"tr_mgpu_kapprox_sums"}},
+    {FAMILY(TR_REG_M_DYN_OPERATOR, "dyn.operator", "dyn", "DYN-001", "closed-observable dynamics"),
+     .state_kind = TR_REG_STATE_TRANSFER_OPERATOR, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(INT128) | CB(BIGINT) | CB(BIGQ),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_dyn_map_from_sym", "tr_dyn_map_polynomial", "tr_dyn_operator_make", "tr_dyn_operator_need",
+                   "tr_dyn_operator_check_geometry", "tr_dyn_authorize_exact", "tr_dyn_evolve", "tr_dyn_rows_evolve",
+                   "tr_dyn_apply_view_eval", "tr_dyn_evolution_authorize_exact", "tr_dyn_need", "tr_dyn_export"},
+     .cuda_entry = {"tr_mgpu_dyn_apply"}},
+    {FAMILY(TR_REG_M_DYN_POWERS, "dyn.powers", "dyn", "DYN-002", "operator powers and recurrences"),
+     .state_kind = TR_REG_STATE_OPERATOR_POWERS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(RATIONAL) | CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(GFP) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_PRIME,
+     .cpu_entry = {"tr_dyn_power_make", "tr_dyn_power_adopt", "tr_dyn_power_compose", "tr_dyn_power_equal",
+                   "tr_dyn_semigroup", "tr_dyn_powmod_view_eval", "tr_dyn_evolvemod_view_eval",
+                   "tr_dyn_evolution_adopt", "tr_dyn_charpoly", "tr_dyn_recurrence_make", "tr_dyn_recurrence_term",
+                   "tr_dyn_float_power"},
+     .cuda_entry = {"tr_mgpu_dyn_powmod", "tr_mgpu_dyn_evolvemod"}},
 };
 #undef BUILTIN
 #undef FAMILY

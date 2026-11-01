@@ -4292,13 +4292,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_dyn.c): declared dynamics x' = F(x) on the n declared coordinates of a SYM-001 geometry in logical units: exact affine maps (SYM-001 maps: translations, scalings, reflections, permutations, affine maps, rotations by exact rational points of the unit circle or multiples of 90 degrees, compositions; interval and value maps refused) and polynomial maps (per output coordinate a sum of exact int64-rational terms in value units of total degree <= 8, optionally polynomial of degree <= 8 in one declared parameter, converted exactly to logical units with one int128 denominator per coordinate; categorical coordinates neither read nor written); the transfer operator K on a SYM-001 monomial basis with phi(F(x)) = K phi(x), hence moments(F(rows)) = K moments(rows): SYM-001's tr_sym_action_make for affine maps, an exact int128 expansion of every prod_i F_i(x)^a_i for polynomial ones, closure decided exactly and completely with the witness (basis term, missing monomial) of the first non-closed term, canonical int128 numerators over one denominator; truncation only under an explicit contract (a declared box bounding every coordinate the basis' evolution reads: the kept terms, the certified bound eps_a = sum of |c| prod max(|lo|, |hi|)^b over the dropped terms as exact FND-009 rationals, F-invariance of the box decided by exact rational interval arithmetic), labelled approximate (UNC-002's label value 5), refused by tr_dyn_authorize_exact (FND-007 reason approximate) and by every exact use; evolution of retained SYM-001 states (FND-004 banks, TENSOR-001 moment tensors; the operator's scope, basis and exact geometry) for t steps without touching rows: integer numerators N^t m_0 over D^t by stepping, exact repeated squaring or modular residues with Chinese remaindering within the proven bound ||N||_inf^t max|m_0| and a check prime (every method the same integers, AUTO by estimated costs: each method's structural work, sparsity included, times unit costs fitted to timed runs), truncated evolutions with the certified componentwise bound E_t = |K^| E_(t-1) + W eps under checked premises (unweighted state, the state's scope with its selected extremes inside the box, F-invariance for more than one step); the explicit exact row evolution of every selected complete row as the reference (one common denominator per step); one exact 512-bit step K m_g per group (SYM-001's evaluator); budgets (variables, degree, support, tensor = (p + 1) nb^2, iterations = steps, output, states, bytes from proven bit bounds) checked before allocation.",
+   "gpu": "CUDA kernel math_dyn_gpu.cu (tr_mgpu_dyn_apply): the operators' int128 numerators and every group's int128 moments copied once, then one work item per (operator, group, basis row) running tr_dyn_apply_entry (SYM-001's 512-bit row evaluator tr_sym_row_exact), one output slot per entry; equal to tr_dyn_apply_view_eval bit for bit. Multi-step evolutions on the device use DYN-002's modular kernels.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_dyn.c",
     "torbles/math_dyn.h",
-    "tests/test_math_dyn.py"
+    "torbles/math_dyn.c",
+    "torbles/math_dyn_gpu.cu",
+    "torbles/math_dyn.py",
+    "tests/test_math_dyn.py",
+    "bench/benchmark_math_dyn.py"
    ],
    "acceptance_tests": [
     "Repeated affine transforms of polynomial moments agree with explicit row evolution.",
@@ -4308,7 +4311,11 @@
     "Apply declared affine or closed-observable dynamics for 0/1/10/1,000 steps on 2/4/8-dimensional states; report operator construction and powers separately.",
     "Compare repeated row evolution with retained operator powers; include nonclosed maps, coefficient growth and numerical stability/budget refusals."
    ],
-   "limitations": [],
+   "limitations": [
+    "Exact transfer operators are int128 numerators over an int128 denominator (SYM-001's limit); a large expansion coefficient is refused (OverflowError), not widened.",
+    "The truncation bound is a worst case over the declared box (often far above the actual error), needs an unweighted state and certifies one step unless the box is proven F-invariant; parametric maps cannot be truncated.",
+    "The native row evolution of a nonlinear map shares one denominator Q_(t+1) = L Q_t^d, so its proven bound grows doubly exponentially and long nonlinear row evolutions are refused; the closure expansion, the truncation bounds and every big-integer product run on the CPU, single-threaded."
+   ],
    "validation": null
   },
   {
@@ -4331,13 +4338,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native C (math_dyn.c): exact powers K^n of transfer operators as integer numerators N^n over D^n (K^0 = I) by exact repeated squaring in big integers (sign-magnitude limb vectors with positive and negative accumulators, every capacity from the proven bound ||N^n||_max <= ||N||_inf^n) or by residues modulo LIN-002's primes in [2^61, 2^62) with Garner's Chinese remaindering within that bound and the check of every entry modulo a further prime (device residues adopted only after the check), AUTO by estimated costs (structural work, sparsity included, times fitted unit costs); composition and exact equality by cross products; semigroup identities K^0 = I, K^1 = K, K^m K^n = K^(m+n) verified exactly; the exact characteristic polynomial from chi_N modulo primes (Hessenberg reduction and its recurrence) reconstructed within the Hadamard bound C(nb, k) ||N||_inf^k and checked; recurrences of s_t = c^T K^t v (c int64, v a state group's moments or int128 values): the characteristic recurrence, or the minimal one by Berlekamp-Massey over FND-009 rationals on 2 nb terms (integral by Gauss, checked, verified on every computed term), any term s_T by square and multiply of x^T modulo the recurrence polynomial in Z[x]; parameterized evolution: convex mixtures sum w_j K_j (exact weights >= 0 summing to 1: the expected moments of random map choices), operators polynomial in a declared parameter evolved as polynomials in it (stepping) and substituted at exact rationals; floating powers K^n and K^n m_g in outward-rounded binary64 interval arithmetic from tight enclosures, every value with a rigorous bound, refused as unstable (NOT_CONVERGED, with the exponent certified and the error) when the bound exceeds the declared absolute or relative tolerance or leaves the double range; budgets (iterations = the step count, output, bytes from the proven coefficient growth, tensor, support) checked before allocation.",
+   "gpu": "CUDA kernels math_dyn_gpu.cu (tr_mgpu_dyn_powmod, tr_mgpu_dyn_evolvemod): the operators' numerators reduced modulo every prime on the device (one work item per (operator, prime, entry)), the binary exponentiation driven by the host with one launch per product (one work item per (operator, prime, entry) running tr_dyn_mulmod_entry), then the moments of every group reduced and multiplied (one work item per (operator, prime, group, row) running tr_dyn_applymod_entry); every output slot has one writer, so the residues equal tr_dyn_powmod_view_eval / tr_dyn_evolvemod_view_eval bit for bit; the host reconstructs and checks them (tr_dyn_power_adopt, tr_dyn_evolution_adopt).",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_dyn.c",
     "torbles/math_dyn.h",
-    "tests/test_math_dyn.py"
+    "torbles/math_dyn.c",
+    "torbles/math_dyn_gpu.cu",
+    "torbles/math_dyn.py",
+    "tests/test_math_dyn.py",
+    "bench/benchmark_math_dyn.py"
    ],
    "acceptance_tests": [
     "Zero/one/many-step composition and semigroup identities match small direct calculations.",
@@ -4347,7 +4357,11 @@
     "Apply declared affine or closed-observable dynamics for 0/1/10/1,000 steps on 2/4/8-dimensional states; report operator construction and powers separately.",
     "Compare repeated row evolution with retained operator powers; include nonclosed maps, coefficient growth and numerical stability/budget refusals."
    ],
-   "limitations": [],
+   "limitations": [
+    "Big-integer products are schoolbook (no Karatsuba or FFT) and the a priori bound ||N||_inf^n can be far above the actual sizes (cancellations are not foreseen), so some exact powers are refused by the bytes budget that would fit; the CRT, the characteristic polynomial, Berlekamp-Massey and the polynomial reduction run on the CPU, single-threaded; Garner's O(k^2) reconstruction makes CPU modular powers slower than squaring except for dense operators at large exponents with few groups, and AUTO's unit costs are estimates fitted on one machine.",
+    "Floating powers are binary64 interval enclosures only (no multiprecision): the wrapping effect makes the bounds of non-normal or expanding operators grow, which the contract reports as unstable rather than returning them.",
+    "Parametric evolutions step (no squaring of polynomial matrices) and have no CUDA path; mixtures need convex rational weights over one basis; truncated operators have no powers, recurrences or device path."
+   ],
    "validation": null
   },
   {

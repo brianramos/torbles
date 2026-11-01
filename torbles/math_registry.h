@@ -968,7 +968,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_EQUIV = 73,             /* META-001 snapshot and universal proofs, counterexamples */
        TR_REG_M_FACTOR = 74,            /* PROB-002 factorized probabilistic inference over bounded factor graphs */
        TR_REG_M_KAPPROX = 75,           /* KERNEL-002 approximate spectral feature kernels */
-       TR_REG_M_END = 76 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_DYN_OPERATOR = 76,      /* DYN-001 finite closed-observable dynamics */
+       TR_REG_M_DYN_POWERS = 77,        /* DYN-002 repeated operator powers and semigroups */
+       TR_REG_M_END = 78 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1032,7 +1034,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_QUERY_PARTS = 62,       /* hash-consed predicates (a shared condition DAG), canonical measures and queries */
        TR_REG_STATE_FACTOR_GRAPH = 63,      /* a factor graph over declared finite supports: scaled exact tables, data sources, costed elimination programs and their message arenas */
        TR_REG_STATE_KERNEL_APPROX = 64,     /* per group: certified sums of declared approximate kernel features, weight statistics, the error record */
-       TR_REG_STATE_KINDS = 65 };
+       TR_REG_STATE_TRANSFER_OPERATOR = 65, /* a closed basis, the exact transfer matrix of declared dynamics (or a certified truncation), evolved moments */
+       TR_REG_STATE_OPERATOR_POWERS = 66,   /* exact powers N^n / D^n, modular residues, characteristic and minimal recurrences, float bounds */
+       TR_REG_STATE_KINDS = 67 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1417,6 +1421,15 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_KAPPROX, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_KAPPROX, CONTRACT, BIGQ, TR__CPU),
     TR__I(TR_REG_M_KAPPROX, MULTIPLY, BIGQ, TR__CPU), TR__I(TR_REG_M_KAPPROX, DIVIDE, BIGQ, TR__CPU),
     TR__I(TR_REG_M_KAPPROX, ENCLOSE, INTERVAL, TR__CPU),
+    /* 76 DYN-001 finite closed-observable dynamics */
+    TR__I(TR_REG_M_DYN_OPERATOR, MULTIPLY, INT128, TR__ALL), TR__I(TR_REG_M_DYN_OPERATOR, CONTRACT, INT128, TR__ALL),
+    TR__I(TR_REG_M_DYN_OPERATOR, POLY_MUL, RATIONAL, TR__CPU), TR__I(TR_REG_M_DYN_OPERATOR, EVAL, INTEGER, TR__CPU),
+    TR__I(TR_REG_M_DYN_OPERATOR, MULTIPLY, BIGINT, TR__CPU), TR__I(TR_REG_M_DYN_OPERATOR, DIVIDE, BIGQ, TR__CPU),
+    /* 77 DYN-002 repeated operator powers and semigroups */
+    TR__I(TR_REG_M_DYN_POWERS, RESIDUE, GFP, TR__ALL), TR__I(TR_REG_M_DYN_POWERS, MULTIPLY, GFP, TR__ALL),
+    TR__I(TR_REG_M_DYN_POWERS, POWERS, GFP, TR__ALL), TR__I(TR_REG_M_DYN_POWERS, POWERS, BIGINT, TR__CPU),
+    TR__I(TR_REG_M_DYN_POWERS, CRT, GFP, TR__CPU), TR__I(TR_REG_M_DYN_POWERS, DIVIDE, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_DYN_POWERS, ENCLOSE, INTERVAL, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

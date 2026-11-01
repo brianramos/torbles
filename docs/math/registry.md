@@ -111,6 +111,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 73 | equiv | scoped query equivalence | META-001 | query parts | `tr_equiv_set_make` | `tr_mgpu_equiv_check` |
 | 74 | factor | factorized inference | PROB-002 | factor graph | `tr_factor_graph_create` | `tr_mgpu_factor_eliminate` |
 | 75 | kapprox | approximate spectral feature kernels | KERNEL-002 | approximate kernel features | `tr_kapprox_plan_create` | `tr_mgpu_kapprox_sums` |
+| 76 | dyn.operator | closed-observable dynamics | DYN-001 | transfer operators | `tr_dyn_map_from_sym` | `tr_mgpu_dyn_apply` |
+| 77 | dyn.powers | operator powers and recurrences | DYN-002 | operator powers | `tr_dyn_power_make` | `tr_mgpu_dyn_powmod`, `tr_mgpu_dyn_evolvemod` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated
