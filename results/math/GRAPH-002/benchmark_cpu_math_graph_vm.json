@@ -1,0 +1,6094 @@
+{
+ "argv": [
+  "--capability",
+  "GRAPH-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/GRAPH-002/benchmark_cpu_math_graph_vm.json"
+ ],
+ "capability": "GRAPH-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "4487999185c3750d020db8f5048dacf383236504",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "517147a12e40d0d053dae820eb7bc58d1f89017225ed59ee843de7983c718d69",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "ef6b38e991f458e1778ba7d299e05723d4dfb2b0a8a3654dfd7a445797a507f2"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T02:59:59+00:00"
+ },
+ "notes": [
+  "small exact oracles (300 edges, 60 keys): {'count': True, 'min_plus': True, 'max_plus': True, 'bool': True, 'gf2': True, 'float_within_bound': True, 'walks': True, 'reach_duckdb': True, 'walks_duckdb': True}"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.00039639500027988106,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00039639500027988106,
+    5.5083000916056335e-05,
+    3.952699989895336e-05
+   ],
+   "warm_median_seconds": 4.730500040750485e-05,
+   "warm_min_seconds": 3.952699989895336e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.0003280199998698663,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000,
+    "entries": 1000,
+    "layout_bytes": 116808,
+    "vertices": 1001
+   },
+   "samples_seconds": [
+    0.0003280199998698663,
+    0.0001701239998510573,
+    9.606700041331351e-05
+   ],
+   "warm_median_seconds": 0.0001330955001321854,
+   "warm_min_seconds": 9.606700041331351e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.1935286520019872,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.1935286520019872,
+    0.00012072599929524586,
+    8.072999844443984e-05
+   ],
+   "warm_median_seconds": 0.00010072799886984285,
+   "warm_min_seconds": 8.072999844443984e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 9.180900087812915e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    9.180900087812915e-05,
+    2.1183997887419537e-05,
+    1.4250003005145118e-05,
+    1.1259999155299738e-05,
+    1.0371000826125965e-05
+   ],
+   "warm_median_seconds": 1.2755001080222428e-05,
+   "warm_min_seconds": 1.0371000826125965e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 5.974400119157508e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    5.974400119157508e-05,
+    1.4566001482307911e-05,
+    8.431001333519816e-06,
+    6.236998160602525e-06,
+    6.6450011217966676e-06
+   ],
+   "warm_median_seconds": 7.538001227658242e-06,
+   "warm_min_seconds": 6.236998160602525e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 2.4722998205106705e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 98,
+   "samples_seconds": [
+    2.4722998205106705e-05,
+    1.3111999578541145e-05,
+    1.0817999282153323e-05,
+    1.0340001608710736e-05,
+    9.548999514663592e-06
+   ],
+   "warm_median_seconds": 1.057900044543203e-05,
+   "warm_min_seconds": 9.548999514663592e-06
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 1.1971002095378935e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 98,
+   "samples_seconds": [
+    1.1971002095378935e-05,
+    7.514998287661001e-06,
+    5.8820005506277084e-06,
+    5.736997991334647e-06,
+    5.7110009947791696e-06
+   ],
+   "warm_median_seconds": 5.809499270981178e-06,
+   "warm_min_seconds": 5.7110009947791696e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 1.6306999896187335e-05,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 527,
+   "samples_seconds": [
+    1.6306999896187335e-05,
+    1.4819001080468297e-05,
+    1.0449999535921961e-05,
+    1.0552997991908342e-05,
+    1.044799864757806e-05
+   ],
+   "warm_median_seconds": 1.0501498763915151e-05,
+   "warm_min_seconds": 1.044799864757806e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 9.235998732037842e-06,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 527,
+   "samples_seconds": [
+    9.235998732037842e-06,
+    7.40999894333072e-06,
+    6.0399979702197015e-06,
+    5.562000296777114e-06,
+    5.653000698657706e-06
+   ],
+   "warm_median_seconds": 5.846499334438704e-06,
+   "warm_min_seconds": 5.562000296777114e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 7.597099829581566e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    7.597099829581566e-05,
+    3.942900002584793e-05,
+    2.9585997253889218e-05,
+    2.4410001060459763e-05,
+    2.4515000404790044e-05
+   ],
+   "warm_median_seconds": 2.705049882933963e-05,
+   "warm_min_seconds": 2.4410001060459763e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 3.5921002563554794e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "bool",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    3.5921002563554794e-05,
+    3.764700159081258e-05,
+    2.4724999093450606e-05,
+    2.2558000637218356e-05,
+    2.1340998500818387e-05
+   ],
+   "warm_median_seconds": 2.364149986533448e-05,
+   "warm_min_seconds": 2.1340998500818387e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 2.4045999452937394e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "min_plus",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    2.4045999452937394e-05,
+    1.9723000150406733e-05,
+    1.7204998584929854e-05,
+    1.7711998225422576e-05,
+    1.6682999557815492e-05
+   ],
+   "warm_median_seconds": 1.7458498405176215e-05,
+   "warm_min_seconds": 1.6682999557815492e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 4.590699973050505e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "float",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    4.590699973050505e-05,
+    3.0093000532360747e-05,
+    2.7409998438088223e-05,
+    2.6880999939749017e-05,
+    2.647099972818978e-05
+   ],
+   "warm_median_seconds": 2.714549918891862e-05,
+   "warm_min_seconds": 2.647099972818978e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 2.5694000214571133e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.5694000214571133e-05,
+    3.073900006711483e-05,
+    8.957998943515122e-06,
+    5.900998075958341e-06,
+    4.9629998102318496e-06
+   ],
+   "warm_median_seconds": 7.429498509736732e-06,
+   "warm_min_seconds": 4.9629998102318496e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 3.376300082891248e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.376300082891248e-05,
+    2.957600008812733e-05,
+    1.7034999473253265e-05,
+    1.4037999790161848e-05,
+    1.4074001228436828e-05
+   ],
+   "warm_median_seconds": 1.5554500350845046e-05,
+   "warm_min_seconds": 1.4037999790161848e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 6.846999895060435e-06,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.846999895060435e-06,
+    2.1319974621292204e-06,
+    1.9980034267064184e-06,
+    1.6640005924273282e-06,
+    1.6660014807712287e-06
+   ],
+   "warm_median_seconds": 1.8320024537388235e-06,
+   "warm_min_seconds": 1.6640005924273282e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 8.875399726093747e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 1001
+   },
+   "samples_seconds": [
+    8.875399726093747e-05,
+    8.35270002426114e-05
+   ],
+   "warm_median_seconds": 8.35270002426114e-05,
+   "warm_min_seconds": 8.35270002426114e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 8.665600034873933e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.665600034873933e-05,
+    1.8750000890577212e-05
+   ],
+   "warm_median_seconds": 1.8750000890577212e-05,
+   "warm_min_seconds": 1.8750000890577212e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.0045281729981070384,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 1001
+   },
+   "samples_seconds": [
+    0.0045281729981070384,
+    0.0005044889985583723
+   ],
+   "warm_median_seconds": 0.0005044889985583723,
+   "warm_min_seconds": 0.0005044889985583723
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.0003534619972924702,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 1001
+   },
+   "samples_seconds": [
+    0.0003534619972924702,
+    0.0004469580017030239
+   ],
+   "warm_median_seconds": 0.0004469580017030239,
+   "warm_min_seconds": 0.0004469580017030239
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.0022517849974974524,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0022517849974974524,
+    0.00017851099983090535
+   ],
+   "warm_median_seconds": 0.00017851099983090535,
+   "warm_min_seconds": 0.00017851099983090535
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.0006412399998225737,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 4.1957642402408483e-10,
+    "iterations": 86
+   },
+   "samples_seconds": [
+    0.0006412399998225737,
+    0.0005402209972089622
+   ],
+   "warm_median_seconds": 0.0005402209972089622,
+   "warm_min_seconds": 0.0005402209972089622
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.0062875910007278435,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0062875910007278435,
+    0.006055359001038596
+   ],
+   "warm_median_seconds": 0.006055359001038596,
+   "warm_min_seconds": 0.006055359001038596
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 9.098900045501068e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 88234,
+   "samples_seconds": [
+    9.098900045501068e-05,
+    3.685999763547443e-05,
+    2.528900222387165e-05
+   ],
+   "warm_median_seconds": 3.107449992967304e-05,
+   "warm_min_seconds": 2.528900222387165e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.002436269001918845,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002436269001918845,
+    0.0063641550004831515,
+    0.0014269970015448052
+   ],
+   "warm_median_seconds": 0.0038955760010139784,
+   "warm_min_seconds": 0.0014269970015448052
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.03625691599881975,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 100000,
+    "entries": 100000,
+    "layout_bytes": 11613184,
+    "vertices": 100001
+   },
+   "samples_seconds": [
+    0.03625691599881975,
+    0.03542821000155527,
+    0.03510355099933804
+   ],
+   "warm_median_seconds": 0.035265880500446656,
+   "warm_min_seconds": 0.03510355099933804
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0011010810012521688,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011010810012521688,
+    0.0009292650029237848,
+    0.0009212429977196734
+   ],
+   "warm_median_seconds": 0.0009252540003217291,
+   "warm_min_seconds": 0.0009212429977196734
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.000469111000711564,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 104,
+   "samples_seconds": [
+    0.000469111000711564,
+    3.056700006709434e-05,
+    2.1900999854551628e-05,
+    2.0490999304456636e-05,
+    1.9742001313716173e-05
+   ],
+   "warm_median_seconds": 2.1195999579504132e-05,
+   "warm_min_seconds": 1.9742001313716173e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.000397309002437396,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 104,
+   "samples_seconds": [
+    0.000397309002437396,
+    0.0003018549978150986,
+    0.0002451530017424375,
+    0.0002448369996272959,
+    0.00026785499721881934
+   ],
+   "warm_median_seconds": 0.0002565039994806284,
+   "warm_min_seconds": 0.0002448369996272959
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00016712399883545004,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 9984,
+   "samples_seconds": [
+    0.00016712399883545004,
+    6.122899867477827e-05,
+    4.389499736134894e-05,
+    5.62899986107368e-05,
+    4.389300011098385e-05
+   ],
+   "warm_median_seconds": 5.009249798604287e-05,
+   "warm_min_seconds": 4.389300011098385e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.004317471997637767,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 9984,
+   "samples_seconds": [
+    0.004317471997637767,
+    0.00031042799673741683,
+    0.0002409209992038086,
+    0.0002461320000293199,
+    0.0002558470005169511
+   ],
+   "warm_median_seconds": 0.0002509895002731355,
+   "warm_min_seconds": 0.0002409209992038086
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0002441500000713859,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 49976,
+   "samples_seconds": [
+    0.0002441500000713859,
+    0.00015242600056808442,
+    0.0001299010000366252,
+    0.0001537060015834868,
+    0.0001454539997212123
+   ],
+   "warm_median_seconds": 0.00014894000014464837,
+   "warm_min_seconds": 0.0001299010000366252
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.00027158100056112744,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 49976,
+   "samples_seconds": [
+    0.00027158100056112744,
+    0.00026585900195641443,
+    0.0004762759999721311,
+    0.00036924300002283417,
+    0.000244333001319319
+   ],
+   "warm_median_seconds": 0.0003175510009896243,
+   "warm_min_seconds": 0.000244333001319319
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.0017229149998456705,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0017229149998456705,
+    0.0015771379985380918,
+    0.005602197998086922,
+    0.0015809910000825766,
+    0.005579453998507233
+   ],
+   "warm_median_seconds": 0.003580222499294905,
+   "warm_min_seconds": 0.0015771379985380918
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.0011746589989343192,
+   "params": {
+    "edges": 100000,
+    "semiring": "bool",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0011746589989343192,
+    0.00105738099955488,
+    0.001021529002173338,
+    0.005237772998953005,
+    0.0010619839995342772
+   ],
+   "warm_median_seconds": 0.0010596824995445786,
+   "warm_min_seconds": 0.001021529002173338
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.0004497110021475237,
+   "params": {
+    "edges": 100000,
+    "semiring": "min_plus",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0004497110021475237,
+    0.0004463320001377724,
+    0.00039684500006842427,
+    0.00035201200080337003,
+    0.00451388900182792
+   ],
+   "warm_median_seconds": 0.00042158850010309834,
+   "warm_min_seconds": 0.00035201200080337003
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.0014861059971735813,
+   "params": {
+    "edges": 100000,
+    "semiring": "float",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0014861059971735813,
+    0.0013714779997826554,
+    0.0054970860001049004,
+    0.0014818190029473044,
+    0.0013383750010689255
+   ],
+   "warm_median_seconds": 0.00142664850136498,
+   "warm_min_seconds": 0.0013383750010689255
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.0002770550017885398,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002770550017885398,
+    0.00034214499828522094,
+    0.0002669749992492143,
+    0.000209518002520781,
+    0.00019623799744294956
+   ],
+   "warm_median_seconds": 0.00023824650088499766,
+   "warm_min_seconds": 0.00019623799744294956
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.0004542719980236143,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004542719980236143,
+    0.0009844870000961237,
+    0.000405130998842651,
+    0.00038198100082809106,
+    0.00043140599882462993
+   ],
+   "warm_median_seconds": 0.0004182684988336405,
+   "warm_min_seconds": 0.00038198100082809106
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.00024950299848569557,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00024950299848569557,
+    0.00016226200023083948,
+    0.0001731510019453708,
+    0.00015074099792400375,
+    0.00015465699834749103
+   ],
+   "warm_median_seconds": 0.00015845949928916525,
+   "warm_min_seconds": 0.00015074099792400375
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.006195647001732141,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 100001
+   },
+   "samples_seconds": [
+    0.006195647001732141,
+    0.006387500001437729
+   ],
+   "warm_median_seconds": 0.006387500001437729,
+   "warm_min_seconds": 0.006387500001437729
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.0006294560007518157,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006294560007518157,
+    0.0006104849999246653
+   ],
+   "warm_median_seconds": 0.0006104849999246653,
+   "warm_min_seconds": 0.0006104849999246653
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.02291203200002201,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 100001
+   },
+   "samples_seconds": [
+    0.02291203200002201,
+    0.025537653997162124
+   ],
+   "warm_median_seconds": 0.025537653997162124,
+   "warm_min_seconds": 0.025537653997162124
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.02098143799958052,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 100001
+   },
+   "samples_seconds": [
+    0.02098143799958052,
+    0.04225596699689049
+   ],
+   "warm_median_seconds": 0.04225596699689049,
+   "warm_min_seconds": 0.04225596699689049
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.006295285998930922,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006295285998930922,
+    0.006311616001767106
+   ],
+   "warm_median_seconds": 0.006311616001767106,
+   "warm_min_seconds": 0.006311616001767106
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.10356369799774257,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.149600542752453e-10,
+    "iterations": 77
+   },
+   "samples_seconds": [
+    0.10356369799774257,
+    0.10907389099884313
+   ],
+   "warm_median_seconds": 0.10907389099884313,
+   "warm_min_seconds": 0.10907389099884313
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.14379574000122375,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.14379574000122375,
+    0.15669396100201993
+   ],
+   "warm_median_seconds": 0.15669396100201993,
+   "warm_min_seconds": 0.15669396100201993
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.0017211250014952384,
+   "params": {
+    "edges": 100000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 8906380,
+   "samples_seconds": [
+    0.0017211250014952384,
+    0.0015974769994500093,
+    0.005645697001455119
+   ],
+   "warm_median_seconds": 0.003621587000452564,
+   "warm_min_seconds": 0.0015974769994500093
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.056445952999638394,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.056445952999638394,
+    0.04790695599876926
+   ],
+   "warm_median_seconds": 0.04790695599876926,
+   "warm_min_seconds": 0.04790695599876926
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.2169186399987666,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000000,
+    "entries": 1000000,
+    "layout_bytes": 116125680,
+    "vertices": 1000001
+   },
+   "samples_seconds": [
+    0.2169186399987666,
+    0.32683508900299785
+   ],
+   "warm_median_seconds": 0.32683508900299785,
+   "warm_min_seconds": 0.32683508900299785
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.019230231002438813,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.019230231002438813,
+    0.02244212200093898
+   ],
+   "warm_median_seconds": 0.02244212200093898,
+   "warm_min_seconds": 0.02244212200093898
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00799126600031741,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 974,
+   "samples_seconds": [
+    0.00799126600031741,
+    0.00012321399844950065,
+    0.00011820399959105998,
+    0.00011410400111344643,
+    0.00010915500024566427
+   ],
+   "warm_median_seconds": 0.0001161540003522532,
+   "warm_min_seconds": 0.00010915500024566427
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0047750209996593185,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 974,
+   "samples_seconds": [
+    0.0047750209996593185,
+    0.004273969996575033,
+    0.004111435999220703,
+    0.0035567879967857152,
+    0.0033399719977751374
+   ],
+   "warm_median_seconds": 0.003834111998003209,
+   "warm_min_seconds": 0.0033399719977751374
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0014601530019717757,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 99890,
+   "samples_seconds": [
+    0.0014601530019717757,
+    0.0013046659987594467,
+    0.0007595140014018398,
+    0.0007767239985696506,
+    0.0007320680015254766
+   ],
+   "warm_median_seconds": 0.0007681189999857452,
+   "warm_min_seconds": 0.0007320680015254766
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.003729931002453668,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 99890,
+   "samples_seconds": [
+    0.003729931002453668,
+    0.003745334000996081,
+    0.003345360000821529,
+    0.002954034000140382,
+    0.006913770001119701
+   ],
+   "warm_median_seconds": 0.003545347000908805,
+   "warm_min_seconds": 0.002954034000140382
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0015769499987072777,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 500929,
+   "samples_seconds": [
+    0.0015769499987072777,
+    0.00917837399902055,
+    0.0013823429981130175,
+    0.0012958389997947961,
+    0.005261948997940635
+   ],
+   "warm_median_seconds": 0.0033221459980268264,
+   "warm_min_seconds": 0.0012958389997947961
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.003232769999158336,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 500929,
+   "samples_seconds": [
+    0.003232769999158336,
+    0.007080064999172464,
+    0.006879270997160347,
+    0.006762114000594011,
+    0.0026731899997685105
+   ],
+   "warm_median_seconds": 0.006820692498877179,
+   "warm_min_seconds": 0.0026731899997685105
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.0361511020018952,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.0361511020018952,
+    0.03341789099795278,
+    0.037110264998773346,
+    0.03289336899979389,
+    0.035944099003245356
+   ],
+   "warm_median_seconds": 0.03468099500059907,
+   "warm_min_seconds": 0.03289336899979389
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.023238221001520287,
+   "params": {
+    "edges": 1000000,
+    "semiring": "bool",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.023238221001520287,
+    0.02870265800083871,
+    0.03899871199973859,
+    0.026344653000705875,
+    0.028972334999707527
+   ],
+   "warm_median_seconds": 0.02883749650027312,
+   "warm_min_seconds": 0.026344653000705875
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.01654161900296458,
+   "params": {
+    "edges": 1000000,
+    "semiring": "min_plus",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.01654161900296458,
+    0.01648738299991237,
+    0.010373758999776328,
+    0.015034771000500768,
+    0.007256225999299204
+   ],
+   "warm_median_seconds": 0.012704265000138548,
+   "warm_min_seconds": 0.007256225999299204
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.023420673001965042,
+   "params": {
+    "edges": 1000000,
+    "semiring": "float",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.023420673001965042,
+    0.020852783000009367,
+    0.023344233002717374,
+    0.038036975001887185,
+    0.029511419001210015
+   ],
+   "warm_median_seconds": 0.026427826001963695,
+   "warm_min_seconds": 0.020852783000009367
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.010077353999804473,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010077353999804473,
+    0.013181295998947462,
+    0.008782640001300024,
+    0.008943147000536555,
+    0.004651582999940729
+   ],
+   "warm_median_seconds": 0.00886289350091829,
+   "warm_min_seconds": 0.004651582999940729
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.004091465001692995,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004091465001692995,
+    0.006469566000305349,
+    0.005247457997029414,
+    0.004161908000241965,
+    0.0035003720004169736
+   ],
+   "warm_median_seconds": 0.00470468299863569,
+   "warm_min_seconds": 0.0035003720004169736
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.003602996999688912,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003602996999688912,
+    0.0018830480003089178,
+    0.0017229490003956016,
+    0.0016377669999201316,
+    0.0016427590016974136
+   ],
+   "warm_median_seconds": 0.0016828540010465076,
+   "warm_min_seconds": 0.0016377669999201316
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.10464160699848435,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 1000001
+   },
+   "samples_seconds": [
+    0.10464160699848435,
+    0.19947473199863452
+   ],
+   "warm_median_seconds": 0.19947473199863452,
+   "warm_min_seconds": 0.19947473199863452
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.01586031099941465,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01586031099941465,
+    0.011432120998506434
+   ],
+   "warm_median_seconds": 0.011432120998506434,
+   "warm_min_seconds": 0.011432120998506434
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.5140843980007048,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 1000001
+   },
+   "samples_seconds": [
+    0.5140843980007048,
+    0.5715844879996439
+   ],
+   "warm_median_seconds": 0.5715844879996439,
+   "warm_min_seconds": 0.5715844879996439
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.5913159269985044,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 1000001
+   },
+   "samples_seconds": [
+    0.5913159269985044,
+    0.4750886479996552
+   ],
+   "warm_median_seconds": 0.4750886479996552,
+   "warm_min_seconds": 0.4750886479996552
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.022306629998638527,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.022306629998638527,
+    0.022415223000280093
+   ],
+   "warm_median_seconds": 0.022415223000280093,
+   "warm_min_seconds": 0.022415223000280093
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.9208865170003264,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.779166463764566e-10,
+    "iterations": 80
+   },
+   "samples_seconds": [
+    0.9208865170003264,
+    1.031986660000257
+   ],
+   "warm_median_seconds": 1.031986660000257,
+   "warm_min_seconds": 1.031986660000257
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 1.3244535310004721,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3244535310004721,
+    1.2516727859983803
+   ],
+   "warm_median_seconds": 1.2516727859983803,
+   "warm_min_seconds": 1.2516727859983803
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.02060924800025532,
+   "params": {
+    "edges": 1000000,
+    "shape": "chain"
+   },
+   "phase": "run",
+   "result": 90133554,
+   "samples_seconds": [
+    0.02060924800025532,
+    0.028202499001054093,
+    0.03253685600066092
+   ],
+   "warm_median_seconds": 0.030369677500857506,
+   "warm_min_seconds": 0.028202499001054093
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.00012458200217224658,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012458200217224658,
+    5.354300083126873e-05,
+    3.31190021825023e-05
+   ],
+   "warm_median_seconds": 4.3331001506885514e-05,
+   "warm_min_seconds": 3.31190021825023e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.00016326599870808423,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000,
+    "entries": 1000,
+    "layout_bytes": 116808,
+    "vertices": 1001
+   },
+   "samples_seconds": [
+    0.00016326599870808423,
+    0.00011662300312309526,
+    9.667499762144871e-05
+   ],
+   "warm_median_seconds": 0.00010664900037227198,
+   "warm_min_seconds": 9.667499762144871e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0002718130017456133,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002718130017456133,
+    9.241199950338341e-05,
+    8.856999920681119e-05
+   ],
+   "warm_median_seconds": 9.04909993550973e-05,
+   "warm_min_seconds": 8.856999920681119e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 7.384199852822348e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    7.384199852822348e-05,
+    1.5396002709167078e-05,
+    1.0595002095215023e-05,
+    1.0017000022344291e-05,
+    3.592800203477964e-05
+   ],
+   "warm_median_seconds": 1.299550240219105e-05,
+   "warm_min_seconds": 1.0017000022344291e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 3.175499659846537e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    3.175499659846537e-05,
+    8.181999874068424e-06,
+    6.3970001065172255e-06,
+    5.566998879658058e-06,
+    5.789999704575166e-06
+   ],
+   "warm_median_seconds": 6.093499905546196e-06,
+   "warm_min_seconds": 5.566998879658058e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 2.237300213892013e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000,
+   "samples_seconds": [
+    2.237300213892013e-05,
+    1.3855998986400664e-05,
+    1.2397998943924904e-05,
+    1.221899947267957e-05,
+    1.2155000149505213e-05
+   ],
+   "warm_median_seconds": 1.2308499208302237e-05,
+   "warm_min_seconds": 1.2155000149505213e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 9.48100205278024e-06,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000,
+   "samples_seconds": [
+    9.48100205278024e-06,
+    6.26700057182461e-06,
+    6.030997610650957e-06,
+    5.862999387318268e-06,
+    5.632999091176316e-06
+   ],
+   "warm_median_seconds": 5.9469984989846125e-06,
+   "warm_min_seconds": 5.632999091176316e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 1.4147997717373073e-05,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    1.4147997717373073e-05,
+    1.0760002624010667e-05,
+    1.0397998266853392e-05,
+    1.0708001354942098e-05,
+    1.0337000276194885e-05
+   ],
+   "warm_median_seconds": 1.0552999810897745e-05,
+   "warm_min_seconds": 1.0337000276194885e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 8.628998330095783e-06,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    8.628998330095783e-06,
+    6.38499841443263e-06,
+    6.084002961870283e-06,
+    5.640002200379968e-06,
+    5.580001015914604e-06
+   ],
+   "warm_median_seconds": 5.862002581125125e-06,
+   "warm_min_seconds": 5.580001015914604e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 4.929900023853406e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    4.929900023853406e-05,
+    2.92309996439144e-05,
+    2.4352997570531443e-05,
+    2.204700285801664e-05,
+    2.179999864893034e-05
+   ],
+   "warm_median_seconds": 2.320000021427404e-05,
+   "warm_min_seconds": 2.179999864893034e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 2.912399941124022e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "bool",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    2.912399941124022e-05,
+    2.2394000552594662e-05,
+    2.18700006371364e-05,
+    2.098199911415577e-05,
+    3.094199928455055e-05
+   ],
+   "warm_median_seconds": 2.213200059486553e-05,
+   "warm_min_seconds": 2.098199911415577e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 2.4114997358992696e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "min_plus",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    2.4114997358992696e-05,
+    1.968200012925081e-05,
+    1.8966002244269475e-05,
+    1.777299985405989e-05,
+    1.7267000657739118e-05
+   ],
+   "warm_median_seconds": 1.8369501049164683e-05,
+   "warm_min_seconds": 1.7267000657739118e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 3.427299816394225e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "float",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1001,
+   "samples_seconds": [
+    3.427299816394225e-05,
+    2.8958998882444575e-05,
+    2.6854999305214733e-05,
+    2.6051002350868657e-05,
+    2.6663998141884804e-05
+   ],
+   "warm_median_seconds": 2.675949872354977e-05,
+   "warm_min_seconds": 2.6051002350868657e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 1.1575000826269388e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1575000826269388e-05,
+    6.910002412041649e-06,
+    5.295998562360182e-06,
+    4.734996764454991e-06,
+    4.847999662160873e-06
+   ],
+   "warm_median_seconds": 5.071999112260528e-06,
+   "warm_min_seconds": 4.734996764454991e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 3.4234999475302175e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.4234999475302175e-05,
+    2.038000093307346e-05,
+    1.6684000001987442e-05,
+    1.608999809832312e-05,
+    1.5060999430716038e-05
+   ],
+   "warm_median_seconds": 1.6386999050155282e-05,
+   "warm_min_seconds": 1.5060999430716038e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 6.074998964322731e-06,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.074998964322731e-06,
+    2.1959967853035778e-06,
+    1.7649981600698084e-06,
+    1.8130012904293835e-06,
+    1.6939993656706065e-06
+   ],
+   "warm_median_seconds": 1.788999725249596e-06,
+   "warm_min_seconds": 1.6939993656706065e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 7.557500066468492e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    7.557500066468492e-05,
+    6.97029972798191e-05
+   ],
+   "warm_median_seconds": 6.97029972798191e-05,
+   "warm_min_seconds": 6.97029972798191e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 9.12649993551895e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.12649993551895e-05,
+    1.9437000446487218e-05
+   ],
+   "warm_median_seconds": 1.9437000446487218e-05,
+   "warm_min_seconds": 1.9437000446487218e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.004545333002170082,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 1001
+   },
+   "samples_seconds": [
+    0.004545333002170082,
+    0.0003975219988205936
+   ],
+   "warm_median_seconds": 0.0003975219988205936,
+   "warm_min_seconds": 0.0003975219988205936
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.00048675400103093125,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    0.00048675400103093125,
+    0.00024175300131901167
+   ],
+   "warm_median_seconds": 0.00024175300131901167,
+   "warm_min_seconds": 0.00024175300131901167
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.00030124999830150045,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00030124999830150045,
+    0.00016176300050574355
+   ],
+   "warm_median_seconds": 0.00016176300050574355,
+   "warm_min_seconds": 0.00016176300050574355
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.0002683380007511005,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 6.056714736229073e-13,
+    "iterations": 4
+   },
+   "samples_seconds": [
+    0.0002683380007511005,
+    0.00015608000103384256
+   ],
+   "warm_median_seconds": 0.00015608000103384256,
+   "warm_min_seconds": 0.00015608000103384256
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.0003236800002923701,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003236800002923701,
+    0.0002093580005748663
+   ],
+   "warm_median_seconds": 0.0002093580005748663,
+   "warm_min_seconds": 0.0002093580005748663
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 6.59889992675744e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 160234,
+   "samples_seconds": [
+    6.59889992675744e-05,
+    2.8380996809573844e-05,
+    2.4813001800794154e-05
+   ],
+   "warm_median_seconds": 2.6596999305184e-05,
+   "warm_min_seconds": 2.4813001800794154e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.0019215719985368196,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0019215719985368196,
+    0.0018830610024451744,
+    0.0017270190000999719
+   ],
+   "warm_median_seconds": 0.0018050400012725731,
+   "warm_min_seconds": 0.0017270190000999719
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.013329223002074286,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 100000,
+    "entries": 100000,
+    "layout_bytes": 11613184,
+    "vertices": 100001
+   },
+   "samples_seconds": [
+    0.013329223002074286,
+    0.012822570999560412,
+    0.012018334000458708
+   ],
+   "warm_median_seconds": 0.01242045250000956,
+   "warm_min_seconds": 0.012018334000458708
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0015055769981699996,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0015055769981699996,
+    0.001348770998447435,
+    0.0012529510022432078
+   ],
+   "warm_median_seconds": 0.0013008610003453214,
+   "warm_min_seconds": 0.0012529510022432078
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0003187690017512068,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0003187690017512068,
+    2.8664999263128266e-05,
+    2.0124000002397224e-05,
+    1.849699765443802e-05,
+    2.2050000552553684e-05
+   ],
+   "warm_median_seconds": 2.1087000277475454e-05,
+   "warm_min_seconds": 1.849699765443802e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.00031896200016490184,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00031896200016490184,
+    0.00028257300073164515,
+    0.0002542809997976292,
+    0.00023258600049302913,
+    0.00022042300042812712
+   ],
+   "warm_median_seconds": 0.00024343350014532916,
+   "warm_min_seconds": 0.00022042300042812712
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0003541250007401686,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100000,
+   "samples_seconds": [
+    0.0003541250007401686,
+    0.00024305999977514148,
+    0.00021930299772066064,
+    0.00023111900009098463,
+    0.00023212700034491718
+   ],
+   "warm_median_seconds": 0.0002316230002179509,
+   "warm_min_seconds": 0.00021930299772066064
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0002547029980632942,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100000,
+   "samples_seconds": [
+    0.0002547029980632942,
+    0.00022361000083037652,
+    0.00023209600112750195,
+    0.00024484400273649953,
+    0.0002320990024600178
+   ],
+   "warm_median_seconds": 0.00023209750179375987,
+   "warm_min_seconds": 0.00022361000083037652
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00013362800018512644,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00013362800018512644,
+    9.085499914363027e-05,
+    8.35979990370106e-05,
+    7.024300066404976e-05,
+    9.32870025280863e-05
+   ],
+   "warm_median_seconds": 8.722649909032043e-05,
+   "warm_min_seconds": 7.024300066404976e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.00025076900055864826,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00025076900055864826,
+    0.00022137999985716306,
+    0.00023049599985824898,
+    0.0002720419979596045,
+    0.00023515399880125187
+   ],
+   "warm_median_seconds": 0.00023282499932975043,
+   "warm_min_seconds": 0.00022137999985716306
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.0010065679998660926,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0010065679998660926,
+    0.0016741910003474914,
+    0.0010255710003548302,
+    0.0009360809999634512,
+    0.0009208420015056618
+   ],
+   "warm_median_seconds": 0.0009808260001591407,
+   "warm_min_seconds": 0.0009208420015056618
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.000418514999182662,
+   "params": {
+    "edges": 100000,
+    "semiring": "bool",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.000418514999182662,
+    0.0004195590008748695,
+    0.0004008350006188266,
+    0.00043727200318244286,
+    0.0003599900010158308
+   ],
+   "warm_median_seconds": 0.00041019700074684806,
+   "warm_min_seconds": 0.0003599900010158308
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.0004309739997552242,
+   "params": {
+    "edges": 100000,
+    "semiring": "min_plus",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0004309739997552242,
+    0.0005840480007464066,
+    0.0007926660000521224,
+    0.0004515130021900404,
+    0.0005027919978601858
+   ],
+   "warm_median_seconds": 0.0005434199993032962,
+   "warm_min_seconds": 0.0004515130021900404
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.0015101270000741351,
+   "params": {
+    "edges": 100000,
+    "semiring": "float",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 100001,
+   "samples_seconds": [
+    0.0015101270000741351,
+    0.0020671899983426556,
+    0.0021406340019893833,
+    0.00145296500340919,
+    0.001645337000809377
+   ],
+   "warm_median_seconds": 0.0018562634995760163,
+   "warm_min_seconds": 0.00145296500340919
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.00029577300301752985,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00029577300301752985,
+    0.0003077769979427103,
+    0.0002932600000349339,
+    0.00022831300157122314,
+    0.0001939530011441093
+   ],
+   "warm_median_seconds": 0.0002607865008030785,
+   "warm_min_seconds": 0.0001939530011441093
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.00044053600140614435,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00044053600140614435,
+    0.0004737310009659268,
+    0.00041055799738387577,
+    0.000400515000364976,
+    0.00035471899900585413
+   ],
+   "warm_median_seconds": 0.0004055364988744259,
+   "warm_min_seconds": 0.00035471899900585413
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.0002995510003529489,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002995510003529489,
+    0.00016691000200808048,
+    0.00014991799980634823,
+    0.00014663999900221825,
+    0.00015541999891865999
+   ],
+   "warm_median_seconds": 0.0001526689993625041,
+   "warm_min_seconds": 0.00014663999900221825
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.004546233998553362,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    0.004546233998553362,
+    0.004640981002012268
+   ],
+   "warm_median_seconds": 0.004640981002012268,
+   "warm_min_seconds": 0.004640981002012268
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.00041447399780736305,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00041447399780736305,
+    0.00041382400013389997
+   ],
+   "warm_median_seconds": 0.00041382400013389997,
+   "warm_min_seconds": 0.00041382400013389997
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.037107951000507455,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 100001
+   },
+   "samples_seconds": [
+    0.037107951000507455,
+    0.07172370999978739
+   ],
+   "warm_median_seconds": 0.07172370999978739,
+   "warm_min_seconds": 0.07172370999978739
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.039372019997244934,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 100001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    0.039372019997244934,
+    0.04008724400046049
+   ],
+   "warm_median_seconds": 0.04008724400046049,
+   "warm_min_seconds": 0.04008724400046049
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.03274113500083331,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03274113500083331,
+    0.0369648350024363
+   ],
+   "warm_median_seconds": 0.0369648350024363,
+   "warm_min_seconds": 0.0369648350024363
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.013489902001310838,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 6.881154975942024e-11,
+    "iterations": 2
+   },
+   "samples_seconds": [
+    0.013489902001310838,
+    0.012415737997798715
+   ],
+   "warm_median_seconds": 0.012415737997798715,
+   "warm_min_seconds": 0.012415737997798715
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.003233747000194853,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003233747000194853,
+    0.0028572270020958968
+   ],
+   "warm_median_seconds": 0.0028572270020958968,
+   "warm_min_seconds": 0.0028572270020958968
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.0015125579993764404,
+   "params": {
+    "edges": 100000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 11691485,
+   "samples_seconds": [
+    0.0015125579993764404,
+    0.0014898320005158894,
+    0.0014098610008659307
+   ],
+   "warm_median_seconds": 0.00144984650069091,
+   "warm_min_seconds": 0.0014098610008659307
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.0187017320022278,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0187017320022278,
+    0.0187119319998601
+   ],
+   "warm_median_seconds": 0.0187119319998601,
+   "warm_min_seconds": 0.0187119319998601
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.25430984199920204,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000000,
+    "entries": 1000000,
+    "layout_bytes": 116125680,
+    "vertices": 1000001
+   },
+   "samples_seconds": [
+    0.25430984199920204,
+    0.3100152420011
+   ],
+   "warm_median_seconds": 0.3100152420011,
+   "warm_min_seconds": 0.3100152420011
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.026302107999072177,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.026302107999072177,
+    0.022530318001372507
+   ],
+   "warm_median_seconds": 0.022530318001372507,
+   "warm_min_seconds": 0.022530318001372507
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.003871128999890061,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.003871128999890061,
+    9.622400102671236e-05,
+    0.00010878399916691706,
+    0.00010180799654335715,
+    9.823199798120186e-05
+   ],
+   "warm_median_seconds": 0.0001000199972622795,
+   "warm_min_seconds": 9.622400102671236e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.004422104000695981,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.004422104000695981,
+    0.0032787609998194966,
+    0.003247099000873277,
+    0.0029476929994416423,
+    0.002838380001776386
+   ],
+   "warm_median_seconds": 0.0030973960001574596,
+   "warm_min_seconds": 0.002838380001776386
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0010901969981205184,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0010901969981205184,
+    0.0009167680000246037,
+    0.0005665530006808694,
+    0.0004452190005395096,
+    0.00045908100219094194
+   ],
+   "warm_median_seconds": 0.0005128170014359057,
+   "warm_min_seconds": 0.0004452190005395096
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.00615088199992897,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00615088199992897,
+    0.004886544000328286,
+    0.0029437160010274965,
+    0.0027726389998861123,
+    0.002614790999359684
+   ],
+   "warm_median_seconds": 0.0028581775004568044,
+   "warm_min_seconds": 0.002614790999359684
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0015634949995728675,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0015634949995728675,
+    0.001583796001796145,
+    0.0008645250018162187,
+    0.0008074670004134532,
+    0.00080500299736741
+   ],
+   "warm_median_seconds": 0.000835996001114836,
+   "warm_min_seconds": 0.00080500299736741
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0026880890000029467,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0026880890000029467,
+    0.002604413999506505,
+    0.002589163999800803,
+    0.0024850289992173202,
+    0.002487181998731103
+   ],
+   "warm_median_seconds": 0.002538172999265953,
+   "warm_min_seconds": 0.0024850289992173202
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.01110069999776897,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.01110069999776897,
+    0.009381541000038851,
+    0.009632360000978224,
+    0.015034911997645395,
+    0.01914261799902306
+   ],
+   "warm_median_seconds": 0.01233363599931181,
+   "warm_min_seconds": 0.009381541000038851
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.007853893999708816,
+   "params": {
+    "edges": 1000000,
+    "semiring": "bool",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.007853893999708816,
+    0.007409124002151657,
+    0.007489032999728806,
+    0.007383890999335563,
+    0.007319109998206841
+   ],
+   "warm_median_seconds": 0.00739650750074361,
+   "warm_min_seconds": 0.007319109998206841
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.008663365002576029,
+   "params": {
+    "edges": 1000000,
+    "semiring": "min_plus",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.008663365002576029,
+    0.008220779000112088,
+    0.008054394002101617,
+    0.007981122998899082,
+    0.0040777439971861895
+   ],
+   "warm_median_seconds": 0.00801775850050035,
+   "warm_min_seconds": 0.0040777439971861895
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.03534150599807617,
+   "params": {
+    "edges": 1000000,
+    "semiring": "float",
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 1000001,
+   "samples_seconds": [
+    0.03534150599807617,
+    0.0325783579974086,
+    0.04358930099988356,
+    0.05491598200023873,
+    0.056258308002725244
+   ],
+   "warm_median_seconds": 0.049252641500061145,
+   "warm_min_seconds": 0.0325783579974086
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.00490452899975935,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00490452899975935,
+    0.004447620998689672,
+    0.003213581003365107,
+    0.0021773840016976465,
+    0.0019818469991150778
+   ],
+   "warm_median_seconds": 0.0026954825025313767,
+   "warm_min_seconds": 0.0019818469991150778
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.004251877002388937,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004251877002388937,
+    0.0058574899994709995,
+    0.003897562000929611,
+    0.00589908599795308,
+    0.006094364998716628
+   ],
+   "warm_median_seconds": 0.0058782879987120396,
+   "warm_min_seconds": 0.003897562000929611
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.0040325560003111605,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0040325560003111605,
+    0.0020870560001640115,
+    0.001732395998260472,
+    0.0017990870001085568,
+    0.0019937200013373513
+   ],
+   "warm_median_seconds": 0.001896403500722954,
+   "warm_min_seconds": 0.001732395998260472
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.05063265900025726,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    0.05063265900025726,
+    0.10233033100303146
+   ],
+   "warm_median_seconds": 0.10233033100303146,
+   "warm_min_seconds": 0.10233033100303146
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.008690079001098638,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008690079001098638,
+    0.008791491000010865
+   ],
+   "warm_median_seconds": 0.008791491000010865,
+   "warm_min_seconds": 0.008791491000010865
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.7904963909968501,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 1000001
+   },
+   "samples_seconds": [
+    0.7904963909968501,
+    0.5305261129979044
+   ],
+   "warm_median_seconds": 0.5305261129979044,
+   "warm_min_seconds": 0.5305261129979044
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.19850563400177634,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1000001,
+    "rounds": 2
+   },
+   "samples_seconds": [
+    0.19850563400177634,
+    0.21431681499961996
+   ],
+   "warm_median_seconds": 0.21431681499961996,
+   "warm_min_seconds": 0.21431681499961996
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.20321591399988392,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.20321591399988392,
+    0.2269868889998179
+   ],
+   "warm_median_seconds": 0.2269868889998179,
+   "warm_min_seconds": 0.2269868889998179
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.17159123499732232,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.962029133135101e-10,
+    "iterations": 2
+   },
+   "samples_seconds": [
+    0.17159123499732232,
+    0.13819337400127552
+   ],
+   "warm_median_seconds": 0.13819337400127552,
+   "warm_min_seconds": 0.13819337400127552
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.03879999200216844,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03879999200216844,
+    0.060555781001312425
+   ],
+   "warm_median_seconds": 0.060555781001312425,
+   "warm_min_seconds": 0.060555781001312425
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.014893882998876506,
+   "params": {
+    "edges": 1000000,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": 62892857,
+   "samples_seconds": [
+    0.014893882998876506,
+    0.020479118000366725,
+    0.01796427600129391
+   ],
+   "warm_median_seconds": 0.019221697000830318,
+   "warm_min_seconds": 0.01796427600129391
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.000115072001790395,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000115072001790395,
+    7.643000208190642e-05,
+    5.608200081042014e-05
+   ],
+   "warm_median_seconds": 6.625600144616328e-05,
+   "warm_min_seconds": 5.608200081042014e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.0006219770002644509,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000,
+    "entries": 1000,
+    "layout_bytes": 118920,
+    "vertices": 1067
+   },
+   "samples_seconds": [
+    0.0006219770002644509,
+    0.00015103500118129887,
+    9.996600056183524e-05
+   ],
+   "warm_median_seconds": 0.00012550050087156706,
+   "warm_min_seconds": 9.996600056183524e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.00024238500191131607,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00024238500191131607,
+    8.611000157543458e-05,
+    7.409200043184683e-05
+   ],
+   "warm_median_seconds": 8.01010010036407e-05,
+   "warm_min_seconds": 7.409200043184683e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 4.937899939250201e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    4.937899939250201e-05,
+    1.414800135535188e-05,
+    1.1934000212932006e-05,
+    9.668001439422369e-06,
+    5.823100218549371e-05
+   ],
+   "warm_median_seconds": 1.3041000784141943e-05,
+   "warm_min_seconds": 9.668001439422369e-06
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 3.589300104067661e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    3.589300104067661e-05,
+    8.298997272504494e-06,
+    6.614998710574582e-06,
+    6.157002644613385e-06,
+    5.9770027291961014e-06
+   ],
+   "warm_median_seconds": 6.386000677593984e-06,
+   "warm_min_seconds": 5.9770027291961014e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 1.8527996871853247e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 107,
+   "samples_seconds": [
+    1.8527996871853247e-05,
+    1.2027998309349641e-05,
+    9.810999472392723e-06,
+    1.0520998330321163e-05,
+    1.0258998372592032e-05
+   ],
+   "warm_median_seconds": 1.0389998351456597e-05,
+   "warm_min_seconds": 9.810999472392723e-06
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 1.0255000233883038e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 107,
+   "samples_seconds": [
+    1.0255000233883038e-05,
+    6.793998181819916e-06,
+    6.223999662324786e-06,
+    6.26700057182461e-06,
+    5.98800033912994e-06
+   ],
+   "warm_median_seconds": 6.245500117074698e-06,
+   "warm_min_seconds": 5.98800033912994e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 1.6091998986667022e-05,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 495,
+   "samples_seconds": [
+    1.6091998986667022e-05,
+    1.3173998013371602e-05,
+    1.1519998224684969e-05,
+    1.135099955718033e-05,
+    1.1242002074141055e-05
+   ],
+   "warm_median_seconds": 1.143549889093265e-05,
+   "warm_min_seconds": 1.1242002074141055e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 8.58899875311181e-06,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 495,
+   "samples_seconds": [
+    8.58899875311181e-06,
+    6.824000593042001e-06,
+    6.144000508356839e-06,
+    6.0820020735263824e-06,
+    5.9829981182701886e-06
+   ],
+   "warm_median_seconds": 6.113001290941611e-06,
+   "warm_min_seconds": 5.9829981182701886e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 5.8743000408867374e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1067,
+   "samples_seconds": [
+    5.8743000408867374e-05,
+    3.799100159085356e-05,
+    2.8162001399323344e-05,
+    2.35740008065477e-05,
+    2.3664000764256343e-05
+   ],
+   "warm_median_seconds": 2.5913001081789844e-05,
+   "warm_min_seconds": 2.35740008065477e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 4.045600144308992e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "bool",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1067,
+   "samples_seconds": [
+    4.045600144308992e-05,
+    3.9497001125710085e-05,
+    2.473800122970715e-05,
+    2.2986001567915082e-05,
+    2.2064999939175323e-05
+   ],
+   "warm_median_seconds": 2.3862001398811117e-05,
+   "warm_min_seconds": 2.2064999939175323e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 2.253099955851212e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "min_plus",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1067,
+   "samples_seconds": [
+    2.253099955851212e-05,
+    1.9244002032792196e-05,
+    1.807200169423595e-05,
+    1.779000012902543e-05,
+    1.9163999240845442e-05
+   ],
+   "warm_median_seconds": 1.8618000467540696e-05,
+   "warm_min_seconds": 1.779000012902543e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 3.894899782608263e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "float",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1067,
+   "samples_seconds": [
+    3.894899782608263e-05,
+    7.875099981902167e-05,
+    7.728700074949302e-05,
+    3.781499981414527e-05,
+    3.2257001294055954e-05
+   ],
+   "warm_median_seconds": 5.755100028181914e-05,
+   "warm_min_seconds": 3.2257001294055954e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 1.55849993461743e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.55849993461743e-05,
+    7.293001544894651e-06,
+    5.498000973602757e-06,
+    5.2010000217705965e-06,
+    5.2010000217705965e-06
+   ],
+   "warm_median_seconds": 5.349500497686677e-06,
+   "warm_min_seconds": 5.2010000217705965e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 3.20209983328823e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.20209983328823e-05,
+    1.924900061567314e-05,
+    1.567399885971099e-05,
+    1.5477002307306975e-05,
+    1.6010999388527125e-05
+   ],
+   "warm_median_seconds": 1.5842499124119058e-05,
+   "warm_min_seconds": 1.5477002307306975e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 6.057001883164048e-06,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.057001883164048e-06,
+    2.1660016500391066e-06,
+    1.844000507844612e-06,
+    1.791999238776043e-06,
+    1.757998688844964e-06
+   ],
+   "warm_median_seconds": 1.8179998733103275e-06,
+   "warm_min_seconds": 1.757998688844964e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 9.08940019144211e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 16,
+    "rounds": 16
+   },
+   "samples_seconds": [
+    9.08940019144211e-05,
+    6.406899774447083e-05
+   ],
+   "warm_median_seconds": 6.406899774447083e-05,
+   "warm_min_seconds": 6.406899774447083e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 6.623499939450994e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.623499939450994e-05,
+    8.498001989210024e-06
+   ],
+   "warm_median_seconds": 8.498001989210024e-06,
+   "warm_min_seconds": 8.498001989210024e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.0002762479998636991,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 16,
+    "rounds": 16
+   },
+   "samples_seconds": [
+    0.0002762479998636991,
+    0.00021059699793113396
+   ],
+   "warm_median_seconds": 0.00021059699793113396,
+   "warm_min_seconds": 0.00021059699793113396
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.00034817699997802265,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 16,
+    "rounds": 16
+   },
+   "samples_seconds": [
+    0.00034817699997802265,
+    0.0002113959999405779
+   ],
+   "warm_median_seconds": 0.0002113959999405779,
+   "warm_min_seconds": 0.0002113959999405779
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.00013382000179262832,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013382000179262832,
+    4.3265001295367256e-05
+   ],
+   "warm_median_seconds": 4.3265001295367256e-05,
+   "warm_min_seconds": 4.3265001295367256e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.0004668549991038162,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 3.3311429150390843e-10,
+    "iterations": 55
+   },
+   "samples_seconds": [
+    0.0004668549991038162,
+    0.00035291200038045645
+   ],
+   "warm_median_seconds": 0.00035291200038045645,
+   "warm_min_seconds": 0.00035291200038045645
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.0011468100019556005,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011468100019556005,
+    0.0009820509985729586
+   ],
+   "warm_median_seconds": 0.0009820509985729586,
+   "warm_min_seconds": 0.0009820509985729586
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.00011754499792004935,
+   "params": {
+    "edges": 1000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 96094,
+   "samples_seconds": [
+    0.00011754499792004935,
+    3.2417003239970654e-05,
+    2.5610999728087336e-05
+   ],
+   "warm_median_seconds": 2.9014001484028995e-05,
+   "warm_min_seconds": 2.5610999728087336e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.0017409419997420628,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017409419997420628,
+    0.00179720900268876,
+    0.0016152770003827754
+   ],
+   "warm_median_seconds": 0.0017062430015357677,
+   "warm_min_seconds": 0.0016152770003827754
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.01261286699809716,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 100000,
+    "entries": 100000,
+    "layout_bytes": 11615232,
+    "vertices": 100065
+   },
+   "samples_seconds": [
+    0.01261286699809716,
+    0.011131963001389522,
+    0.010388676997536095
+   ],
+   "warm_median_seconds": 0.010760319999462808,
+   "warm_min_seconds": 0.010388676997536095
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.001029094997647917,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001029094997647917,
+    0.0008216900023398921,
+    0.0007173970006988384
+   ],
+   "warm_median_seconds": 0.0007695435015193652,
+   "warm_min_seconds": 0.0007173970006988384
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0002784099997370504,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 101,
+   "samples_seconds": [
+    0.0002784099997370504,
+    2.4585999199189246e-05,
+    1.9757000700337812e-05,
+    1.9212002371205017e-05,
+    1.989200245589018e-05
+   ],
+   "warm_median_seconds": 1.9824501578113995e-05,
+   "warm_min_seconds": 1.9212002371205017e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0003904670011252165,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 101,
+   "samples_seconds": [
+    0.0003904670011252165,
+    0.0002527169999666512,
+    0.00025607300267438404,
+    0.00027031100034946576,
+    0.0002484990000084508
+   ],
+   "warm_median_seconds": 0.0002543950013205176,
+   "warm_min_seconds": 0.0002484990000084508
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00012631000208784826,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 10008,
+   "samples_seconds": [
+    0.00012631000208784826,
+    5.544600207940675e-05,
+    4.4272001105127856e-05,
+    4.2114999814657494e-05,
+    3.9545997424283996e-05
+   ],
+   "warm_median_seconds": 4.3193500459892675e-05,
+   "warm_min_seconds": 3.9545997424283996e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0003138169995509088,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 10008,
+   "samples_seconds": [
+    0.0003138169995509088,
+    0.00024649800252518617,
+    0.00024001999918255024,
+    0.0002668550005182624,
+    0.000254327998845838
+   ],
+   "warm_median_seconds": 0.0002504130006855121,
+   "warm_min_seconds": 0.00024001999918255024
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00017187100092996843,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 49928,
+   "samples_seconds": [
+    0.00017187100092996843,
+    0.00013178300287108868,
+    0.00019365000116522424,
+    0.00013574300101026893,
+    0.00012561900075525045
+   ],
+   "warm_median_seconds": 0.0001337630019406788,
+   "warm_min_seconds": 0.00012561900075525045
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0002741550015343819,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 49928,
+   "samples_seconds": [
+    0.0002741550015343819,
+    0.00024407100136158988,
+    0.00027542299721972086,
+    0.0002551020006649196,
+    0.00024151800243998878
+   ],
+   "warm_median_seconds": 0.00024958650101325475,
+   "warm_min_seconds": 0.00024151800243998878
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.0016909939986362588,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 100065,
+   "samples_seconds": [
+    0.0016909939986362588,
+    0.0015355219984485302,
+    0.0014841179981885944,
+    0.0015121709984668996,
+    0.0018644200026756153
+   ],
+   "warm_median_seconds": 0.001523846498457715,
+   "warm_min_seconds": 0.0014841179981885944
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.0010996419987350237,
+   "params": {
+    "edges": 100000,
+    "semiring": "bool",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 100065,
+   "samples_seconds": [
+    0.0010996419987350237,
+    0.0010651640004653018,
+    0.001032141997711733,
+    0.0010091540025314316,
+    0.0010227099992334843
+   ],
+   "warm_median_seconds": 0.0010274259984726086,
+   "warm_min_seconds": 0.0010091540025314316
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.00043245800043223426,
+   "params": {
+    "edges": 100000,
+    "semiring": "min_plus",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 100065,
+   "samples_seconds": [
+    0.00043245800043223426,
+    0.0004028170005767606,
+    0.00038931399831199087,
+    0.0004127690008317586,
+    0.0004074120006407611
+   ],
+   "warm_median_seconds": 0.00040511450060876086,
+   "warm_min_seconds": 0.00038931399831199087
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.0013700280032935552,
+   "params": {
+    "edges": 100000,
+    "semiring": "float",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 100065,
+   "samples_seconds": [
+    0.0013700280032935552,
+    0.0013266579990158789,
+    0.0012892150007246528,
+    0.0012973979974049143,
+    0.0013370840024435893
+   ],
+   "warm_median_seconds": 0.0013120279982103966,
+   "warm_min_seconds": 0.0012892150007246528
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.00026440299916430376,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00026440299916430376,
+    0.00028589199791895226,
+    0.0002098969998769462,
+    0.00019403099940973334,
+    0.0002195390006818343
+   ],
+   "warm_median_seconds": 0.00021471800027939025,
+   "warm_min_seconds": 0.00019403099940973334
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.00043790200288640335,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00043790200288640335,
+    0.0005208139991736971,
+    0.0003954189996875357,
+    0.0003398400003788993,
+    0.0003754999997909181
+   ],
+   "warm_median_seconds": 0.0003854594997392269,
+   "warm_min_seconds": 0.0003398400003788993
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.00020332699932623655,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00020332699932623655,
+    0.00016514199887751602,
+    0.00014485700012301095,
+    0.00014991499847383238,
+    0.00017210499936481938
+   ],
+   "warm_median_seconds": 0.0001575284986756742,
+   "warm_min_seconds": 0.00014485700012301095
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.004270727000402985,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1563,
+    "rounds": 1563
+   },
+   "samples_seconds": [
+    0.004270727000402985,
+    0.004221852999762632
+   ],
+   "warm_median_seconds": 0.004221852999762632,
+   "warm_min_seconds": 0.004221852999762632
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.00010037899846793152,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010037899846793152,
+    4.715500108432025e-05
+   ],
+   "warm_median_seconds": 4.715500108432025e-05,
+   "warm_min_seconds": 4.715500108432025e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.014245643000322161,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1563,
+    "rounds": 1563
+   },
+   "samples_seconds": [
+    0.014245643000322161,
+    0.01499789000081364
+   ],
+   "warm_median_seconds": 0.01499789000081364,
+   "warm_min_seconds": 0.01499789000081364
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.01611709599819733,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 1563,
+    "rounds": 1563
+   },
+   "samples_seconds": [
+    0.01611709599819733,
+    0.015041648999613244
+   ],
+   "warm_median_seconds": 0.015041648999613244,
+   "warm_min_seconds": 0.015041648999613244
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.00026462399910087697,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00026462399910087697,
+    0.00016127100025187247
+   ],
+   "warm_median_seconds": 0.00016127100025187247,
+   "warm_min_seconds": 0.00016127100025187247
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.05241908400057582,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.022801993670282e-10,
+    "iterations": 83
+   },
+   "samples_seconds": [
+    0.05241908400057582,
+    0.06048922500121989
+   ],
+   "warm_median_seconds": 0.06048922500121989,
+   "warm_min_seconds": 0.06048922500121989
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.07049865899898577,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07049865899898577,
+    0.0714641099984874
+   ],
+   "warm_median_seconds": 0.0714641099984874,
+   "warm_min_seconds": 0.0714641099984874
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.0017668330001470167,
+   "params": {
+    "edges": 100000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 9070060,
+   "samples_seconds": [
+    0.0017668330001470167,
+    0.0016957189982349519,
+    0.0016057339998951647
+   ],
+   "warm_median_seconds": 0.0016507264990650583,
+   "warm_min_seconds": 0.0016057339998951647
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.021490228002221556,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.021490228002221556,
+    0.025656417001300724
+   ],
+   "warm_median_seconds": 0.025656417001300724,
+   "warm_min_seconds": 0.025656417001300724
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.19996377899951767,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000000,
+    "entries": 1000000,
+    "layout_bytes": 116127696,
+    "vertices": 1000064
+   },
+   "samples_seconds": [
+    0.19996377899951767,
+    0.21747512299771188
+   ],
+   "warm_median_seconds": 0.21747512299771188,
+   "warm_min_seconds": 0.21747512299771188
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0107774550015165,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0107774550015165,
+    0.00889458199890214
+   ],
+   "warm_median_seconds": 0.00889458199890214,
+   "warm_min_seconds": 0.00889458199890214
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.003877462000673404,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 994,
+   "samples_seconds": [
+    0.003877462000673404,
+    0.00011813500168500468,
+    9.071200111065991e-05,
+    8.726300075068139e-05,
+    0.00010059600026579574
+   ],
+   "warm_median_seconds": 9.565400068822782e-05,
+   "warm_min_seconds": 8.726300075068139e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.004037991002405761,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 994,
+   "samples_seconds": [
+    0.004037991002405761,
+    0.002961881000373978,
+    0.002627290999953402,
+    0.002560526001616381,
+    0.0026989230027538724
+   ],
+   "warm_median_seconds": 0.0026631070013536373,
+   "warm_min_seconds": 0.002560526001616381
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.001486376000684686,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 99911,
+   "samples_seconds": [
+    0.001486376000684686,
+    0.0013422850024653599,
+    0.0006337859995255712,
+    0.0006035229998815339,
+    0.0006316459985100664
+   ],
+   "warm_median_seconds": 0.0006327159990178188,
+   "warm_min_seconds": 0.0006035229998815339
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.002573578000010457,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 99911,
+   "samples_seconds": [
+    0.002573578000010457,
+    0.002692389000003459,
+    0.002745387999311788,
+    0.002499681999324821,
+    0.0025834019979811274
+   ],
+   "warm_median_seconds": 0.002637895498992293,
+   "warm_min_seconds": 0.002499681999324821
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0015127670012589078,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 499979,
+   "samples_seconds": [
+    0.0015127670012589078,
+    0.0014265040008467622,
+    0.0012354899990896229,
+    0.0012120450010115746,
+    0.001338625999778742
+   ],
+   "warm_median_seconds": 0.0012870579994341824,
+   "warm_min_seconds": 0.0012120450010115746
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.002774558997771237,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 499979,
+   "samples_seconds": [
+    0.002774558997771237,
+    0.0025587870004528668,
+    0.002459294999425765,
+    0.0025353919991175644,
+    0.0024797879996185657
+   ],
+   "warm_median_seconds": 0.002507589999368065,
+   "warm_min_seconds": 0.002459294999425765
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.016851366999617312,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1000064,
+   "samples_seconds": [
+    0.016851366999617312,
+    0.01580788899809704,
+    0.015116464001039276,
+    0.014718382000864949,
+    0.014956770999560831
+   ],
+   "warm_median_seconds": 0.015036617500300054,
+   "warm_min_seconds": 0.014718382000864949
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.010738098000729224,
+   "params": {
+    "edges": 1000000,
+    "semiring": "bool",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1000064,
+   "samples_seconds": [
+    0.010738098000729224,
+    0.010690265000448562,
+    0.010615700000926154,
+    0.011277473000518512,
+    0.011098277998826234
+   ],
+   "warm_median_seconds": 0.010894271499637398,
+   "warm_min_seconds": 0.010615700000926154
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.00496261000080267,
+   "params": {
+    "edges": 1000000,
+    "semiring": "min_plus",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1000064,
+   "samples_seconds": [
+    0.00496261000080267,
+    0.004059066999616334,
+    0.004019444000732619,
+    0.003901058000337798,
+    0.004175306999968598
+   ],
+   "warm_median_seconds": 0.004039255500174477,
+   "warm_min_seconds": 0.003901058000337798
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.0168204709989368,
+   "params": {
+    "edges": 1000000,
+    "semiring": "float",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 1000064,
+   "samples_seconds": [
+    0.0168204709989368,
+    0.01486780499908491,
+    0.014920879999408498,
+    0.015500107998377644,
+    0.014288382000813726
+   ],
+   "warm_median_seconds": 0.014894342499246704,
+   "warm_min_seconds": 0.014288382000813726
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.004150583001319319,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004150583001319319,
+    0.004495050998229999,
+    0.0025196429996867664,
+    0.002240703001007205,
+    0.002905073997681029
+   ],
+   "warm_median_seconds": 0.0027123584986838978,
+   "warm_min_seconds": 0.002240703001007205
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.0039244920008059125,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0039244920008059125,
+    0.005686900000000605,
+    0.003696949999721255,
+    0.0038636899989796802,
+    0.0036811499994655605
+   ],
+   "warm_median_seconds": 0.0037803199993504677,
+   "warm_min_seconds": 0.0036811499994655605
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.0034341549981036223,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0034341549981036223,
+    0.0017286330003116746,
+    0.001747070000419626,
+    0.0017119349977292586,
+    0.001791951999621233
+   ],
+   "warm_median_seconds": 0.0017378515003656503,
+   "warm_min_seconds": 0.0017119349977292586
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.06467231100032222,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 15626,
+    "rounds": 15626
+   },
+   "samples_seconds": [
+    0.06467231100032222,
+    0.06459259900293546
+   ],
+   "warm_median_seconds": 0.06459259900293546,
+   "warm_min_seconds": 0.06459259900293546
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.0014111620002950076,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014111620002950076,
+    0.0012016620021313429
+   ],
+   "warm_median_seconds": 0.0012016620021313429,
+   "warm_min_seconds": 0.0012016620021313429
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.204649318002339,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 15626,
+    "rounds": 15626
+   },
+   "samples_seconds": [
+    0.204649318002339,
+    0.2854240109991224
+   ],
+   "warm_median_seconds": 0.2854240109991224,
+   "warm_min_seconds": 0.2854240109991224
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.4035900689996197,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 15626,
+    "rounds": 15626
+   },
+   "samples_seconds": [
+    0.4035900689996197,
+    0.43866497300041374
+   ],
+   "warm_median_seconds": 0.43866497300041374,
+   "warm_min_seconds": 0.43866497300041374
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.0019632830008049496,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019632830008049496,
+    0.006492061002063565
+   ],
+   "warm_median_seconds": 0.006492061002063565,
+   "warm_min_seconds": 0.006492061002063565
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.5204565960011678,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 6.173042862867829e-10,
+    "iterations": 79
+   },
+   "samples_seconds": [
+    0.5204565960011678,
+    0.5122454540032777
+   ],
+   "warm_median_seconds": 0.5122454540032777,
+   "warm_min_seconds": 0.5122454540032777
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.8189352580011473,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.8189352580011473,
+    0.7343580339984328
+   ],
+   "warm_median_seconds": 0.7343580339984328,
+   "warm_min_seconds": 0.7343580339984328
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.016662486999848625,
+   "params": {
+    "edges": 1000000,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": 89856759,
+   "samples_seconds": [
+    0.016662486999848625,
+    0.01617704900127137,
+    0.01594925699828309
+   ],
+   "warm_median_seconds": 0.01606315299977723,
+   "warm_min_seconds": 0.01594925699828309
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.00011025800267816521,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00011025800267816521,
+    4.5450000470736995e-05,
+    3.52829993062187e-05
+   ],
+   "warm_median_seconds": 4.036649988847785e-05,
+   "warm_min_seconds": 3.52829993062187e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.0001501279984950088,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000,
+    "entries": 1000,
+    "layout_bytes": 113576,
+    "vertices": 900
+   },
+   "samples_seconds": [
+    0.0001501279984950088,
+    0.00011268399975961074,
+    9.207000039168634e-05
+   ],
+   "warm_median_seconds": 0.00010237700007564854,
+   "warm_min_seconds": 9.207000039168634e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0002605820009193849,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002605820009193849,
+    0.00010246999954688363,
+    8.627200077171437e-05
+   ],
+   "warm_median_seconds": 9.4371000159299e-05,
+   "warm_min_seconds": 8.627200077171437e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 4.977600110578351e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    4.977600110578351e-05,
+    1.4276000001700595e-05,
+    1.091599915525876e-05,
+    9.36100332182832e-06,
+    8.792998414719477e-06
+   ],
+   "warm_median_seconds": 1.013850123854354e-05,
+   "warm_min_seconds": 8.792998414719477e-06
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 3.1078001484274864e-05,
+   "params": {
+    "density": 0.001,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    3.1078001484274864e-05,
+    7.943002856336534e-06,
+    5.740999768022448e-06,
+    5.4679985623806715e-06,
+    5.38099993718788e-06
+   ],
+   "warm_median_seconds": 5.60449916520156e-06,
+   "warm_min_seconds": 5.38099993718788e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 3.994200233137235e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 104,
+   "samples_seconds": [
+    3.994200233137235e-05,
+    1.909400089061819e-05,
+    1.1246000212850049e-05,
+    9.396997484145686e-06,
+    9.538001904729754e-06
+   ],
+   "warm_median_seconds": 1.0392001058789901e-05,
+   "warm_min_seconds": 9.396997484145686e-06
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 1.5207999240374193e-05,
+   "params": {
+    "density": 0.1,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 104,
+   "samples_seconds": [
+    1.5207999240374193e-05,
+    6.930000381544232e-06,
+    5.8969999372493476e-06,
+    5.385998520068824e-06,
+    5.789999704575166e-06
+   ],
+   "warm_median_seconds": 5.843499820912257e-06,
+   "warm_min_seconds": 5.385998520068824e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 1.833200076362118e-05,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 470,
+   "samples_seconds": [
+    1.833200076362118e-05,
+    1.3254997611511499e-05,
+    1.1465999705251306e-05,
+    1.091299782274291e-05,
+    1.0422998457215726e-05
+   ],
+   "warm_median_seconds": 1.1189498763997108e-05,
+   "warm_min_seconds": 1.0422998457215726e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 8.986000466393307e-06,
+   "params": {
+    "density": 0.5,
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 470,
+   "samples_seconds": [
+    8.986000466393307e-06,
+    6.474001565948129e-06,
+    5.575999239226803e-06,
+    5.485002475325018e-06,
+    5.309000698616728e-06
+   ],
+   "warm_median_seconds": 5.530500857275911e-06,
+   "warm_min_seconds": 5.309000698616728e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 5.3849998948862776e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900,
+   "samples_seconds": [
+    5.3849998948862776e-05,
+    3.261900201323442e-05,
+    2.5729998014867306e-05,
+    2.268399839522317e-05,
+    2.1334999473765492e-05
+   ],
+   "warm_median_seconds": 2.4206998205045238e-05,
+   "warm_min_seconds": 2.1334999473765492e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 3.5780998587142676e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "bool",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900,
+   "samples_seconds": [
+    3.5780998587142676e-05,
+    2.6982997951563448e-05,
+    2.2318003175314516e-05,
+    2.1821997506776825e-05,
+    1.9946997781516984e-05
+   ],
+   "warm_median_seconds": 2.207000034104567e-05,
+   "warm_min_seconds": 1.9946997781516984e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 2.166199919884093e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "min_plus",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900,
+   "samples_seconds": [
+    2.166199919884093e-05,
+    1.86930010386277e-05,
+    1.7872000171337277e-05,
+    1.747900023474358e-05,
+    1.7146001482615247e-05
+   ],
+   "warm_median_seconds": 1.767550020304043e-05,
+   "warm_min_seconds": 1.7146001482615247e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 3.89969973184634e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "float",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900,
+   "samples_seconds": [
+    3.89969973184634e-05,
+    2.8637001378228888e-05,
+    2.7117999707115814e-05,
+    2.7297999622533098e-05,
+    2.7120000595459715e-05
+   ],
+   "warm_median_seconds": 2.7209000108996406e-05,
+   "warm_min_seconds": 2.7117999707115814e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 1.3124998076818883e-05,
+   "params": {
+    "edges": 1000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3124998076818883e-05,
+    6.850001227576286e-06,
+    5.271002009976655e-06,
+    4.663997970055789e-06,
+    4.541001544566825e-06
+   ],
+   "warm_median_seconds": 4.967499990016222e-06,
+   "warm_min_seconds": 4.541001544566825e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 2.9476999770849943e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9476999770849943e-05,
+    1.9568000425351784e-05,
+    1.555500057293102e-05,
+    1.4602999726776034e-05,
+    3.905400080839172e-05
+   ],
+   "warm_median_seconds": 1.7561500499141403e-05,
+   "warm_min_seconds": 1.4602999726776034e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 6.902999302837998e-06,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.902999302837998e-06,
+    2.1609994291793555e-06,
+    1.7599995771888644e-06,
+    1.691001671133563e-06,
+    1.6339981812052429e-06
+   ],
+   "warm_median_seconds": 1.7255006241612136e-06,
+   "warm_min_seconds": 1.6339981812052429e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 7.754500256851315e-05,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900,
+    "rounds": 94
+   },
+   "samples_seconds": [
+    7.754500256851315e-05,
+    5.586000042967498e-05
+   ],
+   "warm_median_seconds": 5.586000042967498e-05,
+   "warm_min_seconds": 5.586000042967498e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.00010642300185281783,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010642300185281783,
+    1.4165998436510563e-05
+   ],
+   "warm_median_seconds": 1.4165998436510563e-05,
+   "warm_min_seconds": 1.4165998436510563e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.00036356799682835117,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900,
+    "rounds": 900
+   },
+   "samples_seconds": [
+    0.00036356799682835117,
+    0.00028771699726348743
+   ],
+   "warm_median_seconds": 0.00028771699726348743,
+   "warm_min_seconds": 0.00028771699726348743
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.0003862119992845692,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900,
+    "rounds": 97
+   },
+   "samples_seconds": [
+    0.0003862119992845692,
+    0.0002821749985741917
+   ],
+   "warm_median_seconds": 0.0002821749985741917,
+   "warm_min_seconds": 0.0002821749985741917
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.00021540699890465476,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021540699890465476,
+    0.00010780800221255049
+   ],
+   "warm_median_seconds": 0.00010780800221255049,
+   "warm_min_seconds": 0.00010780800221255049
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.00048734200026956387,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.047113634868367e-10,
+    "iterations": 81
+   },
+   "samples_seconds": [
+    0.00048734200026956387,
+    0.0003957149965572171
+   ],
+   "warm_median_seconds": 0.0003957149965572171,
+   "warm_min_seconds": 0.0003957149965572171
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.0014270480023697019,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014270480023697019,
+    0.0012748519984597806
+   ],
+   "warm_median_seconds": 0.0012748519984597806,
+   "warm_min_seconds": 0.0012748519984597806
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.00011634600014076568,
+   "params": {
+    "edges": 1000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 86393,
+   "samples_seconds": [
+    0.00011634600014076568,
+    3.3960001019295305e-05,
+    3.792999996221624e-05
+   ],
+   "warm_median_seconds": 3.5945000490755774e-05,
+   "warm_min_seconds": 3.3960001019295305e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.0017966640007216483,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017966640007216483,
+    0.0018690380020416342,
+    0.0017432330023439135
+   ],
+   "warm_median_seconds": 0.0018061355021927739,
+   "warm_min_seconds": 0.0017432330023439135
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.013018787001783494,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 100000,
+    "entries": 100000,
+    "layout_bytes": 11293152,
+    "vertices": 90000
+   },
+   "samples_seconds": [
+    0.013018787001783494,
+    0.01340756900026463,
+    0.011151499002153287
+   ],
+   "warm_median_seconds": 0.012279534001208958,
+   "warm_min_seconds": 0.011151499002153287
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.0021301140004652552,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0021301140004652552,
+    0.0017461300012655556,
+    0.0018295250010851305
+   ],
+   "warm_median_seconds": 0.001787827501175343,
+   "warm_min_seconds": 0.0017461300012655556
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00032766200092737563,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 106,
+   "samples_seconds": [
+    0.00032766200092737563,
+    2.4379998649237677e-05,
+    1.792599869077094e-05,
+    1.8130998796550557e-05,
+    1.8212998838862404e-05
+   ],
+   "warm_median_seconds": 1.817199881770648e-05,
+   "warm_min_seconds": 1.792599869077094e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0004391290021885652,
+   "params": {
+    "density": 0.001,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 106,
+   "samples_seconds": [
+    0.0004391290021885652,
+    0.0003175669990014285,
+    0.000303059998259414,
+    0.000335887998517137,
+    0.000304010998661397
+   ],
+   "warm_median_seconds": 0.00031078899883141275,
+   "warm_min_seconds": 0.000303059998259414
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.00017567300164955668,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 9995,
+   "samples_seconds": [
+    0.00017567300164955668,
+    9.388199759996496e-05,
+    5.4939999245107174e-05,
+    5.337200127542019e-05,
+    4.649699985748157e-05
+   ],
+   "warm_median_seconds": 5.415600026026368e-05,
+   "warm_min_seconds": 4.649699985748157e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.00032878099955269136,
+   "params": {
+    "density": 0.1,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 9995,
+   "samples_seconds": [
+    0.00032878099955269136,
+    0.00029421699946396984,
+    0.0003383659968676511,
+    0.00029720400198129937,
+    0.0002865630012820475
+   ],
+   "warm_median_seconds": 0.0002957105007226346,
+   "warm_min_seconds": 0.0002865630012820475
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0002307089998794254,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 47510,
+   "samples_seconds": [
+    0.0002307089998794254,
+    0.00015987900042091496,
+    0.00014969300173106603,
+    0.00014537900278810412,
+    0.00016465999942738563
+   ],
+   "warm_median_seconds": 0.0001547860010759905,
+   "warm_min_seconds": 0.00014537900278810412
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.0003421830006118398,
+   "params": {
+    "density": 0.5,
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 47510,
+   "samples_seconds": [
+    0.0003421830006118398,
+    0.0003014230023836717,
+    0.00030249399787862785,
+    0.0003400530004000757,
+    0.0003015869988303166
+   ],
+   "warm_median_seconds": 0.0003020404983544722,
+   "warm_min_seconds": 0.0003014230023836717
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.0017210340010933578,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 90000,
+   "samples_seconds": [
+    0.0017210340010933578,
+    0.001673328999459045,
+    0.0016529390013602097,
+    0.0015755690001242328,
+    0.0015934989969537128
+   ],
+   "warm_median_seconds": 0.0016232189991569612,
+   "warm_min_seconds": 0.0015755690001242328
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.001074654999683844,
+   "params": {
+    "edges": 100000,
+    "semiring": "bool",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 90000,
+   "samples_seconds": [
+    0.001074654999683844,
+    0.0010240459996566642,
+    0.000996859002043493,
+    0.0009980280010495335,
+    0.0010161860009247903
+   ],
+   "warm_median_seconds": 0.0010071070009871619,
+   "warm_min_seconds": 0.000996859002043493
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.0005373290005081799,
+   "params": {
+    "edges": 100000,
+    "semiring": "min_plus",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 90000,
+   "samples_seconds": [
+    0.0005373290005081799,
+    0.00048435699864057824,
+    0.000504037001519464,
+    0.000473655996756861,
+    0.0004931630028295331
+   ],
+   "warm_median_seconds": 0.0004887600007350557,
+   "warm_min_seconds": 0.000473655996756861
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.0014472289985860698,
+   "params": {
+    "edges": 100000,
+    "semiring": "float",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 90000,
+   "samples_seconds": [
+    0.0014472289985860698,
+    0.0014906910000718199,
+    0.0013997389978612773,
+    0.0014146030007395893,
+    0.001386631000059424
+   ],
+   "warm_median_seconds": 0.0014071709993004333,
+   "warm_min_seconds": 0.001386631000059424
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.000339394999173237,
+   "params": {
+    "edges": 100000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000339394999173237,
+    0.0003488340007606894,
+    0.00027260000206297264,
+    0.00029657800041604787,
+    0.00026761600020108745
+   ],
+   "warm_median_seconds": 0.00028458900123951025,
+   "warm_min_seconds": 0.00026761600020108745
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.0005543609986489173,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005543609986489173,
+    0.0005293740032357164,
+    0.0004643399988708552,
+    0.0004448400031833444,
+    0.0005032330009271391
+   ],
+   "warm_median_seconds": 0.00048378649989899714,
+   "warm_min_seconds": 0.0004448400031833444
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.00021298400315572508,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021298400315572508,
+    0.00016160700033651665,
+    0.0001494999996793922,
+    0.0001469630005885847,
+    0.00014589999773306772
+   ],
+   "warm_median_seconds": 0.00014823150013398845,
+   "warm_min_seconds": 0.00014589999773306772
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.004487260997848352,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 90000,
+    "rounds": 200
+   },
+   "samples_seconds": [
+    0.004487260997848352,
+    0.004542084996501217
+   ],
+   "warm_median_seconds": 0.004542084996501217,
+   "warm_min_seconds": 0.004542084996501217
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.0013373200017667841,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013373200017667841,
+    0.0008112620016618166
+   ],
+   "warm_median_seconds": 0.0008112620016618166,
+   "warm_min_seconds": 0.0008112620016618166
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.030893324001226574,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 90000,
+    "rounds": 90000
+   },
+   "samples_seconds": [
+    0.030893324001226574,
+    0.03203879099964979
+   ],
+   "warm_median_seconds": 0.03203879099964979,
+   "warm_min_seconds": 0.03203879099964979
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.022657419001916423,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 90000,
+    "rounds": 200
+   },
+   "samples_seconds": [
+    0.022657419001916423,
+    0.023779342998750508
+   ],
+   "warm_median_seconds": 0.023779342998750508,
+   "warm_min_seconds": 0.023779342998750508
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.012782039000740042,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012782039000740042,
+    0.012460401998396264
+   ],
+   "warm_median_seconds": 0.012460401998396264,
+   "warm_min_seconds": 0.012460401998396264
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.05765117999908398,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 5.344993482884607e-10,
+    "iterations": 83
+   },
+   "samples_seconds": [
+    0.05765117999908398,
+    0.05730841900003725
+   ],
+   "warm_median_seconds": 0.05730841900003725,
+   "warm_min_seconds": 0.05730841900003725
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.06738941299772705,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06738941299772705,
+    0.06875536299776286
+   ],
+   "warm_median_seconds": 0.06875536299776286,
+   "warm_min_seconds": 0.06875536299776286
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.0021991670000716113,
+   "params": {
+    "edges": 100000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 9023297,
+   "samples_seconds": [
+    0.0021991670000716113,
+    0.0018039460010186303,
+    0.001729723997414112
+   ],
+   "warm_median_seconds": 0.0017668349992163712,
+   "warm_min_seconds": 0.001729723997414112
+  },
+  {
+   "backend": "cpu",
+   "case": "edge scope (FND-004 arrays)",
+   "first_seconds": 0.025919734998751665,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.025919734998751665,
+    0.0261443599993072
+   ],
+   "warm_median_seconds": 0.0261443599993072,
+   "warm_min_seconds": 0.0261443599993072
+  },
+  {
+   "backend": "cpu",
+   "case": "adjacency / incidence build (dictionary, CSR, CSC, incidence)",
+   "first_seconds": 0.2426369999993767,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "result": {
+    "edges": 1000000,
+    "entries": 1000000,
+    "layout_bytes": 112925648,
+    "vertices": 900000
+   },
+   "samples_seconds": [
+    0.2426369999993767,
+    0.21118734699848574
+   ],
+   "warm_median_seconds": 0.21118734699848574,
+   "warm_min_seconds": 0.21118734699848574
+  },
+  {
+   "backend": "scipy",
+   "case": "adjacency build (COO -> CSR)",
+   "first_seconds": 0.02105334599764319,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02105334599764319,
+    0.02158264900208451
+   ],
+   "warm_median_seconds": 0.02158264900208451,
+   "warm_min_seconds": 0.02158264900208451
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.003866060000291327,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 1019,
+   "samples_seconds": [
+    0.003866060000291327,
+    0.00011099800030933693,
+    9.825799861573614e-05,
+    9.650599895394407e-05,
+    8.875900311977603e-05
+   ],
+   "warm_median_seconds": 9.738199878484011e-05,
+   "warm_min_seconds": 8.875900311977603e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.004814454001461854,
+   "params": {
+    "density": 0.001,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 1019,
+   "samples_seconds": [
+    0.004814454001461854,
+    0.004163465997407911,
+    0.0037279009993653744,
+    0.0037372099977801554,
+    0.0035255859984317794
+   ],
+   "warm_median_seconds": 0.003732555498572765,
+   "warm_min_seconds": 0.0035255859984317794
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0014971359996707179,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 98840,
+   "samples_seconds": [
+    0.0014971359996707179,
+    0.0013765039984718896,
+    0.0007632859997102059,
+    0.0006569670003955252,
+    0.0007213009994302411
+   ],
+   "warm_median_seconds": 0.0007422934995702235,
+   "warm_min_seconds": 0.0006569670003955252
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.003709468997840304,
+   "params": {
+    "density": 0.1,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 98840,
+   "samples_seconds": [
+    0.003709468997840304,
+    0.003647341000032611,
+    0.0036585320012818556,
+    0.0036532800004351884,
+    0.003642089999630116
+   ],
+   "warm_median_seconds": 0.0036503105002339,
+   "warm_min_seconds": 0.003642089999630116
+  },
+  {
+   "backend": "cpu",
+   "case": "frontier expansion",
+   "first_seconds": 0.0018601340016175527,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 474785,
+   "samples_seconds": [
+    0.0018601340016175527,
+    0.0018439509985910263,
+    0.001655184998526238,
+    0.0016961830006039236,
+    0.0016960869979811832
+   ],
+   "warm_median_seconds": 0.0016961349992925534,
+   "warm_min_seconds": 0.001655184998526238
+  },
+  {
+   "backend": "scipy",
+   "case": "frontier expansion (A^T x > 0)",
+   "first_seconds": 0.003906982001353754,
+   "params": {
+    "density": 0.5,
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 474785,
+   "samples_seconds": [
+    0.003906982001353754,
+    0.003865374001179589,
+    0.003669120000267867,
+    0.003590680000343127,
+    0.0036566690032486804
+   ],
+   "warm_median_seconds": 0.0036628945017582737,
+   "warm_min_seconds": 0.003590680000343127
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (count)",
+   "first_seconds": 0.02024362399970414,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900000,
+   "samples_seconds": [
+    0.02024362399970414,
+    0.0191386730002705,
+    0.01947068300069077,
+    0.02004220799790346,
+    0.021588137999060564
+   ],
+   "warm_median_seconds": 0.019756445499297115,
+   "warm_min_seconds": 0.0191386730002705
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (bool)",
+   "first_seconds": 0.014231605997338193,
+   "params": {
+    "edges": 1000000,
+    "semiring": "bool",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900000,
+   "samples_seconds": [
+    0.014231605997338193,
+    0.022582644000067376,
+    0.0228817400020489,
+    0.012639272001251811,
+    0.02182364199688891
+   ],
+   "warm_median_seconds": 0.022203142998478143,
+   "warm_min_seconds": 0.012639272001251811
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (min_plus)",
+   "first_seconds": 0.016421652002463816,
+   "params": {
+    "edges": 1000000,
+    "semiring": "min_plus",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900000,
+   "samples_seconds": [
+    0.016421652002463816,
+    0.011571601000468945,
+    0.010268198999256128,
+    0.0094812749994162,
+    0.009116952001932077
+   ],
+   "warm_median_seconds": 0.009874736999336164,
+   "warm_min_seconds": 0.009116952001932077
+  },
+  {
+   "backend": "cpu",
+   "case": "semiring product (float)",
+   "first_seconds": 0.036717683000460966,
+   "params": {
+    "edges": 1000000,
+    "semiring": "float",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 900000,
+   "samples_seconds": [
+    0.036717683000460966,
+    0.02043424200019217,
+    0.021643406002112897,
+    0.029086792997986777,
+    0.029207235002104426
+   ],
+   "warm_median_seconds": 0.025365099500049837,
+   "warm_min_seconds": 0.02043424200019217
+  },
+  {
+   "backend": "scipy",
+   "case": "semiring product (count): A^T x",
+   "first_seconds": 0.013859318998584058,
+   "params": {
+    "edges": 1000000,
+    "semiring": "count",
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013859318998584058,
+    0.01514166800188832,
+    0.010177567000937415,
+    0.011595109997870168,
+    0.009372265998536022
+   ],
+   "warm_median_seconds": 0.010886338499403792,
+   "warm_min_seconds": 0.009372265998536022
+  },
+  {
+   "backend": "cpu",
+   "case": "degrees (in)",
+   "first_seconds": 0.008801669999229489,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008801669999229489,
+    0.006130124002083903,
+    0.008538512000086484,
+    0.013008709000132512,
+    0.00869481699919561
+   ],
+   "warm_median_seconds": 0.008616664499641047,
+   "warm_min_seconds": 0.006130124002083903
+  },
+  {
+   "backend": "numpy",
+   "case": "degrees (in): bincount",
+   "first_seconds": 0.007843190996936755,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007843190996936755,
+    0.0024705270006961655,
+    0.005959420999715803,
+    0.0018480129983799998,
+    0.005844397997861961
+   ],
+   "warm_median_seconds": 0.004157462499279063,
+   "warm_min_seconds": 0.0018480129983799998
+  },
+  {
+   "backend": "cpu",
+   "case": "reachability from one vertex (fixed point)",
+   "first_seconds": 0.07452495700272266,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900000,
+    "rounds": 227
+   },
+   "samples_seconds": [
+    0.07452495700272266,
+    0.07580082300046342
+   ],
+   "warm_median_seconds": 0.07580082300046342,
+   "warm_min_seconds": 0.07580082300046342
+  },
+  {
+   "backend": "scipy",
+   "case": "reachability (breadth-first order)",
+   "first_seconds": 0.038544884002476465,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.038544884002476465,
+    0.01852264999979525
+   ],
+   "warm_median_seconds": 0.01852264999979525,
+   "warm_min_seconds": 0.01852264999979525
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (dijkstra)",
+   "first_seconds": 0.8274754699996265,
+   "params": {
+    "algorithm": "dijkstra",
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900000,
+    "rounds": 900000
+   },
+   "samples_seconds": [
+    0.8274754699996265,
+    0.6584891160018742
+   ],
+   "warm_median_seconds": 0.6584891160018742,
+   "warm_min_seconds": 0.6584891160018742
+  },
+  {
+   "backend": "cpu",
+   "case": "shortest paths (bellman_ford)",
+   "first_seconds": 0.3255737859981309,
+   "params": {
+    "algorithm": "bellman_ford",
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "reached": 900000,
+    "rounds": 227
+   },
+   "samples_seconds": [
+    0.3255737859981309,
+    0.47186929600138683
+   ],
+   "warm_median_seconds": 0.47186929600138683,
+   "warm_min_seconds": 0.47186929600138683
+  },
+  {
+   "backend": "scipy",
+   "case": "shortest paths (Dijkstra)",
+   "first_seconds": 0.19885770400287583,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.19885770400287583,
+    0.1914231849987118
+   ],
+   "warm_median_seconds": 0.1914231849987118,
+   "warm_min_seconds": 0.1914231849987118
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank (d = 0.85, tol 1e-10)",
+   "first_seconds": 0.6734917790017789,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "bound": 6.267406971165509e-10,
+    "iterations": 83
+   },
+   "samples_seconds": [
+    0.6734917790017789,
+    0.6427537080016918
+   ],
+   "warm_median_seconds": 0.6427537080016918,
+   "warm_min_seconds": 0.6427537080016918
+  },
+  {
+   "backend": "numpy",
+   "case": "PageRank (sparse power iteration)",
+   "first_seconds": 0.8290713370006415,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.8290713370006415,
+    0.8857792220005649
+   ],
+   "warm_median_seconds": 0.8857792220005649,
+   "warm_min_seconds": 0.8857792220005649
+  },
+  {
+   "backend": "cpu",
+   "case": "Dirichlet energy (exact)",
+   "first_seconds": 0.0250834920007037,
+   "params": {
+    "edges": 1000000,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": 89959974,
+   "samples_seconds": [
+    0.0250834920007037,
+    0.022516447002999485,
+    0.020950329999323003
+   ],
+   "warm_median_seconds": 0.021733388501161244,
+   "warm_min_seconds": 0.020950329999323003
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.003419184999074787,
+   "params": {
+    "edges": 100000,
+    "length": 1,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "2",
+    "maxbits": 1,
+    "work": 2
+   },
+   "samples_seconds": [
+    0.003419184999074787,
+    0.00321193600029801,
+    0.0031381449989567045
+   ],
+   "warm_median_seconds": 0.0031750404996273573,
+   "warm_min_seconds": 0.0031381449989567045
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.00306868699772167,
+   "params": {
+    "edges": 100000,
+    "length": 4,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "6",
+    "maxbits": 1,
+    "work": 11
+   },
+   "samples_seconds": [
+    0.00306868699772167,
+    0.0031656869978178293,
+    0.0029733900009887293
+   ],
+   "warm_median_seconds": 0.0030695384994032793,
+   "warm_min_seconds": 0.0029733900009887293
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.003088286001002416,
+   "params": {
+    "edges": 100000,
+    "length": 16,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "75",
+    "maxbits": 1,
+    "work": 165
+   },
+   "samples_seconds": [
+    0.003088286001002416,
+    0.003556753999873763,
+    0.004110718997253571
+   ],
+   "warm_median_seconds": 0.003833736498563667,
+   "warm_min_seconds": 0.003556753999873763
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.0037043009979242925,
+   "params": {
+    "edges": 100000,
+    "length": 32,
+    "shape": "cyclic"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "556",
+    "maxbits": 1,
+    "work": 1222
+   },
+   "samples_seconds": [
+    0.0037043009979242925,
+    0.0039721180000924505,
+    0.003950427999370731
+   ],
+   "warm_median_seconds": 0.003961272999731591,
+   "warm_min_seconds": 0.003950427999370731
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.00944094800070161,
+   "params": {
+    "edges": 100000,
+    "length": 1,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "100001",
+    "maxbits": 1,
+    "work": 200000
+   },
+   "samples_seconds": [
+    0.00944094800070161,
+    0.007192501001554774,
+    0.00643777499863063
+   ],
+   "warm_median_seconds": 0.006815138000092702,
+   "warm_min_seconds": 0.00643777499863063
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.006421606998628704,
+   "params": {
+    "edges": 100000,
+    "length": 4,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "100001",
+    "maxbits": 1,
+    "work": 200000
+   },
+   "samples_seconds": [
+    0.006421606998628704,
+    0.006094093001593137,
+    0.006478989998868201
+   ],
+   "warm_median_seconds": 0.006286541500230669,
+   "warm_min_seconds": 0.006094093001593137
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.006179011998028727,
+   "params": {
+    "edges": 100000,
+    "length": 16,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "100001",
+    "maxbits": 1,
+    "work": 200000
+   },
+   "samples_seconds": [
+    0.006179011998028727,
+    0.006297574000200257,
+    0.0063093230019148905
+   ],
+   "warm_median_seconds": 0.006303448501057574,
+   "warm_min_seconds": 0.006297574000200257
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.006329554998956155,
+   "params": {
+    "edges": 100000,
+    "length": 32,
+    "shape": "star"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "100001",
+    "maxbits": 1,
+    "work": 200000
+   },
+   "samples_seconds": [
+    0.006329554998956155,
+    0.006370199000230059,
+    0.006219692000740906
+   ],
+   "warm_median_seconds": 0.006294945500485483,
+   "warm_min_seconds": 0.006219692000740906
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.003612344000430312,
+   "params": {
+    "edges": 100000,
+    "length": 1,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "2",
+    "maxbits": 1,
+    "work": 2
+   },
+   "samples_seconds": [
+    0.003612344000430312,
+    0.003262271999119548,
+    0.0030615299983765
+   ],
+   "warm_median_seconds": 0.003161900998748024,
+   "warm_min_seconds": 0.0030615299983765
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.0029661019980267156,
+   "params": {
+    "edges": 100000,
+    "length": 4,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "5",
+    "maxbits": 1,
+    "work": 8
+   },
+   "samples_seconds": [
+    0.0029661019980267156,
+    0.003123024998785695,
+    0.003046959998755483
+   ],
+   "warm_median_seconds": 0.003084992498770589,
+   "warm_min_seconds": 0.003046959998755483
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.0028739379995386116,
+   "params": {
+    "edges": 100000,
+    "length": 16,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "17",
+    "maxbits": 1,
+    "work": 32
+   },
+   "samples_seconds": [
+    0.0028739379995386116,
+    0.003031285999895772,
+    0.0030296990007627755
+   ],
+   "warm_median_seconds": 0.0030304925003292738,
+   "warm_min_seconds": 0.0030296990007627755
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded walk counts (totals)",
+   "first_seconds": 0.0029327280026336666,
+   "params": {
+    "edges": 100000,
+    "length": 32,
+    "shape": "disconnected"
+   },
+   "phase": "run",
+   "result": {
+    "grand": "33",
+    "maxbits": 1,
+    "work": 64
+   },
+   "samples_seconds": [
+    0.0029327280026336666,
+    0.0031430170020030346,
+    0.0030071969995333347
+   ],
+   "warm_median_seconds": 0.0030751070007681847,
+   "warm_min_seconds": 0.0030071969995333347
+  },
+  {
+   "backend": "cpu",
+   "case": "walk counts past the declared bound (overflow)",
+   "error": "OverflowError",
+   "message": "walk counts: a coefficient exceeds the declared bound 9223372036854775807 (row at length 63, vertex 0)",
+   "params": {
+    "length": 64
+   },
+   "phase": "refusal",
+   "refused": true,
+   "resource": null
+  },
+  {
+   "backend": "cpu",
+   "case": "unbounded walk counts with a reachable cycle (divergence)",
+   "error": "NoSolutionError",
+   "message": "walk table needs: no answer exists in the declared domain",
+   "params": {},
+   "phase": "refusal",
+   "refused": true,
+   "resource": null
+  },
+  {
+   "backend": "cpu",
+   "case": "PageRank without damping from a point start (nonconvergence)",
+   "error": "NotConvergedError",
+   "message": "PageRank: the change 2.0 is above tol 1e-12 after 100 iterations: no result",
+   "params": {},
+   "phase": "refusal",
+   "refused": true,
+   "resource": null
+  },
+  {
+   "backend": "cpu",
+   "case": "Bellman-Ford with a planted negative cycle (no finite answer)",
+   "error": "UnboundedError",
+   "message": "min_plus paths: a cycle of negative weight -2 is reachable from the sources: no finite answer",
+   "params": {},
+   "phase": "refusal",
+   "refused": true,
+   "resource": null
+  },
+  {
+   "backend": "cpu",
+   "case": "layout build at its byte need",
+   "first_seconds": 0.00200517499979469,
+   "params": {
+    "bytes": 6023808
+   },
+   "phase": "run",
+   "result": 18000,
+   "samples_seconds": [
+    0.00200517499979469
+   ],
+   "warm_median_seconds": 0.00200517499979469,
+   "warm_min_seconds": 0.00200517499979469
+  },
+  {
+   "backend": "cpu",
+   "case": "layout build one byte past",
+   "limit": 6023807,
+   "message": "graph layout: needs 6023808 bytes, budget 6023807",
+   "need": 6023808,
+   "params": {
+    "bytes": 6023807
+   },
+   "phase": "refusal",
+   "refusal_seconds": 8.757099931244738e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "walk counts at a 32-iteration budget",
+   "first_seconds": 0.000669295997795416,
+   "params": {
+    "length": 32
+   },
+   "phase": "run",
+   "result": 67,
+   "samples_seconds": [
+    0.000669295997795416
+   ],
+   "warm_median_seconds": 0.000669295997795416,
+   "warm_min_seconds": 0.000669295997795416
+  },
+  {
+   "backend": "cpu",
+   "case": "walk counts past a 32-iteration budget",
+   "limit": 32,
+   "message": "walk counts: needs 33 iterations, budget 32",
+   "need": 33,
+   "params": {
+    "length": 33
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.82299978507217e-05,
+   "refused": true,
+   "resource": "iterations"
+  }
+ ],
+ "seconds": 37.76284695399954,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "layout bytes (20k-edge cyclic graph)",
+   "largest_admitted": {
+    "bytes": 6023808
+   },
+   "smallest_refused": {
+    "bytes": 6023807
+   }
+  },
+  {
+   "grid": "walk length (iterations 32)",
+   "largest_admitted": {
+    "length": 32
+   },
+   "smallest_refused": {
+    "length": 33
+   }
+  }
+ ]
+}

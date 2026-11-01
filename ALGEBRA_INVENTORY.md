@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 1 |
-| planned | 21 |
-| in_progress | 41 |
+| planned | 17 |
+| in_progress | 45 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -3445,7 +3445,7 @@ Measured runtime: `2e0e328cf05243328e3a4e64b529f54463387459`.
 
 ### GEOM-002: Bounded elimination and generator selection
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Find small generator sets or sparse local elimination forms without assuming a canonical normal form is cheapest.
 
@@ -3490,6 +3490,14 @@ Additional limits:
 - Costs are relative work units of the bit-plane engine measured on one scope (widths, scans, word counts), not a planner's timing model.
 - The CUDA kernel covers the batched row checks; selection, completion, reduction and certification run on the CPU.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+
+- tests: [results/math/GEOM-002/tests_test_math_elim.json](results/math/GEOM-002/tests_test_math_elim.json)
+- tests: [results/math/GEOM-002/sanitized_test_math_elim.json](results/math/GEOM-002/sanitized_test_math_elim.json)
+- benchmarks: [results/math/GEOM-002/benchmark_cpu_math_elim_vm.json](results/math/GEOM-002/benchmark_cpu_math_elim_vm.json)
 
 ## DISC: Relationship discovery
 
@@ -3736,7 +3744,7 @@ Measured runtime: `246664aa793bcecefac4cd954e6366a1a85271f8`.
 
 ### PRE-002: Finite roots, residues and periodic preimages
 
-Status: **planned**. Delivery wave: **W3**.
+Status: **in_progress**. Delivery wave: **W3**.
 
 Represent all bounded preimage branches as intervals, residue classes, finite sets or Boolean cubes.
 
@@ -3780,6 +3788,14 @@ Additional limits:
 - The exhaustive verification covers domains of at most 2^26 codes with values within int64.
 - Branch construction, critical-point isolation and certificates run on the CPU; CUDA covers the scan and the verification.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+
+- tests: [results/math/PRE-002/tests_test_math_preimg.json](results/math/PRE-002/tests_test_math_preimg.json)
+- tests: [results/math/PRE-002/sanitized_test_math_preimg.json](results/math/PRE-002/sanitized_test_math_preimg.json)
+- benchmarks: [results/math/PRE-002/benchmark_cpu_math_preimg_vm.json](results/math/PRE-002/benchmark_cpu_math_preimg_vm.json)
 
 ## ENV: Parametric envelopes
 
@@ -3883,7 +3899,7 @@ Incidence operators, frontiers, paths and bounded recursive computations.
 
 ### GRAPH-001: Declared graph layouts and reductions
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Build explicit incidence/adjacency ownership and native degree, frontier, neighborhood and matrix-vector operations.
 
@@ -3926,11 +3942,19 @@ Additional limits:
 - The binary64 products carry an a priori error bound for exact double inputs, not an enclosure; GF(2) products of weights need integral weights.
 - No FND-007 claim kind states graph facts, so layouts and products emit no certificates.
 
+Validation receipts:
+
+Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+
+- tests: [results/math/GRAPH-001/tests_test_math_graph.json](results/math/GRAPH-001/tests_test_math_graph.json)
+- tests: [results/math/GRAPH-001/sanitized_test_math_graph.json](results/math/GRAPH-001/sanitized_test_math_graph.json)
+- benchmarks: [results/math/GRAPH-001/benchmark_cpu_math_graph_vm.json](results/math/GRAPH-001/benchmark_cpu_math_graph_vm.json)
+
 <a id="graph-002"></a>
 
 ### GRAPH-002: Bounded fixed points, paths and graph energies
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Add reachability, bounded path counts, selected shortest-path semirings and iterative energies with explicit termination/iteration rules.
 
@@ -3972,6 +3996,14 @@ Additional limits:
 - Walk counts count walks (multiplicities, not weights; weighted path sums are GRAPH-001's count and tropical products); bounds of at most 2048 bits; an unbounded count needs no reachable cycle at all (finiteness is not refined per vertex).
 - PageRank and power iteration are binary64 with a posteriori bounds; damping 1 gives no bound (inf); power iteration needs nonnegative weights and converges only with a dominant eigenvalue.
 - No FND-007 claim kind states graph facts: a refused cycle carries its own witness (vertices and weight) and paths their predecessor tree.
+
+Validation receipts:
+
+Measured runtime: `4487999185c3750d020db8f5048dacf383236504`.
+
+- tests: [results/math/GRAPH-002/tests_test_math_graph.json](results/math/GRAPH-002/tests_test_math_graph.json)
+- tests: [results/math/GRAPH-002/sanitized_test_math_graph.json](results/math/GRAPH-002/sanitized_test_math_graph.json)
+- benchmarks: [results/math/GRAPH-002/benchmark_cpu_math_graph_vm.json](results/math/GRAPH-002/benchmark_cpu_math_graph_vm.json)
 
 ## PROV: Provenance
 
