@@ -225,7 +225,8 @@ enum { TR_OP_POLY_ADD = 1, TR_OP_POLY_SUB = 2, TR_OP_POLY_MUL = 3, TR_OP_POLY_PO
        TR_OP_PROPAGATE = 60,      /* source changes propagated through a provenance DAG by the update laws of its semiring */
        TR_OP_EXPLAIN = 61,        /* explanations of a monotone lineage: sufficient, necessary and why-not source sets */
        TR_OP_PROBABILITY = 62,    /* the probability of a lineage under independent source tuples (a weighted model count) */
-       TR_REG_OPERATORS = 63 };
+       TR_OP_NORMALIZE = 63,      /* normalizers, log-likelihoods, gradients and Hessians of a declared finite-support model from retained masses */
+       TR_REG_OPERATORS = 64 };
 #define TR_REG_OPERATOR_WORDS 2    /* operator masks: bit op % 64 of word op / 64 */
 typedef struct { int32_t id, input, output; uint32_t required; } tr_reg_operator;  /* input/output 0: the step's carrier */
 static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
@@ -292,6 +293,7 @@ static const tr_reg_operator tr_reg_operators[TR_REG_OPERATORS] = {
     {TR_OP_PROPAGATE, 0, 0, TR_REG_RING},
     {TR_OP_EXPLAIN, 0, 0, TR_REG_LATTICE},
     {TR_OP_PROBABILITY, 0, 0, TR_REG_RING},
+    {TR_OP_NORMALIZE, 0, 0, TR_REG_FOLD},
 };
 
 /* the declared conversions (EXACT / CHECKED / ENCLOSING at any step; LIFT / REDUCTION / ENCODING by their operator) */
@@ -936,7 +938,8 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_EXPLAIN = 55,           /* PROV-002 explanation specialization and deletion propagation */
        TR_REG_M_FOURIER = 56,           /* SPEC-001 fixed spectral basis states and phase actions */
        TR_REG_M_LINUPD = 57,            /* LIN-003 leave-group-out and low-rank model updates */
-       TR_REG_M_END = 58 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_PROB = 58,              /* PROB-001 small-support partition and likelihood functions */
+       TR_REG_M_END = 59 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -983,7 +986,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_EXPLANATION = 45,       /* a retained provenance cone with reverse edges and its baseline under a base valuation */
        TR_REG_STATE_SPECTRAL_BASIS = 46,    /* per group: exact scaled bounds of the Fourier features of a fixed frequency set, rows, weight sums */
        TR_REG_STATE_SOLVED_SYSTEM = 47,     /* an exact solved system: A, b, its canonical solution set, A^-1, det(A), the last update's denominator */
-       TR_REG_STATE_KINDS = 48 };
+       TR_REG_STATE_SUPPORT_MASSES = 48,    /* per group: the mass of every point of a declared finite support (zeros kept), N, rows */
+       TR_REG_STATE_KINDS = 49 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1278,6 +1282,11 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_LINUPD, DIVIDE, BIGQ, TR__CPU), TR__I(TR_REG_M_LINUPD, RESIDUE, GFP, TR__ALL),
     TR__I(TR_REG_M_LINUPD, SOLVE, GFP, TR__ALL), TR__I(TR_REG_M_LINUPD, CRT, GFP, TR__CPU),
     TR__I(TR_REG_M_LINUPD, ENCLOSE, INTERVAL, TR__CPU),
+    /* 58 PROB-001 small-support partition and likelihood functions */
+    TR__I(TR_REG_M_PROB, FOLD, COUNT, TR__CPU), TR__I(TR_REG_M_PROB, MULTIPLY, COUNT, TR__CPU),
+    TR__I(TR_REG_M_PROB, CONTRACT, INT128, TR__ALL), TR__I(TR_REG_M_PROB, ENCLOSE, QINTERVAL, TR__ALL),
+    TR__I(TR_REG_M_PROB, NORMALIZE, QINTERVAL, TR__ALL), TR__I(TR_REG_M_PROB, NORMALIZE, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_PROB, DIVIDE, BIGQ, TR__CPU), TR__I(TR_REG_M_PROB, ENCLOSE, INTERVAL, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

@@ -66,7 +66,8 @@ static const char *const operator_names[TR_REG_OPERATORS] = {
     "quantify", "test", "occupancy", "zeta", "mobius", "walsh", "rollup", "refine", "group", "update", "prefix",
     "attribute",
     "compile", "model_count",
-    "propagate", "explain", "probability"};
+    "propagate", "explain", "probability",
+    "normalize"};
 static const char *const state_names[TR_REG_STATE_KINDS] = {
     "none", "formal polynomial", "moment bank", "cell bitmap", "evidence", "histogram", "power sums", "plane counts",
     "empty proof", "scope", "grouped moments", "carrier values", "handle table", "gram matrices",
@@ -83,7 +84,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "decision diagram",
     "explanation state",
     "spectral basis",
-    "solved system"};
+    "solved system",
+    "support masses"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -644,6 +646,15 @@ static const tr_reg_module modules[] = {
                    "tr_linupd_subtract", "tr_linupd_float_solve", "tr_linupd_logo_plan", "tr_linupd_logo_solve",
                    "tr_linupd_logo_residues", "tr_linupd_logo_finish", "tr_linupd_equal"},
      .cuda_entry = {"tr_mgpu_linupd_logo"}},
+    {FAMILY(TR_REG_M_PROB, "prob", "prob", "PROB-001", "partition and likelihood functions"),
+     .state_kind = TR_REG_STATE_SUPPORT_MASSES, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(COUNT) | CB(INT128) | CB(BIGQ) | CB(QINTERVAL) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_CELL_DOMAIN | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_prob_support_create", "tr_prob_model_create", "tr_prob_stats_build", "tr_prob_stats_product",
+                   "tr_prob_stats_require", "tr_prob_plan_create", "tr_prob_sums", "tr_prob_finish", "tr_prob_exact",
+                   "tr_prob_plan_need", "tr_prob_stats_need", "tr_prob_ln_bounds"},
+     .cuda_entry = {"tr_mgpu_prob_sums"}},
 };
 #undef BUILTIN
 #undef FAMILY
