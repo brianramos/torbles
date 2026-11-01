@@ -1,0 +1,118 @@
+{
+ "guide": [
+  {
+   "page": "refine.md",
+   "title": "Adaptive refinement and change localization",
+   "capabilities": "MULTI-002",
+   "summary": "threshold, ratio and top-k requests about one level of a MULTI-001 hierarchy answered from the coarsest level down with sound per-region bounds (validity classes, UNC-001 row intervals, exact 256-bit integers), only undecided regions refined and the rest reported unresolved with their bounds, and DELTA-001 updates of the leaves rolled up along the affected paths with exact per-region changes or a complete rebuild, on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "MULTI-002": {
+   "planned_files": [
+    "torbles/math_refine.h",
+    "torbles/math_refine.c",
+    "torbles/math_refine_gpu.cu",
+    "torbles/math_refine.py",
+    "tests/test_math_refine.py",
+    "bench/benchmark_math_refine.py"
+   ],
+   "cpu": "Native refinement states of a MULTI-001 hierarchy: per level the exact FND-004 cells (rows, per term count and 128-bit sum), the UNC-001 abstract input of every group and column (rows, present values, min, max, gcd of differences) built from the leaves' scope and rolled up exactly along the maps, the parent and children links, and the DELTA-001 maintained state of the leaves (nonnegative measure). Requests on a target level: THRESHOLD A op T, RATIO A / D op T (decided as q A - p D op 0 with the operator flipped where D < 0, D = 0 undefined) and TOPK (largest or smallest, ties by the smaller id), A and D integer combinations of up to four SUM / COUNT / ROWS atoms of the basis. Region bounds: the atoms are split into validity classes (SQL term column sets, listwise, every row; one merged class when every atom is valid on every row of the region); per class the exact total E of the region, its valid rows n and the per-row interval [elo, ehi] of the class expression from UNC-001's exact abstract evaluation (affine forms cancel correlated terms) give every present descendant max_k min(k ehi, E - (n - k) elo) above and the symmetric bound below, evaluated exactly in 256-bit integers at the endpoints and the crossing; infinite sides are kept. Waves run coarse to fine in increasing group id: ALL / NONE regions are final, TOPK prunes regions whose upper bound is below the k-th largest witness (lower bounds and the means of the regions' present target descendants), the others are expanded up to an expansion limit, past which they are UNRESOLVED with their bounds; target groups are exact (TRUE / FALSE / UNDEFINED, TOPK IN / OUT with certain ranks, or UNRESOLVED). The entries partition the present target groups; the answer and unresolved bitmaps are their descendants. The complete fine-grain answer of the same request is the baseline. Change localization: DELTA-001 applies a signed delta to the leaves (compatibility, overflow proof, nonnegative promise); each touched leaf's exact change (rows, counts, 192-bit sums, present values, inserted extremes and gcd, deleted multiplicity) is summed into its ancestors only, level by level, the new state checked bit for bit against DELTA-001's cells at level 0, every changed region reported with its exact change, extrema after deletions kept as enclosures (not tight), maps carried; a delta of another schema, an overflow refusal or a leaf that becomes present without a parent falls back to a complete rebuild from new levels (maps certified; for a new group the rebuilt leaves must equal the old ones plus the delta) or is refused; a contradicted nonnegative promise is refused with DELTA-001's violation. Budgets (support, variables, circuit, iterations, output, states, bytes) are checked before allocation and cover the UNC-001 and DELTA-001 steps.",
+   "gpu": "tr_mgpu_refine_bounds: the host gathers the cells and inputs of a wave's regions; one work item per region evaluates the inline tr_refine_region_bound (exact 256-bit integers, the UNC-001 exact abstract evaluation of each class expression in the item's own slots of a device scratch, chunks of 1024 regions per launch) and writes its own output slot. tr_mgpu_refine_rollup: one launch per level, one work item per affected region summing its affected children's exact changes (128-bit counts, 192-bit sums, present counts, inserted extremes and gcd) into its own slots; the host adopts it after a per-level conservation check. No atomics or barriers: every result is a function of its inputs only. The host validates every index the kernels follow and budgets the device copies. Equal to the CPU bit for bit (tested in the emulation with scrambled thread order); compiled with nvcc for sm_80 without warnings; not yet run on a device.",
+   "limitations": [
+    "Region bounds use per-column UNC-001 inputs (no joint information between columns) and a descendant may hold a single row of its region, so lower bounds are weak: gains come from heavy-hitter thresholds and top-k with k at most the heavy regions; uniform data or a median threshold expands almost every region (measured: more work than the fine-grain answer).",
+    "Aggregates are integer combinations of at most four SUM / COUNT / ROWS atoms per side (AVG through RATIO); no MIN / MAX, distinct or quantile requests; the decisions run on the host and tr_refine_supply trusts the bounds it is given (tr_refine_eval_bounds or tr_mgpu_refine_bounds).",
+    "Nonnegative multiplicities only: a signed measure is refused (the bounds count rows).",
+    "Localized updates carry the maps (status carried): a row inserted into a leaf is assumed to share the leaf's parent; a delete of a row that is not there but matches present rows is not detectable (DELTA-001); extrema after deletions are enclosures until a rebuild.",
+    "A localized update copies the old state's arrays before patching the affected regions (memory and copy time proportional to the state; the rollup work proportional to the affected paths); a rebuild reports changes only when every level keeps its group count.",
+    "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "REFINEMENT",
+    "label": "refinement state",
+    "comment": "per level: cells, abstract inputs and links; maintained leaves"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "REFINE",
+    "key": "refine",
+    "family": "refine",
+    "capability": "MULTI-002",
+    "name": "adaptive refinement, localized updates",
+    "comment": "coarse-to-fine bounds, localized rollups",
+    "state": "REFINEMENT",
+    "state_label": "refinement state",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "CODE",
+     "COUNT",
+     "INT128",
+     "BIGINT",
+     "RATIONAL",
+     "QINTERVAL",
+     "KLEENE",
+     "ROWSET"
+    ],
+    "laws_relied": "TR_REG_RING | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_REFINEMENT | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_refine_build",
+     "tr_refine_begin",
+     "tr_refine_supply",
+     "tr_refine_run",
+     "tr_refine_get_answer",
+     "tr_refine_eval_bounds",
+     "tr_refine_fine",
+     "tr_refine_update_state",
+     "tr_refine_update_prepare",
+     "tr_refine_update_rollup",
+     "tr_refine_update_finish",
+     "tr_refine_get_changes"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_refine_bounds",
+     "tr_mgpu_refine_rollup"
+    ],
+    "impl": [
+     [
+      "ENCLOSE",
+      "QINTERVAL",
+      "ALL"
+     ],
+     [
+      "ROLLUP",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "ROLLUP",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "PREDICATE",
+      "RATIONAL",
+      "CPU"
+     ],
+     [
+      "ORDER",
+      "BIGINT",
+      "CPU"
+     ],
+     [
+      "SUBTRACT",
+      "BIGINT",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,131 @@
+{
+ "guide": [
+  {
+   "page": "approx.md",
+   "title": "Explicit approximations and error certificates",
+   "capabilities": "UNC-002",
+   "summary": "certified Taylor and Chebyshev series of exp, log, sin, cos, sqrt and 1/x on rational intervals, coefficient quantization, binary64 evaluation with a rounding bound, exact and seeded low-rank approximations of small matrices, compositions that carry every error term with its origin, per-row enclosures with exact group sums on the CPU and in CUDA, approximate UNC-001 predicates, and a distinct approximate label that exact consumers refuse."
+  }
+ ],
+ "inventory": {
+  "UNC-002": {
+   "planned_files": [
+    "torbles/math_approx.h",
+    "torbles/math_approx.c",
+    "torbles/math_approx_gpu.cu",
+    "torbles/math_approx.py",
+    "tests/test_math_approx.py",
+    "bench/benchmark_math_approx.py"
+   ],
+   "cpu": "Native immutable approximation objects that record the declared norm (absolute, relative, L2, Frobenius, spectral, max entry), the assumptions (domain interval, derivative and Lipschitz bounds, certified range, independence of random probes, no overflow), the error budget, the error spent term by term (kind, the id of the approximation it came from, scaled or not; the error is their exact sum) and the provenance (deterministic, or randomized with the seed and the failure probability, label probabilistic). Series of exp, log, sin, cos, sqrt and 1/x on [a, b] with exact rational endpoints: Taylor coefficients at the midpoint enclosed in 224-bit dyadic interval arithmetic (argument reduction and squaring / double angles, log by atanh, sqrt by integer square roots), the Lagrange remainder (and the integral form for log, sqrt, 1/x), then either monomials in t = (x - mid) / rad or Chebyshev economization of a Taylor series of degree min(n + 24, 2n + 8) with the dropped coefficients added; representatives on 192-bit dyadics with the enclosure radius added; certified range, relative bound when the function has no zero, L2 bound. Exact polynomials; sums (errors add), scalings, products (|f| e_g + |g| e_f + e_f e_g, truncation past degree 64 as its own term) and compositions (the inner range widened by its error must lie in the outer interval; L_outer e_inner + e_outer) never drop a term; quantization of the coefficients to multiples of 2^-bits with the induced error; binary64 coefficients in x with the coefficient rounding, the Horner bound gamma_2n sum |a_j| B^j and an underflow term. Low rank of integer matrices up to 64 x 64: cross approximation by fraction-free Bareiss elimination with complete pivoting (the exact Schur complement residual: exact Frobenius square, Frobenius, min(F, sqrt(norm1 norminf)) spectral, max-entry bounds; exact factorization at full rank) and a seeded Rademacher sketch with exact rational projection whose Frobenius bound 2 max_i ||E w_i|| holds except with probability (13/16)^probes. A requested error budget that the certified bound exceeds is refused (TR_MATH_NOT_CONVERGED), never reported as certified. Per-row evaluation over an FND-004 scope column (binary64 enclosure of x checked inside the domain, interval Clenshaw or Horner with the coefficient enclosures widened by the error and clamped to the range; NULL, out-of-domain and unselected rows reported apart) with exact group sums of floor / ceil of the enclosures in 2^-F units in 128 bits after an overflow proof; approximate predicates f(x) op T over a UNC-001 state (groups decided ALL / NONE by the binary64 UNC-001 proof of the polynomial with dyadic coefficients and the threshold moved by the error, the other rows by their enclosure, undecidable rows counted undecided in their own bitmap); tr_approx_authorize_exact always refuses with the FND-007 reason approximate (statistical for a probabilistic label); FND-007 snapshot certificates of the approximate relationship y ~ p(x) as a POLYNOMIAL claim with a tolerance (certified error, coefficient rounding, data tolerance), which FND-007 refuses to authorize. Budgets (degree, support, tensor, iterations, output, bytes) are checked before allocation.",
+   "gpu": "tr_mgpu_approx_eval: one work item per 64-row word evaluates each selected row with the inline row evaluator of math_approx.h (the binary64 enclosure of x, interval Clenshaw / Horner with the coefficient enclosures, the certified error and range clamp; or the binary64 Horner value with its bound), writes the rows' own output slots, and adds floor(lo 2^F) and ceil(hi 2^F) of its rows into a local 128-bit accumulator per run of equal group ids, flushed with the two-word 128-bit atomic add (counts with 64-bit atomics), so the sums do not depend on the order of the threads; the host proves the sums fit, validates the view and budgets the device copies before launching. Equal to the CPU bit for bit (tested in the emulation with scrambled thread order); compiled with nvcc for sm_80 without warnings; not yet run on a device.",
+   "limitations": [
+    "Functions are exp, log, sin, cos, sqrt, 1/x and exact polynomials of one variable on a bounded rational interval (|a|, |b| <= 1024 for exp, sin, cos); no other special functions and no multivariate approximations.",
+    "Chebyshev series are economized Taylor expansions at the midpoint, not best (minimax) approximations; near a singularity (log or 1/x close to 0, long intervals of sin / cos) the certified bound may exceed a budget the true error meets, which is refused.",
+    "Coefficient representatives are 192-bit dyadics: certified errors do not go below about 2^-190 times the coefficients' size.",
+    "Low-rank methods are exact methods for small integer matrices (up to 64 x 64): cross approximation is not the optimal SVD truncation, the spectral bound is min(F, sqrt(norm1 norminf)), and the sketch bound is probabilistic (a conservative Paley-Zygmund argument), labelled so and never certified.",
+    "The approximate filter runs on the CPU and proves series only (the binary64 form is evaluated per row); rows whose binary64 enclosure of x leaves the domain (a non-dyadic endpoint) are refused as out of domain.",
+    "Compositions need the inner range plus its error inside the outer interval and an internal degree <= 256; products are truncated to degree 64 with a truncation term.",
+    "FND-007 relationship snapshots need scaled integer coefficients (degree <= 16, decimal scales sx n + sy <= 18); they are approximate claims with a tolerance, never exact laws.",
+    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "APPROXIMATION",
+    "label": "approximation",
+    "comment": "an approximant, its norm, assumptions, budget, error terms, provenance"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "APPROX",
+    "key": "approx",
+    "family": "approx",
+    "capability": "UNC-002",
+    "name": "explicit approximations",
+    "comment": "certified series, low rank, rounding, composition",
+    "state": "APPROXIMATION",
+    "state_label": "approximation",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "BIGQ",
+     "BIGINT",
+     "QINTERVAL",
+     "INTERVAL",
+     "FLOAT64",
+     "INT128",
+     "COUNT",
+     "RATIONAL",
+     "KLEENE",
+     "ROWSET"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "laws_guaranteed": "TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_approx_series",
+     "tr_approx_poly",
+     "tr_approx_lowrank",
+     "tr_approx_add",
+     "tr_approx_mul",
+     "tr_approx_compose",
+     "tr_approx_quantize",
+     "tr_approx_float",
+     "tr_approx_eval_rows",
+     "tr_approx_filter",
+     "tr_approx_authorize_exact",
+     "tr_approx_relation"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_approx_eval"
+    ],
+    "impl": [
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "ENCLOSE",
+      "QINTERVAL",
+      "CPU"
+     ],
+     [
+      "EVAL",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "MULTIPLY",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "SOLVE",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "PREDICATE",
+      "RATIONAL",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
