@@ -1,0 +1,251 @@
+{
+ "guide": [
+  {
+   "page": "graph.md",
+   "title": "Graph layouts, fixed points, paths and energies",
+   "capabilities": "GRAPH-001, GRAPH-002",
+   "summary": "declared graph layouts from the edge rows of a scope (a vertex dictionary that is part of the identity with the snapshot revision, CSR / CSC / incidence forms, undirected edges both ways and a self-loop once, multiplicities unless deduplication is declared), degrees, frontier expansion and products in the counting, Boolean, GF(2), (min, +), (max, +) and binary64 semirings; reachability and closure fixed points with their rounds, walk counts under a declared bound (divergent counts refused), Bellman-Ford / Dijkstra that report a reachable improving cycle, the exact Dirichlet energy, and certified PageRank / power iteration that refuse at the iteration cap."
+  }
+ ],
+ "inventory": {
+  "GRAPH-001": {
+   "planned_files": [
+    "torbles/math_graph.h",
+    "torbles/math_graph.c",
+    "torbles/math_graph_gpu.cu",
+    "torbles/math_graph.py",
+    "tests/test_math_graph.py",
+    "bench/benchmark_math_graph.py"
+   ],
+   "cpu": "Native C (math_graph.c; contracts and the per-vertex pulls shared with CUDA in math_graph.h): immutable layouts built from the selected edge rows of an FND-004 scope (table or arrays; key columns of one decimal scale, an optional weight column with a declared unit, Fraction weights put on their least common denominator natively; NULL endpoints or weights skipped and counted, or refused; an optional vertex scope adds isolated vertices). The vertex dictionary is the radix-sorted distinct keys (dense id = rank); canonical edges carry multiplicities (deduplication declared, with refuse / min / max / sum weight combination; loops kept or dropped; an undirected edge appears in both directions and a self-loop once); CSR and CSC are built by stable counting sorts, with the canonical edge list and the vertex-incidence lists (oriented incidence roles). The identity is the declaration, the exact FND-004 descriptors (snapshot revision included) and the dictionary, compared byte for byte; a stale layout is refused natively and every state of another identity is refused. Exact degrees (out / in / total / loops in multiplicity, weight and distinct modes, checked int128), one-step frontier expansion with exclusion, neighborhood aggregates, and pull products y = A^T x or A x over declared semirings: counting (+, x) in checked int128, Boolean (or, and), GF(2) (equal to FIELD-001's matvec of the exported packed A mod 2), (min, +) and (max, +) in checked int64 units of the weight denominator, binary64 (+, x) as a fixed-order fma accumulation with a rigorous per-vertex a priori error bound; NULL inputs contribute no term and validity is reported. Budgets (layout bytes, support, states, output; tensor, output and bytes per request) are checked before allocation.",
+   "gpu": "math_graph_gpu.cu: degrees and every semiring product with one work item per vertex running the shared inline pull (entries in their stored order) into its own output slot (Boolean / GF(2) words by atomic OR, an overflow by atomic minimum, the binary64 coefficients computed on the host and copied); frontier expansion with one work item per frontier word pushing by atomic OR, the count by atomic add. Device copies are budgeted; results equal the CPU's bit for bit (scrambled emulation in the tests). Compiled with nvcc for sm_80; not yet run on a device.",
+   "limitations": [
+    "The layout build (key sort, CSR / CSC, incidence lists) runs on the CPU only, single-threaded; a device entry copies the forms it reads on every call (no device-resident layout).",
+    "Keys are exact-valued integer or decimal columns (no string keys); one graph per scope (a grouped scope is refused); at most 2^32 - 2 vertices and 2^32 - 1 entries.",
+    "The binary64 products carry an a priori error bound for exact double inputs, not an enclosure; GF(2) products of weights need integral weights.",
+    "No FND-007 claim kind states graph facts, so layouts and products emit no certificates."
+   ]
+  },
+  "GRAPH-002": {
+   "planned_files": [
+    "torbles/math_graph.h",
+    "torbles/math_graph.c",
+    "torbles/math_graph_gpu.cu",
+    "torbles/math_graph.py",
+    "tests/test_math_graph.py",
+    "bench/benchmark_math_graph.py"
+   ],
+   "cpu": "Native C on GRAPH-001 layouts: reachability R* / R+ from a source set with BFS levels and the rounds to the fixed point (a max_rounds bound refuses with NotConverged), the transitive closure per source (64 sources per lane word, FIELD-001 rows); walk counts w_(l+1) = A^T w_l over multiplicities for lengths <= L as exact unsigned multiword integers sized by a declared bound (every row, total, length total and the grand total checked, the first violation reported), the unbounded count only when no cycle is reachable from the sources (Kahn's order on the reachable part, else NoSolution); synchronous frontier Bellman-Ford in (min, +) / (max, +) with checked int64 sums, where a change in round n is reported with the improving cycle extracted from the round predecessors and its weight (Unbounded), and Dijkstra with lexicographic (distance, hops) keys for nonnegative weights, both giving the same canonical hops and predecessors; the exact Dirichlet energy x^T L x in 320-bit arithmetic over the canonical edges; PageRank (dangling and teleport sets, damping in (0, 1]) and power iteration in binary64 with fixed blocked sums and explicit fma, stopping at the declared tolerance or refusing at the iteration cap (NotConverged), with rigorous outward-rounded a posteriori bounds (||r - r*||_1, residual norms, an eigenvalue radius for undirected layouts).",
+   "gpu": "math_graph_gpu.cu: reach, closure, walk counts and Bellman-Ford as one launch sequence per round or step (candidates from atomic touch counters, the shared pull per candidate into its own slot, then the commit; violations and witnesses by atomic minimum, walk length totals by exact multiword atomic adds, the host reading each round's counters); the energy by edge slices with 320-bit local sums and multiword atomic adds; PageRank / power iteration with block sums (one work item per block), their total (one work item) and the per-vertex pull update each iteration. The certificates, the walk horizon and the cycle extraction run on the host. Results and statistics equal the CPU's bit for bit (scrambled emulation in the tests). Compiled with nvcc for sm_80; not yet run on a device.",
+   "limitations": [
+    "Dijkstra and the iteration certificates run on the CPU only; Bellman-Ford rounds are synchronous and every device round reads its counters back to the host.",
+    "Walk counts count walks (multiplicities, not weights; weighted path sums are GRAPH-001's count and tropical products); bounds of at most 2048 bits; an unbounded count needs no reachable cycle at all (finiteness is not refined per vertex).",
+    "PageRank and power iteration are binary64 with a posteriori bounds; damping 1 gives no bound (inf); power iteration needs nonnegative weights and converges only with a dominant eigenvalue.",
+    "No FND-007 claim kind states graph facts: a refused cycle carries its own witness (vertices and weight) and paths their predecessor tree."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "GRAPH_LAYOUT",
+    "label": "graph layout",
+    "comment": "a vertex dictionary, CSR / CSC entries with multiplicities, canonical edges and incidence lists of a snapshot"
+   },
+   {
+    "name": "GRAPH_FIXPOINT",
+    "label": "graph fixed point",
+    "comment": "reach sets and levels, bounded walk tables, path trees and certified iterates of a layout"
+   }
+  ],
+  "new_operators": [
+   {
+    "name": "FIXPOINT",
+    "label": "fixpoint",
+    "comment": "the least fixed point of a monotone frontier iteration within a declared round bound",
+    "requires": "TR_REG_LATTICE",
+    "input": null,
+    "output": null
+   },
+   {
+    "name": "RELAX",
+    "label": "relax",
+    "comment": "path relaxations in an ordered idempotent semiring ((min, +), (max, +)) with improving-cycle refusal",
+    "requires": "TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE | TR_LAW_IDEMPOTENT | TR_LAW_ORDERED",
+    "input": null,
+    "output": null
+   }
+  ],
+  "modules": [
+   {
+    "enum": "GRAPH_LAYOUT",
+    "key": "graph.layout",
+    "family": "graph",
+    "capability": "GRAPH-001",
+    "name": "declared graph layouts",
+    "comment": "graph layouts, degrees, frontiers and semiring products",
+    "state": "GRAPH_LAYOUT",
+    "state_label": "graph layout",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INTEGER",
+     "RATIONAL",
+     "COUNT",
+     "INT128",
+     "BOOLEAN",
+     "GF2",
+     "MINMAX",
+     "INTERVAL",
+     "ROWSET"
+    ],
+    "laws_relied": "TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_CHAR2 | TR_LAW_ENCLOSURE | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_graph_layout_build",
+     "tr_graph_layout_need",
+     "tr_graph_layout_get_view",
+     "tr_graph_layout_ids",
+     "tr_graph_layout_same",
+     "tr_graph_layout_fresh",
+     "tr_graph_layout_incidence",
+     "tr_graph_degrees",
+     "tr_graph_expand",
+     "tr_graph_spmv",
+     "tr_graph_gf2_matrix",
+     "tr_graph_need"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_graph_degrees",
+     "tr_mgpu_graph_expand",
+     "tr_mgpu_graph_spmv"
+    ],
+    "impl": [
+     [
+      "ORDER",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "LOGIC",
+      "BOOLEAN",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "GF2",
+      "ALL"
+     ],
+     [
+      "DISTINCT_FOLD",
+      "MINMAX",
+      "ALL"
+     ],
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "ALL"
+     ],
+     [
+      "POPCOUNT",
+      "ROWSET",
+      "ALL"
+     ]
+    ]
+   },
+   {
+    "enum": "GRAPH_PATHS",
+    "key": "graph.paths",
+    "family": "graph",
+    "capability": "GRAPH-002",
+    "name": "bounded fixed points, paths and energies",
+    "comment": "reachability, bounded walk counts, paths with cycle refusal, energies",
+    "state": "GRAPH_FIXPOINT",
+    "state_label": "graph fixed point",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "BOOLEAN",
+     "ROWSET",
+     "COUNT",
+     "BIGINT",
+     "MINMAX",
+     "INT128",
+     "INTERVAL",
+     "INTEGER"
+    ],
+    "laws_relied": "TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_ENCLOSURE | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_IDENTITY | TR_PROOF_BOUND",
+    "cpu_entry": [
+     "tr_graph_reach",
+     "tr_graph_closure",
+     "tr_graph_walks_need",
+     "tr_graph_walks",
+     "tr_graph_paths",
+     "tr_graph_energy",
+     "tr_graph_pagerank",
+     "tr_graph_power",
+     "tr_graph_rationals"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_graph_reach",
+     "tr_mgpu_graph_closure",
+     "tr_mgpu_graph_walks",
+     "tr_mgpu_graph_paths",
+     "tr_mgpu_graph_energy",
+     "tr_mgpu_graph_pagerank",
+     "tr_mgpu_graph_power"
+    ],
+    "impl": [
+     [
+      "FIXPOINT",
+      "BOOLEAN",
+      "ALL"
+     ],
+     [
+      "FIXPOINT",
+      "ROWSET",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "ORDER",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "RELAX",
+      "MINMAX",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
