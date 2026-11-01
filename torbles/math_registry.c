@@ -95,7 +95,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "optimization program",
     "graph layout", "graph fixed point",
     "elimination",
-    "cubical complex", "chain reduction"};
+    "cubical complex", "chain reduction",
+    "pairwise plans"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -778,6 +779,17 @@ static const tr_reg_module modules[] = {
                    "tr_topo_homology_classes", "tr_topo_persistence_build", "tr_topo_persistence_pairs",
                    "tr_topo_persistence_betti", "tr_topo_persistence_levels"},
      .cuda_entry = {"tr_mgpu_topo_dd"}},
+    {FAMILY(TR_REG_M_PAIR_PLAN, "pair.plan", "pairplan", "PAIR-002", "structured pairwise query planning"),
+     .state_kind = TR_REG_STATE_PAIR_PLAN, .devices = TR_REG_ON_BOTH, .finalize = 2,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_pairplan_make", "tr_pairplan_plan_get_info", "tr_pairplan_plan_get",
+                   "tr_pairplan_plan_kernel_view", "tr_pairplan_plan_free", "tr_pairplan_execute",
+                   "tr_pairplan_eval_table", "tr_pairplan_retain", "tr_pairplan_state_get_info",
+                   "tr_pairplan_state_table_view", "tr_pairplan_state_free", "tr_pairplan_default_rates"},
+     .cuda_entry = {"tr_mgpu_pairplan_upload", "tr_mgpu_pairplan_query", "tr_mgpu_pairplan_bytes",
+                    "tr_mgpu_pairplan_free"}},
 };
 #undef BUILTIN
 #undef FAMILY

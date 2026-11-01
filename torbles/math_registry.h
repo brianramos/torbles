@@ -961,7 +961,8 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_PREIMG = 68,            /* PRE-002 roots, residues, bit cubes, fallbacks */
        TR_REG_M_TOPO_COMPLEX = 69,      /* TOPO-001 declared occupancy complexes and local topology */
        TR_REG_M_TOPO_HOMOLOGY = 70,     /* TOPO-002 bounded cycles, homology and persistence */
-       TR_REG_M_END = 71 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_PAIR_PLAN = 71,         /* PAIR-002 structured pairwise query planning */
+       TR_REG_M_END = 72 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1020,7 +1021,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_ELIMINATION = 57,       /* generators, certified reconstructions, row checks */
        TR_REG_STATE_CUBICAL_COMPLEX = 58,   /* occupancy, cells, signed incidences of a declared grid */
        TR_REG_STATE_CHAIN_REDUCTION = 59,   /* ranks, Betti numbers, cycles, persistence pairs */
-       TR_REG_STATE_KINDS = 60 };
+       TR_REG_STATE_PAIR_PLAN = 60,         /* costed pair strategies, support tables with multiplicities */
+       TR_REG_STATE_KINDS = 61 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1380,6 +1382,11 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_TOPO_HOMOLOGY, HOMOLOGY, RATIONAL, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, GF2, TR__CPU),
     TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, GFP, TR__CPU), TR__I(TR_REG_M_TOPO_HOMOLOGY, PERSISTENCE, RATIONAL, TR__CPU),
     TR__I(TR_REG_M_TOPO_HOMOLOGY, ORDER, INTEGER, TR__CPU),
+    /* 71 PAIR-002 structured pairwise query planning */
+    TR__I(TR_REG_M_PAIR_PLAN, FOLD, BIGINT, TR__ALL), TR__I(TR_REG_M_PAIR_PLAN, MERGE, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_PAIR_PLAN, MULTIPLY, BIGINT, TR__ALL), TR__I(TR_REG_M_PAIR_PLAN, SCALE_COUNT, INT128, TR__ALL),
+    TR__I(TR_REG_M_PAIR_PLAN, SUBTRACT, BIGINT, TR__ALL), TR__I(TR_REG_M_PAIR_PLAN, DIVIDE, BIGQ, TR__ALL),
+    TR__I(TR_REG_M_PAIR_PLAN, ORDER, INTEGER, TR__CPU), TR__I(TR_REG_M_PAIR_PLAN, CONTRACT, BIGINT, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU
