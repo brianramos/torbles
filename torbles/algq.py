@@ -139,6 +139,11 @@ for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_cre
                         ("jp_terms", ctypes.c_int64, [vp, ctypes.c_int, vp, ctypes.c_int64, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_double, vp, ctypes.c_int64, ctypes.POINTER(ctypes.c_double)]), ("tb_date_surrogate", None, [vp, u64, vp]),
                         ("tb_refok", u64, [vp, u64, ctypes.c_uint32, u64, vp, vp, ctypes.c_uint32, vp]), ("pt_query", ctypes.c_int64, [vp, ctypes.POINTER(QPlan)])]:
     f = getattr(lib, name); f.restype = res; f.argtypes = args
+# the release of a Table's storage (Table.close, or its finalizer): a torble's planes or a loaded file's mapping
+# (at_release), then its header (at_free), and the plain baseline's column table
+lib.at_free.restype, lib.at_free.argtypes = None, [vp]
+lib.at_release.restype, lib.at_release.argtypes = None, [vp]
+lib.pt_free.restype, lib.pt_free.argtypes = None, [vp]
 
 # optional GPU executor (gpu.cu): libgpu.so (CUDA) or, for testing, libgpu_emu.so (the same kernels run on the CPU)
 _libg = None
@@ -151,7 +156,7 @@ def gpu_lib():
         g = ctypes.CDLL(name)
         g.gpu_open.restype = vp; g.gpu_open.argtypes = [vp]
         g.gpu_query.restype = ctypes.c_int; g.gpu_query.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.POINTER(ctypes.c_double)]
-        g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.argtypes = [vp]
+        g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.restype = None; g.gpu_close.argtypes = [vp]
         g.gpu_mm_mode.restype = ctypes.c_int; g.gpu_mm_mode.argtypes = [ctypes.c_int]
         g.gpu_mm_name.restype = ctypes.c_char_p
         if os.environ.get("TORBLES_GPU_MM"): g.gpu_mm_mode({"word": 0, "popc": 1, "mma": 2}[os.environ["TORBLES_GPU_MM"]])
@@ -802,6 +807,60 @@ def conjuncts(p):
     return [p]
 
 # ------------------------------------------------------------------ tables
+# Lifetimes. A Table owns its native storage (a _Storage): the torble (built planes, or the private mapping of a loaded
+# file), the sidecar torbles its self-extending columns point into, the plain baseline's column table (which points at
+# the Table's own uint32 arrays) and the GPU copy (decoded copies of the planes: it keeps nothing of the host). Every
+# borrower holds a strong reference to the Table: a Query its fact and dimensions (its compiled plans hold no table
+# pointer: the torble is passed at each run), a relationship Catalog and the math modules' objects (Scope, Column,
+# Dimension, Layout, ...) their table. The math modules' native states copy what they read and know the table only by
+# address; a relationship catalog keeps the torble's address and decodes through it after checking its revision. So the
+# finalizer, which runs once no Table object over the storage is left, never frees memory in use. close() frees the
+# storage at once but the torble's header, which stays (emptied, of a new revision) until the finalizer: a catalog
+# then finds a stale table where it would read freed memory, and every use through the Table raises TableClosedError.
+class TableClosedError(RuntimeError):
+    """the table was closed (Table.close, Database.close): its native storage has been released"""
+
+
+class _Storage:
+    """the native handles of one table (see _release): at is None once the table is closed; header is the torble's
+    address until the finalizer frees it"""
+    __slots__ = ("at", "header", "pt", "sides", "gpu", "gpu_close")
+    def __init__(self): self.at = self.header = self.pt = self.gpu = self.gpu_close = None; self.sides = []
+
+
+def _release(s, final=True, at_free=lib.at_free, at_release=lib.at_release, pt_free=lib.pt_free):
+    """free a table's storage: the GPU copy, the plain baseline's table, the torble's planes (or mapping), then the
+    sidecars (the torble points into them); with final (the finalizer), also the torble's header, which close() keeps.
+    Each handle is cleared before it is freed. The functions are bound here, for a release at interpreter exit."""
+    s.at = None
+    gpu, s.gpu = s.gpu, None
+    if gpu: s.gpu_close(gpu)
+    pt, s.pt = s.pt, None
+    if pt: pt_free(pt)
+    if s.header: at_release(s.header)
+    sides, s.sides = s.sides, []
+    for side in sides:
+        if side: at_free(side)
+    if final:
+        header, s.header = s.header, None
+        if header: at_free(header)
+
+
+class _Native:
+    """A table's storage and its finalizer, shared by the Table objects over it (copy.copy(table) is another Table over
+    the same storage: sqlexec binds a table twice that way). The finalizer (weakref.finalize: it also runs at interpreter
+    exit) frees the storage when the last of them is collected, once."""
+    def __init__(self):
+        self.s = _Storage()
+        self.release = weakref.finalize(self, _release, self.s)
+
+
+class _ClosedColumns(dict):
+    """the plain columns of a closed table (released with it): reading one raises TableClosedError"""
+    def __init__(self, name): super().__init__(); self.name = name
+    def __missing__(self, c): raise TableClosedError(f"table {self.name!r} is closed: column {c!r} is released")
+
+
 class Table:
     def __init__(self, name, columns, msb=(), used=None, refs=None, cluster=None, extend=None, virtual=None):
         """msb: columns stored most-significant-bit first (hierarchical foreign keys);
@@ -884,19 +943,67 @@ class Table:
         aptrs = (ctypes.c_void_p * len(self.cols))(*[(zeros if c in virtual else self.data[c]).ctypes.data for c in self.cols])
         ptrs = (ctypes.c_void_p * len(self.cols))(*[self.data[c].ctypes.data for c in self.cols])
         flags = (ctypes.c_int32 * len(self.cols))(*[1 if c in msb else 0 for c in self.cols])
-        self.at = lib.at_create(self.n, len(self.cols), aptrs, flags)
-        self.pt = lib.pt_create(self.n, len(self.cols), ptrs)
+        self._own(lib.at_create(self.n, len(self.cols), aptrs, flags), lib.pt_create(self.n, len(self.cols), ptrs))
+        if not self.pt: raise MemoryError(f"{name}: the plain baseline's table could not be allocated")
         self.sidecars = {}
         for c, (fc, compact, vmsb) in virtual.items():
             fl = self.data[fc].astype(bool); nw = (self.n + 63) // 64
             per = np.zeros(nw * 64, np.uint32); per[:self.n] = fl
             rank = np.concatenate([[0], np.cumsum(per.reshape(nw, 64).sum(1))])[:nw].astype(np.uint32)
             body = compact if len(compact) else np.zeros(1, np.uint32)
-            side = lib.at_create(len(body), 1, (ctypes.c_void_p * 1)(body.ctypes.data), (ctypes.c_int32 * 1)(vmsb))
+            side = self._own_side(lib.at_create(len(body), 1, (ctypes.c_void_p * 1)(body.ctypes.data), (ctypes.c_int32 * 1)(vmsb)))
             lib.at_set_virtual(self.at, self.idx(c), self.idx(fc), side, rank.ctypes.data)
             self.sidecars[c] = dict(side=side, rank=rank, rows=len(compact), body=body)
         del zeros
         self._decoded = {}; self._colmax = {}
+    # ---- ownership and release (see _Native)
+    def _own(self, at, pt=None):
+        """this new Table takes the torble at (and the plain baseline's table pt): from here on they are freed with it"""
+        nat = _Native(); nat.s.at, nat.s.header, nat.s.pt = at, at, pt
+        if not at:
+            nat.release(); raise MemoryError(f"{self.__dict__.get('name', 'table')}: the torble could not be allocated")
+        self.__dict__["_native"] = nat
+    def _own_side(self, side):
+        """a sidecar torble of this table's self-extending columns: freed after the torble, which points into it"""
+        self._storage().sides.append(side)
+        if not side: raise MemoryError(f"{self.name}: a sidecar torble could not be allocated")
+        return side
+    def _storage(self):
+        nat = self.__dict__.get("_native")
+        if nat is None or nat.s.at is None:
+            raise TableClosedError(f"table {self.__dict__.get('name', '?')!r} is closed: its native storage has been released"
+                                   if nat is not None else f"table {self.__dict__.get('name', '?')!r} has no native storage")
+        return nat.s
+    @property
+    def at(self):
+        """the native torble (TableClosedError once the table is closed)"""
+        return self._storage().at
+    @property
+    def pt(self):
+        """the plain baseline's native column table, or None (dropped: drop_plain; loaded tables have none)"""
+        return self._storage().pt
+    @property
+    def closed(self):
+        nat = self.__dict__.get("_native")
+        return nat is None or nat.s.at is None
+    def close(self):
+        """Release the native storage now: the planes (a loaded table's file mapping), the sidecars, the plain baseline's
+        columns and the GPU copy; the relationship catalog attached to the table is closed with it. Any later use of the
+        storage, through this Table, its copies (copy.copy shares it) or the objects built on it (queries, scopes, ...),
+        raises TableClosedError; a catalog kept apart (attach=False) reports a stale table. Closing again does nothing.
+        Only the torble's header (an empty torble) stays until the last Table object over it is collected; without
+        close(), everything is freed then. Not while another thread is running a query on the table."""
+        nat = self.__dict__.get("_native")
+        if nat is None: return
+        catalog = self.__dict__.get("_relationships")
+        if catalog is not None: catalog.close()        # the table's own catalog (it detaches itself)
+        if nat.s.at is not None: _release(nat.s, final=False)
+        self.sidecars, self._decoded, self.data = {}, {}, _ClosedColumns(self.__dict__.get("name", "?"))
+        for a in ("_ranked", "_deltas"): self.__dict__.pop(a, None)
+    def __deepcopy__(self, memo):
+        """a table is not copied by deepcopy (a copy of a query or predicate keeps its tables: their identity and their
+        storage's single owner)"""
+        return self
     def __getattr__(self, k):
         if k in ("cols", "data") or k.startswith("_"): raise AttributeError(k)
         if k in self.cols: return Col(self, k)
@@ -941,12 +1048,15 @@ class Table:
         if self._used_ids is None: self._used_ids = np.nonzero(self.used)[0]
         return self._used_ids
     def gpu_handle(self):
-        """upload the value planes to the GPU once (decoded there by a prefix-XOR kernel); the torus stays here"""
-        if getattr(self, "_gpu", None) is None:
+        """upload the value planes to the GPU once (decoded there by a prefix-XOR kernel); the torus stays here. The
+        copy is part of the table's storage: released with it (close, or the finalizer)."""
+        s = self._storage()
+        if s.gpu is None:
             import time as _t; t0 = _t.perf_counter()
-            self._gpu = gpu_lib().gpu_open(self.at); self.gpu_upload_s = _t.perf_counter() - t0
-            if not self._gpu: raise RuntimeError("GPU upload failed")
-        return self._gpu
+            g = gpu_lib(); h = g.gpu_open(s.at); self.gpu_upload_s = _t.perf_counter() - t0
+            if not h: raise RuntimeError("GPU upload failed")
+            s.gpu, s.gpu_close = h, g.gpu_close
+        return s.gpu
     def colmax(self, c):
         if c not in self._colmax: self._colmax[c] = int(self.data[c].max()) if self.n else 0
         return self._colmax[c]
@@ -958,7 +1068,7 @@ class Table:
         return [fk for fk in getattr(self, "refbit", {}) if getattr(self, "_refdim", {}).get(fk) is dim]
     def plain_handle(self):
         """the plain columnar engine's table (a test baseline): only kept when the database was built with keep_plain"""
-        if getattr(self, "pt", None) is None:
+        if self.pt is None:
             raise RuntimeError(f"engine 'plain' is not available for {self.name}: build the database with keep_plain=True")
         return self.pt
     def drop_plain(self):
@@ -966,7 +1076,9 @@ class Table:
         engine, a test baseline, is unavailable afterwards). Keeps per-column maxima and the clustering column."""
         for c in self.cols: self.colmax(c)
         keep = {self.cluster} if self.cluster else set()
-        self.data = {c: v for c, v in self.data.items() if c in keep}; self.pt = None
+        s = self._storage(); pt, s.pt = s.pt, None
+        if pt: lib.pt_free(pt)                     # before its columns go: it points at them
+        self.data = {c: v for c, v in self.data.items() if c in keep}
     def ranked(self, c, engine="alg"):
         """(distinct values in use, each id's value as a rank among them): a dense GROUP BY key, cached"""
         ck = (c, engine)
@@ -976,15 +1088,23 @@ class Table:
             u = np.unique(vals[self.used_ids]); self._ranked[ck] = (u, np.searchsorted(u, vals).astype(np.uint32))
         return self._ranked[ck]
     def torus_bytes(self): return lib.at_bytes(self.at)
-    def sidecar_bytes(self): return sum(lib.at_bytes(v["side"]) for v in getattr(self, "sidecars", {}).values())
+    def sidecar_bytes(self):
+        self._storage()                            # a copy of a closed table still lists its released sidecars
+        return sum(lib.at_bytes(v["side"]) for v in getattr(self, "sidecars", {}).values())
     def get_rows(self, c, rows):
         """values of column c at the given rows, straight from the planes (virtual columns included)"""
         rows = np.ascontiguousarray(rows, np.uint64); out = np.empty(len(rows), np.uint32)
+        if len(rows) and int(rows.max()) >= self.n:          # the planes hold n rows (none, for an empty table)
+            raise IndexError(f"{self.name}: row {int(rows.max())} of a table of {self.n} rows")
         lib.at_get_rows(self.at, self.idx(c), rows.ctypes.data, len(rows), out.ctypes.data); return out
     def plain_bytes(self): return 4 * self.n * len(self.cols)
     def repair(self): return lib.at_repair(self.at)
     def nplanes(self): return lib.at_nplanes(self.at)
-    def flip(self, plane, row): lib.at_flip(self.at, plane, row)
+    def flip(self, plane, row):
+        """fault injection: flip the bit of row in the plane-th stored plane"""
+        if not 0 <= int(plane) < self.nplanes() or not 0 <= int(row) < self.n:   # the planes hold n rows (none if empty)
+            raise IndexError(f"{self.name}: no stored bit at plane {int(plane)} (of {self.nplanes()}), row {int(row)} (of {self.n})")
+        lib.at_flip(self.at, int(plane), int(row))
     def validate(self, maxbad=8):
         bad = (ctypes.c_uint64 * maxbad)(); n = lib.at_validate(self.at, bad, maxbad); return n, list(bad[:min(n, maxbad)])
 
@@ -2040,7 +2160,7 @@ class Query:
                 d_ = JoinPoly.describe(planned)
                 self.range_used.append((dim.name,) + (d_ if isinstance(d_, tuple) else (d_, 0)) + (poly.space,))
             else:
-                semis.append((cnt / dim.n, fkc, bm, dim.n, fact.kmask(fkn)))
+                semis.append((cnt / max(dim.n, 1), fkc, bm, dim.n, fact.kmask(fkn)))    # (an empty dimension: 0)
         if getattr(self, "_xrows", None) is not None:
             xr, xm = self._xrows; keep.append(xr); plan.xrows = xr.ctypes.data; plan.xmode = xm
         if getattr(self, "_word_ranges", None) is not None and row_ranges is None:

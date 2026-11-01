@@ -471,6 +471,10 @@ class Database:
         return "\n".join(out)
 
     def close(self):
+        """release every table's native storage (planes or file mappings, sidecars, plain columns, GPU copies: using
+        a table afterwards raises algq.TableClosedError) and the DuckDB connection, when this Database opened it.
+        Closing again does nothing."""
+        for t in getattr(self, "tables", {}).values(): t.close()
         if self._own and self.con is not None: self.con.close()
         self.con = None
 
@@ -822,11 +826,18 @@ def load(path, validate=True, con=None):
     """Open a saved database. The bit planes are memory-mapped (privately: nothing is written back); with validate,
     every torus face is checked on load and single-bit faults are repaired in memory (the report is in db.integrity).
     con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional)."""
-    import ctypes
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
     db._own, db.con, db._add, db.tables, db.meta, db.notes, db.integrity = False, con, {}, {}, {}, man.get("notes", []), {}
+    try: return _load_tables(db, path, man, validate)
+    except BaseException:
+        db.close()                                # what was mapped so far is released now, not with the traceback
+        raise
+
+
+def _load_tables(db, path, man, validate):
+    import ctypes
     sgs = {}
     err = ctypes.c_int(0)
     for name in man["order"]:
@@ -835,7 +846,9 @@ def load(path, validate=True, con=None):
         if not at: raise LoadError(f"{name}: cannot load {m['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
                                    3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
         t = Table.__new__(Table)
-        t.name, t.at, t.pt, t.n, t.cols = name, at, None, int(m["rows"]), list(m["cols"])
+        t.name = name; t._own(at)                  # the mapping is the table's from here on (unmapped with it)
+        db.tables[name] = t                        # (and a failed load closes it with the others)
+        t.n, t.cols = int(m["rows"]), list(m["cols"])
         t.msb_cols = set(m["msb"]); t.cluster = m["cluster"]; t.data = {}
         if m["cluster"] is not None: t.cluster_breaks, t.cluster_sorted = m["cluster_breaks"], m["cluster_sorted"]
         t._colmax = {c: int(v) for c, v in m["colmax"].items()}; t._wmax = {c: int(v) for c, v in m["wmax"].items()}
@@ -849,6 +862,7 @@ def load(path, validate=True, con=None):
         for c, sc in m["sidecars"].items():
             side = algq.lib.at_load((base + "." + _fname(c) + ".side.tbl").encode(), ctypes.byref(err))
             if not side: raise LoadError(f"{name}.{c}: cannot load its sidecar")
+            t._own_side(side)
             rank = np.load(base + "." + _fname(f"rank:{c}") + ".npy")
             flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
             algq.lib.at_set_virtual(t.at, t.cols.index(c), t.cols.index(flagcol), side, rank.ctypes.data)
@@ -902,6 +916,5 @@ def load(path, validate=True, con=None):
                 if c not in t.sidecars: t.data[c] = t.decoded(c)
         elif t.cluster is not None and t.cluster not in t.sidecars:
             t.data[t.cluster] = t.decoded(t.cluster)
-        db.tables[name] = t
         db.meta[name] = m.get("meta", {})
     return db

@@ -136,7 +136,10 @@ static inline void transpose64(uint64_t *restrict A) {
 }
 #undef TB_STAGE_DOC
 static uint64_t *plane_alloc(atable_t *t) {          /* not cleared: the build writes every word of every plane */
-    uint64_t *p = aligned_alloc(64, ((t->nw * 8) + 63) & ~(size_t)63);
+    /* an empty torble's planes have no words but must still exist (a NULL plane means an implicit zero plane, which
+     * would change its faces and its file directory): aligned_alloc of 0 bytes may return NULL, so never ask for 0 */
+    size_t sz = ((t->nw * 8) + 63) & ~(size_t)63;
+    uint64_t *p = aligned_alloc(64, sz ? sz : 64);
     t->bytes += t->nw * 8; return p;
 }
 static inline uint64_t rowmask(const atable_t *t, uint64_t w) {
@@ -188,6 +191,7 @@ static void at_faces(atable_t *t) {
 atable_t *at_create(uint64_t n, int ncols, const uint32_t **cols, const int32_t *msb) {
     if (ncols < 1 || ncols > MAXCOL) return NULL;
     atable_t *t = calloc(1, sizeof *t);
+    if (!t) return NULL;
     t->n = n; t->nw = (n + 63) / 64; t->k = ncols;
     for (int c = 0; c < ncols; c++) t->msb[c] = msb ? msb[c] : 0;
     col_widths(n, ncols, cols, t->width);
@@ -277,14 +281,26 @@ atable_t *at_load(const char *path, int *err) {
     at_faces(t);
     return t;
 }
-/* release a torble: its planes (built) or its mapping (loaded) */
-void at_free(atable_t *t) {
+/* release a torble's storage, its planes (built) or its mapping (loaded), and leave the header as an empty torble of a
+ * new revision: an object that kept the header's address (a relationship catalog decodes through its own pointer, after
+ * checking the revision) then finds a changed, empty table instead of freed memory. The header goes with at_free. */
+void at_release(atable_t *t) {
     if (!t) return;
     if (t->map) munmap(t->map, (size_t)t->maplen);
     else {
         for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) free(t->V[c][j]);
         for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) free(t->H[i][j]);
     }
+    t->map = NULL; t->maplen = 0;
+    memset(t->V, 0, sizeof t->V); memset(t->H, 0, sizeof t->H); t->nfaces = 0;
+    t->n = t->nw = 0; t->bytes = 0;
+    for (int c = 0; c < MAXCOL; c++) { t->vflag[c] = 0; t->vside[c] = NULL; t->vrank[c] = NULL; }   /* (sidecars: freed apart) */
+    t->revision++;
+}
+/* release a torble: its storage, then its header */
+void at_free(atable_t *t) {
+    if (!t) return;
+    at_release(t);
     free(t);
 }
 /* make column c virtual: its values are in sidecar `side` for the rows flagged in column flagcol (rank directory) */
@@ -312,10 +328,17 @@ uint64_t at_rows_semi(const atable_t *t, int c, uint32_t kmask, const uint64_t *
 }
 uint64_t at_bytes(const atable_t *t) { return t->bytes; }
 int at_width(const atable_t *t, int c) { return t->width[c]; }
-int at_nplanes(const atable_t *t) { return (int)(t->bytes / (t->nw * 8)); }
+/* the stored planes, counted (bytes / (nw * 8) divides by zero on an empty torble, whose planes hold no words) */
+int at_nplanes(const atable_t *t) {
+    int np = 0;
+    for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) np += t->V[c][j] != NULL;
+    for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) np += t->H[i][j] != NULL;
+    return np;
+}
 
-/* fault injection: flip row r in the p-th stored plane */
+/* fault injection: flip row r in the p-th stored plane (a row past the table is not stored: nothing to flip) */
 void at_flip(atable_t *t, int p, uint64_t r) {
+    if (r >= t->n) return;
     t->revision++;
     int q = 0;
     for (int c = 0; c < t->k; c++) for (int j = 0; j < NB; j++) if (t->V[c][j]) { if (q++ == p) { t->V[c][j][r >> 6] ^= 1ULL << (r & 63); return; } }
@@ -1473,11 +1496,14 @@ static void at_query_part(const atable_t *t, const qplan_t *q, uint64_t w0, uint
 /* ---------------------------------------------------------------- plain columnar baseline: same plans */
 typedef struct { uint64_t n; int32_t k, width[MAXCOL]; const uint32_t *col[MAXCOL]; } ptable_t;
 ptable_t *pt_create(uint64_t n, int ncols, const uint32_t **cols) {     /* references caller's arrays (no copy) */
-    ptable_t *t = calloc(1, sizeof *t); t->n = n; t->k = ncols;
+    if (ncols < 1 || ncols > MAXCOL) return NULL;
+    ptable_t *t = calloc(1, sizeof *t); if (!t) return NULL;
+    t->n = n; t->k = ncols;
     for (int c = 0; c < ncols; c++) t->col[c] = cols[c];
     col_widths(n, ncols, cols, t->width);
     return t;
 }
+void pt_free(ptable_t *t) { free(t); }                 /* the caller's arrays stay the caller's */
 
 /* ---------------------------------------------------------------- ingestion helpers (native, all cores)
  * tb_map: out[i] = lut[in[i]] (in[i] < lutn, else 0): foreign keys rewritten through a key map (derived surrogates).

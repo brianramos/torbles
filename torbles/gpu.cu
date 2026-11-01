@@ -633,7 +633,7 @@ extern "C" void *gpu_open(const atable_t *t) {
             off += (size_t)t->width[c] * t->nw; continue;
         }
         for (int j = 0; j < t->width[c]; j++) { CK(cudaMemcpy(h->buf + off + (size_t)j * t->nw, t->V[c][j], t->nw * 8, cudaMemcpyHostToDevice)); g->P[c][j] = h->buf + off + (size_t)j * t->nw; }
-        if (t->width[c]) kdecode<<<(unsigned)((t->nw + 255) / 256), 256>>>(h->buf + off, t->nw, t->width[c]);
+        if (t->width[c] && t->nw) kdecode<<<(unsigned)((t->nw + 255) / 256), 256>>>(h->buf + off, t->nw, t->width[c]);   /* an empty table: no grid */
         off += (size_t)t->width[c] * t->nw;
     }
     CK(cudaDeviceSynchronize());

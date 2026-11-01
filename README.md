@@ -148,6 +148,9 @@ The typed API is built on the engine's own API (`torbles/algq.py`), which works 
 - `Query(fact).join(dim, fk).where(pred).group_by(...).sum(expr) / .count() / .count(col) / .minmax(col)`
 - `.join_range(dim, x, lo, hi)` and `.join_ineq(dim, x, op, y)`
 - `set_threads(n)` (default: all cores), `set_build_threads(n)`, `set_groupby("mm" | "split")`, `gpu_mm("word" | "popc" | "mma")`
+- `table.close()` / `db.close()` free the native storage at once (planes or a loaded file's mapping, sidecars, plain
+  columns, the GPU copy); without them it is freed when the last object using the table (queries, scopes and catalogs
+  hold their tables) is collected, at the latest at exit. A closed table raises `TableClosedError`.
 
 `torbles/blobcol.py` has `BlobStore` for CLOB/BLOB columns. The engine is `torbles/alg.c` (CPU) and `torbles/gpu.cu`
 (CUDA), sharing `torbles/torble.h`.
