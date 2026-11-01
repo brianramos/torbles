@@ -129,4 +129,51 @@ for name, q in empty.items():
     q.join_mode = "auto"
 set_threads(1)
 print(f"   {len(empty)} empty-result queries x 4 join forms x 2 engines x 1/2 threads = {runs} runs vs DuckDB: {'all match' if fails == f0 else 'FAILURES'}")
+
+# ---------------------------------------------------------------- 4. GROUP BY a dimension attribute, fk stored lowest bit first
+# The default join mode read a dimension attribute's coordinate or prefix field from the fk's planes as if the fk were
+# stored most significant bit first: on a Table built with refs= and no msb=, the codes were the fk's bits reversed
+# (missing groups, or an IndexError past the dimension). The same queries with msb= are the control.
+print("4. GROUP BY dimension attributes through a foreign key stored lowest bit first")
+f0 = fails; runs = 0
+for nd, n, seed in ((64, 3000, 1), (300, 20000, 2), (5000, 200_000, 3)):
+    rng = np.random.default_rng(seed)
+    dc = dict(a=rng.integers(0, 50, nd).astype(np.uint32), b=rng.integers(0, 7, nd).astype(np.uint32),
+              h=(np.arange(nd) // 8).astype(np.uint32))                     # h: a function of the fk's high bits
+    e_n = 40; ec = dict(g=rng.integers(0, 5, e_n).astype(np.uint32))
+    fc = dict(x=rng.integers(0, 1000, n).astype(np.uint32), y=rng.integers(0, 3, n).astype(np.uint32),
+              fk=rng.integers(0, nd, n).astype(np.uint32), ek=rng.integers(0, e_n, n).astype(np.uint32))
+    fk, ek, x = fc["fk"].astype(np.int64), fc["ek"].astype(np.int64), fc["x"].astype(np.int64)
+    def oracle(keys, sel, agg):
+        out = {}
+        for i in np.nonzero(sel)[0].tolist():
+            k = tuple(int(v[i]) for v in keys)
+            if agg == "count": out[k] = out.get(k, 0) + 1
+            elif agg == "sum": out[k] = out.get(k, 0) + int(x[i])
+            else: lo, hi = out.get(k, (x[i], x[i])); out[k] = (int(min(lo, x[i])), int(max(hi, x[i])))
+        return out
+    A, B, H, G, Y = dc["a"][fk], dc["b"][fk], dc["h"][fk], ec["g"][ek], fc["y"]
+    every = np.ones(n, bool)
+    for msb in ((), ("fk", "ek")):
+        D = Table("d", dict(dc)); E = Table("e", dict(ec))
+        F = Table("f", dict(fc), msb=msb, refs={"fk": D, "ek": E})
+        cases = [
+            ("GROUP BY d.a, COUNT", lambda q: q.group_by(D.a).count(), [A], every, "count"),
+            ("GROUP BY d.h, SUM", lambda q: q.group_by(D.h).sum(F.x), [H], every, "sum"),
+            ("d.b = 3, GROUP BY d.a, SUM", lambda q: q.where(D.b == 3).group_by(D.a).sum(F.x), [A], B == 3, "sum"),
+            ("d.a < 10, GROUP BY d.b, d.h", lambda q: q.where(D.a < 10).group_by(D.b, D.h).count(), [B, H], A < 10, "count"),
+            ("GROUP BY d.a, f.y, MIN / MAX", lambda q: q.group_by(D.a, F.y).minmax(F.x), [A, Y], every, "minmax"),
+            ("two dimensions, GROUP BY d.h, e.g", lambda q: q.join(E, F.ek).where(E.g != 2).group_by(D.h, E.g).sum(F.x),
+             [H, G], G != 2, "sum"),
+        ]
+        for name, build_q, keys, sel, agg in cases:
+            want = oracle(keys, sel, agg)
+            for mode in ("auto", "factored", "expanded", "lookup"):
+                for eng in ("alg", "plain", "gpu"):
+                    q = build_q(Query(F, join_mode=mode).join(D, F.fk))
+                    try: got = q.run(eng)
+                    except Exception as ex: got = f"{type(ex).__name__}: {ex}"
+                    runs += 1
+                    check(got == want, f"{name} [nd {nd}, msb {bool(msb)}, {mode}, {eng}]: {str(got)[:120]} != {str(want)[:120]}")
+print(f"   6 queries x 3 dimension sizes x stored lowest / highest bit first x 4 join forms x 3 engines = {runs} runs vs exact counts: {'all match' if fails == f0 else 'FAILURES'}")
 print("\nALL FIX TESTS PASSED" if fails == 0 else f"\n{fails} FAILURES")

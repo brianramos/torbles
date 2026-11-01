@@ -2330,7 +2330,11 @@ class Query:
                     pc = bin(k.mask).count("1"); cand.append([k, 1 << pc, ("plane", pc, None), True]); continue
                 nat = k.table.colmax(k.name) + 1
                 info = None
-                if k.table is not fact and self.join_mode in ("prefix", "auto") and k.table not in self._lookup_keys:
+                if k.table is not fact and self.join_mode in ("prefix", "auto") and k.table not in self._lookup_keys \
+                        and self.joins[k.table] in fact.msb_cols:
+                    # a coordinate or prefix field is read from the fk's planes in the order of a column stored most
+                    # significant bit first; another fk's planes hold its bits from the lowest, so the codes would be its
+                    # bits reversed (wrong groups, codes past the dimension): its keys are looked up instead
                     bw = fact.width(self.joins[k.table])
                     sp_ = fact.space(self.joins[k.table], k.table)
                     co, pk = attr_coords(sp_, k.name, bw), prefix_key(sp_, k.name, bw)
