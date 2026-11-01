@@ -1,7 +1,8 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Every push and pull request: build the engine, run every correctness test (the GPU kernels run in their CPU
-# emulation), fuzz against DuckDB, and check that the package installs from its sdist and wheel.
+# emulation), fuzz against DuckDB, check that the package installs from its sdist and wheel, and run its SQL from the
+# installed wheel with the lowest Python, NumPy and DuckDB that pyproject.toml allows.
 name: ci
 on:
   push:
@@ -13,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.11", "3.13"]
+        python: ["3.11", "3.12", "3.13"]     # 3.11: the lowest Python DuckDB 2.0 publishes wheels for
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,3 +50,31 @@ jobs:
         with:
           name: dist
           path: dist/
+  min-deps:
+    # the package job's wheel with the dependency floors pinned, run outside the source tree: the floor declared before
+    # (Python 3.9, NumPy 1.22, DuckDB 1.1) could not run SELECT 1, and nothing had installed it (release review R01)
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: install the wheel with the lowest NumPy and DuckDB, and nothing else
+        run: |
+          python -m venv /tmp/v && /tmp/v/bin/pip install dist/*.whl numpy==1.23.2 duckdb==2.0.0
+          mkdir /tmp/t && cp -r tests /tmp/t/
+      - name: SQL smoke test with only the declared dependencies
+        run: cd /tmp/t && /tmp/v/bin/python tests/check_min_deps.py --floor
+      - name: the SQL tests on every engine (pandas and pytz for their DuckDB comparisons; the floors stay pinned)
+        run: |
+          /tmp/v/bin/pip install pandas pytz numpy==1.23.2 duckdb==2.0.0
+          cd /tmp/t && for e in alg plain gpu; do TORBLES_SQL_ENGINE=$e /tmp/v/bin/python tests/check_sql.py || exit 1; done
+      - name: a DuckDB below the floor is refused by name at the first SQL use
+        run: |
+          /tmp/v/bin/pip install --no-deps duckdb==1.4.5
+          cd /tmp/t && /tmp/v/bin/python tests/check_min_deps.py --below-floor

@@ -9,7 +9,7 @@ name = "torbles"
 dynamic = ["version"]
 description = "An algebraic relational datastore on torus-encoded bit planes: filters as Boolean polynomials, sums as popcounts, joins as substitutions"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"     # DuckDB 2.0 (below) publishes wheels for CPython 3.11 and later only
 license = {text = "Apache-2.0"}
 authors = [{name = "Brian Richard RAMOS"}]
 keywords = ["database", "olap", "bit planes", "popcount", "gpu", "cuda", "star schema", "duckdb"]
@@ -23,7 +23,12 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Database :: Database Engines/Servers",
 ]
-dependencies = ["numpy>=1.22", "duckdb>=1.1"]
+# The floors are the lowest versions tests/check_min_deps.py and tests/check_sql.py pass with, installed from the wheel
+# (the min-deps job of .github/workflows/ci.yml); torbles.sqlfront.DUCKDB_FLOOR enforces DuckDB's at the first SQL use.
+dependencies = [
+    "numpy>=1.23.2",   # the first NumPy with CPython 3.11 wheels; 1.22 cannot build object arrays with np.fromiter (sqlwin)
+    "duckdb>=2.0",     # the SQL binder reads DuckDB 2.0's syntax tree; 1.1 to 1.5 serialize another (SELECT 1 failed)
+]
 
 [project.optional-dependencies]
 frames = ["pandas>=1.5", "pyarrow>=10"]

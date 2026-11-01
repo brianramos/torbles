@@ -31,7 +31,8 @@ schemas and queries and compare every answer (`python -m torbles.fuzz`, `python 
 
 ## Quick start
 
-Requirements: Linux x86-64 (or WSL2), a C and C++ compiler, Python 3.9+. Optional: nvcc for the GPU executor.
+Requirements: Linux x86-64 (or WSL2), a C and C++ compiler, Python 3.11+ (pip installs NumPy 1.23.2+ and DuckDB 2.0+,
+whose SQL parser torbles reads; DuckDB 2.0 starts at Python 3.11). Optional: nvcc for the GPU executor.
 
     pip install .            # builds the engine for this machine (and the CUDA executor if nvcc is found)
 

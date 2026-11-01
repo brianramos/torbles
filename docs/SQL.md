@@ -36,7 +36,9 @@ one's. `SET TIME ZONE ...` sets the session's time zone; every other statement i
 
 ## How a query runs
 
-DuckDB's parser reads the text (syntax only: `json_serialize_sql`, no data and no binding). ISO forms its grammar does
+DuckDB's parser reads the text (syntax only: `json_serialize_sql`, no data and no binding). The binder reads the tree
+DuckDB 2.0 serializes; DuckDB 1.x serializes another, so the first SQL use refuses a DuckDB older than 2.0 with an
+ImportError (`torbles.sqlfront.DUCKDB_FLOOR`, the floor pyproject.toml declares). ISO forms its grammar does
 not have (`BETWEEN SYMMETRIC`, `LIKE_REGEX`, `MATCH_RECOGNIZE`, `JSON_TABLE`, `MULTISET`, ...) are first rewritten by a
 token pre-pass into calls of marker functions it can parse. The binder resolves names against the catalog, types every
 expression and produces the bound query (`torbles/sqlir.py`), which the Python API builds directly. Execution

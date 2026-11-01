@@ -1222,7 +1222,27 @@ def iso_prepass(sql):
 
 
 # ================================================================== parsing
+# The binder reads the syntax tree DuckDB 2.0 serializes. DuckDB 1.x serializes another (constants as typed values, a
+# function's arguments as "children", CAST's type as "cast_type", ...) and its parser rejects statements 2.0 parses
+# (IGNORE NULLS in a window aggregate, OFFSET <expression> ROWS), so an older DuckDB is refused at the first SQL use,
+# by name, instead of failing inside the binder. pyproject.toml declares the same floor.
+DUCKDB_FLOOR = (2, 0)
 _parser = None
+
+
+def duckdb_supported(version):
+    """whether a DuckDB __version__ is at least DUCKDB_FLOOR (a version that does not start with two numbers passes)"""
+    m = re.match(r"(\d+)\.(\d+)", str(version))
+    return m is None or (int(m.group(1)), int(m.group(2))) >= DUCKDB_FLOOR
+
+
+def check_duckdb(duckdb):
+    """ImportError, naming the floor, if this duckdb module is too old for the binder"""
+    if duckdb_supported(getattr(duckdb, "__version__", "")): return
+    floor = ".".join(map(str, DUCKDB_FLOOR))
+    raise ImportError(f"torbles' SQL needs DuckDB {floor} or later: the binder reads the syntax tree DuckDB {floor} "
+                      f"serializes, and DuckDB {duckdb.__version__} (at {getattr(duckdb, '__file__', '?')}) serializes "
+                      f"another. Upgrade it: pip install --upgrade 'duckdb>={floor}' (DuckDB {floor} needs Python 3.11 or later)")
 
 
 _PARSED = {}                                    # SQL text -> (DuckDB's tree as JSON, pre-pass text, pre-pass FLAGS)
@@ -1238,9 +1258,10 @@ def parse(sql):
         FLAGS.clear(); FLAGS.update(copy.deepcopy(flags))
         return [s["node"] for s in json.loads(js)["statements"]], text
     import duckdb
-    if _parser is None: _parser = duckdb.connect()
+    if _parser is None: check_duckdb(duckdb); _parser = duckdb.connect()
     text = iso_prepass(sql)
-    # the text inlined as a string literal: DuckDB binds a parameter on a slower path than it reads a constant
+    # the text inlined as a string literal: DuckDB binds a parameter on a slower path than it reads a constant, and a
+    # literal is a VARCHAR whatever the version infers for a parameter (DuckDB 1.1 refused json_serialize_sql(?))
     js = _parser.execute("SELECT json_serialize_sql('" + text.replace("'", "''") + "')").fetchone()[0]
     r = json.loads(js)
     if r.get("error"):
