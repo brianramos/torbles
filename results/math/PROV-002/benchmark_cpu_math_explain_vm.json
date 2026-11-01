@@ -1,0 +1,2458 @@
+{
+ "argv": [
+  "--capability",
+  "PROV-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/PROV-002/benchmark_cpu_math_explain_vm.json"
+ ],
+ "capability": "PROV-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "cacb92841d6cae9a8a136a680c29f3cecf01b657",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "a20d76ef24e7078f12bdc091219ec97fdced3e14015ccad3110c6eccdba101ed",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "840929c0a850855e8971957d67d3fc9bffac9dfbc7c754844527a6db9f396a2e"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T00:08:11+00:00"
+ },
+ "notes": [
+  "cpu = math_explain.c (incremental propagation over the retained DAG; explanations and probabilities on COUNT-002 decision diagrams); cuda = math_explain_gpu.cu (one work item per change set; device runs only); reconstruction = a new native store per request; duckdb = the query re-executed; PROV-001 = the whole DAG evaluated per request.",
+  "The naive product of per-derivation probabilities is recorded beside the exact value of correlated lineages to show the difference; it is never returned by the capability."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "annotation_bytes": 41128,
+   "answers": 111,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 590,
+   "cone_nodes": 606,
+   "dag_nodes": 608,
+   "first_seconds": 0.0007716390027781017,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007716390027781017,
+    0.0004956589982612059
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 54971,
+   "warm_median_seconds": 0.0004956589982612059,
+   "warm_min_seconds": 0.0004956589982612059
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 606,
+   "first_seconds": 0.007233578999148449,
+   "mean_affected": 6.02,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.007233578999148449,
+    0.01086433499949635,
+    0.0029148850007914007
+   ],
+   "warm_median_seconds": 0.006889610000143875,
+   "warm_min_seconds": 0.0029148850007914007
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 22,
+   "first_seconds": 0.010235718000330962,
+   "levels": 20,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "peak_nodes": 62,
+   "phase": "run",
+   "samples_seconds": [
+    0.010235718000330962,
+    0.00114392800242058
+   ],
+   "warm_median_seconds": 0.00114392800242058,
+   "warm_min_seconds": 0.00114392800242058
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.013008714002353372,
+   "hi": 0.9374856948852539,
+   "lo": 0.9374856948852539,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.013008714002353372,
+    0.0008895959981600754
+   ],
+   "warm_median_seconds": 0.0008895959981600754,
+   "warm_min_seconds": 0.0008895959981600754
+  },
+  {
+   "annotation_bytes": 82088,
+   "answers": 111,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 3777,
+   "cone_nodes": 1784,
+   "dag_nodes": 1786,
+   "first_seconds": 0.000570302003325196,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000570302003325196,
+    0.0005346899997675791
+   ],
+   "shared_nodes": 284,
+   "state_bytes": 162927,
+   "warm_median_seconds": 0.0005346899997675791,
+   "warm_min_seconds": 0.0005346899997675791
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 1784,
+   "first_seconds": 0.015509868000663118,
+   "mean_affected": 13.96,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.015509868000663118,
+    0.015102833000128157,
+    0.01517723299912177
+   ],
+   "warm_median_seconds": 0.015140032999624964,
+   "warm_min_seconds": 0.015102833000128157
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 26,
+   "first_seconds": 0.0012601399976119865,
+   "levels": 20,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "peak_nodes": 162,
+   "phase": "run",
+   "samples_seconds": [
+    0.0012601399976119865,
+    0.0009816079982556403
+   ],
+   "warm_median_seconds": 0.0009816079982556403,
+   "warm_min_seconds": 0.0009816079982556403
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.01293498700033524,
+   "hi": 0.999955461604176,
+   "lo": 0.703125,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.01293498700033524,
+    0.0008182560013665352
+   ],
+   "warm_median_seconds": 0.0008182560013665352,
+   "warm_min_seconds": 0.0008182560013665352
+  },
+  {
+   "annotation_bytes": 41128,
+   "answers": 46,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 538,
+   "cone_nodes": 549,
+   "dag_nodes": 556,
+   "first_seconds": 0.000431593998655444,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000431593998655444,
+    0.0003751539989025332
+   ],
+   "shared_nodes": 14,
+   "state_bytes": 48908,
+   "warm_median_seconds": 0.0003751539989025332,
+   "warm_min_seconds": 0.0003751539989025332
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 549,
+   "first_seconds": 0.0133961610008555,
+   "mean_affected": 4.46,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0133961610008555,
+    0.0014001829986227676,
+    0.0012825470003008377
+   ],
+   "warm_median_seconds": 0.0013413649994618027,
+   "warm_min_seconds": 0.0012825470003008377
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 26,
+   "first_seconds": 0.013239714000519598,
+   "levels": 24,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "peak_nodes": 78,
+   "phase": "run",
+   "samples_seconds": [
+    0.013239714000519598,
+    0.000981496999884257
+   ],
+   "warm_median_seconds": 0.000981496999884257,
+   "warm_min_seconds": 0.000981496999884257
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.0007140279994928278,
+   "hi": 0.9960785508155823,
+   "lo": 0.9960785508155823,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.0007140279994928278,
+    0.0007262500002980232
+   ],
+   "warm_median_seconds": 0.0007262500002980232,
+   "warm_min_seconds": 0.0007262500002980232
+  },
+  {
+   "annotation_bytes": 41128,
+   "answers": 46,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 817,
+   "cone_nodes": 672,
+   "dag_nodes": 679,
+   "first_seconds": 0.012548129001515917,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012548129001515917,
+    0.0003986199990322348
+   ],
+   "shared_nodes": 88,
+   "state_bytes": 59750,
+   "warm_median_seconds": 0.0003986199990322348,
+   "warm_min_seconds": 0.0003986199990322348
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 672,
+   "first_seconds": 0.0013653300011355896,
+   "mean_affected": 6.83,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0013653300011355896,
+    0.00134845900174696,
+    0.013303986001119483
+   ],
+   "warm_median_seconds": 0.007326222501433222,
+   "warm_min_seconds": 0.00134845900174696
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 34,
+   "first_seconds": 0.0009844969972618856,
+   "levels": 24,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "peak_nodes": 114,
+   "phase": "run",
+   "samples_seconds": [
+    0.0009844969972618856,
+    0.0008832320017972961
+   ],
+   "warm_median_seconds": 0.0008832320017972961,
+   "warm_min_seconds": 0.0008832320017972961
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.0007346480015257839,
+   "hi": 0.9999808381528474,
+   "lo": 0.933837890625,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.0007346480015257839,
+    0.01287969700206304
+   ],
+   "warm_median_seconds": 0.01287969700206304,
+   "warm_min_seconds": 0.01287969700206304
+  },
+  {
+   "annotation_bytes": 24744,
+   "answers": 8,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 405,
+   "cone_nodes": 247,
+   "dag_nodes": 420,
+   "first_seconds": 0.00031167599809123203,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00031167599809123203,
+    0.0002526780008338392
+   ],
+   "shared_nodes": 2,
+   "state_bytes": 24290,
+   "warm_median_seconds": 0.0002526780008338392,
+   "warm_min_seconds": 0.0002526780008338392
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 247,
+   "first_seconds": 0.00045550100185209885,
+   "mean_affected": 2.03,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00045550100185209885,
+    0.00042724900049506687,
+    0.0004451239983609412
+   ],
+   "warm_median_seconds": 0.000436186499428004,
+   "warm_min_seconds": 0.00042724900049506687
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 50,
+   "first_seconds": 0.013244164998468477,
+   "levels": 48,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "peak_nodes": 178,
+   "phase": "run",
+   "samples_seconds": [
+    0.013244164998468477,
+    0.0009828780021052808
+   ],
+   "warm_median_seconds": 0.0009828780021052808,
+   "warm_min_seconds": 0.0009828780021052808
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.0007298739983525593,
+   "hi": 0.9999847409781104,
+   "lo": 0.9999847409781104,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.0007298739983525593,
+    0.0007295880022866186
+   ],
+   "warm_median_seconds": 0.0007295880022866186,
+   "warm_min_seconds": 0.0007295880022866186
+  },
+  {
+   "annotation_bytes": 24744,
+   "answers": 8,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 408,
+   "cone_nodes": 250,
+   "dag_nodes": 422,
+   "first_seconds": 0.0003388759978406597,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003388759978406597,
+    0.01243711599818198
+   ],
+   "shared_nodes": 5,
+   "state_bytes": 24548,
+   "warm_median_seconds": 0.01243711599818198,
+   "warm_min_seconds": 0.01243711599818198
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 250,
+   "first_seconds": 0.000541823999810731,
+   "mean_affected": 2.4,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000541823999810731,
+    0.0004563120019156486,
+    0.00048186300045927055
+   ],
+   "warm_median_seconds": 0.00046908750118745957,
+   "warm_min_seconds": 0.0004563120019156486
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 66,
+   "first_seconds": 0.0011787549992732238,
+   "levels": 48,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "peak_nodes": 194,
+   "phase": "run",
+   "samples_seconds": [
+    0.0011787549992732238,
+    0.013149987000360852
+   ],
+   "warm_median_seconds": 0.013149987000360852,
+   "warm_min_seconds": 0.013149987000360852
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.0008423340004810598,
+   "hi": 0.9999999990686916,
+   "lo": 0.9999694826547056,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.0008423340004810598,
+    0.0073641169983602595
+   ],
+   "warm_median_seconds": 0.0073641169983602595,
+   "warm_min_seconds": 0.0073641169983602595
+  },
+  {
+   "annotation_bytes": 164008,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 2549,
+   "cone_nodes": 2565,
+   "dag_nodes": 2567,
+   "first_seconds": 0.013858565002010437,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.013858565002010437,
+    0.0015911090013105422
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 227398,
+   "warm_median_seconds": 0.0015911090013105422,
+   "warm_min_seconds": 0.0015911090013105422
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 2565,
+   "first_seconds": 0.017377093001414323,
+   "mean_affected": 6.89,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.017377093001414323,
+    0.0033991460004472174,
+    0.008256496999820229
+   ],
+   "warm_median_seconds": 0.005827821500133723,
+   "warm_min_seconds": 0.0033991460004472174
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 88,
+   "first_seconds": 0.012558020000142278,
+   "levels": 86,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "peak_nodes": 363,
+   "phase": "run",
+   "samples_seconds": [
+    0.012558020000142278,
+    0.019449815998086706
+   ],
+   "warm_median_seconds": 0.019449815998086706,
+   "warm_min_seconds": 0.019449815998086706
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.008791311000095448,
+   "hi": 0.999755859375,
+   "lo": 0.9997558593749999,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.008791311000095448,
+    0.019741838001209544
+   ],
+   "warm_median_seconds": 0.019741838001209544,
+   "warm_min_seconds": 0.019741838001209544
+  },
+  {
+   "annotation_bytes": 327848,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 15265,
+   "cone_nodes": 7061,
+   "dag_nodes": 7063,
+   "first_seconds": 0.010306137999577913,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010306137999577913,
+    0.002172304997657193
+   ],
+   "shared_nodes": 692,
+   "state_bytes": 643846,
+   "warm_median_seconds": 0.002172304997657193,
+   "warm_min_seconds": 0.002172304997657193
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 7061,
+   "first_seconds": 0.012113633001717972,
+   "mean_affected": 28.49,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.012113633001717972,
+    0.011007461002009222,
+    0.027333449997968273
+   ],
+   "warm_median_seconds": 0.019170455499988748,
+   "warm_min_seconds": 0.011007461002009222
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 100,
+   "first_seconds": 0.028498772997409105,
+   "levels": 86,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "peak_nodes": 1324,
+   "phase": "run",
+   "samples_seconds": [
+    0.028498772997409105,
+    0.016503758997714613
+   ],
+   "warm_median_seconds": 0.016503758997714613,
+   "warm_min_seconds": 0.016503758997714613
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.016265902999293758,
+   "hi": 1.0,
+   "lo": 0.9372711181640625,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.016265902999293758,
+    0.017741429001034703
+   ],
+   "warm_median_seconds": 0.017741429001034703,
+   "warm_min_seconds": 0.017741429001034703
+  },
+  {
+   "annotation_bytes": 164008,
+   "answers": 109,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 2435,
+   "cone_nodes": 2451,
+   "dag_nodes": 2453,
+   "first_seconds": 0.0013690020023204852,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013690020023204852,
+    0.014876971999910893
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 218031,
+   "warm_median_seconds": 0.014876971999910893,
+   "warm_min_seconds": 0.014876971999910893
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 2451,
+   "first_seconds": 0.014901051999913761,
+   "mean_affected": 6.18,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.014901051999913761,
+    0.0029072260003886186,
+    0.015000096998846857
+   ],
+   "warm_median_seconds": 0.008953661499617738,
+   "warm_min_seconds": 0.0029072260003886186
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 98,
+   "first_seconds": 0.017846979000751162,
+   "levels": 96,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "peak_nodes": 402,
+   "phase": "run",
+   "samples_seconds": [
+    0.017846979000751162,
+    0.012825677000364522
+   ],
+   "warm_median_seconds": 0.012825677000364522,
+   "warm_min_seconds": 0.012825677000364522
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.012112476000766037,
+   "hi": 0.9999999403953552,
+   "lo": 0.9999999403953551,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.012112476000766037,
+    0.012252885000634706
+   ],
+   "warm_median_seconds": 0.012252885000634706,
+   "warm_min_seconds": 0.012252885000634706
+  },
+  {
+   "annotation_bytes": 180392,
+   "answers": 109,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 6425,
+   "cone_nodes": 3910,
+   "dag_nodes": 3912,
+   "first_seconds": 0.0016905030024645384,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0016905030024645384,
+    0.013810445998387877
+   ],
+   "shared_nodes": 326,
+   "state_bytes": 352081,
+   "warm_median_seconds": 0.013810445998387877,
+   "warm_min_seconds": 0.013810445998387877
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 3910,
+   "first_seconds": 0.003085422998992726,
+   "mean_affected": 15.71,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.003085422998992726,
+    0.015208345001155976,
+    0.011155823998706182
+   ],
+   "warm_median_seconds": 0.01318208449993108,
+   "warm_min_seconds": 0.011155823998706182
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 122,
+   "first_seconds": 0.01768136600003345,
+   "levels": 96,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "peak_nodes": 1078,
+   "phase": "run",
+   "samples_seconds": [
+    0.01768136600003345,
+    0.010192232999543194
+   ],
+   "warm_median_seconds": 0.010192232999543194,
+   "warm_min_seconds": 0.010192232999543194
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.016385924998758128,
+   "hi": 1.0,
+   "lo": 0.9997557997849071,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.016385924998758128,
+    0.024496805999660864
+   ],
+   "warm_median_seconds": 0.024496805999660864,
+   "warm_min_seconds": 0.024496805999660864
+  },
+  {
+   "annotation_bytes": 164008,
+   "answers": 48,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 2138,
+   "cone_nodes": 2154,
+   "dag_nodes": 2156,
+   "first_seconds": 0.0014588279991585296,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0014588279991585296,
+    0.009503820998361334
+   ],
+   "shared_nodes": 13,
+   "state_bytes": 193148,
+   "warm_median_seconds": 0.009503820998361334,
+   "warm_min_seconds": 0.009503820998361334
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 2154,
+   "first_seconds": 0.0014917440021235961,
+   "mean_affected": 4.47,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0014917440021235961,
+    0.0014364759990712628,
+    0.013525336999009596
+   ],
+   "warm_median_seconds": 0.0074809064990404295,
+   "warm_min_seconds": 0.0014364759990712628
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 114,
+   "first_seconds": 0.011380611002095975,
+   "levels": 112,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "peak_nodes": 514,
+   "phase": "run",
+   "samples_seconds": [
+    0.011380611002095975,
+    0.01629231300103129
+   ],
+   "warm_median_seconds": 0.01629231300103129,
+   "warm_min_seconds": 0.01629231300103129
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.009543503998429514,
+   "hi": 0.9999999999999964,
+   "lo": 0.9999999999999963,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.009543503998429514,
+    0.02310047399805626
+   ],
+   "warm_median_seconds": 0.02310047399805626,
+   "warm_min_seconds": 0.02310047399805626
+  },
+  {
+   "annotation_bytes": 164008,
+   "answers": 48,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 2503,
+   "cone_nodes": 2309,
+   "dag_nodes": 2311,
+   "first_seconds": 0.0016427330010628793,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0016427330010628793,
+    0.0013748190031037666
+   ],
+   "shared_nodes": 92,
+   "state_bytes": 206918,
+   "warm_median_seconds": 0.0013748190031037666,
+   "warm_min_seconds": 0.0013748190031037666
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 2309,
+   "first_seconds": 0.007927966998977354,
+   "mean_affected": 7.39,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.007927966998977354,
+    0.009707286000775639,
+    0.0015064100007293746
+   ],
+   "warm_median_seconds": 0.005606848000752507,
+   "warm_min_seconds": 0.0015064100007293746
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 178,
+   "first_seconds": 0.013018886998906964,
+   "levels": 112,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "peak_nodes": 658,
+   "phase": "run",
+   "samples_seconds": [
+    0.013018886998906964,
+    0.01697457499903976
+   ],
+   "warm_median_seconds": 0.01697457499903976,
+   "warm_min_seconds": 0.01697457499903976
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.01633828000194626,
+   "hi": 0.9999999999999964,
+   "lo": 0.9999847412109374,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.01633828000194626,
+    0.016213365001021884
+   ],
+   "warm_median_seconds": 0.016213365001021884,
+   "warm_min_seconds": 0.016213365001021884
+  },
+  {
+   "annotation_bytes": 655528,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 9015,
+   "cone_nodes": 9031,
+   "dag_nodes": 9033,
+   "first_seconds": 0.024139934001141228,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.024139934001141228,
+    0.015008627000497654
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 803746,
+   "warm_median_seconds": 0.015008627000497654,
+   "warm_min_seconds": 0.015008627000497654
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 9031,
+   "first_seconds": 0.010011468999437056,
+   "mean_affected": 6.99,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.010011468999437056,
+    0.01533347399890772,
+    0.011435962998803006
+   ],
+   "warm_median_seconds": 0.013384718498855364,
+   "warm_min_seconds": 0.011435962998803006
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 295,
+   "first_seconds": 0.0565134130010847,
+   "levels": 293,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "peak_nodes": 1655,
+   "phase": "run",
+   "samples_seconds": [
+    0.0565134130010847,
+    0.04942241900062072
+   ],
+   "warm_median_seconds": 0.04942241900062072,
+   "warm_min_seconds": 0.04942241900062072
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.056554052000137744,
+   "hi": 0.9999999999999716,
+   "lo": 0.9999999999999715,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.056554052000137744,
+    0.05985848199998145
+   ],
+   "warm_median_seconds": 0.05985848199998145,
+   "warm_min_seconds": 0.05985848199998145
+  },
+  {
+   "annotation_bytes": 721064,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 26883,
+   "cone_nodes": 15319,
+   "dag_nodes": 15321,
+   "first_seconds": 0.022905015997821465,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.022905015997821465,
+    0.022724098998878617
+   ],
+   "shared_nodes": 916,
+   "state_bytes": 1386850,
+   "warm_median_seconds": 0.022724098998878617,
+   "warm_min_seconds": 0.022724098998878617
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 15319,
+   "first_seconds": 0.012014304997137515,
+   "mean_affected": 35.19,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.012014304997137515,
+    0.012240041000040947,
+    0.011863781997817568
+   ],
+   "warm_median_seconds": 0.012051911498929258,
+   "warm_min_seconds": 0.011863781997817568
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 340,
+   "first_seconds": 0.05445716999747674,
+   "levels": 293,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "peak_nodes": 5890,
+   "phase": "run",
+   "samples_seconds": [
+    0.05445716999747674,
+    0.06690643399997498
+   ],
+   "warm_median_seconds": 0.06690643399997498,
+   "warm_min_seconds": 0.06690643399997498
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.05722783300006995,
+   "hi": 1.0,
+   "lo": 0.9990234374999716,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.05722783300006995,
+    0.0747307580022607
+   ],
+   "warm_median_seconds": 0.0747307580022607,
+   "warm_min_seconds": 0.0747307580022607
+  },
+  {
+   "annotation_bytes": 655528,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 8817,
+   "cone_nodes": 8833,
+   "dag_nodes": 8835,
+   "first_seconds": 0.028666776001045946,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.028666776001045946,
+    0.01415841799826012
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 788302,
+   "warm_median_seconds": 0.01415841799826012,
+   "warm_min_seconds": 0.01415841799826012
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 8833,
+   "first_seconds": 0.011916470000869595,
+   "mean_affected": 7.0,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.011916470000869595,
+    0.007775682999636047,
+    0.011679153998557013
+   ],
+   "warm_median_seconds": 0.00972741849909653,
+   "warm_min_seconds": 0.007775682999636047
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 346,
+   "first_seconds": 0.05362867700023344,
+   "levels": 344,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "peak_nodes": 2014,
+   "phase": "run",
+   "samples_seconds": [
+    0.05362867700023344,
+    0.05929948099947069
+   ],
+   "warm_median_seconds": 0.05929948099947069,
+   "warm_min_seconds": 0.05929948099947069
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.0491480689997843,
+   "hi": 1.0,
+   "lo": 0.9999999999999998,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.0491480689997843,
+    0.06357598300019163
+   ],
+   "warm_median_seconds": 0.06357598300019163,
+   "warm_min_seconds": 0.06357598300019163
+  },
+  {
+   "annotation_bytes": 721064,
+   "answers": 128,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 21464,
+   "cone_nodes": 13305,
+   "dag_nodes": 13307,
+   "first_seconds": 0.12924291500166873,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.12924291500166873,
+    0.013930809000157751
+   ],
+   "shared_nodes": 689,
+   "state_bytes": 1202518,
+   "warm_median_seconds": 0.013930809000157751,
+   "warm_min_seconds": 0.013930809000157751
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 13305,
+   "first_seconds": 0.011337453997839475,
+   "mean_affected": 28.08,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.011337453997839475,
+    0.015352553000411717,
+    0.012025462998281
+   ],
+   "warm_median_seconds": 0.013689007999346359,
+   "warm_min_seconds": 0.012025462998281
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 410,
+   "first_seconds": 0.055108878997998545,
+   "levels": 344,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "peak_nodes": 6382,
+   "phase": "run",
+   "samples_seconds": [
+    0.055108878997998545,
+    0.06253206299879821
+   ],
+   "warm_median_seconds": 0.06253206299879821,
+   "warm_min_seconds": 0.06253206299879821
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.05167356799938716,
+   "hi": 1.0,
+   "lo": 0.9999847412109374,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.05167356799938716,
+    0.049261288997513475
+   ],
+   "warm_median_seconds": 0.049261288997513475,
+   "warm_min_seconds": 0.049261288997513475
+  },
+  {
+   "annotation_bytes": 655528,
+   "answers": 109,
+   "backend": "cpu",
+   "case": "explanation state: shared derivations (group, then join)",
+   "child_entries": 8439,
+   "cone_nodes": 8455,
+   "dag_nodes": 8457,
+   "first_seconds": 0.013367597999604186,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.013367597999604186,
+    0.02285173799828044
+   ],
+   "shared_nodes": 16,
+   "state_bytes": 758343,
+   "warm_median_seconds": 0.02285173799828044,
+   "warm_min_seconds": 0.02285173799828044
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 8455,
+   "first_seconds": 0.01097270999889588,
+   "mean_affected": 6.43,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.01097270999889588,
+    0.012459898000088288,
+    0.010255599998345133
+   ],
+   "warm_median_seconds": 0.01135774899921671,
+   "warm_min_seconds": 0.010255599998345133
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 354,
+   "first_seconds": 0.05635084899768117,
+   "levels": 352,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "peak_nodes": 1890,
+   "phase": "run",
+   "samples_seconds": [
+    0.05635084899768117,
+    0.061465405000490136
+   ],
+   "warm_median_seconds": 0.061465405000490136,
+   "warm_min_seconds": 0.061465405000490136
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.053866862999711884,
+   "hi": 1.0,
+   "lo": 0.9999999999999998,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": true,
+   "samples_seconds": [
+    0.053866862999711884,
+    0.05190566800229135
+   ],
+   "warm_median_seconds": 0.05190566800229135,
+   "warm_min_seconds": 0.05190566800229135
+  },
+  {
+   "annotation_bytes": 655528,
+   "answers": 109,
+   "backend": "cpu",
+   "case": "explanation state: independent derivations (join, then group)",
+   "child_entries": 12479,
+   "cone_nodes": 9932,
+   "dag_nodes": 9934,
+   "first_seconds": 0.027015596002456732,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.027015596002456732,
+    0.017846245002147043
+   ],
+   "shared_nodes": 330,
+   "state_bytes": 894053,
+   "warm_median_seconds": 0.017846245002147043,
+   "warm_min_seconds": 0.017846245002147043
+  },
+  {
+   "backend": "cpu",
+   "case": "100 single-source deletions propagated",
+   "cone_nodes": 9932,
+   "first_seconds": 0.015157377001742134,
+   "mean_affected": 16.62,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.015157377001742134,
+    0.011210205000679707,
+    0.003129503002128331
+   ],
+   "warm_median_seconds": 0.007169854001404019,
+   "warm_min_seconds": 0.003129503002128331
+  },
+  {
+   "backend": "cpu",
+   "case": "exact probability of the largest answer",
+   "diagram_nodes": 466,
+   "first_seconds": 0.07368791000044439,
+   "levels": 352,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "peak_nodes": 4610,
+   "phase": "run",
+   "samples_seconds": [
+    0.07368791000044439,
+    0.07322823900176445
+   ],
+   "warm_median_seconds": 0.07322823900176445,
+   "warm_min_seconds": 0.07322823900176445
+  },
+  {
+   "backend": "cpu",
+   "case": "certified probability bounds of the largest answer",
+   "first_seconds": 0.07823038499918766,
+   "hi": 1.0,
+   "lo": 0.9999999997671692,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "run",
+   "read_once": false,
+   "samples_seconds": [
+    0.07823038499918766,
+    0.06830440699923201
+   ],
+   "warm_median_seconds": 0.06830440699923201,
+   "warm_min_seconds": 0.06830440699923201
+  },
+  {
+   "answers": 127,
+   "backend": "cpu",
+   "case": "explanation state (cone, reverse edges, baseline)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.0015359880017058458,
+   "params": {},
+   "phase": "build",
+   "samples_seconds": [
+    0.0015359880017058458,
+    0.009702101000584662,
+    0.0015875780009082519
+   ],
+   "warm_median_seconds": 0.005644839500746457,
+   "warm_min_seconds": 0.0015875780009082519
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.00018735499907052144,
+   "mean_affected": 11.0,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00018735499907052144,
+    7.303099846467376e-05,
+    5.41179979336448e-05
+   ],
+   "warm_median_seconds": 6.357449819915928e-05,
+   "warm_min_seconds": 5.41179979336448e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.0009106420002353843,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0009106420002353843,
+    0.0005318859984981827,
+    0.00048309300109394826
+   ],
+   "warm_median_seconds": 0.0005074894997960655,
+   "warm_min_seconds": 0.00048309300109394826
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 0.015610932998242788,
+   "params": {
+    "reconstructed": 1,
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015610932998242788
+   ],
+   "warm_median_seconds": 0.015610932998242788,
+   "warm_min_seconds": 0.015610932998242788
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per request",
+   "first_seconds": 0.05099465899911593,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05099465899911593
+   ],
+   "warm_median_seconds": 0.05099465899911593,
+   "warm_min_seconds": 0.05099465899911593
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.00019659200188471004,
+   "mean_affected": 27.0,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00019659200188471004,
+    7.19720010238234e-05,
+    0.00010432500130264089
+   ],
+   "warm_median_seconds": 8.814850116323214e-05,
+   "warm_min_seconds": 7.19720010238234e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.0006290609999268781,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0006290609999268781,
+    0.0005622280004899949,
+    0.0005171340017113835
+   ],
+   "warm_median_seconds": 0.0005396810011006892,
+   "warm_min_seconds": 0.0005171340017113835
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 0.027474315000290517,
+   "params": {
+    "reconstructed": 1,
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.027474315000290517
+   ],
+   "warm_median_seconds": 0.027474315000290517,
+   "warm_min_seconds": 0.027474315000290517
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per request",
+   "first_seconds": 0.030311152997455793,
+   "params": {
+    "requests": 1,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.030311152997455793
+   ],
+   "warm_median_seconds": 0.030311152997455793,
+   "warm_min_seconds": 0.030311152997455793
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.015777454002090963,
+   "mean_affected": 7.13,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.015777454002090963,
+    0.023601195000082953,
+    0.0034107980027329177
+   ],
+   "warm_median_seconds": 0.013505996501407935,
+   "warm_min_seconds": 0.0034107980027329177
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.01590162999855238,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.01590162999855238,
+    0.01625821199922939,
+    0.016417750000982778
+   ],
+   "warm_median_seconds": 0.016337981000106083,
+   "warm_min_seconds": 0.01625821199922939
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 1.3665359759979765,
+   "params": {
+    "reconstructed": 100,
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3665359759979765
+   ],
+   "warm_median_seconds": 1.3665359759979765,
+   "warm_min_seconds": 1.3665359759979765
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per request",
+   "first_seconds": 1.3676481789989339,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3676481789989339
+   ],
+   "warm_median_seconds": 1.3676481789989339,
+   "warm_min_seconds": 1.3676481789989339
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.015834379999432713,
+   "mean_affected": 26.16,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.015834379999432713,
+    0.023844432998885168,
+    0.015940929999487707
+   ],
+   "warm_median_seconds": 0.019892681499186438,
+   "warm_min_seconds": 0.015940929999487707
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.021400297002401203,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.021400297002401203,
+    0.034315005999815185,
+    0.019874346999131376
+   ],
+   "warm_median_seconds": 0.02709467649947328,
+   "warm_min_seconds": 0.019874346999131376
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 1.4457064870002796,
+   "params": {
+    "reconstructed": 100,
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4457064870002796
+   ],
+   "warm_median_seconds": 1.4457064870002796,
+   "warm_min_seconds": 1.4457064870002796
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per request",
+   "first_seconds": 1.4764870450017042,
+   "params": {
+    "requests": 100,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4764870450017042
+   ],
+   "warm_median_seconds": 1.4764870450017042,
+   "warm_min_seconds": 1.4764870450017042
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.16179945200201473,
+   "mean_affected": 6.957,
+   "params": {
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.16179945200201473,
+    0.1502026060006756,
+    0.21925239600022906
+   ],
+   "warm_median_seconds": 0.18472750100045232,
+   "warm_min_seconds": 0.1502026060006756
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.135597004002193,
+   "params": {
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.135597004002193,
+    0.15012669099814957,
+    0.13362089300062507
+   ],
+   "warm_median_seconds": 0.14187379199938732,
+   "warm_min_seconds": 0.13362089300062507
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 1.1726322319991596,
+   "params": {
+    "reconstructed": 100,
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1726322319991596
+   ],
+   "warm_median_seconds": 1.1726322319991596,
+   "warm_min_seconds": 1.1726322319991596
+  },
+  {
+   "backend": "cpu",
+   "case": "deletion requests propagated in one batch (N and B)",
+   "cone_nodes": 2645,
+   "first_seconds": 0.1295412680010486,
+   "mean_affected": 26.787,
+   "params": {
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.1295412680010486,
+    0.1340568070008885,
+    0.162853723999433
+   ],
+   "warm_median_seconds": 0.14845526550016075,
+   "warm_min_seconds": 0.1340568070008885
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: the whole DAG evaluated per request",
+   "first_seconds": 0.16422132600200712,
+   "params": {
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.16422132600200712,
+    0.13371629599714652,
+    0.1708578990001115
+   ],
+   "warm_median_seconds": 0.152287097498629,
+   "warm_min_seconds": 0.13371629599714652
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per request (native)",
+   "first_seconds": 1.0618773070018506,
+   "params": {
+    "reconstructed": 100,
+    "requests": 1000,
+    "rows": 1000,
+    "tuples_per_request": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0618773070018506
+   ],
+   "warm_median_seconds": 1.0618773070018506,
+   "warm_min_seconds": 1.0618773070018506
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal sufficient sets",
+   "first_seconds": 0.0004051300020364579,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004051300020364579
+   ],
+   "warm_median_seconds": 0.0004051300020364579,
+   "warm_min_seconds": 0.0004051300020364579
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: counterfactual sources",
+   "first_seconds": 6.277499778661877e-05,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.277499778661877e-05
+   ],
+   "warm_median_seconds": 6.277499778661877e-05,
+   "warm_min_seconds": 6.277499778661877e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: minimal witnesses by expansion",
+   "first_seconds": 0.0009556020013405941,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009556020013405941
+   ],
+   "warm_median_seconds": 0.0009556020013405941,
+   "warm_min_seconds": 0.0009556020013405941
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: why-not restorations (base with absent tuples)",
+   "first_seconds": 6.227999983821064e-05,
+   "params": {
+    "absent_answers": 16,
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.227999983821064e-05
+   ],
+   "warm_median_seconds": 6.227999983821064e-05,
+   "warm_min_seconds": 6.227999983821064e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal sufficient sets",
+   "first_seconds": 0.226939512998797,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.226939512998797
+   ],
+   "warm_median_seconds": 0.226939512998797,
+   "warm_min_seconds": 0.226939512998797
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: counterfactual sources",
+   "first_seconds": 0.012842812000599224,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012842812000599224
+   ],
+   "warm_median_seconds": 0.012842812000599224,
+   "warm_min_seconds": 0.012842812000599224
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: minimal witnesses by expansion",
+   "first_seconds": 0.4487361020001117,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.4487361020001117
+   ],
+   "warm_median_seconds": 0.4487361020001117,
+   "warm_min_seconds": 0.4487361020001117
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: why-not restorations (base with absent tuples)",
+   "first_seconds": 0.008117577999655623,
+   "params": {
+    "absent_answers": 16,
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008117577999655623
+   ],
+   "warm_median_seconds": 0.008117577999655623,
+   "warm_min_seconds": 0.008117577999655623
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal sufficient sets",
+   "first_seconds": 0.27283106799950474,
+   "params": {
+    "requests": 127,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.27283106799950474
+   ],
+   "warm_median_seconds": 0.27283106799950474,
+   "warm_min_seconds": 0.27283106799950474
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: counterfactual sources",
+   "first_seconds": 0.014947289000701858,
+   "params": {
+    "requests": 127,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014947289000701858
+   ],
+   "warm_median_seconds": 0.014947289000701858,
+   "warm_min_seconds": 0.014947289000701858
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: minimal witnesses by expansion",
+   "first_seconds": 0.5459643440008222,
+   "params": {
+    "requests": 127,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.5459643440008222
+   ],
+   "warm_median_seconds": 0.5459643440008222,
+   "warm_min_seconds": 0.5459643440008222
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: why-not restorations (base with absent tuples)",
+   "first_seconds": 0.010430872000142699,
+   "params": {
+    "absent_answers": 16,
+    "requests": 127,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010430872000142699
+   ],
+   "warm_median_seconds": 0.010430872000142699,
+   "warm_min_seconds": 0.010430872000142699
+  },
+  {
+   "backend": "cpu",
+   "case": "correlated lineage: exact probability",
+   "diagram_nodes": 10,
+   "first_seconds": 0.00029886299671488814,
+   "levels": 6,
+   "params": {
+    "answer": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00029886299671488814,
+    0.00017745999866747297
+   ],
+   "warm_median_seconds": 0.00017745999866747297,
+   "warm_min_seconds": 0.00017745999866747297
+  },
+  {
+   "backend": "python",
+   "case": "correlated lineage: enumeration of the 2^12 worlds",
+   "derivations": 8,
+   "exact": 0.47195471274723966,
+   "first_seconds": 0.1187129370009643,
+   "naive_independent_derivations": 0.6655412412143029,
+   "params": {
+    "answer": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1187129370009643
+   ],
+   "warm_median_seconds": 0.1187129370009643,
+   "warm_min_seconds": 0.1187129370009643
+  },
+  {
+   "backend": "cpu",
+   "case": "correlated lineage: exact probability",
+   "diagram_nodes": 5,
+   "first_seconds": 0.0003507469991745893,
+   "levels": 3,
+   "params": {
+    "answer": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003507469991745893,
+    0.00016574300025240518
+   ],
+   "warm_median_seconds": 0.00016574300025240518,
+   "warm_min_seconds": 0.00016574300025240518
+  },
+  {
+   "backend": "python",
+   "case": "correlated lineage: enumeration of the 2^12 worlds",
+   "derivations": 2,
+   "exact": 0.1457725947521866,
+   "first_seconds": 0.11443321299884701,
+   "naive_independent_derivations": 0.1582673885880883,
+   "params": {
+    "answer": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.11443321299884701
+   ],
+   "warm_median_seconds": 0.11443321299884701,
+   "warm_min_seconds": 0.11443321299884701
+  },
+  {
+   "backend": "cpu",
+   "case": "PROV-001: join past the annotation limit (2^14 nodes)",
+   "limit": 16384,
+   "message": "join: needs 17426 circuit, budget 16384",
+   "need": 17426,
+   "params": {
+    "pairs": 16384,
+    "rows": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 5.9024001529905945e-05,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 10,
+   "first_seconds": 0.0003048130020033568,
+   "params": {
+    "n": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003048130020033568,
+    0.00014155000098980963
+   ],
+   "warm_median_seconds": 0.00014155000098980963,
+   "warm_min_seconds": 0.00014155000098980963
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order: exact probability",
+   "diagram_nodes": 32,
+   "first_seconds": 0.0001392660014971625,
+   "params": {
+    "n": 4
+   },
+   "peak_nodes": 41,
+   "phase": "run",
+   "samples_seconds": [
+    0.0001392660014971625
+   ],
+   "warm_median_seconds": 0.0001392660014971625,
+   "warm_min_seconds": 0.0001392660014971625
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 14,
+   "first_seconds": 0.00022881500262883492,
+   "params": {
+    "n": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022881500262883492,
+    0.000162776999786729
+   ],
+   "warm_median_seconds": 0.000162776999786729,
+   "warm_min_seconds": 0.000162776999786729
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order: exact probability",
+   "diagram_nodes": 128,
+   "first_seconds": 0.008400990001973696,
+   "params": {
+    "n": 6
+   },
+   "peak_nodes": 155,
+   "phase": "run",
+   "samples_seconds": [
+    0.008400990001973696
+   ],
+   "warm_median_seconds": 0.008400990001973696,
+   "warm_min_seconds": 0.008400990001973696
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 18,
+   "first_seconds": 0.00032784699942567386,
+   "params": {
+    "n": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00032784699942567386,
+    0.0001852730019891169
+   ],
+   "warm_median_seconds": 0.0001852730019891169,
+   "warm_min_seconds": 0.0001852730019891169
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order: exact probability",
+   "diagram_nodes": 512,
+   "first_seconds": 0.00023251099992194213,
+   "params": {
+    "n": 8
+   },
+   "peak_nodes": 545,
+   "phase": "run",
+   "samples_seconds": [
+    0.00023251099992194213
+   ],
+   "warm_median_seconds": 0.00023251099992194213,
+   "warm_min_seconds": 0.00023251099992194213
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 22,
+   "first_seconds": 0.00023781599884387106,
+   "params": {
+    "n": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023781599884387106,
+    0.00015247100236592814
+   ],
+   "warm_median_seconds": 0.00015247100236592814,
+   "warm_min_seconds": 0.00015247100236592814
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order: exact probability",
+   "diagram_nodes": 2048,
+   "first_seconds": 0.0005044179997639731,
+   "params": {
+    "n": 10
+   },
+   "peak_nodes": 2339,
+   "phase": "run",
+   "samples_seconds": [
+    0.0005044179997639731
+   ],
+   "warm_median_seconds": 0.0005044179997639731,
+   "warm_min_seconds": 0.0005044179997639731
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 26,
+   "first_seconds": 0.00022057900059735402,
+   "params": {
+    "n": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022057900059735402,
+    0.0001838369971665088
+   ],
+   "warm_median_seconds": 0.0001838369971665088,
+   "warm_min_seconds": 0.0001838369971665088
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order: exact probability",
+   "diagram_nodes": 8192,
+   "first_seconds": 0.009586035001120763,
+   "params": {
+    "n": 12
+   },
+   "peak_nodes": 8489,
+   "phase": "run",
+   "samples_seconds": [
+    0.009586035001120763
+   ],
+   "warm_median_seconds": 0.009586035001120763,
+   "warm_min_seconds": 0.009586035001120763
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, dfs order: exact probability",
+   "diagram_nodes": 30,
+   "first_seconds": 0.0005238550002104603,
+   "params": {
+    "n": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005238550002104603,
+    0.00036257499959901907
+   ],
+   "warm_median_seconds": 0.00036257499959901907,
+   "warm_min_seconds": 0.00036257499959901907
+  },
+  {
+   "backend": "cpu",
+   "case": "lineage sum r_i s_i, natural order past 2^14 diagram nodes",
+   "limit": 16384,
+   "message": "lineage diagram: needs 16385 circuit, budget 16384",
+   "need": 16385,
+   "params": {
+    "n": 14
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0016087549993244465,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "method auto: certified bounds after the refusal",
+   "exact": 0.8077507360455923,
+   "first_seconds": 0.0015866319990891498,
+   "hi": 0.8077507360455927,
+   "lo": 0.8077507360455919,
+   "params": {
+    "n": 14
+   },
+   "phase": "run",
+   "refused_resource": "circuit",
+   "samples_seconds": [
+    0.0015866319990891498
+   ],
+   "warm_median_seconds": 0.0015866319990891498,
+   "warm_min_seconds": 0.0015866319990891498
+  }
+ ],
+ "seconds": 15.651885114999459,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "annotation store: n x 16 matching tuples under 2^14 DAG nodes",
+   "largest_admitted": {
+    "nodes": 8722,
+    "pairs": 8192,
+    "rows": 512
+   },
+   "limit": 16384,
+   "smallest_refused": {
+    "pairs": 16384,
+    "rows": 1024
+   }
+  },
+  {
+   "grid": "lineage diagram of sum r_i s_i under the natural order, 2^14 nodes",
+   "largest_admitted": {
+    "n": 12,
+    "nodes": 8192,
+    "peak_nodes": 8489
+   },
+   "limit": 16384,
+   "smallest_refused": {
+    "n": 14
+   }
+  }
+ ]
+}

@@ -1,0 +1,1276 @@
+{
+ "argv": [
+  "--capability",
+  "SPEC-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/SPEC-001/benchmark_cpu_math_fourier_vm.json"
+ ],
+ "capability": "SPEC-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "cacb92841d6cae9a8a136a680c29f3cecf01b657",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "a20d76ef24e7078f12bdc091219ec97fdced3e14015ccad3110c6eccdba101ed",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "840929c0a850855e8971957d67d3fc9bffac9dfbc7c754844527a6db9f396a2e"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T00:17:22+00:00"
+ },
+ "notes": [
+  "direct numpy evaluation not run for 10000 requests x 8 frequencies (8.00e+08 complex exponentials); not extrapolated",
+  "direct numpy evaluation not run for 10000 requests x 32 frequencies (3.20e+09 complex exponentials); not extrapolated",
+  "CUDA is timed only with --device; actions, derivatives and the Walsh inverse run on the CPU. Total wall time 38.8 s."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.025435802999709267,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 2.2737367544323206e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.025435802999709267,
+    0.024608921001345152,
+    0.030000524999195477
+   ],
+   "warm_median_seconds": 0.027304723000270315,
+   "warm_min_seconds": 0.024608921001345152
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.0006984250030654948,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 1,
+   "samples_seconds": [
+    0.0006984250030654948,
+    0.00043305399958626367,
+    0.000392857997212559
+   ],
+   "warm_median_seconds": 0.00041295599839941133,
+   "warm_min_seconds": 0.000392857997212559
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 0.000122053999803029,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000122053999803029,
+    3.122799898847006e-05,
+    2.1924999600742012e-05,
+    1.897300171549432e-05,
+    1.6558002243982628e-05
+   ],
+   "warm_median_seconds": 2.0449000658118166e-05,
+   "warm_min_seconds": 1.6558002243982628e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.024109979000058956,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.024109979000058956,
+    0.022223017000214895,
+    0.028764033999323146
+   ],
+   "warm_median_seconds": 0.02549352549976902,
+   "warm_min_seconds": 0.022223017000214895
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 8.465899736620486e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    8.465899736620486e-05,
+    3.31190021825023e-05,
+    2.3348999093286693e-05
+   ],
+   "warm_median_seconds": 2.8234000637894496e-05,
+   "warm_min_seconds": 2.3348999093286693e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 2.299499828950502e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.299499828950502e-05,
+    1.8874998204410076e-05,
+    1.4647001080447808e-05
+   ],
+   "warm_median_seconds": 1.6760999642428942e-05,
+   "warm_min_seconds": 1.4647001080447808e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.0004899910018139053,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.0004899910018139053,
+    0.00037052900006528944
+   ],
+   "warm_median_seconds": 0.00037052900006528944,
+   "warm_min_seconds": 0.00037052900006528944
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.0004829579993383959,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    0.0004829579993383959,
+    0.0003249569999752566,
+    0.0003727690018422436
+   ],
+   "warm_median_seconds": 0.0003488630009087501,
+   "warm_min_seconds": 0.0003249569999752566
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.00018209100016974844,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00018209100016974844,
+    0.0001626310004212428,
+    0.0001599889983481262
+   ],
+   "warm_median_seconds": 0.0001613099993846845,
+   "warm_min_seconds": 0.0001599889983481262
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.08263155500026187,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 100,
+   "samples_seconds": [
+    0.08263155500026187,
+    0.09300822599834646
+   ],
+   "warm_median_seconds": 0.09300822599834646,
+   "warm_min_seconds": 0.09300822599834646
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.09004332099721069,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    0.09004332099721069,
+    0.06462661900150124
+   ],
+   "warm_median_seconds": 0.06462661900150124,
+   "warm_min_seconds": 0.06462661900150124
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.02949402000012924,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02949402000012924,
+    0.030385054000362288,
+    0.03509224300069036
+   ],
+   "warm_median_seconds": 0.032738648500526324,
+   "warm_min_seconds": 0.030385054000362288
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 9.3003967179975,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 10000,
+   "samples_seconds": [
+    9.3003967179975
+   ],
+   "warm_median_seconds": 9.3003967179975,
+   "warm_min_seconds": 9.3003967179975
+  },
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.24999145599940675,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 4.547473508864641e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.24999145599940675,
+    0.25979174899839563,
+    0.26175609300116776
+   ],
+   "warm_median_seconds": 0.2607739209997817,
+   "warm_min_seconds": 0.25979174899839563
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.011441695998655632,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 8,
+   "samples_seconds": [
+    0.011441695998655632,
+    0.007269890000316082,
+    0.010921413002506597
+   ],
+   "warm_median_seconds": 0.00909565150141134,
+   "warm_min_seconds": 0.007269890000316082
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 0.0001536029994895216,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001536029994895216,
+    3.751300027943216e-05,
+    2.5244000426027924e-05,
+    2.2340998839354143e-05,
+    2.1546999050769955e-05
+   ],
+   "warm_median_seconds": 2.3792499632691033e-05,
+   "warm_min_seconds": 2.1546999050769955e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.02869503799956874,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02869503799956874,
+    0.036926503002177924,
+    0.04028357500283164
+   ],
+   "warm_median_seconds": 0.03860503900250478,
+   "warm_min_seconds": 0.036926503002177924
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.0001511959999334067,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.8189894035458565e-12
+   },
+   "samples_seconds": [
+    0.0001511959999334067,
+    4.432499918038957e-05,
+    4.581399844028056e-05
+   ],
+   "warm_median_seconds": 4.506949881033506e-05,
+   "warm_min_seconds": 4.432499918038957e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 2.8230999305378646e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8230999305378646e-05,
+    1.99290007003583e-05,
+    1.9242001144448295e-05
+   ],
+   "warm_median_seconds": 1.95855009224033e-05,
+   "warm_min_seconds": 1.9242001144448295e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.0075302020013623405,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 8,
+   "samples_seconds": [
+    0.0075302020013623405,
+    0.007342343000345863
+   ],
+   "warm_median_seconds": 0.007342343000345863,
+   "warm_min_seconds": 0.007342343000345863
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.0016616399989288766,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 2.2737367544323206e-12
+   },
+   "samples_seconds": [
+    0.0016616399989288766,
+    0.0015016129982541315,
+    0.005627059003018076
+   ],
+   "warm_median_seconds": 0.0035643360006361036,
+   "warm_min_seconds": 0.0015016129982541315
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.0003026790000149049,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003026790000149049,
+    0.00023756800146657042,
+    0.00022578899734071456
+   ],
+   "warm_median_seconds": 0.0002316784994036425,
+   "warm_min_seconds": 0.00022578899734071456
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.845737880001252,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 800,
+   "samples_seconds": [
+    0.845737880001252,
+    0.7457166359999974
+   ],
+   "warm_median_seconds": 0.7457166359999974,
+   "warm_min_seconds": 0.7457166359999974
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.3905504190006468,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 2.2737367544323206e-12
+   },
+   "samples_seconds": [
+    0.3905504190006468,
+    0.4085555980018398
+   ],
+   "warm_median_seconds": 0.4085555980018398,
+   "warm_min_seconds": 0.4085555980018398
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.06165350999799557,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06165350999799557,
+    0.05169113699957961,
+    0.07149465600014082
+   ],
+   "warm_median_seconds": 0.06159289649986022,
+   "warm_min_seconds": 0.05169113699957961
+  },
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.9493838179987506,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 9.094947017729282e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.9493838179987506,
+    0.9858707889979996,
+    0.9491065689981042
+   ],
+   "warm_median_seconds": 0.9674886789980519,
+   "warm_min_seconds": 0.9491065689981042
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.05676685399885173,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 32,
+   "samples_seconds": [
+    0.05676685399885173,
+    0.05083393099994282,
+    0.05123291400013841
+   ],
+   "warm_median_seconds": 0.051033422500040615,
+   "warm_min_seconds": 0.05083393099994282
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 0.00023402100123348646,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023402100123348646,
+    8.525600060238503e-05,
+    6.197399852680974e-05,
+    4.928999987896532e-05,
+    4.082400118932128e-05
+   ],
+   "warm_median_seconds": 5.563199920288753e-05,
+   "warm_min_seconds": 4.082400118932128e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.04667646599773434,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04667646599773434,
+    0.03823774799820967,
+    0.023584136997669702
+   ],
+   "warm_median_seconds": 0.030910942497939686,
+   "warm_min_seconds": 0.023584136997669702
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.0002072040006169118,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    0.0002072040006169118,
+    9.16540011530742e-05,
+    8.316100138472393e-05
+   ],
+   "warm_median_seconds": 8.740750126889907e-05,
+   "warm_min_seconds": 8.316100138472393e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 5.536499884328805e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.536499884328805e-05,
+    3.648300116765313e-05,
+    3.089500023634173e-05
+   ],
+   "warm_median_seconds": 3.368900070199743e-05,
+   "warm_min_seconds": 3.089500023634173e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.029704489999858197,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.029704489999858197,
+    0.06166158400083077
+   ],
+   "warm_median_seconds": 0.06166158400083077,
+   "warm_min_seconds": 0.06166158400083077
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.014066341002035188,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    0.014066341002035188,
+    0.02204486899790936,
+    0.018806544001563452
+   ],
+   "warm_median_seconds": 0.020425706499736407,
+   "warm_min_seconds": 0.018806544001563452
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.0007524760003434494,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007524760003434494,
+    0.0005175320002308581,
+    0.0004996450006728992
+   ],
+   "warm_median_seconds": 0.0005085885004518786,
+   "warm_min_seconds": 0.0004996450006728992
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 3.3615240239996638,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 3200,
+   "samples_seconds": [
+    3.3615240239996638,
+    3.5941705260011076
+   ],
+   "warm_median_seconds": 3.5941705260011076,
+   "warm_min_seconds": 3.5941705260011076
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 1.5004961640006513,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    1.5004961640006513,
+    1.6938756859999557
+   ],
+   "warm_median_seconds": 1.6938756859999557,
+   "warm_min_seconds": 1.6938756859999557
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.12993489899963606,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.12993489899963606,
+    0.19998056099939276,
+    0.12347748300089734
+   ],
+   "warm_median_seconds": 0.16172902200014505,
+   "warm_min_seconds": 0.12347748300089734
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.0012413340009516105,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012413340009516105,
+    0.0011178220011061057
+   ],
+   "warm_median_seconds": 0.0011178220011061057,
+   "warm_min_seconds": 0.0011178220011061057
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.00013600300007965416,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    0.00013600300007965416,
+    2.8771999495802447e-05,
+    2.0243001927156e-05
+   ],
+   "warm_median_seconds": 2.4507500711479224e-05,
+   "warm_min_seconds": 2.0243001927156e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 0.00025143300081253983,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00025143300081253983,
+    4.6440000005532056e-05
+   ],
+   "warm_median_seconds": 4.6440000005532056e-05,
+   "warm_min_seconds": 4.6440000005532056e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.0002739369992923457,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 8
+   },
+   "samples_seconds": [
+    0.0002739369992923457,
+    4.1508999856887385e-05,
+    2.6043999241665006e-05
+   ],
+   "warm_median_seconds": 3.3776499549276195e-05,
+   "warm_min_seconds": 2.6043999241665006e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 9.430499994778074e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 3,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    9.430499994778074e-05,
+    5.689899990102276e-05,
+    3.749399911612272e-05
+   ],
+   "warm_median_seconds": 4.719649950857274e-05,
+   "warm_min_seconds": 3.749399911612272e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 5.4653002734994516e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    5.4653002734994516e-05,
+    1.9226001313654706e-05,
+    1.5414996596518904e-05
+   ],
+   "warm_median_seconds": 1.7320498955086805e-05,
+   "warm_min_seconds": 1.5414996596518904e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.023793219999788562,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.023793219999788562,
+    0.027363087003323017
+   ],
+   "warm_median_seconds": 0.027363087003323017,
+   "warm_min_seconds": 0.027363087003323017
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.00018840000120690092,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    0.00018840000120690092,
+    6.718300210195594e-05,
+    5.938100002822466e-05
+   ],
+   "warm_median_seconds": 6.32820010650903e-05,
+   "warm_min_seconds": 5.938100002822466e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 6.806699821026996e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.806699821026996e-05,
+    3.414700040593743e-05
+   ],
+   "warm_median_seconds": 3.414700040593743e-05,
+   "warm_min_seconds": 3.414700040593743e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.00013418700109468773,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 64
+   },
+   "samples_seconds": [
+    0.00013418700109468773,
+    2.8819002181990072e-05,
+    3.8570997276110575e-05
+   ],
+   "warm_median_seconds": 3.369499972905032e-05,
+   "warm_min_seconds": 2.8819002181990072e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 0.0001517450000392273,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 6,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    0.0001517450000392273,
+    0.00010205299986409955,
+    9.381099880556576e-05
+   ],
+   "warm_median_seconds": 9.793199933483265e-05,
+   "warm_min_seconds": 9.381099880556576e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 5.187799979466945e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    5.187799979466945e-05,
+    2.841199966496788e-05,
+    2.520600173738785e-05
+   ],
+   "warm_median_seconds": 2.6809000701177865e-05,
+   "warm_min_seconds": 2.520600173738785e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.4748877749989333,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.4748877749989333,
+    0.5294527810001455
+   ],
+   "warm_median_seconds": 0.5294527810001455,
+   "warm_min_seconds": 0.5294527810001455
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.0011581849976209924,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.0011581849976209924,
+    0.0032166170021810103,
+    0.0011408979989937507
+   ],
+   "warm_median_seconds": 0.0021787575005873805,
+   "warm_min_seconds": 0.0011408979989937507
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 0.00010927699986496009,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010927699986496009,
+    5.2750998293049634e-05
+   ],
+   "warm_median_seconds": 5.2750998293049634e-05,
+   "warm_min_seconds": 5.2750998293049634e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.0002154299982066732,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.0002154299982066732,
+    0.00010377400030847639,
+    8.64670000737533e-05
+   ],
+   "warm_median_seconds": 9.512050019111484e-05,
+   "warm_min_seconds": 8.64670000737533e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 0.0012546650032163598,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 10,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    0.0012546650032163598,
+    0.00967047599988291,
+    0.0012187719985377043
+   ],
+   "warm_median_seconds": 0.005444623999210307,
+   "warm_min_seconds": 0.0012187719985377043
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 8.650699965073727e-05,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    8.650699965073727e-05,
+    5.830299778608605e-05,
+    5.544400119106285e-05
+   ],
+   "warm_median_seconds": 5.687349948857445e-05,
+   "warm_min_seconds": 5.544400119106285e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 2.6895706670002255,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.6895706670002255,
+    2.3291396419990633
+   ],
+   "warm_median_seconds": 2.3291396419990633,
+   "warm_min_seconds": 2.3291396419990633
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.024580247001722455,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.024580247001722455,
+    0.012443175000953488,
+    0.012852321997343097
+   ],
+   "warm_median_seconds": 0.012647748499148292,
+   "warm_min_seconds": 0.012443175000953488
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 0.00010457899770699441,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010457899770699441,
+    5.428899748949334e-05
+   ],
+   "warm_median_seconds": 5.428899748949334e-05,
+   "warm_min_seconds": 5.428899748949334e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.00039620600000489503,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.00039620600000489503,
+    0.0002844850023393519,
+    0.00025751200155355036
+   ],
+   "warm_median_seconds": 0.00027099850194645114,
+   "warm_min_seconds": 0.00025751200155355036
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 0.021516320997761795,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 12,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    0.021516320997761795,
+    0.010939615000097547,
+    0.013213284000812564
+   ],
+   "warm_median_seconds": 0.012076449500455055,
+   "warm_min_seconds": 0.010939615000097547
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 0.0002027080008701887,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0002027080008701887,
+    0.00017426599879399873,
+    0.00021941900195088238
+   ],
+   "warm_median_seconds": 0.00019684250037244055,
+   "warm_min_seconds": 0.00017426599879399873
+  }
+ ],
+ "seconds": 38.84479078399818,
+ "seed": 2026,
+ "thresholds": []
+}

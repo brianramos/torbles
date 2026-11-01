@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 1 |
-| planned | 30 |
-| in_progress | 32 |
+| planned | 26 |
+| in_progress | 36 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -2111,7 +2111,7 @@ Measured runtime: `2cabc7ed424807bc9d2b8382d71e3ac29fcfee96`.
 
 ### LIN-003: Leave-group-out and low-rank model updates
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Subtract compatible group states and use checked low-rank update identities with singularity fallbacks.
 
@@ -2155,6 +2155,14 @@ Additional limits:
 - Row deletions need the deleted rows and cannot detect rows that were never in the data; rows updates are for common-listwise regression models only.
 - The CUDA kernel covers the modular LOGO eliminations; the host forms the exact integer systems (Hadamard bounds, verification) and runs the CRT, comparable in cost to the exact CPU solve; updates and the floating variant are CPU code.
 - No FND-007 certificate is emitted: FND-007's claim kinds are row relations of a scope or polynomial laws, and a fitted model proves neither; every exact solution is verified natively (A x = b, A A^-1 = I, the CRT reconstruction against the integer system) and flagged so.
+
+Validation receipts:
+
+Measured runtime: `cacb92841d6cae9a8a136a680c29f3cecf01b657`.
+
+- tests: [results/math/LIN-003/tests_test_math_linupd.json](results/math/LIN-003/tests_test_math_linupd.json)
+- tests: [results/math/LIN-003/sanitized_test_math_linupd.json](results/math/LIN-003/sanitized_test_math_linupd.json)
+- benchmarks: [results/math/LIN-003/benchmark_cpu_math_linupd_vm.json](results/math/LIN-003/benchmark_cpu_math_linupd_vm.json)
 
 ## TENSOR: Tensor algebra
 
@@ -2346,7 +2354,7 @@ Fourier, Walsh, parity correlation and frequency-response representations.
 
 ### SPEC-001: Fixed spectral basis state
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Aggregate chosen Fourier/complex features once; phase actions and derivatives reuse that fixed frequency basis.
 
@@ -2390,6 +2398,14 @@ Additional limits:
 - Only the feature sums run on CUDA; actions, derivatives, lookups and the Walsh inverse are CPU code.
 - The only inverse transform is the Boolean (Walsh) one; no general discrete Fourier inversion or band-limited reconstruction is offered, and nothing is ever reconstructed from an incomplete basis.
 - No FND-007 certificate is emitted: FND-007's claim kinds are row relations of a scope or polynomial laws, and a basis proves neither; its exact scaled bounds (and the Walsh case's exact points) are the results' own evidence.
+
+Validation receipts:
+
+Measured runtime: `cacb92841d6cae9a8a136a680c29f3cecf01b657`.
+
+- tests: [results/math/SPEC-001/tests_test_math_fourier.json](results/math/SPEC-001/tests_test_math_fourier.json)
+- tests: [results/math/SPEC-001/sanitized_test_math_fourier.json](results/math/SPEC-001/sanitized_test_math_fourier.json)
+- benchmarks: [results/math/SPEC-001/benchmark_cpu_math_fourier_vm.json](results/math/SPEC-001/benchmark_cpu_math_fourier_vm.json)
 
 <a id="spec-002"></a>
 
@@ -3105,7 +3121,7 @@ Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
 
 ### COUNT-002: Symbolic full-domain algebraic model counting
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Add a bounded circuit/decision-diagram/variable-elimination backend for counts and witnesses over declared assignment domains.
 
@@ -3149,6 +3165,14 @@ Additional limits:
 - Weights are nonnegative exact rationals with int64 numerators and denominators (scaled per variable or factor below 2^126); a formula with dependent weights is counted as a factor system (CNF clauses as 0/1 tables), not as a weighted diagram.
 - The bounded search is breadth first in a fixed order without caching of equal residual formulas: its certified bounds can be loose; variable elimination, search and witness decoding run single-threaded on the CPU (the level count and the brute force have kernels).
 - Counts are of the declared universe only; statements about observed rows remain COUNT-001's certificates (no FND-007 certificate is emitted for a symbolic count).
+
+Validation receipts:
+
+Measured runtime: `cacb92841d6cae9a8a136a680c29f3cecf01b657`.
+
+- tests: [results/math/COUNT-002/tests_test_math_symcount.json](results/math/COUNT-002/tests_test_math_symcount.json)
+- tests: [results/math/COUNT-002/sanitized_test_math_symcount.json](results/math/COUNT-002/sanitized_test_math_symcount.json)
+- benchmarks: [results/math/COUNT-002/benchmark_cpu_math_symcount_vm.json](results/math/COUNT-002/benchmark_cpu_math_symcount_vm.json)
 
 ## FIELD: Finite-field algebra
 
@@ -3863,7 +3887,7 @@ Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
 
 ### PROV-002: Explanation specialization and deletion propagation
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Specialize retained provenance into source explanations and supported deletion effects without recomputing derivations.
 
@@ -3905,6 +3929,14 @@ Additional limits:
 - PROV-001's operators only (selection, union, equi-join, group-by; no aggregates other than multiplicities, no negation, outer joins or recursion); for a global group (always present) the existence explained and propagated is COUNT(*) > 0.
 - Probabilities assume independent source tuples; the exact path is bounded by the lineage diagram, whose size depends on the variable order (DFS first appearance by default); past it the bounds are certified but can be loose on heavily shared lineages.
 - Explanations and probability bounds are per answer and single-threaded on the CPU; minimal sets are enumerated explicitly from the diagram; propagation is batched on the device but each change set is sequential within its work item.
+
+Validation receipts:
+
+Measured runtime: `cacb92841d6cae9a8a136a680c29f3cecf01b657`.
+
+- tests: [results/math/PROV-002/tests_test_math_explain.json](results/math/PROV-002/tests_test_math_explain.json)
+- tests: [results/math/PROV-002/sanitized_test_math_explain.json](results/math/PROV-002/sanitized_test_math_explain.json)
+- benchmarks: [results/math/PROV-002/benchmark_cpu_math_explain_vm.json](results/math/PROV-002/benchmark_cpu_math_explain_vm.json)
 
 ## ATTR: Attribution and repair
 

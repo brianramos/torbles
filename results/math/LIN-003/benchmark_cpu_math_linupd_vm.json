@@ -1,0 +1,6585 @@
+{
+ "argv": [
+  "--capability",
+  "LIN-003",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/LIN-003/benchmark_cpu_math_linupd_vm.json"
+ ],
+ "capability": "LIN-003",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "cacb92841d6cae9a8a136a680c29f3cecf01b657",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "a20d76ef24e7078f12bdc091219ec97fdced3e14015ccad3110c6eccdba101ed",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "840929c0a850855e8971957d67d3fc9bffac9dfbc7c754844527a6db9f396a2e"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T00:28:06+00:00"
+ },
+ "notes": [
+  "LOGO cost does not depend on the rows once the moment state exists: the plan copies groups x slots and the solves are per system; reconstruction is measured per group for the first groups only.",
+  "The CUDA path is timed only with --device; the residues' CPU reference is the same inline code as the kernel. Total wall time 97.9 s."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0006800439987273421,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006800439987273421
+   ],
+   "warm_median_seconds": 0.0006800439987273421,
+   "warm_min_seconds": 0.0006800439987273421
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00036825399729423225,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 896
+   },
+   "samples_seconds": [
+    0.00036825399729423225,
+    7.606300277984701e-05
+   ],
+   "warm_median_seconds": 7.606300277984701e-05,
+   "warm_min_seconds": 7.606300277984701e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.007028626998362597,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 968,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.007028626998362597,
+    0.00010139599908143282
+   ],
+   "warm_median_seconds": 0.00010139599908143282,
+   "warm_min_seconds": 0.00010139599908143282
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 9.07319990801625e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    9.07319990801625e-05,
+    6.858399865450338e-05
+   ],
+   "warm_median_seconds": 6.858399865450338e-05,
+   "warm_min_seconds": 6.858399865450338e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0001360200003546197,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001360200003546197,
+    8.205500125768594e-05
+   ],
+   "warm_median_seconds": 8.205500125768594e-05,
+   "warm_min_seconds": 8.205500125768594e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.810900231357664e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.810900231357664e-05,
+    5.57630010007415e-05
+   ],
+   "warm_median_seconds": 5.57630010007415e-05,
+   "warm_min_seconds": 5.57630010007415e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.00043840099897352047,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.00043840099897352047
+   ],
+   "warm_median_seconds": 0.00043840099897352047,
+   "warm_min_seconds": 0.00043840099897352047
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.00010940599895548075,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010940599895548075
+   ],
+   "warm_median_seconds": 0.00010940599895548075,
+   "warm_min_seconds": 0.00010940599895548075
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 6.820300040999427e-05,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 5816
+   },
+   "samples_seconds": [
+    6.820300040999427e-05,
+    5.974399755359627e-05
+   ],
+   "warm_median_seconds": 5.974399755359627e-05,
+   "warm_min_seconds": 5.974399755359627e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00011320200064801611,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 12528,
+    "primes": 4,
+    "systems": 16,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.00011320200064801611,
+    6.59200013615191e-05
+   ],
+   "warm_median_seconds": 6.59200013615191e-05,
+   "warm_min_seconds": 6.59200013615191e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.0011088999999628868,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.0011088999999628868,
+    0.013256292000733083
+   ],
+   "warm_median_seconds": 0.013256292000733083,
+   "warm_min_seconds": 0.013256292000733083
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0003685429983306676,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003685429983306676,
+    0.00021359600214054808
+   ],
+   "warm_median_seconds": 0.00021359600214054808,
+   "warm_min_seconds": 0.00021359600214054808
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0010443790015415289,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0010443790015415289,
+    0.0010629360003804322
+   ],
+   "warm_median_seconds": 0.0010629360003804322,
+   "warm_min_seconds": 0.0010629360003804322
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.012683043998549692,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.012683043998549692
+   ],
+   "warm_median_seconds": 0.012683043998549692,
+   "warm_min_seconds": 0.012683043998549692
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0005441790017357562,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0005441790017357562
+   ],
+   "warm_median_seconds": 0.0005441790017357562,
+   "warm_min_seconds": 0.0005441790017357562
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0004026359965791926,
+   "params": {
+    "features": 2,
+    "group": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0004026359965791926
+   ],
+   "warm_median_seconds": 0.0004026359965791926,
+   "warm_min_seconds": 0.0004026359965791926
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 8.198799696401693e-05,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.198799696401693e-05
+   ],
+   "warm_median_seconds": 8.198799696401693e-05,
+   "warm_min_seconds": 8.198799696401693e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00018029000057140365,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 84536
+   },
+   "samples_seconds": [
+    0.00018029000057140365,
+    0.00011316299787722528
+   ],
+   "warm_median_seconds": 0.00011316299787722528,
+   "warm_min_seconds": 0.00011316299787722528
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0005570489993260708,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 194928,
+    "primes": 4,
+    "systems": 256,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0005570489993260708,
+    0.0006831639984739013
+   ],
+   "warm_median_seconds": 0.0006831639984739013,
+   "warm_min_seconds": 0.0006831639984739013
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.06463200399957714,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.06463200399957714,
+    0.06045848199937609
+   ],
+   "warm_median_seconds": 0.06045848199937609,
+   "warm_min_seconds": 0.06045848199937609
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0023619290004717186,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023619290004717186,
+    0.013590521997684846
+   ],
+   "warm_median_seconds": 0.013590521997684846,
+   "warm_min_seconds": 0.013590521997684846
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.03501721400243696,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.03501721400243696,
+    0.05219295699862414
+   ],
+   "warm_median_seconds": 0.05219295699862414,
+   "warm_min_seconds": 0.05219295699862414
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0017018590006045997,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0017018590006045997
+   ],
+   "warm_median_seconds": 0.0017018590006045997,
+   "warm_min_seconds": 0.0017018590006045997
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.00028565100001287647,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.00028565100001287647
+   ],
+   "warm_median_seconds": 0.00028565100001287647,
+   "warm_min_seconds": 0.00028565100001287647
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0002787420016829856,
+   "params": {
+    "features": 2,
+    "group": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0002787420016829856
+   ],
+   "warm_median_seconds": 0.0002787420016829856,
+   "warm_min_seconds": 0.0002787420016829856
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.01433830499809119,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01433830499809119
+   ],
+   "warm_median_seconds": 0.01433830499809119,
+   "warm_min_seconds": 0.01433830499809119
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.0017892249998112675,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 896
+   },
+   "samples_seconds": [
+    0.0017892249998112675,
+    0.006581122997886268
+   ],
+   "warm_median_seconds": 0.006581122997886268,
+   "warm_min_seconds": 0.006581122997886268
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0001413369973306544,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 968,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0001413369973306544,
+    3.226799890398979e-05
+   ],
+   "warm_median_seconds": 3.226799890398979e-05,
+   "warm_min_seconds": 3.226799890398979e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 6.149800174171105e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    6.149800174171105e-05,
+    3.0017999961273745e-05
+   ],
+   "warm_median_seconds": 3.0017999961273745e-05,
+   "warm_min_seconds": 3.0017999961273745e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0008536889981769491,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008536889981769491,
+    7.72439998399932e-05
+   ],
+   "warm_median_seconds": 7.72439998399932e-05,
+   "warm_min_seconds": 7.72439998399932e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.262100214371458e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.262100214371458e-05,
+    5.1085997256450355e-05
+   ],
+   "warm_median_seconds": 5.1085997256450355e-05,
+   "warm_min_seconds": 5.1085997256450355e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.014644415001384914,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.014644415001384914
+   ],
+   "warm_median_seconds": 0.014644415001384914,
+   "warm_min_seconds": 0.014644415001384914
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0021816080006828997,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0021816080006828997
+   ],
+   "warm_median_seconds": 0.0021816080006828997,
+   "warm_min_seconds": 0.0021816080006828997
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.013920279998274054,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 5816
+   },
+   "samples_seconds": [
+    0.013920279998274054,
+    0.001812274000258185
+   ],
+   "warm_median_seconds": 0.001812274000258185,
+   "warm_min_seconds": 0.001812274000258185
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0001844220023485832,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 12528,
+    "primes": 4,
+    "systems": 16,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0001844220023485832,
+    5.819700163556263e-05
+   ],
+   "warm_median_seconds": 5.819700163556263e-05,
+   "warm_min_seconds": 5.819700163556263e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.0009096920002775732,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.0009096920002775732,
+    0.013005100998270791
+   ],
+   "warm_median_seconds": 0.013005100998270791,
+   "warm_min_seconds": 0.013005100998270791
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.00030676499955006875,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 4,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00030676499955006875,
+    0.00020160100029897876
+   ],
+   "warm_median_seconds": 0.00020160100029897876,
+   "warm_min_seconds": 0.00020160100029897876
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0008264549978775904,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 4,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0008264549978775904,
+    0.0008121419996314216
+   ],
+   "warm_median_seconds": 0.0008121419996314216,
+   "warm_min_seconds": 0.0008121419996314216
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.026273062998370733,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.026273062998370733
+   ],
+   "warm_median_seconds": 0.026273062998370733,
+   "warm_min_seconds": 0.026273062998370733
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.016380203996959608,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.016380203996959608
+   ],
+   "warm_median_seconds": 0.016380203996959608,
+   "warm_min_seconds": 0.016380203996959608
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.01616843200099538,
+   "params": {
+    "features": 2,
+    "group": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.01616843200099538
+   ],
+   "warm_median_seconds": 0.01616843200099538,
+   "warm_min_seconds": 0.01616843200099538
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.014153149000776466,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014153149000776466
+   ],
+   "warm_median_seconds": 0.014153149000776466,
+   "warm_min_seconds": 0.014153149000776466
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.001967763000720879,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 84536
+   },
+   "samples_seconds": [
+    0.001967763000720879,
+    0.014109153999015689
+   ],
+   "warm_median_seconds": 0.014109153999015689,
+   "warm_min_seconds": 0.014109153999015689
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00048298299952875823,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 194928,
+    "primes": 4,
+    "systems": 256,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.00048298299952875823,
+    0.00032171600105357356
+   ],
+   "warm_median_seconds": 0.00032171600105357356,
+   "warm_min_seconds": 0.00032171600105357356
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.04868518999865046,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.04868518999865046,
+    0.052420317002543015
+   ],
+   "warm_median_seconds": 0.052420317002543015,
+   "warm_min_seconds": 0.052420317002543015
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.010987461002514465,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 4,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010987461002514465,
+    0.00974795699949027
+   ],
+   "warm_median_seconds": 0.00974795699949027,
+   "warm_min_seconds": 0.00974795699949027
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.051777441000012914,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 4,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.051777441000012914,
+    0.04137444700245396
+   ],
+   "warm_median_seconds": 0.04137444700245396,
+   "warm_min_seconds": 0.04137444700245396
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.03036406100000022,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.03036406100000022
+   ],
+   "warm_median_seconds": 0.03036406100000022,
+   "warm_min_seconds": 0.03036406100000022
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.01632038699972327,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.01632038699972327
+   ],
+   "warm_median_seconds": 0.01632038699972327,
+   "warm_min_seconds": 0.01632038699972327
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.01619112299886183,
+   "params": {
+    "features": 2,
+    "group": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.01619112299886183
+   ],
+   "warm_median_seconds": 0.01619112299886183,
+   "warm_min_seconds": 0.01619112299886183
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.09416810699985945,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.09416810699985945
+   ],
+   "warm_median_seconds": 0.09416810699985945,
+   "warm_min_seconds": 0.09416810699985945
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.060958228998060804,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 896
+   },
+   "samples_seconds": [
+    0.060958228998060804,
+    0.07610822300193831
+   ],
+   "warm_median_seconds": 0.07610822300193831,
+   "warm_min_seconds": 0.07610822300193831
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0001594259992998559,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 968,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0001594259992998559,
+    3.461400046944618e-05
+   ],
+   "warm_median_seconds": 3.461400046944618e-05,
+   "warm_min_seconds": 3.461400046944618e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 7.057399852783419e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    7.057399852783419e-05,
+    3.236299744457938e-05
+   ],
+   "warm_median_seconds": 3.236299744457938e-05,
+   "warm_min_seconds": 3.236299744457938e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0007836639997549355,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007836639997549355,
+    7.56049994379282e-05
+   ],
+   "warm_median_seconds": 7.56049994379282e-05,
+   "warm_min_seconds": 7.56049994379282e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.407799810403958e-05,
+   "params": {
+    "features": 2,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.407799810403958e-05,
+    5.116399916005321e-05
+   ],
+   "warm_median_seconds": 5.116399916005321e-05,
+   "warm_min_seconds": 5.116399916005321e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.062186185001337435,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.062186185001337435
+   ],
+   "warm_median_seconds": 0.062186185001337435,
+   "warm_min_seconds": 0.062186185001337435
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.11310473599951365,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.11310473599951365
+   ],
+   "warm_median_seconds": 0.11310473599951365,
+   "warm_min_seconds": 0.11310473599951365
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.08226379100233316,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 5816
+   },
+   "samples_seconds": [
+    0.08226379100233316,
+    0.06605578100061393
+   ],
+   "warm_median_seconds": 0.06605578100061393,
+   "warm_min_seconds": 0.06605578100061393
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0002098380027746316,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 14608,
+    "primes": 5,
+    "systems": 16,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0002098380027746316,
+    8.800400246400386e-05
+   ],
+   "warm_median_seconds": 8.800400246400386e-05,
+   "warm_min_seconds": 8.800400246400386e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.013168298999516992,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.013168298999516992,
+    0.0009444589995837305
+   ],
+   "warm_median_seconds": 0.0009444589995837305,
+   "warm_min_seconds": 0.0009444589995837305
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.00040422200254397467,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 5,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00040422200254397467,
+    0.00024034399757510982
+   ],
+   "warm_median_seconds": 0.00024034399757510982,
+   "warm_min_seconds": 0.00024034399757510982
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0008900379980332218,
+   "params": {
+    "features": 2,
+    "groups": 16,
+    "primes": 5,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0008900379980332218,
+    0.013053320999460993
+   ],
+   "warm_median_seconds": 0.013053320999460993,
+   "warm_min_seconds": 0.013053320999460993
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.19408766200285754,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.19408766200285754
+   ],
+   "warm_median_seconds": 0.19408766200285754,
+   "warm_min_seconds": 0.19408766200285754
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.1511635480019322,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1511635480019322
+   ],
+   "warm_median_seconds": 0.1511635480019322,
+   "warm_min_seconds": 0.1511635480019322
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.09080352399905678,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.09080352399905678
+   ],
+   "warm_median_seconds": 0.09080352399905678,
+   "warm_min_seconds": 0.09080352399905678
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.09018194899908849,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 10,
+    "state_bytes": 84536
+   },
+   "samples_seconds": [
+    0.09018194899908849,
+    0.09782030900169048
+   ],
+   "warm_median_seconds": 0.09782030900169048,
+   "warm_min_seconds": 0.09782030900169048
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0006070899980841205,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 227728,
+    "primes": 5,
+    "systems": 256,
+    "unknowns": 3
+   },
+   "samples_seconds": [
+    0.0006070899980841205,
+    0.0003367509998497553
+   ],
+   "warm_median_seconds": 0.0003367509998497553,
+   "warm_min_seconds": 0.0003367509998497553
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.07650187500257744,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.07650187500257744,
+    0.08008026199968299
+   ],
+   "warm_median_seconds": 0.08008026199968299,
+   "warm_min_seconds": 0.08008026199968299
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.019046811998123303,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 5,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.019046811998123303,
+    0.002351235001697205
+   ],
+   "warm_median_seconds": 0.002351235001697205,
+   "warm_min_seconds": 0.002351235001697205
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.05271140600234503,
+   "params": {
+    "features": 2,
+    "groups": 256,
+    "primes": 5,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.05271140600234503,
+    0.06196510500012664
+   ],
+   "warm_median_seconds": 0.06196510500012664,
+   "warm_min_seconds": 0.06196510500012664
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.1652707860012015,
+   "params": {
+    "features": 2,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1652707860012015
+   ],
+   "warm_median_seconds": 0.1652707860012015,
+   "warm_min_seconds": 0.1652707860012015
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.1648575789986353,
+   "params": {
+    "features": 2,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1648575789986353
+   ],
+   "warm_median_seconds": 0.1648575789986353,
+   "warm_min_seconds": 0.1648575789986353
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.00015762999828439206,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015762999828439206
+   ],
+   "warm_median_seconds": 0.00015762999828439206,
+   "warm_min_seconds": 0.00015762999828439206
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 9.652299922890961e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 1336
+   },
+   "samples_seconds": [
+    9.652299922890961e-05,
+    5.2585000958060846e-05
+   ],
+   "warm_median_seconds": 5.2585000958060846e-05,
+   "warm_min_seconds": 5.2585000958060846e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 6.462999954237603e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 1928,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    6.462999954237603e-05,
+    2.374500036239624e-05
+   ],
+   "warm_median_seconds": 2.374500036239624e-05,
+   "warm_min_seconds": 2.374500036239624e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 5.840800076839514e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    5.840800076839514e-05,
+    3.9535003452328965e-05
+   ],
+   "warm_median_seconds": 3.9535003452328965e-05,
+   "warm_min_seconds": 3.9535003452328965e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.00014062799891689792,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014062799891689792,
+    0.00010942000153590925
+   ],
+   "warm_median_seconds": 0.00010942000153590925,
+   "warm_min_seconds": 0.00010942000153590925
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 8.309599797939882e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    8.309599797939882e-05,
+    5.7384000683669e-05
+   ],
+   "warm_median_seconds": 5.7384000683669e-05,
+   "warm_min_seconds": 5.7384000683669e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0004572670004563406,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0004572670004563406
+   ],
+   "warm_median_seconds": 0.0004572670004563406,
+   "warm_min_seconds": 0.0004572670004563406
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 8.438700024271384e-05,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.438700024271384e-05
+   ],
+   "warm_median_seconds": 8.438700024271384e-05,
+   "warm_min_seconds": 8.438700024271384e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 5.4072999773779884e-05,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 11536
+   },
+   "samples_seconds": [
+    5.4072999773779884e-05,
+    4.638300015358254e-05
+   ],
+   "warm_median_seconds": 4.638300015358254e-05,
+   "warm_min_seconds": 4.638300015358254e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00018715500118560158,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 30616,
+    "primes": 5,
+    "systems": 16,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.00018715500118560158,
+    7.90230005804915e-05
+   ],
+   "warm_median_seconds": 7.90230005804915e-05,
+   "warm_min_seconds": 7.90230005804915e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.0021135309980309103,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.0021135309980309103,
+    0.01847121700120624
+   ],
+   "warm_median_seconds": 0.01847121700120624,
+   "warm_min_seconds": 0.01847121700120624
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0004910200004815124,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 5,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004910200004815124,
+    0.0004049199997098185
+   ],
+   "warm_median_seconds": 0.0004049199997098185,
+   "warm_min_seconds": 0.0004049199997098185
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.018212389000836993,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 5,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.018212389000836993,
+    0.0021785049975733273
+   ],
+   "warm_median_seconds": 0.0021785049975733273,
+   "warm_min_seconds": 0.0021785049975733273
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0006885369984956924,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0006885369984956924
+   ],
+   "warm_median_seconds": 0.0006885369984956924,
+   "warm_min_seconds": 0.0006885369984956924
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.016791464000561973,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.016791464000561973
+   ],
+   "warm_median_seconds": 0.016791464000561973,
+   "warm_min_seconds": 0.016791464000561973
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0004546310010482557,
+   "params": {
+    "features": 4,
+    "group": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0004546310010482557
+   ],
+   "warm_median_seconds": 0.0004546310010482557,
+   "warm_min_seconds": 0.0004546310010482557
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 8.132199945976026e-05,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.132199945976026e-05
+   ],
+   "warm_median_seconds": 8.132199945976026e-05,
+   "warm_min_seconds": 8.132199945976026e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00010946799739031121,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 174736
+   },
+   "samples_seconds": [
+    0.00010946799739031121,
+    8.761400022194721e-05
+   ],
+   "warm_median_seconds": 8.761400022194721e-05,
+   "warm_min_seconds": 8.761400022194721e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0007160700006352272,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 479896,
+    "primes": 5,
+    "systems": 256,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.0007160700006352272,
+    0.0007804939996276516
+   ],
+   "warm_median_seconds": 0.0007804939996276516,
+   "warm_min_seconds": 0.0007804939996276516
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.1740612739995413,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.1740612739995413,
+    0.15394851499877404
+   ],
+   "warm_median_seconds": 0.15394851499877404,
+   "warm_min_seconds": 0.15394851499877404
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.030859423000947572,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 5,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.030859423000947572,
+    0.017183412997837877
+   ],
+   "warm_median_seconds": 0.017183412997837877,
+   "warm_min_seconds": 0.017183412997837877
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.20063341099739773,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 5,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.20063341099739773,
+    0.14645253100025002
+   ],
+   "warm_median_seconds": 0.14645253100025002,
+   "warm_min_seconds": 0.14645253100025002
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.015009562997875037,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.015009562997875037
+   ],
+   "warm_median_seconds": 0.015009562997875037,
+   "warm_min_seconds": 0.015009562997875037
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0004515489999903366,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0004515489999903366
+   ],
+   "warm_median_seconds": 0.0004515489999903366,
+   "warm_min_seconds": 0.0004515489999903366
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.00044075099867768586,
+   "params": {
+    "features": 4,
+    "group": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.00044075099867768586
+   ],
+   "warm_median_seconds": 0.00044075099867768586,
+   "warm_min_seconds": 0.00044075099867768586
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.014834969999355962,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014834969999355962
+   ],
+   "warm_median_seconds": 0.014834969999355962,
+   "warm_min_seconds": 0.014834969999355962
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.01397331999760354,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 1336
+   },
+   "samples_seconds": [
+    0.01397331999760354,
+    0.003306236998469103
+   ],
+   "warm_median_seconds": 0.003306236998469103,
+   "warm_min_seconds": 0.003306236998469103
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0001557909999974072,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 1928,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.0001557909999974072,
+    3.675699917948805e-05
+   ],
+   "warm_median_seconds": 3.675699917948805e-05,
+   "warm_min_seconds": 3.675699917948805e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 7.874999937484972e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    7.874999937484972e-05,
+    4.328700015321374e-05
+   ],
+   "warm_median_seconds": 4.328700015321374e-05,
+   "warm_min_seconds": 4.328700015321374e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.00019251400226494297,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019251400226494297,
+    7.69220023357775e-05
+   ],
+   "warm_median_seconds": 7.69220023357775e-05,
+   "warm_min_seconds": 7.69220023357775e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.813200161559507e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.813200161559507e-05,
+    6.325099820969626e-05
+   ],
+   "warm_median_seconds": 6.325099820969626e-05,
+   "warm_min_seconds": 6.325099820969626e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.020263169000827475,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.020263169000827475
+   ],
+   "warm_median_seconds": 0.020263169000827475,
+   "warm_min_seconds": 0.020263169000827475
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.015781974001583876,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.015781974001583876
+   ],
+   "warm_median_seconds": 0.015781974001583876,
+   "warm_min_seconds": 0.015781974001583876
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.015278973998647416,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 11536
+   },
+   "samples_seconds": [
+    0.015278973998647416,
+    0.015407179998874199
+   ],
+   "warm_median_seconds": 0.015407179998874199,
+   "warm_min_seconds": 0.015407179998874199
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00023255399719346315,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 35000,
+    "primes": 6,
+    "systems": 16,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.00023255399719346315,
+    8.85599984030705e-05
+   ],
+   "warm_median_seconds": 8.85599984030705e-05,
+   "warm_min_seconds": 8.85599984030705e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.015001154002675321,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.015001154002675321,
+    0.002830612000252586
+   ],
+   "warm_median_seconds": 0.002830612000252586,
+   "warm_min_seconds": 0.002830612000252586
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0006074390003050212,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 6,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006074390003050212,
+    0.012556271001813002
+   ],
+   "warm_median_seconds": 0.012556271001813002,
+   "warm_min_seconds": 0.012556271001813002
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.002724713001953205,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 6,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.002724713001953205,
+    0.014792516001762124
+   ],
+   "warm_median_seconds": 0.014792516001762124,
+   "warm_min_seconds": 0.014792516001762124
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.031346741001470946,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.031346741001470946
+   ],
+   "warm_median_seconds": 0.031346741001470946,
+   "warm_min_seconds": 0.031346741001470946
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.03898430000117514,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.03898430000117514
+   ],
+   "warm_median_seconds": 0.03898430000117514,
+   "warm_min_seconds": 0.03898430000117514
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.018933175997517537,
+   "params": {
+    "features": 4,
+    "group": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.018933175997517537
+   ],
+   "warm_median_seconds": 0.018933175997517537,
+   "warm_min_seconds": 0.018933175997517537
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.015346922999015078,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.015346922999015078
+   ],
+   "warm_median_seconds": 0.015346922999015078,
+   "warm_min_seconds": 0.015346922999015078
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.015345537001849152,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 174736
+   },
+   "samples_seconds": [
+    0.015345537001849152,
+    0.015235879000101704
+   ],
+   "warm_median_seconds": 0.015235879000101704,
+   "warm_min_seconds": 0.015235879000101704
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0008623200010333676,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 549560,
+    "primes": 6,
+    "systems": 256,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.0008623200010333676,
+    0.0007711949983786326
+   ],
+   "warm_median_seconds": 0.0007711949983786326,
+   "warm_min_seconds": 0.0007711949983786326
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.18679559500014875,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.18679559500014875,
+    0.23552994199781097
+   ],
+   "warm_median_seconds": 0.23552994199781097,
+   "warm_min_seconds": 0.23552994199781097
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.03252020000218181,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 6,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03252020000218181,
+    0.01833374099805951
+   ],
+   "warm_median_seconds": 0.01833374099805951,
+   "warm_min_seconds": 0.01833374099805951
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.19801218000066,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 6,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.19801218000066,
+    0.19231372400099644
+   ],
+   "warm_median_seconds": 0.19231372400099644,
+   "warm_min_seconds": 0.19231372400099644
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.05415237000124762,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.05415237000124762
+   ],
+   "warm_median_seconds": 0.05415237000124762,
+   "warm_min_seconds": 0.05415237000124762
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.04307746300037252,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.04307746300037252
+   ],
+   "warm_median_seconds": 0.04307746300037252,
+   "warm_min_seconds": 0.04307746300037252
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.022970235000684625,
+   "params": {
+    "features": 4,
+    "group": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.022970235000684625
+   ],
+   "warm_median_seconds": 0.022970235000684625,
+   "warm_min_seconds": 0.022970235000684625
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.15531045000170707,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.15531045000170707
+   ],
+   "warm_median_seconds": 0.15531045000170707,
+   "warm_min_seconds": 0.15531045000170707
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.17893398000160232,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 1336
+   },
+   "samples_seconds": [
+    0.17893398000160232,
+    0.15525937900019926
+   ],
+   "warm_median_seconds": 0.15525937900019926,
+   "warm_min_seconds": 0.15525937900019926
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00017527800082461908,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 1928,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.00017527800082461908,
+    4.03240010200534e-05
+   ],
+   "warm_median_seconds": 4.03240010200534e-05,
+   "warm_min_seconds": 4.03240010200534e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 8.40600005176384e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    8.40600005176384e-05,
+    4.205300137982704e-05
+   ],
+   "warm_median_seconds": 4.205300137982704e-05,
+   "warm_min_seconds": 4.205300137982704e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0002363840030739084,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002363840030739084,
+    8.284899740829132e-05
+   ],
+   "warm_median_seconds": 8.284899740829132e-05,
+   "warm_min_seconds": 8.284899740829132e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 7.860000187065452e-05,
+   "params": {
+    "features": 4,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    7.860000187065452e-05,
+    7.075800021993928e-05
+   ],
+   "warm_median_seconds": 7.075800021993928e-05,
+   "warm_min_seconds": 7.075800021993928e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.12927319500158774,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.12927319500158774
+   ],
+   "warm_median_seconds": 0.12927319500158774,
+   "warm_min_seconds": 0.12927319500158774
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.1651995819993317,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.1651995819993317
+   ],
+   "warm_median_seconds": 0.1651995819993317,
+   "warm_min_seconds": 0.1651995819993317
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.1229335309981252,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 11536
+   },
+   "samples_seconds": [
+    0.1229335309981252,
+    0.13475963800010504
+   ],
+   "warm_median_seconds": 0.13475963800010504,
+   "warm_min_seconds": 0.13475963800010504
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0002534790000936482,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 35000,
+    "primes": 6,
+    "systems": 16,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.0002534790000936482,
+    8.776699905865826e-05
+   ],
+   "warm_median_seconds": 8.776699905865826e-05,
+   "warm_min_seconds": 8.776699905865826e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.015361366997240111,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.015361366997240111,
+    0.008054853999055922
+   ],
+   "warm_median_seconds": 0.008054853999055922,
+   "warm_min_seconds": 0.008054853999055922
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0007247629982884973,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 6,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007247629982884973,
+    0.0005624090008495841
+   ],
+   "warm_median_seconds": 0.0005624090008495841,
+   "warm_min_seconds": 0.0005624090008495841
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.01545188800082542,
+   "params": {
+    "features": 4,
+    "groups": 16,
+    "primes": 6,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.01545188800082542,
+    0.016569447001529625
+   ],
+   "warm_median_seconds": 0.016569447001529625,
+   "warm_min_seconds": 0.016569447001529625
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.38331861999904504,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.38331861999904504
+   ],
+   "warm_median_seconds": 0.38331861999904504,
+   "warm_min_seconds": 0.38331861999904504
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.27129421000063303,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.27129421000063303
+   ],
+   "warm_median_seconds": 0.27129421000063303,
+   "warm_min_seconds": 0.27129421000063303
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.16376205399865285,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.16376205399865285
+   ],
+   "warm_median_seconds": 0.16376205399865285,
+   "warm_min_seconds": 0.16376205399865285
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.12597619900043355,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 21,
+    "state_bytes": 174736
+   },
+   "samples_seconds": [
+    0.12597619900043355,
+    0.14102563300184556
+   ],
+   "warm_median_seconds": 0.14102563300184556,
+   "warm_min_seconds": 0.14102563300184556
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0009343910023744684,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 549560,
+    "primes": 6,
+    "systems": 256,
+    "unknowns": 5
+   },
+   "samples_seconds": [
+    0.0009343910023744684,
+    0.0008398470017709769
+   ],
+   "warm_median_seconds": 0.0008398470017709769,
+   "warm_min_seconds": 0.0008398470017709769
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.19229341599930194,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.19229341599930194,
+    0.20446448700022302
+   ],
+   "warm_median_seconds": 0.20446448700022302,
+   "warm_min_seconds": 0.20446448700022302
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.01852877199780778,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 6,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01852877199780778,
+    0.030475539999315515
+   ],
+   "warm_median_seconds": 0.030475539999315515,
+   "warm_min_seconds": 0.030475539999315515
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.17993478299831622,
+   "params": {
+    "features": 4,
+    "groups": 256,
+    "primes": 6,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.17993478299831622,
+    0.19224207200022647
+   ],
+   "warm_median_seconds": 0.19224207200022647,
+   "warm_min_seconds": 0.19224207200022647
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.30127640300270286,
+   "params": {
+    "features": 4,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.30127640300270286
+   ],
+   "warm_median_seconds": 0.30127640300270286,
+   "warm_min_seconds": 0.30127640300270286
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.26561794400186045,
+   "params": {
+    "features": 4,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.26561794400186045
+   ],
+   "warm_median_seconds": 0.26561794400186045,
+   "warm_min_seconds": 0.26561794400186045
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0001814520001062192,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001814520001062192
+   ],
+   "warm_median_seconds": 0.0001814520001062192,
+   "warm_min_seconds": 0.0001814520001062192
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00016019899703678675,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 2696
+   },
+   "samples_seconds": [
+    0.00016019899703678675,
+    0.00012665699978242628
+   ],
+   "warm_median_seconds": 0.00012665699978242628,
+   "warm_min_seconds": 0.00012665699978242628
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 8.518899994669482e-05,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 5000,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    8.518899994669482e-05,
+    3.2676001865183935e-05
+   ],
+   "warm_median_seconds": 3.2676001865183935e-05,
+   "warm_min_seconds": 3.2676001865183935e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.00011488599920994602,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.00011488599920994602,
+    7.198399907792918e-05
+   ],
+   "warm_median_seconds": 7.198399907792918e-05,
+   "warm_min_seconds": 7.198399907792918e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.00022387200078810565,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022387200078810565,
+    9.653400047682226e-05
+   ],
+   "warm_median_seconds": 9.653400047682226e-05,
+   "warm_min_seconds": 9.653400047682226e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.00010681600178941153,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.00010681600178941153,
+    0.00010955900143017061
+   ],
+   "warm_median_seconds": 0.00010955900143017061,
+   "warm_min_seconds": 0.00010955900143017061
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0007223600005090702,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0007223600005090702
+   ],
+   "warm_median_seconds": 0.0007223600005090702,
+   "warm_min_seconds": 0.0007223600005090702
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.00012696599878836423,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012696599878836423
+   ],
+   "warm_median_seconds": 0.00012696599878836423,
+   "warm_min_seconds": 0.00012696599878836423
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00012122300176997669,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 29216
+   },
+   "samples_seconds": [
+    0.00012122300176997669,
+    0.00013917200340074487
+   ],
+   "warm_median_seconds": 0.00013917200340074487,
+   "warm_min_seconds": 0.00013917200340074487
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00022640499810222536,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 107016,
+    "primes": 7,
+    "systems": 16,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.00022640499810222536,
+    0.01230392100114841
+   ],
+   "warm_median_seconds": 0.01230392100114841,
+   "warm_min_seconds": 0.01230392100114841
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.04972630799966282,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.04972630799966282,
+    0.04859477100035292
+   ],
+   "warm_median_seconds": 0.04859477100035292,
+   "warm_min_seconds": 0.04859477100035292
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.013802293000480859,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 7,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013802293000480859,
+    0.0015479800022148993
+   ],
+   "warm_median_seconds": 0.0015479800022148993,
+   "warm_min_seconds": 0.0015479800022148993
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.047467152999161044,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 7,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.047467152999161044,
+    0.047661365002568346
+   ],
+   "warm_median_seconds": 0.047661365002568346,
+   "warm_min_seconds": 0.047661365002568346
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0016562169985263608,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0016562169985263608
+   ],
+   "warm_median_seconds": 0.0016562169985263608,
+   "warm_min_seconds": 0.0016562169985263608
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.013669216001289897,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.013669216001289897
+   ],
+   "warm_median_seconds": 0.013669216001289897,
+   "warm_min_seconds": 0.013669216001289897
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0014225110026018228,
+   "params": {
+    "features": 8,
+    "group": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0014225110026018228
+   ],
+   "warm_median_seconds": 0.0014225110026018228,
+   "warm_min_seconds": 0.0014225110026018228
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.00012416599929565564,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012416599929565564
+   ],
+   "warm_median_seconds": 0.00012416599929565564,
+   "warm_min_seconds": 0.00012416599929565564
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.0002120850003848318,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 453536
+   },
+   "samples_seconds": [
+    0.0002120850003848318,
+    0.00020842500089202076
+   ],
+   "warm_median_seconds": 0.00020842500089202076,
+   "warm_min_seconds": 0.00020842500089202076
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.014229378000891302,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 1689096,
+    "primes": 7,
+    "systems": 256,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.014229378000891302,
+    0.01471466499788221
+   ],
+   "warm_median_seconds": 0.01471466499788221,
+   "warm_min_seconds": 0.01471466499788221
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.8007110489998013,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.8007110489998013,
+    0.7954021689984074
+   ],
+   "warm_median_seconds": 0.7954021689984074,
+   "warm_min_seconds": 0.7954021689984074
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.10156352600097307,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 7,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10156352600097307,
+    0.09650887099996908
+   ],
+   "warm_median_seconds": 0.09650887099996908,
+   "warm_min_seconds": 0.09650887099996908
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.6991494550020434,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 7,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.6991494550020434,
+    0.7231654530005471
+   ],
+   "warm_median_seconds": 0.7231654530005471,
+   "warm_min_seconds": 0.7231654530005471
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.030877748999046162,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.030877748999046162
+   ],
+   "warm_median_seconds": 0.030877748999046162,
+   "warm_min_seconds": 0.030877748999046162
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0012930850025441032,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0012930850025441032
+   ],
+   "warm_median_seconds": 0.0012930850025441032,
+   "warm_min_seconds": 0.0012930850025441032
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.013584862997959135,
+   "params": {
+    "features": 8,
+    "group": 2,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.013584862997959135
+   ],
+   "warm_median_seconds": 0.013584862997959135,
+   "warm_min_seconds": 0.013584862997959135
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.029318409000552492,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.029318409000552492
+   ],
+   "warm_median_seconds": 0.029318409000552492,
+   "warm_min_seconds": 0.029318409000552492
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.03243306999866036,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 2696
+   },
+   "samples_seconds": [
+    0.03243306999866036,
+    0.031875995999143925
+   ],
+   "warm_median_seconds": 0.031875995999143925,
+   "warm_min_seconds": 0.031875995999143925
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00017034600023180246,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 5000,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.00017034600023180246,
+    4.461099888430908e-05
+   ],
+   "warm_median_seconds": 4.461099888430908e-05,
+   "warm_min_seconds": 4.461099888430908e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.00012662600056501105,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.00012662600056501105,
+    7.384399941656739e-05
+   ],
+   "warm_median_seconds": 7.384399941656739e-05,
+   "warm_min_seconds": 7.384399941656739e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.028898611999466084,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.028898611999466084,
+    8.429400259046815e-05
+   ],
+   "warm_median_seconds": 8.429400259046815e-05,
+   "warm_min_seconds": 8.429400259046815e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 9.329999738838524e-05,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    9.329999738838524e-05,
+    6.945099812583067e-05
+   ],
+   "warm_median_seconds": 6.945099812583067e-05,
+   "warm_min_seconds": 6.945099812583067e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.03212563800116186,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.03212563800116186
+   ],
+   "warm_median_seconds": 0.03212563800116186,
+   "warm_min_seconds": 0.03212563800116186
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.017364854000334162,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.017364854000334162
+   ],
+   "warm_median_seconds": 0.017364854000334162,
+   "warm_min_seconds": 0.017364854000334162
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.031278033999114996,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 29216
+   },
+   "samples_seconds": [
+    0.031278033999114996,
+    0.018725175999861676
+   ],
+   "warm_median_seconds": 0.018725175999861676,
+   "warm_min_seconds": 0.018725175999861676
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.012469449000491295,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 119080,
+    "primes": 8,
+    "systems": 16,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.012469449000491295,
+    0.00020059199960087426
+   ],
+   "warm_median_seconds": 0.00020059199960087426,
+   "warm_min_seconds": 0.00020059199960087426
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.050024219999613706,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.050024219999613706,
+    0.0524148430013156
+   ],
+   "warm_median_seconds": 0.0524148430013156,
+   "warm_min_seconds": 0.0524148430013156
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.013937849998910679,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 8,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013937849998910679,
+    0.0016102759982459247
+   ],
+   "warm_median_seconds": 0.0016102759982459247,
+   "warm_min_seconds": 0.0016102759982459247
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0486214230004407,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 8,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0486214230004407,
+    0.04868752599941217
+   ],
+   "warm_median_seconds": 0.04868752599941217,
+   "warm_min_seconds": 0.04868752599941217
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.06403078299990739,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.06403078299990739
+   ],
+   "warm_median_seconds": 0.06403078299990739,
+   "warm_min_seconds": 0.06403078299990739
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.05093271499936236,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.05093271499936236
+   ],
+   "warm_median_seconds": 0.05093271499936236,
+   "warm_min_seconds": 0.05093271499936236
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.06285334199856152,
+   "params": {
+    "features": 8,
+    "group": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.06285334199856152
+   ],
+   "warm_median_seconds": 0.06285334199856152,
+   "warm_min_seconds": 0.06285334199856152
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.030005890999746043,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.030005890999746043
+   ],
+   "warm_median_seconds": 0.030005890999746043,
+   "warm_min_seconds": 0.030005890999746043
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.036067545999685535,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 453536
+   },
+   "samples_seconds": [
+    0.036067545999685535,
+    0.032414354998763883
+   ],
+   "warm_median_seconds": 0.032414354998763883,
+   "warm_min_seconds": 0.032414354998763883
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.014373999001691118,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 1881640,
+    "primes": 8,
+    "systems": 256,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.014373999001691118,
+    0.002518101999157807
+   ],
+   "warm_median_seconds": 0.002518101999157807,
+   "warm_min_seconds": 0.002518101999157807
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.9215181699983077,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.9215181699983077,
+    1.0200634119973984
+   ],
+   "warm_median_seconds": 1.0200634119973984,
+   "warm_min_seconds": 1.0200634119973984
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.12750753600266762,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 8,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.12750753600266762,
+    0.09779624200018588
+   ],
+   "warm_median_seconds": 0.09779624200018588,
+   "warm_min_seconds": 0.09779624200018588
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.9859143659996334,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 8,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.9859143659996334,
+    0.9269894939970982
+   ],
+   "warm_median_seconds": 0.9269894939970982,
+   "warm_min_seconds": 0.9269894939970982
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.11347803399985423,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.11347803399985423
+   ],
+   "warm_median_seconds": 0.11347803399985423,
+   "warm_min_seconds": 0.11347803399985423
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.06441970400192076,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.06441970400192076
+   ],
+   "warm_median_seconds": 0.06441970400192076,
+   "warm_min_seconds": 0.06441970400192076
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.05152540099879843,
+   "params": {
+    "features": 8,
+    "group": 2,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.05152540099879843
+   ],
+   "warm_median_seconds": 0.05152540099879843,
+   "warm_min_seconds": 0.05152540099879843
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.28777853100109496,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.28777853100109496
+   ],
+   "warm_median_seconds": 0.28777853100109496,
+   "warm_min_seconds": 0.28777853100109496
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.3053355560005002,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 2696
+   },
+   "samples_seconds": [
+    0.3053355560005002,
+    0.33802665900293505
+   ],
+   "warm_median_seconds": 0.33802665900293505,
+   "warm_min_seconds": 0.33802665900293505
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00017380899953423068,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 5000,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.00017380899953423068,
+    0.00813071700031287
+   ],
+   "warm_median_seconds": 0.00813071700031287,
+   "warm_min_seconds": 0.00813071700031287
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.00018973399710375816,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.00018973399710375816,
+    8.106499808491208e-05
+   ],
+   "warm_median_seconds": 8.106499808491208e-05,
+   "warm_min_seconds": 8.106499808491208e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.012516025999502745,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012516025999502745,
+    8.433099719695747e-05
+   ],
+   "warm_median_seconds": 8.433099719695747e-05,
+   "warm_min_seconds": 8.433099719695747e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.00617262000014307,
+   "params": {
+    "features": 8,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.00617262000014307,
+    0.00017911699978867546
+   ],
+   "warm_median_seconds": 0.00017911699978867546,
+   "warm_min_seconds": 0.00017911699978867546
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.17827795000266633,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.17827795000266633
+   ],
+   "warm_median_seconds": 0.17827795000266633,
+   "warm_min_seconds": 0.17827795000266633
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.24633429999812506,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.24633429999812506
+   ],
+   "warm_median_seconds": 0.24633429999812506,
+   "warm_min_seconds": 0.24633429999812506
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.29638494399841875,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 29216
+   },
+   "samples_seconds": [
+    0.29638494399841875,
+    0.2969285219987796
+   ],
+   "warm_median_seconds": 0.2969285219987796,
+   "warm_min_seconds": 0.2969285219987796
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00036520299909170717,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 131144,
+    "primes": 9,
+    "systems": 16,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.00036520299909170717,
+    0.00016373200196539983
+   ],
+   "warm_median_seconds": 0.00016373200196539983,
+   "warm_min_seconds": 0.00016373200196539983
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.07270336200235761,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.07270336200235761,
+    0.05010479100019438
+   ],
+   "warm_median_seconds": 0.05010479100019438,
+   "warm_min_seconds": 0.05010479100019438
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.014860474002489354,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 9,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014860474002489354,
+    0.002047496000159299
+   ],
+   "warm_median_seconds": 0.002047496000159299,
+   "warm_min_seconds": 0.002047496000159299
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.05544646499765804,
+   "params": {
+    "features": 8,
+    "groups": 16,
+    "primes": 9,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.05544646499765804,
+    0.06361852999907569
+   ],
+   "warm_median_seconds": 0.06361852999907569,
+   "warm_min_seconds": 0.06361852999907569
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.6563509600018733,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.6563509600018733
+   ],
+   "warm_median_seconds": 0.6563509600018733,
+   "warm_min_seconds": 0.6563509600018733
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.5296406870002102,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.5296406870002102
+   ],
+   "warm_median_seconds": 0.5296406870002102,
+   "warm_min_seconds": 0.5296406870002102
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.2728960049971647,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.2728960049971647
+   ],
+   "warm_median_seconds": 0.2728960049971647,
+   "warm_min_seconds": 0.2728960049971647
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.3396168059989577,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 55,
+    "state_bytes": 453536
+   },
+   "samples_seconds": [
+    0.3396168059989577,
+    0.37563030299861566
+   ],
+   "warm_median_seconds": 0.37563030299861566,
+   "warm_min_seconds": 0.37563030299861566
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.010233640001388267,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 2074184,
+    "primes": 9,
+    "systems": 256,
+    "unknowns": 9
+   },
+   "samples_seconds": [
+    0.010233640001388267,
+    0.0024757860010140575
+   ],
+   "warm_median_seconds": 0.0024757860010140575,
+   "warm_min_seconds": 0.0024757860010140575
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 1.0753295109971077,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    1.0753295109971077,
+    1.2238853929993638
+   ],
+   "warm_median_seconds": 1.2238853929993638,
+   "warm_min_seconds": 1.2238853929993638
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.13878793399999267,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 9,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.13878793399999267,
+    0.12230340099995374
+   ],
+   "warm_median_seconds": 0.12230340099995374,
+   "warm_min_seconds": 0.12230340099995374
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 1.143513790997531,
+   "params": {
+    "features": 8,
+    "groups": 256,
+    "primes": 9,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    1.143513790997531,
+    1.0555944480001926
+   ],
+   "warm_median_seconds": 1.0555944480001926,
+   "warm_min_seconds": 1.0555944480001926
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.7953397130004305,
+   "params": {
+    "features": 8,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.7953397130004305
+   ],
+   "warm_median_seconds": 0.7953397130004305,
+   "warm_min_seconds": 0.7953397130004305
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.6512543270000606,
+   "params": {
+    "features": 8,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.6512543270000606
+   ],
+   "warm_median_seconds": 0.6512543270000606,
+   "warm_min_seconds": 0.6512543270000606
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0003919259979738854,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003919259979738854
+   ],
+   "warm_median_seconds": 0.0003919259979738854,
+   "warm_min_seconds": 0.0003919259979738854
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.0003500599996186793,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 7336
+   },
+   "samples_seconds": [
+    0.0003500599996186793,
+    0.0002953080002043862
+   ],
+   "warm_median_seconds": 0.0002953080002043862,
+   "warm_min_seconds": 0.0002953080002043862
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0001351430000795517,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 15752,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.0001351430000795517,
+    8.221800089813769e-05
+   ],
+   "warm_median_seconds": 8.221800089813769e-05,
+   "warm_min_seconds": 8.221800089813769e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.00022942400028114207,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.00022942400028114207,
+    0.00021562599795288406
+   ],
+   "warm_median_seconds": 0.00021562599795288406,
+   "warm_min_seconds": 0.00021562599795288406
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.03137469300054363,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03137469300054363,
+    0.00019707100000232458
+   ],
+   "warm_median_seconds": 0.00019707100000232458,
+   "warm_min_seconds": 0.00019707100000232458
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0002661599974089768,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0002661599974089768,
+    0.0004023389992653392
+   ],
+   "warm_median_seconds": 0.0004023389992653392,
+   "warm_min_seconds": 0.0004023389992653392
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.0015997570008039474,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0015997570008039474
+   ],
+   "warm_median_seconds": 0.0015997570008039474,
+   "warm_min_seconds": 0.0015997570008039474
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0002512820028641727,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002512820028641727
+   ],
+   "warm_median_seconds": 0.0002512820028641727,
+   "warm_min_seconds": 0.0002512820028641727
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.00033074399834731594,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 89536
+   },
+   "samples_seconds": [
+    0.00033074399834731594,
+    0.00032226900293608196
+   ],
+   "warm_median_seconds": 0.00032226900293608196,
+   "warm_min_seconds": 0.00032226900293608196
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0006015470025886316,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 546440,
+    "primes": 12,
+    "systems": 16,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.0006015470025886316,
+    0.0005542299986700527
+   ],
+   "warm_median_seconds": 0.0005542299986700527,
+   "warm_min_seconds": 0.0005542299986700527
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.38887188299850095,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.38887188299850095,
+    0.449757641999895
+   ],
+   "warm_median_seconds": 0.449757641999895,
+   "warm_min_seconds": 0.449757641999895
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.05338467500041588,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 12,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05338467500041588,
+    0.06588925699907122
+   ],
+   "warm_median_seconds": 0.06588925699907122,
+   "warm_min_seconds": 0.06588925699907122
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.41308600199772627,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 12,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.41308600199772627,
+    0.419749786000466
+   ],
+   "warm_median_seconds": 0.419749786000466,
+   "warm_min_seconds": 0.419749786000466
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.047771605000889394,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.047771605000889394
+   ],
+   "warm_median_seconds": 0.047771605000889394,
+   "warm_min_seconds": 0.047771605000889394
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.06331489899821463,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.06331489899821463
+   ],
+   "warm_median_seconds": 0.06331489899821463,
+   "warm_min_seconds": 0.06331489899821463
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.043887689000257524,
+   "params": {
+    "features": 16,
+    "group": 2,
+    "groups": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.043887689000257524
+   ],
+   "warm_median_seconds": 0.043887689000257524,
+   "warm_min_seconds": 0.043887689000257524
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.00026514799901633523,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00026514799901633523
+   ],
+   "warm_median_seconds": 0.00026514799901633523,
+   "warm_min_seconds": 0.00026514799901633523
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.001952020000317134,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 1404736
+   },
+   "samples_seconds": [
+    0.001952020000317134,
+    0.008439523000561167
+   ],
+   "warm_median_seconds": 0.008439523000561167,
+   "warm_min_seconds": 0.008439523000561167
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.02715429200179642,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 8675720,
+    "primes": 12,
+    "systems": 256,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.02715429200179642,
+    0.05315335200066329
+   ],
+   "warm_median_seconds": 0.05315335200066329,
+   "warm_min_seconds": 0.05315335200066329
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 6.838695668000582,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    6.838695668000582
+   ],
+   "warm_median_seconds": 6.838695668000582,
+   "warm_min_seconds": 6.838695668000582
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.7550014040025417,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 12,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.7550014040025417
+   ],
+   "warm_median_seconds": 0.7550014040025417,
+   "warm_min_seconds": 0.7550014040025417
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.59214638299818,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 12,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.59214638299818
+   ],
+   "warm_median_seconds": 6.59214638299818,
+   "warm_min_seconds": 6.59214638299818
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.044482812998467125,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.044482812998467125
+   ],
+   "warm_median_seconds": 0.044482812998467125,
+   "warm_min_seconds": 0.044482812998467125
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.032640797002386535,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.032640797002386535
+   ],
+   "warm_median_seconds": 0.032640797002386535,
+   "warm_min_seconds": 0.032640797002386535
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.0794494459987618,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0794494459987618
+   ],
+   "warm_median_seconds": 0.0794494459987618,
+   "warm_min_seconds": 0.0794494459987618
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.11509736900188727,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 7336
+   },
+   "samples_seconds": [
+    0.11509736900188727,
+    0.1080955500001437
+   ],
+   "warm_median_seconds": 0.1080955500001437,
+   "warm_min_seconds": 0.1080955500001437
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00019690999761223793,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 15752,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.00019690999761223793,
+    6.224300159374252e-05
+   ],
+   "warm_median_seconds": 6.224300159374252e-05,
+   "warm_min_seconds": 6.224300159374252e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.0002866949980671052,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.0002866949980671052,
+    0.00021639999977196567
+   ],
+   "warm_median_seconds": 0.00021639999977196567,
+   "warm_min_seconds": 0.00021639999977196567
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.0005348150007193908,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005348150007193908,
+    0.00014899000234436244
+   ],
+   "warm_median_seconds": 0.00014899000234436244,
+   "warm_min_seconds": 0.00014899000234436244
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0001715520011202898,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0001715520011202898,
+    0.00016554999820073135
+   ],
+   "warm_median_seconds": 0.00016554999820073135,
+   "warm_min_seconds": 0.00016554999820073135
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.04613030399923446,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.04613030399923446
+   ],
+   "warm_median_seconds": 0.04613030399923446,
+   "warm_min_seconds": 0.04613030399923446
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.07579552799870726,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.07579552799870726
+   ],
+   "warm_median_seconds": 0.07579552799870726,
+   "warm_min_seconds": 0.07579552799870726
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.13566162499773782,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 89536
+   },
+   "samples_seconds": [
+    0.13566162499773782,
+    0.10529049000251689
+   ],
+   "warm_median_seconds": 0.10529049000251689,
+   "warm_min_seconds": 0.10529049000251689
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0006716879979649093,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 586152,
+    "primes": 13,
+    "systems": 16,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.0006716879979649093,
+    0.000543459002074087
+   ],
+   "warm_median_seconds": 0.000543459002074087,
+   "warm_min_seconds": 0.000543459002074087
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.48660149299757904,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.48660149299757904,
+    0.5195656239993696
+   ],
+   "warm_median_seconds": 0.5195656239993696,
+   "warm_min_seconds": 0.5195656239993696
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.04700878099902184,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 13,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04700878099902184,
+    0.03529356899889535
+   ],
+   "warm_median_seconds": 0.03529356899889535,
+   "warm_min_seconds": 0.03529356899889535
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.36324554499879014,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 13,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.36324554499879014,
+    0.3935207279973838
+   ],
+   "warm_median_seconds": 0.3935207279973838,
+   "warm_min_seconds": 0.3935207279973838
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.16094364099990344,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.16094364099990344
+   ],
+   "warm_median_seconds": 0.16094364099990344,
+   "warm_min_seconds": 0.16094364099990344
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.1598659619994578,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1598659619994578
+   ],
+   "warm_median_seconds": 0.1598659619994578,
+   "warm_min_seconds": 0.1598659619994578
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.15653116600151407,
+   "params": {
+    "features": 16,
+    "group": 2,
+    "groups": 16,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.15653116600151407
+   ],
+   "warm_median_seconds": 0.15653116600151407,
+   "warm_min_seconds": 0.15653116600151407
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.047134437001659535,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.047134437001659535
+   ],
+   "warm_median_seconds": 0.047134437001659535,
+   "warm_min_seconds": 0.047134437001659535
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.09670675700181164,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 1404736
+   },
+   "samples_seconds": [
+    0.09670675700181164,
+    0.09303895500124781
+   ],
+   "warm_median_seconds": 0.09303895500124781,
+   "warm_min_seconds": 0.09303895500124781
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.03163722399767721,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 9310632,
+    "primes": 13,
+    "systems": 256,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.03163722399767721,
+    0.05068969700005255
+   ],
+   "warm_median_seconds": 0.05068969700005255,
+   "warm_min_seconds": 0.05068969700005255
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 6.27348372599954,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    6.27348372599954
+   ],
+   "warm_median_seconds": 6.27348372599954,
+   "warm_min_seconds": 6.27348372599954
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.558466974998737,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 13,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.558466974998737
+   ],
+   "warm_median_seconds": 0.558466974998737,
+   "warm_min_seconds": 0.558466974998737
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 5.289245268999366,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 13,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    5.289245268999366
+   ],
+   "warm_median_seconds": 5.289245268999366,
+   "warm_min_seconds": 5.289245268999366
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.14184941600251477,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.14184941600251477
+   ],
+   "warm_median_seconds": 0.14184941600251477,
+   "warm_min_seconds": 0.14184941600251477
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.14220665999891935,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 256,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.14220665999891935
+   ],
+   "warm_median_seconds": 0.14220665999891935,
+   "warm_min_seconds": 0.14220665999891935
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.6404490630011423,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.6404490630011423
+   ],
+   "warm_median_seconds": 0.6404490630011423,
+   "warm_min_seconds": 0.6404490630011423
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.8999423240020406,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 7336
+   },
+   "samples_seconds": [
+    0.8999423240020406,
+    0.9812113189982483
+   ],
+   "warm_median_seconds": 0.9812113189982483,
+   "warm_min_seconds": 0.9812113189982483
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.00022379100118996575,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 15752,
+    "primes": 3,
+    "systems": 1,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.00022379100118996575,
+    7.595700299134478e-05
+   ],
+   "warm_median_seconds": 7.595700299134478e-05,
+   "warm_min_seconds": 7.595700299134478e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.0002806429984048009,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "family"
+   },
+   "samples_seconds": [
+    0.0002806429984048009,
+    0.00025637900034780614
+   ],
+   "warm_median_seconds": 0.00025637900034780614,
+   "warm_min_seconds": 0.00025637900034780614
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.058187004000501474,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.058187004000501474,
+    0.00017114599904743955
+   ],
+   "warm_median_seconds": 0.00017114599904743955,
+   "warm_min_seconds": 0.00017114599904743955
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.0002144130012311507,
+   "params": {
+    "features": 16,
+    "groups": 1,
+    "primes": 3,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.0002144130012311507,
+    0.01236087600045721
+   ],
+   "warm_median_seconds": 0.01236087600045721,
+   "warm_min_seconds": 0.01236087600045721
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 0.3831287169996358,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 1,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.3831287169996358
+   ],
+   "warm_median_seconds": 0.3831287169996358,
+   "warm_min_seconds": 0.3831287169996358
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.4555003880013828,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.4555003880013828
+   ],
+   "warm_median_seconds": 0.4555003880013828,
+   "warm_min_seconds": 0.4555003880013828
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 0.7694832540000789,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 89536
+   },
+   "samples_seconds": [
+    0.7694832540000789,
+    0.9647990509984083
+   ],
+   "warm_median_seconds": 0.9647990509984083,
+   "warm_min_seconds": 0.9647990509984083
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.0007018139986030292,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 665576,
+    "primes": 15,
+    "systems": 16,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.0007018139986030292,
+    0.000560017997486284
+   ],
+   "warm_median_seconds": 0.000560017997486284,
+   "warm_min_seconds": 0.000560017997486284
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 0.42494156199973077,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    0.42494156199973077,
+    0.4519212970008084
+   ],
+   "warm_median_seconds": 0.4519212970008084,
+   "warm_min_seconds": 0.4519212970008084
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.048088489998917794,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 15,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.048088489998917794,
+    0.05216742999982671
+   ],
+   "warm_median_seconds": 0.05216742999982671,
+   "warm_min_seconds": 0.05216742999982671
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 0.36823895199995604,
+   "params": {
+    "features": 16,
+    "groups": 16,
+    "primes": 15,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    0.36823895199995604,
+    0.5018795950018102
+   ],
+   "warm_median_seconds": 0.5018795950018102,
+   "warm_min_seconds": 0.5018795950018102
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 2.574679612000182,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    2.574679612000182
+   ],
+   "warm_median_seconds": 2.574679612000182,
+   "warm_min_seconds": 2.574679612000182
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 1.30937180500041,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 16,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    1.30937180500041
+   ],
+   "warm_median_seconds": 1.30937180500041,
+   "warm_min_seconds": 1.30937180500041
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004 arrays)",
+   "first_seconds": 0.859358213001542,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.859358213001542
+   ],
+   "warm_median_seconds": 0.859358213001542,
+   "warm_min_seconds": 0.859358213001542
+  },
+  {
+   "backend": "cpu",
+   "case": "moment state (LIN-001)",
+   "first_seconds": 1.0744954039982986,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "slots": 171,
+    "state_bytes": 1404736
+   },
+   "samples_seconds": [
+    1.0744954039982986,
+    0.9515251119992172
+   ],
+   "warm_median_seconds": 0.9515251119992172,
+   "warm_min_seconds": 0.9515251119992172
+  },
+  {
+   "backend": "cpu",
+   "case": "leave-one-group-out plan (assembly: total, complements, integer systems)",
+   "first_seconds": 0.04068528499919921,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "build",
+   "result": {
+    "device_bytes": 10580456,
+    "primes": 15,
+    "systems": 256,
+    "unknowns": 17
+   },
+   "samples_seconds": [
+    0.04068528499919921,
+    0.06096654800057877
+   ],
+   "warm_median_seconds": 0.06096654800057877,
+   "warm_min_seconds": 0.06096654800057877
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO solve (CPU exact, every group)",
+   "first_seconds": 8.40893122900161,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "kinds": "unique"
+   },
+   "samples_seconds": [
+    8.40893122900161
+   ],
+   "warm_median_seconds": 8.40893122900161,
+   "warm_min_seconds": 8.40893122900161
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO residues (the kernel's work, CPU reference)",
+   "first_seconds": 0.8542605559996446,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 15,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.8542605559996446
+   ],
+   "warm_median_seconds": 0.8542605559996446,
+   "warm_min_seconds": 0.8542605559996446
+  },
+  {
+   "backend": "cpu",
+   "case": "LOGO finish (CRT, reconstruction, exact verification)",
+   "first_seconds": 6.985397866999847,
+   "params": {
+    "features": 16,
+    "groups": 256,
+    "primes": 15,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal_cpu": true
+   },
+   "samples_seconds": [
+    6.985397866999847
+   ],
+   "warm_median_seconds": 6.985397866999847,
+   "warm_min_seconds": 6.985397866999847
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 1.3568216239982576,
+   "params": {
+    "features": 16,
+    "group": 0,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    1.3568216239982576
+   ],
+   "warm_median_seconds": 1.3568216239982576,
+   "warm_min_seconds": 1.3568216239982576
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction of one group's model (scope, LIN-001, LIN-002)",
+   "first_seconds": 1.2518341069990129,
+   "params": {
+    "features": 16,
+    "group": 1,
+    "groups": 256,
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    1.2518341069990129
+   ],
+   "warm_median_seconds": 1.2518341069990129,
+   "warm_min_seconds": 1.2518341069990129
+  },
+  {
+   "backend": "cpu",
+   "case": "model with its exact inverse (fit)",
+   "first_seconds": 0.0004816859982383903,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "rows": 20000
+   },
+   "phase": "build",
+   "result": {
+    "det_bits": 145,
+    "inverse": true,
+    "kind": "unique"
+   },
+   "samples_seconds": [
+    0.0004816859982383903,
+    0.0003509659982228186,
+    0.00031935899824020453
+   ],
+   "warm_median_seconds": 0.00033516249823151156,
+   "warm_min_seconds": 0.00031935899824020453
+  },
+  {
+   "backend": "reconstruction",
+   "case": "LIN-002 fit (no inverse)",
+   "first_seconds": 0.012705460998404305,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012705460998404305,
+    0.0006123079983808566,
+    0.0005552670008910354
+   ],
+   "warm_median_seconds": 0.000583787499635946,
+   "warm_min_seconds": 0.0005552670008910354
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (Woodbury chain, rank 4)",
+   "first_seconds": 0.09701725000195438,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.09701725000195438
+   ],
+   "warm_median_seconds": 0.09701725000195438,
+   "warm_min_seconds": 0.09701725000195438
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (rebuild from A0)",
+   "first_seconds": 0.017211747999681393,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017211747999681393
+   ],
+   "warm_median_seconds": 0.017211747999681393,
+   "warm_min_seconds": 0.017211747999681393
+  },
+  {
+   "backend": "reconstruction",
+   "case": "ridge requests (LIN-002 fit of the moments)",
+   "first_seconds": 0.026745023002149537,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.026745023002149537
+   ],
+   "warm_median_seconds": 0.026745023002149537,
+   "warm_min_seconds": 0.026745023002149537
+  },
+  {
+   "backend": "cpu",
+   "case": "single-row deletions (Woodbury chain)",
+   "first_seconds": 0.046255052999185864,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.046255052999185864
+   ],
+   "warm_median_seconds": 0.046255052999185864,
+   "warm_min_seconds": 0.046255052999185864
+  },
+  {
+   "backend": "reconstruction",
+   "case": "single-row deletions (complete reconstruction each time)",
+   "first_seconds": 0.1368945040012477,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1368945040012477
+   ],
+   "warm_median_seconds": 0.1368945040012477,
+   "warm_min_seconds": 0.1368945040012477
+  },
+  {
+   "backend": "cpu",
+   "case": "floating solve with a certified bound (tol 1e-9)",
+   "first_seconds": 8.404400068684481e-05,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "alpha": 1.1489456526683913e-11,
+    "bound": 1.1325707581676357e-14,
+    "certified": true,
+    "kappa": 338930.78115933837
+   },
+   "samples_seconds": [
+    8.404400068684481e-05,
+    2.7652997232507914e-05,
+    1.889799750642851e-05
+   ],
+   "warm_median_seconds": 2.3275497369468212e-05,
+   "warm_min_seconds": 1.889799750642851e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "exact solve of the same system (LIN-002)",
+   "first_seconds": 0.00029617000109283254,
+   "params": {
+    "features": 4,
+    "matrix": "random",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": "unique",
+   "samples_seconds": [
+    0.00029617000109283254,
+    0.00014584200107492507,
+    0.00015824300135136582
+   ],
+   "warm_median_seconds": 0.00015204250121314544,
+   "warm_min_seconds": 0.00014584200107492507
+  },
+  {
+   "backend": "cpu",
+   "case": "model with its exact inverse (fit)",
+   "first_seconds": 0.00025522199939587153,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "rows": 20000
+   },
+   "phase": "build",
+   "result": {
+    "det_bits": 126,
+    "inverse": true,
+    "kind": "unique"
+   },
+   "samples_seconds": [
+    0.00025522199939587153,
+    0.0002510839985916391,
+    0.00020421699809958227
+   ],
+   "warm_median_seconds": 0.00022765049834561069,
+   "warm_min_seconds": 0.00020421699809958227
+  },
+  {
+   "backend": "reconstruction",
+   "case": "LIN-002 fit (no inverse)",
+   "first_seconds": 0.0003193660013494082,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003193660013494082,
+    0.00032734599881223403,
+    0.0002807989985740278
+   ],
+   "warm_median_seconds": 0.0003040724986931309,
+   "warm_min_seconds": 0.0002807989985740278
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (Woodbury chain, rank 4)",
+   "first_seconds": 0.06875160400159075,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06875160400159075
+   ],
+   "warm_median_seconds": 0.06875160400159075,
+   "warm_min_seconds": 0.06875160400159075
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (rebuild from A0)",
+   "first_seconds": 0.02895054499822436,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02895054499822436
+   ],
+   "warm_median_seconds": 0.02895054499822436,
+   "warm_min_seconds": 0.02895054499822436
+  },
+  {
+   "backend": "reconstruction",
+   "case": "ridge requests (LIN-002 fit of the moments)",
+   "first_seconds": 0.018658278000657447,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.018658278000657447
+   ],
+   "warm_median_seconds": 0.018658278000657447,
+   "warm_min_seconds": 0.018658278000657447
+  },
+  {
+   "backend": "cpu",
+   "case": "single-row deletions (Woodbury chain)",
+   "first_seconds": 0.05325270100001944,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.05325270100001944
+   ],
+   "warm_median_seconds": 0.05325270100001944,
+   "warm_min_seconds": 0.05325270100001944
+  },
+  {
+   "backend": "reconstruction",
+   "case": "single-row deletions (complete reconstruction each time)",
+   "first_seconds": 0.12052373699771124,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.12052373699771124
+   ],
+   "warm_median_seconds": 0.12052373699771124,
+   "warm_min_seconds": 0.12052373699771124
+  },
+  {
+   "backend": "cpu",
+   "case": "floating solve with a certified bound (tol 1e-9)",
+   "first_seconds": 7.618599920533597e-05,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "alpha": 0.8981139737630337,
+    "certified": false,
+    "kappa": 1.9916131572729544e+18,
+    "reason": "the certified error bound exceeds tol"
+   },
+   "samples_seconds": [
+    7.618599920533597e-05,
+    2.226799915661104e-05,
+    1.5475998225156218e-05
+   ],
+   "warm_median_seconds": 1.887199869088363e-05,
+   "warm_min_seconds": 1.5475998225156218e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "exact solve of the same system (LIN-002)",
+   "first_seconds": 0.00026649999927030876,
+   "params": {
+    "features": 4,
+    "matrix": "nearly",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": "unique",
+   "samples_seconds": [
+    0.00026649999927030876,
+    0.0001302050004596822,
+    0.00011903199992957525
+   ],
+   "warm_median_seconds": 0.00012461850019462872,
+   "warm_min_seconds": 0.00011903199992957525
+  },
+  {
+   "backend": "cpu",
+   "case": "model with its exact inverse (fit)",
+   "first_seconds": 0.00015899100253591314,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "rows": 20000
+   },
+   "phase": "build",
+   "result": {
+    "det_bits": null,
+    "inverse": false,
+    "kind": "family"
+   },
+   "samples_seconds": [
+    0.00015899100253591314,
+    0.008212036002078094,
+    0.000179130001924932
+   ],
+   "warm_median_seconds": 0.004195583002001513,
+   "warm_min_seconds": 0.000179130001924932
+  },
+  {
+   "backend": "reconstruction",
+   "case": "LIN-002 fit (no inverse)",
+   "first_seconds": 0.0003082530020037666,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "rows": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003082530020037666,
+    0.0002682070007722359,
+    0.000230534998991061
+   ],
+   "warm_median_seconds": 0.00024937099988164846,
+   "warm_min_seconds": 0.000230534998991061
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (Woodbury chain, rank 4)",
+   "first_seconds": 0.04963603500073077,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04963603500073077
+   ],
+   "warm_median_seconds": 0.04963603500073077,
+   "warm_min_seconds": 0.04963603500073077
+  },
+  {
+   "backend": "cpu",
+   "case": "ridge requests (rebuild from A0)",
+   "first_seconds": 0.012228768999193562,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012228768999193562
+   ],
+   "warm_median_seconds": 0.012228768999193562,
+   "warm_min_seconds": 0.012228768999193562
+  },
+  {
+   "backend": "reconstruction",
+   "case": "ridge requests (LIN-002 fit of the moments)",
+   "first_seconds": 0.025864621002256172,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.025864621002256172
+   ],
+   "warm_median_seconds": 0.025864621002256172,
+   "warm_min_seconds": 0.025864621002256172
+  },
+  {
+   "backend": "cpu",
+   "case": "single-row deletions (Woodbury chain)",
+   "first_seconds": 0.012041956000757637,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "fallback": true,
+    "method": "rebuilt"
+   },
+   "samples_seconds": [
+    0.012041956000757637
+   ],
+   "warm_median_seconds": 0.012041956000757637,
+   "warm_min_seconds": 0.012041956000757637
+  },
+  {
+   "backend": "reconstruction",
+   "case": "single-row deletions (complete reconstruction each time)",
+   "first_seconds": 0.1256051890013623,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "requests": 20,
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.1256051890013623
+   ],
+   "warm_median_seconds": 0.1256051890013623,
+   "warm_min_seconds": 0.1256051890013623
+  },
+  {
+   "backend": "cpu",
+   "case": "floating solve with a certified bound (tol 1e-9)",
+   "first_seconds": 3.762900087167509e-05,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": {
+    "certified": false,
+    "reason": "exactly singular"
+   },
+   "samples_seconds": [
+    3.762900087167509e-05,
+    1.1726999218808487e-05,
+    7.254002412082627e-06
+   ],
+   "warm_median_seconds": 9.490500815445557e-06,
+   "warm_min_seconds": 7.254002412082627e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "exact solve of the same system (LIN-002)",
+   "first_seconds": 0.0003013580026163254,
+   "params": {
+    "features": 4,
+    "matrix": "deficient",
+    "rows": 20000
+   },
+   "phase": "run",
+   "result": "family",
+   "samples_seconds": [
+    0.0003013580026163254,
+    0.0001651479979045689,
+    0.0001311349988100119
+   ],
+   "warm_median_seconds": 0.0001481414983572904,
+   "warm_min_seconds": 0.0001311349988100119
+  },
+  {
+   "backend": "cpu",
+   "case": "one-row deletion (Woodbury downdate from the kept inverse)",
+   "first_seconds": 0.00020941799812135287,
+   "params": {
+    "features": 2,
+    "rows": 20000,
+    "unknowns": 3
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.00020941799812135287,
+    0.00016471100025228225,
+    0.00014518999887513928
+   ],
+   "warm_median_seconds": 0.00015495049956371076,
+   "warm_min_seconds": 0.00014518999887513928
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (exact rebuild of the updated normal equations, with its inverse)",
+   "first_seconds": 8.244399941759184e-05,
+   "params": {
+    "features": 2,
+    "rows": 20000,
+    "unknowns": 3
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    8.244399941759184e-05,
+    9.619300180929713e-05,
+    6.108799789217301e-05
+   ],
+   "warm_median_seconds": 7.864049985073507e-05,
+   "warm_min_seconds": 6.108799789217301e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (complete reconstruction: scope, LIN-001, fit with its inverse)",
+   "first_seconds": 0.0008105589986371342,
+   "params": {
+    "features": 2,
+    "rows": 20000,
+    "unknowns": 3
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0008105589986371342,
+    0.012958889998117229,
+    0.0007981449998624157
+   ],
+   "warm_median_seconds": 0.006878517498989822,
+   "warm_min_seconds": 0.0007981449998624157
+  },
+  {
+   "backend": "cpu",
+   "case": "one-row deletion (Woodbury downdate from the kept inverse)",
+   "first_seconds": 0.0005536820026463829,
+   "params": {
+    "features": 4,
+    "rows": 20000,
+    "unknowns": 5
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.0005536820026463829,
+    0.0005128759985382203,
+    0.00047725399781484157
+   ],
+   "warm_median_seconds": 0.0004950649981765309,
+   "warm_min_seconds": 0.00047725399781484157
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (exact rebuild of the updated normal equations, with its inverse)",
+   "first_seconds": 0.00016763500025263056,
+   "params": {
+    "features": 4,
+    "rows": 20000,
+    "unknowns": 5
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.00016763500025263056,
+    0.00014300900147645734,
+    0.0001571850007167086
+   ],
+   "warm_median_seconds": 0.00015009700109658297,
+   "warm_min_seconds": 0.00014300900147645734
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (complete reconstruction: scope, LIN-001, fit with its inverse)",
+   "first_seconds": 0.01364184900012333,
+   "params": {
+    "features": 4,
+    "rows": 20000,
+    "unknowns": 5
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.01364184900012333,
+    0.0014853749999019783,
+    0.013501675999577856
+   ],
+   "warm_median_seconds": 0.007493525499739917,
+   "warm_min_seconds": 0.0014853749999019783
+  },
+  {
+   "backend": "cpu",
+   "case": "one-row deletion (Woodbury downdate from the kept inverse)",
+   "first_seconds": 0.0022235239994188305,
+   "params": {
+    "features": 8,
+    "rows": 20000,
+    "unknowns": 9
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.0022235239994188305,
+    0.012020521000522422,
+    0.010721022001234815
+   ],
+   "warm_median_seconds": 0.011370771500878618,
+   "warm_min_seconds": 0.010721022001234815
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (exact rebuild of the updated normal equations, with its inverse)",
+   "first_seconds": 0.0006504280027002096,
+   "params": {
+    "features": 8,
+    "rows": 20000,
+    "unknowns": 9
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.0006504280027002096,
+    0.0005806319968542084,
+    0.008672969001054298
+   ],
+   "warm_median_seconds": 0.004626800498954253,
+   "warm_min_seconds": 0.0005806319968542084
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (complete reconstruction: scope, LIN-001, fit with its inverse)",
+   "first_seconds": 0.011877183002070524,
+   "params": {
+    "features": 8,
+    "rows": 20000,
+    "unknowns": 9
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.011877183002070524,
+    0.011961688000155846,
+    0.011647982999420492
+   ],
+   "warm_median_seconds": 0.011804835499788169,
+   "warm_min_seconds": 0.011647982999420492
+  },
+  {
+   "backend": "cpu",
+   "case": "one-row deletion (Woodbury downdate from the kept inverse)",
+   "first_seconds": 0.04187230200113845,
+   "params": {
+    "features": 16,
+    "rows": 20000,
+    "unknowns": 17
+   },
+   "phase": "run",
+   "result": {
+    "fallback": false,
+    "method": "woodbury"
+   },
+   "samples_seconds": [
+    0.04187230200113845,
+    0.07519011899785255,
+    0.08569379300024593
+   ],
+   "warm_median_seconds": 0.08044195599904924,
+   "warm_min_seconds": 0.07519011899785255
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (exact rebuild of the updated normal equations, with its inverse)",
+   "first_seconds": 0.01971713999955682,
+   "params": {
+    "features": 16,
+    "rows": 20000,
+    "unknowns": 17
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.01971713999955682,
+    0.01589783300005365,
+    0.015964070000336505
+   ],
+   "warm_median_seconds": 0.01593095150019508,
+   "warm_min_seconds": 0.01589783300005365
+  },
+  {
+   "backend": "reconstruction",
+   "case": "one-row deletion (complete reconstruction: scope, LIN-001, fit with its inverse)",
+   "first_seconds": 0.055090551999455784,
+   "params": {
+    "features": 16,
+    "rows": 20000,
+    "unknowns": 17
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    0.055090551999455784,
+    0.05936955700235558,
+    0.04989349699826562
+   ],
+   "warm_median_seconds": 0.0546315270003106,
+   "warm_min_seconds": 0.04989349699826562
+  }
+ ],
+ "seconds": 97.92673072300022,
+ "seed": 2026,
+ "thresholds": []
+}
