@@ -1254,6 +1254,8 @@ def parse(sql):
 _CMP = {"COMPARE_EQUAL": "=", "COMPARE_NOTEQUAL": "<>", "COMPARE_LESSTHAN": "<", "COMPARE_GREATERTHAN": ">",
         "COMPARE_LESSTHANOREQUALTO": "<=", "COMPARE_GREATERTHANOREQUALTO": ">=", "COMPARE_DISTINCT_FROM": "is_distinct",
         "COMPARE_NOT_DISTINCT_FROM": "is_not_distinct"}
+_NOT_CMP = {"COMPARE_EQUAL": "<>", "COMPARE_NOTEQUAL": "=", "COMPARE_LESSTHAN": ">=", "COMPARE_GREATERTHANOREQUALTO": "<",
+            "COMPARE_GREATERTHAN": "<=", "COMPARE_LESSTHANOREQUALTO": ">"}         # NOT (a op b) is a <this> b
 _FN_ALIAS = {"**": "power", "^": "power", "~~": "like", "!~~": "not_like", "~~*": "ilike", "!~~*": "not_ilike", "~~~": "glob",
              "not_like_escape": "not_like_escape", "mod": "%", "fmod": "%", "divide": "//", "list_value": "list_value",
              "array_value": "list_value", "ceiling": "ceil", "character_length": "char_length", "strpos": "position",
@@ -1292,7 +1294,7 @@ def cast_to(e, t, try_=False):
     if t is None or e.t == t: return e
     if isinstance(e, I.Lit):
         if e.v is None or isinstance(e.v, F.Err): return I.Lit(e.v, t)
-        try: return I.Lit(T.cast_value(e.v, e.t, t, not try_), t)
+        try: return I.Lit(T.cast_value(e.v, e.t, t, not try_), t, fixed=True)
         except SqlError as ex: return I.Lit(F.Err(str(ex)), t)
     return I.Cast(e, t, try_)
 
@@ -1318,6 +1320,123 @@ def _collated_args(name, args):
             a = make_func("__ckey", [a, I.Lit(c, T.VARCHAR)])
         out.append(a)
     return out
+
+
+_CMP_FLIP = {"=": "=", "<>": "<>", "<": ">", "<=": ">=", ">": "<", ">=": "<="}
+
+
+def _as_written(e, *src):
+    """e, a rewrite of the expression src (a call: name and arguments), that keeps that expression's identity (its key):
+    expressions written differently stay different (GROUP BY ROLLUP (i + 1 > 5, i > 4) has two grouping columns, as
+    in DuckDB, which rewrites after binding them), the same one written twice is one"""
+    if isinstance(e, I.Func) and (e.extra is None or isinstance(e.extra, tuple) and e.extra[:1] == ("as",)):
+        return I.Func(e.fn, e.args, e.t, ("as",) + tuple(a.key() if isinstance(a, I.Node) else a for a in src))
+    return e
+
+
+def _const_or_null(x, v):
+    """v where x is not NULL, else NULL (DuckDB's constant_or_null: x is still evaluated, with its own errors)"""
+    if v: return I.Func("or", [make_func("is_not_null", [x], extra="strict"), I.Lit(None, T.BOOLEAN)], T.BOOLEAN)
+    return I.Func("and", [make_func("is_null", [x], extra="strict"), I.Lit(None, T.BOOLEAN)], T.BOOLEAN)
+
+
+def _mul_chain(args, rt):
+    """DuckDB's reassociation of an integer product: the factors of a chain of * of one type, with its constants
+    folded into one placed last (x * 0 is constant_or_null(0, x)), so (32767 * b) * u is (b * u) * 32767, computed in
+    that order, and a comparison of it with a constant is decided as one of b * u. None: as it is (x * c, or
+    constants whose product leaves the type: DuckDB keeps that product, which fails where it is computed)"""
+    out = []
+    def flat(e):
+        if isinstance(e, I.Func) and e.fn == "*" and len(e.args) == 2 and e.t == rt: flat(e.args[0]); flat(e.args[1])
+        else: out.append(e)
+    for a in args: flat(a)
+    consts = [e for e in out if F.lit_int(e)]
+    rest = [e for e in out if not F.lit_int(e)]
+    if not consts or not rest: return None
+    c = 1
+    for k in consts: c *= k.v
+    if len(consts) == 1 and c != 0 and (len(out) == 2 or out[-1] is consts[0]): return None
+    lo, hi = T.INT_RANGE[rt.id]
+    if not lo <= c <= hi: return None
+    x = cast_to(rest[0], rt)
+    for e in rest[1:]: x = make_func("*", [x, cast_to(e, rt)])
+    if c == 0: return I.Case([(make_func("is_null", [x], extra="strict"), I.Lit(None, rt))], I.Lit(0, rt, fixed=True), rt)
+    # (x * 1 stays a product: another expression than x, as GROUP BY ROLLUP (x, x * 1) has two grouping columns)
+    return make_func("*", [x, I.Lit(c, rt, fixed=True)])
+
+
+def _unit_div(x):
+    """x without its // 1 (DuckDB: x // 1 is x), which a comparison with a constant looks through"""
+    while isinstance(x, I.Func) and x.fn in ("//", "divide") and len(x.args) == 2 and F.lit_int(x.args[1]) and x.args[1].v == 1 \
+            and x.args[0].t == x.t:
+        x = x.args[0]
+    return x
+
+
+def _can_fail(e):
+    """whether computing e can raise an overflow or a conversion error (an integer / DECIMAL operation, a cast that
+    is not widening)"""
+    import sqlexec
+    if isinstance(e, I.Cast) and not e.try_ and not sqlexec._widening(e.arg.t, e.t): return True
+    if isinstance(e, I.Func) and sqlexec._bounded(e.fn, e.t) is not None: return True
+    return isinstance(e, (I.Func, I.Case, I.Cast)) and any(_can_fail(c) for c in e.children())
+
+
+def _null_test_computes(x):
+    """whether DuckDB computes x for x IS [NOT] NULL: it decides the test from its statistics where they show that x
+    is never NULL, and a cast that can fail has none (nor has anything computed from it; a CASE's WHEN conditions are
+    no part of its value), so there x is computed and its error fails the query. Elsewhere x's error counts as a
+    value that is not NULL, as where DuckDB decides the test without x (its statistics of a column's NULLs, which a
+    filter can rule out, are not followed here)"""
+    if isinstance(x, I.Cast):
+        import sqlexec
+        return not sqlexec._widening(x.arg.t, x.t) or _null_test_computes(x.arg)
+    if isinstance(x, I.Func):           # (a strict test is a constant_or_null, which has no statistics either)
+        return x.extra == "strict" or any(_null_test_computes(a) for a in x.args)
+    if isinstance(x, I.Case): return any(_null_test_computes(v) for _, v in x.whens) or x.else_ is not None and _null_test_computes(x.else_)
+    return False
+
+
+def _cmp_constants(name, args):
+    """DuckDB's rewrites of a comparison with a constant (its ComparisonSimplification and MoveConstants rules), which
+    decide it without computing the integer arithmetic on the other side: the answer is the exact one, and an
+    overflow there is no error, as in DuckDB. A NULL constant gives NULL; CAST(x AS <wider integer>) compares x with
+    a constant that fits x's type; x + c1, c1 + x, x - c1, c1 - x, -x and x * c1 (c1 dividing c2) against c2 compare
+    x with the constant they give, when it fits the type; = (and <> of a product or a negation) is otherwise FALSE
+    (TRUE) where x is not NULL. -> the rewritten comparison, or None (evaluated as written)"""
+    a, b = args
+    if isinstance(a, I.Lit) == isinstance(b, I.Lit): return None
+    x, c, op = (a, b, name) if isinstance(b, I.Lit) else (b, a, _CMP_FLIP[name])
+    if c.v is None: return I.Lit(None, T.BOOLEAN)
+    if not (F.lit_int(c) and c.t.integer and x.t.integer): return None
+    x = _unit_div(x)
+    v = c.v
+    if isinstance(x, I.Cast):
+        import sqlexec
+        if x.try_ or not x.arg.t.integer or not sqlexec._widening(x.arg.t, x.t) or not F._fits(v, x.arg.t): return None
+        return make_func(op, [x.arg, I.Lit(v, x.arg.t, fixed=True)])
+    if not isinstance(x, I.Func): return None
+    neq = False                                      # does <> of an impossible value give TRUE (else: evaluated)?
+    if x.fn == "neg" and len(x.args) == 1:
+        inner, nv, op2, neq = x.args[0], -v, _CMP_FLIP[op], True
+    elif x.fn in ("+", "-", "*") and len(x.args) == 2:
+        l, r = x.args
+        if F.lit_int(r) and not F.lit_int(l): inner, k, first = l, r.v, False
+        elif F.lit_int(l) and not F.lit_int(r): inner, k, first = r, l.v, True
+        else: return None
+        if x.fn == "+": nv, op2 = v - k, op
+        elif x.fn == "-": nv, op2 = (k - v, _CMP_FLIP[op]) if first else (v + k, op)
+        else:
+            if k == 0: return None
+            neq = True
+            if v % k: return _const_or_null(inner, op == "<>") if op in ("=", "<>") else None    # never equal
+            nv, op2 = v // k, _CMP_FLIP[op] if k < 0 else op
+    else: return None
+    if not inner.t.integer: return None
+    if not F._fits(nv, x.t):                         # the value x would need is outside its type
+        if op == "=" or op == "<>" and neq: return _const_or_null(inner, op == "<>")
+        return None
+    return make_func(op2, [inner, I.Lit(nv, x.t, fixed=True)])
 
 
 def make_func(name, args, extra=None):
@@ -1350,6 +1469,22 @@ def make_func(name, args, extra=None):
     rt, casts = s.typer(args)
     if casts:
         args = [cast_to(a, c) if c is not None else a for a, c in zip(args, list(casts) + [None] * (len(args) - len(casts)))]
+    if name in _CMP_FLIP and len(args) == 2:
+        got = _cmp_constants(name, args)
+        if got is not None: return _as_written(got, name, *args)
+    # BETWEEN on integer arithmetic: two comparisons (DuckDB), each then decided without computing it where it can be
+    if name == "between" and len(args) == 3:
+        x0 = _unit_div(args[0])
+        split = args[0].t.integer and all(isinstance(x, I.Lit) for x in args[1:]) and \
+            (isinstance(x0, I.Cast) or isinstance(x0, I.Func) and x0.fn in ("+", "-", "*", "neg"))
+        both = make_func("and", [make_func(">=", [args[0], args[1]]), make_func("<=", [args[0], args[2]])]) if split else None
+        if all(isinstance(x, I.Lit) and x.v is not None and not isinstance(x.v, F.Err) for x in args[1:]) and not isinstance(args[0], I.Lit):
+            try: empty = F.cmp_values(args[1].v, args[2].v) > 0
+            except TypeError: empty = False
+            if empty:   # an empty range: DuckDB computes the operand only for a value (a filter drops every row first)
+                if split and not _can_fail(both): return _as_written(both, name, *args)    # (the comparisons no longer compute it)
+                return _as_written(_const_or_null(args[0], False), name, *args)
+        if split: return _as_written(both, name, *args)
     if name in ("__iso_interval", "__iso_interval_cast") and isinstance(args[1], I.Lit) and isinstance(args[1].v, str):
         rt = T.SqlType("INTERVAL", s=args[1].v)                 # INTERVAL DAY, INTERVAL YEAR TO MONTH, ...
     if name == "__iso_dt_diff" and isinstance(args[2], I.Lit) and isinstance(args[2].v, str):
@@ -1360,19 +1495,72 @@ def make_func(name, args, extra=None):
     if name in _COLL_KEEP and rt.id == "VARCHAR" and any(getattr(a.t, "coll", None) for a in args):
         c, impl = T.coll_merge([a.t for a in args])
         if c: rt = T.SqlType("VARCHAR", p=rt.p, coll=c, cimpl=impl)
+    if name in ("is_null", "is_not_null") and extra is None and _null_test_computes(args[0]): extra = "strict"
+    if name == "*" and len(args) == 2 and rt.integer and rt.id in T.INT_RANGE:
+        got = _mul_chain(args, rt)
+        if got is not None: return _as_written(got, name, *args)
     f = I.Func(name, args, rt, extra)
     if rt.id == "DECFLOAT" and name in ("+", "-", "*", "/", "%", "neg", "abs", "//"):     # rounded to DECFLOAT(p)
         f = I.Func("__decfloat", [f, I.Lit(rt.p, T.INTEGER)], rt)
         if all(isinstance(a, I.Lit) for a in args):
             import sqlexec
-            try: return I.Lit(sqlexec.eval_const(f), rt)
+            try: return I.Lit(sqlexec.eval_const(f), rt, fixed=True)
             except SqlError: return f
         return f
     if s.deterministic and all(isinstance(a, I.Lit) for a in args) and name not in ("typeof",):
         import sqlexec
-        try: return I.Lit(sqlexec.eval_const(f), rt)            # constant folding
-        except SqlError: return f                               # a runtime error: raised only if evaluated
+        try: return I.Lit(sqlexec.eval_const(f), rt, fixed=True)            # constant folding
+        except SqlError: return f                               # a runtime error (an overflow, ...): raised only if evaluated
     return f
+
+
+def count_rows(name, args, distinct, filt):
+    """COUNT(x) of an x that is NULL exactly where a column it reads is (arithmetic, ABS and widening casts of
+    columns and constants) counts the rows where those columns are not NULL, without computing x, as DuckDB does
+    where its statistics show that those columns hold no NULL: an overflow in x is then no error (DuckDB computes x,
+    and fails on an overflow, where a column can be NULL; this never does). A cast that can fail, a CASE, DISTINCT
+    keep x. -> (name, args, filter)"""
+    if name != "count" or distinct or len(args) != 1 or isinstance(args[0], (I.Col, I.Outer)): return name, args, filt
+    import sqlexec
+    cols = {}
+    def null_exact(x):
+        if isinstance(x, (I.Col, I.Outer)): cols.setdefault(x.key(), x); return True
+        if isinstance(x, I.Lit): return x.v is not None and not isinstance(x.v, F.Err)
+        if isinstance(x, I.Func): return x.fn in ("+", "-", "*", "neg", "abs") and x.t.numeric and all(null_exact(a) for a in x.args)
+        if isinstance(x, I.Cast): return not x.try_ and sqlexec._widening(x.arg.t, x.t) and null_exact(x.arg)
+        return False
+    if not null_exact(args[0]): return name, args, filt
+    cs = list(cols.values())
+    if len(cs) == 1: return name, cs, filt
+    return "count_star", [], make_and([make_func("is_not_null", [c]) for c in cs] + [filt])
+
+
+def _sum_of_constant(a):
+    """SUM(x + c) of a SMALLINT / INTEGER / BIGINT x + c with a constant c -> SUM(x) + COUNT(x) * c, or None. DuckDB
+    rewrites it so in a block without GROUP BY: x + c is then not computed row by row, so its overflow is no error"""
+    if a.name != "sum" or a.distinct or a.filter is not None or a.order or len(a.args) != 1: return None
+    e = a.args[0]
+    if not (isinstance(e, I.Func) and e.fn == "+" and len(e.args) == 2 and e.t.id in ("SMALLINT", "INTEGER", "BIGINT")): return None
+    l, r = e.args
+    x, c = (l, r) if F.lit_int(r) else (r, l) if F.lit_int(l) else (None, None)
+    if x is None or isinstance(x, I.Lit) or not x.t.integer: return None
+    sx = I.Agg("sum", [x], F.agg_typer("sum", [x.t], ()))
+    sx = _sum_of_constant(sx) or sx
+    n, args, filt = count_rows("count", [x], False, None)
+    return make_func("+", [sx, make_func("*", [cast_to(I.Agg(n, args, T.BIGINT, filter=filt), T.HUGEINT), c])])
+
+
+def sum_constants(s):
+    """a block without GROUP BY: every SUM(x + c) as SUM(x) + COUNT(x) * c (_sum_of_constant)"""
+    if not s.aggregate or s.group or s.sets is not None: return
+    top = [x for x, _ in s.items] + [s.having, s.qualify] + [o[0][1] for o in s.order if o[0][0] == "expr"]
+    if not any(_sum_of_constant(a) is not None for x in top if x is not None for a in I.find(x, I.Agg)): return
+    def f(x):
+        return _sum_of_constant(x) if isinstance(x, I.Agg) else None
+    s.items = [(I.subst(x, f), n) for x, n in s.items]
+    if s.having is not None: s.having = I.subst(s.having, f)
+    if s.qualify is not None: s.qualify = I.subst(s.qualify, f)
+    s.order = [(("expr", I.subst(o[0][1], f)) if o[0][0] == "expr" else o[0], o[1], o[2]) for o in s.order]
 
 
 def make_and(parts):
@@ -1882,8 +2070,10 @@ class Binder:
             or (s.qualify is not None and I.has(s.qualify, I.Agg))
         self.bind_modifiers(node, s, sc, aliases=aliases)
         if s.aggregate:
+            sum_constants(s)
             _functional_dependencies(s)
             _check_grouped(s)
+            having_pushdown(s)
         return s
 
     def bind_modifiers(self, node, s, sc, setop=False, aliases=None):
@@ -2043,7 +2233,7 @@ class Binder:
                 raise SqlError(f"CAST of a row of degree {len(_row_parts(x))} to {t}: the degrees differ")
             if isinstance(x, I.Lit):
                 if x.v is None or isinstance(x.v, F.Err): return I.Lit(x.v, t)
-                try: return I.Lit(T.cast_value(x.v, x.t, t, not e.get("try_cast")), t)
+                try: return I.Lit(T.cast_value(x.v, x.t, t, not e.get("try_cast")), t, fixed=True)
                 except SqlError as ex:
                     if e.get("try_cast"): return I.Lit(None, t)
                     return I.Lit(F.Err(str(ex)), t)
@@ -2244,7 +2434,18 @@ class Binder:
     def operator(self, e, sc, ctx):
         t = e["type"]; kids = e.get("children") or []
         if t == "OPERATOR_NOT":
-            return self.func("not", [self.boolean(self.expr(kids[0], sc, ctx), "NOT")])
+            # DuckDB's rewrites: NOT NOT x is x, NOT of a comparison the opposite comparison, which is then decided as
+            # one (NOT (x * 7 <> -3) is x * 7 = -3, FALSE or NULL without computing x * 7)
+            k = kids[0]
+            if k.get("class") == "OPERATOR" and k.get("type") == "OPERATOR_NOT":
+                x = self.boolean(self.expr(k["children"][0], sc, ctx), "NOT")
+                return _as_written(x, "not", "not", x)
+            if k.get("class") == "COMPARISON" and k.get("type") in _NOT_CMP and not (
+                    k["right"].get("class") == "FUNCTION" and k["right"].get("function_name", "").startswith("__iso_pred_")):
+                a, b = self.expr(k["left"], sc, ctx), self.expr(k["right"], sc, ctx)
+                if not (_rowish(a) or _rowish(b)): return _as_written(self.cmp(_NOT_CMP[k["type"]], a, b), "not", _CMP[k["type"]], a, b)
+                return self.func("not", [self.boolean(self.cmp(_CMP[k["type"]], a, b), "NOT")])
+            return self.func("not", [self.boolean(self.expr(k, sc, ctx), "NOT")])
         if t in ("OPERATOR_IS_NULL", "OPERATOR_IS_NOT_NULL"):
             x = self.expr(kids[0], sc, ctx); fn = "is_null" if t == "OPERATOR_IS_NULL" else "is_not_null"
             if _rowish(x): return _row_null(x, fn)                                  # every field NULL / not NULL (ISO 8.8)
@@ -2417,6 +2618,7 @@ class Binder:
             # MIN / MAX under a collation: the value of least / greatest key
             args = [args[0], self.func("__ckey", [args[0], I.Lit(args[0].t.coll, T.VARCHAR)])]
             name = "arg_min" if name == "min" else "arg_max"
+        if not orders: name, args, filt = count_rows(name, args, distinct, filt)
         a = F.AGGS.get(name)
         if a is None: raise SqlError(f"unknown aggregate function {name}")
         if name in ("string_agg", "__iso_listagg") or a.name == "string_agg":
@@ -2496,6 +2698,7 @@ class Binder:
                 nv = 2 if aname == "__json_objectagg" else 1
                 o = json.loads(_const(args[nv], aname)); o["vtypes"] = [str(args[nv - 1].t)]
                 params = (json.dumps(o),); args = args[:nv]
+            aname, args, filt = count_rows(aname, args, bool(e.get("distinct")), filt)
             if aname == "count" and not args: aname = "count_star"
             if aname in ("sum", "avg") and len(args) == 1 and args[0].t.id == "DECFLOAT": params = (("decfloat", args[0].t.p),)
             if aname in ("min", "max") and len(args) == 1 and T.coll_key(args[0].t) is not None:
@@ -2925,6 +3128,23 @@ def _check_grouped(s):
     for o in s.order:
         if o[0][0] == "expr" and not ok(o[0][1]):
             raise SqlError(f'ORDER BY column "{_first_col(o[0][1], gk)}" must appear in the GROUP BY clause or be used in an aggregate function')
+
+
+def having_pushdown(s):
+    """a HAVING term on the GROUP BY expressions alone moves to WHERE, as DuckDB's filter pushdown moves it below the
+    aggregate: it drops the same groups, but drops their rows before anything else is computed on them, so an error
+    those rows would raise (an overflow in another WHERE term or in an aggregate) does not fail the query. Not with
+    grouping sets (a key is NULL in the sets without it), nor a term with a subquery or an outer reference"""
+    if s.having is None or not s.group or s.sets is not None: return
+    gk = {g.key() for g in s.group}
+    def on_keys(x):
+        if x.key() in gk or isinstance(x, I.Lit): return True
+        return isinstance(x, (I.Func, I.Case, I.Cast)) and all(on_keys(c) for c in x.children())
+    terms = conjuncts(s.having)
+    move = [c for c in terms if I.cols_of(c) and on_keys(c)]
+    if not move: return
+    s.where = make_and([s.where] + move)
+    s.having = make_and([c for c in terms if not any(c is m for m in move)])
 
 
 def _first_col(x, gk):

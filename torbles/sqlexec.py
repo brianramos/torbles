@@ -153,11 +153,53 @@ def eval_const(e):
     return v
 
 
-def _apply(s, args, n):
+# ------------------------------------------------------------------ bounded exact types
+# Values are exact Python integers and Decimals (they never wrap), so an integer or DECIMAL operation whose value
+# leaves its SQL type is an error where it is computed (DuckDB's overflow errors), on every path that computes it:
+# row by row (_apply), on value columns (_vec_func), on code columns (_ev_codes), and in the planner's proofs before
+# an expression becomes an engine polynomial or a plane predicate. Like every runtime error it fails the query only
+# if the value is used.
+_BOUNDED_OPS = {"+", "-", "*", "neg", "abs", "//", "divide", "%", "mod", "<<", "round", "gcd", "lcm", "factorial"}
+_DUCK_INT = {"TINYINT": "INT8", "SMALLINT": "INT16", "INTEGER": "INT32", "BIGINT": "INT64", "HUGEINT": "INT128",
+             "UTINYINT": "UINT8", "USMALLINT": "UINT16", "UINTEGER": "UINT32", "UBIGINT": "UINT64", "UHUGEINT": "UINT128"}
+
+
+def type_range(t):
+    """(lo, hi): the values of an integer type, or of DECIMAL(p, s) (|v| < 10^(p - s)); None for any other type"""
+    if t is None: return None
+    r = T.INT_RANGE.get(t.id)
+    if r is not None or t.id != "DECIMAL" or t.p is None: return r
+    m = Decimal(10 ** t.p - 1).scaleb(-t.s)
+    return -m, m
+
+
+def overflow_error(fn, t, args):
+    """DuckDB's message for an operation of type t whose exact value on args is outside t"""
+    a = [str(x) for x in args]
+    if fn == "neg": return "Out of Range Error: Overflow in negation of numeric value!"
+    if fn == "abs": return f"Out of Range Error: Overflow on abs({a[0]})"
+    if fn == "<<": return f"Out of Range Error: Overflow in left shift ({a[0]} << {a[1]})"
+    if fn == "round": return f"Out of Range Error: Overflow in ROUND of integer ({a[0]})"
+    if fn in ("gcd", "lcm", "factorial"): return f"Out of Range Error: {fn} value is out of range for {t}"
+    if fn in ("//", "divide", "%", "mod"): return f"Out of Range Error: Overflow in division of {a[0]} / {a[1]}"
+    what = {"+": "addition", "-": "subtraction", "*": "multiplication"}[fn]
+    if t.id == "DECIMAL": return f"Out of Range Error: Overflow in {what} of DECIMAL({t.p}) ({a[0]} {fn} {a[1]})"
+    return f"Out of Range Error: Overflow in {what} of {_DUCK_INT.get(t.id, t.id)} ({a[0]} {fn} {a[1]})!"
+
+
+def _bounded(fn, t):
+    """the range an operation's values must keep (None: unbounded, or not an integer / DECIMAL operation)"""
+    return type_range(t) if fn in _BOUNDED_OPS else None
+
+
+def _apply(s, args, n, t=None):
+    """a scalar function row by row; t: its result type (an integer or DECIMAL operation's values are checked)"""
     impl = s.impl
     if not args: return [impl()] * n if s.deterministic else [impl() for _ in range(n)]
     out = []
     prop = s.nulls == "propagate"
+    rng = _bounded(s.name, t)
+    sdiv = rng is not None and s.name in ("%", "mod") and t.integer and rng[0] < 0
     for row in zip(*args):
         bad = None
         for x in row:
@@ -167,10 +209,14 @@ def _apply(s, args, n):
         if prop and None in row:
             out.append(None); continue
         try:
-            out.append(impl(*row))
-        except SqlError as ex: out.append(Err(str(ex)))
+            v = impl(*row)
+        except SqlError as ex: out.append(Err(str(ex))); continue
         except (ZeroDivisionError, ValueError, OverflowError, ArithmeticError, IndexError, TypeError) as ex:
-            out.append(Err(f"{s.name}: {ex}"))
+            out.append(Err(f"{s.name}: {ex}")); continue
+        if rng is not None and type(v) in (int, Decimal) and not rng[0] <= v <= rng[1] or \
+                sdiv and row[1] == -1 and row[0] == rng[0]:        # DuckDB: the least value % -1 overflows, as // does
+            v = Err(overflow_error(s.name, t, row))
+        out.append(v)
     return out
 
 
@@ -183,6 +229,8 @@ def ev(e, rel, cx):
     if isinstance(e, I.Func):
         s = F.SCALARS.get(e.fn)
         if s is None: raise SqlError(f"internal: no implementation of {e.fn}")
+        if s.nulls == "propagate" and any(isinstance(a, I.Lit) and a.v is None for a in e.args):
+            return [None] * n           # NULL whatever the other arguments are: they are not computed (DuckDB folds it)
         if all(isinstance(a, I.Lit) for a in e.args) and s.deterministic and n > 1:
             one = Rel(1); return [ev(e, one, cx)[0]] * n
         if e.fn == "in" and len(e.args) > 8 and all(isinstance(a, I.Lit) for a in e.args[1:]):
@@ -193,15 +241,20 @@ def ev(e, rel, cx):
             r = _dict_eval(e, rel, cx)
             if r is not None: return r
         argv = [ev(a, rel, cx) for a in e.args]
+        if e.extra == "strict" and any(isinstance(v, Err) for v in argv[0]):      # x IS [NOT] NULL that computes x
+            return [v if isinstance(v, Err) else (v is None) == (e.fn == "is_null") for v in argv[0]]   # (sqlfront)
         if VEC_SCALARS and n >= 64 and e.fn in _VEC_FNS:
-            r = _vec_func(e.fn, argv, n)
+            r = _vec_func(e.fn, argv, n, e.t)
             if r is not None: return r
-        return _apply(s, argv, n)
+        return _apply(s, argv, n, e.t)
     if isinstance(e, I.Case):
         if COLUMNAR and DICT_EVAL and n >= 64:
             r = _dict_eval(e, rel, cx)
             if r is not None: return r
         conds = [ev(c, rel, cx) for c, _ in e.whens]
+        # a WHEN is a filter of the rows (DuckDB selects them term by term): an error in one term of its AND / OR
+        # counts only for a row that the others leave undecided (_select)
+        conds = [_select(c, rel, cx) if any(isinstance(v, Err) for v in cv) else cv for (c, _), cv in zip(e.whens, conds)]
         vals = [ev(x, rel, cx) for _, x in e.whens]
         el = ev(e.else_, rel, cx) if e.else_ is not None else [None] * n
         out = []
@@ -319,9 +372,21 @@ def _out(arr, nul):
     return o.tolist()
 
 
-def _vec_func(fn, argv, n):
+def _int_fits(r, nul, t, a=None, b=None):
+    """do the integer results r of an operation of type t stay inside t (rows NULL in nul aside)? With a, b: the
+    operands of a % or //, whose least value % -1 overflows too. (False: the row-by-row path gives each row's error)"""
+    rng = T.INT_RANGE.get(t.id) if t is not None else None
+    if rng is None: return True
+    live = slice(None) if nul is None else ~nul
+    v = r[live]
+    if len(v) and (int(v.min()) < rng[0] or int(v.max()) > rng[1]): return False
+    return a is None or rng[0] >= 0 or not bool(((a[live] == rng[0]) & (b[live] == -1)).any())
+
+
+def _vec_func(fn, argv, n, t=None):
     """the operator on whole columns, with the row-by-row results (exact integers, IEEE doubles, three-valued logic);
-    None when a column is not plain ints / doubles / booleans"""
+    None when a column is not plain ints / doubles / booleans, or when an integer result leaves its type t (the
+    row-by-row path then gives that row its overflow error)"""
     if fn in ("and", "or", "not"):
         for col in argv:
             if not set(map(type, col)) <= {bool, _NoneT}: return None
@@ -344,7 +409,8 @@ def _vec_func(fn, argv, n):
         if c[2] is not None: nul = c[2] if nul is None else (nul | c[2])
     kinds = {c[0] for c in cols}
     if fn == "neg":
-        return _out(-cols[0][1], nul)
+        r = -cols[0][1]
+        return _out(r, nul) if kinds != {"int"} or _int_fits(r, nul, t) else None
     a, b = cols[0][1], cols[1][1]
     if fn in _CMPF:
         if kinds == {"int", "float"} and max(c[3] for c in cols if c[0] == "int") >= 1 << 53: return None
@@ -354,16 +420,19 @@ def _vec_func(fn, argv, n):
         live = b if nul is None else b[~nul]
         if (live == 0).any(): return None
         bb = np.where(b == 0, 1, b)
-        if fn in ("%", "mod"): return _out(np.fmod(a, bb), nul)
-        q = np.abs(a) // np.abs(bb)
-        return _out(np.where((a >= 0) == (bb >= 0), q, -q), nul)
+        if fn in ("%", "mod"): r = np.fmod(a, bb)
+        else:
+            q = np.abs(a) // np.abs(bb)
+            r = np.where((a >= 0) == (bb >= 0), q, -q)
+        return _out(r, nul) if _int_fits(r, nul, t, a, b) else None
     if fn == "/":
         with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
             return _out(a.astype(np.float64) / b.astype(np.float64), nul)
     if kinds == {"int"}:
         ma, mb = cols[0][3], cols[1][3]
         if fn == "*" and ma * mb >= 1 << 63: return None
-        return _out(a + b if fn == "+" else a - b if fn == "-" else a * b, nul)
+        r = a + b if fn == "+" else a - b if fn == "-" else a * b
+        return _out(r, nul) if _int_fits(r, nul, t) else None
     if kinds == {"int", "float"} and max(c[3] for c in cols if c[0] == "int") >= 1 << 53: return None
     a, b = a.astype(np.float64), b.astype(np.float64)
     with np.errstate(over="ignore", invalid="ignore"):
@@ -480,9 +549,19 @@ def _as_float(o):
     return None
 
 
+def _codes_fit(r, valid, t, a=None, b=None):
+    """do the exact results r of an integer / DECIMAL operation of type t (DECIMAL: scaled by 10^t.s) stay inside t,
+    on the valid rows? With a, b: the operands of a % or //, whose least value % -1 overflows too"""
+    if t.id == "DECIMAL":
+        v = r if valid is None else r[valid]
+        return not len(v) or int(np.abs(v).max()) < 10 ** t.p
+    return _int_fits(r, None if valid is None else ~valid, t, a, b)
+
+
 def _ev_codes(e, rel, cx):
     """arithmetic, comparisons, AND / OR / NOT, IS NULL and numeric casts on code columns (exact integers, exact
-    scaled decimals, IEEE doubles with SQL's NaN order, three-valued logic); None for anything else"""
+    scaled decimals, IEEE doubles with SQL's NaN order, three-valued logic); None for anything else, and for an
+    integer or DECIMAL result outside its type (the row-by-row path gives those rows their overflow errors)"""
     if isinstance(e, I.Cast):
         o = _operand(e.arg, rel, cx)
         if o is None or o[0] == "null": return None
@@ -526,7 +605,8 @@ def _ev_codes(e, rel, cx):
     kinds = {o[0] for o in ops}
     if fn == "neg":
         k, v, sc, _ = ops[0]
-        return None if k == "bool" else _mk(k, -v, sc, valid)
+        if k == "bool" or k == "int" and not _codes_fit(-v, valid, e.t): return None
+        return _mk(k, -v, sc, valid)
     if "bool" in kinds and kinds != {"bool"}: return None
     (ka, va, sa, _), (kb, vb, sb, _) = ops
     if fn in ("%", "mod", "//", "divide"):              # integers, no zero divisor: truncating, as SQL's
@@ -534,9 +614,11 @@ def _ev_codes(e, rel, cx):
         live = vb if valid is None else vb[valid]
         if (live == 0).any(): return None
         bb = np.where(vb == 0, 1, vb)
-        if fn in ("%", "mod"): return _mk("int", np.fmod(va, bb), 0, valid)
-        qq = np.abs(va) // np.abs(bb)
-        return _mk("int", np.where((va >= 0) == (bb >= 0), qq, -qq), 0, valid)
+        if fn in ("%", "mod"): r = np.fmod(va, bb)
+        else:
+            qq = np.abs(va) // np.abs(bb)
+            r = np.where((va >= 0) == (bb >= 0), qq, -qq)
+        return _mk("int", r, 0, valid) if _codes_fit(r, valid, e.t, va, vb) else None
     if fn == "/" or "float" in kinds:                     # double arithmetic (DuckDB: / on numbers is a double division)
         fa, fb = _as_float(ops[0]), _as_float(ops[1])
         if fa is None or fb is None: return None
@@ -553,25 +635,53 @@ def _ev_codes(e, rel, cx):
         if xa is None or xb is None: return None
         if fn in ("+", "-"):
             r = xa + xb if fn == "+" else xa - xb
-            if e.t.id == "DECIMAL" and e.t.s != S: return None
+            if e.t.id == "DECIMAL" and e.t.s != S or not _codes_fit(r, valid, e.t): return None
             return _mk("dec" if S else "int", r, S, valid)
         if fn == "*":
             if len(va) and int(np.abs(va).max()) * int(np.abs(vb).max() if len(vb) else 0) >= 1 << 62: return None
-            if e.t.id == "DECIMAL" and e.t.s != sa + sb: return None
+            if e.t.id == "DECIMAL" and e.t.s != sa + sb or not _codes_fit(va * vb, valid, e.t): return None
             return _mk("dec" if sa + sb else "int", va * vb, sa + sb, valid)
         lt, eq = xa < xb, xa == xb
     r = {"=": eq, "<>": ~eq, "<": lt, "<=": lt | eq, ">": ~(lt | eq), ">=": ~lt}[fn]
     return _mk("bool", r, 0, valid)
 
 
-def rows_where(e, rel, cx):
-    """the rows where condition e is TRUE (on codes when it can be computed there)"""
-    a = codes_of(e, rel, cx) if e is not None else None
+def _select(e, rel, cx):
+    """condition e as a filter (WHERE, ON, HAVING, a CASE's WHEN) on every row of rel: True (kept), False (dropped:
+    FALSE or NULL) or the row's Err. An AND drops a row on any term that is FALSE or NULL, an OR keeps it on any TRUE
+    term, whatever the others are: DuckDB evaluates a filter's terms one after the other on the rows still undecided,
+    so an error in one counts only for a row the other terms leave undecided (a projection computes AND / OR in full:
+    there NULL AND <error> fails)"""
+    if isinstance(e, I.Func) and e.fn in ("and", "or"):
+        parts = [_select(x, rel, cx) for x in e.args]
+        decide = e.fn == "or"                                # the value that decides: TRUE for OR, FALSE for AND
+        out = []
+        for vs in zip(*parts):
+            if decide in vs: out.append(decide); continue
+            out.append(next((v for v in vs if isinstance(v, Err)), not decide))
+        return out
+    return [v if v is True or isinstance(v, Err) else False for v in ev(e, rel, cx)]
+
+
+def filter_rows(e, rel, cx):
+    """condition e as a filter (_select) -> (the rows where it is TRUE, {row: error} of the rows it errs on)"""
+    a = codes_of(e, rel, cx)
     if a is not None and (a.codec is _BOOL or getattr(a.codec, "kind", None) == "bool") and a.codes.dtype != object:
         m = a.codes != 0
         if a.valid is not None: m &= a.valid
-        return np.flatnonzero(m).tolist()
-    return truth(ev(e, rel, cx))
+        return np.flatnonzero(m).tolist(), {}
+    vals = ev(e, rel, cx)
+    if not any(isinstance(v, Err) for v in vals): return [i for i, v in enumerate(vals) if v is True], {}
+    vals = _select(e, rel, cx)                       # (where the full value has no error, the same rows)
+    return [i for i, v in enumerate(vals) if v is True], {i: v for i, v in enumerate(vals) if isinstance(v, Err)}
+
+
+def rows_where(e, rel, cx):
+    """the rows where condition e is TRUE (on codes when it can be computed there), as a filter (filter_rows): an error
+    on a row that the other terms pass fails the query"""
+    rows, errs = filter_rows(e, rel, cx)
+    if errs: raise SqlError(errs[min(errs)].msg)
+    return rows
 
 
 def _in_set(e, xs):
@@ -583,15 +693,6 @@ def _in_set(e, xs):
     for x in xs:
         if x is None or isinstance(x, Err): out.append(x if isinstance(x, Err) else None); continue
         out.append(True if nkey(x) in st else (None if has_null else False))
-    return out
-
-
-def truth(vals):
-    """WHERE / HAVING / FILTER: rows whose condition is TRUE (an error fails the query)"""
-    out = []
-    for i, v in enumerate(vals):
-        if isinstance(v, Err): raise SqlError(v.msg)
-        if v is True: out.append(i)
     return out
 
 
@@ -1153,7 +1254,7 @@ def run_select(s, cx, as_rel=False):
     if s.from_ is None:
         rel = Rel(1); aggplan = {}
         if s.where is not None:
-            keep = truth(ev(s.where, rel, cx)); rel = rel.take(keep)
+            keep = rows_where(s.where, rel, cx); rel = rel.take(keep)
     else:
         rel, aggplan = None, {}
         if all(b.table is not None for b in bindings):
@@ -1203,11 +1304,18 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     for i in range(len(s.items)): out.cols[("pos", i)] = cols[i]
     if s.distinct:
         if s.distinct_on:
-            keys = [out.cols[("pos", d[1])] if d[0] == "pos" else ev(d[1], out, cx) for d in s.distinct_on]
+            # the DISTINCT ON keys and the ORDER BY that picks each one's row compare under their collations, as
+            # ORDER BY and DISTINCT do (x COLLATE NOCASE: 'a' and 'A' are one key)
+            def keyvals(spec):
+                if spec[0] == "pos": return _ckeys(out.cols[("pos", spec[1])], _out_type(s, spec[1]))
+                return _ckeys(ev(spec[1], out, cx), spec[1].t)
+            keys = [keyvals(d) for d in s.distinct_on]
             idx = list(range(len(rows)))
-            if s.order:
-                okeys = [out.cols[("pos", sp[1])] if sp[0] == "pos" else ev(sp[1], out, cx) for sp, _, _ in s.order]
-                idx = sort_rows(idx, okeys, [(d, nf) for _, d, nf in s.order])
+            okeys = [keyvals(sp) for sp, _, _ in s.order]
+            for kc in keys + okeys:
+                for v in kc:
+                    if isinstance(v, Err): raise SqlError(v.msg)
+            if s.order: idx = sort_rows(idx, okeys, [(d, nf) for _, d, nf in s.order])
             seen, keep = set(), []
             for i in idx:
                 k = tuple(nkey(kc[i]) for kc in keys)
@@ -1490,24 +1598,24 @@ def agg_values(a, rel, members, plan, cx):
             out.append(_moment_final(a.name, n, sums))
         return out
     d = F.AGGS[a.name]
-    filt = rows_where(a.filter, rel, cx) if a.filter is not None else None
+    # a row whose argument, FILTER or ORDER BY value is an error (an overflow, a failed cast) makes its group's
+    # aggregate that error, which fails the query only if the aggregate is used (an output row, HAVING, ORDER BY): a
+    # group that a HAVING on its keys drops does not fail it (DuckDB filters those rows before aggregating them; the
+    # binder moves such a HAVING term to WHERE when there are no grouping sets, sqlfront.having_pushdown)
+    bad = {}
+    filt = _rows_where_errs(a.filter, rel, cx, bad) if a.filter is not None else None
     fset = set(filt) if filt is not None else None
     if VEC_GROUPS:                                   # engine columns as codes, others as values
         src = [codes_of(x, rel, cx) for x in a.args]
-        src = [c if c is not None else ev(x, rel, cx) for c, x in zip(src, a.args)]
-        for col in src:
-            if not isinstance(col, ColArr):
-                for v in col:
-                    if isinstance(v, Err): raise SqlError(v.msg)
+        src = [c if c is not None else _scrub(ev(x, rel, cx), bad) for c, x in zip(src, a.args)]
         got = _agg_arrays(a, rel, members, src, filt, d)
-        if got is not None: return got
-    args = [ev(x, rel, cx) for x in a.args]
-    okeys = [_ckeys(ev(o[0], rel, cx), o[0].t) for o in a.order]
-    for col in args + okeys:
-        for v in col:
-            if isinstance(v, Err): raise SqlError(v.msg)
+        if got is not None: return _group_errs(got, members, bad)
+    args = [_scrub(ev(x, rel, cx), bad) for x in a.args]
+    okeys = [_scrub(_ckeys(ev(o[0], rel, cx), o[0].t), bad) for o in a.order]
+    gerr = _group_errs([None] * len(members), members, bad)
     out = []
-    for mem in members:
+    for g, mem in enumerate(members):
+        if gerr[g] is not None: out.append(gerr[g]); continue
         rows = []
         for i in mem:
             if fset is not None and i not in fset: continue
@@ -1532,6 +1640,32 @@ def agg_values(a, rel, members, plan, cx):
             out.append(_hypothetical(a, rr))
         elif a.name == "count_star": out.append(sum(w for _, w in rr))
         else: out.append(d.final(rr, a.params))
+    return out
+
+
+def _scrub(vals, bad):
+    """a value column with its errors recorded in bad {row: Err} (the first per row) and replaced by NULL"""
+    if isinstance(vals, ColArr) or not any(isinstance(v, Err) for v in vals): return vals
+    out = list(vals)
+    for i, v in enumerate(vals):
+        if isinstance(v, Err): bad.setdefault(i, v); out[i] = None
+    return out
+
+
+def _rows_where_errs(e, rel, cx, bad):
+    """rows_where, with a row whose condition is an error recorded in bad instead of failing the query"""
+    rows, errs = filter_rows(e, rel, cx)
+    for i, v in errs.items(): bad.setdefault(i, v)
+    return rows
+
+
+def _group_errs(out, members, bad):
+    """the aggregate of a group holding a row recorded in bad is that row's error (the first of the group's rows)"""
+    if not bad: return out
+    out = list(out)
+    for g, mem in enumerate(members):
+        for i in mem:
+            if i in bad: out[g] = bad[i]; break
     return out
 
 
@@ -2301,15 +2435,98 @@ class NotStar(Exception):
     pass
 
 
+def _frac_range(r):
+    return None if r is None else (Fraction(r[0]), Fraction(r[1]))
+
+
+def _within(r, t):
+    """is the interval r (Fractions) inside the values of the integer / DECIMAL type t?"""
+    tr = _frac_range(type_range(t))
+    return tr is not None and tr[0] <= r[0] and r[1] <= tr[1]
+
+
+def _exact_cast(a, t):
+    """a cast from exact type a to exact type t that keeps every value that fits t (no rounding: an integer, or a
+    DECIMAL to a scale at least its own)"""
+    if t.integer: return a.integer or a.id == "DECIMAL" and a.s == 0
+    return t.id == "DECIMAL" and (a.integer or a.id == "DECIMAL" and a.s <= t.s)
+
+
+def _widening(a, t):
+    """does CAST from type a to type t give back every value of a unchanged (never rounding, never failing)?"""
+    if a.exact and t.exact: return _exact_cast(a, t) and _within(_frac_range(type_range(a)), t)
+    if a.exact and t.floating:                       # every value an exact double / float
+        r = _frac_range(type_range(a))
+        return a.integer and max(-r[0], r[1]) <= (2 ** 53 if t.id == "DOUBLE" else 2 ** 24) or \
+            a.id == "DECIMAL" and t.id == "DOUBLE" and a.p <= 15
+    if a.id == "DATE" and t.id == "TIMESTAMP": return True
+    return a.id == "VARCHAR" and t.id == "VARCHAR" and t.p is None      # (a length cuts strings)
+
+
 def _strip_cast(e):
-    """a column under value-preserving conversions (widening numeric casts, DATE -> TIMESTAMP)"""
-    while isinstance(e, I.Cast) and not e.try_:
-        a, t = e.arg.t, e.t
-        if a.integer and (t.integer or t.id == "DECIMAL" or t.floating) or (a.id == "DECIMAL" and (t.id == "DECIMAL" and t.s >= a.s or t.floating)) \
-                or (a.id == "DATE" and t.id == "TIMESTAMP") or (a.id == "VARCHAR" and t.id == "VARCHAR"):
-            e = e.arg
+    """an expression under conversions that keep every value of its type (widening casts, DATE -> TIMESTAMP): a
+    narrowing cast stays (the planner's own proofs, on the values a column holds, may remove one: _Planner.strip)"""
+    while isinstance(e, I.Cast) and not e.try_ and _widening(e.arg.t, e.t): e = e.arg
+    return e
+
+
+def expr_range(e, col_range):
+    """[lo, hi] (Fractions) bounding the values of an exact expression, proved from col_range(column) -> [lo, hi] or
+    None, when every cast and integer / DECIMAL operation in it keeps its type on those values (interval arithmetic);
+    None when that is not proved. An expression it bounds can be computed exactly (an engine polynomial, a column
+    compared without its casts) with the values and errors of its SQL types: none of its operations can fail."""
+    if isinstance(e, I.Lit):
+        v = e.v
+        if type(v) is int or type(v) is Decimal and v.is_finite(): return (Fraction(v), Fraction(v))
+        return None
+    if isinstance(e, I.Col): return col_range(e) if e.t.exact else None
+    if isinstance(e, I.Cast):
+        if e.try_ or not (e.arg.t.exact and _exact_cast(e.arg.t, e.t)): return None
+        r = expr_range(e.arg, col_range)
+        return r if r is not None and _within(r, e.t) else None
+    if isinstance(e, I.Func) and (e.fn in ("+", "-", "*", "__xmul") and len(e.args) == 2 or e.fn == "neg" and len(e.args) == 1):
+        rs = [expr_range(a, col_range) for a in e.args]
+        if any(r is None for r in rs): return None
+        if e.fn == "neg": r = (-rs[0][1], -rs[0][0])
+        elif e.fn == "+": r = (rs[0][0] + rs[1][0], rs[0][1] + rs[1][1])
+        elif e.fn == "-": r = (rs[0][0] - rs[1][1], rs[0][1] - rs[1][0])
+        else:
+            c = [x * y for x in rs[0] for y in rs[1]]
+            r = (min(c), max(c))
+        return r if e.fn == "__xmul" or _within(r, e.t) else None            # (__xmul: the planner's exact product)
+    return None
+
+
+def _shifted(e):
+    """e without its top x + c of a constant c, of SMALLINT / INTEGER / BIGINT (DuckDB's SUM / AVG rewrites take c out
+    of the sum: x + c is not computed)"""
+    while isinstance(e, I.Func) and e.fn == "+" and len(e.args) == 2 and e.t.id in ("SMALLINT", "INTEGER", "BIGINT"):
+        l, r = e.args
+        if F.lit_int(r) and not F.lit_int(l): e = l
+        elif F.lit_int(l) and not F.lit_int(r): e = r
         else: break
     return e
+
+
+def stored_range(t, name):
+    """[lo, hi] (Fractions) bounding every value stored column `name` of engine table t holds (NULL rows store code 0,
+    a value of the column too): the span of its codes through its codec; None when unknown"""
+    try: mx = int(t.maxcode(name)) if hasattr(t, "maxcode") else int(t.colmax(name))
+    except Exception: return None
+    cd = getattr(t, "codecs", {}).get(name)
+    if cd is None: return (Fraction(0), Fraction(mx))             # plain codes: the values themselves
+    aff = getattr(cd, "affine", None)
+    if aff is not None and getattr(cd, "kind", "") in ("int", "decimal"):
+        off, sc = aff
+        return (Fraction(off, 10 ** sc), Fraction(off + mx, 10 ** sc))
+    kind = getattr(cd, "kind", "")
+    if kind == "rank" and getattr(cd.base, "affine", None) is not None and cd.raw:     # wide values: ranks of the sorted ones
+        lo, hi = cd.decode([0, min(mx, len(cd.raw) - 1)])
+    elif kind == "dict" and getattr(cd, "numeric", False) and not getattr(cd, "floating", False) and cd.values:
+        lo, hi = cd.values[0], cd.values[min(mx, len(cd.values) - 1)]            # sorted, as the codes are
+    else: return None
+    if not all(type(x) is int or type(x) is Decimal and x.is_finite() for x in (lo, hi)): return None
+    return (Fraction(lo), Fraction(hi))
 
 
 def _fk_info(col):
@@ -2465,32 +2682,34 @@ class _Planner:
     def binding_of(self, col): return self.canon(col)[0]
 
     def strip(self, e):
-        """a column under conversions that keep its values (an exact column converted to DOUBLE only when every
-        value it holds is a double: integers below 2^53, decimals of at most 15 digits)"""
-        while isinstance(e, I.Cast) and not e.try_:
-            a, t = e.arg.t, e.t
-            if t.floating and a.exact:
-                base = e.arg
-                while isinstance(base, I.Cast): base = base.arg
-                if not (isinstance(base, I.Col) and self.double_exact(base)): break
-                e = e.arg; continue
-            if _strip_cast(I.Cast(e.arg, t, False)) is e.arg or _strip_cast(e) is not e:
-                nxt = _strip_cast(e)
-                if nxt is e: break
-                e = e.arg
-                continue
-            break
+        """a column under conversions that keep its values: each cast proved on the values its argument holds (a
+        narrowing integer / DECIMAL cast whose source values fit the target; an exact column converted to DOUBLE or
+        REAL only when every value it holds is exactly one). A cast that can fail or round stays: the predicate is
+        then not a plane predicate, and the cast is evaluated (with its error) on the values"""
+        while isinstance(e, I.Cast) and not e.try_ and self.keeps_values(e): e = e.arg
         return e
 
-    def double_exact(self, col):
-        t = col.t
-        if t.id == "DECIMAL": return t.p <= 15
-        if not t.integer: return False
+    def value_range(self, col):
+        """[lo, hi] bounding the values the engine reads for column col (its stored codes' span), or None"""
         b, name = self.canon(col)
-        tb = self.tab[b]; cd = getattr(tb, "codecs", {}).get(name)
-        mx = tb.maxcode(name) if hasattr(tb, "maxcode") else tb.colmax(name)
-        off = cd.offset if cd is not None and hasattr(cd, "offset") else 0
-        return max(abs(off), abs(off + mx)) < 2 ** 53
+        return stored_range(self.tab[b], name)
+
+    def exact_range(self, e):
+        """[lo, hi] of an exact expression of the block's columns, when its casts and integer / DECIMAL operations
+        provably keep their types on the values the columns hold (expr_range); None otherwise"""
+        return expr_range(e, self.value_range)
+
+    def keeps_values(self, c):
+        """does CAST c give back every value its argument takes here, unchanged and without an error?"""
+        a, t = c.arg.t, c.t
+        if _widening(a, t): return True
+        if not a.exact or not (t.exact or t.floating): return False
+        r = self.exact_range(c.arg)
+        if r is None: return False
+        if t.exact: return _exact_cast(a, t) and _within(r, t)
+        m = max(-r[0], r[1])                               # to a binary float: every value one exactly
+        if a.integer or a.id == "DECIMAL" and a.s == 0: return m <= (2 ** 53 if t.id == "DOUBLE" else 2 ** 24)
+        return t.id == "DOUBLE" and m * 10 ** a.s < 10 ** 15       # decimals of at most 15 digits (they round-trip)
 
     # predicates ------------------------------------------------------------
     def native(self, e):
@@ -2625,8 +2844,10 @@ class _Planner:
         for c in I.cols_of(e): out.add(self.binding_of(c))
         return out
 
-    def rowmask(self, b, e):
-        """a predicate on one dimension: evaluated on the dimension's distinct value tuples -> its passing rows"""
+    def rowmask(self, b, e, lazy=False):
+        """a predicate on one dimension: evaluated on the dimension's distinct value tuples -> its passing rows. An
+        error on a row in use fails the query, or with lazy (a WHERE term) gives None: the term then stays residual,
+        evaluated on the joined rows that pass the block's other terms (an error matters only where it is used)"""
         t = self.tab[b]; cols = I.cols_of(e)
         names = sorted({self.canon(c)[1] for c in cols})
         nb = getattr(t, "nullable", {})
@@ -2648,8 +2869,13 @@ class _Planner:
                 for col in cols:
                     if self.canon(col)[1] == c: r.cols[col.key()] = vals
             res = ev(e, r, self.cx)
-            for x in res:
-                if isinstance(x, Err): raise SqlError(x.msg)
+            bad = [i for i, x in enumerate(res) if isinstance(x, Err)]
+            if bad:
+                inuse = np.asarray(t.used[:n], bool) if len(t.used) >= n else np.ones(n, bool)
+                hit = np.intersect1d(np.array(bad, np.int64), inv[inuse])
+                if len(hit):
+                    if lazy: return None
+                    raise SqlError(res[int(hit[0])].msg)
             ok = np.array([x is True for x in res], bool)
             mask = ok[inv]
         mask &= t.used[:n] if len(t.used) >= n else mask
@@ -2657,7 +2883,9 @@ class _Planner:
 
     def codeset(self, col, e):
         """a predicate on one fact column: evaluated on every code the column can hold -> intervals or a code set
-        (returns a list of engine predicates, or None)"""
+        (returns a list of engine predicates, or None). An error on a value the column holds gives None as well: the
+        term stays residual, evaluated on the rows that pass the block's other terms, so that it fails the query only
+        if a row needs that value (DuckDB evaluates such a term after the cheaper ones)"""
         b, name = self.canon(col)
         t = self.tab[b]
         if name in getattr(t, "wide", {}): return None
@@ -2671,7 +2899,7 @@ class _Planner:
         r0 = Rel(1)
         for x in I.cols_of(e): r0.cols[x.key()] = [None]
         at_null = ev(e, r0, self.cx)[0] if v is not None else None
-        if isinstance(at_null, Err): at_null = None
+        if isinstance(at_null, Err): return None
         if mx < 0 or t.n == 0:                         # no values stored: only NULLs (or no rows)
             return [algq.Not(v)] if (at_null is True and v is not None) else [algq.Cmp(c, "LT", 0)]
         def present():
@@ -2693,8 +2921,7 @@ class _Planner:
             # run of them that passes an interval up to the next present code
             pcs = present()
             res = run(pcs)
-            for x in res:
-                if isinstance(x, Err): raise SqlError(x.msg)
+            if any(isinstance(x, Err) for x in res): return None
             okp = np.array([x is True for x in res], bool)
             chg = np.flatnonzero(np.diff(okp.astype(np.int8)) != 0) + 1
             bounds = np.concatenate(([0], chg, [len(pcs)]))
@@ -2712,7 +2939,7 @@ class _Planner:
             bad = [i for i, x in enumerate(res) if isinstance(x, Err)]
             if bad:                                    # an error matters only for a code the column holds
                 hit = np.intersect1d(np.array(bad, np.int64), present())
-                if len(hit): raise SqlError(res[int(hit[0])].msg)
+                if len(hit): return None
             ok = np.array([x is True for x in res], bool)
             edges = np.diff(np.concatenate([[0], ok.astype(np.int8), [0]]))
             starts, ends = np.nonzero(edges == 1)[0], np.nonzero(edges == -1)[0] - 1
@@ -2734,14 +2961,19 @@ class _Planner:
         return out + ([v] if v is not None else [])
 
     # aggregates ------------------------------------------------------------
-    def poly(self, e):
-        """an exact polynomial (algq expression) of e, or None (NULLs are excluded by the caller's variant)"""
-        e0 = e
-        if isinstance(e, I.Cast) and not e.try_:
-            a, t = e.arg.t, e.t
-            if a.exact and (t.integer and a.integer and True or t.id == "DECIMAL" and (a.integer or a.s <= t.s)):
-                return self.poly(e.arg)
-            return None
+    def poly(self, e, shift=False):
+        """an exact polynomial (algq expression) of e, or None (NULLs are excluded by the caller's variant). The engine
+        sums polynomials exactly, without the SQL types of their parts: e is lowered only when its casts and integer /
+        DECIMAL operations provably keep their types on the values the columns hold (exact_range), so that no value
+        the sums stand for is a conversion or overflow error. Otherwise the aggregate takes its argument's values,
+        computed (and checked) per group. shift: e's top x + c (constant c) need not keep its type (an AVG that DuckDB
+        computes as SUM(x) / COUNT(*) + c, never computing x + c: _shifted)"""
+        if self.exact_range(_shifted(e) if shift else e) is None: return None
+        return self._poly(e)
+
+    def _poly(self, e):
+        if isinstance(e, I.Cast):                     # proved to keep every value (exact_range)
+            return self._poly(e.arg)
         if isinstance(e, I.Lit):
             if isinstance(e.v, bool) or e.v is None: return None
             if isinstance(e.v, int): return algq.Const(e.v)
@@ -2755,20 +2987,20 @@ class _Planner:
             if cd is not None and cd.affine is None and algq._bridge_col(c) != "hide": return None
             return c
         if isinstance(e, I.Func):
-            if e.fn in ("+", "-", "*") and len(e.args) == 2:
+            if e.fn in ("+", "-", "*", "__xmul") and len(e.args) == 2:
                 if not (e.args[0].t.exact and e.args[1].t.exact): return None
-                l, r = self.poly(e.args[0]), self.poly(e.args[1])
+                l, r = self._poly(e.args[0]), self._poly(e.args[1])
                 if l is None or r is None: return None
-                return algq.Arith(e.fn, l, r)
+                return algq.Arith("*" if e.fn == "__xmul" else e.fn, l, r)
             if e.fn == "neg":
-                a = self.poly(e.args[0]); return None if a is None else algq.Arith("-", algq.Const(0), a)
+                a = self._poly(e.args[0]); return None if a is None else algq.Arith("-", algq.Const(0), a)
         return None
 
-    def poly_of_tuple(self, m):
+    def poly_of_tuple(self, m, shift=False):
         if isinstance(m, tuple):
             a, b = self.poly_of_tuple(m[1]), self.poly_of_tuple(m[2])
             return algq.Arith("*", a, b)
-        return self.poly(m)
+        return self.poly(m, shift)
 
     # the run ---------------------------------------------------------------
     def run(self, rest, need, aggs):
@@ -2959,7 +3191,7 @@ class _Planner:
             else: rel.cols[k] = [None] * rel.n
         for k, plan in aggplan.items():
             if plan.get("rowfilter_expr") is not None:
-                plan["rowfilter"] = set(truth(ev(plan["rowfilter_expr"], rel, cx)))
+                plan["rowfilter"] = set(rows_where(plan["rowfilter_expr"], rel, cx))
         if residual:
             keep = rows_where(_and(residual), rel, cx)
             rel = rel.take(keep)
@@ -3048,7 +3280,8 @@ class _Planner:
             if len(cols) == 1:
                 return self.codeset(I.cols_of(c)[0], c)
             return None
-        return [self.rowmask(b, c)]
+        m = self.rowmask(b, c, lazy=True)
+        return None if m is None else [m]
 
     def agg_plan(self, a, variants, vpreds, mlist, mkeys):
         """how an aggregate is computed: from engine moments ({kind: moment, variant, moments}), from the engine's
@@ -3072,11 +3305,15 @@ class _Planner:
             if eps is None:
                 if I.has(f, I.Subq): return None
                 rowfilter, eps = f, []
+        # AVG(x + c) of a block without GROUP BY over columns without NULLs: DuckDB computes it as SUM(x) / COUNT(*) + c
+        # (its statistics show no NULL), never computing x + c, so an overflow there is no error
+        shift = name == "avg" and not self.s.group and self.s.sets is None and not a.distinct and a.filter is None \
+            and _shifted(a.args[0]) is not a.args[0] and all(self.valid(c) is None for c in I.cols_of(a.args[0]))
         if name != "count_star":
             if name == "count" and isinstance(a.args[0], I.Col): pass       # COUNT(column): its validity alone
             elif not ext:
                 y = a.args[0]; x = a.args[1] if len(a.args) > 1 else None
-                if self.poly(y) is None or (x is not None and self.poly(x) is None): return None
+                if self.poly(y, shift) is None or (x is not None and self.poly(x) is None): return None
             seen = set()
             for arg in a.args:                         # NULL arguments are skipped: only rows where all are valid
                 for col in I.cols_of(arg):
@@ -3103,7 +3340,7 @@ class _Planner:
         for m in MOMENTS[name](y, x):
             k = _mkey(m)
             if k not in mkeys[v]:
-                mkeys[v][k] = len(mlist[v]); mlist[v].append(self.poly_of_tuple(m))
+                mkeys[v][k] = len(mlist[v]); mlist[v].append(self.poly_of_tuple(m, shift))
             ms.append(mkeys[v][k])
         return dict(kind="moment", variant=v, moments=ms, rowfilter_expr=rowfilter)
 
@@ -3767,11 +4004,50 @@ def join_preagg(s, aggs, cx):
     def mfactors(m):
         if isinstance(m, tuple): return mfactors(m[1]) + mfactors(m[2])
         return factors(m)
+    def is_prod(e): return isinstance(e, I.Func) and e.fn == "*" and len(e.args) == 2 and factors(e) is not None
+    def bounded_prods(e):
+        """does e's product tree hold a product of an integer / DECIMAL type? (factors() splits them: the pairs' products
+        are never computed, so each must provably keep its type)"""
+        return is_prod(e) and (type_range(e.t) is not None or bounded_prods(e.args[0]) or bounded_prods(e.args[1]))
+    def tree_range(e, leaf):
+        """the interval of e's product tree from its factors' (leaf(factor) -> [lo, hi], () for a factor NULL on every
+        row, or None): True above an approximate product, None when a product of a bounded type is not proved"""
+        if is_prod(e):
+            a, b = tree_range(e.args[0], leaf), tree_range(e.args[1], leaf)
+            if a is None or b is None: return None
+            if type_range(e.t) is None: return True
+            if a == () or b == (): return ()
+            if a is True or b is True: return None
+            c = [x * y for x in a for y in b]; r = (min(c), max(c))
+            return r if _within(r, e.t) else None
+        if type_range(e.t) is None: return True
+        return expr_range(e, lambda c: None) if isinstance(e, I.Lit) else leaf(e)
+    def side_src(X):
+        """the stored binding a side reads and the derived table's columns as its expressions (None: a stored table),
+        or (None, None) for any other derived table"""
+        q0 = X.q
+        if X.table is not None: return X, None
+        if isinstance(q0, I.Select) and isinstance(q0.from_, I.Binding) and q0.from_.table is not None and not q0.aggregate \
+                and not q0.group and q0.having is None and q0.qualify is None and not q0.distinct and q0.distinct_on is None \
+                and not q0.order and q0.limit is None and q0.offset is None and q0.sample is None and q0.from_.sample is None:
+            inner = [x for x, _ in q0.items] + ([q0.where] if q0.where is not None else [])
+            names = [n for _, n in q0.items]
+            if len(set(names)) == len(names) and not any(I.has(x, I.Subq) or I.has(x, I.Outer) or I.has(x, I.Win) or I.has(x, I.Agg)
+                                                         or not _deterministic(x) for x in inner):
+                return q0.from_, {n: x for x, n in q0.items}
+        return None, None
+    def static_leaf(y):
+        """a factor's range from the codes its side's stored columns hold, or None"""
+        X = side_of(y); src, m = side_src(X)
+        if src is None: return None
+        z = y if m is None else I.subst(y, lambda n: m[n.name] if isinstance(n, I.Col) and n.b is X else None)
+        return expr_range(z, lambda c: stored_range(src.table, c.name) if c.b is src else None)
     parts = {L: {}, R: {}}
     def part(X, agg): parts[X].setdefault(agg.key(), agg); return agg.key()
     nkeys = {X: part(X, I.Agg("count_star", [], T.BIGINT)) for X in (L, R)}
     def side_of(e): bs = sides(e); return R if bs == {R} else L
     plans = {}
+    checks = []                                     # (argument, {factor: (side, its MIN part, its MAX part)}) to prove
     for k, a in aggs.items():
         plan = None
         if a.filter is None and not a.order and not a.name.startswith("__iso_h"):
@@ -3785,6 +4061,14 @@ def join_preagg(s, aggs, cx):
                 if ok and a.name != "count":
                     ok = all(_exact_num(x.t) for x in a.args) and all(_exact_num(y.t) for x in fs for y in x)
                 if ok:
+                    for x in a.args:                 # the split products: proved from the stored columns, or from the
+                        if not bounded_prods(x) or tree_range(x, static_leaf) is not None: continue     # sides' extremes
+                        lv = {}
+                        for y in factors(x):
+                            if isinstance(y, I.Lit) or type_range(y.t) is None: continue
+                            X = side_of(y)
+                            lv[y.key()] = (X, part(X, I.Agg("min", [y], y.t)), part(X, I.Agg("max", [y], y.t)))
+                        checks.append((x, lv))
                     val = {L: {}, R: {}}
                     for y in (y for x in fs for y in x if not isinstance(y, I.Lit)): val[side_of(y)][y.key()] = y
                     # each side's rows with every factor of the arguments valid: its count, and the sums of the
@@ -3807,7 +4091,7 @@ def join_preagg(s, aggs, cx):
                             own = {z.key() for z in fl[X] if not isinstance(z, I.Lit)}
                             for z in fl[X]:
                                 if z.t.integer: z = sqlfront.cast_to(z, T.HUGEINT)
-                                prod = z if prod is None else sqlfront.make_func("*", [prod, z])
+                                prod = z if prod is None else sqlfront.make_func("__xmul", [prod, z])
                             mk.append(part(X, I.Agg("sum", [prod], F.AGGS["sum"].typer([prod.t]),
                                                     filter=None if own == set(val[X]) else cond[X])))
                         ms.append(tuple(mk))
@@ -3820,15 +4104,8 @@ def join_preagg(s, aggs, cx):
     def side_rel(X, preds):
         """the side's groups: the kept columns, the partial aggregates. A derived table or CTE that only filters and
         computes columns of one stored table is read from that table (the engine groups its rows)"""
-        src, m, q0 = X, None, X.q
-        if isinstance(q0, I.Select) and isinstance(q0.from_, I.Binding) and q0.from_.table is not None and not q0.aggregate \
-                and not q0.group and q0.having is None and q0.qualify is None and not q0.distinct and q0.distinct_on is None \
-                and not q0.order and q0.limit is None and q0.offset is None and q0.sample is None and q0.from_.sample is None:
-            inner = [x for x, _ in q0.items] + ([q0.where] if q0.where is not None else [])
-            names = [n for _, n in q0.items]
-            if len(set(names)) == len(names) and not any(I.has(x, I.Subq) or I.has(x, I.Outer) or I.has(x, I.Win) or I.has(x, I.Agg)
-                                                         or not _deterministic(x) for x in inner):
-                m = {n: x for x, n in q0.items}; src = q0.from_
+        src, m = side_src(X); q0 = X.q
+        if src is None: src = X
         sub = (lambda e: I.subst(e, lambda n: m[n.name] if isinstance(n, I.Col) and n.b is X else None)) if m is not None else (lambda e: e)
         kc, pa = list(keep[X].values()), list(parts[X].values())
         g = [sub(c) for c in kc]; ps = [sub(a) for a in pa]
@@ -3845,6 +4122,24 @@ def join_preagg(s, aggs, cx):
                 else: out.cols[old.key()] = out.cols[new.key()]
         return out
     A = side_rel(L, pl); B = side_rel(R, pr)
+    # an error among the sides' partial values (a factor's overflow, a failed cast in it): its pairs are formed, row
+    # pair by row pair, so that it fails the query only where it is used; so too when a product the moments split may
+    # leave its type on the factors' extremes the sides found
+    def partial_errs():
+        for X, rel_ in ((L, A), (R, B)):
+            for key in parts[X]:
+                if rel_.cols.array(key) is None and any(isinstance(v, Err) for v in rel_.cols[key]): return True
+        for x, lv in checks:
+            rng = {}
+            for yk, (X, kmin, kmax) in lv.items():
+                rel_ = A if X is L else B
+                lo = [v for v in rel_.cols[kmin] if v is not None]; hi = [v for v in rel_.cols[kmax] if v is not None]
+                rng[yk] = () if not lo else (Fraction(min(lo)), Fraction(max(hi)))
+            if tree_range(x, lambda y: rng.get(y.key())) is None: return True
+        return False
+    if partial_errs():
+        cx.stats["join_preagg"] -= 1
+        return None
     # the pairs of groups with equal join keys (NULL keys pair with nothing)
     import sqlwin
     ka, kb = [], []
@@ -3968,7 +4263,7 @@ def _lateral(j, L, refs, per, pushed, cx):
     C.cnt = [L.cnt[i] * c for i, c in zip(li, rc)]
     conds_on = _conjuncts(j.cond)
     if conds_on:
-        keep = truth(ev(_and(conds_on), C, cx)); C = C.take(keep); li = [li[k] for k in keep]
+        keep = rows_where(_and(conds_on), C, cx); C = C.take(keep); li = [li[k] for k in keep]
     if j.kind == "left":
         hit = set(li)
         extra = [i for i in range(L.n) if i not in hit]
@@ -3986,7 +4281,7 @@ def _mat_binding(b, cols, conds, cx):
         try: rel = _mat_binding(b, {c.key(): c for c in cols}, [], cx)
         finally: b.sample = sp
         rel = sample_rel(rel, sp, cx)
-        return rel.take(truth(ev(_and(conds), rel, cx))) if conds else rel
+        return rel.take(rows_where(_and(conds), rel, cx)) if conds else rel
     if b.table is not None:
         s = I.Select(); s.from_ = b
         s.items = []; s.where = _and(conds) if conds else None
@@ -4006,7 +4301,7 @@ def _mat_binding(b, cols, conds, cx):
         j = names.index(c.name)
         rel.cols[c.key()] = [r[j] for r in res.rows]
     if conds:
-        rel = rel.take(truth(ev(_and(conds), rel, cx)))
+        rel = rel.take(rows_where(_and(conds), rel, cx))
     return rel
 
 
@@ -4016,6 +4311,9 @@ def _join(j, L, R, cx):
         side, exprs = part
         P = L if side == "left" else R
         keys = [ev(x, P, cx) for x in exprs]
+        for col in keys:
+            for v in col:
+                if isinstance(v, Err): raise SqlError(v.msg)
         groups = {}
         for i in range(P.n): groups.setdefault(tuple(nkey(k[i]) for k in keys), []).append(i)
         parts = []
@@ -4049,6 +4347,10 @@ def _join_plain(j, L, R, cx):
         lv = [codes_of(x, L, cx) for x in lkeys]; rv = [codes_of(x, R, cx) for x in rkeys]
         lv = [c if c is not None else ev(x, L, cx) for c, x in zip(lv, lkeys)]
         rv = [c if c is not None else ev(x, R, cx) for c, x in zip(rv, rkeys)]
+        for col in lv + rv:                          # a key that is an error (an overflow, a failed cast) matches as
+            if not isinstance(col, ColArr):          # nothing can: every row's key decides its pairs, so it fails the query
+                for v in col:
+                    if isinstance(v, Err): raise SqlError(v.msg)
         lc, rc = [], []
         lok = np.ones(L.n, bool); rok = np.ones(R.n, bool)
         for a, b, ne in zip(lv, rv, nulleq):
@@ -4071,7 +4373,7 @@ def _join_plain(j, L, R, cx):
         li = np.repeat(np.arange(L.n), R.n); ri = np.tile(np.arange(R.n), L.n)
     C = _combine(L, R, li, ri)
     if other:
-        keep = np.array(truth(ev(_and(other), C, cx)), np.int64)
+        keep = np.array(rows_where(_and(other), C, cx), np.int64)
         C = C.take(keep.tolist()); li, ri = li[keep], ri[keep]
     if kind in ("inner", "cross"): return C
     if kind in ("semi", "anti"):

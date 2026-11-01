@@ -117,8 +117,19 @@ item (or `UNNEST(t.a)`, `JSON_TABLE(t.doc, ...)`) runs once per distinct tuple o
 list with SQL's three-valued rules, so they reach the engine as plane predicates or code sets. A correlated one runs
 once per distinct tuple of the outer values it reads.
 
-**Errors** follow DuckDB's evaluate-on-use semantics: a failing cast or a division by zero fails the query only if the
-value is used by a row that is output.
+**Errors** follow DuckDB's evaluate-on-use semantics: a failing cast, an integer or DECIMAL operation whose value leaves
+its type (INTEGER + INTEGER past 2^31 - 1, a product past DECIMAL(18)) or a division by zero fails the query only if
+the value is used: by a row that is output, by a WHERE term a row needs (a row that one term of an AND makes FALSE or
+NULL, or one term of an OR makes TRUE, does not evaluate the others; a projection computes AND and OR in full), by a
+GROUP BY or join key, by an aggregate of a group that is kept (a HAVING term on the GROUP BY expressions alone filters
+the rows before grouping, as DuckDB's filter pushdown does). The engine's exact sums and plane predicates stand for an
+expression only where the stored columns' ranges prove that none of its casts and operations can fail
+(`SUM(CAST(i AS TINYINT))` on values past 127 is computed, and fails, on the values). A comparison with a constant is
+decided as DuckDB's optimizer decides it (`x + 1 > 5` is `x > 4`, `x * 7 = -3` is FALSE for every non-NULL x), and
+`COUNT(x * y)` counts the rows where x and y are not NULL, so that their arithmetic is not computed. DuckDB's other
+rewrites that change what is computed are followed too: NOT of a comparison is the opposite comparison, the constants
+of an integer product are folded into one placed last (`(2 * x) * y` is `(x * y) * 2`, `x * 0` is 0 or NULL), `x // 1`
+is x, and `x IS NULL` computes x where DuckDB's statistics cannot decide it (a cast that can fail).
 
 ## Data types
 

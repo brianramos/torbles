@@ -20,9 +20,11 @@ class Node:
 
 
 class Lit(Node):
-    """a constant. strlit: written as a string literal (it converts implicitly to the type it meets)"""
-    __slots__ = ("v", "strlit")
-    def __init__(self, v, t, strlit=False): self.v, self.t, self.strlit = v, t, strlit
+    """a constant. strlit: written as a string literal (it converts implicitly to the type it meets); fixed: the value
+    of a folded expression or a CAST, whose type is that expression's (an integer literal of the text narrows to the
+    integer type it meets in arithmetic, as in DuckDB; ti + CAST(1 AS INTEGER) is an INTEGER, ti + 1 a TINYINT)"""
+    __slots__ = ("v", "strlit", "fixed")
+    def __init__(self, v, t, strlit=False, fixed=False): self.v, self.t, self.strlit, self.fixed = v, t, strlit, fixed
     @property
     def nullable(self): return self.v is None
     def _key(self): return ("lit", type(self.v).__name__, _vkey(self.v), str(self.t))

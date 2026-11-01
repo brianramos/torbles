@@ -95,8 +95,10 @@ def _num_t(args, op):
         r = T.supertype(a, b)
         return r, [r, r]
     if a.integer and b.integer:
-        if lit_int(args[1]) and _fits(args[1].v, a): b = a
-        if lit_int(args[0]) and _fits(args[0].v, b): a = b
+        # an integer literal of the text takes the other operand's type when it fits (the result can then overflow
+        # that type, as in DuckDB); a folded expression or a CAST keeps its own type
+        if lit_int(args[1]) and not args[1].fixed and _fits(args[1].v, a): b = a
+        if lit_int(args[0]) and not args[0].fixed and _fits(args[0].v, b): a = b
         r = T._int_supertype(a, b)
         if op == "/": return T.DOUBLE, [T.DOUBLE, T.DOUBLE]
         return r, None
@@ -281,6 +283,9 @@ def _mod(a, b):
 scalar("+", _arith_typer("+"))(_add)
 scalar("-", _arith_typer("-"))(_sub)
 scalar("*", _arith_typer("*"))(_mul)
+# the executor's own exact product (a pre-aggregated join's partial sums of factors): typed as *, never an overflow,
+# as no SQL operation computes it
+scalar("__xmul", _arith_typer("*"))(_mul)
 scalar("/", _arith_typer("/"))(_div)
 scalar("// divide", _arith_typer("//"))(_idiv)
 scalar("% mod", _arith_typer("%"))(_mod)
@@ -290,7 +295,18 @@ scalar("% mod", _arith_typer("%"))(_mod)
 def _decfloat(x, p): return T.decfloat(x, p) if isinstance(x, Decimal) or isinstance(x, (int, float)) else x
 
 
-@scalar("neg", lambda a: (a[0].t if a[0].t.id != "NULL" else T.INTEGER, None))
+_WIDER = {"TINYINT": "SMALLINT", "SMALLINT": "INTEGER", "INTEGER": "BIGINT", "BIGINT": "HUGEINT"}
+
+
+def _neg_typer(a):
+    t = a[0].t
+    if t.id == "NULL": return T.INTEGER, None
+    if lit_int(a[0]) and t.id in _WIDER and a[0].v == T.INT_RANGE[t.id][0]:
+        return T.SqlType(_WIDER[t.id]), None       # DuckDB: minus the least constant of a type is of the wider type
+    return t, None
+
+
+@scalar("neg", _neg_typer)
 def _neg(a): return -a
 
 
@@ -302,6 +318,9 @@ def _pos(a): return a
 def _cmp_typer(args):
     a, b = args
     t = T.supertype(a.t, b.t, _strlit(a), _strlit(b))
+    if a.t.integer and b.t.integer and t != a.t and lit_int(b) and not b.fixed and _fits(b.v, a.t): t = a.t
+    elif a.t.integer and b.t.integer and t != b.t and lit_int(a) and not a.fixed and _fits(a.v, b.t): t = b.t
+    # (an integer literal of the text compares in the other side's integer type when it fits it, as in DuckDB)
     if t.id == "VARCHAR" and (a.t.id != "VARCHAR" or b.t.id != "VARCHAR") and not (_strlit(a) or _strlit(b)):
         # DuckDB compares a number with a string column as strings only through an explicit cast
         if a.t.numeric or b.t.numeric: t = T.DOUBLE if (a.t.floating or b.t.floating) else (a.t if a.t.numeric else b.t)
@@ -357,21 +376,24 @@ def _bool_typer(args):
 
 @scalar("and", _bool_typer, nulls="custom")
 def _and(*xs):
+    """a FALSE operand decides, whatever the others (an error in one fails the query only if the result needs it:
+    the order of the terms does not matter, as DuckDB evaluates the cheaper ones first)"""
     out = True
     for x in xs:
         if x is False: return False
-        if isinstance(x, Err): return x
-        if x is None: out = None
+        if isinstance(x, Err): out = out if isinstance(out, Err) else x
+        elif x is None and not isinstance(out, Err): out = None
     return out
 
 
 @scalar("or", _bool_typer, nulls="custom")
 def _or(*xs):
+    """a TRUE operand decides, whatever the others (as AND)"""
     out = False
     for x in xs:
         if x is True: return True
-        if isinstance(x, Err): return x
-        if x is None: out = None
+        if isinstance(x, Err): out = out if isinstance(out, Err) else x
+        elif x is None and not isinstance(out, Err): out = None
     return out
 
 

@@ -229,6 +229,7 @@ class _Functions:
             elif aname in ("quantile_cont", "quantile_disc") and len(nodes) == 2: params = (nodes[1].v,); nodes = nodes[:1]
             order = [_order(o) for o in _list(order_by)]
             filt = _node(filter) if filter is not None else None
+            if not order: aname, nodes, filt = FR.count_rows(aname, nodes, distinct, filt)     # as db.sql() binds COUNT
             t = T.BIGINT if aname == "count_star" else SF.agg_typer(aname, [n.t for n in nodes], params)
             return E(I.Agg(aname, nodes, t, distinct, filt, order, params))
         fname = FR._FN_ALIAS.get(lname, lname)
@@ -372,7 +373,7 @@ class Query:
         s.limit, s.offset = self._limit, self._offset
         for x in [x for x, _ in s.items] + [c for c in (s.where, s.having, s.qualify) if c is not None] + [o[0][1] for o in s.order if o[0][0] == "expr"] + s.group:
             FR.check_nested(x)
-        if s.aggregate: FR._check_grouped(s)
+        if s.aggregate: FR.sum_constants(s); FR._check_grouped(s); FR.having_pushdown(s)     # (as db.sql() binds a block)
         q = s
         for op, all_, other in self._setops:
             ob = other._bind()
