@@ -176,6 +176,15 @@ BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly). Every engin
 
 ## Results
 
+The SSB numbers below are for the Python query API: each query is built once with `db.query(...)`, as
+`bench/ssb/ssb_auto.py` writes them, and then run, so they measure the engine's planning, execution and result, not
+SQL. Through `db.sql(...)`, which parses, binds and plans the statement and builds its ordered result on every call,
+the release review of 2026-11-01 measured the 13 queries at SF10 (60M rows, 24 threads, RTX 5090 Laptop GPU) in 121 ms
+on the CPU and 41 ms on the GPU, against 219 ms for DuckDB; through the Python API, in the same protocol, in 81 and 10
+ms against 222. Window functions and the rest of a query that runs after the engine's aggregation run on the CPU, in
+Python, whichever engine is selected, and on large inputs they are much slower than DuckDB
+([docs/SQL.md](docs/SQL.md#performance)).
+
 ### SSB with nothing designed by hand (0.2.0), and CPU performance
 
 `bench/ssb/ssb_auto.py` loads the official SSB database with `torbles.from_duckdb`, takes the keys from the standard

@@ -28,21 +28,21 @@ lacks, and the binder types every expression with DuckDB's rules wherever the st
 answers compare value for value. A star block runs as engine queries: each filter on one table becomes a plane
 predicate, a dimension row mask or a fact code set (so any function in it runs on distinct values); COUNT, SUM, AVG,
 the variances, covariances, CORR and the nine REGR functions are exact moment sums; MIN and MAX are computed on the
-planes by plane elimination (a new engine pass, `Query.minmax()`, also on the plain and GPU engines); SUM of CASE and
-FILTER clauses run as engine variants; LEFT JOINs to dimensions run as disjoint passes. Everything else runs on the
-distinct tuples the engine returns, and other joins as hash joins of the engine's multisets. The ISO coverage is
-nearly complete for queries: every predicate (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE, OVERLAPS, PERIOD predicates, IS
-NORMALIZED, IS JSON, MEMBER OF, SUBMULTISET, IS A SET), the scalar functions, the aggregates (percentiles, hypothetical
-set functions, LISTAGG, COLLECT, FUSION, INTERSECTION, JSON_ARRAYAGG), window functions with every frame and
-exclusion, time zones, collations, intervals with qualifiers, binary strings, arrays, multisets, SQL/JSON with its
-path language and JSON_TABLE (with its PLAN clauses), LATERAL, partitioned outer joins, WITH RECURSIVE with SEARCH and
-CYCLE, MATCH_RECOGNIZE and row pattern recognition in windows, nested window functions (VALUE_OF, ROW_NUMBER of a row
-marker), row types with named fields (also as stored STRUCT columns), DECFLOAT, TIMESTAMP(p) / TIME(p), and
-TABLESAMPLE, the UNICODE collation (the Unicode Collation Algorithm, through the optional pyuca package), JOIN ... USING
-(...) AS j, COLLATION FOR, the literal UNKNOWN, character set introducers, and ordered aggregates over windows.
-`docs/SQL.md` lists every construct with where it runs and what is excluded (statements other than queries, SQL/XML,
-property graphs and the other parts of ISO/IEC 9075). In Python, every function is `F.<name>(...)` and every other
-expression form `F.expr("<SQL text>", tables...)`.
+planes by plane elimination (a new engine pass, `Query.minmax()`, also on the plain engine; with the GPU engine it
+runs on the CPU); SUM of CASE and FILTER clauses run as engine variants; LEFT JOINs to dimensions run as disjoint
+passes. Everything else runs on the distinct tuples the engine returns, and other joins as hash joins of the engine's
+multisets. The ISO coverage is nearly complete for queries: every predicate (SIMILAR TO, LIKE_REGEX, MATCH, UNIQUE,
+OVERLAPS, PERIOD predicates, IS NORMALIZED, IS JSON, MEMBER OF, SUBMULTISET, IS A SET), the scalar functions, the
+aggregates (percentiles, hypothetical set functions, LISTAGG, COLLECT, FUSION, INTERSECTION, JSON_ARRAYAGG), window
+functions with every frame and exclusion, time zones, collations, intervals with qualifiers, binary strings, arrays,
+multisets, SQL/JSON with its path language and JSON_TABLE (with its PLAN clauses), LATERAL, partitioned outer joins,
+WITH RECURSIVE with SEARCH and CYCLE, MATCH_RECOGNIZE and row pattern recognition in windows, nested window functions
+(VALUE_OF, ROW_NUMBER of a row marker), row types with named fields (also as stored STRUCT columns), DECFLOAT,
+TIMESTAMP(p) / TIME(p), and TABLESAMPLE, the UNICODE collation (the Unicode Collation Algorithm, through the optional
+pyuca package), JOIN ... USING (...) AS j, COLLATION FOR, the literal UNKNOWN, character set introducers, and ordered
+aggregates over windows. `docs/SQL.md` lists every construct with where it runs and what is excluded (statements other
+than queries, SQL/XML, property graphs and the other parts of ISO/IEC 9075). In Python, every function is
+`F.<name>(...)` and every other expression form `F.expr("<SQL text>", tables...)`.
 
 Window functions, and GROUP BY over the tuples the engine returns, run as array algebra (`sqlwin.py`): every PARTITION
 BY, ORDER BY and grouping column becomes dense order codes and one stable lexsort orders every partition, so ranking

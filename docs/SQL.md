@@ -133,6 +133,20 @@ rewrites that change what is computed are followed too: NOT of a comparison is t
 of an integer product are folded into one placed last (`(2 * x) * y` is `(x * y) * 2`, `x * 0` is 0 or NULL), `x // 1`
 is x, and `x IS NULL` computes x where DuckDB's statistics cannot decide it (a cast that can fail).
 
+### Performance
+
+What the engine computes (filters, joins to dimensions, the aggregates of a star block, MIN and MAX, rank selections)
+runs on the bit planes, and on the GPU where the GPU executor supports it. The rest of a query runs here, in Python and
+NumPy on the CPU, whichever engine is selected: window functions, the grouping of the tuples the engine returns, joins
+that are not stars, set operations, ORDER BY, and functions evaluated on distinct values. Its cost grows with the rows
+it handles. In the release review's synthetic workload (2026-11-01, 1M rows, 24 threads, RTX 5090 Laptop GPU), a
+partitioned running SUM and a global RANK, each over every row and returning 100 rows, took 7.7 s together on the CPU
+engine and 7.3 s with the GPU engine, against 66 ms for DuckDB. The workload's six aggregate and distinct-value queries
+took 40 ms on the CPU and 33 ms with the GPU, against 15 ms. With the GPU engine, MIN and MAX, row bitmaps,
+COUNT(DISTINCT) cells and semi-join lookups run on the CPU engine, so a SQL workload is not all on the GPU. The 13 SSB
+queries through `db.sql` at SF10 took 121 ms on the CPU and 41 ms on the GPU, against 219 ms for DuckDB, where the
+same queries built once with the Python API take 81 and 10 ms (README, Results).
+
 ## Data types
 
 | SQL type | values | stored columns |

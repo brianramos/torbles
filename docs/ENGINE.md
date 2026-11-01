@@ -76,8 +76,8 @@ Queries are built as algebraic expressions (`algq.py`) and executed algebraicall
   and up to two looked-up keys) into a sparse group table on the GPU (a slot's key is read before it is claimed by
   CAS; the groups present are gathered from an insertion list and their slots cleared, so the table stays empty
   between queries), dominance slices, row ranges, delta planes, self-extending columns. The torus planes and integrity
-  checks stay on the CPU; the GPU holds the value planes, decoded once at upload. Semi-join lookups stay on the CPU
-  (the query falls back). `gpu_mm("word" | "popc" | "mma")` selects the GROUP BY kernel: per-word (default), or the
+  checks stay on the CPU; the GPU holds the value planes, decoded once at upload. Semi-join lookups, MIN / MAX by plane
+  elimination, row bitmaps and COUNT(DISTINCT) cells stay on the CPU (the query falls back). `gpu_mm("word" | "popc" | "mma")` selects the GROUP BY kernel: per-word (default), or the
   tile matrix product with `__popc` or on the tensor cores. The same source builds as plain C++ (`-DEMULATE`) so the
   kernels are tested without a GPU (`tests/check_gpu.py`). Results on an RTX 5090 Laptop GPU: `docs/SSB.md`.
 - GROUP BY with a degree-2 polynomial measure (e.g. revenue = 100*price - price*discount) on keys that live on
