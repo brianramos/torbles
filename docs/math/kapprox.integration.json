@@ -1,0 +1,126 @@
+{
+ "guide": [
+  {
+   "page": "kapprox.md",
+   "title": "Approximate spectral feature kernels",
+   "capabilities": "KERNEL-002",
+   "summary": "Gaussian, Laplace and Cauchy kernels through declared finite-feature approximations: certified truncated-Taylor Gaussian features on a declared domain (per-pair bound P(Poisson(U) > N)) and seeded random Fourier features through SPEC-001's certified spectral sums (a probabilistic Hoeffding bound with its failure probability, the frequency bias stated); kernel sums, means, MMD and witness values as exact enclosures with UNC-002 error records, persisted in FND-011's format with their seeds, never authorizing an exact rewrite; exact polynomial kernels stay KERNEL-001's."
+  }
+ ],
+ "inventory": {
+  "KERNEL-002": {
+   "planned_files": [
+    "torbles/math_kapprox.h",
+    "torbles/math_kapprox.c",
+    "torbles/math_kapprox_gpu.cu",
+    "torbles/math_kapprox.py",
+    "tests/test_math_kapprox.py",
+    "bench/benchmark_math_kapprox.py"
+   ],
+   "budgets": [
+    "Build: variables = d (<= 16) + weight, degree = N (<= 12), support = Taylor items C(d + N, N) or the D (<= 2^20) frequencies, states = groups x items, tensor = selected rows x items (random features: SPEC-001's rows x frequencies), iterations = D d generator draws, bytes = the plan, the sums and the state (SPEC-001's own needs); CUDA: every device copy (tr_kapprox_device_bytes).",
+    "Requests: output = requests, tensor = points x items (point features), bytes = the point features; every big rational of an answer is FND-009-budgeted; save / load: bytes = the record (twice for a load).",
+    "Refused before allocation: AlgebraBudgetError; NotConvergedError when the per-pair bound exceeds the error budget; UnsupportedError for d > 16, N > 12, D > 2^20, Taylor features of Laplace or Cauchy kernels, frequencies past 2^60, a Gaussian factor below 2^-(2^24); DomainError for columns of different scales and data or points outside the declared domain."
+   ],
+   "cpu": "Native C (math_kapprox.c, the per-row code shared with CUDA in math_kapprox.h): Gaussian exp(-gamma |x - y|^2), Laplace exp(-gamma |x - y|_1) and Cauchy prod 1 / (1 + gamma^2 (x_j - y_j)^2) kernels (exact int64-rational gamma, d <= 16 columns of one decimal scale, an optional weight) through declared finite-feature approximations. Taylor (Gaussian): E(x) E(y) sum_{n <= N} (2 gamma x.y)^n / n! (N <= 12) as features E(x) u^a over the C(d + N, N) multi-indices with KERNEL-001's sorted-multi-index multiplicities, per row t = gamma |x|^2 / ln 2 from the exact 192-bit sum of squares and a 64.320 fixed-point constant (577-bit 1/ln 2), E = 2^-t by CALC-003's certified exp, exact u = X 2^-b, midpoint-radius monomials, outward integers summed exactly in 128 bits; the declared domain |x|^2 <= radius2 (declared or the data's largest, exact; rows and points outside refused) and the certified per-pair bound e^-U T_N(U) = P(Poisson(U) > N), U = 2 gamma radius2, as an exact rational. Random Fourier features (all three): D <= 2^20 frequencies from a native seeded generator (splitmix64 words in UNC-002's stream convention, 128-bit uniform cells; Box-Muller, tangent and exponential transforms evaluated with certified fixed-point ln (atanh), integer square roots and CALC-003 sin / cos after SPEC-001's exact quarter-turn reduction, rounded to dyadics with each sample's enclosure checked), deduplicated with multiplicities, accumulated through SPEC-001's fixed spectral basis (plan, exact sums, adoption checks); per pair, with probability >= 1 - delta under the stated independence assumption, |k^ - k| <= 2 sqrt(ln(2 / delta) / (2 D)) + beta, beta the deterministic bias 2 P_bad + 2 rho sqrt(d) eta of the dyadic frequencies (a coupling with exact samples), all exact rationals. Per group the selected and counted rows, W = sum w, A = sum |w| (128 bits), Q = sum w^2 (192 bits). Answers (KERNEL-001's pair semantics: sums across and within groups with or without self-pairs, ordered or unordered, kernel means, biased and unbiased MMD^2, witness values at logical points inside the domain): exact rational enclosures of the approximant (midpoint-radius products in KERNEL-001's 384-bit accumulators, FND-009 big rationals) with UNC-002 records: norm abs, assumptions (domain, no overflow, independence for random features), error terms (remainder eps F; probabilistic h R with the failure probability and quantization beta F, F the weight factor, R the Hoeffding range), their exact sum, the bound [lo - error, hi + error], label certified or probabilistic; a requested error budget below the per-pair bound is refused (NOT_CONVERGED). tr_kapprox_authorize_exact always refuses (FND-007 reason approximate, statistical for random features). Persistence in FND-011's record format (header, FND-007 source record, the spec with seed, count and failure, derived constants, frequencies and SPEC-001 reduction constants, metadata, payload, FND-011's checksum) with FND-011's refusal order; a reload gives identical answers and bytes, with a scope it must be fresh and the plan rebuilt from the recorded seed must agree; FND-011's typed loader refuses the record (an unknown type, exact 0). Exact polynomial kernels are answered by KERNEL-001. Budgets checked before allocation.",
+   "gpu": "tr_mgpu_kapprox_sums (math_kapprox_gpu.cu): a counts kernel (work item = row slice: rows, counted rows, W and A with two-word 128-bit atomics, Q with a three-word atomic carry chain, local while the group stays the same; the largest |x|^2 of the slice in its own output slot), for Taylor a prefactor kernel (one slot per row: exp(-gamma |x|^2) = 2^e m by the shared inline code) and a feature kernel (work item = (item, row slice): the monomial recomputed in the CPU's multiplication order, outward integers accumulated locally per group and added with tr_atomic_add_wide), for random features the counts kernel then SPEC-001's tr_mgpu_fourier_sums (certified cos / sin of omega.x per row summed as exact scaled integers); the host validates the views and budgets every device copy, and tr_kapprox_from_sums adopts the readback after consistency checks (and SPEC-001's adoption checks). Equal to the CPU bit for bit (emulated with a scrambled thread order in the tests); compiled with nvcc for sm_80 without warnings; not yet run on a device.",
+   "limitations": [
+    "Deterministic (Taylor) features for the Gaussian kernel only, with N <= 12; the bound P(Poisson(U) > N) is useful only while U = 2 gamma radius2 is moderate, and the per-answer weight factors are worst cases (A_a A_b for a sum).",
+    "Random-feature bounds hold per answer with probability >= 1 - delta (m answers together: m delta) under the assumption that the seeded generator's words are i.i.d. uniform; Hoeffding's ranges are conservative (observed errors at most about 0.14 of the stated bound in the tests and benchmark).",
+    "Only the row accumulation runs on CUDA; answers, point features and the frequency generator (host code with FND-009 big integers, 20 to 50 us a coordinate) run on the CPU.",
+    "Kernel columns must share one decimal scale; witness points are logical values inside the declared domain; at most 16 dimensions and 2^20 frequencies.",
+    "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.",
+    "No FND-007 certificate is emitted: an approximate kernel quantity is neither a row relation nor a polynomial law; the answers carry their own error records."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "KERNEL_APPROX",
+    "label": "approximate kernel features",
+    "comment": "per group: certified sums of declared approximate kernel features, weight statistics, the error record"
+   }
+  ],
+  "modules": [
+   {
+    "enum": "KAPPROX",
+    "key": "kapprox",
+    "family": "kapprox",
+    "capability": "KERNEL-002",
+    "name": "approximate spectral feature kernels",
+    "comment": "approximate spectral feature kernels",
+    "state": "KERNEL_APPROX",
+    "state_label": "approximate kernel features",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INTEGER",
+     "COUNT",
+     "INT128",
+     "QINTERVAL",
+     "BIGINT",
+     "BIGQ",
+     "INTERVAL"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE",
+    "laws_guaranteed": "TR_LAW_ENCLOSURE",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_kapprox_plan_create",
+     "tr_kapprox_build",
+     "tr_kapprox_sums",
+     "tr_kapprox_from_sums",
+     "tr_kapprox_query",
+     "tr_kapprox_need",
+     "tr_kapprox_generate",
+     "tr_kapprox_save",
+     "tr_kapprox_load",
+     "tr_kapprox_fresh",
+     "tr_kapprox_authorize_exact",
+     "tr_kapprox_get_info"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_kapprox_sums"
+    ],
+    "impl": [
+     [
+      "ENCLOSE",
+      "QINTERVAL",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "CONTRACT",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "MULTIPLY",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "ENCLOSE",
+      "INTERVAL",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
