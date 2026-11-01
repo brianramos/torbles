@@ -110,6 +110,7 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 72 | conserve | conservation across revisions | DISC-003 | tracker | `tr_cons_tracker_make` | `tr_mgpu_cons_delta` |
 | 73 | equiv | scoped query equivalence | META-001 | query parts | `tr_equiv_set_make` | `tr_mgpu_equiv_check` |
 | 74 | factor | factorized inference | PROB-002 | factor graph | `tr_factor_graph_create` | `tr_mgpu_factor_eliminate` |
+| 75 | kapprox | approximate spectral feature kernels | KERNEL-002 | approximate kernel features | `tr_kapprox_plan_create` | `tr_mgpu_kapprox_sums` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

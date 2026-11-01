@@ -967,7 +967,8 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_CONSERVE = 72,          /* DISC-003 incremental identity evidence, records, laws */
        TR_REG_M_EQUIV = 73,             /* META-001 snapshot and universal proofs, counterexamples */
        TR_REG_M_FACTOR = 74,            /* PROB-002 factorized probabilistic inference over bounded factor graphs */
-       TR_REG_M_END = 75 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_KAPPROX = 75,           /* KERNEL-002 approximate spectral feature kernels */
+       TR_REG_M_END = 76 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1030,7 +1031,8 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_TRACKER = 61,           /* a Gram kept current under signed deltas, identity evidence and persistence records */
        TR_REG_STATE_QUERY_PARTS = 62,       /* hash-consed predicates (a shared condition DAG), canonical measures and queries */
        TR_REG_STATE_FACTOR_GRAPH = 63,      /* a factor graph over declared finite supports: scaled exact tables, data sources, costed elimination programs and their message arenas */
-       TR_REG_STATE_KINDS = 64 };
+       TR_REG_STATE_KERNEL_APPROX = 64,     /* per group: certified sums of declared approximate kernel features, weight statistics, the error record */
+       TR_REG_STATE_KINDS = 65 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1410,6 +1412,11 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_FACTOR, ELIMINATE, BIGINT, TR__ALL), TR__I(TR_REG_M_FACTOR, MULTIPLY, BIGINT, TR__ALL),
     TR__I(TR_REG_M_FACTOR, ORDER, BIGINT, TR__ALL), TR__I(TR_REG_M_FACTOR, MODEL_COUNT, BIGQ, TR__CPU),
     TR__I(TR_REG_M_FACTOR, NORMALIZE, BIGQ, TR__CPU), TR__I(TR_REG_M_FACTOR, DIVIDE, BIGQ, TR__CPU),
+    /* 75 KERNEL-002 approximate spectral feature kernels */
+    TR__I(TR_REG_M_KAPPROX, ENCLOSE, QINTERVAL, TR__ALL), TR__I(TR_REG_M_KAPPROX, FOLD, INT128, TR__ALL),
+    TR__I(TR_REG_M_KAPPROX, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_KAPPROX, CONTRACT, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_KAPPROX, MULTIPLY, BIGQ, TR__CPU), TR__I(TR_REG_M_KAPPROX, DIVIDE, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_KAPPROX, ENCLOSE, INTERVAL, TR__CPU),
 };
 #undef TR__I
 #undef TR__CPU

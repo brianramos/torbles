@@ -100,7 +100,8 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "pairwise plans",
     "tracker",
     "query parts",
-    "factor graph"};
+    "factor graph",
+    "approximate kernel features"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -824,6 +825,15 @@ static const tr_reg_module modules[] = {
                    "tr_factor_alternative", "tr_factor_plan_get", "tr_factor_prog_need", "tr_factor_graph_table",
                    "tr_factor_answer_value"},
      .cuda_entry = {"tr_mgpu_factor_eliminate"}},
+    {FAMILY(TR_REG_M_KAPPROX, "kapprox", "kapprox", "KERNEL-002", "approximate spectral feature kernels"),
+     .state_kind = TR_REG_STATE_KERNEL_APPROX, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(INTEGER) | CB(COUNT) | CB(INT128) | CB(QINTERVAL) | CB(BIGINT) | CB(BIGQ) | CB(INTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_ENCLOSURE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_IDENTITY | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_kapprox_plan_create", "tr_kapprox_build", "tr_kapprox_sums", "tr_kapprox_from_sums",
+                   "tr_kapprox_query", "tr_kapprox_need", "tr_kapprox_generate", "tr_kapprox_save",
+                   "tr_kapprox_load", "tr_kapprox_fresh", "tr_kapprox_authorize_exact", "tr_kapprox_get_info"},
+     .cuda_entry = {"tr_mgpu_kapprox_sums"}},
 };
 #undef BUILTIN
 #undef FAMILY
