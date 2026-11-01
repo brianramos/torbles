@@ -3,25 +3,25 @@
   "--capability",
   "PROV-001",
   "--out",
-  "/home/claude/release/torbles-val/results/math/PROV-001/benchmark_cpu_math_prov_vm.json"
+  "/home/claude/release/torbles-val2/results/math/PROV-001/benchmark_cpu_math_prov_vm.json"
  ],
  "capability": "PROV-001",
  "device": null,
  "device_run": false,
  "machine": {
-  "commit": "81a5294ad96d447c8ffe8361cdd27c24b64f4863",
+  "commit": "ff5c4906bb932caea0750d4ca82dc8aa77369cb0",
   "cores": 2,
   "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
   "dirty_worktree": true,
   "host": "vm",
   "libraries": {
-   "torbles/libalg.so": "2bbd5146d46c29b1636113ff968284bb9445ba430409234bd816d54a47682e73",
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
    "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
-   "torbles/libmathgpu_emu.so": "b32d125b7bbc099f82cbfcbac2325f4f998231e1abc139d931cb3604291cac4b"
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
   },
   "numpy": "2.5.3",
   "python": "3.13.18",
-  "when": "2026-10-31T22:19:10+00:00"
+  "when": "2026-11-01T19:37:17+00:00"
  },
  "notes": [
   "cpu = math_prov.c (hash-consed DAG, K-relation operators, one valuation at a time); cuda = math_prov_gpu.cu (one work item per valuation; device runs only); duckdb = the query re-executed (bag multiplicities by GROUP BY ALL / COUNT(*)); reconstruction = a new native store per deletion.",
@@ -32,18 +32,18 @@
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.016031215000111843,
+   "first_seconds": 0.01565543099968636,
    "params": {
     "duplicates": 1,
     "rows": 200
    },
    "phase": "run",
    "samples_seconds": [
-    0.016031215000111843,
-    0.015188369001407409
+    0.01565543099968636,
+    0.006256657000449195
    ],
-   "warm_median_seconds": 0.015188369001407409,
-   "warm_min_seconds": 0.015188369001407409
+   "warm_median_seconds": 0.006256657000449195,
+   "warm_min_seconds": 0.006256657000449195
   },
   {
    "annotation_bytes": 41128,
@@ -51,7 +51,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 590,
    "dag_nodes": 608,
-   "first_seconds": 0.001256149000255391,
+   "first_seconds": 0.0037768439997307723,
    "hash_hits": 0,
    "output_tuples": 111,
    "params": {
@@ -61,17 +61,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.001256149000255391,
-    0.004993689000912127
+    0.0037768439997307723,
+    0.0006117979992268374
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.004993689000912127,
-   "warm_min_seconds": 0.004993689000912127
+   "warm_median_seconds": 0.0006117979992268374,
+   "warm_min_seconds": 0.0006117979992268374
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0003277949999755947,
+   "first_seconds": 0.0003159870002491516,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -79,17 +79,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0003277949999755947,
-    0.0002004489997489145,
-    0.00017770100021152757
+    0.0003159870002491516,
+    0.0002117610001732828,
+    0.00017765400025382405
    ],
-   "warm_median_seconds": 0.00018907499998022104,
-   "warm_min_seconds": 0.00017770100021152757
+   "warm_median_seconds": 0.00019470750021355343,
+   "warm_min_seconds": 0.00017765400025382405
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.00020024900004500523,
+   "first_seconds": 0.00017614900025364477,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -97,18 +97,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00020024900004500523,
-    0.00015682700177421793,
-    0.00015137299851630814
+    0.00017614900025364477,
+    0.0001593689994479064,
+    0.0001553409992993693
    ],
-   "warm_median_seconds": 0.00015410000014526304,
-   "warm_min_seconds": 0.00015137299851630814
+   "warm_median_seconds": 0.00015735499937363784,
+   "warm_min_seconds": 0.0001553409992993693
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2459,
-   "first_seconds": 0.03498719299932418,
+   "first_seconds": 0.04720633099987026,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -117,10 +117,10 @@
    "phase": "run",
    "result": 2459,
    "samples_seconds": [
-    0.03498719299932418
+    0.04720633099987026
    ],
-   "warm_median_seconds": 0.03498719299932418,
-   "warm_min_seconds": 0.03498719299932418
+   "warm_median_seconds": 0.04720633099987026,
+   "warm_min_seconds": 0.04720633099987026
   },
   {
    "annotation_bytes": 82088,
@@ -128,7 +128,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 3777,
    "dag_nodes": 1786,
-   "first_seconds": 0.000771539000197663,
+   "first_seconds": 0.0013732990000789869,
    "hash_hits": 0,
    "output_tuples": 111,
    "params": {
@@ -138,17 +138,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.000771539000197663,
-    0.0006421470006898744
+    0.0013732990000789869,
+    0.005396042999564088
    ],
    "shared_nodes": 284,
-   "warm_median_seconds": 0.0006421470006898744,
-   "warm_min_seconds": 0.0006421470006898744
+   "warm_median_seconds": 0.005396042999564088,
+   "warm_min_seconds": 0.005396042999564088
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.00027186899933440145,
+   "first_seconds": 0.0004885039998043794,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -156,17 +156,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00027186899933440145,
-    0.00019710099877556786,
-    0.00018892699881689623
+    0.0004885039998043794,
+    0.00034243300069647375,
+    0.0003540980005709571
    ],
-   "warm_median_seconds": 0.00019301399879623204,
-   "warm_min_seconds": 0.00018892699881689623
+   "warm_median_seconds": 0.0003482655006337154,
+   "warm_min_seconds": 0.00034243300069647375
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.00016817399955471046,
+   "first_seconds": 0.00032540699976379983,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -174,18 +174,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00016817399955471046,
-    0.00516309500017087,
-    0.00023214599968923721
+    0.00032540699976379983,
+    0.0003140740000162623,
+    0.0003430209999351064
    ],
-   "warm_median_seconds": 0.0026976204999300535,
-   "warm_min_seconds": 0.00023214599968923721
+   "warm_median_seconds": 0.00032854749997568433,
+   "warm_min_seconds": 0.0003140740000162623
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2459,
-   "first_seconds": 0.03375412899913499,
+   "first_seconds": 0.047981880999941495,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -194,26 +194,26 @@
    "phase": "run",
    "result": 2459,
    "samples_seconds": [
-    0.03375412899913499
+    0.047981880999941495
    ],
-   "warm_median_seconds": 0.03375412899913499,
-   "warm_min_seconds": 0.03375412899913499
+   "warm_median_seconds": 0.047981880999941495,
+   "warm_min_seconds": 0.047981880999941495
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.008542101999410079,
+   "first_seconds": 0.003410729000279389,
    "params": {
     "duplicates": 4,
     "rows": 200
    },
    "phase": "run",
    "samples_seconds": [
-    0.008542101999410079,
-    0.007612044000779861
+    0.003410729000279389,
+    0.0033955150001929724
    ],
-   "warm_median_seconds": 0.007612044000779861,
-   "warm_min_seconds": 0.007612044000779861
+   "warm_median_seconds": 0.0033955150001929724,
+   "warm_min_seconds": 0.0033955150001929724
   },
   {
    "annotation_bytes": 41128,
@@ -221,7 +221,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 523,
    "dag_nodes": 543,
-   "first_seconds": 0.0006720210003550164,
+   "first_seconds": 0.0007366559993897681,
    "hash_hits": 0,
    "output_tuples": 37,
    "params": {
@@ -231,17 +231,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0006720210003550164,
-    0.0005282259990053717
+    0.0007366559993897681,
+    0.0006420950003303005
    ],
    "shared_nodes": 12,
-   "warm_median_seconds": 0.0005282259990053717,
-   "warm_min_seconds": 0.0005282259990053717
+   "warm_median_seconds": 0.0006420950003303005,
+   "warm_min_seconds": 0.0006420950003303005
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.000256212000749656,
+   "first_seconds": 0.00024551099977543345,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -249,17 +249,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.000256212000749656,
-    0.00015852899923629593,
-    0.0001483309988543624
+    0.00024551099977543345,
+    0.00017101399953389773,
+    0.00018049499976768857
    ],
-   "warm_median_seconds": 0.00015342999904532917,
-   "warm_min_seconds": 0.0001483309988543624
+   "warm_median_seconds": 0.00017575449965079315,
+   "warm_min_seconds": 0.00017101399953389773
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.004410923000250477,
+   "first_seconds": 0.00018175500008510426,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -267,18 +267,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.004410923000250477,
-    0.000299852999887662,
-    0.00015862199870753102
+    0.00018175500008510426,
+    0.00016382600006181747,
+    0.00016098900050565135
    ],
-   "warm_median_seconds": 0.00022923749929759651,
-   "warm_min_seconds": 0.00015862199870753102
+   "warm_median_seconds": 0.0001624075002837344,
+   "warm_min_seconds": 0.00016098900050565135
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2816,
-   "first_seconds": 0.015943157000947394,
+   "first_seconds": 0.008155892999639036,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -287,10 +287,10 @@
    "phase": "run",
    "result": 2816,
    "samples_seconds": [
-    0.015943157000947394
+    0.008155892999639036
    ],
-   "warm_median_seconds": 0.015943157000947394,
-   "warm_min_seconds": 0.015943157000947394
+   "warm_median_seconds": 0.008155892999639036,
+   "warm_min_seconds": 0.008155892999639036
   },
   {
    "annotation_bytes": 41128,
@@ -298,7 +298,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 797,
    "dag_nodes": 660,
-   "first_seconds": 0.0005776620000688126,
+   "first_seconds": 0.0005695320005543181,
    "hash_hits": 0,
    "output_tuples": 37,
    "params": {
@@ -308,17 +308,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0005776620000688126,
-    0.0004955000003974419
+    0.0005695320005543181,
+    0.0005729530003009131
    ],
    "shared_nodes": 76,
-   "warm_median_seconds": 0.0004955000003974419,
-   "warm_min_seconds": 0.0004955000003974419
+   "warm_median_seconds": 0.0005729530003009131,
+   "warm_min_seconds": 0.0005729530003009131
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0001946600004885113,
+   "first_seconds": 0.00024232200030382955,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -326,17 +326,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0001946600004885113,
-    0.0001767940011632163,
-    0.0001679640008660499
+    0.00024232200030382955,
+    0.00016871000025275862,
+    0.00015236800027196296
    ],
-   "warm_median_seconds": 0.0001723790010146331,
-   "warm_min_seconds": 0.0001679640008660499
+   "warm_median_seconds": 0.0001605390002623608,
+   "warm_min_seconds": 0.00015236800027196296
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.00014959199870645534,
+   "first_seconds": 0.00015876299949013628,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -344,18 +344,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00014959199870645534,
-    0.00014505900071526412,
-    0.00014097699931880925
+    0.00015876299949013628,
+    0.00014745400039828382,
+    0.00021525700049096486
    ],
-   "warm_median_seconds": 0.00014301800001703668,
-   "warm_min_seconds": 0.00014097699931880925
+   "warm_median_seconds": 0.00018135550044462434,
+   "warm_min_seconds": 0.00014745400039828382
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2816,
-   "first_seconds": 0.01617908499974874,
+   "first_seconds": 0.007742351999695529,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -364,26 +364,26 @@
    "phase": "run",
    "result": 2816,
    "samples_seconds": [
-    0.01617908499974874
+    0.007742351999695529
    ],
-   "warm_median_seconds": 0.01617908499974874,
-   "warm_min_seconds": 0.01617908499974874
+   "warm_median_seconds": 0.007742351999695529,
+   "warm_min_seconds": 0.007742351999695529
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.004145427999901585,
+   "first_seconds": 0.0029346080000323127,
    "params": {
     "duplicates": 16,
     "rows": 200
    },
    "phase": "run",
    "samples_seconds": [
-    0.004145427999901585,
-    0.01055392399939592
+    0.0029346080000323127,
+    0.0020861909997620387
    ],
-   "warm_median_seconds": 0.01055392399939592,
-   "warm_min_seconds": 0.01055392399939592
+   "warm_median_seconds": 0.0020861909997620387,
+   "warm_min_seconds": 0.0020861909997620387
   },
   {
    "annotation_bytes": 24744,
@@ -391,7 +391,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 404,
    "dag_nodes": 419,
-   "first_seconds": 0.0006407500004570466,
+   "first_seconds": 0.0005880210001123487,
    "hash_hits": 0,
    "output_tuples": 8,
    "params": {
@@ -401,17 +401,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0006407500004570466,
-    0.0005272669986879919
+    0.0005880210001123487,
+    0.0005022289997214102
    ],
    "shared_nodes": 2,
-   "warm_median_seconds": 0.0005272669986879919,
-   "warm_min_seconds": 0.0005272669986879919
+   "warm_median_seconds": 0.0005022289997214102,
+   "warm_min_seconds": 0.0005022289997214102
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.00024594099886598997,
+   "first_seconds": 0.0002485029999661492,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -419,17 +419,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00024594099886598997,
-    0.00015359999997599516,
-    0.00014954700054659043
+    0.0002485029999661492,
+    0.00018809599987434922,
+    0.00015327399978559697
    ],
-   "warm_median_seconds": 0.0001515735002612928,
-   "warm_min_seconds": 0.00014954700054659043
+   "warm_median_seconds": 0.0001706849998299731,
+   "warm_min_seconds": 0.00015327399978559697
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0002647239998623263,
+   "first_seconds": 0.00020818099983443972,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -437,18 +437,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0002647239998623263,
-    0.00016524199963896535,
-    0.00014886100143485237
+    0.00020818099983443972,
+    0.00015395599984913133,
+    0.00013759100056631723
    ],
-   "warm_median_seconds": 0.00015705150053690886,
-   "warm_min_seconds": 0.00014886100143485237
+   "warm_median_seconds": 0.00014577350020772428,
+   "warm_min_seconds": 0.00013759100056631723
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2816,
-   "first_seconds": 0.011109900000519701,
+   "first_seconds": 0.004413890999785508,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -457,10 +457,10 @@
    "phase": "run",
    "result": 2816,
    "samples_seconds": [
-    0.011109900000519701
+    0.004413890999785508
    ],
-   "warm_median_seconds": 0.011109900000519701,
-   "warm_min_seconds": 0.011109900000519701
+   "warm_median_seconds": 0.004413890999785508,
+   "warm_min_seconds": 0.004413890999785508
   },
   {
    "annotation_bytes": 24744,
@@ -468,7 +468,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 410,
    "dag_nodes": 422,
-   "first_seconds": 0.005000023998945835,
+   "first_seconds": 0.0005581960003837594,
    "hash_hits": 0,
    "output_tuples": 8,
    "params": {
@@ -478,17 +478,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.005000023998945835,
-    0.0008736009986023419
+    0.0005581960003837594,
+    0.00045564199990622
    ],
    "shared_nodes": 3,
-   "warm_median_seconds": 0.0008736009986023419,
-   "warm_min_seconds": 0.0008736009986023419
+   "warm_median_seconds": 0.00045564199990622,
+   "warm_min_seconds": 0.00045564199990622
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.00029327300035220105,
+   "first_seconds": 0.00020312000015110243,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -496,17 +496,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00029327300035220105,
-    0.00030601300022681244,
-    0.0002963779988931492
+    0.00020312000015110243,
+    0.0001511250002295128,
+    0.00014199799989000894
    ],
-   "warm_median_seconds": 0.0003011954995599808,
-   "warm_min_seconds": 0.0002963779988931492
+   "warm_median_seconds": 0.00014656150005976087,
+   "warm_min_seconds": 0.00014199799989000894
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.00021994400049152318,
+   "first_seconds": 0.00014131799980532378,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -514,18 +514,18 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.00021994400049152318,
-    0.00024865399973350577,
-    0.00020754700017278083
+    0.00014131799980532378,
+    0.00014776299940422177,
+    0.00013657399995281594
    ],
-   "warm_median_seconds": 0.0002281004999531433,
-   "warm_min_seconds": 0.00020754700017278083
+   "warm_median_seconds": 0.00014216849967851886,
+   "warm_min_seconds": 0.00013657399995281594
   },
   {
    "backend": "cpu",
    "case": "expanded size (N[X] of every output)",
    "expanded_monomials": 2816,
-   "first_seconds": 0.014092006998907891,
+   "first_seconds": 0.005535653999686474,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -534,26 +534,26 @@
    "phase": "run",
    "result": 2816,
    "samples_seconds": [
-    0.014092006998907891
+    0.005535653999686474
    ],
-   "warm_median_seconds": 0.014092006998907891,
-   "warm_min_seconds": 0.014092006998907891
+   "warm_median_seconds": 0.005535653999686474,
+   "warm_min_seconds": 0.005535653999686474
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.009843437999734306,
+   "first_seconds": 0.0039138379997893935,
    "params": {
     "duplicates": 1,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.009843437999734306,
-    0.012368859999696724
+    0.0039138379997893935,
+    0.003995373000179825
    ],
-   "warm_median_seconds": 0.012368859999696724,
-   "warm_min_seconds": 0.012368859999696724
+   "warm_median_seconds": 0.003995373000179825,
+   "warm_min_seconds": 0.003995373000179825
   },
   {
    "annotation_bytes": 164008,
@@ -561,7 +561,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 2535,
    "dag_nodes": 2553,
-   "first_seconds": 0.008616312999947695,
+   "first_seconds": 0.0027379869998185313,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -571,17 +571,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.008616312999947695,
-    0.008417905000897008
+    0.0027379869998185313,
+    0.0025141590003840975
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.008417905000897008,
-   "warm_min_seconds": 0.008417905000897008
+   "warm_median_seconds": 0.0025141590003840975,
+   "warm_min_seconds": 0.0025141590003840975
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.006505469000330777,
+   "first_seconds": 0.0007590999994135927,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -589,17 +589,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.006505469000330777,
-    0.001055107999491156,
-    0.0010049060001620091
+    0.0007590999994135927,
+    0.0006154510001579183,
+    0.0005785000003015739
    ],
-   "warm_median_seconds": 0.0010300069998265826,
-   "warm_min_seconds": 0.0010049060001620091
+   "warm_median_seconds": 0.0005969755002297461,
+   "warm_min_seconds": 0.0005785000003015739
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0008589620010752697,
+   "first_seconds": 0.0005941589997746632,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -607,12 +607,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0008589620010752697,
-    0.0008890259996405803,
-    0.0008931449992815033
+    0.0005941589997746632,
+    0.0005689019999408629,
+    0.0006723549995513167
    ],
-   "warm_median_seconds": 0.0008910854994610418,
-   "warm_min_seconds": 0.0008890259996405803
+   "warm_median_seconds": 0.0006206284997460898,
+   "warm_min_seconds": 0.0005689019999408629
   },
   {
    "annotation_bytes": 327848,
@@ -620,7 +620,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 15458,
    "dag_nodes": 7121,
-   "first_seconds": 0.008977915998912067,
+   "first_seconds": 0.003200095000465808,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -630,17 +630,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.008977915998912067,
-    0.00907652099886036
+    0.003200095000465808,
+    0.003188171000147122
    ],
    "shared_nodes": 701,
-   "warm_median_seconds": 0.00907652099886036,
-   "warm_min_seconds": 0.00907652099886036
+   "warm_median_seconds": 0.003188171000147122,
+   "warm_min_seconds": 0.003188171000147122
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.005508643998837215,
+   "first_seconds": 0.0007228590002341662,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -648,17 +648,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.005508643998837215,
-    0.00113812100062205,
-    0.0010673389988369308
+    0.0007228590002341662,
+    0.0006678810004814295,
+    0.0006675619997622562
    ],
-   "warm_median_seconds": 0.0011027299997294904,
-   "warm_min_seconds": 0.0010673389988369308
+   "warm_median_seconds": 0.0006677215001218428,
+   "warm_min_seconds": 0.0006675619997622562
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.004925278000882827,
+   "first_seconds": 0.000606653999966511,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -666,28 +666,28 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.004925278000882827,
-    0.0011066630013374379,
-    0.0010082600001624087
+    0.000606653999966511,
+    0.00059085100019729,
+    0.000613901999713562
    ],
-   "warm_median_seconds": 0.0010574615007499233,
-   "warm_min_seconds": 0.0010082600001624087
+   "warm_median_seconds": 0.000602376499955426,
+   "warm_min_seconds": 0.00059085100019729
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.008180994998838287,
+   "first_seconds": 0.007974735999596305,
    "params": {
     "duplicates": 4,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.008180994998838287,
-    0.008092406000287156
+    0.007974735999596305,
+    0.007921909999822674
    ],
-   "warm_median_seconds": 0.008092406000287156,
-   "warm_min_seconds": 0.008092406000287156
+   "warm_median_seconds": 0.007921909999822674,
+   "warm_min_seconds": 0.007921909999822674
   },
   {
    "annotation_bytes": 164008,
@@ -695,7 +695,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 2431,
    "dag_nodes": 2449,
-   "first_seconds": 0.002423358999294578,
+   "first_seconds": 0.0024461129996780073,
    "hash_hits": 0,
    "output_tuples": 111,
    "params": {
@@ -705,17 +705,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.002423358999294578,
-    0.006390168000507401
+    0.0024461129996780073,
+    0.006483999999545631
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.006390168000507401,
-   "warm_min_seconds": 0.006390168000507401
+   "warm_median_seconds": 0.006483999999545631,
+   "warm_min_seconds": 0.006483999999545631
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0007520959989051335,
+   "first_seconds": 0.0007448919996022596,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -723,17 +723,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0007520959989051335,
-    0.000592271000641631,
-    0.0005821690010634484
+    0.0007448919996022596,
+    0.0006427830003303825,
+    0.0005829769997944823
    ],
-   "warm_median_seconds": 0.0005872200008525397,
-   "warm_min_seconds": 0.0005821690010634484
+   "warm_median_seconds": 0.0006128800000624324,
+   "warm_min_seconds": 0.0005829769997944823
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.004769672001202707,
+   "first_seconds": 0.0005684469997504493,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -741,12 +741,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.004769672001202707,
-    0.0006660199996986194,
-    0.0006014320006215712
+    0.0005684469997504493,
+    0.004725007000160986,
+    0.0006832669996583718
    ],
-   "warm_median_seconds": 0.0006337260001600953,
-   "warm_min_seconds": 0.0006014320006215712
+   "warm_median_seconds": 0.0027041369999096787,
+   "warm_min_seconds": 0.0006832669996583718
   },
   {
    "annotation_bytes": 180392,
@@ -754,7 +754,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 6422,
    "dag_nodes": 3907,
-   "first_seconds": 0.0023234959990077186,
+   "first_seconds": 0.0023659329999645706,
    "hash_hits": 0,
    "output_tuples": 111,
    "params": {
@@ -764,17 +764,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.0023234959990077186,
-    0.008116781000353512
+    0.0023659329999645706,
+    0.006878512000184855
    ],
    "shared_nodes": 320,
-   "warm_median_seconds": 0.008116781000353512,
-   "warm_min_seconds": 0.008116781000353512
+   "warm_median_seconds": 0.006878512000184855,
+   "warm_min_seconds": 0.006878512000184855
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0007292099999176571,
+   "first_seconds": 0.0006904869997015339,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -782,17 +782,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0007292099999176571,
-    0.000627253999482491,
-    0.0005999950008117594
+    0.0006904869997015339,
+    0.000638970000181871,
+    0.0006378119996952591
    ],
-   "warm_median_seconds": 0.0006136245001471252,
-   "warm_min_seconds": 0.0005999950008117594
+   "warm_median_seconds": 0.0006383909999385651,
+   "warm_min_seconds": 0.0006378119996952591
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0005710990008083172,
+   "first_seconds": 0.00059795299966936,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -800,28 +800,28 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0005710990008083172,
-    0.0005695199997717282,
-    0.0005552389993681572
+    0.00059795299966936,
+    0.0005646039999191999,
+    0.0005919399991398677
    ],
-   "warm_median_seconds": 0.0005623794995699427,
-   "warm_min_seconds": 0.0005552389993681572
+   "warm_median_seconds": 0.0005782719995295338,
+   "warm_min_seconds": 0.0005646039999191999
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.007976042999871424,
+   "first_seconds": 0.008072711999375315,
    "params": {
     "duplicates": 16,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.007976042999871424,
-    0.008084012999461265
+    0.008072711999375315,
+    0.0069306039995353785
    ],
-   "warm_median_seconds": 0.008084012999461265,
-   "warm_min_seconds": 0.008084012999461265
+   "warm_median_seconds": 0.0069306039995353785,
+   "warm_min_seconds": 0.0069306039995353785
   },
   {
    "annotation_bytes": 164008,
@@ -829,7 +829,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 2135,
    "dag_nodes": 2153,
-   "first_seconds": 0.004686300999310333,
+   "first_seconds": 0.006510715000331402,
    "hash_hits": 0,
    "output_tuples": 46,
    "params": {
@@ -839,17 +839,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.004686300999310333,
-    0.0074602710010367446
+    0.006510715000331402,
+    0.002195645999563567
    ],
    "shared_nodes": 11,
-   "warm_median_seconds": 0.0074602710010367446,
-   "warm_min_seconds": 0.0074602710010367446
+   "warm_median_seconds": 0.002195645999563567,
+   "warm_min_seconds": 0.002195645999563567
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0007761980014038272,
+   "first_seconds": 0.0007093780004652217,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -857,17 +857,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0007761980014038272,
-    0.0007293030012078816,
-    0.0006019869997544447
+    0.0007093780004652217,
+    0.0005594249996647704,
+    0.004676974000176415
    ],
-   "warm_median_seconds": 0.0006656450004811632,
-   "warm_min_seconds": 0.0006019869997544447
+   "warm_median_seconds": 0.0026181994999205926,
+   "warm_min_seconds": 0.0005594249996647704
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.004509022999627632,
+   "first_seconds": 0.0005583789998127031,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -875,12 +875,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.004509022999627632,
-    0.0008789080002316041,
-    0.0006128620007075369
+    0.0005583789998127031,
+    0.0005460849997689365,
+    0.000521835999279574
    ],
-   "warm_median_seconds": 0.0007458850004695705,
-   "warm_min_seconds": 0.0006128620007075369
+   "warm_median_seconds": 0.0005339604995242553,
+   "warm_min_seconds": 0.000521835999279574
   },
   {
    "annotation_bytes": 164008,
@@ -888,7 +888,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 2530,
    "dag_nodes": 2320,
-   "first_seconds": 0.006329218000246328,
+   "first_seconds": 0.006305543000053149,
    "hash_hits": 0,
    "output_tuples": 46,
    "params": {
@@ -898,17 +898,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.006329218000246328,
-    0.00203661299929081
+    0.006305543000053149,
+    0.002282612000271911
    ],
    "shared_nodes": 88,
-   "warm_median_seconds": 0.00203661299929081,
-   "warm_min_seconds": 0.00203661299929081
+   "warm_median_seconds": 0.002282612000271911,
+   "warm_min_seconds": 0.002282612000271911
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0005980099995213095,
+   "first_seconds": 0.0006944149999981164,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -916,17 +916,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0005980099995213095,
-    0.0005605639998975676,
-    0.004688259001341066
+    0.0006944149999981164,
+    0.0005657339997924282,
+    0.004696543999671121
    ],
-   "warm_median_seconds": 0.002624411500619317,
-   "warm_min_seconds": 0.0005605639998975676
+   "warm_median_seconds": 0.0026311389997317747,
+   "warm_min_seconds": 0.0005657339997924282
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0006095459993957775,
+   "first_seconds": 0.0005986489995848387,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -934,28 +934,28 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0006095459993957775,
-    0.0005232000003161374,
-    0.0005626290003419854
+    0.0005986489995848387,
+    0.0005446449995361036,
+    0.0005636209998556296
    ],
-   "warm_median_seconds": 0.0005429145003290614,
-   "warm_min_seconds": 0.0005232000003161374
+   "warm_median_seconds": 0.0005541329996958666,
+   "warm_min_seconds": 0.0005446449995361036
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.028571898001246154,
+   "first_seconds": 0.03178426400063472,
    "params": {
     "duplicates": 1,
     "rows": 4000
    },
    "phase": "run",
    "samples_seconds": [
-    0.028571898001246154,
-    0.027508837998539093
+    0.03178426400063472,
+    0.024028368000472256
    ],
-   "warm_median_seconds": 0.027508837998539093,
-   "warm_min_seconds": 0.027508837998539093
+   "warm_median_seconds": 0.024028368000472256,
+   "warm_min_seconds": 0.024028368000472256
   },
   {
    "annotation_bytes": 655528,
@@ -963,7 +963,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 9016,
    "dag_nodes": 9034,
-   "first_seconds": 0.021625497000059113,
+   "first_seconds": 0.01769065100052103,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -973,17 +973,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.021625497000059113,
-    0.017104779999499442
+    0.01769065100052103,
+    0.017630887999985134
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.017104779999499442,
-   "warm_min_seconds": 0.017104779999499442
+   "warm_median_seconds": 0.017630887999985134,
+   "warm_min_seconds": 0.017630887999985134
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.0073245900002802955,
+   "first_seconds": 0.007403483999951277,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -991,17 +991,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0073245900002802955,
-    0.006551565000336268,
-    0.0072636599998077145
+    0.007403483999951277,
+    0.006667652000032831,
+    0.008553020999897853
    ],
-   "warm_median_seconds": 0.006907612500071991,
-   "warm_min_seconds": 0.006551565000336268
+   "warm_median_seconds": 0.007610336499965342,
+   "warm_min_seconds": 0.006667652000032831
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0023946910005179234,
+   "first_seconds": 0.008447328999864112,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 1,
@@ -1009,12 +1009,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0023946910005179234,
-    0.0038123919985082466,
-    0.007153861999540823
+    0.008447328999864112,
+    0.008272678999674099,
+    0.008276221999949485
    ],
-   "warm_median_seconds": 0.005483126999024535,
-   "warm_min_seconds": 0.0038123919985082466
+   "warm_median_seconds": 0.008274450499811792,
+   "warm_min_seconds": 0.008272678999674099
   },
   {
    "annotation_bytes": 721064,
@@ -1022,7 +1022,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 26930,
    "dag_nodes": 15338,
-   "first_seconds": 0.01792945899978804,
+   "first_seconds": 0.040209474000221235,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -1032,17 +1032,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.01792945899978804,
-    0.02355840499876649
+    0.040209474000221235,
+    0.04425146300036431
    ],
    "shared_nodes": 918,
-   "warm_median_seconds": 0.02355840499876649,
-   "warm_min_seconds": 0.02355840499876649
+   "warm_median_seconds": 0.04425146300036431,
+   "warm_min_seconds": 0.04425146300036431
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.002934684000138077,
+   "first_seconds": 0.00911569799973222,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -1050,17 +1050,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.002934684000138077,
-    0.007259775000420632,
-    0.0023639920000277925
+    0.00911569799973222,
+    0.008585904000028677,
+    0.015182834999905026
    ],
-   "warm_median_seconds": 0.004811883500224212,
-   "warm_min_seconds": 0.0023639920000277925
+   "warm_median_seconds": 0.011884369499966851,
+   "warm_min_seconds": 0.008585904000028677
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.0023926039993966697,
+   "first_seconds": 0.014600789999349217,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 1,
@@ -1068,28 +1068,28 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0023926039993966697,
-    0.014748880999832181,
-    0.002261116000227048
+    0.014600789999349217,
+    0.013090358000226843,
+    0.008379096000680875
    ],
-   "warm_median_seconds": 0.008504998500029615,
-   "warm_min_seconds": 0.002261116000227048
+   "warm_median_seconds": 0.010734727000453859,
+   "warm_min_seconds": 0.008379096000680875
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.040157933999580564,
+   "first_seconds": 0.04547910599922034,
    "params": {
     "duplicates": 4,
     "rows": 4000
    },
    "phase": "run",
    "samples_seconds": [
-    0.040157933999580564,
-    0.043978779000099166
+    0.04547910599922034,
+    0.03204550500049663
    ],
-   "warm_median_seconds": 0.043978779000099166,
-   "warm_min_seconds": 0.043978779000099166
+   "warm_median_seconds": 0.03204550500049663,
+   "warm_min_seconds": 0.03204550500049663
   },
   {
    "annotation_bytes": 655528,
@@ -1097,7 +1097,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 8824,
    "dag_nodes": 8842,
-   "first_seconds": 0.02477839200037124,
+   "first_seconds": 0.014155804999973043,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -1107,17 +1107,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.02477839200037124,
-    0.024257692999526625
+    0.014155804999973043,
+    0.01723410199974751
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.024257692999526625,
-   "warm_min_seconds": 0.024257692999526625
+   "warm_median_seconds": 0.01723410199974751,
+   "warm_min_seconds": 0.01723410199974751
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.015353637001680909,
+   "first_seconds": 0.006959770999856119,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -1125,17 +1125,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.015353637001680909,
-    0.0024550199996156152,
-    0.0228310969996528
+    0.006959770999856119,
+    0.0067727840005318285,
+    0.006590367000171682
    ],
-   "warm_median_seconds": 0.012643058499634208,
-   "warm_min_seconds": 0.0024550199996156152
+   "warm_median_seconds": 0.006681575500351755,
+   "warm_min_seconds": 0.006590367000171682
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.014788350999879185,
+   "first_seconds": 0.002331179000066186,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 4,
@@ -1143,12 +1143,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.014788350999879185,
-    0.0024846079995768378,
-    0.006530553999255062
+    0.002331179000066186,
+    0.006720422999933362,
+    0.008469987999887962
    ],
-   "warm_median_seconds": 0.00450758099941595,
-   "warm_min_seconds": 0.0024846079995768378
+   "warm_median_seconds": 0.007595205499910662,
+   "warm_min_seconds": 0.006720422999933362
   },
   {
    "annotation_bytes": 721064,
@@ -1156,7 +1156,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 21632,
    "dag_nodes": 13370,
-   "first_seconds": 0.013513398000213783,
+   "first_seconds": 0.02007653799955733,
    "hash_hits": 0,
    "output_tuples": 128,
    "params": {
@@ -1166,17 +1166,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.013513398000213783,
-    0.02128293499845313
+    0.02007653799955733,
+    0.017153780999251467
    ],
    "shared_nodes": 696,
-   "warm_median_seconds": 0.02128293499845313,
-   "warm_min_seconds": 0.02128293499845313
+   "warm_median_seconds": 0.017153780999251467,
+   "warm_min_seconds": 0.017153780999251467
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.008312036999996053,
+   "first_seconds": 0.004442729999937001,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -1184,17 +1184,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.008312036999996053,
-    0.0024918449998949654,
-    0.006773963999876287
+    0.004442729999937001,
+    0.006559104000189109,
+    0.006633531999796105
    ],
-   "warm_median_seconds": 0.004632904499885626,
-   "warm_min_seconds": 0.0024918449998949654
+   "warm_median_seconds": 0.006596317999992607,
+   "warm_min_seconds": 0.006559104000189109
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.006678716999886092,
+   "first_seconds": 0.006943888999558112,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 4,
@@ -1202,28 +1202,28 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.006678716999886092,
-    0.0069448340000235476,
-    0.05526364399884187
+    0.006943888999558112,
+    0.0024305670003741398,
+    0.04324185099994793
    ],
-   "warm_median_seconds": 0.03110423899943271,
-   "warm_min_seconds": 0.0069448340000235476
+   "warm_median_seconds": 0.022836209000161034,
+   "warm_min_seconds": 0.0024305670003741398
   },
   {
    "backend": "duckdb",
    "case": "bag multiplicities (GROUP BY)",
-   "first_seconds": 0.0317304599993804,
+   "first_seconds": 0.028790112000024237,
    "params": {
     "duplicates": 16,
     "rows": 4000
    },
    "phase": "run",
    "samples_seconds": [
-    0.0317304599993804,
-    0.030970567000622395
+    0.028790112000024237,
+    0.030735560000721307
    ],
-   "warm_median_seconds": 0.030970567000622395,
-   "warm_min_seconds": 0.030970567000622395
+   "warm_median_seconds": 0.030735560000721307,
+   "warm_min_seconds": 0.030735560000721307
   },
   {
    "annotation_bytes": 655528,
@@ -1231,7 +1231,7 @@
    "case": "annotated query: shared derivations (group, then join)",
    "child_entries": 8428,
    "dag_nodes": 8446,
-   "first_seconds": 0.016878177999387844,
+   "first_seconds": 0.018464378000317083,
    "hash_hits": 0,
    "output_tuples": 107,
    "params": {
@@ -1241,17 +1241,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.016878177999387844,
-    0.017777348999516107
+    0.018464378000317083,
+    0.037806452000040736
    ],
    "shared_nodes": 16,
-   "warm_median_seconds": 0.017777348999516107,
-   "warm_min_seconds": 0.017777348999516107
+   "warm_median_seconds": 0.037806452000040736,
+   "warm_min_seconds": 0.037806452000040736
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.007156790999943041,
+   "first_seconds": 0.009526492000077269,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -1259,17 +1259,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.007156790999943041,
-    0.006670781000138959,
-    0.0024145870011125226
+    0.009526492000077269,
+    0.007563784999547352,
+    0.006844090000413416
    ],
-   "warm_median_seconds": 0.004542684000625741,
-   "warm_min_seconds": 0.0024145870011125226
+   "warm_median_seconds": 0.007203937499980384,
+   "warm_min_seconds": 0.006844090000413416
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.006608395000512246,
+   "first_seconds": 0.0026888709999184357,
    "params": {
     "derivations": "shared derivations",
     "duplicates": 16,
@@ -1277,12 +1277,12 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.006608395000512246,
-    0.006486690999736311,
-    0.002456113999869558
+    0.0026888709999184357,
+    0.006534221000038087,
+    0.006670169000244641
    ],
-   "warm_median_seconds": 0.0044714024998029345,
-   "warm_min_seconds": 0.002456113999869558
+   "warm_median_seconds": 0.006602195000141364,
+   "warm_min_seconds": 0.006534221000038087
   },
   {
    "annotation_bytes": 655528,
@@ -1290,7 +1290,7 @@
    "case": "annotated query: independent derivations (join, then group)",
    "child_entries": 12293,
    "dag_nodes": 9861,
-   "first_seconds": 0.016771603000961477,
+   "first_seconds": 0.01758295900071971,
    "hash_hits": 0,
    "output_tuples": 107,
    "params": {
@@ -1300,17 +1300,17 @@
    },
    "phase": "build",
    "samples_seconds": [
-    0.016771603000961477,
-    0.024763492001511622
+    0.01758295900071971,
+    0.02395789100046386
    ],
    "shared_nodes": 321,
-   "warm_median_seconds": 0.024763492001511622,
-   "warm_min_seconds": 0.024763492001511622
+   "warm_median_seconds": 0.02395789100046386,
+   "warm_min_seconds": 0.02395789100046386
   },
   {
    "backend": "cpu",
    "case": "multiplicities (N at 1)",
-   "first_seconds": 0.007534330999988015,
+   "first_seconds": 0.00479770699985238,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -1318,17 +1318,17 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.007534330999988015,
-    0.0025654630007920787,
-    0.007140359999539214
+    0.00479770699985238,
+    0.008652959999380982,
+    0.01252162499986298
    ],
-   "warm_median_seconds": 0.004852911500165646,
-   "warm_min_seconds": 0.0025654630007920787
+   "warm_median_seconds": 0.01058729249962198,
+   "warm_min_seconds": 0.008652959999380982
   },
   {
    "backend": "cpu",
    "case": "existence (B at 1)",
-   "first_seconds": 0.006898225001350511,
+   "first_seconds": 0.002556849000029615,
    "params": {
     "derivations": "independent derivations",
     "duplicates": 16,
@@ -1336,67 +1336,67 @@
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.006898225001350511,
-    0.0024323699999513337,
-    0.006810949000282562
+    0.002556849000029615,
+    0.0065729739999369485,
+    0.006683071999759704
    ],
-   "warm_median_seconds": 0.004621659500116948,
-   "warm_min_seconds": 0.0024323699999513337
+   "warm_median_seconds": 0.0066280229998483264,
+   "warm_min_seconds": 0.0065729739999369485
   },
   {
    "backend": "cpu",
    "case": "evaluation plan (the cone)",
    "cone_nodes": 2653,
-   "first_seconds": 0.00016400000095018186,
+   "first_seconds": 0.00012026199965475826,
    "outputs": 124,
    "params": {},
    "phase": "build",
    "samples_seconds": [
-    0.00016400000095018186,
-    6.212500011315569e-05,
-    3.5135999496560544e-05
+    0.00012026199965475826,
+    8.251099916378735e-05,
+    5.487399994308362e-05
    ],
-   "warm_median_seconds": 4.863049980485812e-05,
-   "warm_min_seconds": 3.5135999496560544e-05
+   "warm_median_seconds": 6.869249955343548e-05,
+   "warm_min_seconds": 5.487399994308362e-05
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (count)",
-   "first_seconds": 0.0010078019986394793,
+   "first_seconds": 0.0012727590001304634,
    "params": {
     "requests": 1,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0010078019986394793,
-    0.0005412820009951247,
-    0.004741857001135941
+    0.0012727590001304634,
+    0.000612077999903704,
+    0.0006874999999126885
    ],
-   "warm_median_seconds": 0.0026415695010655327,
-   "warm_min_seconds": 0.0005412820009951247
+   "warm_median_seconds": 0.0006497889999081963,
+   "warm_min_seconds": 0.000612077999903704
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (bool)",
-   "first_seconds": 0.0005716729992855107,
+   "first_seconds": 0.0005890290003662813,
    "params": {
     "requests": 1,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0005716729992855107,
-    0.0005706360007025069,
-    0.0005196880010771565
+    0.0005890290003662813,
+    0.004656606000025931,
+    0.0005642169999191537
    ],
-   "warm_median_seconds": 0.0005451620008898317,
-   "warm_min_seconds": 0.0005196880010771565
+   "warm_median_seconds": 0.0026104114999725425,
+   "warm_min_seconds": 0.0005642169999191537
   },
   {
    "backend": "reconstruction",
    "case": "complete reconstruction per deletion (native)",
-   "first_seconds": 0.0076991950008959975,
+   "first_seconds": 0.0077385390004565124,
    "params": {
     "reconstructed": 1,
     "requests": 1,
@@ -1404,64 +1404,64 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.0076991950008959975
+    0.0077385390004565124
    ],
-   "warm_median_seconds": 0.0076991950008959975,
-   "warm_min_seconds": 0.0076991950008959975
+   "warm_median_seconds": 0.0077385390004565124,
+   "warm_min_seconds": 0.0077385390004565124
   },
   {
    "backend": "duckdb",
    "case": "query re-executed per deletion",
-   "first_seconds": 0.00911929100038833,
+   "first_seconds": 0.010265859999890381,
    "params": {
     "requests": 1,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.00911929100038833
+    0.010265859999890381
    ],
-   "warm_median_seconds": 0.00911929100038833,
-   "warm_min_seconds": 0.00911929100038833
+   "warm_median_seconds": 0.010265859999890381,
+   "warm_min_seconds": 0.010265859999890381
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (count)",
-   "first_seconds": 0.008618682999440352,
+   "first_seconds": 0.01329678700039949,
    "params": {
     "requests": 100,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.008618682999440352,
-    0.01290974599942274,
-    0.00425323300078162
+    0.01329678700039949,
+    0.008726942999601306,
+    0.008570965000217257
    ],
-   "warm_median_seconds": 0.00858148950010218,
-   "warm_min_seconds": 0.00425323300078162
+   "warm_median_seconds": 0.008648953999909281,
+   "warm_min_seconds": 0.008570965000217257
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (bool)",
-   "first_seconds": 0.0020693270016636234,
+   "first_seconds": 0.006312135999905877,
    "params": {
     "requests": 100,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0020693270016636234,
-    0.0062346489994524745,
-    0.00209801500022877
+    0.006312135999905877,
+    0.0023255940004673903,
+    0.006249539000236837
    ],
-   "warm_median_seconds": 0.004166331999840622,
-   "warm_min_seconds": 0.00209801500022877
+   "warm_median_seconds": 0.0042875665003521135,
+   "warm_min_seconds": 0.0023255940004673903
   },
   {
    "backend": "reconstruction",
    "case": "complete reconstruction per deletion (native)",
-   "first_seconds": 0.6923983199994836,
+   "first_seconds": 0.6859187669997482,
    "params": {
     "reconstructed": 100,
     "requests": 100,
@@ -1469,64 +1469,64 @@
    },
    "phase": "run",
    "samples_seconds": [
-    0.6923983199994836
+    0.6859187669997482
    ],
-   "warm_median_seconds": 0.6923983199994836,
-   "warm_min_seconds": 0.6923983199994836
+   "warm_median_seconds": 0.6859187669997482,
+   "warm_min_seconds": 0.6859187669997482
   },
   {
    "backend": "duckdb",
    "case": "query re-executed per deletion",
-   "first_seconds": 0.6552972179997596,
+   "first_seconds": 0.6935916809998162,
    "params": {
     "requests": 100,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.6552972179997596
+    0.6935916809998162
    ],
-   "warm_median_seconds": 0.6552972179997596,
-   "warm_min_seconds": 0.6552972179997596
+   "warm_median_seconds": 0.6935916809998162,
+   "warm_min_seconds": 0.6935916809998162
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (count)",
-   "first_seconds": 0.1371016970006167,
+   "first_seconds": 0.07968946299934032,
    "params": {
     "requests": 1000,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.1371016970006167,
-    0.09087297699988994,
-    0.08068211799945857
+    0.07968946299934032,
+    0.1178686409994043,
+    0.07677062000038859
    ],
-   "warm_median_seconds": 0.08577754749967426,
-   "warm_min_seconds": 0.08068211799945857
+   "warm_median_seconds": 0.09731963049989645,
+   "warm_min_seconds": 0.07677062000038859
   },
   {
    "backend": "cpu",
    "case": "source deletions in one batch (bool)",
-   "first_seconds": 0.03279897699940193,
+   "first_seconds": 0.029855022999981884,
    "params": {
     "requests": 1000,
     "rows": 1000
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.03279897699940193,
-    0.04143708899937337,
-    0.03238360599971202
+    0.029855022999981884,
+    0.03896611199979816,
+    0.032804747999762185
    ],
-   "warm_median_seconds": 0.036910347499542695,
-   "warm_min_seconds": 0.03238360599971202
+   "warm_median_seconds": 0.03588542999978017,
+   "warm_min_seconds": 0.032804747999762185
   },
   {
    "backend": "reconstruction",
    "case": "complete reconstruction per deletion (native)",
-   "first_seconds": 6.956557172999965,
+   "first_seconds": 4.084221420000176,
    "params": {
     "reconstructed": 1000,
     "requests": 1000,
@@ -1534,144 +1534,144 @@
    },
    "phase": "run",
    "samples_seconds": [
-    6.956557172999965
+    4.084221420000176
    ],
-   "warm_median_seconds": 6.956557172999965,
-   "warm_min_seconds": 6.956557172999965
+   "warm_median_seconds": 4.084221420000176,
+   "warm_min_seconds": 4.084221420000176
   },
   {
    "backend": "cpu",
    "case": "explanations: N[X] expansions",
-   "first_seconds": 0.001122654000937473,
+   "first_seconds": 0.0011331950008752756,
    "params": {
     "requests": 1,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.001122654000937473
+    0.0011331950008752756
    ],
-   "warm_median_seconds": 0.001122654000937473,
-   "warm_min_seconds": 0.001122654000937473
+   "warm_median_seconds": 0.0011331950008752756,
+   "warm_min_seconds": 0.0011331950008752756
   },
   {
    "backend": "cpu",
    "case": "explanations: minimal witnesses (B)",
-   "first_seconds": 0.005205032999583636,
+   "first_seconds": 0.0011491550003484008,
    "params": {
     "requests": 1,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.005205032999583636
+    0.0011491550003484008
    ],
-   "warm_median_seconds": 0.005205032999583636,
-   "warm_min_seconds": 0.005205032999583636
+   "warm_median_seconds": 0.0011491550003484008,
+   "warm_min_seconds": 0.0011491550003484008
   },
   {
    "backend": "cpu",
    "case": "explanations: N[X] expansions",
-   "first_seconds": 0.2797612839985959,
+   "first_seconds": 0.12123632699967857,
    "params": {
     "requests": 100,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.2797612839985959
+    0.12123632699967857
    ],
-   "warm_median_seconds": 0.2797612839985959,
-   "warm_min_seconds": 0.2797612839985959
+   "warm_median_seconds": 0.12123632699967857,
+   "warm_min_seconds": 0.12123632699967857
   },
   {
    "backend": "cpu",
    "case": "explanations: minimal witnesses (B)",
-   "first_seconds": 0.45444041500013554,
+   "first_seconds": 0.19471492699994997,
    "params": {
     "requests": 100,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.45444041500013554
+    0.19471492699994997
    ],
-   "warm_median_seconds": 0.45444041500013554,
-   "warm_min_seconds": 0.45444041500013554
+   "warm_median_seconds": 0.19471492699994997,
+   "warm_min_seconds": 0.19471492699994997
   },
   {
    "backend": "cpu",
    "case": "explanations: N[X] expansions",
-   "first_seconds": 0.29728297499968903,
+   "first_seconds": 0.15339068499997666,
    "params": {
     "requests": 124,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.29728297499968903
+    0.15339068499997666
    ],
-   "warm_median_seconds": 0.29728297499968903,
-   "warm_min_seconds": 0.29728297499968903
+   "warm_median_seconds": 0.15339068499997666,
+   "warm_min_seconds": 0.15339068499997666
   },
   {
    "backend": "cpu",
    "case": "explanations: minimal witnesses (B)",
-   "first_seconds": 0.5066533160006657,
+   "first_seconds": 0.2214306330006366,
    "params": {
     "requests": 124,
     "rows": 1000
    },
    "phase": "run",
    "samples_seconds": [
-    0.5066533160006657
+    0.2214306330006366
    ],
-   "warm_median_seconds": 0.5066533160006657,
-   "warm_min_seconds": 0.5066533160006657
+   "warm_median_seconds": 0.2214306330006366,
+   "warm_min_seconds": 0.2214306330006366
   },
   {
    "backend": "cpu",
    "case": "self-join (correlated derivations: squared variables)",
-   "first_seconds": 0.0005249089990684297,
+   "first_seconds": 0.0005579210001087631,
    "params": {
     "rows": 300
    },
    "phase": "build",
    "samples_seconds": [
-    0.0005249089990684297,
-    0.008561478000046918
+    0.0005579210001087631,
+    0.00044977100060350494
    ],
-   "warm_median_seconds": 0.008561478000046918,
-   "warm_min_seconds": 0.008561478000046918
+   "warm_median_seconds": 0.00044977100060350494,
+   "warm_min_seconds": 0.00044977100060350494
   },
   {
    "backend": "cpu",
    "case": "multiplicity valuations (N)",
-   "first_seconds": 0.0022970139998506056,
+   "first_seconds": 0.0022831730002508266,
    "params": {
     "valuations": 100
    },
    "phase": "first+warm",
    "samples_seconds": [
-    0.0022970139998506056,
-    0.006365786999595002,
-    0.002161967000574805
+    0.0022831730002508266,
+    0.0022779549999540905,
+    0.002200705999712227
    ],
-   "warm_median_seconds": 0.0042638770000849036,
-   "warm_min_seconds": 0.002161967000574805
+   "warm_median_seconds": 0.0022393304998331587,
+   "warm_min_seconds": 0.002200705999712227
   },
   {
    "backend": "duckdb",
    "case": "self-join on duplicated rows",
-   "first_seconds": 0.008571729998948285,
+   "first_seconds": 0.0034154590002799523,
    "params": {},
    "phase": "run",
    "samples_seconds": [
-    0.008571729998948285,
-    0.007016318000751198
+    0.0034154590002799523,
+    0.003055090000088967
    ],
-   "warm_median_seconds": 0.007016318000751198,
-   "warm_min_seconds": 0.007016318000751198
+   "warm_median_seconds": 0.003055090000088967,
+   "warm_min_seconds": 0.003055090000088967
   },
   {
    "backend": "cpu",
@@ -1684,7 +1684,7 @@
     "rows": 1024
    },
    "phase": "refusal",
-   "refusal_seconds": 5.61359993298538e-05,
+   "refusal_seconds": 6.812300034653163e-05,
    "refused": true,
    "resource": "circuit"
   },
@@ -1698,28 +1698,28 @@
     "dag_nodes": 49
    },
    "phase": "refusal",
-   "refusal_seconds": 3.671600097732153e-05,
+   "refusal_seconds": 3.72240001524915e-05,
    "refused": true,
    "resource": "support"
   },
   {
    "backend": "cpu",
    "case": "the same annotation evaluated factored (N at 1)",
-   "first_seconds": 0.00012332600090303458,
+   "first_seconds": 0.000112835000436462,
    "params": {
     "dag_nodes": 49
    },
    "phase": "run",
    "samples_seconds": [
-    0.00012332600090303458,
-    0.00010510599895496853,
-    6.65360003040405e-05
+    0.000112835000436462,
+    7.092899977578782e-05,
+    6.756999937351793e-05
    ],
-   "warm_median_seconds": 8.582099962950451e-05,
-   "warm_min_seconds": 6.65360003040405e-05
+   "warm_median_seconds": 6.924949957465287e-05,
+   "warm_min_seconds": 6.756999937351793e-05
   }
  ],
- "seconds": 12.285544435000702,
+ "seconds": 8.286373208000441,
  "seed": 2026,
  "thresholds": [
   {
