@@ -1,0 +1,4994 @@
+{
+ "argv": [
+  "--capability",
+  "DYN-002",
+  "--out",
+  "/home/claude/release/torbles-val2/results/math/DYN-002/benchmark_cpu_math_dyn_vm.json"
+ ],
+ "capability": "DYN-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T05:00:06+00:00"
+ },
+ "notes": [
+  "nonclosed: a box that is not F-invariant (v' = v/3 + u^2 on [-50, 50]) certifies one step; two steps: refused (DomainError)",
+  "exact results are integer numerators over D^t (every method gives the same integers, checked before timing); the float64 rows and NumPy powers are inexact baselines; the floating powers are certified interval enclosures or refused as unstable; the 1,000-step exact row baseline runs on a 64-row subset (affine), and is refused for the nonlinear map: its proven bound (one common denominator, Q_(t+1) = L Q_t^2) grows doubly exponentially, while the closed operator's grows linearly"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.0002866529976017773,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002866529976017773,
+    0.00018731100135482848,
+    0.00016861400217749178
+   ],
+   "warm_median_seconds": 0.00017796250176616013,
+   "warm_min_seconds": 0.00016861400217749178
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 3.5682001907844096e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "25",
+    "nonzeros": 25,
+    "norm_bits": 7,
+    "sym_action": true
+   },
+   "samples_seconds": [
+    3.5682001907844096e-05,
+    1.5104997146409005e-05,
+    9.84700454864651e-06
+   ],
+   "warm_median_seconds": 1.2476000847527757e-05,
+   "warm_min_seconds": 9.84700454864651e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.638998456764966e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.638998456764966e-06,
+    6.506001227535307e-06,
+    5.133995728101581e-06
+   ],
+   "warm_median_seconds": 5.819998477818444e-06,
+   "warm_min_seconds": 5.133995728101581e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.258999979356304e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    4.258999979356304e-05,
+    4.321299638831988e-05,
+    6.937599391676486e-05
+   ],
+   "warm_median_seconds": 5.629449515254237e-05,
+   "warm_min_seconds": 4.321299638831988e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.612005669623613e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.612005669623613e-06,
+    9.207004040945321e-06,
+    6.85700069880113e-06
+   ],
+   "warm_median_seconds": 8.032002369873226e-06,
+   "warm_min_seconds": 6.85700069880113e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 8.256000000983477e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.256000000983477e-06,
+    7.381000614259392e-06,
+    6.64399703964591e-06
+   ],
+   "warm_median_seconds": 7.012498826952651e-06,
+   "warm_min_seconds": 6.64399703964591e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.2954004786442965e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 839768,
+    "cost_squaring": 27688,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    5.2954004786442965e-05,
+    4.659599653678015e-05,
+    4.4464002712629735e-05
+   ],
+   "warm_median_seconds": 4.552999962470494e-05,
+   "warm_min_seconds": 4.4464002712629735e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.0026821139981620945,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026821139981620945,
+    0.002736851994995959,
+    0.0026067900034831837
+   ],
+   "warm_median_seconds": 0.0026718209992395714,
+   "warm_min_seconds": 0.0026067900034831837
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0005420170055003837,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0005420170055003837,
+    0.00047482199443038553,
+    0.000460723000287544
+   ],
+   "warm_median_seconds": 0.00046777249735896476,
+   "warm_min_seconds": 0.000460723000287544
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.1680038925260305e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 7,
+    "max_bits": 6,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.1680038925260305e-06,
+    7.251001079566777e-06,
+    5.51799894310534e-06
+   ],
+   "warm_median_seconds": 6.384500011336058e-06,
+   "warm_min_seconds": 5.51799894310534e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.70770028186962e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 7,
+    "max_bits": 6,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    4.70770028186962e-05,
+    4.8123001761268824e-05,
+    4.7827001253608614e-05
+   ],
+   "warm_median_seconds": 4.797500150743872e-05,
+   "warm_min_seconds": 4.7827001253608614e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.0869996913243085e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0869996913243085e-05,
+    9.73699934547767e-06,
+    8.014001650735736e-06
+   ],
+   "warm_median_seconds": 8.875500498106703e-06,
+   "warm_min_seconds": 8.014001650735736e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.2167998647782952e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2167998647782952e-05,
+    9.711002348922193e-06,
+    8.916998922359198e-06
+   ],
+   "warm_median_seconds": 9.314000635640696e-06,
+   "warm_min_seconds": 8.916998922359198e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.084699660073966e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 862700,
+    "cost_squaring": 27688,
+    "cost_stepping": 18080
+   },
+   "samples_seconds": [
+    5.084699660073966e-05,
+    5.0026996177621186e-05,
+    7.384300261037424e-05
+   ],
+   "warm_median_seconds": 6.193499939399771e-05,
+   "warm_min_seconds": 5.0026996177621186e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 8.001900278031826e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.001900278031826e-05,
+    7.676699897274375e-05,
+    7.201299740700051e-05,
+    8.019900269573554e-05,
+    6.964099884498864e-05
+   ],
+   "warm_median_seconds": 7.438999818987213e-05,
+   "warm_min_seconds": 6.964099884498864e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.0033146490022772923,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033146490022772923,
+    0.0035072780010523275,
+    0.003009890002431348
+   ],
+   "warm_median_seconds": 0.0032585840017418377,
+   "warm_min_seconds": 0.003009890002431348
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0005144120004842989,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 3.5007584126707856e-16
+   },
+   "samples_seconds": [
+    0.0005144120004842989,
+    0.000523561000591144,
+    0.00048645999777363613
+   ],
+   "warm_median_seconds": 0.00050501049918239,
+   "warm_min_seconds": 0.00048645999777363613
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 1.2984004570171237e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 70,
+    "max_bits": 49,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    1.2984004570171237e-05,
+    1.2208998668938875e-05,
+    1.1928001185879111e-05
+   ],
+   "warm_median_seconds": 1.2068499927408993e-05,
+   "warm_min_seconds": 1.1928001185879111e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 7.007600652286783e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 70,
+    "max_bits": 49,
+    "primes": 3,
+    "products": 5
+   },
+   "samples_seconds": [
+    7.007600652286783e-05,
+    7.743400055915117e-05,
+    7.143199763959274e-05
+   ],
+   "warm_median_seconds": 7.443299909937195e-05,
+   "warm_min_seconds": 7.143199763959274e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 2.2299995180219412e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.2299995180219412e-05,
+    2.0360006601549685e-05,
+    1.873699511634186e-05
+   ],
+   "warm_median_seconds": 1.9548500858945772e-05,
+   "warm_min_seconds": 1.873699511634186e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.6404999769292772e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.6404999769292772e-05,
+    1.501099904999137e-05,
+    1.4390003343578428e-05
+   ],
+   "warm_median_seconds": 1.4700501196784899e-05,
+   "warm_min_seconds": 1.4390003343578428e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 7.046900282148272e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 1441002,
+    "cost_squaring": 139896,
+    "cost_stepping": 180800
+   },
+   "samples_seconds": [
+    7.046900282148272e-05,
+    6.849200144642964e-05,
+    6.746700091753155e-05
+   ],
+   "warm_median_seconds": 6.79795011819806e-05,
+   "warm_min_seconds": 6.746700091753155e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.00718978900113143,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00718978900113143
+   ],
+   "warm_median_seconds": 0.00718978900113143,
+   "warm_min_seconds": 0.00718978900113143
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0007498230042983778,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 9.539885061559281e-15
+   },
+   "samples_seconds": [
+    0.0007498230042983778,
+    0.0007023889993433841,
+    0.0006666039989795536
+   ],
+   "warm_median_seconds": 0.0006844964991614688,
+   "warm_min_seconds": 0.0006666039989795536
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0003009609936270863,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 7000,
+    "max_bits": 4646,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    0.0003009609936270863
+   ],
+   "warm_median_seconds": 0.0003009609936270863,
+   "warm_min_seconds": 0.0003009609936270863
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.006428508000681177,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 7000,
+    "max_bits": 4646,
+    "primes": 116,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.006428508000681177
+   ],
+   "warm_median_seconds": 0.006428508000681177,
+   "warm_min_seconds": 0.006428508000681177
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.00686452000081772,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00686452000081772
+   ],
+   "warm_median_seconds": 0.00686452000081772,
+   "warm_min_seconds": 0.00686452000081772
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0002984449965879321,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002984449965879321
+   ],
+   "warm_median_seconds": 0.0002984449965879321,
+   "warm_min_seconds": 0.0002984449965879321
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.005141009998624213,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 111228858,
+    "cost_squaring": 8382816,
+    "cost_stepping": 171352000
+   },
+   "samples_seconds": [
+    0.005141009998624213
+   ],
+   "warm_median_seconds": 0.005141009998624213,
+   "warm_min_seconds": 0.005141009998624213
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.017305911002040375,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017305911002040375
+   ],
+   "warm_median_seconds": 0.017305911002040375,
+   "warm_min_seconds": 0.017305911002040375
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 0.0003368990001035854,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003368990001035854
+   ],
+   "warm_median_seconds": 0.0003368990001035854,
+   "warm_min_seconds": 0.0003368990001035854
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.023488379003538284,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 6,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 4.649077264724365e-13
+   },
+   "samples_seconds": [
+    0.023488379003538284,
+    0.02403030500136083,
+    0.022698920001857914
+   ],
+   "warm_median_seconds": 0.023364612501609372,
+   "warm_min_seconds": 0.022698920001857914
+  },
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.0001984490008908324,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001984490008908324,
+    0.0001226659951498732,
+    0.00011788499978138134
+   ],
+   "warm_median_seconds": 0.00012027549746562727,
+   "warm_min_seconds": 0.00011788499978138134
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 6.216700421646237e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "12",
+    "nonzeros": 5,
+    "norm_bits": 5,
+    "sym_action": false
+   },
+   "samples_seconds": [
+    6.216700421646237e-05,
+    2.0517996745184064e-05,
+    1.2500997399911284e-05
+   ],
+   "warm_median_seconds": 1.6509497072547674e-05,
+   "warm_min_seconds": 1.2500997399911284e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 5.79599873162806e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    5.79599873162806e-06,
+    5.9710000641644e-06,
+    5.155001417733729e-06
+   ],
+   "warm_median_seconds": 5.5630007409490645e-06,
+   "warm_min_seconds": 5.155001417733729e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.493899905355647e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    4.493899905355647e-05,
+    5.23429989698343e-05,
+    4.8109002818819135e-05
+   ],
+   "warm_median_seconds": 5.022600089432672e-05,
+   "warm_min_seconds": 4.8109002818819135e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 2.0070001482963562e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0070001482963562e-05,
+    1.0495998139958829e-05,
+    7.96299718786031e-06
+   ],
+   "warm_median_seconds": 9.22949766390957e-06,
+   "warm_min_seconds": 7.96299718786031e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.346003935206681e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.346003935206681e-06,
+    8.827002602629364e-06,
+    7.636001100763679e-06
+   ],
+   "warm_median_seconds": 8.231501851696521e-06,
+   "warm_min_seconds": 7.636001100763679e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.291599518386647e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 794168,
+    "cost_squaring": 6488,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    5.291599518386647e-05,
+    5.162200250197202e-05,
+    4.953199822921306e-05
+   ],
+   "warm_median_seconds": 5.057700036559254e-05,
+   "warm_min_seconds": 4.953199822921306e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.0023750850014039315,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023750850014039315,
+    0.00271601300482871,
+    0.0024704600000404753
+   ],
+   "warm_median_seconds": 0.0025932365024345927,
+   "warm_min_seconds": 0.0024704600000404753
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0003873629975714721,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0003873629975714721,
+    0.0003363470023032278,
+    0.0003208899943274446
+   ],
+   "warm_median_seconds": 0.0003286184983153362,
+   "warm_min_seconds": 0.0003208899943274446
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.439004209823906e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.439004209823906e-06,
+    6.672999006696045e-06,
+    5.638001312036067e-06
+   ],
+   "warm_median_seconds": 6.155500159366056e-06,
+   "warm_min_seconds": 5.638001312036067e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.8385001718997955e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    4.8385001718997955e-05,
+    4.864599759457633e-05,
+    4.8795998736750335e-05
+   ],
+   "warm_median_seconds": 4.872099816566333e-05,
+   "warm_min_seconds": 4.864599759457633e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.5343997802119702e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.5343997802119702e-05,
+    1.0554998880252242e-05,
+    8.385002729482949e-06
+   ],
+   "warm_median_seconds": 9.470000804867595e-06,
+   "warm_min_seconds": 8.385002729482949e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.33800038183108e-06,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.33800038183108e-06,
+    9.625997336115688e-06,
+    8.652998076286167e-06
+   ],
+   "warm_median_seconds": 9.139497706200927e-06,
+   "warm_min_seconds": 8.652998076286167e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.492699710885063e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 798276,
+    "cost_squaring": 6488,
+    "cost_stepping": 5200
+   },
+   "samples_seconds": [
+    5.492699710885063e-05,
+    5.300599877955392e-05,
+    5.8859994169324636e-05
+   ],
+   "warm_median_seconds": 5.593299647443928e-05,
+   "warm_min_seconds": 5.300599877955392e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 5.5272001191042364e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.5272001191042364e-05,
+    5.189800140215084e-05,
+    4.944499960402027e-05,
+    4.911299765808508e-05,
+    4.935999459121376e-05
+   ],
+   "warm_median_seconds": 4.9402497097617015e-05,
+   "warm_min_seconds": 4.911299765808508e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.004283631998987403,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004283631998987403,
+    0.00450372100021923,
+    0.004268040000170004
+   ],
+   "warm_median_seconds": 0.004385880500194617,
+   "warm_min_seconds": 0.004268040000170004
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0006258579960558563,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.4608162741656707e-16
+   },
+   "samples_seconds": [
+    0.0006258579960558563,
+    0.0005876239956705831,
+    0.0006435010000132024
+   ],
+   "warm_median_seconds": 0.0006155624978418928,
+   "warm_min_seconds": 0.0005876239956705831
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 1.2384000001475215e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    1.2384000001475215e-05,
+    1.3268996553961188e-05,
+    1.1443997209426016e-05
+   ],
+   "warm_median_seconds": 1.2356496881693602e-05,
+   "warm_min_seconds": 1.1443997209426016e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 5.372000305214897e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 2,
+    "products": 5
+   },
+   "samples_seconds": [
+    5.372000305214897e-05,
+    0.00010259400005452335,
+    6.174400186864659e-05
+   ],
+   "warm_median_seconds": 8.216900096158497e-05,
+   "warm_min_seconds": 6.174400186864659e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 6.273000326473266e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.273000326473266e-05,
+    2.5173998437821865e-05,
+    1.862900535343215e-05
+   ],
+   "warm_median_seconds": 2.1901501895627007e-05,
+   "warm_min_seconds": 1.862900535343215e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 2.147300256183371e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.147300256183371e-05,
+    1.6055004380177706e-05,
+    1.4368000847753137e-05
+   ],
+   "warm_median_seconds": 1.5211502613965422e-05,
+   "warm_min_seconds": 1.4368000847753137e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 8.323499787366018e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 1228302,
+    "cost_squaring": 19112,
+    "cost_stepping": 52000
+   },
+   "samples_seconds": [
+    8.323499787366018e-05,
+    0.00011488200107123703,
+    8.515499939676374e-05
+   ],
+   "warm_median_seconds": 0.00010001850023400038,
+   "warm_min_seconds": 8.515499939676374e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.048495063005248085,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.048495063005248085
+   ],
+   "warm_median_seconds": 0.048495063005248085,
+   "warm_min_seconds": 0.048495063005248085
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0006100749960751273,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0006100749960751273,
+    0.0005914130015298724,
+    0.0005159740030649118
+   ],
+   "warm_median_seconds": 0.0005536935022973921,
+   "warm_min_seconds": 0.0005159740030649118
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 2.3254004190675914e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    2.3254004190675914e-05
+   ],
+   "warm_median_seconds": 2.3254004190675914e-05,
+   "warm_min_seconds": 2.3254004190675914e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.002417542003968265,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 83,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.002417542003968265
+   ],
+   "warm_median_seconds": 0.002417542003968265,
+   "warm_min_seconds": 0.002417542003968265
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.001191481998830568,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001191481998830568
+   ],
+   "warm_median_seconds": 0.001191481998830568,
+   "warm_min_seconds": 0.001191481998830568
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 3.313799970783293e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.313799970783293e-05
+   ],
+   "warm_median_seconds": 3.313799970783293e-05,
+   "warm_min_seconds": 3.313799970783293e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.002485151002474595,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 50270136,
+    "cost_squaring": 368528,
+    "cost_stepping": 27096000
+   },
+   "samples_seconds": [
+    0.002485151002474595
+   ],
+   "warm_median_seconds": 0.002485151002474595,
+   "warm_min_seconds": 0.002485151002474595
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "limit": 1073741824,
+   "message": "row evolution: needs more than 2^64-1 bytes, budget 1073741824",
+   "need": 18446744073709551615,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.1706000552512705e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 3.5108001611661166e-05,
+   "params": {
+    "coordinates": 2,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.5108001611661166e-05
+   ],
+   "warm_median_seconds": 3.5108001611661166e-05,
+   "warm_min_seconds": 3.5108001611661166e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.02771351100091124,
+   "params": {
+    "coordinates": 2,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 4,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.02771351100091124,
+    0.027713784998923074,
+    0.027109563998237718
+   ],
+   "warm_median_seconds": 0.027411674498580396,
+   "warm_min_seconds": 0.027109563998237718
+  },
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.0009322780024376698,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009322780024376698,
+    0.0004253900042385794,
+    0.00039013000059640035
+   ],
+   "warm_median_seconds": 0.0004077600024174899,
+   "warm_min_seconds": 0.00039013000059640035
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 6.376099918270484e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "100",
+    "nonzeros": 63,
+    "norm_bits": 9,
+    "sym_action": true
+   },
+   "samples_seconds": [
+    6.376099918270484e-05,
+    2.7119996957480907e-05,
+    1.649100158829242e-05
+   ],
+   "warm_median_seconds": 2.1805499272886664e-05,
+   "warm_min_seconds": 1.649100158829242e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 9.372997737955302e-06,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    9.372997737955302e-06,
+    9.636998584028333e-06,
+    8.782000804785639e-06
+   ],
+   "warm_median_seconds": 9.209499694406986e-06,
+   "warm_min_seconds": 8.782000804785639e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.558099994435906e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.558099994435906e-05,
+    6.192499859025702e-05,
+    5.858200165675953e-05
+   ],
+   "warm_median_seconds": 6.0253500123508275e-05,
+   "warm_min_seconds": 5.858200165675953e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.460899511585012e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.460899511585012e-05,
+    1.0732997907325625e-05,
+    1.6742000298108906e-05
+   ],
+   "warm_median_seconds": 1.3737499102717265e-05,
+   "warm_min_seconds": 1.0732997907325625e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.5202000213321298e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.5202000213321298e-05,
+    1.3424003554973751e-05,
+    1.1556003300938755e-05
+   ],
+   "warm_median_seconds": 1.2490003427956253e-05,
+   "warm_min_seconds": 1.1556003300938755e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.222300286637619e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 1133560,
+    "cost_squaring": 84276,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    9.222300286637619e-05,
+    6.467100320151076e-05,
+    6.116300210123882e-05
+   ],
+   "warm_median_seconds": 6.291700265137479e-05,
+   "warm_min_seconds": 6.116300210123882e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.007381819996226113,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007381819996226113,
+    0.007587334999698214,
+    0.00738365099823568
+   ],
+   "warm_median_seconds": 0.007485492998966947,
+   "warm_min_seconds": 0.00738365099823568
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0017185600008815527,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0017185600008815527,
+    0.0013660559998243116,
+    0.001327062003838364
+   ],
+   "warm_median_seconds": 0.0013465590018313378,
+   "warm_min_seconds": 0.001327062003838364
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 1.1714000720530748e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9,
+    "max_bits": 8,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    1.1714000720530748e-05,
+    1.1463002010714263e-05,
+    2.7596004656516016e-05
+   ],
+   "warm_median_seconds": 1.952950333361514e-05,
+   "warm_min_seconds": 1.1463002010714263e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.745700375176966e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9,
+    "max_bits": 8,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    6.745700375176966e-05,
+    6.74580005579628e-05,
+    6.61369995214045e-05
+   ],
+   "warm_median_seconds": 6.679750003968365e-05,
+   "warm_min_seconds": 6.61369995214045e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.7318001482635736e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7318001482635736e-05,
+    1.465800596633926e-05,
+    1.2958997103851289e-05
+   ],
+   "warm_median_seconds": 1.3808501535095274e-05,
+   "warm_min_seconds": 1.2958997103851289e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.805400097509846e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.805400097509846e-05,
+    1.62759970407933e-05,
+    1.5017998521216214e-05
+   ],
+   "warm_median_seconds": 1.5646997781004757e-05,
+   "warm_min_seconds": 1.5017998521216214e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 7.585799903608859e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 1335190,
+    "cost_squaring": 84276,
+    "cost_stepping": 69732
+   },
+   "samples_seconds": [
+    7.585799903608859e-05,
+    7.105399708962068e-05,
+    6.937099533388391e-05
+   ],
+   "warm_median_seconds": 7.02124962117523e-05,
+   "warm_min_seconds": 6.937099533388391e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 0.000167088997841347,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000167088997841347,
+    0.00016829800006235018,
+    0.000200708003831096,
+    0.00017061599646694958,
+    0.00016521799989277497
+   ],
+   "warm_median_seconds": 0.00016945699826464988,
+   "warm_min_seconds": 0.00016521799989277497
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.007494785000744741,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007494785000744741,
+    0.007671239000046626,
+    0.00786108600004809
+   ],
+   "warm_median_seconds": 0.007766162500047358,
+   "warm_min_seconds": 0.007671239000046626
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.001414234000549186,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 7.70811985668323e-14
+   },
+   "samples_seconds": [
+    0.001414234000549186,
+    0.0013833869961672463,
+    0.0013734610038227402
+   ],
+   "warm_median_seconds": 0.0013784239999949932,
+   "warm_min_seconds": 0.0013734610038227402
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.184399585938081e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 90,
+    "max_bits": 69,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    4.184399585938081e-05,
+    5.1820999942719936e-05,
+    4.019699554191902e-05
+   ],
+   "warm_median_seconds": 4.600899774231948e-05,
+   "warm_min_seconds": 4.019699554191902e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.00014691300020786002,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 90,
+    "max_bits": 69,
+    "primes": 3,
+    "products": 5
+   },
+   "samples_seconds": [
+    0.00014691300020786002,
+    0.00014154000382404774,
+    0.00015892599913058802
+   ],
+   "warm_median_seconds": 0.00015023300147731788,
+   "warm_min_seconds": 0.00014154000382404774
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.875199713045731e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.875199713045731e-05,
+    5.8768004237208515e-05,
+    4.998299846192822e-05
+   ],
+   "warm_median_seconds": 5.437550134956837e-05,
+   "warm_min_seconds": 4.998299846192822e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 6.32070004940033e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.32070004940033e-05,
+    5.4773001465946436e-05,
+    4.655600059777498e-05
+   ],
+   "warm_median_seconds": 5.066450103186071e-05,
+   "warm_min_seconds": 4.655600059777498e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0001815370051190257,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 3235965,
+    "cost_squaring": 654624,
+    "cost_stepping": 697320
+   },
+   "samples_seconds": [
+    0.0001815370051190257,
+    0.00015405700105475262,
+    0.000155795001774095
+   ],
+   "warm_median_seconds": 0.0001549260014144238,
+   "warm_min_seconds": 0.00015405700105475262
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.01453580799716292,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01453580799716292
+   ],
+   "warm_median_seconds": 0.01453580799716292,
+   "warm_min_seconds": 0.01453580799716292
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.002909847993578296,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.3666752289991008e-14
+   },
+   "samples_seconds": [
+    0.002909847993578296,
+    0.0021253369995974936,
+    0.0019192660038243048
+   ],
+   "warm_median_seconds": 0.002022301501710899,
+   "warm_min_seconds": 0.0019192660038243048
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0009950750027201138,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9000,
+    "max_bits": 6646,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    0.0009950750027201138
+   ],
+   "warm_median_seconds": 0.0009950750027201138,
+   "warm_min_seconds": 0.0009950750027201138
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0378575099966838,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9000,
+    "max_bits": 6646,
+    "primes": 149,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.0378575099966838
+   ],
+   "warm_median_seconds": 0.0378575099966838,
+   "warm_min_seconds": 0.0378575099966838
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.02569696999853477,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02569696999853477
+   ],
+   "warm_median_seconds": 0.02569696999853477,
+   "warm_min_seconds": 0.02569696999853477
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0009556419972795993,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009556419972795993
+   ],
+   "warm_median_seconds": 0.0009556419972795993,
+   "warm_min_seconds": 0.0009556419972795993
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.020509221001702826,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 480615145,
+    "cost_squaring": 30838830,
+    "cost_stepping": 566333280
+   },
+   "samples_seconds": [
+    0.020509221001702826
+   ],
+   "warm_median_seconds": 0.020509221001702826,
+   "warm_min_seconds": 0.020509221001702826
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.03452491599455243,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03452491599455243
+   ],
+   "warm_median_seconds": 0.03452491599455243,
+   "warm_min_seconds": 0.03452491599455243
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 0.0009442530063097365,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009442530063097365
+   ],
+   "warm_median_seconds": 0.0009442530063097365,
+   "warm_min_seconds": 0.0009442530063097365
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.08421875099884346,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 6.726678980700367e-13
+   },
+   "samples_seconds": [
+    0.08421875099884346,
+    0.09628581099968869,
+    0.07877292799821589
+   ],
+   "warm_median_seconds": 0.08752936949895229,
+   "warm_min_seconds": 0.07877292799821589
+  },
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.00032146800367627293,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00032146800367627293,
+    0.00019923899526474997,
+    0.0002390139998169616
+   ],
+   "warm_median_seconds": 0.00021912649754085578,
+   "warm_min_seconds": 0.00019923899526474997
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 3.1160998332779855e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "12",
+    "nonzeros": 9,
+    "norm_bits": 5,
+    "sym_action": false
+   },
+   "samples_seconds": [
+    3.1160998332779855e-05,
+    1.8669001292437315e-05,
+    1.3434997526928782e-05
+   ],
+   "warm_median_seconds": 1.605199940968305e-05,
+   "warm_min_seconds": 1.3434997526928782e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.1539976741187274e-06,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.1539976741187274e-06,
+    7.17100192559883e-06,
+    6.022004527039826e-06
+   ],
+   "warm_median_seconds": 6.596503226319328e-06,
+   "warm_min_seconds": 6.022004527039826e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.672600334743038e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    4.672600334743038e-05,
+    4.746700142277405e-05,
+    4.687199543695897e-05
+   ],
+   "warm_median_seconds": 4.716949842986651e-05,
+   "warm_min_seconds": 4.687199543695897e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.1481999536044896e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1481999536044896e-05,
+    9.81100311037153e-06,
+    7.968003046698868e-06
+   ],
+   "warm_median_seconds": 8.8895030785352e-06,
+   "warm_min_seconds": 7.968003046698868e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.012997907120734e-06,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.012997907120734e-06,
+    2.648199733812362e-05,
+    1.2149997928645462e-05
+   ],
+   "warm_median_seconds": 1.931599763338454e-05,
+   "warm_min_seconds": 1.2149997928645462e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.119200068293139e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 852552,
+    "cost_squaring": 13860,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    5.119200068293139e-05,
+    5.000100645702332e-05,
+    4.8681002226658165e-05
+   ],
+   "warm_median_seconds": 4.9341004341840744e-05,
+   "warm_min_seconds": 4.8681002226658165e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.004508187994360924,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004508187994360924,
+    0.004410415000165813,
+    0.004708191998361144
+   ],
+   "warm_median_seconds": 0.0045593034992634784,
+   "warm_min_seconds": 0.004410415000165813
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0006104939966462553,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0006104939966462553,
+    0.0005859299999428913,
+    0.0005662749972543679
+   ],
+   "warm_median_seconds": 0.0005761024985986296,
+   "warm_min_seconds": 0.0005662749972543679
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.218993803486228e-06,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    6.218993803486228e-06,
+    7.93800427345559e-06,
+    6.255999323911965e-06
+   ],
+   "warm_median_seconds": 7.0970017986837775e-06,
+   "warm_min_seconds": 6.255999323911965e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 4.937499761581421e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    4.937499761581421e-05,
+    5.016000068280846e-05,
+    4.913299926556647e-05
+   ],
+   "warm_median_seconds": 4.9646499974187464e-05,
+   "warm_min_seconds": 4.913299926556647e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.0864001524168998e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0864001524168998e-05,
+    1.1115997040178627e-05,
+    8.880000677891076e-06
+   ],
+   "warm_median_seconds": 9.997998859034851e-06,
+   "warm_min_seconds": 8.880000677891076e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 9.791998309083283e-06,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.791998309083283e-06,
+    9.435003448743373e-06,
+    8.73200042406097e-06
+   ],
+   "warm_median_seconds": 9.083501936402172e-06,
+   "warm_min_seconds": 8.73200042406097e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 7.331300002988428e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 871818,
+    "cost_squaring": 13860,
+    "cost_stepping": 12996
+   },
+   "samples_seconds": [
+    7.331300002988428e-05,
+    5.7024997659027576e-05,
+    5.8192003052681684e-05
+   ],
+   "warm_median_seconds": 5.760850035585463e-05,
+   "warm_min_seconds": 5.7024997659027576e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 8.287400123663247e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.287400123663247e-05,
+    0.00013069599663140252,
+    8.842799434205517e-05,
+    8.021200483199209e-05,
+    7.795700366841629e-05
+   ],
+   "warm_median_seconds": 8.431999958702363e-05,
+   "warm_min_seconds": 7.795700366841629e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.008501002004777547,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008501002004777547,
+    0.00869389099534601,
+    0.008692071001860313
+   ],
+   "warm_median_seconds": 0.008692980998603161,
+   "warm_min_seconds": 0.008692071001860313
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0006462710007326677,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.442502310842309e-16
+   },
+   "samples_seconds": [
+    0.0006462710007326677,
+    0.000704225996742025,
+    0.0006768069943063892
+   ],
+   "warm_median_seconds": 0.0006905164955242071,
+   "warm_min_seconds": 0.0006768069943063892
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 1.2074997357558459e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    1.2074997357558459e-05,
+    1.3037002645432949e-05,
+    1.140400127042085e-05
+   ],
+   "warm_median_seconds": 1.22205019579269e-05,
+   "warm_min_seconds": 1.140400127042085e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 5.425299605121836e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 2,
+    "products": 5
+   },
+   "samples_seconds": [
+    5.425299605121836e-05,
+    5.466599395731464e-05,
+    5.462099943542853e-05
+   ],
+   "warm_median_seconds": 5.4643496696371585e-05,
+   "warm_min_seconds": 5.462099943542853e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 2.181799936806783e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.181799936806783e-05,
+    2.0159997802693397e-05,
+    2.4696004402358085e-05
+   ],
+   "warm_median_seconds": 2.242800110252574e-05,
+   "warm_min_seconds": 2.0159997802693397e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.59639967023395e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.59639967023395e-05,
+    1.5286001143977046e-05,
+    1.3479999324772507e-05
+   ],
+   "warm_median_seconds": 1.4383000234374776e-05,
+   "warm_min_seconds": 1.3479999324772507e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 8.07859978522174e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 1434243,
+    "cost_squaring": 61376,
+    "cost_stepping": 129960
+   },
+   "samples_seconds": [
+    8.07859978522174e-05,
+    8.04049996077083e-05,
+    7.933199958642945e-05
+   ],
+   "warm_median_seconds": 7.986849959706888e-05,
+   "warm_min_seconds": 7.933199958642945e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.0826268370001344,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0826268370001344
+   ],
+   "warm_median_seconds": 0.0826268370001344,
+   "warm_min_seconds": 0.0826268370001344
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0010840700051630847,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.7900455173314666e-16
+   },
+   "samples_seconds": [
+    0.0010840700051630847,
+    0.0010300650028511882,
+    0.0010162120015593246
+   ],
+   "warm_median_seconds": 0.0010231385022052564,
+   "warm_min_seconds": 0.0010162120015593246
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 3.295399801572785e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    3.295399801572785e-05
+   ],
+   "warm_median_seconds": 3.295399801572785e-05,
+   "warm_min_seconds": 3.295399801572785e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0036974419999751262,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 83,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.0036974419999751262
+   ],
+   "warm_median_seconds": 0.0036974419999751262,
+   "warm_min_seconds": 0.0036974419999751262
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0017924880012287758,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017924880012287758
+   ],
+   "warm_median_seconds": 0.0017924880012287758,
+   "warm_min_seconds": 0.0017924880012287758
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 4.689599882112816e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.689599882112816e-05
+   ],
+   "warm_median_seconds": 4.689599882112816e-05,
+   "warm_min_seconds": 4.689599882112816e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0028745360032189637,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 73017084,
+    "cost_squaring": 761238,
+    "cost_stepping": 52408800
+   },
+   "samples_seconds": [
+    0.0028745360032189637
+   ],
+   "warm_median_seconds": 0.0028745360032189637,
+   "warm_min_seconds": 0.0028745360032189637
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "limit": 1073741824,
+   "message": "row evolution: needs more than 2^64-1 bytes, budget 1073741824",
+   "need": 18446744073709551615,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.8669001292437315e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 5.741199856856838e-05,
+   "params": {
+    "coordinates": 4,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.741199856856838e-05
+   ],
+   "warm_median_seconds": 5.741199856856838e-05,
+   "warm_min_seconds": 5.741199856856838e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.05692433600052027,
+   "params": {
+    "coordinates": 4,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 7,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.05692433600052027,
+    0.05996615200274391,
+    0.05979992199718254
+   ],
+   "warm_median_seconds": 0.059883036999963224,
+   "warm_min_seconds": 0.05979992199718254
+  },
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.001138162006100174,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001138162006100174,
+    0.0011253300035605207,
+    0.0010874709987547249
+   ],
+   "warm_median_seconds": 0.0011064005011576228,
+   "warm_min_seconds": 0.0010874709987547249
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 7.699799607507885e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "100",
+    "nonzeros": 187,
+    "norm_bits": 9,
+    "sym_action": true
+   },
+   "samples_seconds": [
+    7.699799607507885e-05,
+    5.3609001042786986e-05,
+    4.2567000491544604e-05
+   ],
+   "warm_median_seconds": 4.8088000767165795e-05,
+   "warm_min_seconds": 4.2567000491544604e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 2.395200135651976e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    2.395200135651976e-05,
+    2.6192996301688254e-05,
+    2.3154003429226577e-05
+   ],
+   "warm_median_seconds": 2.4673499865457416e-05,
+   "warm_min_seconds": 2.3154003429226577e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.00011138099944218993,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    0.00011138099944218993,
+    0.00011382299999240786,
+    0.00011045900464523584
+   ],
+   "warm_median_seconds": 0.00011214100231882185,
+   "warm_min_seconds": 0.00011045900464523584
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.8553997506387532e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.8553997506387532e-05,
+    1.4033998013474047e-05,
+    1.1264004569966346e-05
+   ],
+   "warm_median_seconds": 1.2649001291720197e-05,
+   "warm_min_seconds": 1.1264004569966346e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 3.495199780445546e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.495199780445546e-05,
+    3.1247996957972646e-05,
+    2.961799327749759e-05
+   ],
+   "warm_median_seconds": 3.0432995117735118e-05,
+   "warm_min_seconds": 2.961799327749759e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0001205930020660162,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 3478040,
+    "cost_squaring": 396724,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    0.0001205930020660162,
+    0.00011831500160042197,
+    0.00012364400026854128
+   ],
+   "warm_median_seconds": 0.00012097950093448162,
+   "warm_min_seconds": 0.00011831500160042197
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.021095755997521337,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.021095755997521337,
+    0.020182732005196158,
+    0.019749466999201104
+   ],
+   "warm_median_seconds": 0.01996609950219863,
+   "warm_min_seconds": 0.019749466999201104
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0036251040000934154,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0036251040000934154,
+    0.0036829619930358604,
+    0.003821182996034622
+   ],
+   "warm_median_seconds": 0.0037520724945352413,
+   "warm_min_seconds": 0.0036829619930358604
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 3.31069968524389e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9,
+    "max_bits": 8,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    3.31069968524389e-05,
+    3.449900395935401e-05,
+    3.137299790978432e-05
+   ],
+   "warm_median_seconds": 3.2936000934569165e-05,
+   "warm_min_seconds": 3.137299790978432e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.00034327000321354717,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9,
+    "max_bits": 8,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    0.00034327000321354717,
+    0.0003148600007989444,
+    0.0002806839984259568
+   ],
+   "warm_median_seconds": 0.0002977719996124506,
+   "warm_min_seconds": 0.0002806839984259568
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 3.8393001887016e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.8393001887016e-05,
+    5.268400127533823e-05,
+    2.8822003514505923e-05
+   ],
+   "warm_median_seconds": 4.075300239492208e-05,
+   "warm_min_seconds": 2.8822003514505923e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.283099744701758e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.283099744701758e-05,
+    4.712199734058231e-05,
+    4.48200007667765e-05
+   ],
+   "warm_median_seconds": 4.597099905367941e-05,
+   "warm_min_seconds": 4.48200007667765e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.00031292399944504723,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 8285570,
+    "cost_squaring": 396724,
+    "cost_stepping": 451268
+   },
+   "samples_seconds": [
+    0.00031292399944504723,
+    0.00031128100090427324,
+    0.00029790699773002416
+   ],
+   "warm_median_seconds": 0.0003045939993171487,
+   "warm_min_seconds": 0.00029790699773002416
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 0.0004852009951719083,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004852009951719083,
+    0.0004787419966305606,
+    0.0004763949982589111,
+    0.0007961429946590215,
+    0.00046239199582487345
+   ],
+   "warm_median_seconds": 0.00047756849744473584,
+   "warm_min_seconds": 0.00046239199582487345
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.02248727300320752,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02248727300320752,
+    0.021744685000157915,
+    0.022224182001082227
+   ],
+   "warm_median_seconds": 0.02198443350062007,
+   "warm_min_seconds": 0.021744685000157915
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0041977650034823455,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 5.757846307021502e-14
+   },
+   "samples_seconds": [
+    0.0041977650034823455,
+    0.004008666997833643,
+    0.004055751000123564
+   ],
+   "warm_median_seconds": 0.004032208998978604,
+   "warm_min_seconds": 0.004008666997833643
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0003565240040188655,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 90,
+    "max_bits": 69,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    0.0003565240040188655,
+    0.00035865999961970374,
+    0.0003141819979646243
+   ],
+   "warm_median_seconds": 0.00033642099879216403,
+   "warm_min_seconds": 0.0003141819979646243
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0016715170058887452,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 90,
+    "max_bits": 69,
+    "primes": 3,
+    "products": 5
+   },
+   "samples_seconds": [
+    0.0016715170058887452,
+    0.0016511170033481903,
+    0.0015348209999501705
+   ],
+   "warm_median_seconds": 0.0015929690016491804,
+   "warm_min_seconds": 0.0015348209999501705
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0001634399959584698,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001634399959584698,
+    0.0001496319964644499,
+    0.0002134910027962178
+   ],
+   "warm_median_seconds": 0.00018156149963033386,
+   "warm_min_seconds": 0.0001496319964644499
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.000385789004212711,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000385789004212711,
+    0.000375569004972931,
+    0.0003965340001741424
+   ],
+   "warm_median_seconds": 0.0003860515025735367,
+   "warm_min_seconds": 0.000375569004972931
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.0016911299971980043,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 41343735,
+    "cost_squaring": 10784664,
+    "cost_stepping": 4512680
+   },
+   "samples_seconds": [
+    0.0016911299971980043,
+    0.001712828001473099,
+    0.0016555589972995222
+   ],
+   "warm_median_seconds": 0.0016841934993863106,
+   "warm_min_seconds": 0.0016555589972995222
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.03371813799458323,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03371813799458323
+   ],
+   "warm_median_seconds": 0.03371813799458323,
+   "warm_min_seconds": 0.03371813799458323
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0054064549985923804,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.8478485220790163e-14
+   },
+   "samples_seconds": [
+    0.0054064549985923804,
+    0.005140202003531158,
+    0.004986628002370708
+   ],
+   "warm_median_seconds": 0.005063415002950933,
+   "warm_min_seconds": 0.004986628002370708
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.0037985529997968115,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9000,
+    "max_bits": 6646,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    0.0037985529997968115
+   ],
+   "warm_median_seconds": 0.0037985529997968115,
+   "warm_min_seconds": 0.0037985529997968115
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.4276753580052173,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9000,
+    "max_bits": 6646,
+    "primes": 149,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.4276753580052173
+   ],
+   "warm_median_seconds": 0.4276753580052173,
+   "warm_min_seconds": 0.4276753580052173
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.07280192199687008,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "stepping",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07280192199687008
+   ],
+   "warm_median_seconds": 0.07280192199687008,
+   "warm_min_seconds": 0.07280192199687008
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.004342943997471593,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "squaring",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004342943997471593
+   ],
+   "warm_median_seconds": 0.004342943997471593,
+   "warm_min_seconds": 0.004342943997471593
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.24552206799853593,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "method": "modular",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 6144058955,
+    "cost_squaring": 113087378,
+    "cost_stepping": 1925306720
+   },
+   "samples_seconds": [
+    0.24552206799853593
+   ],
+   "warm_median_seconds": 0.24552206799853593,
+   "warm_min_seconds": 0.24552206799853593
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.08302197900047759,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08302197900047759
+   ],
+   "warm_median_seconds": 0.08302197900047759,
+   "warm_min_seconds": 0.08302197900047759
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 0.004456971000763588,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004456971000763588
+   ],
+   "warm_median_seconds": 0.004456971000763588,
+   "warm_min_seconds": 0.004456971000763588
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.1263272899959702,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "affine",
+    "moments": 45,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 9.437721983039796e-13
+   },
+   "samples_seconds": [
+    0.1263272899959702,
+    0.10622956400038674,
+    0.11058819799654884
+   ],
+   "warm_median_seconds": 0.1084088809984678,
+   "warm_min_seconds": 0.10622956400038674
+  },
+  {
+   "backend": "cpu",
+   "case": "state (FND-004 bank)",
+   "first_seconds": 0.0004084730026079342,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004084730026079342,
+    0.00033356000494677573,
+    0.0003321610056445934
+   ],
+   "warm_median_seconds": 0.00033286050529568456,
+   "warm_min_seconds": 0.0003321610056445934
+  },
+  {
+   "backend": "cpu",
+   "case": "operator K (closure and transfer matrix)",
+   "first_seconds": 3.371699858689681e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000
+   },
+   "phase": "build",
+   "result": {
+    "den": "12",
+    "nonzeros": 17,
+    "norm_bits": 5,
+    "sym_action": false
+   },
+   "samples_seconds": [
+    3.371699858689681e-05,
+    2.129199856426567e-05,
+    1.6185003914870322e-05
+   ],
+   "warm_median_seconds": 1.8738501239567995e-05,
+   "warm_min_seconds": 1.6185003914870322e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 8.380004146602005e-06,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    8.380004146602005e-06,
+    8.17399995867163e-06,
+    7.438997272402048e-06
+   ],
+   "warm_median_seconds": 7.806498615536839e-06,
+   "warm_min_seconds": 7.438997272402048e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 5.276299634715542e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 1,
+    "max_bits": 1,
+    "primes": 2,
+    "products": 0
+   },
+   "samples_seconds": [
+    5.276299634715542e-05,
+    5.445400165626779e-05,
+    7.463699876097962e-05
+   ],
+   "warm_median_seconds": 6.454550020862371e-05,
+   "warm_min_seconds": 5.445400165626779e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.3875003787688911e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3875003787688911e-05,
+    1.1023999832104892e-05,
+    9.138995665125549e-06
+   ],
+   "warm_median_seconds": 1.008149774861522e-05,
+   "warm_min_seconds": 9.138995665125549e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.0861003829631954e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0861003829631954e-05,
+    1.0691001079976559e-05,
+    9.802999556995928e-06
+   ],
+   "warm_median_seconds": 1.0247000318486243e-05,
+   "warm_min_seconds": 9.802999556995928e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 5.5479998991359025e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "auto": "stepping",
+    "cost_modular": 1032392,
+    "cost_squaring": 34436,
+    "cost_stepping": 0
+   },
+   "samples_seconds": [
+    5.5479998991359025e-05,
+    5.509600305231288e-05,
+    5.444999987957999e-05
+   ],
+   "warm_median_seconds": 5.4773001465946436e-05,
+   "warm_min_seconds": 5.444999987957999e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.008900180000637192,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008900180000637192,
+    0.008839214002364315,
+    0.01009015399904456
+   ],
+   "warm_median_seconds": 0.009464684000704437,
+   "warm_min_seconds": 0.008839214002364315
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0012210179993417114,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 0
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.0012210179993417114,
+    0.0012026730037177913,
+    0.0011247820002608933
+   ],
+   "warm_median_seconds": 0.0011637275019893423,
+   "warm_min_seconds": 0.0011247820002608933
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 1.0805997590068728e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 0,
+    "products": 0
+   },
+   "samples_seconds": [
+    1.0805997590068728e-05,
+    1.0616000508889556e-05,
+    1.0030002158600837e-05
+   ],
+   "warm_median_seconds": 1.0323001333745196e-05,
+   "warm_min_seconds": 1.0030002158600837e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 6.079500599298626e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5,
+    "max_bits": 4,
+    "primes": 2,
+    "products": 1
+   },
+   "samples_seconds": [
+    6.079500599298626e-05,
+    5.9163001424167305e-05,
+    5.932799831498414e-05
+   ],
+   "warm_median_seconds": 5.9245499869575724e-05,
+   "warm_min_seconds": 5.9163001424167305e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.3688004401046783e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3688004401046783e-05,
+    1.332100509898737e-05,
+    1.0206997103523463e-05
+   ],
+   "warm_median_seconds": 1.1764001101255417e-05,
+   "warm_min_seconds": 1.0206997103523463e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 1.3569995644502342e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3569995644502342e-05,
+    1.3071003195364028e-05,
+    1.1361000360921025e-05
+   ],
+   "warm_median_seconds": 1.2216001778142527e-05,
+   "warm_min_seconds": 1.1361000360921025e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 6.233299791347235e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 1149366,
+    "cost_squaring": 34436,
+    "cost_stepping": 38308
+   },
+   "samples_seconds": [
+    6.233299791347235e-05,
+    6.114200368756428e-05,
+    6.679500074824318e-05
+   ],
+   "warm_median_seconds": 6.396850221790373e-05,
+   "warm_min_seconds": 6.114200368756428e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "one step K m (512-bit)",
+   "first_seconds": 0.0001414360012859106,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001414360012859106,
+    0.0001417379971826449,
+    0.00014444800035562366,
+    0.00014211400412023067,
+    0.0001470339993829839
+   ],
+   "warm_median_seconds": 0.00014328100223792717,
+   "warm_min_seconds": 0.0001417379971826449
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.016776010998000856,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016776010998000856,
+    0.02253725199989276,
+    0.022892442997545004
+   ],
+   "warm_median_seconds": 0.022714847498718882,
+   "warm_min_seconds": 0.02253725199989276
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0013053669972578064,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.4287407687381136e-16
+   },
+   "samples_seconds": [
+    0.0013053669972578064,
+    0.0012305560012464412,
+    0.001182214000436943
+   ],
+   "warm_median_seconds": 0.001206385000841692,
+   "warm_min_seconds": 0.001182214000436943
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 2.3838998458813876e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 0,
+    "products": 4
+   },
+   "samples_seconds": [
+    2.3838998458813876e-05,
+    2.4082000891212374e-05,
+    2.261199551867321e-05
+   ],
+   "warm_median_seconds": 2.3346998204942793e-05,
+   "warm_min_seconds": 2.261199551867321e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 7.576400093967095e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 50,
+    "max_bits": 36,
+    "primes": 2,
+    "products": 5
+   },
+   "samples_seconds": [
+    7.576400093967095e-05,
+    7.530999573646113e-05,
+    7.518300117226318e-05
+   ],
+   "warm_median_seconds": 7.524649845436215e-05,
+   "warm_min_seconds": 7.518300117226318e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 3.601299977162853e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.601299977162853e-05,
+    2.9261995223350823e-05,
+    2.662099723238498e-05
+   ],
+   "warm_median_seconds": 2.79414962278679e-05,
+   "warm_min_seconds": 2.662099723238498e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 2.7374997443985194e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.7374997443985194e-05,
+    2.674399729585275e-05,
+    2.5157998607028276e-05
+   ],
+   "warm_median_seconds": 2.5950997951440513e-05,
+   "warm_min_seconds": 2.5157998607028276e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.00011500000255182385,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 2446173,
+    "cost_squaring": 291704,
+    "cost_stepping": 383080
+   },
+   "samples_seconds": [
+    0.00011500000255182385,
+    0.00011195899423910305,
+    0.0001102840033126995
+   ],
+   "warm_median_seconds": 0.00011112149877590127,
+   "warm_min_seconds": 0.0001102840033126995
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "first_seconds": 0.18487478000315605,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.18487478000315605
+   ],
+   "warm_median_seconds": 0.18487478000315605,
+   "warm_min_seconds": 0.18487478000315605
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.0021743980032624677,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 1.818379358526374e-16
+   },
+   "samples_seconds": [
+    0.0021743980032624677,
+    0.0022359219947247766,
+    0.00247309599944856
+   ],
+   "warm_median_seconds": 0.0023545089970866684,
+   "warm_min_seconds": 0.0022359219947247766
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 7.564599945908412e-05,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 0,
+    "products": 14
+   },
+   "samples_seconds": [
+    7.564599945908412e-05
+   ],
+   "warm_median_seconds": 7.564599945908412e-05,
+   "warm_min_seconds": 7.564599945908412e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power K^t",
+   "first_seconds": 0.009391653999045957,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 5000,
+    "max_bits": 3585,
+    "primes": 83,
+    "products": 15
+   },
+   "samples_seconds": [
+    0.009391653999045957
+   ],
+   "warm_median_seconds": 0.009391653999045957,
+   "warm_min_seconds": 0.009391653999045957
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.004069888993399218,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "stepping",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004069888993399218
+   ],
+   "warm_median_seconds": 0.004069888993399218,
+   "warm_min_seconds": 0.004069888993399218
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.00010990699956892058,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "squaring",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010990699956892058
+   ],
+   "warm_median_seconds": 0.00010990699956892058,
+   "warm_min_seconds": 0.00010990699956892058
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments",
+   "first_seconds": 0.008041071996558458,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "method": "modular",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "auto": "squaring",
+    "cost_modular": 163616964,
+    "cost_squaring": 2042378,
+    "cost_stepping": 112754400
+   },
+   "samples_seconds": [
+    0.008041071996558458
+   ],
+   "warm_median_seconds": 0.008041071996558458,
+   "warm_min_seconds": 0.008041071996558458
+  },
+  {
+   "backend": "reconstruction",
+   "case": "explicit row evolution (exact, native)",
+   "limit": 1073741824,
+   "message": "row evolution: needs more than 2^64-1 bytes, budget 1073741824",
+   "need": 18446744073709551615,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.8198996258433908e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve moments (the subset's state)",
+   "first_seconds": 0.00011317800090182573,
+   "params": {
+    "coordinates": 8,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000,
+    "subset_rows": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011317800090182573
+   ],
+   "warm_median_seconds": 0.00011317800090182573,
+   "warm_min_seconds": 0.00011317800090182573
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit row evolution (float64)",
+   "first_seconds": 0.14052844899561023,
+   "params": {
+    "coordinates": 8,
+    "exact": false,
+    "groups": 4,
+    "kind": "closed",
+    "moments": 13,
+    "rows": 4000,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "max_relative_deviation": 0.0
+   },
+   "samples_seconds": [
+    0.14052844899561023,
+    0.15418274600233417,
+    0.15597454100497998
+   ],
+   "warm_median_seconds": 0.15507864350365708,
+   "warm_min_seconds": 0.15418274600233417
+  },
+  {
+   "backend": "cpu",
+   "case": "closure check (not closed)",
+   "first_seconds": 6.758000381523743e-05,
+   "params": {
+    "moments": 15
+   },
+   "phase": "run",
+   "result": {
+    "missing": "{'x0': 3}",
+    "refused": true,
+    "term": "(1, 1, 0, 0)"
+   },
+   "samples_seconds": [
+    6.758000381523743e-05,
+    3.75889940187335e-05,
+    3.994999860879034e-05,
+    3.074899723287672e-05,
+    7.128400466172025e-05
+   ],
+   "warm_median_seconds": 3.876949631376192e-05,
+   "warm_min_seconds": 3.074899723287672e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated operator (box contract)",
+   "first_seconds": 0.00010148699948331341,
+   "params": {
+    "moments": 15
+   },
+   "phase": "build",
+   "result": {
+    "dropped": 11,
+    "invariant": true
+   },
+   "samples_seconds": [
+    0.00010148699948331341,
+    8.025999704841524e-05,
+    0.00011012500181095675
+   ],
+   "warm_median_seconds": 9.5192499429686e-05,
+   "warm_min_seconds": 8.025999704841524e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated evolution (certified bound)",
+   "first_seconds": 4.5296001189853996e-05,
+   "params": {
+    "moments": 15,
+    "rows": 4000,
+    "steps": 1
+   },
+   "phase": "run",
+   "result": {
+    "label": "certified approximate",
+    "max_relative_bound": 7718.682505399567
+   },
+   "samples_seconds": [
+    4.5296001189853996e-05,
+    2.7476002287585288e-05,
+    2.140300057362765e-05
+   ],
+   "warm_median_seconds": 2.443950143060647e-05,
+   "warm_min_seconds": 2.140300057362765e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "truncated evolution (certified bound)",
+   "first_seconds": 6.890000076964498e-05,
+   "params": {
+    "moments": 15,
+    "rows": 4000,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "label": "certified approximate",
+    "max_relative_bound": 1729218.749504065
+   },
+   "samples_seconds": [
+    6.890000076964498e-05,
+    5.6796998251229525e-05,
+    4.7638000978622586e-05
+   ],
+   "warm_median_seconds": 5.2217499614926055e-05,
+   "warm_min_seconds": 4.7638000978622586e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient growth of K^t",
+   "first_seconds": 4.920300125377253e-05,
+   "params": {
+    "moments": 15,
+    "steps": 10
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 90,
+    "den_bits": 67,
+    "max_bits": 69,
+    "need_bytes": 26609
+   },
+   "samples_seconds": [
+    4.920300125377253e-05
+   ],
+   "warm_median_seconds": 4.920300125377253e-05,
+   "warm_min_seconds": 4.920300125377253e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient growth of K^t",
+   "first_seconds": 0.0001382429982186295,
+   "params": {
+    "moments": 15,
+    "steps": 100
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 900,
+    "den_bits": 665,
+    "max_bits": 667,
+    "need_bytes": 120697
+   },
+   "samples_seconds": [
+    0.0001382429982186295
+   ],
+   "warm_median_seconds": 0.0001382429982186295,
+   "warm_min_seconds": 0.0001382429982186295
+  },
+  {
+   "backend": "cpu",
+   "case": "coefficient growth of K^t",
+   "first_seconds": 0.0010672999997041188,
+   "params": {
+    "moments": 15,
+    "steps": 1000
+   },
+   "phase": "run",
+   "result": {
+    "bound_bits": 9000,
+    "den_bits": 6644,
+    "max_bits": 6646,
+    "need_bytes": 1032721
+   },
+   "samples_seconds": [
+    0.0010672999997041188
+   ],
+   "warm_median_seconds": 0.0010672999997041188,
+   "warm_min_seconds": 0.0010672999997041188
+  },
+  {
+   "backend": "cpu",
+   "case": "floating power (rigorous bound)",
+   "first_seconds": 0.0003406590039958246,
+   "params": {
+    "exponent": 1000,
+    "operator": "contracting",
+    "tolerance": 1e-09
+   },
+   "phase": "run",
+   "result": {
+    "error": 7.993605777301127e-15,
+    "reached": 1000,
+    "stable": true
+   },
+   "samples_seconds": [
+    0.0003406590039958246,
+    0.0002648470035637729,
+    0.00023483899713028222
+   ],
+   "warm_median_seconds": 0.00024984300034702756,
+   "warm_min_seconds": 0.00023483899713028222
+  },
+  {
+   "backend": "numpy",
+   "case": "floating power",
+   "first_seconds": 0.00016557000344619155,
+   "params": {
+    "certified": false,
+    "exponent": 1000,
+    "operator": "contracting"
+   },
+   "phase": "run",
+   "result": {
+    "finite": true
+   },
+   "samples_seconds": [
+    0.00016557000344619155,
+    3.7242003600113094e-05,
+    2.891800249926746e-05
+   ],
+   "warm_median_seconds": 3.3080003049690276e-05,
+   "warm_min_seconds": 2.891800249926746e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "floating power (rigorous bound)",
+   "first_seconds": 0.0002867299990612082,
+   "params": {
+    "exponent": 1000,
+    "operator": "expanding",
+    "tolerance": 1e-09
+   },
+   "phase": "run",
+   "result": {
+    "error": Infinity,
+    "reached": 8,
+    "stable": false
+   },
+   "samples_seconds": [
+    0.0002867299990612082,
+    0.00019694200454978272,
+    0.00017887199646793306
+   ],
+   "warm_median_seconds": 0.0001879070005088579,
+   "warm_min_seconds": 0.00017887199646793306
+  },
+  {
+   "backend": "numpy",
+   "case": "floating power",
+   "first_seconds": 3.705400013132021e-05,
+   "params": {
+    "certified": false,
+    "exponent": 1000,
+    "operator": "expanding"
+   },
+   "phase": "run",
+   "result": {
+    "finite": false
+   },
+   "samples_seconds": [
+    3.705400013132021e-05,
+    2.577299892436713e-05,
+    2.2904001525603235e-05
+   ],
+   "warm_median_seconds": 2.4338500224985182e-05,
+   "warm_min_seconds": 2.2904001525603235e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "power within bytes=1 MiB",
+   "first_seconds": 0.0011480839966679923,
+   "params": {
+    "steps": 1016
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011480839966679923
+   ],
+   "warm_median_seconds": 0.0011480839966679923,
+   "warm_min_seconds": 0.0011480839966679923
+  },
+  {
+   "backend": "cpu",
+   "case": "power within bytes=1 MiB",
+   "limit": 1048576,
+   "message": "power: needs 1054433 bytes, budget 1048576",
+   "need": 1054433,
+   "params": {
+    "steps": 1017
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.712799712549895e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve within iterations=1000",
+   "limit": 1000,
+   "message": "evolution: needs 1001 iterations, budget 1000",
+   "need": 1001,
+   "params": {
+    "steps": 1001
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.4205997760873288e-05,
+   "refused": true,
+   "resource": "iterations"
+  },
+  {
+   "backend": "cpu",
+   "case": "evolve within output",
+   "limit": 59,
+   "message": "evolution: needs 60 output, budget 59",
+   "need": 60,
+   "params": {
+    "output": 60
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.640100137796253e-05,
+   "refused": true,
+   "resource": "output"
+  }
+ ],
+ "seconds": 5.582860476002679,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "power bytes budget 1 MiB (coefficient growth)",
+   "largest_admitted": {
+    "steps": 1016
+   },
+   "resource": "bytes",
+   "smallest_refused": {
+    "need": 1054433,
+    "steps": 1017
+   }
+  },
+  {
+   "grid": "evolution step count 1000",
+   "largest_admitted": {
+    "steps": 1000
+   },
+   "resource": "iterations",
+   "smallest_refused": {
+    "steps": 1001
+   }
+  },
+  {
+   "grid": "evolution output (groups x moments)",
+   "largest_admitted": {
+    "output": 60
+   },
+   "resource": "output",
+   "smallest_refused": {
+    "output": 59
+   }
+  }
+ ]
+}

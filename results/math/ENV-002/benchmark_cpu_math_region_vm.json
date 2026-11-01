@@ -1,0 +1,2888 @@
+{
+ "argv": [
+  "--capability",
+  "ENV-002",
+  "--out",
+  "/home/claude/release/torbles-val2/results/math/ENV-002/benchmark_cpu_math_region_vm.json"
+ ],
+ "capability": "ENV-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T05:20:10+00:00"
+ },
+ "notes": [
+  "lookups: the index, region and all-class lookups (and CUDA with --device), the NumPy exact int64 and the Fraction baselines give the same winner at every value; build and lookups are timed apart so build + m lookups can be set against m all-group evaluations",
+  "refused as unsupported: d = 5 (parameter regions: outside the capability's declared scope)",
+  "refused as unsupported: quadratic without a contract (parameter regions: outside the capability's declared scope)"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "boundaries": 10,
+   "boundary_kinds": "[('inner', 3), ('wall', 7)]",
+   "bytes": 18352,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.00489401699451264,
+   "incidences": 13,
+   "index_nodes": 1,
+   "lps": 6,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 28,
+   "regions": 3,
+   "samples_seconds": [
+    0.00489401699451264,
+    0.003760436004085932,
+    0.003619743998569902
+   ],
+   "vertices": 8,
+   "warm_median_seconds": 0.003690090001327917,
+   "warm_min_seconds": 0.003619743998569902
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0007371330066234805,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0007371330066234805,
+    0.00018561500473879278,
+    8.681599865667522e-05
+   ],
+   "warm_median_seconds": 0.000136215501697734,
+   "warm_min_seconds": 8.681599865667522e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 7.863299833843485e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    7.863299833843485e-05,
+    7.247000030474737e-05,
+    6.845100142527372e-05
+   ],
+   "warm_median_seconds": 7.046050086501054e-05,
+   "warm_min_seconds": 6.845100142527372e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 7.054999878164381e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    7.054999878164381e-05,
+    0.00010161599493585527,
+    7.18180017429404e-05
+   ],
+   "warm_median_seconds": 8.671699833939783e-05,
+   "warm_min_seconds": 7.18180017429404e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 7.097600609995425e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.097600609995425e-05,
+    4.732299566967413e-05
+   ],
+   "warm_median_seconds": 4.732299566967413e-05,
+   "warm_min_seconds": 4.732299566967413e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 7.336500129895285e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.336500129895285e-05,
+    2.097000106004998e-05,
+    8.6759973783046e-06
+   ],
+   "warm_median_seconds": 1.482299921917729e-05,
+   "warm_min_seconds": 8.6759973783046e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 8.329699630849063e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.329699630849063e-05
+   ],
+   "warm_median_seconds": 8.329699630849063e-05,
+   "warm_min_seconds": 8.329699630849063e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0001672509970376268,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0001672509970376268,
+    0.0001384089991915971,
+    0.00012106299982406199
+   ],
+   "warm_median_seconds": 0.00012973599950782955,
+   "warm_min_seconds": 0.00012106299982406199
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00011292799899820238,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00011292799899820238,
+    0.00010574100451776758,
+    0.00010401599865872413
+   ],
+   "warm_median_seconds": 0.00010487850158824585,
+   "warm_min_seconds": 0.00010401599865872413
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00012387199967633933,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00012387199967633933,
+    0.00010827299411175773,
+    0.0001062239971361123
+   ],
+   "warm_median_seconds": 0.00010724849562393501,
+   "warm_min_seconds": 0.0001062239971361123
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0004112680035177618,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004112680035177618,
+    0.0003662899980554357
+   ],
+   "warm_median_seconds": 0.0003662899980554357,
+   "warm_min_seconds": 0.0003662899980554357
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 3.608599945437163e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.608599945437163e-05,
+    1.711700315354392e-05,
+    1.3746997865382582e-05
+   ],
+   "warm_median_seconds": 1.543200050946325e-05,
+   "warm_min_seconds": 1.3746997865382582e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.0034742610005196184,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0034742610005196184
+   ],
+   "warm_median_seconds": 0.0034742610005196184,
+   "warm_min_seconds": 0.0034742610005196184
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.005401260998041835,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.005401260998041835,
+    0.004826076001336332,
+    0.003941066999686882
+   ],
+   "warm_median_seconds": 0.004383571500511607,
+   "warm_min_seconds": 0.003941066999686882
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.004569523000100162,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004569523000100162,
+    0.004346565001469571,
+    0.004071053997904528
+   ],
+   "warm_median_seconds": 0.0042088094996870495,
+   "warm_min_seconds": 0.004071053997904528
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.005070416998933069,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.005070416998933069,
+    0.00463220300298417,
+    0.004393721996166278
+   ],
+   "warm_median_seconds": 0.004512962499575224,
+   "warm_min_seconds": 0.004393721996166278
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.03373319600359537,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03373319600359537,
+    0.03426032000425039
+   ],
+   "warm_median_seconds": 0.03426032000425039,
+   "warm_min_seconds": 0.03426032000425039
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0007176389990490861,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007176389990490861,
+    0.0005862460020580329,
+    0.000603602995397523
+   ],
+   "warm_median_seconds": 0.000594924498727778,
+   "warm_min_seconds": 0.0005862460020580329
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 28,
+   "boundary_kinds": "[('inner', 14), ('wall', 14)]",
+   "bytes": 69568,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.016314439999405295,
+   "incidences": 42,
+   "index_nodes": 11,
+   "lps": 12,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 90,
+   "regions": 9,
+   "samples_seconds": [
+    0.016314439999405295,
+    0.015657564996217843,
+    0.015602092003973667
+   ],
+   "vertices": 20,
+   "warm_median_seconds": 0.015629828500095755,
+   "warm_min_seconds": 0.015602092003973667
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00028404399927239865,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00028404399927239865,
+    0.00010815399582497776,
+    9.432699880562723e-05
+   ],
+   "warm_median_seconds": 0.00010124049731530249,
+   "warm_min_seconds": 9.432699880562723e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00019436299771768972,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00019436299771768972,
+    9.605199738871306e-05,
+    9.02539977687411e-05
+   ],
+   "warm_median_seconds": 9.315299757872708e-05,
+   "warm_min_seconds": 9.02539977687411e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00012873100058641285,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00012873100058641285,
+    0.00011136599641758949,
+    0.00010005999502027407
+   ],
+   "warm_median_seconds": 0.00010571299571893178,
+   "warm_min_seconds": 0.00010005999502027407
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 8.001300011528656e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.001300011528656e-05,
+    6.029599899193272e-05
+   ],
+   "warm_median_seconds": 6.029599899193272e-05,
+   "warm_min_seconds": 6.029599899193272e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 9.053600660990924e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.053600660990924e-05,
+    2.608299837447703e-05,
+    1.9847000658046454e-05
+   ],
+   "warm_median_seconds": 2.296499951626174e-05,
+   "warm_min_seconds": 1.9847000658046454e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.0003267619977123104,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003267619977123104
+   ],
+   "warm_median_seconds": 0.0003267619977123104,
+   "warm_min_seconds": 0.0003267619977123104
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00020394700550241396,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00020394700550241396,
+    0.00014371900033438578,
+    0.0001301949960179627
+   ],
+   "warm_median_seconds": 0.00013695699817617424,
+   "warm_min_seconds": 0.0001301949960179627
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0003821880018222146,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0003821880018222146,
+    0.0001722290035104379,
+    0.0001524580002296716
+   ],
+   "warm_median_seconds": 0.00016234350187005475,
+   "warm_min_seconds": 0.0001524580002296716
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00026292799884686247,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00026292799884686247,
+    0.0002428130028420128,
+    0.00028101100178901106
+   ],
+   "warm_median_seconds": 0.0002619120023155119,
+   "warm_min_seconds": 0.0002428130028420128
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00046681099775014445,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00046681099775014445,
+    0.00039889299659989774
+   ],
+   "warm_median_seconds": 0.00039889299659989774,
+   "warm_min_seconds": 0.00039889299659989774
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 9.315100032836199e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.315100032836199e-05,
+    4.8733003495726734e-05,
+    4.367999645182863e-05
+   ],
+   "warm_median_seconds": 4.620649997377768e-05,
+   "warm_min_seconds": 4.367999645182863e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.02883045800263062,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02883045800263062
+   ],
+   "warm_median_seconds": 0.02883045800263062,
+   "warm_min_seconds": 0.02883045800263062
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0047074589965632185,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0047074589965632185,
+    0.005562176993407775,
+    0.004392740003822837
+   ],
+   "warm_median_seconds": 0.004977458498615306,
+   "warm_min_seconds": 0.004392740003822837
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.006966205000935588,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.006966205000935588,
+    0.007108414996764623,
+    0.0071684630020172335
+   ],
+   "warm_median_seconds": 0.007138438999390928,
+   "warm_min_seconds": 0.007108414996764623
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.015880636005022097,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.015880636005022097,
+    0.015910728005110286,
+    0.015980181000486482
+   ],
+   "warm_median_seconds": 0.015945454502798384,
+   "warm_min_seconds": 0.015910728005110286
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.045155504005379044,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.045155504005379044,
+    0.03565609599900199
+   ],
+   "warm_median_seconds": 0.03565609599900199,
+   "warm_min_seconds": 0.03565609599900199
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.003617243994085584,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003617243994085584,
+    0.0027844869982800446,
+    0.002802244998747483
+   ],
+   "warm_median_seconds": 0.0027933659985137638,
+   "warm_min_seconds": 0.0027844869982800446
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 39,
+   "boundary_kinds": "[('inner', 28), ('wall', 11)]",
+   "bytes": 644920,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 1024,
+   "first_seconds": 0.09896531700360356,
+   "incidences": 68,
+   "index_nodes": 63,
+   "lps": 23,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 221,
+   "regions": 14,
+   "samples_seconds": [
+    0.09896531700360356
+   ],
+   "vertices": 27,
+   "warm_median_seconds": 0.09896531700360356,
+   "warm_min_seconds": 0.09896531700360356
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0005930579936830327,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0005930579936830327,
+    0.00033806500141508877,
+    0.00029064099362585694
+   ],
+   "warm_median_seconds": 0.00031435299752047285,
+   "warm_min_seconds": 0.00029064099362585694
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00044075099867768586,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00044075099867768586,
+    0.0002795920008793473,
+    0.0002754619999905117
+   ],
+   "warm_median_seconds": 0.0002775270004349295,
+   "warm_min_seconds": 0.0002754619999905117
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0002913310017902404,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0002913310017902404,
+    0.0003117360029136762,
+    0.00029097500373609364
+   ],
+   "warm_median_seconds": 0.0003013555033248849,
+   "warm_min_seconds": 0.00029097500373609364
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00025825700140558183,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00025825700140558183,
+    0.0002509140031179413
+   ],
+   "warm_median_seconds": 0.0002509140031179413,
+   "warm_min_seconds": 0.0002509140031179413
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00027774099726229906,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00027774099726229906,
+    0.00024181100161513314,
+    0.00020224399486323819
+   ],
+   "warm_median_seconds": 0.00022202749823918566,
+   "warm_min_seconds": 0.00020224399486323819
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.004671581998991314,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004671581998991314
+   ],
+   "warm_median_seconds": 0.004671581998991314,
+   "warm_min_seconds": 0.004671581998991314
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00046867899800417945,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00046867899800417945,
+    0.0003362659990671091,
+    0.00031978700280888006
+   ],
+   "warm_median_seconds": 0.00032802650093799457,
+   "warm_min_seconds": 0.00031978700280888006
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00038418899930547923,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00038418899930547923,
+    0.00035967699659522623,
+    0.0003713810001499951
+   ],
+   "warm_median_seconds": 0.00036552899837261066,
+   "warm_min_seconds": 0.00035967699659522623
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0028389840008458123,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0028389840008458123,
+    0.0027924180030822754,
+    0.002719762000197079
+   ],
+   "warm_median_seconds": 0.002756090001639677,
+   "warm_min_seconds": 0.002719762000197079
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0006425270039471798,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006425270039471798,
+    0.000594055003602989
+   ],
+   "warm_median_seconds": 0.000594055003602989,
+   "warm_min_seconds": 0.000594055003602989
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0007828719972167164,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007828719972167164,
+    0.0006542199989780784,
+    0.0005951950006419793
+   ],
+   "warm_median_seconds": 0.0006247074998100288,
+   "warm_min_seconds": 0.0005951950006419793
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.47139991800213465,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.47139991800213465
+   ],
+   "warm_median_seconds": 0.47139991800213465,
+   "warm_min_seconds": 0.47139991800213465
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.004736836002848577,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004736836002848577,
+    0.004484782999497838,
+    0.004314247002184857
+   ],
+   "warm_median_seconds": 0.0043995150008413475,
+   "warm_min_seconds": 0.004314247002184857
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.009403629999724217,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.009403629999724217,
+    0.008121621001919266,
+    0.008168956002919003
+   ],
+   "warm_median_seconds": 0.008145288502419135,
+   "warm_min_seconds": 0.008121621001919266
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.22936857600143412,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.22936857600143412,
+    0.23060303700185614,
+    0.24407238999992842
+   ],
+   "warm_median_seconds": 0.23733771350089228,
+   "warm_min_seconds": 0.23060303700185614
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.03627702799713006,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03627702799713006,
+    0.03874482199898921
+   ],
+   "warm_median_seconds": 0.03874482199898921,
+   "warm_min_seconds": 0.03874482199898921
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.2266831369997817,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.2266831369997817,
+    0.06377584700385341,
+    0.05743869200523477
+   ],
+   "warm_median_seconds": 0.06060726950454409,
+   "warm_min_seconds": 0.05743869200523477
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 14), ('wall', 11)]",
+   "bytes": 33464,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.010110379000252578,
+   "incidences": 39,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 65,
+   "regions": 8,
+   "samples_seconds": [
+    0.010110379000252578,
+    0.009442148002563044,
+    0.009426747004908975
+   ],
+   "vertices": 18,
+   "warm_median_seconds": 0.00943444750373601,
+   "warm_min_seconds": 0.009426747004908975
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00031034099811222404,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00031034099811222404,
+    9.497799328528345e-05,
+    7.66059965826571e-05
+   ],
+   "warm_median_seconds": 8.579199493397027e-05,
+   "warm_min_seconds": 7.66059965826571e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00019287200120743364,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00019287200120743364,
+    7.749400538159534e-05,
+    7.129200093913823e-05
+   ],
+   "warm_median_seconds": 7.439300316036679e-05,
+   "warm_min_seconds": 7.129200093913823e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 8.064300345722586e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    8.064300345722586e-05,
+    7.448199903592467e-05,
+    7.174799975473434e-05
+   ],
+   "warm_median_seconds": 7.31149993953295e-05,
+   "warm_min_seconds": 7.174799975473434e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 8.77940037753433e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.77940037753433e-05,
+    4.719600110547617e-05
+   ],
+   "warm_median_seconds": 4.719600110547617e-05,
+   "warm_min_seconds": 4.719600110547617e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 4.7927998821251094e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7927998821251094e-05,
+    1.0985000699292868e-05,
+    7.4929994298145175e-06
+   ],
+   "warm_median_seconds": 9.239000064553693e-06,
+   "warm_min_seconds": 7.4929994298145175e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 9.068699728231877e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.068699728231877e-05
+   ],
+   "warm_median_seconds": 9.068699728231877e-05,
+   "warm_min_seconds": 9.068699728231877e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00016217600204981863,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00016217600204981863,
+    0.00011804499808931723,
+    0.00010534900502534583
+   ],
+   "warm_median_seconds": 0.00011169700155733153,
+   "warm_min_seconds": 0.00010534900502534583
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00013284599845064804,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00013284599845064804,
+    0.00012015600077575073,
+    0.00014277099398896098
+   ],
+   "warm_median_seconds": 0.00013146349738235585,
+   "warm_min_seconds": 0.00012015600077575073
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00011237400030950084,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00011237400030950084,
+    0.00011404899851186201,
+    0.00016075400344561785
+   ],
+   "warm_median_seconds": 0.00013740150097873993,
+   "warm_min_seconds": 0.00011404899851186201
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0003635360044427216,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003635360044427216,
+    0.00037740199331892654
+   ],
+   "warm_median_seconds": 0.00037740199331892654,
+   "warm_min_seconds": 0.00037740199331892654
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 4.107200220460072e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.107200220460072e-05,
+    1.638400135561824e-05,
+    1.284800237044692e-05
+   ],
+   "warm_median_seconds": 1.461600186303258e-05,
+   "warm_min_seconds": 1.284800237044692e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.00333860899991123,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00333860899991123
+   ],
+   "warm_median_seconds": 0.00333860899991123,
+   "warm_min_seconds": 0.00333860899991123
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.005396535998443142,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.005396535998443142,
+    0.0048883429990382865,
+    0.004837141001189593
+   ],
+   "warm_median_seconds": 0.00486274200011394,
+   "warm_min_seconds": 0.004837141001189593
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00642673899710644,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00642673899710644,
+    0.006429756002034992,
+    0.006518907001009211
+   ],
+   "warm_median_seconds": 0.0064743315015221015,
+   "warm_min_seconds": 0.006429756002034992
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.004849678996833973,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004849678996833973,
+    0.004766006000863854,
+    0.004796795001311693
+   ],
+   "warm_median_seconds": 0.004781400501087774,
+   "warm_min_seconds": 0.004766006000863854
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.044477226001617964,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.044477226001617964,
+    0.03571887200087076
+   ],
+   "warm_median_seconds": 0.03571887200087076,
+   "warm_min_seconds": 0.03571887200087076
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0007412019986077212,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007412019986077212,
+    0.000588068003708031,
+    0.0005770679999841377
+   ],
+   "warm_median_seconds": 0.0005825680018460844,
+   "warm_min_seconds": 0.0005770679999841377
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 157), ('wall', 36)]",
+   "bytes": 267704,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.14140765900083352,
+   "incidences": 350,
+   "index_nodes": 125,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 843,
+   "regions": 64,
+   "samples_seconds": [
+    0.14140765900083352,
+    0.15348792699660407,
+    0.15068473399878712
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.1520863304976956,
+   "warm_min_seconds": 0.15068473399878712
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0004532450038823299,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0004532450038823299,
+    0.00021106500207679346,
+    0.00015695500042056665
+   ],
+   "warm_median_seconds": 0.00018401000124868006,
+   "warm_min_seconds": 0.00015695500042056665
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0003034409965039231,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0003034409965039231,
+    0.00015932899987092242,
+    0.0001476359975640662
+   ],
+   "warm_median_seconds": 0.0001534824987174943,
+   "warm_min_seconds": 0.0001476359975640662
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.000161259995365981,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.000161259995365981,
+    0.0001505210020695813,
+    0.00014349599950946867
+   ],
+   "warm_median_seconds": 0.000147008500789525,
+   "warm_min_seconds": 0.00014349599950946867
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00016343099559890106,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016343099559890106,
+    0.00011650200030999258
+   ],
+   "warm_median_seconds": 0.00011650200030999258,
+   "warm_min_seconds": 0.00011650200030999258
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 6.974199641263112e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.974199641263112e-05,
+    2.1943000319879502e-05,
+    1.8475002434570342e-05
+   ],
+   "warm_median_seconds": 2.0209001377224922e-05,
+   "warm_min_seconds": 1.8475002434570342e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.00030705499375471845,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00030705499375471845
+   ],
+   "warm_median_seconds": 0.00030705499375471845,
+   "warm_min_seconds": 0.00030705499375471845
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0002941820057458244,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0002941820057458244,
+    0.00020160900021437556,
+    0.00019970200082752854
+   ],
+   "warm_median_seconds": 0.00020065550052095205,
+   "warm_min_seconds": 0.00019970200082752854
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0005070530023658648,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0005070530023658648,
+    0.0004943820022162981,
+    0.0004592749974108301
+   ],
+   "warm_median_seconds": 0.0004768284998135641,
+   "warm_min_seconds": 0.0004592749974108301
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0003385700038052164,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0003385700038052164,
+    0.00045337600022321567,
+    0.0003483600012259558
+   ],
+   "warm_median_seconds": 0.0004008680007245857,
+   "warm_min_seconds": 0.0003483600012259558
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0004822710034204647,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004822710034204647,
+    0.0005502499989233911
+   ],
+   "warm_median_seconds": 0.0005502499989233911,
+   "warm_min_seconds": 0.0005502499989233911
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 8.52310040500015e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.52310040500015e-05,
+    4.636300582205877e-05,
+    4.212800558889285e-05
+   ],
+   "warm_median_seconds": 4.424550570547581e-05,
+   "warm_min_seconds": 4.212800558889285e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.030259891995228827,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.030259891995228827
+   ],
+   "warm_median_seconds": 0.030259891995228827,
+   "warm_min_seconds": 0.030259891995228827
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.006382068000675645,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.006382068000675645,
+    0.005841672005772125,
+    0.007120795002265368
+   ],
+   "warm_median_seconds": 0.006481233504018746,
+   "warm_min_seconds": 0.005841672005772125
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0283265649995883,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0283265649995883,
+    0.02838014699955238,
+    0.028151619000709616
+   ],
+   "warm_median_seconds": 0.028265883000130998,
+   "warm_min_seconds": 0.028151619000709616
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.018548502994235605,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.018548502994235605,
+    0.01831671300169546,
+    0.018117712999810465
+   ],
+   "warm_median_seconds": 0.018217213000752963,
+   "warm_min_seconds": 0.018117712999810465
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.04022448300383985,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04022448300383985,
+    0.0381406029991922
+   ],
+   "warm_median_seconds": 0.0381406029991922,
+   "warm_min_seconds": 0.0381406029991922
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0036162570031592622,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0036162570031592622,
+    0.0030847590023768134,
+    0.0032639869968988933
+   ],
+   "warm_median_seconds": 0.0031743729996378534,
+   "warm_min_seconds": 0.0030847590023768134
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 3073,
+   "boundary_kinds": "[('inner', 2951), ('wall', 122)]",
+   "bytes": 4397128,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 1024,
+   "first_seconds": 3.187731670004723,
+   "incidences": 6024,
+   "index_nodes": 2127,
+   "lps": 1025,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 15600,
+   "regions": 1024,
+   "samples_seconds": [
+    3.187731670004723
+   ],
+   "vertices": 2050,
+   "warm_median_seconds": 3.187731670004723,
+   "warm_min_seconds": 3.187731670004723
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0033726889960234985,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0033726889960234985,
+    0.0019550120050553232,
+    0.0018119010055670515
+   ],
+   "warm_median_seconds": 0.0018834565053111874,
+   "warm_min_seconds": 0.0018119010055670515
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0018264440004713833,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0018264440004713833,
+    0.0018121129978680983,
+    0.0017662690006545745
+   ],
+   "warm_median_seconds": 0.0017891909992613364,
+   "warm_min_seconds": 0.0017662690006545745
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0017582719956408255,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0017582719956408255,
+    0.0017089940010919236,
+    0.001716298000246752
+   ],
+   "warm_median_seconds": 0.0017126460006693378,
+   "warm_min_seconds": 0.0017089940010919236
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.001653583996812813,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001653583996812813,
+    0.0017065070060198195
+   ],
+   "warm_median_seconds": 0.0017065070060198195,
+   "warm_min_seconds": 0.0017065070060198195
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00027334399783285335,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00027334399783285335,
+    0.00019084000086877495,
+    0.00020695200510090217
+   ],
+   "warm_median_seconds": 0.00019889600298483856,
+   "warm_min_seconds": 0.00019084000086877495
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.003968996999901719,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003968996999901719
+   ],
+   "warm_median_seconds": 0.003968996999901719,
+   "warm_min_seconds": 0.003968996999901719
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0018587519953143783,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0018587519953143783,
+    0.001769342998159118,
+    0.0017374460003338754
+   ],
+   "warm_median_seconds": 0.0017533944992464967,
+   "warm_min_seconds": 0.0017374460003338754
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0062143129980540834,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0062143129980540834,
+    0.0061805359946447425,
+    0.006177877003210597
+   ],
+   "warm_median_seconds": 0.00617920649892767,
+   "warm_min_seconds": 0.006177877003210597
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.004457396003999747,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004457396003999747,
+    0.004442365003342275,
+    0.0045243519998621196
+   ],
+   "warm_median_seconds": 0.004483358501602197,
+   "warm_min_seconds": 0.004442365003342275
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0023887829956947826,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023887829956947826,
+    0.0022575670009246096
+   ],
+   "warm_median_seconds": 0.0022575670009246096,
+   "warm_min_seconds": 0.0022575670009246096
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0009133720013778657,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009133720013778657,
+    0.0006510770035674796,
+    0.0006032259989297017
+   ],
+   "warm_median_seconds": 0.0006271515012485906,
+   "warm_min_seconds": 0.0006032259989297017
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.44851696400291985,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.44851696400291985
+   ],
+   "warm_median_seconds": 0.44851696400291985,
+   "warm_min_seconds": 0.44851696400291985
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.010854810003365856,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.010854810003365856,
+    0.009164051996776834,
+    0.008866870004567318
+   ],
+   "warm_median_seconds": 0.009015461000672076,
+   "warm_min_seconds": 0.008866870004567318
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.4694623879986466,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.4694623879986466,
+    0.4869900640042033,
+    0.47324811299768044
+   ],
+   "warm_median_seconds": 0.48011908850094187,
+   "warm_min_seconds": 0.47324811299768044
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.2905434440035606,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.2905434440035606,
+    0.26323559799493523,
+    0.303078099997947
+   ],
+   "warm_median_seconds": 0.2831568489964411,
+   "warm_min_seconds": 0.26323559799493523
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.06330020500172395,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06330020500172395,
+    0.04832931499549886
+   ],
+   "warm_median_seconds": 0.04832931499549886,
+   "warm_min_seconds": 0.04832931499549886
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.08031447500252398,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08031447500252398,
+    0.06055588400340639,
+    0.05829782999353483
+   ],
+   "warm_median_seconds": 0.05942685699847061,
+   "warm_min_seconds": 0.05829782999353483
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 31,
+   "boundary_kinds": "[('inner', 19), ('wall', 12)]",
+   "bytes": 74328,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.022708498996507842,
+   "incidences": 50,
+   "index_nodes": 13,
+   "lps": 14,
+   "params": {
+    "coincident": 0,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 122,
+   "regions": 10,
+   "samples_seconds": [
+    0.022708498996507842,
+    0.02302955399500206
+   ],
+   "tied_regions": 0,
+   "vertices": 22,
+   "warm_median_seconds": 0.02302955399500206,
+   "warm_min_seconds": 0.02302955399500206
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 14), ('wall', 11)]",
+   "bytes": 66936,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 56,
+   "first_seconds": 0.019350899994606152,
+   "incidences": 39,
+   "index_nodes": 9,
+   "lps": 13,
+   "params": {
+    "coincident": 8,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 111,
+   "regions": 8,
+   "samples_seconds": [
+    0.019350899994606152,
+    0.01874779399804538
+   ],
+   "tied_regions": 1,
+   "vertices": 18,
+   "warm_median_seconds": 0.01874779399804538,
+   "warm_min_seconds": 0.01874779399804538
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 13), ('wall', 12)]",
+   "bytes": 65912,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 32,
+   "first_seconds": 0.01645608800026821,
+   "incidences": 38,
+   "index_nodes": 9,
+   "lps": 11,
+   "params": {
+    "coincident": 32,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 97,
+   "regions": 8,
+   "samples_seconds": [
+    0.01645608800026821,
+    0.015456151995749678
+   ],
+   "tied_regions": 5,
+   "vertices": 18,
+   "warm_median_seconds": 0.015456151995749678,
+   "warm_min_seconds": 0.015456151995749678
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 13), ('wall', 12)]",
+   "bytes": 33128,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.011647102997812908,
+   "incidences": 38,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 2,
+    "groups": 8
+   },
+   "phase": "build",
+   "pivots": 83,
+   "regions": 8,
+   "samples_seconds": [
+    0.011647102997812908
+   ],
+   "vertices": 18,
+   "warm_median_seconds": 0.011647102997812908,
+   "warm_min_seconds": 0.011647102997812908
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 9,
+   "boundary_kinds": "[('inner', 7), ('wall', 2)]",
+   "bytes": 17128,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.004749127998366021,
+   "incidences": 16,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 1,
+    "groups": 8
+   },
+   "phase": "build",
+   "pivots": 53,
+   "regions": 8,
+   "samples_seconds": [
+    0.004749127998366021,
+    0.005327366998244543
+   ],
+   "vertices": 9,
+   "warm_median_seconds": 0.005327366998244543,
+   "warm_min_seconds": 0.005327366998244543
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 7,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.0010956469996017404,
+   "params": {
+    "d": 1,
+    "groups": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010956469996017404,
+    0.0007548680005129427
+   ],
+   "warm_median_seconds": 0.0007548680005129427,
+   "warm_min_seconds": 0.0007548680005129427
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 159), ('wall', 34)]",
+   "bytes": 264312,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.19627238999964902,
+   "incidences": 352,
+   "index_nodes": 101,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 876,
+   "regions": 64,
+   "samples_seconds": [
+    0.19627238999964902
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.19627238999964902,
+   "warm_min_seconds": 0.19627238999964902
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 65,
+   "boundary_kinds": "[('inner', 63), ('wall', 2)]",
+   "bytes": 104712,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.07030663500336232,
+   "incidences": 128,
+   "index_nodes": 33,
+   "lps": 65,
+   "params": {
+    "d": 1,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 397,
+   "regions": 64,
+   "samples_seconds": [
+    0.07030663500336232,
+    0.06161328699818114
+   ],
+   "vertices": 65,
+   "warm_median_seconds": 0.06161328699818114,
+   "warm_min_seconds": 0.06161328699818114
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 63,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.007775932004733477,
+   "params": {
+    "d": 1,
+    "groups": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007775932004733477,
+    0.007112318002327811
+   ],
+   "warm_median_seconds": 0.007112318002327811,
+   "warm_min_seconds": 0.007112318002327811
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 769,
+   "boundary_kinds": "[('inner', 713), ('wall', 56)]",
+   "bytes": 1087112,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 256,
+   "first_seconds": 0.8339881830033846,
+   "incidences": 1482,
+   "index_nodes": 505,
+   "lps": 257,
+   "params": {
+    "d": 2,
+    "groups": 256
+   },
+   "phase": "build",
+   "pivots": 3716,
+   "regions": 256,
+   "samples_seconds": [
+    0.8339881830033846
+   ],
+   "vertices": 514,
+   "warm_median_seconds": 0.8339881830033846,
+   "warm_min_seconds": 0.8339881830033846
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 257,
+   "boundary_kinds": "[('inner', 255), ('wall', 2)]",
+   "bytes": 405128,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 256,
+   "first_seconds": 0.1511050570043153,
+   "incidences": 512,
+   "index_nodes": 143,
+   "lps": 257,
+   "params": {
+    "d": 1,
+    "groups": 256
+   },
+   "phase": "build",
+   "pivots": 1521,
+   "regions": 256,
+   "samples_seconds": [
+    0.1511050570043153,
+    0.1504939650039887
+   ],
+   "vertices": 257,
+   "warm_median_seconds": 0.1504939650039887,
+   "warm_min_seconds": 0.1504939650039887
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 255,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.053718896000646055,
+   "params": {
+    "d": 1,
+    "groups": 256
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.053718896000646055,
+    0.04680360299971653
+   ],
+   "warm_median_seconds": 0.04680360299971653,
+   "warm_min_seconds": 0.04680360299971653
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 4,
+   "boundary_kinds": "[('inner', 2), ('wall', 2)]",
+   "bytes": 38496,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.004151729001023341,
+   "incidences": 6,
+   "index_nodes": 3,
+   "lps": 4,
+   "params": {
+    "d": 1,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 12,
+   "regions": 3,
+   "samples_seconds": [
+    0.004151729001023341
+   ],
+   "vertices": 4,
+   "warm_median_seconds": 0.004151729001023341,
+   "warm_min_seconds": 0.004151729001023341
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 65,
+   "boundary_kinds": "[('inner', 63), ('wall', 2)]",
+   "bytes": 103880,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.03133895000064513,
+   "incidences": 128,
+   "index_nodes": 33,
+   "lps": 65,
+   "params": {
+    "d": 1,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 336,
+   "regions": 64,
+   "samples_seconds": [
+    0.03133895000064513
+   ],
+   "vertices": 65,
+   "warm_median_seconds": 0.03133895000064513,
+   "warm_min_seconds": 0.03133895000064513
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 22,
+   "boundary_kinds": "[('inner', 12), ('wall', 10)]",
+   "bytes": 63776,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.013757501998043153,
+   "incidences": 34,
+   "index_nodes": 7,
+   "lps": 11,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 82,
+   "regions": 7,
+   "samples_seconds": [
+    0.013757501998043153
+   ],
+   "vertices": 16,
+   "warm_median_seconds": 0.013757501998043153,
+   "warm_min_seconds": 0.013757501998043153
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 158), ('wall', 35)]",
+   "bytes": 264984,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.14991307900345419,
+   "incidences": 351,
+   "index_nodes": 103,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 842,
+   "regions": 64,
+   "samples_seconds": [
+    0.14991307900345419
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.14991307900345419,
+   "warm_min_seconds": 0.14991307900345419
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 79,
+   "boundary_kinds": "[('inner', 46), ('wall', 33)]",
+   "bytes": 190008,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.08932872999866959,
+   "incidences": 194,
+   "index_nodes": 121,
+   "lps": 21,
+   "params": {
+    "d": 3,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 368,
+   "regions": 14,
+   "samples_seconds": [
+    0.08932872999866959
+   ],
+   "vertices": 68,
+   "warm_median_seconds": 0.08932872999866959,
+   "warm_min_seconds": 0.08932872999866959
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 421,
+   "boundary_kinds": "[('inner', 326), ('wall', 95)]",
+   "bytes": 845304,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.543507784997928,
+   "incidences": 1238,
+   "index_nodes": 451,
+   "lps": 65,
+   "params": {
+    "d": 3,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 1584,
+   "regions": 64,
+   "samples_seconds": [
+    0.543507784997928
+   ],
+   "vertices": 360,
+   "warm_median_seconds": 0.543507784997928,
+   "warm_min_seconds": 0.543507784997928
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 255,
+   "boundary_kinds": "[('inner', 161), ('wall', 94)]",
+   "bytes": 1161368,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.389628349999839,
+   "incidences": 1293,
+   "index_nodes": 1367,
+   "lps": 34,
+   "params": {
+    "d": 4,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 857,
+   "regions": 28,
+   "samples_seconds": [
+    0.389628349999839
+   ],
+   "vertices": 348,
+   "warm_median_seconds": 0.389628349999839,
+   "warm_min_seconds": 0.389628349999839
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 757,
+   "boundary_kinds": "[('inner', 565), ('wall', 192)]",
+   "bytes": 3797144,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 1.8660796699987259,
+   "incidences": 4717,
+   "index_nodes": 4523,
+   "lps": 65,
+   "params": {
+    "d": 4,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 2759,
+   "regions": 64,
+   "samples_seconds": [
+    1.8660796699987259
+   ],
+   "vertices": 1136,
+   "warm_median_seconds": 1.8660796699987259,
+   "warm_min_seconds": 1.8660796699987259
+  },
+  {
+   "backend": "cpu",
+   "case": "build at the output limit",
+   "first_seconds": 0.16144929300207878,
+   "params": {
+    "groups": 64,
+    "output": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.16144929300207878
+   ],
+   "warm_median_seconds": 0.16144929300207878,
+   "warm_min_seconds": 0.16144929300207878
+  },
+  {
+   "backend": "cpu",
+   "case": "build one past the output limit",
+   "limit": 63,
+   "message": "parameter regions: needs 64 output, budget 63",
+   "need": 64,
+   "params": {
+    "groups": 64,
+    "output": 63
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.13782374400034314,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "build at the support limit",
+   "first_seconds": 0.1549356120012817,
+   "params": {
+    "groups": 64,
+    "support": 359
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.1549356120012817
+   ],
+   "warm_median_seconds": 0.1549356120012817,
+   "warm_min_seconds": 0.1549356120012817
+  },
+  {
+   "backend": "cpu",
+   "case": "build one past the support limit",
+   "limit": 358,
+   "message": "parameter regions: needs 359 support, budget 358",
+   "need": 359,
+   "params": {
+    "groups": 64,
+    "support": 358
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.14421000800211914,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 92,
+   "boundary_kinds": "[('cell', 64), ('inner', 12), ('wall', 16)]",
+   "bytes": 115432,
+   "case": "quadratics under the piecewise-linear contract (approximate)",
+   "claim": "approximate",
+   "classes": 48,
+   "error": "1/16",
+   "first_seconds": 0.015639275996363722,
+   "incidences": 106,
+   "index_nodes": 16,
+   "lps": 31,
+   "params": {
+    "d": 2,
+    "error_budget": "1/10",
+    "groups": 3,
+    "pieces": 4
+   },
+   "phase": "build",
+   "pivots": 141,
+   "regions": 28,
+   "samples_seconds": [
+    0.015639275996363722
+   ],
+   "vertices": 82,
+   "warm_median_seconds": 0.015639275996363722,
+   "warm_min_seconds": 0.015639275996363722
+  }
+ ],
+ "seconds": 15.181598764000228,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "regions build, output (nonempty regions)",
+   "largest_admitted": {
+    "output": 64
+   },
+   "need_reported": 64,
+   "smallest_refused": {
+    "output": 63
+   }
+  },
+  {
+   "grid": "regions build, support (incidences)",
+   "largest_admitted": {
+    "support": 359
+   },
+   "need_reported": 359,
+   "smallest_refused": {
+    "support": 358
+   }
+  }
+ ]
+}

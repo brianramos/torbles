@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 0 |
-| planned | 9 |
-| in_progress | 54 |
+| planned | 0 |
+| in_progress | 63 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -536,7 +536,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 
 ### FND-006: Fused multi-output basis reduction
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Accumulate multiple basis states in one traversal while sharing predicates, decoded planes, group masks and overlapping products; preserve a competing repeated-reduction plan.
 
@@ -581,6 +581,14 @@ Additional limits:
 - The repeated CUDA plan evaluates predicates and builds the derived scopes on the host and is orchestrated from Python through native calls; sparse fused outputs are compacted on the host.
 - Plan costs are hand-set relative estimates (cost basis estimate), not calibrated times; the CPU paths are single-threaded.
 - Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/FND-006/tests_test_math_fused_reduce.json](results/math/FND-006/tests_test_math_fused_reduce.json)
+- tests: [results/math/FND-006/sanitized_test_math_fused_reduce.json](results/math/FND-006/sanitized_test_math_fused_reduce.json)
+- benchmarks: [results/math/FND-006/benchmark_cpu_math_reduce_vm.json](results/math/FND-006/benchmark_cpu_math_reduce_vm.json)
 
 <a id="fnd-007"></a>
 
@@ -2818,7 +2826,7 @@ Finite closed observables and repeated operator application.
 
 ### DYN-001: Finite closed-observable dynamics
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Represent declared dynamics as a matrix action on a basis proven closed under composition.
 
@@ -2860,11 +2868,19 @@ Additional limits:
 - The truncation bound is a worst case over the declared box (often far above the actual error), needs an unweighted state and certifies one step unless the box is proven F-invariant; parametric maps cannot be truncated.
 - The native row evolution of a nonlinear map shares one denominator Q_(t+1) = L Q_t^d, so its proven bound grows doubly exponentially and long nonlinear row evolutions are refused; the closure expansion, the truncation bounds and every big-integer product run on the CPU, single-threaded.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/DYN-001/tests_test_math_dyn.json](results/math/DYN-001/tests_test_math_dyn.json)
+- tests: [results/math/DYN-001/sanitized_test_math_dyn.json](results/math/DYN-001/sanitized_test_math_dyn.json)
+- benchmarks: [results/math/DYN-001/benchmark_cpu_math_dyn_vm.json](results/math/DYN-001/benchmark_cpu_math_dyn_vm.json)
+
 <a id="dyn-002"></a>
 
 ### DYN-002: Repeated operator powers and semigroups
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Evaluate many steps, selected recurrences or parameterized evolution from retained finite operators.
 
@@ -2905,6 +2921,14 @@ Additional limits:
 - Big-integer products are schoolbook (no Karatsuba or FFT) and the a priori bound ||N||_inf^n can be far above the actual sizes (cancellations are not foreseen), so some exact powers are refused by the bytes budget that would fit; the CRT, the characteristic polynomial, Berlekamp-Massey and the polynomial reduction run on the CPU, single-threaded; Garner's O(k^2) reconstruction makes CPU modular powers slower than squaring except for dense operators at large exponents with few groups, and AUTO's unit costs are estimates fitted on one machine.
 - Floating powers are binary64 interval enclosures only (no multiprecision): the wrapping effect makes the bounds of non-normal or expanding operators grow, which the contract reports as unstable rather than returning them.
 - Parametric evolutions step (no squaring of polynomial matrices) and have no CUDA path; mixtures need convex rational weights over one basis; truncated operators have no powers, recurrences or device path.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/DYN-002/tests_test_math_dyn.json](results/math/DYN-002/tests_test_math_dyn.json)
+- tests: [results/math/DYN-002/sanitized_test_math_dyn.json](results/math/DYN-002/sanitized_test_math_dyn.json)
+- benchmarks: [results/math/DYN-002/benchmark_cpu_math_dyn_vm.json](results/math/DYN-002/benchmark_cpu_math_dyn_vm.json)
 
 ## BOOL: Boolean calculus
 
@@ -3966,7 +3990,7 @@ Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
 
 ### ENV-002: Bounded multivariate parameter regions
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Represent supported linear/convex regions where groups or plans dominate; bound region count and dimension.
 
@@ -4009,6 +4033,14 @@ Additional limits:
 - The build is single-threaded CPU code whose work grows with the regions, their vertices and their index neighbours (measured: 1,024 tangent planes in d = 2 about 11 s, 64 in d = 4 about 6 s on the 2-core development machine); the CUDA path is point location only.
 - At most 64 rows besides the box, a certifying LP of at most 255 rows, lookup values within 64 moduli (about 3,900 bits).
 - No FND-007 certificate kind describes a region: the LP evidence and the vertex enumeration are cross-checked natively, and FND-007 is used to refuse the exact use of an approximate result.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/ENV-002/tests_test_math_region.json](results/math/ENV-002/tests_test_math_region.json)
+- tests: [results/math/ENV-002/sanitized_test_math_region.json](results/math/ENV-002/sanitized_test_math_region.json)
+- benchmarks: [results/math/ENV-002/benchmark_cpu_math_region_vm.json](results/math/ENV-002/benchmark_cpu_math_region_vm.json)
 
 ## GRAPH: Graph and fixed-point queries
 
@@ -4303,7 +4335,7 @@ Measured runtime: `81a5294ad96d447c8ffe8361cdd27c24b64f4863`.
 
 ### ATTR-002: Bounded explanation and repair search
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Search for redundant predicates, minimal distinguishing sets and least-cost feasible repairs with certificates where tractable.
 
@@ -4346,6 +4378,14 @@ Additional limits:
 - The search is exponential in the worst case: admissible bounds exist for hitting sets and linear deletion targets only; circuits, games and != targets branch with the generic bound (the cheapest undecided element), so large ones end incomplete under a state budget, with proven bounds.
 - Continuous repairs (value edits, threshold changes) are CPU only, through INV-002, and change one declared threshold at a time; the CUDA path is the batched candidate evaluation and scan.
 - No FND-007 certificate kind is emitted for minimality: optimality is proven by the exhaustive order or by the bounds and redundancy by exact counts; every result is algebraic, never causal.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/ATTR-002/tests_test_math_repair.json](results/math/ATTR-002/tests_test_math_repair.json)
+- tests: [results/math/ATTR-002/sanitized_test_math_repair.json](results/math/ATTR-002/sanitized_test_math_repair.json)
+- benchmarks: [results/math/ATTR-002/benchmark_cpu_math_repair_vm.json](results/math/ATTR-002/benchmark_cpu_math_repair_vm.json)
 
 ## PROB: Probability and inference
 
@@ -4414,7 +4454,7 @@ Measured runtime: `40e4d463b0e30e7a2e78fde12ae5c7831010b78f`.
 
 ### PROB-002: Factorized probabilistic inference
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Use bounded factor graphs/circuits and costed elimination to compute marginals or selected best assignments.
 
@@ -4460,6 +4500,14 @@ Additional limits:
 - Data factors take one group's state; the independence declaration is the caller's statement, never verified against the data; products of PROB-001 statistics are refused as factors.
 - Alternative backends are bounded by their own capabilities: the decision diagram needs binary variables and at most 64 program variables (variables plus parameters), TENSOR-002 at most 8 tables over 16 variables with scopes of 8 and every contraction step's bound below 2^127, COUNT-002 elimination int64 rational entries.
 - Cost rates are hand-set relative estimates (not calibrated); the CUDA timings need --device on an actual GPU.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/PROB-002/tests_test_math_factor.json](results/math/PROB-002/tests_test_math_factor.json)
+- tests: [results/math/PROB-002/sanitized_test_math_factor.json](results/math/PROB-002/sanitized_test_math_factor.json)
+- benchmarks: [results/math/PROB-002/benchmark_cpu_math_factor_vm.json](results/math/PROB-002/benchmark_cpu_math_factor_vm.json)
 
 ## DELTA: Update calculus
 
@@ -4768,7 +4816,7 @@ Measured runtime: `3833d4d1d856591a0f2080e9ecb42e5545209163`.
 
 ### META-002: Query families as a multi-output program
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Compile related predicates/scenarios/measures jointly, sharing decode, masks and states while retaining per-output domains and explanations.
 
@@ -4814,6 +4862,14 @@ Additional limits:
 - Snapshot lifetimes are kept in the Python program object (reuse decided by the native scope freshness checks); the CPU paths are single-threaded.
 - Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/META-002/tests_test_math_program.json](results/math/META-002/tests_test_math_program.json)
+- tests: [results/math/META-002/sanitized_test_math_program.json](results/math/META-002/sanitized_test_math_program.json)
+- benchmarks: [results/math/META-002/benchmark_cpu_math_program_vm.json](results/math/META-002/benchmark_cpu_math_program_vm.json)
+
 ## TOPO: Finite geometry and topology
 
 Declared occupancy complexes, boundaries, cycles and homology.
@@ -4822,7 +4878,7 @@ Declared occupancy complexes, boundaries, cycles and homology.
 
 ### TOPO-001: Declared occupancy complexes and local topology
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Construct explicit grid/cubical incidence from user-declared geometry; compute supported boundaries, adjacency and Euler-characteristic summaries.
 
@@ -4867,11 +4923,19 @@ Additional limits:
 - The complex is tied to its scope through an FND-007 record (freshness with exact reasons); FND-007 has no claim kind for complexes, so no certificate is issued.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/TOPO-001/tests_test_math_topo.json](results/math/TOPO-001/tests_test_math_topo.json)
+- tests: [results/math/TOPO-001/sanitized_test_math_topo.json](results/math/TOPO-001/sanitized_test_math_topo.json)
+- benchmarks: [results/math/TOPO-001/benchmark_cpu_math_topo_vm.json](results/math/TOPO-001/benchmark_cpu_math_topo_vm.json)
+
 <a id="topo-002"></a>
 
 ### TOPO-002: Bounded cycles, homology and persistence
 
-Status: **planned**. Delivery wave: **W5**.
+Status: **in_progress**. Delivery wave: **W5**.
 
 Add boundary matrices, cycle/rank calculations and explicitly bounded filtrations with a declared coefficient field.
 
@@ -4915,3 +4979,11 @@ Additional limits:
 - Cycle representatives are the reduction's V columns (cycles, not shortest or simple cycles); persistence returns pairs and levels, no representative cycles per pair.
 - Filtrations are lower-star style on the top cells of a complex (or explicit levels); FND-007 has no claim kind for homology, so results are tied to the complex's FND-007 record rather than issued as certificates.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/TOPO-002/tests_test_math_topo.json](results/math/TOPO-002/tests_test_math_topo.json)
+- tests: [results/math/TOPO-002/sanitized_test_math_topo.json](results/math/TOPO-002/sanitized_test_math_topo.json)
+- benchmarks: [results/math/TOPO-002/benchmark_cpu_math_topo_vm.json](results/math/TOPO-002/benchmark_cpu_math_topo_vm.json)

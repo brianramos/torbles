@@ -1,0 +1,8940 @@
+{
+ "argv": [
+  "--capability",
+  "TOPO-001",
+  "--out",
+  "/home/claude/release/torbles-val2/results/math/TOPO-001/benchmark_cpu_math_topo_vm.json"
+ ],
+ "capability": "TOPO-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T05:09:52+00:00"
+ },
+ "notes": [
+  "CUDA timings only with --device; the column reductions (homology, persistence) run on the CPU only.",
+  "Baselines: NumPy shifted ORs for the cells per dimension, SciPy ndimage.label for the components; both checked equal to the native counts. Known Betti numbers: holes per tile of the patterns."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0005291400011628866,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005291400011628866,
+    5.043000419391319e-05
+   ],
+   "warm_median_seconds": 5.043000419391319e-05,
+   "warm_min_seconds": 5.043000419391319e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0009513030017842539,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 16641,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0009513030017842539,
+    0.00025584999821148813,
+    0.00025970200658775866
+   ],
+   "warm_median_seconds": 0.0002577760023996234,
+   "warm_min_seconds": 0.00025584999821148813
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0004690179994213395,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004690179994213395,
+    0.00046467300126096234,
+    0.0013451749982777983
+   ],
+   "warm_median_seconds": 0.0009049239997693803,
+   "warm_min_seconds": 0.00046467300126096234
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.00021127500076545402,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.00021127500076545402,
+    6.77839998388663e-05,
+    4.493600135901943e-05
+   ],
+   "warm_median_seconds": 5.636000059894286e-05,
+   "warm_min_seconds": 4.493600135901943e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 4.327100032242015e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    4.327100032242015e-05,
+    2.870299795176834e-05,
+    1.6028003301471472e-05
+   ],
+   "warm_median_seconds": 2.2365500626619905e-05,
+   "warm_min_seconds": 1.6028003301471472e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0002937640019808896,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002937640019808896,
+    0.0001432409990229644,
+    0.00019359499856363982
+   ],
+   "warm_median_seconds": 0.0001684179987933021,
+   "warm_min_seconds": 0.0001432409990229644
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 4.151900066062808e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    4.151900066062808e-05,
+    2.2176005586516112e-05,
+    1.6335005057044327e-05
+   ],
+   "warm_median_seconds": 1.925550532178022e-05,
+   "warm_min_seconds": 1.6335005057044327e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00019395200069993734,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00019395200069993734,
+    5.111599602969363e-05,
+    2.9928000003565103e-05
+   ],
+   "warm_median_seconds": 4.052199801662937e-05,
+   "warm_min_seconds": 2.9928000003565103e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0003904999975929968,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003904999975929968,
+    0.00010353799734730273
+   ],
+   "warm_median_seconds": 0.00010353799734730273,
+   "warm_min_seconds": 0.00010353799734730273
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0003113229977316223,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 16641,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 1,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0003113229977316223,
+    0.0002788419951684773,
+    0.0003029510044143535
+   ],
+   "warm_median_seconds": 0.0002908964997914154,
+   "warm_min_seconds": 0.0002788419951684773
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.002749381004832685,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002749381004832685,
+    0.0027757120042224415,
+    0.002632641000673175
+   ],
+   "warm_median_seconds": 0.002704176502447808,
+   "warm_min_seconds": 0.002632641000673175
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0010811760002980009,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0010811760002980009,
+    0.0010589960002107546,
+    0.000924193998798728
+   ],
+   "warm_median_seconds": 0.0009915949995047413,
+   "warm_min_seconds": 0.000924193998798728
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.00016199200035771355,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 32768
+   },
+   "samples_seconds": [
+    0.00016199200035771355,
+    0.00016369000513805076,
+    0.0001610649997019209
+   ],
+   "warm_median_seconds": 0.00016237750241998583,
+   "warm_min_seconds": 0.0001610649997019209
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0002495260050636716,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002495260050636716,
+    0.00014030199963599443,
+    0.00012364199938019738
+   ],
+   "warm_median_seconds": 0.0001319719995080959,
+   "warm_min_seconds": 0.00012364199938019738
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.00024078600108623505,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 1,
+    "edges": 16002,
+    "pairs": null,
+    "tops": 4096
+   },
+   "samples_seconds": [
+    0.00024078600108623505,
+    0.00024100500013446435,
+    0.00023417299962602556
+   ],
+   "warm_median_seconds": 0.00023758899988024496,
+   "warm_min_seconds": 0.00023417299962602556
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00010995800403179601,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00010995800403179601,
+    4.1868996049743146e-05,
+    3.666100383270532e-05
+   ],
+   "warm_median_seconds": 3.926499994122423e-05,
+   "warm_min_seconds": 3.666100383270532e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     256,
+     256,
+     0
+    ],
+    "cells": [
+     4225,
+     8320,
+     4096
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     4225,
+     8320,
+     4096
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00014584800373995677,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014584800373995677,
+    4.174099740339443e-05
+   ],
+   "warm_median_seconds": 4.174099740339443e-05,
+   "warm_min_seconds": 4.174099740339443e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.00038655400567222387,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": -256,
+    "candidates": 16641,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 265,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.00038655400567222387,
+    0.00031446199864149094,
+    0.00029203699523350224
+   ],
+   "warm_median_seconds": 0.0003032494969374966,
+   "warm_min_seconds": 0.00029203699523350224
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.001269142005185131,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001269142005185131,
+    0.0012856859975727275,
+    0.0012095139973098412
+   ],
+   "warm_median_seconds": 0.0012475999974412844,
+   "warm_min_seconds": 0.0012095139973098412
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0006559369940077886,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0006559369940077886,
+    0.0004942110026604496,
+    0.0005215729979681782
+   ],
+   "warm_median_seconds": 0.0005078920003143139,
+   "warm_min_seconds": 0.0004942110026604496
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 6.232099985936657e-05,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 7744
+   },
+   "samples_seconds": [
+    6.232099985936657e-05,
+    4.7694004024378955e-05,
+    8.08709955890663e-05
+   ],
+   "warm_median_seconds": 6.428249980672263e-05,
+   "warm_min_seconds": 4.7694004024378955e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.00022005299979355186,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022005299979355186,
+    0.00011930899927392602,
+    0.00011617600102908909
+   ],
+   "warm_median_seconds": 0.00011774250015150756,
+   "warm_min_seconds": 0.00011617600102908909
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0001229800036526285,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 274,
+    "edges": 900,
+    "pairs": null,
+    "tops": 968
+   },
+   "samples_seconds": [
+    0.0001229800036526285,
+    9.474100079387426e-05,
+    7.321500015677884e-05
+   ],
+   "warm_median_seconds": 8.397800047532655e-05,
+   "warm_min_seconds": 7.321500015677884e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00012345899449428543,
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": 274,
+   "samples_seconds": [
+    0.00012345899449428543,
+    5.171100201550871e-05,
+    3.8928003050386906e-05
+   ],
+   "warm_median_seconds": 4.531950253294781e-05,
+   "warm_min_seconds": 3.8928003050386906e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 968,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     2706,
+     2962,
+     0
+    ],
+    "cells": [
+     2714,
+     3417,
+     968
+    ],
+    "components": 274,
+    "euler": 265,
+    "numpy_cells": [
+     2714,
+     3417,
+     968
+    ],
+    "scipy_components": 274
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0001574709967826493,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001574709967826493,
+    5.930900078965351e-05
+   ],
+   "warm_median_seconds": 5.930900078965351e-05,
+   "warm_min_seconds": 5.930900078965351e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.00029304200143087655,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 16641,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.00029304200143087655,
+    0.00025054000434465706,
+    0.0002753309963736683
+   ],
+   "warm_median_seconds": 0.0002629355003591627,
+   "warm_min_seconds": 0.00025054000434465706
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.001788326000678353,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001788326000678353,
+    0.0017853460012702271,
+    0.00174484900344396
+   ],
+   "warm_median_seconds": 0.0017650975023570936,
+   "warm_min_seconds": 0.00174484900344396
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0008682180050527677,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0008682180050527677,
+    0.0007370609964709729,
+    0.0007142120011849329
+   ],
+   "warm_median_seconds": 0.0007256364988279529,
+   "warm_min_seconds": 0.0007142120011849329
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 9.168800170300528e-05,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 16384
+   },
+   "samples_seconds": [
+    9.168800170300528e-05,
+    9.048700303537771e-05,
+    9.748800221132115e-05
+   ],
+   "warm_median_seconds": 9.398750262334943e-05,
+   "warm_min_seconds": 9.048700303537771e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0002323910011909902,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002323910011909902,
+    0.00014319400361273438,
+    0.00011818199709523469
+   ],
+   "warm_median_seconds": 0.00013068800035398453,
+   "warm_min_seconds": 0.00011818199709523469
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0001308009959757328,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 256,
+    "edges": 3072,
+    "pairs": null,
+    "tops": 2048
+   },
+   "samples_seconds": [
+    0.0001308009959757328,
+    0.00011400299990782514,
+    0.0001088860008167103
+   ],
+   "warm_median_seconds": 0.00011144450036226772,
+   "warm_min_seconds": 0.0001088860008167103
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00013293899974087253,
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": 256,
+   "samples_seconds": [
+    0.00013293899974087253,
+    4.237499524606392e-05,
+    3.4749995393212885e-05
+   ],
+   "warm_median_seconds": 3.85624953196384e-05,
+   "warm_min_seconds": 3.4749995393212885e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 2048,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     4096,
+     4096,
+     0
+    ],
+    "cells": [
+     4096,
+     6144,
+     2048
+    ],
+    "components": 256,
+    "euler": 0,
+    "numpy_cells": [
+     4096,
+     6144,
+     2048
+    ],
+    "scipy_components": 256
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0001285620019189082,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001285620019189082,
+    2.779100032057613e-05
+   ],
+   "warm_median_seconds": 2.779100032057613e-05,
+   "warm_min_seconds": 2.779100032057613e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0008852429964463226,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 66049,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 16384
+   },
+   "samples_seconds": [
+    0.0008852429964463226,
+    0.0008357949991477653,
+    0.0008134999952744693
+   ],
+   "warm_median_seconds": 0.0008246474972111173,
+   "warm_min_seconds": 0.0008134999952744693
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0016652069971314631,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0016652069971314631,
+    0.0016683169960742816,
+    0.0016811320019769482
+   ],
+   "warm_median_seconds": 0.001674724499025615,
+   "warm_min_seconds": 0.0016683169960742816
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.00012777500523952767,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.00012777500523952767,
+    5.846999556524679e-05,
+    3.720899985637516e-05
+   ],
+   "warm_median_seconds": 4.7839497710810974e-05,
+   "warm_min_seconds": 3.720899985637516e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 2.6144000003114343e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    2.6144000003114343e-05,
+    1.3292003131937236e-05,
+    1.3008000678382814e-05
+   ],
+   "warm_median_seconds": 1.3150001905160025e-05,
+   "warm_min_seconds": 1.3008000678382814e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.00021444400044856593,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021444400044856593,
+    0.00014526499580824748,
+    0.00013907899847254157
+   ],
+   "warm_median_seconds": 0.00014217199714039452,
+   "warm_min_seconds": 0.00013907899847254157
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 2.9734997951891273e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    2.9734997951891273e-05,
+    1.6500001947861165e-05,
+    1.3008000678382814e-05
+   ],
+   "warm_median_seconds": 1.475400131312199e-05,
+   "warm_min_seconds": 1.3008000678382814e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0001336049972451292,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0001336049972451292,
+    0.00011316200107103214,
+    7.229100447148085e-05
+   ],
+   "warm_median_seconds": 9.272650277125649e-05,
+   "warm_min_seconds": 7.229100447148085e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0006822440045652911,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006822440045652911,
+    0.0005704290015273727
+   ],
+   "warm_median_seconds": 0.0005704290015273727,
+   "warm_min_seconds": 0.0005704290015273727
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.001586350001161918,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 66049,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 1,
+    "positions": 16384
+   },
+   "samples_seconds": [
+    0.001586350001161918,
+    0.0011019279991160147,
+    0.001153616001829505
+   ],
+   "warm_median_seconds": 0.0011277720004727598,
+   "warm_min_seconds": 0.0011019279991160147
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.011304375999316107,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011304375999316107,
+    0.01096154999686405,
+    0.012954812998941634
+   ],
+   "warm_median_seconds": 0.011958181497902842,
+   "warm_min_seconds": 0.01096154999686405
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0048879880050662905,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0048879880050662905,
+    0.004071146002388559,
+    0.003533600000082515
+   ],
+   "warm_median_seconds": 0.0038023730012355372,
+   "warm_min_seconds": 0.003533600000082515
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0005543730003410019,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 131072
+   },
+   "samples_seconds": [
+    0.0005543730003410019,
+    0.0005994250022922643,
+    0.0007091239967849106
+   ],
+   "warm_median_seconds": 0.0006542744995385874,
+   "warm_min_seconds": 0.0005994250022922643
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0003427199990255758,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003427199990255758,
+    0.00015862200234550983,
+    0.00014331300189951435
+   ],
+   "warm_median_seconds": 0.0001509675021225121,
+   "warm_min_seconds": 0.00014331300189951435
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0009427820041310042,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 1,
+    "edges": 64770,
+    "pairs": null,
+    "tops": 16384
+   },
+   "samples_seconds": [
+    0.0009427820041310042,
+    0.0009044929975061677,
+    0.0008344949965248816
+   ],
+   "warm_median_seconds": 0.0008694939970155247,
+   "warm_min_seconds": 0.0008344949965248816
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00019392400281503797,
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00019392400281503797,
+    0.00010076900070998818,
+    9.249999857274815e-05
+   ],
+   "warm_median_seconds": 9.663449964136817e-05,
+   "warm_min_seconds": 9.249999857274815e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 16384,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     512,
+     512,
+     0
+    ],
+    "cells": [
+     16641,
+     33024,
+     16384
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     16641,
+     33024,
+     16384
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00019476400484563783,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00019476400484563783,
+    0.0001012860011542216
+   ],
+   "warm_median_seconds": 0.0001012860011542216,
+   "warm_min_seconds": 0.0001012860011542216
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0013736999972024933,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": -1192,
+    "candidates": 66049,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 968,
+    "positions": 16384
+   },
+   "samples_seconds": [
+    0.0013736999972024933,
+    0.0013338889984879643,
+    0.0012354940045042895
+   ],
+   "warm_median_seconds": 0.0012846915014961269,
+   "warm_min_seconds": 0.0012354940045042895
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.00527191400033189,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00527191400033189,
+    0.005444989001262002,
+    0.005430409000837244
+   ],
+   "warm_median_seconds": 0.005437699001049623,
+   "warm_min_seconds": 0.005430409000837244
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.002595423000457231,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.002595423000457231,
+    0.002878462997614406,
+    0.002802664996124804
+   ],
+   "warm_median_seconds": 0.002840563996869605,
+   "warm_min_seconds": 0.002802664996124804
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.00023429700377164409,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 33688
+   },
+   "samples_seconds": [
+    0.00023429700377164409,
+    0.00024021600256673992,
+    0.00024125699565047398
+   ],
+   "warm_median_seconds": 0.00024073649910860695,
+   "warm_min_seconds": 0.00024021600256673992
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.000451046995294746,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000451046995294746,
+    0.0002460019968566485,
+    0.0001949459983734414
+   ],
+   "warm_median_seconds": 0.00022047399761504494,
+   "warm_min_seconds": 0.0001949459983734414
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0004785979981534183,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 1034,
+    "edges": 4243,
+    "pairs": null,
+    "tops": 4211
+   },
+   "samples_seconds": [
+    0.0004785979981534183,
+    0.0004289330026949756,
+    0.0004147709987591952
+   ],
+   "warm_median_seconds": 0.0004218520007270854,
+   "warm_min_seconds": 0.0004147709987591952
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00030317900382215157,
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": 1034,
+   "samples_seconds": [
+    0.00030317900382215157,
+    0.00021339899831218645,
+    0.00020579500414896756
+   ],
+   "warm_median_seconds": 0.000209597001230577,
+   "warm_min_seconds": 0.00020579500414896756
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 4211,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     11438,
+     12630,
+     0
+    ],
+    "cells": [
+     11494,
+     14737,
+     4211
+    ],
+    "components": 1034,
+    "euler": 968,
+    "numpy_cells": [
+     11494,
+     14737,
+     4211
+    ],
+    "scipy_components": 1034
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0002980210047098808,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002980210047098808,
+    0.00017166099860332906
+   ],
+   "warm_median_seconds": 0.00017166099860332906,
+   "warm_min_seconds": 0.00017166099860332906
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0011845289991470054,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 66049,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 16384
+   },
+   "samples_seconds": [
+    0.0011845289991470054,
+    0.001481375002185814,
+    0.0010415979995741509
+   ],
+   "warm_median_seconds": 0.0012614865008799825,
+   "warm_min_seconds": 0.0010415979995741509
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.007672265004657675,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007672265004657675,
+    0.00734445100533776,
+    0.007357309994404204
+   ],
+   "warm_median_seconds": 0.007350880499870982,
+   "warm_min_seconds": 0.00734445100533776
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0033897589964908548,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0033897589964908548,
+    0.0027337290011928417,
+    0.002694859998882748
+   ],
+   "warm_median_seconds": 0.002714294500037795,
+   "warm_min_seconds": 0.002694859998882748
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0002894549979828298,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 65536
+   },
+   "samples_seconds": [
+    0.0002894549979828298,
+    0.00029428400011966005,
+    0.000315709003189113
+   ],
+   "warm_median_seconds": 0.0003049965016543865,
+   "warm_min_seconds": 0.00029428400011966005
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.00033228399843210354,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00033228399843210354,
+    0.00017152699729194865,
+    0.00016362900350941345
+   ],
+   "warm_median_seconds": 0.00016757800040068105,
+   "warm_min_seconds": 0.00016362900350941345
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.00041686299664434046,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 1024,
+    "edges": 12288,
+    "pairs": null,
+    "tops": 8192
+   },
+   "samples_seconds": [
+    0.00041686299664434046,
+    0.0003862980011035688,
+    0.0004964750041835941
+   ],
+   "warm_median_seconds": 0.0004413865026435815,
+   "warm_min_seconds": 0.0003862980011035688
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00023304199567064643,
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "run",
+   "result": 1024,
+   "samples_seconds": [
+    0.00023304199567064643,
+    9.432400111109018e-05,
+    0.00012034300016239285
+   ],
+   "warm_median_seconds": 0.00010733350063674152,
+   "warm_min_seconds": 9.432400111109018e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 8192,
+    "shape": [
+     128,
+     128
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     16384,
+     16384,
+     0
+    ],
+    "cells": [
+     16384,
+     24576,
+     8192
+    ],
+    "components": 1024,
+    "euler": 0,
+    "numpy_cells": [
+     16384,
+     24576,
+     8192
+    ],
+    "scipy_components": 1024
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00015749799786135554,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015749799786135554,
+    3.161700442433357e-05
+   ],
+   "warm_median_seconds": 3.161700442433357e-05,
+   "warm_min_seconds": 3.161700442433357e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0035336210057721473,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 263169,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 65536
+   },
+   "samples_seconds": [
+    0.0035336210057721473,
+    0.0033844460049294867,
+    0.003534031995513942
+   ],
+   "warm_median_seconds": 0.0034592390002217144,
+   "warm_min_seconds": 0.0033844460049294867
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0067680240026675165,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0067680240026675165,
+    0.006849277000583243,
+    0.0070077549971756525
+   ],
+   "warm_median_seconds": 0.006928515998879448,
+   "warm_min_seconds": 0.006849277000583243
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0001827489977586083,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0001827489977586083,
+    5.182199674891308e-05,
+    4.163700214121491e-05
+   ],
+   "warm_median_seconds": 4.672949944506399e-05,
+   "warm_min_seconds": 4.163700214121491e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 2.6649002393241972e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    2.6649002393241972e-05,
+    1.443899964215234e-05,
+    1.3447999663185328e-05
+   ],
+   "warm_median_seconds": 1.3943499652668834e-05,
+   "warm_min_seconds": 1.3447999663185328e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0004486129982979037,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004486129982979037,
+    0.00032686800113879144,
+    0.0002751099964370951
+   ],
+   "warm_median_seconds": 0.0003009889987879433,
+   "warm_min_seconds": 0.0002751099964370951
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 3.5526005376596004e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    3.5526005376596004e-05,
+    1.7144004232250154e-05,
+    1.399000029778108e-05
+   ],
+   "warm_median_seconds": 1.5567002265015617e-05,
+   "warm_min_seconds": 1.399000029778108e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00037463600165210664,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00037463600165210664,
+    0.0001935259933816269,
+    0.00017923799896379933
+   ],
+   "warm_median_seconds": 0.00018638199617271312,
+   "warm_min_seconds": 0.00017923799896379933
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.001146485999925062,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001146485999925062,
+    0.0010541049996390939
+   ],
+   "warm_median_seconds": 0.0010541049996390939,
+   "warm_min_seconds": 0.0010541049996390939
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0040985960004036315,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 263169,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 1,
+    "positions": 65536
+   },
+   "samples_seconds": [
+    0.0040985960004036315,
+    0.003989842000009958,
+    0.003960689005907625
+   ],
+   "warm_median_seconds": 0.003975265502958791,
+   "warm_min_seconds": 0.003960689005907625
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.04362516700348351,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04362516700348351,
+    0.044404788000974804,
+    0.043219282997597475
+   ],
+   "warm_median_seconds": 0.04381203549928614,
+   "warm_min_seconds": 0.043219282997597475
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.01344471799529856,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.01344471799529856,
+    0.014299851005489472,
+    0.013797200997942127
+   ],
+   "warm_median_seconds": 0.0140485260017158,
+   "warm_min_seconds": 0.013797200997942127
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0024062089942162856,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 524288
+   },
+   "samples_seconds": [
+    0.0024062089942162856,
+    0.0023197219998110086,
+    0.002286691997142043
+   ],
+   "warm_median_seconds": 0.0023032069984765258,
+   "warm_min_seconds": 0.002286691997142043
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0005332809960236773,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005332809960236773,
+    0.00025967600231524557,
+    0.00026231800438836217
+   ],
+   "warm_median_seconds": 0.00026099700335180387,
+   "warm_min_seconds": 0.00025967600231524557
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.003334196997457184,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 1,
+    "edges": 260610,
+    "pairs": null,
+    "tops": 65536
+   },
+   "samples_seconds": [
+    0.003334196997457184,
+    0.0032185590025619604,
+    0.0033281169962720014
+   ],
+   "warm_median_seconds": 0.003273337999416981,
+   "warm_min_seconds": 0.0032185590025619604
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0004690440036938526,
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.0004690440036938526,
+    0.00035829900298267603,
+    0.0003403839946258813
+   ],
+   "warm_median_seconds": 0.00034934149880427867,
+   "warm_min_seconds": 0.0003403839946258813
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 65536,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     1024,
+     1024,
+     0
+    ],
+    "cells": [
+     66049,
+     131584,
+     65536
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     66049,
+     131584,
+     65536
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00036468199687078595,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00036468199687078595,
+    0.00023920099920360371
+   ],
+   "warm_median_seconds": 0.00023920099920360371,
+   "warm_min_seconds": 0.00023920099920360371
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.004470129999390338,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": -4630,
+    "candidates": 263169,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 3832,
+    "positions": 65536
+   },
+   "samples_seconds": [
+    0.004470129999390338,
+    0.0042517960027907975,
+    0.004515639004239347
+   ],
+   "warm_median_seconds": 0.004383717503515072,
+   "warm_min_seconds": 0.0042517960027907975
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.021500490998732857,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.021500490998732857,
+    0.021850484001333825,
+    0.021781324001494795
+   ],
+   "warm_median_seconds": 0.02181590400141431,
+   "warm_min_seconds": 0.021781324001494795
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.008093724994978402,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.008093724994978402,
+    0.007931161002488807,
+    0.007961766998050734
+   ],
+   "warm_median_seconds": 0.00794646400026977,
+   "warm_min_seconds": 0.007931161002488807
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0006320450047496706,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 132512
+   },
+   "samples_seconds": [
+    0.0006320450047496706,
+    0.000588826005696319,
+    0.0006067930007702671
+   ],
+   "warm_median_seconds": 0.0005978095032332931,
+   "warm_min_seconds": 0.000588826005696319
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0004994300034013577,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004994300034013577,
+    0.00028096199821447954,
+    0.0003068449950660579
+   ],
+   "warm_median_seconds": 0.0002939034966402687,
+   "warm_min_seconds": 0.00028096199821447954
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0012713329997495748,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 4084,
+    "edges": 16612,
+    "pairs": null,
+    "tops": 16564
+   },
+   "samples_seconds": [
+    0.0012713329997495748,
+    0.0011761310015572235,
+    0.001179847000457812
+   ],
+   "warm_median_seconds": 0.0011779890010075178,
+   "warm_min_seconds": 0.0011761310015572235
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0007119199945009314,
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": 4084,
+   "samples_seconds": [
+    0.0007119199945009314,
+    0.00057877699873643,
+    0.0005414830011432059
+   ],
+   "warm_median_seconds": 0.0005601299999398179,
+   "warm_min_seconds": 0.0005414830011432059
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 16564,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     44930,
+     49560,
+     0
+    ],
+    "cells": [
+     45176,
+     57908,
+     16564
+    ],
+    "components": 4084,
+    "euler": 3832,
+    "numpy_cells": [
+     45176,
+     57908,
+     16564
+    ],
+    "scipy_components": 4084
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0005675619977409951,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005675619977409951,
+    0.0004641519990400411
+   ],
+   "warm_median_seconds": 0.0004641519990400411,
+   "warm_min_seconds": 0.0004641519990400411
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.003987865005910862,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 263169,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 65536
+   },
+   "samples_seconds": [
+    0.003987865005910862,
+    0.0038930430018808693,
+    0.0038800819966127165
+   ],
+   "warm_median_seconds": 0.003886562499246793,
+   "warm_min_seconds": 0.0038800819966127165
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.031045784999150783,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.031045784999150783,
+    0.030586250002670567,
+    0.029695709999941755
+   ],
+   "warm_median_seconds": 0.03014098000130616,
+   "warm_min_seconds": 0.029695709999941755
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.011007389002770651,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.011007389002770651,
+    0.011249447998125106,
+    0.010818537004524842
+   ],
+   "warm_median_seconds": 0.011033992501324974,
+   "warm_min_seconds": 0.010818537004524842
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0011587599947233684,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 262144
+   },
+   "samples_seconds": [
+    0.0011587599947233684,
+    0.0012295399938011542,
+    0.00119778499356471
+   ],
+   "warm_median_seconds": 0.0012136624936829321,
+   "warm_min_seconds": 0.00119778499356471
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0005416069980128668,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005416069980128668,
+    0.0002688230015337467,
+    0.0002928890025941655
+   ],
+   "warm_median_seconds": 0.0002808560020639561,
+   "warm_min_seconds": 0.0002688230015337467
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0016380149972974323,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "components": 4096,
+    "edges": 49152,
+    "pairs": null,
+    "tops": 32768
+   },
+   "samples_seconds": [
+    0.0016380149972974323,
+    0.0016613549960311502,
+    0.0015788949967827648
+   ],
+   "warm_median_seconds": 0.0016201249964069575,
+   "warm_min_seconds": 0.0015788949967827648
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00041610699554439634,
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "run",
+   "result": 4096,
+   "samples_seconds": [
+    0.00041610699554439634,
+    0.0003066749995923601,
+    0.0003120539986412041
+   ],
+   "warm_median_seconds": 0.0003093644991167821,
+   "warm_min_seconds": 0.0003066749995923601
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 32768,
+    "shape": [
+     256,
+     256
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     65536,
+     65536,
+     0
+    ],
+    "cells": [
+     65536,
+     98304,
+     32768
+    ],
+    "components": 4096,
+    "euler": 0,
+    "numpy_cells": [
+     65536,
+     98304,
+     32768
+    ],
+    "scipy_components": 4096
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00016562699602218345,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016562699602218345,
+    2.9413000447675586e-05
+   ],
+   "warm_median_seconds": 2.9413000447675586e-05,
+   "warm_min_seconds": 2.9413000447675586e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0009127410012297332,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 35937,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 0,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0009127410012297332,
+    0.0008345519963768311,
+    0.0008410390000790358
+   ],
+   "warm_median_seconds": 0.0008377954982279334,
+   "warm_min_seconds": 0.0008345519963768311
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.00170584800071083,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00170584800071083,
+    0.001673676997597795,
+    0.0016363090035156347
+   ],
+   "warm_median_seconds": 0.0016549930005567148,
+   "warm_min_seconds": 0.0016363090035156347
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.00012094499834347516,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.00012094499834347516,
+    5.3079005738254637e-05,
+    4.366699431557208e-05
+   ],
+   "warm_median_seconds": 4.837300002691336e-05,
+   "warm_min_seconds": 4.366699431557208e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 2.4457993276882917e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    2.4457993276882917e-05,
+    1.4379998901858926e-05,
+    1.213900395669043e-05
+   ],
+   "warm_median_seconds": 1.3259501429274678e-05,
+   "warm_min_seconds": 1.213900395669043e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0004628410024452023,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004628410024452023,
+    0.00034625000262167305,
+    0.0003270270026405342
+   ],
+   "warm_median_seconds": 0.0003366385026311036,
+   "warm_min_seconds": 0.0003270270026405342
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 3.617699985625222e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    3.617699985625222e-05,
+    1.7021993699017912e-05,
+    1.3197997759561986e-05
+   ],
+   "warm_median_seconds": 1.5109995729289949e-05,
+   "warm_min_seconds": 1.3197997759561986e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00012828299804823473,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00012828299804823473,
+    6.578999455086887e-05,
+    5.382100061979145e-05
+   ],
+   "warm_median_seconds": 5.980549758533016e-05,
+   "warm_min_seconds": 5.382100061979145e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00020628700440283865,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00020628700440283865,
+    9.264700202038512e-05
+   ],
+   "warm_median_seconds": 9.264700202038512e-05,
+   "warm_min_seconds": 9.264700202038512e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0009428170014871284,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 2,
+    "candidates": 35937,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 1,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0009428170014871284,
+    0.0008849930018186569,
+    0.0009253749958588742
+   ],
+   "warm_median_seconds": 0.0009051839988387655,
+   "warm_min_seconds": 0.0008849930018186569
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.008138782999594696,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008138782999594696,
+    0.008337879997270647,
+    0.008080768995569088
+   ],
+   "warm_median_seconds": 0.008209324496419868,
+   "warm_min_seconds": 0.008080768995569088
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0030980109950178303,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0030980109950178303,
+    0.003003527999680955,
+    0.002976313997351099
+   ],
+   "warm_median_seconds": 0.002989920998516027,
+   "warm_min_seconds": 0.002976313997351099
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0010044239970739,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 202752
+   },
+   "samples_seconds": [
+    0.0010044239970739,
+    0.0010222880009678192,
+    0.0009949379964382388
+   ],
+   "warm_median_seconds": 0.001008612998703029,
+   "warm_min_seconds": 0.0009949379964382388
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0004739520009025,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004739520009025,
+    0.0003618039991124533,
+    0.00031969400151865557
+   ],
+   "warm_median_seconds": 0.00034074900031555444,
+   "warm_min_seconds": 0.00031969400151865557
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0006368680042214692,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 1,
+    "edges": 46620,
+    "pairs": null,
+    "tops": 4096
+   },
+   "samples_seconds": [
+    0.0006368680042214692,
+    0.0006078410006011836,
+    0.0006358660029945895
+   ],
+   "warm_median_seconds": 0.0006218535017978866,
+   "warm_min_seconds": 0.0006078410006011836
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00015714399341959506,
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00015714399341959506,
+    9.13559997570701e-05,
+    0.00010422699415357783
+   ],
+   "warm_median_seconds": 9.779149695532396e-05,
+   "warm_min_seconds": 9.13559997570701e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 4096,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     1538,
+     3072,
+     1536,
+     0
+    ],
+    "cells": [
+     4913,
+     13872,
+     13056,
+     4096
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     4913,
+     13872,
+     13056,
+     4096
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0001753819960867986,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001753819960867986,
+    6.345700239762664e-05
+   ],
+   "warm_median_seconds": 6.345700239762664e-05,
+   "warm_min_seconds": 6.345700239762664e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0011660089949145913,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 110,
+    "candidates": 35937,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": -265,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0011660089949145913,
+    0.0010928510018857196,
+    0.0010722940060077235
+   ],
+   "warm_median_seconds": 0.0010825725039467216,
+   "warm_min_seconds": 0.0010722940060077235
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0050022700015688315,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0050022700015688315,
+    0.004982967999239918,
+    0.004916917001537513
+   ],
+   "warm_median_seconds": 0.004949942500388715,
+   "warm_min_seconds": 0.004916917001537513
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0026052640023408458,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0026052640023408458,
+    0.0023795800007064827,
+    0.002368287001445424
+   ],
+   "warm_median_seconds": 0.0023739335010759532,
+   "warm_min_seconds": 0.002368287001445424
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0003649990030680783,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 68000
+   },
+   "samples_seconds": [
+    0.0003649990030680783,
+    0.0003441799999563955,
+    0.00031104200024856254
+   ],
+   "warm_median_seconds": 0.000327611000102479,
+   "warm_min_seconds": 0.00031104200024856254
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.00046193599700927734,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00046193599700927734,
+    0.0003521739999996498,
+    0.00031896000291453674
+   ],
+   "warm_median_seconds": 0.0003355670014570933,
+   "warm_min_seconds": 0.00031896000291453674
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0002441500037093647,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 7,
+    "edges": 2824,
+    "pairs": null,
+    "tops": 1021
+   },
+   "samples_seconds": [
+    0.0002441500037093647,
+    0.00020938899979228154,
+    0.0002365120017202571
+   ],
+   "warm_median_seconds": 0.00022295050075626932,
+   "warm_min_seconds": 0.00020938899979228154
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00023829199926694855,
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": 7,
+   "samples_seconds": [
+    0.00023829199926694855,
+    0.000177036999957636,
+    0.00014320199989015236
+   ],
+   "warm_median_seconds": 0.00016011949992389418,
+   "warm_min_seconds": 0.00014320199989015236
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 1021,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     4064,
+     8702,
+     4748,
+     0
+    ],
+    "cells": [
+     4064,
+     8745,
+     5437,
+     1021
+    ],
+    "components": 7,
+    "euler": -265,
+    "numpy_cells": [
+     4064,
+     8745,
+     5437,
+     1021
+    ],
+    "scipy_components": 7
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0002138599957106635,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002138599957106635,
+    5.7892000768333673e-05
+   ],
+   "warm_median_seconds": 5.7892000768333673e-05,
+   "warm_min_seconds": 5.7892000768333673e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0009991909973905422,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 256,
+    "candidates": 35937,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 128,
+    "positions": 4096
+   },
+   "samples_seconds": [
+    0.0009991909973905422,
+    0.0009354680005344562,
+    0.0009740530003909953
+   ],
+   "warm_median_seconds": 0.0009547605004627258,
+   "warm_min_seconds": 0.0009354680005344562
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0051248699965071864,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0051248699965071864,
+    0.005342739001207519,
+    0.005464000998472329
+   ],
+   "warm_median_seconds": 0.005403369999839924,
+   "warm_min_seconds": 0.005342739001207519
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0024336299975402653,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0024336299975402653,
+    0.0022732910001650453,
+    0.0021828680037287995
+   ],
+   "warm_median_seconds": 0.0022280795019469224,
+   "warm_min_seconds": 0.0021828680037287995
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0005176790000405163,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 95232
+   },
+   "samples_seconds": [
+    0.0005176790000405163,
+    0.0005151099976501428,
+    0.0004870929988101125
+   ],
+   "warm_median_seconds": 0.0005011014982301276,
+   "warm_min_seconds": 0.0004870929988101125
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0005337550028343685,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005337550028343685,
+    0.00037592500302707776,
+    0.0003330510007799603
+   ],
+   "warm_median_seconds": 0.00035448800190351903,
+   "warm_min_seconds": 0.0003330510007799603
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.00028770299832103774,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 64,
+    "edges": 8448,
+    "pairs": null,
+    "tops": 1664
+   },
+   "samples_seconds": [
+    0.00028770299832103774,
+    0.0002468370003043674,
+    0.00025690400070743635
+   ],
+   "warm_median_seconds": 0.0002518705005059019,
+   "warm_min_seconds": 0.0002468370003043674
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0001654579973546788,
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": 64,
+   "samples_seconds": [
+    0.0001654579973546788,
+    8.133600204018876e-05,
+    8.012000034796074e-05
+   ],
+   "warm_median_seconds": 8.072800119407475e-05,
+   "warm_min_seconds": 8.012000034796074e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 1664,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     4096,
+     7680,
+     3840,
+     0
+    ],
+    "cells": [
+     4096,
+     9216,
+     6912,
+     1664
+    ],
+    "components": 64,
+    "euler": 128,
+    "numpy_cells": [
+     4096,
+     9216,
+     6912,
+     1664
+    ],
+    "scipy_components": 64
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0001368810044368729,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001368810044368729,
+    2.9873997846152633e-05
+   ],
+   "warm_median_seconds": 2.9873997846152633e-05,
+   "warm_min_seconds": 2.9873997846152633e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0026759289976325817,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 117649,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 0,
+    "positions": 13824
+   },
+   "samples_seconds": [
+    0.0026759289976325817,
+    0.0025801919982768595,
+    0.0025661580002633855
+   ],
+   "warm_median_seconds": 0.0025731749992701225,
+   "warm_min_seconds": 0.0025661580002633855
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.0051727120007853955,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0051727120007853955,
+    0.005286843006615527,
+    0.005354700995667372
+   ],
+   "warm_median_seconds": 0.0053207720011414494,
+   "warm_min_seconds": 0.005286843006615527
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.0001598349990672432,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.0001598349990672432,
+    4.517699562711641e-05,
+    3.681099769892171e-05
+   ],
+   "warm_median_seconds": 4.099399666301906e-05,
+   "warm_min_seconds": 3.681099769892171e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 2.6421999791637063e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    2.6421999791637063e-05,
+    1.3645003491546959e-05,
+    1.2078002328053117e-05
+   ],
+   "warm_median_seconds": 1.2861502909800038e-05,
+   "warm_min_seconds": 1.2078002328053117e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0006347050002659671,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006347050002659671,
+    0.00045794499601470307,
+    0.00041294199763797224
+   ],
+   "warm_median_seconds": 0.00043544349682633765,
+   "warm_min_seconds": 0.00041294199763797224
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 3.762199776247144e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    3.762199776247144e-05,
+    2.1223000658210367e-05,
+    1.6796999261714518e-05
+   ],
+   "warm_median_seconds": 1.9009999959962443e-05,
+   "warm_min_seconds": 1.6796999261714518e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0002106809988617897,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.0002106809988617897,
+    0.0001470360002713278,
+    0.0001372680053464137
+   ],
+   "warm_median_seconds": 0.00014215200280887075,
+   "warm_min_seconds": 0.0001372680053464137
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00038211899664020166,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00038211899664020166,
+    0.00028241099789738655
+   ],
+   "warm_median_seconds": 0.00028241099789738655,
+   "warm_min_seconds": 0.00028241099789738655
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0031416530036949553,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 2,
+    "candidates": 117649,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 1,
+    "positions": 13824
+   },
+   "samples_seconds": [
+    0.0031416530036949553,
+    0.003018927003722638,
+    0.0033390099997632205
+   ],
+   "warm_median_seconds": 0.0031789685017429292,
+   "warm_min_seconds": 0.003018927003722638
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.03022504000546178,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03022504000546178,
+    0.029548157996032387,
+    0.0319086400049855
+   ],
+   "warm_median_seconds": 0.030728399000508944,
+   "warm_min_seconds": 0.029548157996032387
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.01202855500014266,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.01202855500014266,
+    0.010674755001673475,
+    0.010128294001333416
+   ],
+   "warm_median_seconds": 0.010401524501503445,
+   "warm_min_seconds": 0.010128294001333416
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.003364545998920221,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 677376
+   },
+   "samples_seconds": [
+    0.003364545998920221,
+    0.0031883600022410974,
+    0.003358560999913607
+   ],
+   "warm_median_seconds": 0.003273460501077352,
+   "warm_min_seconds": 0.0031883600022410974
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0008103599975584075,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008103599975584075,
+    0.00041565100400475785,
+    0.0005230120004853234
+   ],
+   "warm_median_seconds": 0.0004693315022450406,
+   "warm_min_seconds": 0.00041565100400475785
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0024257699988083914,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 1,
+    "edges": 164588,
+    "pairs": null,
+    "tops": 13824
+   },
+   "samples_seconds": [
+    0.0024257699988083914,
+    0.0023026839990052395,
+    0.002101341000525281
+   ],
+   "warm_median_seconds": 0.00220201249976526,
+   "warm_min_seconds": 0.002101341000525281
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00034788500488502905,
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.00034788500488502905,
+    0.0002453150009387173,
+    0.0002385379993938841
+   ],
+   "warm_median_seconds": 0.00024192650016630068,
+   "warm_min_seconds": 0.0002385379993938841
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 13824,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     3458,
+     6912,
+     3456,
+     0
+    ],
+    "cells": [
+     15625,
+     45000,
+     43200,
+     13824
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     15625,
+     45000,
+     43200,
+     13824
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0002135679969796911,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002135679969796911,
+    0.00011978200200246647
+   ],
+   "warm_median_seconds": 0.00011978200200246647,
+   "warm_min_seconds": 0.00011978200200246647
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0030209950054995716,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 210,
+    "candidates": 117649,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": -938,
+    "positions": 13824
+   },
+   "samples_seconds": [
+    0.0030209950054995716,
+    0.0030147540019243024,
+    0.0029307390068424866
+   ],
+   "warm_median_seconds": 0.0029727465043833945,
+   "warm_min_seconds": 0.0029307390068424866
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.01647194900579052,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01647194900579052,
+    0.016844038997078314,
+    0.016072137994342484
+   ],
+   "warm_median_seconds": 0.0164580884957104,
+   "warm_min_seconds": 0.016072137994342484
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.007399449998047203,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.007399449998047203,
+    0.007626424005138688,
+    0.007467698997061234
+   ],
+   "warm_median_seconds": 0.007547061501099961,
+   "warm_min_seconds": 0.007467698997061234
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0010722590013756417,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 229480
+   },
+   "samples_seconds": [
+    0.0010722590013756417,
+    0.0010898159962380305,
+    0.0011029029992641881
+   ],
+   "warm_median_seconds": 0.0010963594977511093,
+   "warm_min_seconds": 0.0010898159962380305
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0006520489987451583,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006520489987451583,
+    0.00045698000030824915,
+    0.00042550799844320863
+   ],
+   "warm_median_seconds": 0.0004412439993757289,
+   "warm_min_seconds": 0.00042550799844320863
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0007537330020568334,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 15,
+    "edges": 10316,
+    "pairs": null,
+    "tops": 3459
+   },
+   "samples_seconds": [
+    0.0007537330020568334,
+    0.0007544049949501641,
+    0.0006994930008659139
+   ],
+   "warm_median_seconds": 0.000726948997908039,
+   "warm_min_seconds": 0.0006994930008659139
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0005359759961720556,
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": 15,
+   "samples_seconds": [
+    0.0005359759961720556,
+    0.00045841700193705037,
+    0.0004301169974496588
+   ],
+   "warm_median_seconds": 0.0004442669996933546,
+   "warm_min_seconds": 0.0004301169974496588
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 3459,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     13271,
+     28923,
+     15862,
+     0
+    ],
+    "cells": [
+     13271,
+     29058,
+     18308,
+     3459
+    ],
+    "components": 15,
+    "euler": -938,
+    "numpy_cells": [
+     13271,
+     29058,
+     18308,
+     3459
+    ],
+    "scipy_components": 15
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0002300950000062585,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002300950000062585,
+    0.00012989799870410934
+   ],
+   "warm_median_seconds": 0.00012989799870410934,
+   "warm_min_seconds": 0.00012989799870410934
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.0030775269988225773,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 864,
+    "candidates": 117649,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 432,
+    "positions": 13824
+   },
+   "samples_seconds": [
+    0.0030775269988225773,
+    0.0032809019976411946,
+    0.0030439210022450425
+   ],
+   "warm_median_seconds": 0.0031624114999431185,
+   "warm_min_seconds": 0.0030439210022450425
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.018235605995869264,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.018235605995869264,
+    0.018853883004339878,
+    0.01778289399953792
+   ],
+   "warm_median_seconds": 0.018318388501938898,
+   "warm_min_seconds": 0.01778289399953792
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.006844117997388821,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.006844117997388821,
+    0.006712377005896997,
+    0.006919542000105139
+   ],
+   "warm_median_seconds": 0.006815959503001068,
+   "warm_min_seconds": 0.006712377005896997
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.0015548120063613169,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 321408
+   },
+   "samples_seconds": [
+    0.0015548120063613169,
+    0.0015606759989168495,
+    0.001567211002111435
+   ],
+   "warm_median_seconds": 0.0015639435005141422,
+   "warm_min_seconds": 0.0015606759989168495
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0006513129992526956,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006513129992526956,
+    0.0004655029988498427,
+    0.0004121750025660731
+   ],
+   "warm_median_seconds": 0.0004388390007079579,
+   "warm_min_seconds": 0.0004121750025660731
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0008545009986846708,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 216,
+    "edges": 28512,
+    "pairs": null,
+    "tops": 5616
+   },
+   "samples_seconds": [
+    0.0008545009986846708,
+    0.0007838129968149588,
+    0.000775446998886764
+   ],
+   "warm_median_seconds": 0.0007796299978508614,
+   "warm_min_seconds": 0.000775446998886764
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0002879130042856559,
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": 216,
+   "samples_seconds": [
+    0.0002879130042856559,
+    0.00019948000408476219,
+    0.00017677299911156297
+   ],
+   "warm_median_seconds": 0.00018812650159816258,
+   "warm_min_seconds": 0.00017677299911156297
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 5616,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     13824,
+     25920,
+     12960,
+     0
+    ],
+    "cells": [
+     13824,
+     31104,
+     23328,
+     5616
+    ],
+    "components": 216,
+    "euler": 432,
+    "numpy_cells": [
+     13824,
+     31104,
+     23328,
+     5616
+    ],
+    "scipy_components": 216
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0001653299987083301,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001653299987083301,
+    2.8700997063424438e-05
+   ],
+   "warm_median_seconds": 2.8700997063424438e-05,
+   "warm_min_seconds": 2.8700997063424438e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.005844849998538848,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 274625,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 0,
+    "positions": 32768
+   },
+   "samples_seconds": [
+    0.005844849998538848,
+    0.005552194001211319,
+    0.00580568299483275
+   ],
+   "warm_median_seconds": 0.005678938498022035,
+   "warm_min_seconds": 0.005552194001211319
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.012631081001018174,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012631081001018174,
+    0.012198739001178183,
+    0.01180605500121601
+   ],
+   "warm_median_seconds": 0.012002397001197096,
+   "warm_min_seconds": 0.01180605500121601
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.00014969200128689408,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.00014969200128689408,
+    4.548899596557021e-05,
+    3.464600013103336e-05
+   ],
+   "warm_median_seconds": 4.0067498048301786e-05,
+   "warm_min_seconds": 3.464600013103336e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 2.4777997168712318e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 0
+   },
+   "samples_seconds": [
+    2.4777997168712318e-05,
+    1.2976001016795635e-05,
+    1.249599881703034e-05
+   ],
+   "warm_median_seconds": 1.2735999916912988e-05,
+   "warm_min_seconds": 1.249599881703034e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0007872749993111938,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007872749993111938,
+    0.0005477480008266866,
+    0.0005543879960896447
+   ],
+   "warm_median_seconds": 0.0005510679984581657,
+   "warm_min_seconds": 0.0005477480008266866
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 3.9280996134039015e-05,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 0,
+    "edges": 0,
+    "pairs": null,
+    "tops": 0
+   },
+   "samples_seconds": [
+    3.9280996134039015e-05,
+    1.7367005057167262e-05,
+    1.347699435427785e-05
+   ],
+   "warm_median_seconds": 1.5421999705722556e-05,
+   "warm_min_seconds": 1.347699435427785e-05
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.00043737099622376263,
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.00043737099622376263,
+    0.0002809959987644106,
+    0.0002357499979552813
+   ],
+   "warm_median_seconds": 0.00025837299835984595,
+   "warm_min_seconds": 0.0002357499979552813
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "empty",
+    "rows": 0,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "components": 0,
+    "euler": 0,
+    "numpy_cells": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "scipy_components": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0007490959978895262,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007490959978895262,
+    0.000647897002636455
+   ],
+   "warm_median_seconds": 0.000647897002636455,
+   "warm_min_seconds": 0.000647897002636455
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.006629303999943659,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 2,
+    "candidates": 274625,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 1,
+    "positions": 32768
+   },
+   "samples_seconds": [
+    0.006629303999943659,
+    0.006346818998281378,
+    0.006353875003696885
+   ],
+   "warm_median_seconds": 0.006350347000989132,
+   "warm_min_seconds": 0.006346818998281378
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.06826759099931223,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.06826759099931223,
+    0.07241215700196335,
+    0.07163207000121474
+   ],
+   "warm_median_seconds": 0.07202211350158905,
+   "warm_min_seconds": 0.07163207000121474
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.02251848699961556,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.02251848699961556,
+    0.022455582999100443,
+    0.02396750500338385
+   ],
+   "warm_median_seconds": 0.023211544001242146,
+   "warm_min_seconds": 0.022455582999100443
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.007897957999375649,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 1597440
+   },
+   "samples_seconds": [
+    0.007897957999375649,
+    0.008053129000472836,
+    0.0077727460011374205
+   ],
+   "warm_median_seconds": 0.007912937500805128,
+   "warm_min_seconds": 0.0077727460011374205
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0008234359993366525,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008234359993366525,
+    0.0005762479995610192,
+    0.0005751129938289523
+   ],
+   "warm_median_seconds": 0.0005756804966949858,
+   "warm_min_seconds": 0.0005751129938289523
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.004478960996493697,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 1,
+    "edges": 398908,
+    "pairs": null,
+    "tops": 32768
+   },
+   "samples_seconds": [
+    0.004478960996493697,
+    0.004649963004339952,
+    0.004927477995806839
+   ],
+   "warm_median_seconds": 0.004788720500073396,
+   "warm_min_seconds": 0.004649963004339952
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.000573930999962613,
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.000573930999962613,
+    0.0005170290023670532,
+    0.0005040169999119826
+   ],
+   "warm_median_seconds": 0.0005105230011395179,
+   "warm_min_seconds": 0.0005040169999119826
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "full",
+    "rows": 32768,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     6146,
+     12288,
+     6144,
+     0
+    ],
+    "cells": [
+     35937,
+     104544,
+     101376,
+     32768
+    ],
+    "components": 1,
+    "euler": 1,
+    "numpy_cells": [
+     35937,
+     104544,
+     101376,
+     32768
+    ],
+    "scipy_components": 1
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.00044395000440999866,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00044395000440999866,
+    0.00028445499629015103
+   ],
+   "warm_median_seconds": 0.00028445499629015103,
+   "warm_min_seconds": 0.00028445499629015103
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.01108470700273756,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 242,
+    "candidates": 274625,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": -2410,
+    "positions": 32768
+   },
+   "samples_seconds": [
+    0.01108470700273756,
+    0.009671498002717271,
+    0.009508202005235944
+   ],
+   "warm_median_seconds": 0.009589850003976608,
+   "warm_min_seconds": 0.009508202005235944
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.04098081000120146,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04098081000120146,
+    0.04111712200392503,
+    0.05768248600361403
+   ],
+   "warm_median_seconds": 0.04939980400376953,
+   "warm_min_seconds": 0.04111712200392503
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.027570856997044757,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.027570856997044757,
+    0.02886866899643792,
+    0.03515403099299874
+   ],
+   "warm_median_seconds": 0.03201134999471833,
+   "warm_min_seconds": 0.02886866899643792
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.002493590996891726,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 539120
+   },
+   "samples_seconds": [
+    0.002493590996891726,
+    0.002519670997571666,
+    0.0023919949962873943
+   ],
+   "warm_median_seconds": 0.00245583299692953,
+   "warm_min_seconds": 0.0023919949962873943
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0008685030043125153,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008685030043125153,
+    0.0005737690007663332,
+    0.0005521700004464947
+   ],
+   "warm_median_seconds": 0.0005629695006064139,
+   "warm_min_seconds": 0.0005521700004464947
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.001813337999919895,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 25,
+    "edges": 24378,
+    "pairs": null,
+    "tops": 8138
+   },
+   "samples_seconds": [
+    0.001813337999919895,
+    0.0016774459945736453,
+    0.0017666529965936206
+   ],
+   "warm_median_seconds": 0.001722049495583633,
+   "warm_min_seconds": 0.0016774459945736453
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0009693700048956089,
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": 25,
+   "samples_seconds": [
+    0.0009693700048956089,
+    0.0009023890015669167,
+    0.0008961359999375418
+   ],
+   "warm_median_seconds": 0.0008992625007522292,
+   "warm_min_seconds": 0.0008961359999375418
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "25%",
+    "rows": 8138,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     30934,
+     67816,
+     37124,
+     0
+    ],
+    "cells": [
+     30935,
+     68183,
+     42976,
+     8138
+    ],
+    "components": 25,
+    "euler": -2410,
+    "numpy_cells": [
+     30935,
+     68183,
+     42976,
+     8138
+    ],
+    "scipy_components": 25
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "scope",
+   "first_seconds": 0.0004879870029981248,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004879870029981248,
+    0.000417752999055665
+   ],
+   "warm_median_seconds": 0.000417752999055665,
+   "warm_min_seconds": 0.000417752999055665
+  },
+  {
+   "backend": "cpu",
+   "case": "euler counts",
+   "first_seconds": 0.007125778996851295,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "backend": "cpu",
+    "boundary_euler": 2048,
+    "candidates": 274625,
+    "device": "native CPU",
+    "dim": 3,
+    "euler": 1024,
+    "positions": 32768
+   },
+   "samples_seconds": [
+    0.007125778996851295,
+    0.006968589004827663,
+    0.006718019998515956
+   ],
+   "warm_median_seconds": 0.00684330450167181,
+   "warm_min_seconds": 0.006718019998515956
+  },
+  {
+   "backend": "cpu",
+   "case": "complex (cells, incidences)",
+   "first_seconds": 0.04503211099654436,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.04503211099654436,
+    0.04436912700475659,
+    0.04450906599959126
+   ],
+   "warm_median_seconds": 0.044439096502173925,
+   "warm_min_seconds": 0.04436912700475659
+  },
+  {
+   "backend": "cpu",
+   "case": "local invariants",
+   "first_seconds": 0.016711081996618304,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.016711081996618304,
+    0.016723729997465853,
+    0.016641173999232706
+   ],
+   "warm_median_seconds": 0.01668245199834928,
+   "warm_min_seconds": 0.016641173999232706
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check",
+   "first_seconds": 0.003557952994015068,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 761856
+   },
+   "samples_seconds": [
+    0.003557952994015068,
+    0.0035144060020684265,
+    0.003647265999461524
+   ],
+   "warm_median_seconds": 0.0035808360007649753,
+   "warm_min_seconds": 0.0035144060020684265
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy cells (baseline)",
+   "first_seconds": 0.0009876359981717542,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009876359981717542,
+    0.0005760810017818585,
+    0.0005936550005571917
+   ],
+   "warm_median_seconds": 0.0005848680011695251,
+   "warm_min_seconds": 0.0005760810017818585
+  },
+  {
+   "backend": "cpu",
+   "case": "dual graph components",
+   "first_seconds": 0.0019051499984925613,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 26,
+    "components": 512,
+    "edges": 67584,
+    "pairs": null,
+    "tops": 13312
+   },
+   "samples_seconds": [
+    0.0019051499984925613,
+    0.0018177390011260286,
+    0.0018683419984881766
+   ],
+   "warm_median_seconds": 0.0018430404998071026,
+   "warm_min_seconds": 0.0018177390011260286
+  },
+  {
+   "backend": "scipy",
+   "case": "scipy ndimage.label (baseline)",
+   "first_seconds": 0.0005335800015018322,
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": 512,
+   "samples_seconds": [
+    0.0005335800015018322,
+    0.00043705700227292255,
+    0.00041485700057819486
+   ],
+   "warm_median_seconds": 0.0004259570014255587,
+   "warm_min_seconds": 0.00041485700057819486
+  },
+  {
+   "backend": "cpu",
+   "case": "complex summary",
+   "params": {
+    "pattern": "holes",
+    "rows": 13312,
+    "shape": [
+     32,
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "boundary": [
+     32768,
+     61440,
+     30720,
+     0
+    ],
+    "cells": [
+     32768,
+     73728,
+     55296,
+     13312
+    ],
+    "components": 512,
+    "euler": 1024,
+    "numpy_cells": [
+     32768,
+     73728,
+     55296,
+     13312
+    ],
+    "scipy_components": 512
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.00047605000145267695,
+   "params": {
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00047605000145267695
+   ],
+   "warm_median_seconds": 0.00047605000145267695,
+   "warm_min_seconds": 0.00047605000145267695
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0013929380002082326,
+   "params": {
+    "cells": 3072,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013929380002082326,
+    0.0006123470011516474
+   ],
+   "warm_median_seconds": 0.0006123470011516474,
+   "warm_min_seconds": 0.0006123470011516474
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 3072,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     64,
+     0
+    ],
+    "peak_bytes": 1276448,
+    "ranks": [
+     0,
+     960,
+     512,
+     0
+    ],
+    "steps": 2880
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.00157296300312737,
+   "params": {
+    "cells": 3072,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00157296300312737,
+    0.0012270049992366694
+   ],
+   "warm_median_seconds": 0.0012270049992366694,
+   "warm_min_seconds": 0.0012270049992366694
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 3072,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     64,
+     0
+    ],
+    "peak_bytes": 397312,
+    "ranks": [
+     0,
+     960,
+     512,
+     0
+    ],
+    "steps": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0006464390025939792,
+   "params": {
+    "cells": 3072,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006464390025939792,
+    0.0005858609947608784
+   ],
+   "warm_median_seconds": 0.0005858609947608784,
+   "warm_min_seconds": 0.0005858609947608784
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 3072,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     64,
+     0
+    ],
+    "peak_bytes": 1278496,
+    "ranks": [
+     0,
+     960,
+     512,
+     0
+    ],
+    "steps": 2880
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0005592070010607131,
+   "params": {
+    "cells": 3072,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005592070010607131,
+    0.0006273190010688268
+   ],
+   "warm_median_seconds": 0.0006273190010688268,
+   "warm_min_seconds": 0.0006273190010688268
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 3072,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     64,
+     0
+    ],
+    "peak_bytes": 1282592,
+    "ranks": [
+     0,
+     960,
+     512,
+     0
+    ],
+    "steps": 2880
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0015153799977269955,
+   "params": {
+    "cells": 3072,
+    "levels": 4,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015153799977269955,
+    0.0014384060050360858
+   ],
+   "warm_median_seconds": 0.0014384060050360858,
+   "warm_min_seconds": 0.0014384060050360858
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 1472,
+    "peak_bytes": 1265088,
+    "steps": 2590,
+    "zero_length": 1421
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0011299550023977645,
+   "params": {
+    "cells": 3072,
+    "levels": 16,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011299550023977645,
+    0.0014465299973380752
+   ],
+   "warm_median_seconds": 0.0014465299973380752,
+   "warm_min_seconds": 0.0014465299973380752
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 1472,
+    "peak_bytes": 1265088,
+    "steps": 2472,
+    "zero_length": 1404
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0012150999973528087,
+   "params": {
+    "cells": 3072,
+    "levels": 64,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012150999973528087,
+    0.0012808949977625161
+   ],
+   "warm_median_seconds": 0.0012808949977625161,
+   "warm_min_seconds": 0.0012808949977625161
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 1472,
+    "peak_bytes": 1265088,
+    "steps": 2426,
+    "zero_length": 1396
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.00034267199953319505,
+   "params": {
+    "cells": 3072,
+    "shape": [
+     32,
+     32
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 4096
+   },
+   "samples_seconds": [
+    0.00034267199953319505,
+    0.00011996200191788375
+   ],
+   "warm_median_seconds": 0.00011996200191788375,
+   "warm_min_seconds": 0.00011996200191788375
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.0007539919970440678,
+   "params": {
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007539919970440678
+   ],
+   "warm_median_seconds": 0.0007539919970440678,
+   "warm_min_seconds": 0.0007539919970440678
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.001037670997902751,
+   "params": {
+    "cells": 2736,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001037670997902751,
+    0.0005228640002314933
+   ],
+   "warm_median_seconds": 0.0005228640002314933,
+   "warm_min_seconds": 0.0005228640002314933
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 2736,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "known": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "peak_bytes": 1229536,
+    "ranks": [
+     0,
+     504,
+     648,
+     208,
+     0
+    ],
+    "steps": 6048
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0010736460026237182,
+   "params": {
+    "cells": 2736,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010736460026237182,
+    0.0010029469995060936
+   ],
+   "warm_median_seconds": 0.0010029469995060936,
+   "warm_min_seconds": 0.0010029469995060936
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 2736,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "known": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "peak_bytes": 262144,
+    "ranks": [
+     0,
+     504,
+     648,
+     208,
+     0
+    ],
+    "steps": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0005699529938283376,
+   "params": {
+    "cells": 2736,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005699529938283376,
+    0.0005599590003839694
+   ],
+   "warm_median_seconds": 0.0005599590003839694,
+   "warm_min_seconds": 0.0005599590003839694
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 2736,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "known": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "peak_bytes": 1231584,
+    "ranks": [
+     0,
+     504,
+     648,
+     208,
+     0
+    ],
+    "steps": 6048
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0006855359970359132,
+   "params": {
+    "cells": 2736,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006855359970359132,
+    0.000604350003413856
+   ],
+   "warm_median_seconds": 0.000604350003413856,
+   "warm_min_seconds": 0.000604350003413856
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 2736,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "known": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "peak_bytes": 1235680,
+    "ranks": [
+     0,
+     504,
+     648,
+     208,
+     0
+    ],
+    "steps": 6048
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0012812700006179512,
+   "params": {
+    "cells": 2736,
+    "levels": 4,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012812700006179512,
+    0.0012185409941594116
+   ],
+   "warm_median_seconds": 0.0012185409941594116,
+   "warm_min_seconds": 0.0012185409941594116
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "essential": 16,
+    "pairs": 1360,
+    "peak_bytes": 1226336,
+    "steps": 5515,
+    "zero_length": 1349
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0011770019991672598,
+   "params": {
+    "cells": 2736,
+    "levels": 16,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011770019991672598,
+    0.001316956004302483
+   ],
+   "warm_median_seconds": 0.001316956004302483,
+   "warm_min_seconds": 0.001316956004302483
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "essential": 16,
+    "pairs": 1360,
+    "peak_bytes": 1226336,
+    "steps": 5428,
+    "zero_length": 1341
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0011950410043937154,
+   "params": {
+    "cells": 2736,
+    "levels": 64,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011950410043937154,
+    0.0024074709945125505
+   ],
+   "warm_median_seconds": 0.0024074709945125505,
+   "warm_min_seconds": 0.0024074709945125505
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     8,
+     0,
+     8,
+     0
+    ],
+    "essential": 16,
+    "pairs": 1360,
+    "peak_bytes": 1226336,
+    "steps": 5373,
+    "zero_length": 1340
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.00010271399514749646,
+   "params": {
+    "cells": 2736,
+    "shape": [
+     8,
+     8,
+     8
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 11904
+   },
+   "samples_seconds": [
+    0.00010271399514749646,
+    0.00010851900151465088
+   ],
+   "warm_median_seconds": 0.00010851900151465088,
+   "warm_min_seconds": 0.00010851900151465088
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.0018100160014000721,
+   "params": {
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0018100160014000721
+   ],
+   "warm_median_seconds": 0.0018100160014000721,
+   "warm_min_seconds": 0.0018100160014000721
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0025860420064418577,
+   "params": {
+    "cells": 12288,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025860420064418577,
+    0.001745286994264461
+   ],
+   "warm_median_seconds": 0.001745286994264461,
+   "warm_min_seconds": 0.001745286994264461
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 12288,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "known": [
+     256,
+     256,
+     0
+    ],
+    "peak_bytes": 1956512,
+    "ranks": [
+     0,
+     3840,
+     2048,
+     0
+    ],
+    "steps": 11520
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.03707904800103279,
+   "params": {
+    "cells": 12288,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03707904800103279,
+    0.033131768002931494
+   ],
+   "warm_median_seconds": 0.033131768002931494,
+   "warm_min_seconds": 0.033131768002931494
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 12288,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "known": [
+     256,
+     256,
+     0
+    ],
+    "peak_bytes": 6295552,
+    "ranks": [
+     0,
+     3840,
+     2048,
+     0
+    ],
+    "steps": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.002120778000971768,
+   "params": {
+    "cells": 12288,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002120778000971768,
+    0.002020910003921017
+   ],
+   "warm_median_seconds": 0.002020910003921017,
+   "warm_min_seconds": 0.002020910003921017
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 12288,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "known": [
+     256,
+     256,
+     0
+    ],
+    "peak_bytes": 1958560,
+    "ranks": [
+     0,
+     3840,
+     2048,
+     0
+    ],
+    "steps": 11520
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0020345800003269687,
+   "params": {
+    "cells": 12288,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020345800003269687,
+    0.002254575003462378
+   ],
+   "warm_median_seconds": 0.002254575003462378,
+   "warm_min_seconds": 0.002254575003462378
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 12288,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "known": [
+     256,
+     256,
+     0
+    ],
+    "peak_bytes": 1962656,
+    "ranks": [
+     0,
+     3840,
+     2048,
+     0
+    ],
+    "steps": 11520
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.004435279995959718,
+   "params": {
+    "cells": 12288,
+    "levels": 4,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004435279995959718,
+    0.005389466998167336
+   ],
+   "warm_median_seconds": 0.005389466998167336,
+   "warm_min_seconds": 0.005389466998167336
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "essential": 512,
+    "pairs": 5888,
+    "peak_bytes": 1912896,
+    "steps": 10429,
+    "zero_length": 5689
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.004026898997835815,
+   "params": {
+    "cells": 12288,
+    "levels": 16,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004026898997835815,
+    0.0049248680006712675
+   ],
+   "warm_median_seconds": 0.0049248680006712675,
+   "warm_min_seconds": 0.0049248680006712675
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "essential": 512,
+    "pairs": 5888,
+    "peak_bytes": 1912896,
+    "steps": 9892,
+    "zero_length": 5608
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.004107624001335353,
+   "params": {
+    "cells": 12288,
+    "levels": 64,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004107624001335353,
+    0.004183363002084661
+   ],
+   "warm_median_seconds": 0.004183363002084661,
+   "warm_min_seconds": 0.004183363002084661
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     256,
+     256,
+     0
+    ],
+    "essential": 512,
+    "pairs": 5888,
+    "peak_bytes": 1912896,
+    "steps": 9799,
+    "zero_length": 5593
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.00011626800551312044,
+   "params": {
+    "cells": 12288,
+    "shape": [
+     64,
+     64
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 16384
+   },
+   "samples_seconds": [
+    0.00011626800551312044,
+    8.350300049642101e-05
+   ],
+   "warm_median_seconds": 8.350300049642101e-05,
+   "warm_min_seconds": 8.350300049642101e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.002443742996547371,
+   "params": {
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002443742996547371
+   ],
+   "warm_median_seconds": 0.002443742996547371,
+   "warm_min_seconds": 0.002443742996547371
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0021346889989217743,
+   "params": {
+    "cells": 9234,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021346889989217743,
+    0.0014115010053501464
+   ],
+   "warm_median_seconds": 0.0014115010053501464,
+   "warm_min_seconds": 0.0014115010053501464
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 9234,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "known": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "peak_bytes": 1707456,
+    "ranks": [
+     0,
+     1701,
+     2187,
+     702,
+     0
+    ],
+    "steps": 20412
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.012255804998858366,
+   "params": {
+    "cells": 9234,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012255804998858366,
+    0.010500174001208507
+   ],
+   "warm_median_seconds": 0.010500174001208507,
+   "warm_min_seconds": 0.010500174001208507
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 9234,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "known": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "peak_bytes": 2865664,
+    "ranks": [
+     0,
+     1701,
+     2187,
+     702,
+     0
+    ],
+    "steps": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0017008139984682202,
+   "params": {
+    "cells": 9234,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017008139984682202,
+    0.0015708210048615001
+   ],
+   "warm_median_seconds": 0.0015708210048615001,
+   "warm_min_seconds": 0.0015708210048615001
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 9234,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "known": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "peak_bytes": 1709504,
+    "ranks": [
+     0,
+     1701,
+     2187,
+     702,
+     0
+    ],
+    "steps": 20412
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0018809470057021827,
+   "params": {
+    "cells": 9234,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018809470057021827,
+    0.0019589410003391095
+   ],
+   "warm_median_seconds": 0.0019589410003391095,
+   "warm_min_seconds": 0.0019589410003391095
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 9234,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "known": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "peak_bytes": 1713600,
+    "ranks": [
+     0,
+     1701,
+     2187,
+     702,
+     0
+    ],
+    "steps": 20412
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.003483154003333766,
+   "params": {
+    "cells": 9234,
+    "levels": 4,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003483154003333766,
+    0.0039712020006845705
+   ],
+   "warm_median_seconds": 0.0039712020006845705,
+   "warm_min_seconds": 0.0039712020006845705
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "essential": 54,
+    "pairs": 4590,
+    "peak_bytes": 1697472,
+    "steps": 18703,
+    "zero_length": 4564
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.003448277995630633,
+   "params": {
+    "cells": 9234,
+    "levels": 16,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003448277995630633,
+    0.0035335149950697087
+   ],
+   "warm_median_seconds": 0.0035335149950697087,
+   "warm_min_seconds": 0.0035335149950697087
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "essential": 54,
+    "pairs": 4590,
+    "peak_bytes": 1697472,
+    "steps": 17714,
+    "zero_length": 4530
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.003403472001082264,
+   "params": {
+    "cells": 9234,
+    "levels": 64,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003403472001082264,
+    0.003467716000159271
+   ],
+   "warm_median_seconds": 0.003467716000159271,
+   "warm_min_seconds": 0.003467716000159271
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     27,
+     0,
+     27,
+     0
+    ],
+    "essential": 54,
+    "pairs": 4590,
+    "peak_bytes": 1697472,
+    "steps": 17643,
+    "zero_length": 4526
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.00023451300512533635,
+   "params": {
+    "cells": 9234,
+    "shape": [
+     12,
+     12,
+     12
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 40176
+   },
+   "samples_seconds": [
+    0.00023451300512533635,
+    0.00022482899657916278
+   ],
+   "warm_median_seconds": 0.00022482899657916278,
+   "warm_min_seconds": 0.00022482899657916278
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.0038165959995239973,
+   "params": {
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0038165959995239973
+   ],
+   "warm_median_seconds": 0.0038165959995239973,
+   "warm_min_seconds": 0.0038165959995239973
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0046048119984334335,
+   "params": {
+    "cells": 27648,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0046048119984334335,
+    0.003857324001728557
+   ],
+   "warm_median_seconds": 0.003857324001728557,
+   "warm_min_seconds": 0.003857324001728557
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 27648,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "known": [
+     576,
+     576,
+     0
+    ],
+    "peak_bytes": 3035680,
+    "ranks": [
+     0,
+     8640,
+     4608,
+     0
+    ],
+    "steps": 25920
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "limit": 67108864,
+   "message": "homology: needs 127401984 tensor, budget 67108864",
+   "need": 127401984,
+   "params": {
+    "cells": 27648,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.68410042533651e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.003930967002816033,
+   "params": {
+    "cells": 27648,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003930967002816033,
+    0.0054373680031858385
+   ],
+   "warm_median_seconds": 0.0054373680031858385,
+   "warm_min_seconds": 0.0054373680031858385
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 27648,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "known": [
+     576,
+     576,
+     0
+    ],
+    "peak_bytes": 3037728,
+    "ranks": [
+     0,
+     8640,
+     4608,
+     0
+    ],
+    "steps": 25920
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.004929160000756383,
+   "params": {
+    "cells": 27648,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004929160000756383,
+    0.004811537997738924
+   ],
+   "warm_median_seconds": 0.004811537997738924,
+   "warm_min_seconds": 0.004811537997738924
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 27648,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "known": [
+     576,
+     576,
+     0
+    ],
+    "peak_bytes": 3041824,
+    "ranks": [
+     0,
+     8640,
+     4608,
+     0
+    ],
+    "steps": 25920
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.007716928994341288,
+   "params": {
+    "cells": 27648,
+    "levels": 4,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007716928994341288,
+    0.00936834800086217
+   ],
+   "warm_median_seconds": 0.00936834800086217,
+   "warm_min_seconds": 0.00936834800086217
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "essential": 1152,
+    "pairs": 13248,
+    "peak_bytes": 2928576,
+    "steps": 23417,
+    "zero_length": 12799
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.03471072699903743,
+   "params": {
+    "cells": 27648,
+    "levels": 16,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03471072699903743,
+    0.010670654999557883
+   ],
+   "warm_median_seconds": 0.010670654999557883,
+   "warm_min_seconds": 0.010670654999557883
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "essential": 1152,
+    "pairs": 13248,
+    "peak_bytes": 2928576,
+    "steps": 22215,
+    "zero_length": 12620
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.00803863100009039,
+   "params": {
+    "cells": 27648,
+    "levels": 64,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00803863100009039,
+    0.008899255997675937
+   ],
+   "warm_median_seconds": 0.008899255997675937,
+   "warm_min_seconds": 0.008899255997675937
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     576,
+     576,
+     0
+    ],
+    "essential": 1152,
+    "pairs": 13248,
+    "peak_bytes": 2928576,
+    "steps": 21945,
+    "zero_length": 12590
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.0002068070025416091,
+   "params": {
+    "cells": 27648,
+    "shape": [
+     96,
+     96
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 36864
+   },
+   "samples_seconds": [
+    0.0002068070025416091,
+    0.00018020100105786696
+   ],
+   "warm_median_seconds": 0.00018020100105786696,
+   "warm_min_seconds": 0.00018020100105786696
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.005211023999436293,
+   "params": {
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005211023999436293
+   ],
+   "warm_median_seconds": 0.005211023999436293,
+   "warm_min_seconds": 0.005211023999436293
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.003935726002964657,
+   "params": {
+    "cells": 21888,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003935726002964657,
+    0.003115849001915194
+   ],
+   "warm_median_seconds": 0.003115849001915194,
+   "warm_min_seconds": 0.003115849001915194
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 21888,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "peak_bytes": 2483520,
+    "ranks": [
+     0,
+     4032,
+     5184,
+     1664,
+     0
+    ],
+    "steps": 48384
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.06926600100268843,
+   "params": {
+    "cells": 21888,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06926600100268843,
+    0.06357460599974729
+   ],
+   "warm_median_seconds": 0.06357460599974729,
+   "warm_min_seconds": 0.06357460599974729
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 21888,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "peak_bytes": 15929344,
+    "ranks": [
+     0,
+     4032,
+     5184,
+     1664,
+     0
+    ],
+    "steps": 0
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.003954831001465209,
+   "params": {
+    "cells": 21888,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003954831001465209,
+    0.003688030999910552
+   ],
+   "warm_median_seconds": 0.003688030999910552,
+   "warm_min_seconds": 0.003688030999910552
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 21888,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "peak_bytes": 2485568,
+    "ranks": [
+     0,
+     4032,
+     5184,
+     1664,
+     0
+    ],
+    "steps": 48384
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0044143519990029745,
+   "params": {
+    "cells": 21888,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0044143519990029745,
+    0.0042945129971485585
+   ],
+   "warm_median_seconds": 0.0042945129971485585,
+   "warm_min_seconds": 0.0042945129971485585
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 21888,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "known": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "peak_bytes": 2489664,
+    "ranks": [
+     0,
+     4032,
+     5184,
+     1664,
+     0
+    ],
+    "steps": 48384
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.007649352999578696,
+   "params": {
+    "cells": 21888,
+    "levels": 4,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007649352999578696,
+    0.008481937999022193
+   ],
+   "warm_median_seconds": 0.008481937999022193,
+   "warm_min_seconds": 0.008481937999022193
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 10880,
+    "peak_bytes": 2464064,
+    "steps": 44417,
+    "zero_length": 10806
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.007898540003225207,
+   "params": {
+    "cells": 21888,
+    "levels": 16,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007898540003225207,
+    0.008115668999380432
+   ],
+   "warm_median_seconds": 0.008115668999380432,
+   "warm_min_seconds": 0.008115668999380432
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 10880,
+    "peak_bytes": 2464064,
+    "steps": 41842,
+    "zero_length": 10732
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.007645629993930925,
+   "params": {
+    "cells": 21888,
+    "levels": 64,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007645629993930925,
+    0.008293269995192531
+   ],
+   "warm_median_seconds": 0.008293269995192531,
+   "warm_min_seconds": 0.008293269995192531
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     64,
+     0,
+     64,
+     0
+    ],
+    "essential": 128,
+    "pairs": 10880,
+    "peak_bytes": 2464064,
+    "steps": 41349,
+    "zero_length": 10716
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.0005408899960457347,
+   "params": {
+    "cells": 21888,
+    "shape": [
+     16,
+     16,
+     16
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 95232
+   },
+   "samples_seconds": [
+    0.0005408899960457347,
+    0.00046811199717922136
+   ],
+   "warm_median_seconds": 0.00046811199717922136,
+   "warm_min_seconds": 0.00046811199717922136
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.016989659998216666,
+   "params": {
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.016989659998216666
+   ],
+   "warm_median_seconds": 0.016989659998216666,
+   "warm_min_seconds": 0.016989659998216666
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.02546336699742824,
+   "params": {
+    "cells": 110592,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02546336699742824,
+    0.023984232000657357
+   ],
+   "warm_median_seconds": 0.023984232000657357,
+   "warm_min_seconds": 0.023984232000657357
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 110592,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "known": [
+     2304,
+     2304,
+     0
+    ],
+    "peak_bytes": 8993440,
+    "ranks": [
+     0,
+     34560,
+     18432,
+     0
+    ],
+    "steps": 103680
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "limit": 67108864,
+   "message": "homology: needs 2038431744 tensor, budget 67108864",
+   "need": 2038431744,
+   "params": {
+    "cells": 110592,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.8187005480285734e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.01924164599768119,
+   "params": {
+    "cells": 110592,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01924164599768119,
+    0.020650787999329623
+   ],
+   "warm_median_seconds": 0.020650787999329623,
+   "warm_min_seconds": 0.020650787999329623
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 110592,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "known": [
+     2304,
+     2304,
+     0
+    ],
+    "peak_bytes": 10044096,
+    "ranks": [
+     0,
+     34560,
+     18432,
+     0
+    ],
+    "steps": 103680
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.017063280996808317,
+   "params": {
+    "cells": 110592,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.017063280996808317,
+    0.01741815699642757
+   ],
+   "warm_median_seconds": 0.01741815699642757,
+   "warm_min_seconds": 0.01741815699642757
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 110592,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "known": [
+     2304,
+     2304,
+     0
+    ],
+    "peak_bytes": 10048192,
+    "ranks": [
+     0,
+     34560,
+     18432,
+     0
+    ],
+    "steps": 103680
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.05469053999695461,
+   "params": {
+    "cells": 110592,
+    "levels": 4,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05469053999695461,
+    0.07412786799977766
+   ],
+   "warm_median_seconds": 0.07412786799977766,
+   "warm_min_seconds": 0.07412786799977766
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "essential": 4608,
+    "pairs": 52992,
+    "peak_bytes": 8792064,
+    "steps": 93416,
+    "zero_length": 51306
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.0415558310050983,
+   "params": {
+    "cells": 110592,
+    "levels": 16,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0415558310050983,
+    0.06760453199967742
+   ],
+   "warm_median_seconds": 0.06760453199967742,
+   "warm_min_seconds": 0.06760453199967742
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "essential": 4608,
+    "pairs": 52992,
+    "peak_bytes": 8792064,
+    "steps": 88657,
+    "zero_length": 50576
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.04988738999963971,
+   "params": {
+    "cells": 110592,
+    "levels": 64,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04988738999963971,
+    0.05152170699875569
+   ],
+   "warm_median_seconds": 0.05152170699875569,
+   "warm_min_seconds": 0.05152170699875569
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     2304,
+     2304,
+     0
+    ],
+    "essential": 4608,
+    "pairs": 52992,
+    "peak_bytes": 8792064,
+    "steps": 87771,
+    "zero_length": 50414
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.000732430002244655,
+   "params": {
+    "cells": 110592,
+    "shape": [
+     192,
+     192
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 147456
+   },
+   "samples_seconds": [
+    0.000732430002244655,
+    0.0006424579987651668
+   ],
+   "warm_median_seconds": 0.0006424579987651668,
+   "warm_min_seconds": 0.0006424579987651668
+  },
+  {
+   "backend": "cpu",
+   "case": "complex for homology",
+   "first_seconds": 0.019443351004156284,
+   "params": {
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.019443351004156284
+   ],
+   "warm_median_seconds": 0.019443351004156284,
+   "warm_min_seconds": 0.019443351004156284
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.01159191899932921,
+   "params": {
+    "cells": 73872,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01159191899932921,
+    0.010491605004062876
+   ],
+   "warm_median_seconds": 0.010491605004062876,
+   "warm_min_seconds": 0.010491605004062876
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 73872,
+    "field": "gf2",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "known": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "peak_bytes": 6311968,
+    "ranks": [
+     0,
+     13608,
+     17496,
+     5616,
+     0
+    ],
+    "steps": 163296
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "limit": 67108864,
+   "message": "homology: needs 725594112 tensor, budget 67108864",
+   "need": 725594112,
+   "params": {
+    "cells": 73872,
+    "field": "gf2",
+    "method": "packed",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.4404002286028117e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.012378350998915266,
+   "params": {
+    "cells": 73872,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012378350998915266,
+    0.011147120996611193
+   ],
+   "warm_median_seconds": 0.011147120996611193,
+   "warm_min_seconds": 0.011147120996611193
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 73872,
+    "field": "2305843009213693951",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "known": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "peak_bytes": 7019776,
+    "ranks": [
+     0,
+     13608,
+     17496,
+     5616,
+     0
+    ],
+    "steps": 163296
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "homology (ranks, Betti, cycles)",
+   "first_seconds": 0.0145894609959214,
+   "params": {
+    "cells": 73872,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0145894609959214,
+    0.014684827001474332
+   ],
+   "warm_median_seconds": 0.014684827001474332,
+   "warm_min_seconds": 0.014684827001474332
+  },
+  {
+   "backend": "cpu",
+   "case": "homology summary",
+   "params": {
+    "cells": 73872,
+    "field": "q",
+    "method": "reduction",
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "known": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "peak_bytes": 7023872,
+    "ranks": [
+     0,
+     13608,
+     17496,
+     5616,
+     0
+    ],
+    "steps": 163296
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.023875446000602096,
+   "params": {
+    "cells": 73872,
+    "levels": 4,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.023875446000602096,
+    0.02702763200068148
+   ],
+   "warm_median_seconds": 0.02702763200068148,
+   "warm_min_seconds": 0.02702763200068148
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 4,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "essential": 432,
+    "pairs": 36720,
+    "peak_bytes": 6491904,
+    "steps": 150001,
+    "zero_length": 36419
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.024193302997446153,
+   "params": {
+    "cells": 73872,
+    "levels": 16,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.024193302997446153,
+    0.029384761000983417
+   ],
+   "warm_median_seconds": 0.029384761000983417,
+   "warm_min_seconds": 0.029384761000983417
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 16,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "essential": 432,
+    "pairs": 36720,
+    "peak_bytes": 6491904,
+    "steps": 142573,
+    "zero_length": 36143
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence (sublevel thresholds)",
+   "first_seconds": 0.026472632001969032,
+   "params": {
+    "cells": 73872,
+    "levels": 64,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026472632001969032,
+    0.030484714996418916
+   ],
+   "warm_median_seconds": 0.030484714996418916,
+   "warm_min_seconds": 0.030484714996418916
+  },
+  {
+   "backend": "cpu",
+   "case": "persistence summary",
+   "params": {
+    "levels": 64,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "result",
+   "result": {
+    "betti": [
+     216,
+     0,
+     216,
+     0
+    ],
+    "essential": 432,
+    "pairs": 36720,
+    "peak_bytes": 6491904,
+    "steps": 141912,
+    "zero_length": 36082
+   }
+  },
+  {
+   "backend": "cpu",
+   "case": "d o d check (homology complex)",
+   "first_seconds": 0.0016318519992637448,
+   "params": {
+    "cells": 73872,
+    "shape": [
+     24,
+     24,
+     24
+    ]
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "invalid": 0,
+    "terms": 321408
+   },
+   "samples_seconds": [
+    0.0016318519992637448,
+    0.0016408619994763285
+   ],
+   "warm_median_seconds": 0.0016408619994763285,
+   "warm_min_seconds": 0.0016408619994763285
+  },
+  {
+   "backend": "cpu",
+   "case": "homology at the step limit",
+   "first_seconds": 0.0016875849978532642,
+   "params": {
+    "iterations": 6480
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016875849978532642
+   ],
+   "warm_median_seconds": 0.0016875849978532642,
+   "warm_min_seconds": 0.0016875849978532642
+  },
+  {
+   "backend": "cpu",
+   "case": "homology one step below",
+   "limit": 6479,
+   "message": "homology: needs 6480 iterations, budget 6479",
+   "need": 6480,
+   "params": {
+    "iterations": 6479
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0011086199956480414,
+   "refused": true,
+   "resource": "iterations"
+  },
+  {
+   "backend": "cpu",
+   "case": "packed GF(2) homology",
+   "limit": 67108864,
+   "message": "homology: needs 85030560 tensor, budget 67108864",
+   "need": 85030560,
+   "params": {
+    "n": 80,
+    "tensor": 85030560
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.347400343045592e-05,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "Euler counts of a 4096^2 extent",
+   "first_seconds": 0.863077718000568,
+   "params": {
+    "positions": 16777216
+   },
+   "phase": "run",
+   "result": {
+    "adjacency": 8,
+    "backend": "cpu",
+    "boundary_euler": 0,
+    "candidates": 67125249,
+    "device": "native CPU",
+    "dim": 2,
+    "euler": 0,
+    "positions": 16777216
+   },
+   "samples_seconds": [
+    0.863077718000568
+   ],
+   "warm_median_seconds": 0.863077718000568,
+   "warm_min_seconds": 0.863077718000568
+  },
+  {
+   "backend": "cpu",
+   "case": "Euler counts of a 4096 x 4097 extent",
+   "limit": 16777216,
+   "message": "topology counts: needs 16781312 states, budget 16777216",
+   "need": 16781312,
+   "params": {
+    "positions": 16781312
+   },
+   "phase": "refusal",
+   "refusal_seconds": 9.793399658519775e-05,
+   "refused": true,
+   "resource": "states"
+  }
+ ],
+ "seconds": 8.671547245998227,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "betti": [
+    144,
+    144,
+    0
+   ],
+   "grid": "reduction steps (Q, H_1 cycles): the iterations budget",
+   "largest_admitted": {
+    "iterations_limit": 6480
+   },
+   "shape": [
+    48,
+    48
+   ],
+   "smallest_refused": {
+    "iterations_limit": 6479
+   },
+   "steps_needed": 6480
+  },
+  {
+   "grid": "packed GF(2) ranks (default tensor budget)",
+   "largest_admitted": {
+    "n": 72,
+    "tensor": 56018448
+   },
+   "smallest_refused": {
+    "n": 80,
+    "tensor": 85030560
+   }
+  },
+  {
+   "grid": "scan states (default budget)",
+   "largest_admitted": {
+    "positions": 16777216
+   },
+   "smallest_refused": {
+    "positions": 16781312
+   }
+  }
+ ]
+}

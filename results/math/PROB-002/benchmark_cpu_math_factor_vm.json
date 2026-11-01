@@ -1,0 +1,7801 @@
+{
+ "argv": [
+  "--capability",
+  "PROB-002",
+  "--out",
+  "/home/claude/release/torbles-val2/results/math/PROB-002/benchmark_cpu_math_factor_vm.json"
+ ],
+ "capability": "PROB-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T05:04:44+00:00"
+ },
+ "notes": [
+  "CUDA timings exist only with --device on an actual GPU; without it the CUDA path is not timed (the tests check its emulated arena bit for bit against the CPU).",
+  "Every answer is an exact rational (precision: exact); the limbs L bound every intermediate integer (64 L bits); z_*_bits are the bit lengths of the reduced Z. The NumPy enumeration baseline is float64 and uncertified; its requests are checked exactly (exact_equal) against Python-integer enumeration.",
+  "Plans: 'complete' means the exact subset DP considered every order (at most 14 eliminated variables by default); larger models use the heuristic candidates (min-fill, min-degree, min-weight, weighted min-fill, natural, reverse) chosen by FND-008's cost (relative work units, not time)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004, the data)",
+   "first_seconds": 0.0007545690023107454,
+   "params": {
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007545690023107454,
+    0.0006462759993155487
+   ],
+   "warm_median_seconds": 0.0006462759993155487,
+   "warm_min_seconds": 0.0006462759993155487
+  },
+  {
+   "backend": "cpu",
+   "case": "factor graph: count tensors (one scan each) and the graph",
+   "first_seconds": 0.011009826004737988,
+   "graph": {
+    "assignments": 8,
+    "bytes": 1448946,
+    "data_factors": 3,
+    "declared": true,
+    "digest": "46ab4900539bdd7f3dadc910e4daa172",
+    "entries": 12,
+    "factors": 3,
+    "limbs": 1,
+    "linked": 3,
+    "max_scope": 2,
+    "max_table": 4,
+    "sources": 1,
+    "variables": 3
+   },
+   "params": {
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011009826004737988,
+    0.010196791001362726
+   ],
+   "warm_median_seconds": 0.010196791001362726,
+   "warm_min_seconds": 0.010196791001362726
+  },
+  {
+   "backend": "cpu",
+   "case": "normalizer Z (planned elimination, retained)",
+   "first_seconds": 0.0007043799996608868,
+   "params": {
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007043799996608868
+   ],
+   "warm_median_seconds": 0.0007043799996608868,
+   "warm_min_seconds": 0.0007043799996608868
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.506699719466269e-05,
+   "params": {
+    "observed": 2,
+    "requests": 1,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 1,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 1,
+    "order": [
+     "x1"
+    ],
+    "products": 6,
+    "support": 1,
+    "total": 4033.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.506699719466269e-05,
+    4.183100099908188e-05
+   ],
+   "warm_median_seconds": 4.183100099908188e-05,
+   "warm_min_seconds": 4.183100099908188e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.00011246599751757458,
+   "params": {
+    "observed": 2,
+    "requests": 1,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011246599751757458,
+    8.268999954452738e-05,
+    7.771999662509188e-05,
+    8.210100349970162e-05
+   ],
+   "warm_median_seconds": 8.210100349970162e-05,
+   "warm_min_seconds": 7.771999662509188e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 2.0817002223338932e-05,
+   "params": {
+    "observed": 2,
+    "requests": 1,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0817002223338932e-05,
+    1.505300315329805e-05
+   ],
+   "warm_median_seconds": 1.505300315329805e-05,
+   "warm_min_seconds": 1.505300315329805e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 2.1653999283444136e-05,
+   "params": {
+    "observed": 2,
+    "requests": 1,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    2.1653999283444136e-05,
+    1.714999962132424e-05,
+    1.549499575048685e-05,
+    1.4215002011042088e-05
+   ],
+   "warm_median_seconds": 1.549499575048685e-05,
+   "warm_min_seconds": 1.4215002011042088e-05
+  },
+  {
+   "arena_entries": 2,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 1,
+   "exact_equal": true,
+   "first_seconds": 8.460899698548019e-05,
+   "params": {
+    "observed": 2,
+    "requests": 1,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.460899698548019e-05,
+    2.0974002836737782e-05,
+    9.83799691312015e-06
+   ],
+   "warm_median_seconds": 1.5405999874928966e-05,
+   "warm_min_seconds": 9.83799691312015e-06,
+   "z_bits": [
+    41
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.792299973312765e-05,
+   "params": {
+    "observed": 2,
+    "requests": 100,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 1,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 1,
+    "order": [
+     "x1"
+    ],
+    "products": 6,
+    "support": 1,
+    "total": 7300.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.792299973312765e-05,
+    4.566300049191341e-05
+   ],
+   "warm_median_seconds": 4.566300049191341e-05,
+   "warm_min_seconds": 4.566300049191341e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.00015158399764914066,
+   "params": {
+    "observed": 2,
+    "requests": 100,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015158399764914066,
+    0.0001763260006555356,
+    0.00016203399718506262,
+    0.00014041700342204422
+   ],
+   "warm_median_seconds": 0.00016203399718506262,
+   "warm_min_seconds": 0.00014041700342204422
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.00011743800132535398,
+   "params": {
+    "observed": 2,
+    "requests": 100,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011743800132535398,
+    0.00010459400073159486
+   ],
+   "warm_median_seconds": 0.00010459400073159486,
+   "warm_min_seconds": 0.00010459400073159486
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 5.0078997446689755e-05,
+   "params": {
+    "observed": 2,
+    "requests": 100,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    5.0078997446689755e-05,
+    2.7833004423882812e-05,
+    2.7284004318062216e-05,
+    2.430400490993634e-05
+   ],
+   "warm_median_seconds": 2.7284004318062216e-05,
+   "warm_min_seconds": 2.430400490993634e-05
+  },
+  {
+   "arena_entries": 200,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.0005357879999792203,
+   "params": {
+    "observed": 2,
+    "requests": 100,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005357879999792203,
+    0.0006106699947849847,
+    0.0008184309990610927
+   ],
+   "warm_median_seconds": 0.0007145504969230387,
+   "warm_min_seconds": 0.0006106699947849847,
+   "z_bits": [
+    41
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.151600246084854e-05,
+   "params": {
+    "observed": 2,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 1,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 1,
+    "order": [
+     "x1"
+    ],
+    "products": 6,
+    "support": 1,
+    "total": 334000.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.151600246084854e-05,
+    4.3273998016957194e-05
+   ],
+   "warm_median_seconds": 4.3273998016957194e-05,
+   "warm_min_seconds": 4.3273998016957194e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.006309481999778654,
+   "params": {
+    "observed": 2,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006309481999778654,
+    0.008401045000937302
+   ],
+   "warm_median_seconds": 0.008401045000937302,
+   "warm_min_seconds": 0.008401045000937302
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.009805415000300854,
+   "params": {
+    "observed": 2,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009805415000300854,
+    0.01168897800380364
+   ],
+   "warm_median_seconds": 0.01168897800380364,
+   "warm_min_seconds": 0.01168897800380364
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 0.0009251579976989888,
+   "params": {
+    "observed": 2,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    0.0009251579976989888,
+    0.0008967899993876927
+   ],
+   "warm_median_seconds": 0.0008967899993876927,
+   "warm_min_seconds": 0.0008967899993876927
+  },
+  {
+   "arena_entries": 20000,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.055758382004569285,
+   "params": {
+    "observed": 2,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 8,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.055758382004569285,
+    0.055185681994771585
+   ],
+   "warm_median_seconds": 0.055185681994771585,
+   "warm_min_seconds": 0.055185681994771585,
+   "z_bits": [
+    41
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004, the data)",
+   "first_seconds": 0.000788452998676803,
+   "params": {
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000788452998676803,
+    0.0007322679957724176
+   ],
+   "warm_median_seconds": 0.0007322679957724176,
+   "warm_min_seconds": 0.0007322679957724176
+  },
+  {
+   "backend": "cpu",
+   "case": "factor graph: count tensors (one scan each) and the graph",
+   "first_seconds": 0.05442426800436806,
+   "graph": {
+    "assignments": 64,
+    "bytes": 5777844,
+    "data_factors": 6,
+    "declared": true,
+    "digest": "2b38d82d0402087386bff85ee5896bb9",
+    "entries": 24,
+    "factors": 6,
+    "limbs": 2,
+    "linked": 6,
+    "max_scope": 2,
+    "max_table": 4,
+    "sources": 1,
+    "variables": 6
+   },
+   "params": {
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05442426800436806,
+    0.05495422599778976
+   ],
+   "warm_median_seconds": 0.05495422599778976,
+   "warm_min_seconds": 0.05495422599778976
+  },
+  {
+   "backend": "cpu",
+   "case": "normalizer Z (planned elimination, retained)",
+   "first_seconds": 0.00033274800080107525,
+   "params": {
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00033274800080107525
+   ],
+   "warm_median_seconds": 0.00033274800080107525,
+   "warm_min_seconds": 0.00033274800080107525
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.12720032222569e-05,
+   "params": {
+    "observed": 3,
+    "requests": 1,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 2,
+    "order": [
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 15,
+    "support": 1,
+    "total": 8094.7,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.12720032222569e-05,
+    4.4206004531588405e-05
+   ],
+   "warm_median_seconds": 4.4206004531588405e-05,
+   "warm_min_seconds": 4.4206004531588405e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.00013621999823953956,
+   "params": {
+    "observed": 3,
+    "requests": 1,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013621999823953956,
+    9.847699402598664e-05,
+    7.238100079121068e-05,
+    6.94050031597726e-05
+   ],
+   "warm_median_seconds": 7.238100079121068e-05,
+   "warm_min_seconds": 6.94050031597726e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 6.6688000515569e-05,
+   "params": {
+    "observed": 3,
+    "requests": 1,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.6688000515569e-05,
+    1.6600002709310502e-05
+   ],
+   "warm_median_seconds": 1.6600002709310502e-05,
+   "warm_min_seconds": 1.6600002709310502e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 5.608000356005505e-05,
+   "params": {
+    "observed": 3,
+    "requests": 1,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    5.608000356005505e-05,
+    2.141299773938954e-05,
+    1.726699701976031e-05,
+    1.656599488342181e-05
+   ],
+   "warm_median_seconds": 1.726699701976031e-05,
+   "warm_min_seconds": 1.656599488342181e-05
+  },
+  {
+   "arena_entries": 8,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 1,
+   "exact_equal": true,
+   "first_seconds": 9.280000085709617e-05,
+   "params": {
+    "observed": 3,
+    "requests": 1,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.280000085709617e-05,
+    2.835899795172736e-05,
+    2.5055996957235038e-05
+   ],
+   "warm_median_seconds": 2.67074974544812e-05,
+   "warm_min_seconds": 2.5055996957235038e-05,
+   "z_bits": [
+    80
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.889700307510793e-05,
+   "params": {
+    "observed": 3,
+    "requests": 100,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 2,
+    "order": [
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 15,
+    "support": 1,
+    "total": 17470.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.889700307510793e-05,
+    4.299900319892913e-05
+   ],
+   "warm_median_seconds": 4.299900319892913e-05,
+   "warm_min_seconds": 4.299900319892913e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.00023207100457511842,
+   "params": {
+    "observed": 3,
+    "requests": 100,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023207100457511842,
+    0.00022024499776307493,
+    0.00024404199939453974,
+    0.0003206729961675592
+   ],
+   "warm_median_seconds": 0.00024404199939453974,
+   "warm_min_seconds": 0.00022024499776307493
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.00032969900348689407,
+   "params": {
+    "observed": 3,
+    "requests": 100,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00032969900348689407,
+    0.00025588100106688216
+   ],
+   "warm_median_seconds": 0.00025588100106688216,
+   "warm_min_seconds": 0.00025588100106688216
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 5.68269970244728e-05,
+   "params": {
+    "observed": 3,
+    "requests": 100,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    5.68269970244728e-05,
+    4.747200000565499e-05,
+    7.770299998810515e-05,
+    6.031699740560725e-05
+   ],
+   "warm_median_seconds": 6.031699740560725e-05,
+   "warm_min_seconds": 4.747200000565499e-05
+  },
+  {
+   "arena_entries": 800,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.0007989299992914312,
+   "params": {
+    "observed": 3,
+    "requests": 100,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007989299992914312,
+    0.0007443509966833517,
+    0.000740365001547616
+   ],
+   "warm_median_seconds": 0.0007423579991154838,
+   "warm_min_seconds": 0.000740365001547616,
+   "z_bits": [
+    80
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 7.206099689938128e-05,
+   "params": {
+    "observed": 3,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 2,
+    "order": [
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 15,
+    "support": 1,
+    "total": 955000.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    7.206099689938128e-05,
+    4.171099863015115e-05
+   ],
+   "warm_median_seconds": 4.171099863015115e-05,
+   "warm_min_seconds": 4.171099863015115e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.01010139100253582,
+   "params": {
+    "observed": 3,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01010139100253582,
+    0.011161731003085151
+   ],
+   "warm_median_seconds": 0.011161731003085151,
+   "warm_min_seconds": 0.011161731003085151
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.025736064999364316,
+   "params": {
+    "observed": 3,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025736064999364316,
+    0.027044071997806896
+   ],
+   "warm_median_seconds": 0.027044071997806896,
+   "warm_min_seconds": 0.027044071997806896
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 0.0029416699981084093,
+   "params": {
+    "observed": 3,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    0.0029416699981084093,
+    0.0027996220014756545
+   ],
+   "warm_median_seconds": 0.0027996220014756545,
+   "warm_min_seconds": 0.0027996220014756545
+  },
+  {
+   "arena_entries": 80000,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.0722279260007781,
+   "params": {
+    "observed": 3,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 64,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0722279260007781,
+    0.06766717699792935
+   ],
+   "warm_median_seconds": 0.06766717699792935,
+   "warm_min_seconds": 0.06766717699792935,
+   "z_bits": [
+    80
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "scope (FND-004, the data)",
+   "first_seconds": 0.0014029330050107092,
+   "params": {
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0014029330050107092,
+    0.0012418289989000186
+   ],
+   "warm_median_seconds": 0.0012418289989000186,
+   "warm_min_seconds": 0.0012418289989000186
+  },
+  {
+   "backend": "cpu",
+   "case": "factor graph: count tensors (one scan each) and the graph",
+   "first_seconds": 0.22006395499920473,
+   "graph": {
+    "assignments": 1024,
+    "bytes": 16030156,
+    "data_factors": 10,
+    "declared": true,
+    "digest": "8172b0226b9db45bdc645a2ae4085674",
+    "entries": 40,
+    "factors": 10,
+    "limbs": 3,
+    "linked": 10,
+    "max_scope": 2,
+    "max_table": 4,
+    "sources": 1,
+    "variables": 10
+   },
+   "params": {
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.22006395499920473,
+    0.2189016959964647
+   ],
+   "warm_median_seconds": 0.2189016959964647,
+   "warm_min_seconds": 0.2189016959964647
+  },
+  {
+   "backend": "cpu",
+   "case": "normalizer Z (planned elimination, retained)",
+   "first_seconds": 0.000434642999607604,
+   "params": {
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000434642999607604
+   ],
+   "warm_median_seconds": 0.000434642999607604,
+   "warm_min_seconds": 0.000434642999607604
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 0.00011697000445565209,
+   "params": {
+    "observed": 5,
+    "requests": 1,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 3,
+    "order": [
+     "x9",
+     "x7",
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 25,
+    "support": 1,
+    "total": 12202.9,
+    "width": 0
+   },
+   "samples_seconds": [
+    0.00011697000445565209,
+    4.802300099981949e-05
+   ],
+   "warm_median_seconds": 4.802300099981949e-05,
+   "warm_min_seconds": 4.802300099981949e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.00011531000200193375,
+   "params": {
+    "observed": 5,
+    "requests": 1,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011531000200193375,
+    7.842599734431133e-05,
+    6.906899943714961e-05,
+    6.838000263087451e-05
+   ],
+   "warm_median_seconds": 6.906899943714961e-05,
+   "warm_min_seconds": 6.838000263087451e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 8.164600149029866e-05,
+   "params": {
+    "observed": 5,
+    "requests": 1,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.164600149029866e-05,
+    1.578400406287983e-05
+   ],
+   "warm_median_seconds": 1.578400406287983e-05,
+   "warm_min_seconds": 1.578400406287983e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 5.5256001360248774e-05,
+   "params": {
+    "observed": 5,
+    "requests": 1,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    5.5256001360248774e-05,
+    1.9190003513358533e-05,
+    1.695800165180117e-05,
+    1.6429999959655106e-05
+   ],
+   "warm_median_seconds": 1.695800165180117e-05,
+   "warm_min_seconds": 1.6429999959655106e-05
+  },
+  {
+   "arena_entries": 18,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 1,
+   "exact_equal": true,
+   "first_seconds": 0.00048437099758302793,
+   "params": {
+    "observed": 5,
+    "requests": 1,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00048437099758302793,
+    0.000382622005417943,
+    0.0003498419973766431
+   ],
+   "warm_median_seconds": 0.00036623200139729306,
+   "warm_min_seconds": 0.0003498419973766431,
+   "z_bits": [
+    133
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 6.977500015636906e-05,
+   "params": {
+    "observed": 5,
+    "requests": 100,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 3,
+    "order": [
+     "x9",
+     "x7",
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 25,
+    "support": 1,
+    "total": 32290.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    6.977500015636906e-05,
+    4.285699833417311e-05
+   ],
+   "warm_median_seconds": 4.285699833417311e-05,
+   "warm_min_seconds": 4.285699833417311e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.0002661890030140057,
+   "params": {
+    "observed": 5,
+    "requests": 100,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002661890030140057,
+    0.00024228099937317893,
+    0.0002326540052308701,
+    0.0002529869962017983
+   ],
+   "warm_median_seconds": 0.00024228099937317893,
+   "warm_min_seconds": 0.0002326540052308701
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.0002955029995064251,
+   "params": {
+    "observed": 5,
+    "requests": 100,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002955029995064251,
+    0.0002805559997796081
+   ],
+   "warm_median_seconds": 0.0002805559997796081,
+   "warm_min_seconds": 0.0002805559997796081
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 7.176100189099088e-05,
+   "params": {
+    "observed": 5,
+    "requests": 100,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    7.176100189099088e-05,
+    6.518399459309876e-05,
+    6.48500063107349e-05,
+    6.2876999436412e-05
+   ],
+   "warm_median_seconds": 6.48500063107349e-05,
+   "warm_min_seconds": 6.2876999436412e-05
+  },
+  {
+   "arena_entries": 1800,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.00200696899992181,
+   "params": {
+    "observed": 5,
+    "requests": 100,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00200696899992181,
+    0.0024058319977484643,
+    0.0018829349937732331
+   ],
+   "warm_median_seconds": 0.0021443834957608487,
+   "warm_min_seconds": 0.0018829349937732331,
+   "z_bits": [
+    133
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "retained query: plan and program for the evidence shape",
+   "first_seconds": 9.153500286629423e-05,
+   "params": {
+    "observed": 5,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 2,
+    "limbs": 3,
+    "order": [
+     "x9",
+     "x7",
+     "x5",
+     "x3",
+     "x1"
+    ],
+    "products": 25,
+    "support": 1,
+    "total": 2041000.0,
+    "width": 0
+   },
+   "samples_seconds": [
+    9.153500286629423e-05,
+    5.618599971057847e-05
+   ],
+   "warm_median_seconds": 5.618599971057847e-05,
+   "warm_min_seconds": 5.618599971057847e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "likelihood batch: exact Z_e and P(e) per request (retained state)",
+   "first_seconds": 0.020100907000596635,
+   "params": {
+    "observed": 5,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.020100907000596635,
+    0.02026714599924162
+   ],
+   "warm_median_seconds": 0.02026714599924162,
+   "warm_min_seconds": 0.02026714599924162
+  },
+  {
+   "backend": "cpu",
+   "case": "exact readout of the batch's P(e) column as Fractions (one native call)",
+   "first_seconds": 0.0310328909981763,
+   "params": {
+    "observed": 5,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0310328909981763,
+    0.029369921001489274
+   ],
+   "warm_median_seconds": 0.029369921001489274,
+   "warm_min_seconds": 0.029369921001489274
+  },
+  {
+   "backend": "cpu",
+   "case": "the raw elimination alone (native arena, no exact readout)",
+   "first_seconds": 0.005449260002933443,
+   "params": {
+    "observed": 5,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "result": {
+    "arg": null,
+    "backend": "cpu",
+    "cnts": null,
+    "maxv": null
+   },
+   "samples_seconds": [
+    0.005449260002933443,
+    0.0053156720023253
+   ],
+   "warm_median_seconds": 0.0053156720023253,
+   "warm_min_seconds": 0.0053156720023253
+  },
+  {
+   "arena_entries": 180000,
+   "backend": "numpy",
+   "case": "numpy: repeated support enumeration per request (float64, uncertified)",
+   "exact_checked": 100,
+   "exact_equal": true,
+   "first_seconds": 0.15399630300089484,
+   "params": {
+    "observed": 5,
+    "requests": 10000,
+    "rows": 20000,
+    "support": 1024,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.15399630300089484,
+    0.20665183299570344
+   ],
+   "warm_median_seconds": 0.20665183299570344,
+   "warm_min_seconds": 0.20665183299570344,
+   "z_bits": [
+    133
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0004030939962831326,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004030939962831326,
+    0.00017809200653573498
+   ],
+   "warm_median_seconds": 0.00017809200653573498,
+   "warm_min_seconds": 0.00017809200653573498
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 32,
+   "first_seconds": 0.0001133820042014122,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 4,
+    "limbs": 1,
+    "order": [
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 23,
+    "support": 2,
+    "total": 10081.5,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.0001133820042014122,
+    3.4797005355358124e-05
+   ],
+   "warm_median_seconds": 3.4797005355358124e-05,
+   "warm_min_seconds": 3.4797005355358124e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0005251309994491749,
+   "heuristic": "exact",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 1,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 23,
+   "samples_seconds": [
+    0.0005251309994491749,
+    0.00023915700148791075,
+    0.00020270500681363046
+   ],
+   "warm_median_seconds": 0.0002209310041507706,
+   "warm_min_seconds": 0.00020270500681363046,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 10
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00028966899844817817,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00028966899844817817,
+    0.000325020999298431
+   ],
+   "warm_median_seconds": 0.000325020999298431,
+   "warm_min_seconds": 0.000325020999298431
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.000287843999103643,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000287843999103643,
+    0.00025729299522936344
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00025729299522936344,
+   "warm_min_seconds": 0.00025729299522936344
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 8.149399945978075e-05,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.149399945978075e-05,
+    4.358800651971251e-05
+   ],
+   "warm_median_seconds": 4.358800651971251e-05,
+   "warm_min_seconds": 4.358800651971251e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 9.52320042415522e-05,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.52320042415522e-05
+   ],
+   "warm_median_seconds": 9.52320042415522e-05,
+   "warm_min_seconds": 9.52320042415522e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.00011673699918901548,
+   "params": {
+    "factors": 3,
+    "family": "chain",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011673699918901548
+   ],
+   "warm_median_seconds": 0.00011673699918901548,
+   "warm_min_seconds": 0.00011673699918901548
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0003158350009471178,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003158350009471178,
+    0.000251880002906546
+   ],
+   "warm_median_seconds": 0.000251880002906546,
+   "warm_min_seconds": 0.000251880002906546
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 1024,
+   "first_seconds": 7.404999632854015e-05,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 4,
+    "limbs": 1,
+    "order": [
+     "v7",
+     "v6",
+     "v5",
+     "v4",
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 55,
+    "support": 2,
+    "total": 18169.5,
+    "width": 1
+   },
+   "samples_seconds": [
+    7.404999632854015e-05,
+    9.405500168213621e-05
+   ],
+   "warm_median_seconds": 9.405500168213621e-05,
+   "warm_min_seconds": 9.405500168213621e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0005796609984827228,
+   "heuristic": "exact",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 1,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 55,
+   "samples_seconds": [
+    0.0005796609984827228,
+    0.0003113769998890348,
+    0.00028381100128171965
+   ],
+   "warm_median_seconds": 0.0002975940005853772,
+   "warm_min_seconds": 0.00028381100128171965,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 19
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00027660399791784585,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00027660399791784585,
+    0.00024836399825289845
+   ],
+   "warm_median_seconds": 0.00024836399825289845,
+   "warm_min_seconds": 0.00024836399825289845
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0004271079960744828,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004271079960744828,
+    0.0003198609992978163
+   ],
+   "ties": 2,
+   "warm_median_seconds": 0.0003198609992978163,
+   "warm_min_seconds": 0.0003198609992978163
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 7.618499512318522e-05,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.618499512318522e-05,
+    4.371699469629675e-05
+   ],
+   "warm_median_seconds": 4.371699469629675e-05,
+   "warm_min_seconds": 4.371699469629675e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 8.251799590652809e-05,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.251799590652809e-05
+   ],
+   "warm_median_seconds": 8.251799590652809e-05,
+   "warm_min_seconds": 8.251799590652809e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.0020009979998576455,
+   "params": {
+    "factors": 7,
+    "family": "chain",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020009979998576455
+   ],
+   "warm_median_seconds": 0.0020009979998576455,
+   "warm_min_seconds": 0.0020009979998576455
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.00048384000547230244,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00048384000547230244,
+    0.00046899100561859086
+   ],
+   "warm_median_seconds": 0.00046899100561859086,
+   "warm_min_seconds": 0.00046899100561859086
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 6.93909969413653e-05,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 4,
+    "limbs": 2,
+    "order": [
+     "v0",
+     "v1",
+     "v2",
+     "v3",
+     "v4",
+     "v5",
+     "v6",
+     "v7",
+     "v8",
+     "v9",
+     "v10",
+     "v11",
+     "v12",
+     "v13",
+     "v14",
+     "v15"
+    ],
+    "products": 119,
+    "support": 2,
+    "total": 34618.7,
+    "width": 1
+   },
+   "samples_seconds": [
+    6.93909969413653e-05,
+    4.36670015915297e-05
+   ],
+   "warm_median_seconds": 4.36670015915297e-05,
+   "warm_min_seconds": 4.36670015915297e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.00045643100020242855,
+   "heuristic": "min-fill",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 2,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 119,
+   "samples_seconds": [
+    0.00045643100020242855,
+    0.0002838319996953942,
+    0.00021523600298678502
+   ],
+   "warm_median_seconds": 0.0002495340013410896,
+   "warm_min_seconds": 0.00021523600298678502,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 45
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0020050820021424443,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020050820021424443,
+    0.002041462001216132
+   ],
+   "warm_median_seconds": 0.002041462001216132,
+   "warm_min_seconds": 0.002041462001216132
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00036708699917653576,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00036708699917653576,
+    0.00041353400592925027
+   ],
+   "ties": 2,
+   "warm_median_seconds": 0.00041353400592925027,
+   "warm_min_seconds": 0.00041353400592925027
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 8.215800335165113e-05,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.215800335165113e-05,
+    5.502999556483701e-05
+   ],
+   "warm_median_seconds": 5.502999556483701e-05,
+   "warm_min_seconds": 5.502999556483701e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.02721691899932921,
+   "params": {
+    "factors": 15,
+    "family": "chain",
+    "size": 16,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02721691899932921
+   ],
+   "warm_median_seconds": 0.02721691899932921,
+   "warm_min_seconds": 0.02721691899932921
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0016651480036671273,
+   "params": {
+    "factors": 63,
+    "family": "chain",
+    "size": 64,
+    "variables": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0016651480036671273,
+    0.0016273220026050694
+   ],
+   "warm_median_seconds": 0.0016273220026050694,
+   "warm_min_seconds": 0.0016273220026050694
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0001812959962990135,
+   "params": {
+    "factors": 63,
+    "family": "chain",
+    "size": 64,
+    "variables": 64
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 4,
+    "limbs": 5,
+    "order": [
+     "v0",
+     "v1",
+     "v2",
+     "v3",
+     "v4",
+     "v5",
+     "v6",
+     "v7",
+     "v8",
+     "v9",
+     "v10",
+     "v11",
+     "v12",
+     "v13",
+     "v14",
+     "v15",
+     "v16",
+     "v17",
+     "v18",
+     "v19",
+     "v20",
+     "v21",
+     "v22",
+     "v23",
+     "v24",
+     "v25",
+     "v26",
+     "v27",
+     "v28",
+     "v29",
+     "v30",
+     "v31",
+     "v32",
+     "v33",
+     "v34",
+     "v35",
+     "v36",
+     "v37",
+     "v38",
+     "v39",
+     "v40",
+     "v41",
+     "v42",
+     "v43",
+     "v44",
+     "v45",
+     "v46",
+     "v47",
+     "v48",
+     "v49",
+     "v50",
+     "v51",
+     "v52",
+     "v53",
+     "v54",
+     "v55",
+     "v56",
+     "v57",
+     "v58",
+     "v59",
+     "v60",
+     "v61",
+     "v62",
+     "v63"
+    ],
+    "products": 503,
+    "support": 2,
+    "total": 135950.3,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.0001812959962990135,
+    0.00016182999388547614
+   ],
+   "warm_median_seconds": 0.00016182999388547614,
+   "warm_min_seconds": 0.00016182999388547614
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0009918580035446212,
+   "heuristic": "min-fill",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 5,
+   "params": {
+    "factors": 63,
+    "family": "chain",
+    "size": 64,
+    "variables": 64
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 503,
+   "samples_seconds": [
+    0.0009918580035446212,
+    0.0004057830010424368,
+    0.00024231600400526077
+   ],
+   "warm_median_seconds": 0.0003240495025238488,
+   "warm_min_seconds": 0.00024231600400526077,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 178
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00031574899912811816,
+   "params": {
+    "factors": 63,
+    "family": "chain",
+    "size": 64,
+    "variables": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00031574899912811816,
+    0.0003688040014822036
+   ],
+   "warm_median_seconds": 0.0003688040014822036,
+   "warm_min_seconds": 0.0003688040014822036
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0010690530034480616,
+   "params": {
+    "factors": 63,
+    "family": "chain",
+    "size": 64,
+    "variables": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010690530034480616,
+    0.0011228299990762025
+   ],
+   "ties": 48,
+   "warm_median_seconds": 0.0011228299990762025,
+   "warm_min_seconds": 0.0011228299990762025
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.003797085999394767,
+   "params": {
+    "factors": 255,
+    "family": "chain",
+    "size": 256,
+    "variables": 256
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003797085999394767,
+    0.003581119002774358
+   ],
+   "warm_median_seconds": 0.003581119002774358,
+   "warm_min_seconds": 0.003581119002774358
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0012643139998544939,
+   "params": {
+    "factors": 255,
+    "family": "chain",
+    "size": 256,
+    "variables": 256
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 4,
+    "limbs": 20,
+    "order": [
+     "v0",
+     "v1",
+     "v2",
+     "v3",
+     "v4",
+     "v5",
+     "v6",
+     "v7",
+     "v8",
+     "v9",
+     "v10",
+     "v11",
+     "v12",
+     "v13",
+     "v14",
+     "v15",
+     "v16",
+     "v17",
+     "v18",
+     "v19",
+     "v20",
+     "v21",
+     "v22",
+     "v23",
+     "v24",
+     "v25",
+     "v26",
+     "v27",
+     "v28",
+     "v29",
+     "v30",
+     "v31",
+     "v32",
+     "v33",
+     "v34",
+     "v35",
+     "v36",
+     "v37",
+     "v38",
+     "v39",
+     "v40",
+     "v41",
+     "v42",
+     "v43",
+     "v44",
+     "v45",
+     "v46",
+     "v47",
+     "v48",
+     "v49",
+     "v50",
+     "v51",
+     "v52",
+     "v53",
+     "v54",
+     "v55",
+     "v56",
+     "v57",
+     "v58",
+     "v59",
+     "v60",
+     "v61",
+     "v62",
+     "v63",
+     "v64",
+     "v65",
+     "v66",
+     "v67",
+     "v68",
+     "v69",
+     "v70",
+     "v71",
+     "v72",
+     "v73",
+     "v74",
+     "v75",
+     "v76",
+     "v77",
+     "v78",
+     "v79",
+     "v80",
+     "v81",
+     "v82",
+     "v83",
+     "v84",
+     "v85",
+     "v86",
+     "v87",
+     "v88",
+     "v89",
+     "v90",
+     "v91",
+     "v92",
+     "v93",
+     "v94",
+     "v95",
+     "v96",
+     "v97",
+     "v98",
+     "v99",
+     "v100",
+     "v101",
+     "v102",
+     "v103",
+     "v104",
+     "v105",
+     "v106",
+     "v107",
+     "v108",
+     "v109",
+     "v110",
+     "v111",
+     "v112",
+     "v113",
+     "v114",
+     "v115",
+     "v116",
+     "v117",
+     "v118",
+     "v119",
+     "v120",
+     "v121",
+     "v122",
+     "v123",
+     "v124",
+     "v125",
+     "v126",
+     "v127",
+     "v128",
+     "v129",
+     "v130",
+     "v131",
+     "v132",
+     "v133",
+     "v134",
+     "v135",
+     "v136",
+     "v137",
+     "v138",
+     "v139",
+     "v140",
+     "v141",
+     "v142",
+     "v143",
+     "v144",
+     "v145",
+     "v146",
+     "v147",
+     "v148",
+     "v149",
+     "v150",
+     "v151",
+     "v152",
+     "v153",
+     "v154",
+     "v155",
+     "v156",
+     "v157",
+     "v158",
+     "v159",
+     "v160",
+     "v161",
+     "v162",
+     "v163",
+     "v164",
+     "v165",
+     "v166",
+     "v167",
+     "v168",
+     "v169",
+     "v170",
+     "v171",
+     "v172",
+     "v173",
+     "v174",
+     "v175",
+     "v176",
+     "v177",
+     "v178",
+     "v179",
+     "v180",
+     "v181",
+     "v182",
+     "v183",
+     "v184",
+     "v185",
+     "v186",
+     "v187",
+     "v188",
+     "v189",
+     "v190",
+     "v191",
+     "v192",
+     "v193",
+     "v194",
+     "v195",
+     "v196",
+     "v197",
+     "v198",
+     "v199",
+     "v200",
+     "v201",
+     "v202",
+     "v203",
+     "v204",
+     "v205",
+     "v206",
+     "v207",
+     "v208",
+     "v209",
+     "v210",
+     "v211",
+     "v212",
+     "v213",
+     "v214",
+     "v215",
+     "v216",
+     "v217",
+     "v218",
+     "v219",
+     "v220",
+     "v221",
+     "v222",
+     "v223",
+     "v224",
+     "v225",
+     "v226",
+     "v227",
+     "v228",
+     "v229",
+     "v230",
+     "v231",
+     "v232",
+     "v233",
+     "v234",
+     "v235",
+     "v236",
+     "v237",
+     "v238",
+     "v239",
+     "v240",
+     "v241",
+     "v242",
+     "v243",
+     "v244",
+     "v245",
+     "v246",
+     "v247",
+     "v248",
+     "v249",
+     "v250",
+     "v251",
+     "v252",
+     "v253",
+     "v254",
+     "v255"
+    ],
+    "products": 2039,
+    "support": 2,
+    "total": 606896.3,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.0012643139998544939,
+    0.0012536189969978295
+   ],
+   "warm_median_seconds": 0.0012536189969978295,
+   "warm_min_seconds": 0.0012536189969978295
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0034110570049961098,
+   "heuristic": "min-fill",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 20,
+   "params": {
+    "factors": 255,
+    "family": "chain",
+    "size": 256,
+    "variables": 256
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 2039,
+   "samples_seconds": [
+    0.0034110570049961098,
+    0.0015463689996977337,
+    0.001574465997691732
+   ],
+   "warm_median_seconds": 0.0015604174986947328,
+   "warm_min_seconds": 0.0015463689996977337,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 699
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0019384670013096184,
+   "params": {
+    "factors": 255,
+    "family": "chain",
+    "size": 256,
+    "variables": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019384670013096184,
+    0.0019586990019888617
+   ],
+   "warm_median_seconds": 0.0019586990019888617,
+   "warm_min_seconds": 0.0019586990019888617
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.16509285199572332,
+   "params": {
+    "factors": 255,
+    "family": "chain",
+    "size": 256,
+    "variables": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.16509285199572332,
+    0.1922723079987918
+   ],
+   "ties": 3072,
+   "warm_median_seconds": 0.1922723079987918,
+   "warm_min_seconds": 0.1922723079987918
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.013793968995742034,
+   "params": {
+    "factors": 1023,
+    "family": "chain",
+    "size": 1024,
+    "variables": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.013793968995742034,
+    0.014597155997762457
+   ],
+   "warm_median_seconds": 0.014597155997762457,
+   "warm_min_seconds": 0.014597155997762457
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.038335296005243436,
+   "params": {
+    "factors": 1023,
+    "family": "chain",
+    "size": 1024,
+    "variables": 1024
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 4,
+    "limbs": 79,
+    "order": [
+     "v0",
+     "v1",
+     "v2",
+     "v3",
+     "v4",
+     "v5",
+     "v6",
+     "v7",
+     "v8",
+     "v9",
+     "v10",
+     "v11",
+     "v12",
+     "v13",
+     "v14",
+     "v15",
+     "v16",
+     "v17",
+     "v18",
+     "v19",
+     "v20",
+     "v21",
+     "v22",
+     "v23",
+     "v24",
+     "v25",
+     "v26",
+     "v27",
+     "v28",
+     "v29",
+     "v30",
+     "v31",
+     "v32",
+     "v33",
+     "v34",
+     "v35",
+     "v36",
+     "v37",
+     "v38",
+     "v39",
+     "v40",
+     "v41",
+     "v42",
+     "v43",
+     "v44",
+     "v45",
+     "v46",
+     "v47",
+     "v48",
+     "v49",
+     "v50",
+     "v51",
+     "v52",
+     "v53",
+     "v54",
+     "v55",
+     "v56",
+     "v57",
+     "v58",
+     "v59",
+     "v60",
+     "v61",
+     "v62",
+     "v63",
+     "v64",
+     "v65",
+     "v66",
+     "v67",
+     "v68",
+     "v69",
+     "v70",
+     "v71",
+     "v72",
+     "v73",
+     "v74",
+     "v75",
+     "v76",
+     "v77",
+     "v78",
+     "v79",
+     "v80",
+     "v81",
+     "v82",
+     "v83",
+     "v84",
+     "v85",
+     "v86",
+     "v87",
+     "v88",
+     "v89",
+     "v90",
+     "v91",
+     "v92",
+     "v93",
+     "v94",
+     "v95",
+     "v96",
+     "v97",
+     "v98",
+     "v99",
+     "v100",
+     "v101",
+     "v102",
+     "v103",
+     "v104",
+     "v105",
+     "v106",
+     "v107",
+     "v108",
+     "v109",
+     "v110",
+     "v111",
+     "v112",
+     "v113",
+     "v114",
+     "v115",
+     "v116",
+     "v117",
+     "v118",
+     "v119",
+     "v120",
+     "v121",
+     "v122",
+     "v123",
+     "v124",
+     "v125",
+     "v126",
+     "v127",
+     "v128",
+     "v129",
+     "v130",
+     "v131",
+     "v132",
+     "v133",
+     "v134",
+     "v135",
+     "v136",
+     "v137",
+     "v138",
+     "v139",
+     "v140",
+     "v141",
+     "v142",
+     "v143",
+     "v144",
+     "v145",
+     "v146",
+     "v147",
+     "v148",
+     "v149",
+     "v150",
+     "v151",
+     "v152",
+     "v153",
+     "v154",
+     "v155",
+     "v156",
+     "v157",
+     "v158",
+     "v159",
+     "v160",
+     "v161",
+     "v162",
+     "v163",
+     "v164",
+     "v165",
+     "v166",
+     "v167",
+     "v168",
+     "v169",
+     "v170",
+     "v171",
+     "v172",
+     "v173",
+     "v174",
+     "v175",
+     "v176",
+     "v177",
+     "v178",
+     "v179",
+     "v180",
+     "v181",
+     "v182",
+     "v183",
+     "v184",
+     "v185",
+     "v186",
+     "v187",
+     "v188",
+     "v189",
+     "v190",
+     "v191",
+     "v192",
+     "v193",
+     "v194",
+     "v195",
+     "v196",
+     "v197",
+     "v198",
+     "v199",
+     "v200",
+     "v201",
+     "v202",
+     "v203",
+     "v204",
+     "v205",
+     "v206",
+     "v207",
+     "v208",
+     "v209",
+     "v210",
+     "v211",
+     "v212",
+     "v213",
+     "v214",
+     "v215",
+     "v216",
+     "v217",
+     "v218",
+     "v219",
+     "v220",
+     "v221",
+     "v222",
+     "v223",
+     "v224",
+     "v225",
+     "v226",
+     "v227",
+     "v228",
+     "v229",
+     "v230",
+     "v231",
+     "v232",
+     "v233",
+     "v234",
+     "v235",
+     "v236",
+     "v237",
+     "v238",
+     "v239",
+     "v240",
+     "v241",
+     "v242",
+     "v243",
+     "v244",
+     "v245",
+     "v246",
+     "v247",
+     "v248",
+     "v249",
+     "v250",
+     "v251",
+     "v252",
+     "v253",
+     "v254",
+     "v255",
+     "v256",
+     "v257",
+     "v258",
+     "v259",
+     "v260",
+     "v261",
+     "v262",
+     "v263",
+     "v264",
+     "v265",
+     "v266",
+     "v267",
+     "v268",
+     "v269",
+     "v270",
+     "v271",
+     "v272",
+     "v273",
+     "v274",
+     "v275",
+     "v276",
+     "v277",
+     "v278",
+     "v279",
+     "v280",
+     "v281",
+     "v282",
+     "v283",
+     "v284",
+     "v285",
+     "v286",
+     "v287",
+     "v288",
+     "v289",
+     "v290",
+     "v291",
+     "v292",
+     "v293",
+     "v294",
+     "v295",
+     "v296",
+     "v297",
+     "v298",
+     "v299",
+     "v300",
+     "v301",
+     "v302",
+     "v303",
+     "v304",
+     "v305",
+     "v306",
+     "v307",
+     "v308",
+     "v309",
+     "v310",
+     "v311",
+     "v312",
+     "v313",
+     "v314",
+     "v315",
+     "v316",
+     "v317",
+     "v318",
+     "v319",
+     "v320",
+     "v321",
+     "v322",
+     "v323",
+     "v324",
+     "v325",
+     "v326",
+     "v327",
+     "v328",
+     "v329",
+     "v330",
+     "v331",
+     "v332",
+     "v333",
+     "v334",
+     "v335",
+     "v336",
+     "v337",
+     "v338",
+     "v339",
+     "v340",
+     "v341",
+     "v342",
+     "v343",
+     "v344",
+     "v345",
+     "v346",
+     "v347",
+     "v348",
+     "v349",
+     "v350",
+     "v351",
+     "v352",
+     "v353",
+     "v354",
+     "v355",
+     "v356",
+     "v357",
+     "v358",
+     "v359",
+     "v360",
+     "v361",
+     "v362",
+     "v363",
+     "v364",
+     "v365",
+     "v366",
+     "v367",
+     "v368",
+     "v369",
+     "v370",
+     "v371",
+     "v372",
+     "v373",
+     "v374",
+     "v375",
+     "v376",
+     "v377",
+     "v378",
+     "v379",
+     "v380",
+     "v381",
+     "v382",
+     "v383",
+     "v384",
+     "v385",
+     "v386",
+     "v387",
+     "v388",
+     "v389",
+     "v390",
+     "v391",
+     "v392",
+     "v393",
+     "v394",
+     "v395",
+     "v396",
+     "v397",
+     "v398",
+     "v399",
+     "v400",
+     "v401",
+     "v402",
+     "v403",
+     "v404",
+     "v405",
+     "v406",
+     "v407",
+     "v408",
+     "v409",
+     "v410",
+     "v411",
+     "v412",
+     "v413",
+     "v414",
+     "v415",
+     "v416",
+     "v417",
+     "v418",
+     "v419",
+     "v420",
+     "v421",
+     "v422",
+     "v423",
+     "v424",
+     "v425",
+     "v426",
+     "v427",
+     "v428",
+     "v429",
+     "v430",
+     "v431",
+     "v432",
+     "v433",
+     "v434",
+     "v435",
+     "v436",
+     "v437",
+     "v438",
+     "v439",
+     "v440",
+     "v441",
+     "v442",
+     "v443",
+     "v444",
+     "v445",
+     "v446",
+     "v447",
+     "v448",
+     "v449",
+     "v450",
+     "v451",
+     "v452",
+     "v453",
+     "v454",
+     "v455",
+     "v456",
+     "v457",
+     "v458",
+     "v459",
+     "v460",
+     "v461",
+     "v462",
+     "v463",
+     "v464",
+     "v465",
+     "v466",
+     "v467",
+     "v468",
+     "v469",
+     "v470",
+     "v471",
+     "v472",
+     "v473",
+     "v474",
+     "v475",
+     "v476",
+     "v477",
+     "v478",
+     "v479",
+     "v480",
+     "v481",
+     "v482",
+     "v483",
+     "v484",
+     "v485",
+     "v486",
+     "v487",
+     "v488",
+     "v489",
+     "v490",
+     "v491",
+     "v492",
+     "v493",
+     "v494",
+     "v495",
+     "v496",
+     "v497",
+     "v498",
+     "v499",
+     "v500",
+     "v501",
+     "v502",
+     "v503",
+     "v504",
+     "v505",
+     "v506",
+     "v507",
+     "v508",
+     "v509",
+     "v510",
+     "v511",
+     "v512",
+     "v513",
+     "v514",
+     "v515",
+     "v516",
+     "v517",
+     "v518",
+     "v519",
+     "v520",
+     "v521",
+     "v522",
+     "v523",
+     "v524",
+     "v525",
+     "v526",
+     "v527",
+     "v528",
+     "v529",
+     "v530",
+     "v531",
+     "v532",
+     "v533",
+     "v534",
+     "v535",
+     "v536",
+     "v537",
+     "v538",
+     "v539",
+     "v540",
+     "v541",
+     "v542",
+     "v543",
+     "v544",
+     "v545",
+     "v546",
+     "v547",
+     "v548",
+     "v549",
+     "v550",
+     "v551",
+     "v552",
+     "v553",
+     "v554",
+     "v555",
+     "v556",
+     "v557",
+     "v558",
+     "v559",
+     "v560",
+     "v561",
+     "v562",
+     "v563",
+     "v564",
+     "v565",
+     "v566",
+     "v567",
+     "v568",
+     "v569",
+     "v570",
+     "v571",
+     "v572",
+     "v573",
+     "v574",
+     "v575",
+     "v576",
+     "v577",
+     "v578",
+     "v579",
+     "v580",
+     "v581",
+     "v582",
+     "v583",
+     "v584",
+     "v585",
+     "v586",
+     "v587",
+     "v588",
+     "v589",
+     "v590",
+     "v591",
+     "v592",
+     "v593",
+     "v594",
+     "v595",
+     "v596",
+     "v597",
+     "v598",
+     "v599",
+     "v600",
+     "v601",
+     "v602",
+     "v603",
+     "v604",
+     "v605",
+     "v606",
+     "v607",
+     "v608",
+     "v609",
+     "v610",
+     "v611",
+     "v612",
+     "v613",
+     "v614",
+     "v615",
+     "v616",
+     "v617",
+     "v618",
+     "v619",
+     "v620",
+     "v621",
+     "v622",
+     "v623",
+     "v624",
+     "v625",
+     "v626",
+     "v627",
+     "v628",
+     "v629",
+     "v630",
+     "v631",
+     "v632",
+     "v633",
+     "v634",
+     "v635",
+     "v636",
+     "v637",
+     "v638",
+     "v639",
+     "v640",
+     "v641",
+     "v642",
+     "v643",
+     "v644",
+     "v645",
+     "v646",
+     "v647",
+     "v648",
+     "v649",
+     "v650",
+     "v651",
+     "v652",
+     "v653",
+     "v654",
+     "v655",
+     "v656",
+     "v657",
+     "v658",
+     "v659",
+     "v660",
+     "v661",
+     "v662",
+     "v663",
+     "v664",
+     "v665",
+     "v666",
+     "v667",
+     "v668",
+     "v669",
+     "v670",
+     "v671",
+     "v672",
+     "v673",
+     "v674",
+     "v675",
+     "v676",
+     "v677",
+     "v678",
+     "v679",
+     "v680",
+     "v681",
+     "v682",
+     "v683",
+     "v684",
+     "v685",
+     "v686",
+     "v687",
+     "v688",
+     "v689",
+     "v690",
+     "v691",
+     "v692",
+     "v693",
+     "v694",
+     "v695",
+     "v696",
+     "v697",
+     "v698",
+     "v699",
+     "v700",
+     "v701",
+     "v702",
+     "v703",
+     "v704",
+     "v705",
+     "v706",
+     "v707",
+     "v708",
+     "v709",
+     "v710",
+     "v711",
+     "v712",
+     "v713",
+     "v714",
+     "v715",
+     "v716",
+     "v717",
+     "v718",
+     "v719",
+     "v720",
+     "v721",
+     "v722",
+     "v723",
+     "v724",
+     "v725",
+     "v726",
+     "v727",
+     "v728",
+     "v729",
+     "v730",
+     "v731",
+     "v732",
+     "v733",
+     "v734",
+     "v735",
+     "v736",
+     "v737",
+     "v738",
+     "v739",
+     "v740",
+     "v741",
+     "v742",
+     "v743",
+     "v744",
+     "v745",
+     "v746",
+     "v747",
+     "v748",
+     "v749",
+     "v750",
+     "v751",
+     "v752",
+     "v753",
+     "v754",
+     "v755",
+     "v756",
+     "v757",
+     "v758",
+     "v759",
+     "v760",
+     "v761",
+     "v762",
+     "v763",
+     "v764",
+     "v765",
+     "v766",
+     "v767",
+     "v768",
+     "v769",
+     "v770",
+     "v771",
+     "v772",
+     "v773",
+     "v774",
+     "v775",
+     "v776",
+     "v777",
+     "v778",
+     "v779",
+     "v780",
+     "v781",
+     "v782",
+     "v783",
+     "v784",
+     "v785",
+     "v786",
+     "v787",
+     "v788",
+     "v789",
+     "v790",
+     "v791",
+     "v792",
+     "v793",
+     "v794",
+     "v795",
+     "v796",
+     "v797",
+     "v798",
+     "v799",
+     "v800",
+     "v801",
+     "v802",
+     "v803",
+     "v804",
+     "v805",
+     "v806",
+     "v807",
+     "v808",
+     "v809",
+     "v810",
+     "v811",
+     "v812",
+     "v813",
+     "v814",
+     "v815",
+     "v816",
+     "v817",
+     "v818",
+     "v819",
+     "v820",
+     "v821",
+     "v822",
+     "v823",
+     "v824",
+     "v825",
+     "v826",
+     "v827",
+     "v828",
+     "v829",
+     "v830",
+     "v831",
+     "v832",
+     "v833",
+     "v834",
+     "v835",
+     "v836",
+     "v837",
+     "v838",
+     "v839",
+     "v840",
+     "v841",
+     "v842",
+     "v843",
+     "v844",
+     "v845",
+     "v846",
+     "v847",
+     "v848",
+     "v849",
+     "v850",
+     "v851",
+     "v852",
+     "v853",
+     "v854",
+     "v855",
+     "v856",
+     "v857",
+     "v858",
+     "v859",
+     "v860",
+     "v861",
+     "v862",
+     "v863",
+     "v864",
+     "v865",
+     "v866",
+     "v867",
+     "v868",
+     "v869",
+     "v870",
+     "v871",
+     "v872",
+     "v873",
+     "v874",
+     "v875",
+     "v876",
+     "v877",
+     "v878",
+     "v879",
+     "v880",
+     "v881",
+     "v882",
+     "v883",
+     "v884",
+     "v885",
+     "v886",
+     "v887",
+     "v888",
+     "v889",
+     "v890",
+     "v891",
+     "v892",
+     "v893",
+     "v894",
+     "v895",
+     "v896",
+     "v897",
+     "v898",
+     "v899",
+     "v900",
+     "v901",
+     "v902",
+     "v903",
+     "v904",
+     "v905",
+     "v906",
+     "v907",
+     "v908",
+     "v909",
+     "v910",
+     "v911",
+     "v912",
+     "v913",
+     "v914",
+     "v915",
+     "v916",
+     "v917",
+     "v918",
+     "v919",
+     "v920",
+     "v921",
+     "v922",
+     "v923",
+     "v924",
+     "v925",
+     "v926",
+     "v927",
+     "v928",
+     "v929",
+     "v930",
+     "v931",
+     "v932",
+     "v933",
+     "v934",
+     "v935",
+     "v936",
+     "v937",
+     "v938",
+     "v939",
+     "v940",
+     "v941",
+     "v942",
+     "v943",
+     "v944",
+     "v945",
+     "v946",
+     "v947",
+     "v948",
+     "v949",
+     "v950",
+     "v951",
+     "v952",
+     "v953",
+     "v954",
+     "v955",
+     "v956",
+     "v957",
+     "v958",
+     "v959",
+     "v960",
+     "v961",
+     "v962",
+     "v963",
+     "v964",
+     "v965",
+     "v966",
+     "v967",
+     "v968",
+     "v969",
+     "v970",
+     "v971",
+     "v972",
+     "v973",
+     "v974",
+     "v975",
+     "v976",
+     "v977",
+     "v978",
+     "v979",
+     "v980",
+     "v981",
+     "v982",
+     "v983",
+     "v984",
+     "v985",
+     "v986",
+     "v987",
+     "v988",
+     "v989",
+     "v990",
+     "v991",
+     "v992",
+     "v993",
+     "v994",
+     "v995",
+     "v996",
+     "v997",
+     "v998",
+     "v999",
+     "v1000",
+     "v1001",
+     "v1002",
+     "v1003",
+     "v1004",
+     "v1005",
+     "v1006",
+     "v1007",
+     "v1008",
+     "v1009",
+     "v1010",
+     "v1011",
+     "v1012",
+     "v1013",
+     "v1014",
+     "v1015",
+     "v1016",
+     "v1017",
+     "v1018",
+     "v1019",
+     "v1020",
+     "v1021",
+     "v1022",
+     "v1023"
+    ],
+    "products": 8183,
+    "support": 2,
+    "total": 3509063.1,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.038335296005243436,
+    0.03688058799889404
+   ],
+   "warm_median_seconds": 0.03688058799889404,
+   "warm_min_seconds": 0.03688058799889404
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.07684688299923437,
+   "heuristic": "min-fill",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 79,
+   "params": {
+    "factors": 1023,
+    "family": "chain",
+    "size": 1024,
+    "variables": 1024
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 8183,
+   "samples_seconds": [
+    0.07684688299923437,
+    0.04003356299654115,
+    0.03897908500221092
+   ],
+   "warm_median_seconds": 0.039506323999376036,
+   "warm_min_seconds": 0.03897908500221092,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 2810
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.04413797899906058,
+   "params": {
+    "factors": 1023,
+    "family": "chain",
+    "size": 1024,
+    "variables": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04413797899906058,
+    0.044185595004819334
+   ],
+   "warm_median_seconds": 0.044185595004819334,
+   "warm_min_seconds": 0.044185595004819334
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "limit": 16777216,
+   "message": "max answer: needs 86973087749 output, budget 16777216",
+   "need": 86973087749,
+   "note": "every tied maximizer is enumerated: the exact number of ties is the output need",
+   "params": {
+    "factors": 1023,
+    "family": "chain",
+    "size": 1024,
+    "variables": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.04325137400155654,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.00036990700027672574,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00036990700027672574,
+    0.00019521999638527632
+   ],
+   "warm_median_seconds": 0.00019521999638527632,
+   "warm_min_seconds": 0.00019521999638527632
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 1024,
+   "first_seconds": 7.211099728010595e-05,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 3,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 4,
+    "limbs": 1,
+    "order": [
+     "v7",
+     "v6",
+     "v5",
+     "v4",
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 51,
+    "support": 2,
+    "total": 18159.5,
+    "width": 1
+   },
+   "samples_seconds": [
+    7.211099728010595e-05,
+    4.0384002204518765e-05
+   ],
+   "warm_median_seconds": 4.0384002204518765e-05,
+   "warm_min_seconds": 4.0384002204518765e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.00038575800135731697,
+   "heuristic": "exact",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 1,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 51,
+   "samples_seconds": [
+    0.00038575800135731697,
+    0.00016597800276940688,
+    0.0001440839987481013
+   ],
+   "warm_median_seconds": 0.0001550310007587541,
+   "warm_min_seconds": 0.0001440839987481013,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 21
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0001734890029183589,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001734890029183589,
+    0.00015576100122416392
+   ],
+   "warm_median_seconds": 0.00015576100122416392,
+   "warm_min_seconds": 0.00015576100122416392
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00025900499895215034,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00025900499895215034,
+    0.00025548000121489167
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00025548000121489167,
+   "warm_min_seconds": 0.00025548000121489167
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 0.00012017200060654432,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012017200060654432,
+    3.693599865073338e-05
+   ],
+   "warm_median_seconds": 3.693599865073338e-05,
+   "warm_min_seconds": 3.693599865073338e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 8.431600144831464e-05,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.431600144831464e-05
+   ],
+   "warm_median_seconds": 8.431600144831464e-05,
+   "warm_min_seconds": 8.431600144831464e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.0011426650016801432,
+   "params": {
+    "factors": 7,
+    "family": "tree",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011426650016801432
+   ],
+   "warm_median_seconds": 0.0011426650016801432,
+   "warm_min_seconds": 0.0011426650016801432
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0005956279928795993,
+   "params": {
+    "factors": 31,
+    "family": "tree",
+    "size": 32,
+    "variables": 32
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005956279928795993,
+    0.000511822996486444
+   ],
+   "warm_median_seconds": 0.000511822996486444,
+   "warm_min_seconds": 0.000511822996486444
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 9.88569954643026e-05,
+   "params": {
+    "factors": 31,
+    "family": "tree",
+    "size": 32,
+    "variables": 32
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 3,
+    "chosen": 2,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "reverse",
+    "joint": 4,
+    "limbs": 3,
+    "order": [
+     "v31",
+     "v30",
+     "v29",
+     "v28",
+     "v27",
+     "v26",
+     "v25",
+     "v24",
+     "v23",
+     "v22",
+     "v21",
+     "v20",
+     "v19",
+     "v18",
+     "v17",
+     "v16",
+     "v15",
+     "v14",
+     "v13",
+     "v12",
+     "v11",
+     "v10",
+     "v9",
+     "v8",
+     "v7",
+     "v6",
+     "v5",
+     "v4",
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 235,
+    "support": 2,
+    "total": 67741.9,
+    "width": 1
+   },
+   "samples_seconds": [
+    9.88569954643026e-05,
+    7.326299964915961e-05
+   ],
+   "warm_median_seconds": 7.326299964915961e-05,
+   "warm_min_seconds": 7.326299964915961e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0004177790033281781,
+   "heuristic": "reverse",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 3,
+   "params": {
+    "factors": 31,
+    "family": "tree",
+    "size": 32,
+    "variables": 32
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 235,
+   "samples_seconds": [
+    0.0004177790033281781,
+    0.0002381879967288114,
+    0.00018899200222222134
+   ],
+   "warm_median_seconds": 0.00021358999947551638,
+   "warm_min_seconds": 0.00018899200222222134,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 88
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00023462700482923537,
+   "params": {
+    "factors": 31,
+    "family": "tree",
+    "size": 32,
+    "variables": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023462700482923537,
+    0.0002206089993705973
+   ],
+   "warm_median_seconds": 0.0002206089993705973,
+   "warm_min_seconds": 0.0002206089993705973
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0003517259974614717,
+   "params": {
+    "factors": 31,
+    "family": "tree",
+    "size": 32,
+    "variables": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003517259974614717,
+    0.0003185579989803955
+   ],
+   "ties": 8,
+   "warm_median_seconds": 0.0003185579989803955,
+   "warm_min_seconds": 0.0003185579989803955
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0017733670028974302,
+   "params": {
+    "factors": 127,
+    "family": "tree",
+    "size": 128,
+    "variables": 128
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017733670028974302,
+    0.002042116997472476
+   ],
+   "warm_median_seconds": 0.002042116997472476,
+   "warm_min_seconds": 0.002042116997472476
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0006055580015527084,
+   "params": {
+    "factors": 127,
+    "family": "tree",
+    "size": 128,
+    "variables": 128
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 3,
+    "chosen": 2,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "reverse",
+    "joint": 4,
+    "limbs": 10,
+    "order": [
+     "v127",
+     "v126",
+     "v125",
+     "v124",
+     "v123",
+     "v122",
+     "v121",
+     "v120",
+     "v119",
+     "v118",
+     "v117",
+     "v116",
+     "v115",
+     "v114",
+     "v113",
+     "v112",
+     "v111",
+     "v110",
+     "v109",
+     "v108",
+     "v107",
+     "v106",
+     "v105",
+     "v104",
+     "v103",
+     "v102",
+     "v101",
+     "v100",
+     "v99",
+     "v98",
+     "v97",
+     "v96",
+     "v95",
+     "v94",
+     "v93",
+     "v92",
+     "v91",
+     "v90",
+     "v89",
+     "v88",
+     "v87",
+     "v86",
+     "v85",
+     "v84",
+     "v83",
+     "v82",
+     "v81",
+     "v80",
+     "v79",
+     "v78",
+     "v77",
+     "v76",
+     "v75",
+     "v74",
+     "v73",
+     "v72",
+     "v71",
+     "v70",
+     "v69",
+     "v68",
+     "v67",
+     "v66",
+     "v65",
+     "v64",
+     "v63",
+     "v62",
+     "v61",
+     "v60",
+     "v59",
+     "v58",
+     "v57",
+     "v56",
+     "v55",
+     "v54",
+     "v53",
+     "v52",
+     "v51",
+     "v50",
+     "v49",
+     "v48",
+     "v47",
+     "v46",
+     "v45",
+     "v44",
+     "v43",
+     "v42",
+     "v41",
+     "v40",
+     "v39",
+     "v38",
+     "v37",
+     "v36",
+     "v35",
+     "v34",
+     "v33",
+     "v32",
+     "v31",
+     "v30",
+     "v29",
+     "v28",
+     "v27",
+     "v26",
+     "v25",
+     "v24",
+     "v23",
+     "v22",
+     "v21",
+     "v20",
+     "v19",
+     "v18",
+     "v17",
+     "v16",
+     "v15",
+     "v14",
+     "v13",
+     "v12",
+     "v11",
+     "v10",
+     "v9",
+     "v8",
+     "v7",
+     "v6",
+     "v5",
+     "v4",
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 1007,
+    "support": 2,
+    "total": 281248.3,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.0006055580015527084,
+    0.0005642649994115345
+   ],
+   "warm_median_seconds": 0.0005642649994115345,
+   "warm_min_seconds": 0.0005642649994115345
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.001532922004116699,
+   "heuristic": "reverse",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 10,
+   "params": {
+    "factors": 127,
+    "family": "tree",
+    "size": 128,
+    "variables": 128
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 1007,
+   "samples_seconds": [
+    0.001532922004116699,
+    0.0007604919956065714,
+    0.0008139299970935099
+   ],
+   "warm_median_seconds": 0.0007872109963500407,
+   "warm_min_seconds": 0.0007604919956065714,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 356
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0008120290003716946,
+   "params": {
+    "factors": 127,
+    "family": "tree",
+    "size": 128,
+    "variables": 128
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008120290003716946,
+    0.0007956059998832643
+   ],
+   "warm_median_seconds": 0.0007956059998832643,
+   "warm_min_seconds": 0.0007956059998832643
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00661461799609242,
+   "params": {
+    "factors": 127,
+    "family": "tree",
+    "size": 128,
+    "variables": 128
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00661461799609242,
+    0.0072801499991328456
+   ],
+   "ties": 256,
+   "warm_median_seconds": 0.0072801499991328456,
+   "warm_min_seconds": 0.0072801499991328456
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.007524081003793981,
+   "params": {
+    "factors": 511,
+    "family": "tree",
+    "size": 512,
+    "variables": 512
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007524081003793981,
+    0.007629215004271828
+   ],
+   "warm_median_seconds": 0.007629215004271828,
+   "warm_min_seconds": 0.007629215004271828
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.009169327000563499,
+   "params": {
+    "factors": 511,
+    "family": "tree",
+    "size": 512,
+    "variables": 512
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 3,
+    "chosen": 2,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "reverse",
+    "joint": 4,
+    "limbs": 40,
+    "order": [
+     "v511",
+     "v510",
+     "v509",
+     "v508",
+     "v507",
+     "v506",
+     "v505",
+     "v504",
+     "v503",
+     "v502",
+     "v501",
+     "v500",
+     "v499",
+     "v498",
+     "v497",
+     "v496",
+     "v495",
+     "v494",
+     "v493",
+     "v492",
+     "v491",
+     "v490",
+     "v489",
+     "v488",
+     "v487",
+     "v486",
+     "v485",
+     "v484",
+     "v483",
+     "v482",
+     "v481",
+     "v480",
+     "v479",
+     "v478",
+     "v477",
+     "v476",
+     "v475",
+     "v474",
+     "v473",
+     "v472",
+     "v471",
+     "v470",
+     "v469",
+     "v468",
+     "v467",
+     "v466",
+     "v465",
+     "v464",
+     "v463",
+     "v462",
+     "v461",
+     "v460",
+     "v459",
+     "v458",
+     "v457",
+     "v456",
+     "v455",
+     "v454",
+     "v453",
+     "v452",
+     "v451",
+     "v450",
+     "v449",
+     "v448",
+     "v447",
+     "v446",
+     "v445",
+     "v444",
+     "v443",
+     "v442",
+     "v441",
+     "v440",
+     "v439",
+     "v438",
+     "v437",
+     "v436",
+     "v435",
+     "v434",
+     "v433",
+     "v432",
+     "v431",
+     "v430",
+     "v429",
+     "v428",
+     "v427",
+     "v426",
+     "v425",
+     "v424",
+     "v423",
+     "v422",
+     "v421",
+     "v420",
+     "v419",
+     "v418",
+     "v417",
+     "v416",
+     "v415",
+     "v414",
+     "v413",
+     "v412",
+     "v411",
+     "v410",
+     "v409",
+     "v408",
+     "v407",
+     "v406",
+     "v405",
+     "v404",
+     "v403",
+     "v402",
+     "v401",
+     "v400",
+     "v399",
+     "v398",
+     "v397",
+     "v396",
+     "v395",
+     "v394",
+     "v393",
+     "v392",
+     "v391",
+     "v390",
+     "v389",
+     "v388",
+     "v387",
+     "v386",
+     "v385",
+     "v384",
+     "v383",
+     "v382",
+     "v381",
+     "v380",
+     "v379",
+     "v378",
+     "v377",
+     "v376",
+     "v375",
+     "v374",
+     "v373",
+     "v372",
+     "v371",
+     "v370",
+     "v369",
+     "v368",
+     "v367",
+     "v366",
+     "v365",
+     "v364",
+     "v363",
+     "v362",
+     "v361",
+     "v360",
+     "v359",
+     "v358",
+     "v357",
+     "v356",
+     "v355",
+     "v354",
+     "v353",
+     "v352",
+     "v351",
+     "v350",
+     "v349",
+     "v348",
+     "v347",
+     "v346",
+     "v345",
+     "v344",
+     "v343",
+     "v342",
+     "v341",
+     "v340",
+     "v339",
+     "v338",
+     "v337",
+     "v336",
+     "v335",
+     "v334",
+     "v333",
+     "v332",
+     "v331",
+     "v330",
+     "v329",
+     "v328",
+     "v327",
+     "v326",
+     "v325",
+     "v324",
+     "v323",
+     "v322",
+     "v321",
+     "v320",
+     "v319",
+     "v318",
+     "v317",
+     "v316",
+     "v315",
+     "v314",
+     "v313",
+     "v312",
+     "v311",
+     "v310",
+     "v309",
+     "v308",
+     "v307",
+     "v306",
+     "v305",
+     "v304",
+     "v303",
+     "v302",
+     "v301",
+     "v300",
+     "v299",
+     "v298",
+     "v297",
+     "v296",
+     "v295",
+     "v294",
+     "v293",
+     "v292",
+     "v291",
+     "v290",
+     "v289",
+     "v288",
+     "v287",
+     "v286",
+     "v285",
+     "v284",
+     "v283",
+     "v282",
+     "v281",
+     "v280",
+     "v279",
+     "v278",
+     "v277",
+     "v276",
+     "v275",
+     "v274",
+     "v273",
+     "v272",
+     "v271",
+     "v270",
+     "v269",
+     "v268",
+     "v267",
+     "v266",
+     "v265",
+     "v264",
+     "v263",
+     "v262",
+     "v261",
+     "v260",
+     "v259",
+     "v258",
+     "v257",
+     "v256",
+     "v255",
+     "v254",
+     "v253",
+     "v252",
+     "v251",
+     "v250",
+     "v249",
+     "v248",
+     "v247",
+     "v246",
+     "v245",
+     "v244",
+     "v243",
+     "v242",
+     "v241",
+     "v240",
+     "v239",
+     "v238",
+     "v237",
+     "v236",
+     "v235",
+     "v234",
+     "v233",
+     "v232",
+     "v231",
+     "v230",
+     "v229",
+     "v228",
+     "v227",
+     "v226",
+     "v225",
+     "v224",
+     "v223",
+     "v222",
+     "v221",
+     "v220",
+     "v219",
+     "v218",
+     "v217",
+     "v216",
+     "v215",
+     "v214",
+     "v213",
+     "v212",
+     "v211",
+     "v210",
+     "v209",
+     "v208",
+     "v207",
+     "v206",
+     "v205",
+     "v204",
+     "v203",
+     "v202",
+     "v201",
+     "v200",
+     "v199",
+     "v198",
+     "v197",
+     "v196",
+     "v195",
+     "v194",
+     "v193",
+     "v192",
+     "v191",
+     "v190",
+     "v189",
+     "v188",
+     "v187",
+     "v186",
+     "v185",
+     "v184",
+     "v183",
+     "v182",
+     "v181",
+     "v180",
+     "v179",
+     "v178",
+     "v177",
+     "v176",
+     "v175",
+     "v174",
+     "v173",
+     "v172",
+     "v171",
+     "v170",
+     "v169",
+     "v168",
+     "v167",
+     "v166",
+     "v165",
+     "v164",
+     "v163",
+     "v162",
+     "v161",
+     "v160",
+     "v159",
+     "v158",
+     "v157",
+     "v156",
+     "v155",
+     "v154",
+     "v153",
+     "v152",
+     "v151",
+     "v150",
+     "v149",
+     "v148",
+     "v147",
+     "v146",
+     "v145",
+     "v144",
+     "v143",
+     "v142",
+     "v141",
+     "v140",
+     "v139",
+     "v138",
+     "v137",
+     "v136",
+     "v135",
+     "v134",
+     "v133",
+     "v132",
+     "v131",
+     "v130",
+     "v129",
+     "v128",
+     "v127",
+     "v126",
+     "v125",
+     "v124",
+     "v123",
+     "v122",
+     "v121",
+     "v120",
+     "v119",
+     "v118",
+     "v117",
+     "v116",
+     "v115",
+     "v114",
+     "v113",
+     "v112",
+     "v111",
+     "v110",
+     "v109",
+     "v108",
+     "v107",
+     "v106",
+     "v105",
+     "v104",
+     "v103",
+     "v102",
+     "v101",
+     "v100",
+     "v99",
+     "v98",
+     "v97",
+     "v96",
+     "v95",
+     "v94",
+     "v93",
+     "v92",
+     "v91",
+     "v90",
+     "v89",
+     "v88",
+     "v87",
+     "v86",
+     "v85",
+     "v84",
+     "v83",
+     "v82",
+     "v81",
+     "v80",
+     "v79",
+     "v78",
+     "v77",
+     "v76",
+     "v75",
+     "v74",
+     "v73",
+     "v72",
+     "v71",
+     "v70",
+     "v69",
+     "v68",
+     "v67",
+     "v66",
+     "v65",
+     "v64",
+     "v63",
+     "v62",
+     "v61",
+     "v60",
+     "v59",
+     "v58",
+     "v57",
+     "v56",
+     "v55",
+     "v54",
+     "v53",
+     "v52",
+     "v51",
+     "v50",
+     "v49",
+     "v48",
+     "v47",
+     "v46",
+     "v45",
+     "v44",
+     "v43",
+     "v42",
+     "v41",
+     "v40",
+     "v39",
+     "v38",
+     "v37",
+     "v36",
+     "v35",
+     "v34",
+     "v33",
+     "v32",
+     "v31",
+     "v30",
+     "v29",
+     "v28",
+     "v27",
+     "v26",
+     "v25",
+     "v24",
+     "v23",
+     "v22",
+     "v21",
+     "v20",
+     "v19",
+     "v18",
+     "v17",
+     "v16",
+     "v15",
+     "v14",
+     "v13",
+     "v12",
+     "v11",
+     "v10",
+     "v9",
+     "v8",
+     "v7",
+     "v6",
+     "v5",
+     "v4",
+     "v3",
+     "v2",
+     "v1",
+     "v0"
+    ],
+    "products": 4083,
+    "support": 2,
+    "total": 1395782.3,
+    "width": 1
+   },
+   "samples_seconds": [
+    0.009169327000563499,
+    0.009324656995886471
+   ],
+   "warm_median_seconds": 0.009324656995886471,
+   "warm_min_seconds": 0.009324656995886471
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.02125440199597506,
+   "heuristic": "reverse",
+   "intermediate_support": 2,
+   "joint": 4,
+   "limbs": 40,
+   "params": {
+    "factors": 511,
+    "family": "tree",
+    "size": 512,
+    "variables": 512
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 4083,
+   "samples_seconds": [
+    0.02125440199597506,
+    0.009680930998001713,
+    0.010283406998496503
+   ],
+   "warm_median_seconds": 0.009982168998249108,
+   "warm_min_seconds": 0.009680930998001713,
+   "width": 1,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 1401
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.009310877998359501,
+   "params": {
+    "factors": 511,
+    "family": "tree",
+    "size": 512,
+    "variables": 512
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009310877998359501,
+    0.009078593000594992
+   ],
+   "warm_median_seconds": 0.009078593000594992,
+   "warm_min_seconds": 0.009078593000594992
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "limit": 16777216,
+   "message": "max answer: needs 148434069749765 output, budget 16777216",
+   "need": 148434069749765,
+   "note": "every tied maximizer is enumerated: the exact number of ties is the output need",
+   "params": {
+    "factors": 511,
+    "family": "tree",
+    "size": 512,
+    "variables": 512
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.010202135003055446,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.00021947999630356207,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00021947999630356207,
+    0.00010235100489808246
+   ],
+   "warm_median_seconds": 0.00010235100489808246,
+   "warm_min_seconds": 0.00010235100489808246
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 32,
+   "first_seconds": 3.4224001865368336e-05,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 8,
+    "limbs": 1,
+    "order": [
+     "g1_1",
+     "g1_0",
+     "g0_1",
+     "g0_0"
+    ],
+    "products": 43,
+    "support": 4,
+    "total": 10135.5,
+    "width": 2
+   },
+   "samples_seconds": [
+    3.4224001865368336e-05,
+    1.9122002413496375e-05
+   ],
+   "warm_median_seconds": 1.9122002413496375e-05,
+   "warm_min_seconds": 1.9122002413496375e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0003022210003109649,
+   "heuristic": "exact",
+   "intermediate_support": 4,
+   "joint": 8,
+   "limbs": 1,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 43,
+   "samples_seconds": [
+    0.0003022210003109649,
+    0.00012570599938044325,
+    0.00011016100324923173
+   ],
+   "warm_median_seconds": 0.00011793350131483749,
+   "warm_min_seconds": 0.00011016100324923173,
+   "width": 2,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 11
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00014310800179373473,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014310800179373473,
+    0.00012998599413549528
+   ],
+   "warm_median_seconds": 0.00012998599413549528,
+   "warm_min_seconds": 0.00012998599413549528
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00014916499640094116,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014916499640094116,
+    0.00013614600175060332
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00013614600175060332,
+   "warm_min_seconds": 0.00013614600175060332
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 6.897800631122664e-05,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.897800631122664e-05,
+    2.7538000722415745e-05
+   ],
+   "warm_median_seconds": 2.7538000722415745e-05,
+   "warm_min_seconds": 2.7538000722415745e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 2.543000300647691e-05,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.543000300647691e-05
+   ],
+   "warm_median_seconds": 2.543000300647691e-05,
+   "warm_min_seconds": 2.543000300647691e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 6.278300133999437e-05,
+   "params": {
+    "factors": 4,
+    "family": "grid",
+    "size": 2,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.278300133999437e-05
+   ],
+   "warm_median_seconds": 6.278300133999437e-05,
+   "warm_min_seconds": 6.278300133999437e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0002729800035012886,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002729800035012886,
+    0.0002393549948465079
+   ],
+   "warm_median_seconds": 0.0002393549948465079,
+   "warm_min_seconds": 0.0002393549948465079
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 2304,
+   "first_seconds": 9.439099812880158e-05,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 5,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 16,
+    "limbs": 1,
+    "order": [
+     "g2_2",
+     "g2_0",
+     "g2_1",
+     "g0_2",
+     "g1_2",
+     "g1_1",
+     "g1_0",
+     "g0_1",
+     "g0_0"
+    ],
+    "products": 195,
+    "support": 8,
+    "total": 20543.5,
+    "width": 3
+   },
+   "samples_seconds": [
+    9.439099812880158e-05,
+    9.866199980024248e-05
+   ],
+   "warm_median_seconds": 9.866199980024248e-05,
+   "warm_min_seconds": 9.866199980024248e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0003952200058847666,
+   "heuristic": "exact",
+   "intermediate_support": 8,
+   "joint": 16,
+   "limbs": 1,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 195,
+   "samples_seconds": [
+    0.0003952200058847666,
+    0.00021706499683205038,
+    0.00016756999684730545
+   ],
+   "warm_median_seconds": 0.00019231749683967791,
+   "warm_min_seconds": 0.00016756999684730545,
+   "width": 3,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 32
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00018515400006435812,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00018515400006435812,
+    0.000178754999069497
+   ],
+   "warm_median_seconds": 0.000178754999069497,
+   "warm_min_seconds": 0.000178754999069497
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00023236800188897178,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023236800188897178,
+    0.0002458420058246702
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.0002458420058246702,
+   "warm_min_seconds": 0.0002458420058246702
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 4.6296998334582895e-05,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.6296998334582895e-05,
+    3.469199873507023e-05
+   ],
+   "warm_median_seconds": 3.469199873507023e-05,
+   "warm_min_seconds": 3.469199873507023e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.00012133700511185452,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012133700511185452
+   ],
+   "warm_median_seconds": 0.00012133700511185452,
+   "warm_min_seconds": 0.00012133700511185452
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.002913175994763151,
+   "params": {
+    "factors": 12,
+    "family": "grid",
+    "size": 3,
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002913175994763151
+   ],
+   "warm_median_seconds": 0.002913175994763151,
+   "warm_min_seconds": 0.002913175994763151
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0003463809989625588,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003463809989625588,
+    0.00035281099553685635
+   ],
+   "warm_median_seconds": 0.00035281099553685635,
+   "warm_min_seconds": 0.00035281099553685635
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 5.676500586559996e-05,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 3,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 32,
+    "limbs": 2,
+    "order": [
+     "g0_0",
+     "g0_3",
+     "g3_0",
+     "g3_3",
+     "g0_1",
+     "g1_0",
+     "g1_3",
+     "g3_1",
+     "g0_2",
+     "g1_1",
+     "g1_2",
+     "g2_0",
+     "g2_1",
+     "g2_2",
+     "g2_3",
+     "g3_2"
+    ],
+    "products": 675,
+    "support": 16,
+    "total": 37312.7,
+    "width": 4
+   },
+   "samples_seconds": [
+    5.676500586559996e-05,
+    4.012299905298278e-05
+   ],
+   "warm_median_seconds": 4.012299905298278e-05,
+   "warm_min_seconds": 4.012299905298278e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.00032940300297923386,
+   "heuristic": "min-fill",
+   "intermediate_support": 16,
+   "joint": 32,
+   "limbs": 2,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 675,
+   "samples_seconds": [
+    0.00032940300297923386,
+    0.00016845399659359828,
+    0.00015063399769132957
+   ],
+   "warm_median_seconds": 0.00015954399714246392,
+   "warm_min_seconds": 0.00015063399769132957,
+   "width": 4,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 59
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0031575210014125332,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0031575210014125332,
+    0.003070705002755858
+   ],
+   "warm_median_seconds": 0.003070705002755858,
+   "warm_min_seconds": 0.003070705002755858
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.000276167003903538,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000276167003903538,
+    0.0002424589984002523
+   ],
+   "ties": 4,
+   "warm_median_seconds": 0.0002424589984002523,
+   "warm_min_seconds": 0.0002424589984002523
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 7.24380006431602e-05,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.24380006431602e-05,
+    5.706900265067816e-05
+   ],
+   "warm_median_seconds": 5.706900265067816e-05,
+   "warm_min_seconds": 5.706900265067816e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.027581533999182284,
+   "params": {
+    "factors": 24,
+    "family": "grid",
+    "size": 4,
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.027581533999182284
+   ],
+   "warm_median_seconds": 0.027581533999182284,
+   "warm_min_seconds": 0.027581533999182284
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0006763850033166818,
+   "params": {
+    "factors": 40,
+    "family": "grid",
+    "size": 5,
+    "variables": 25
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006763850033166818,
+    0.0005712440033676103
+   ],
+   "warm_median_seconds": 0.0005712440033676103,
+   "warm_min_seconds": 0.0005712440033676103
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.00010254600056214258,
+   "params": {
+    "factors": 40,
+    "family": "grid",
+    "size": 5,
+    "variables": 25
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 4,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 64,
+    "limbs": 3,
+    "order": [
+     "g0_0",
+     "g0_4",
+     "g4_0",
+     "g4_4",
+     "g0_1",
+     "g0_3",
+     "g1_0",
+     "g1_4",
+     "g3_0",
+     "g3_4",
+     "g4_1",
+     "g4_3",
+     "g1_1",
+     "g1_3",
+     "g3_1",
+     "g2_2",
+     "g3_3",
+     "g0_2",
+     "g1_2",
+     "g2_0",
+     "g2_1",
+     "g2_3",
+     "g2_4",
+     "g3_2",
+     "g4_2"
+    ],
+    "products": 1571,
+    "support": 32,
+    "total": 63097.9,
+    "width": 5
+   },
+   "samples_seconds": [
+    0.00010254600056214258,
+    6.883899914100766e-05
+   ],
+   "warm_median_seconds": 6.883899914100766e-05,
+   "warm_min_seconds": 6.883899914100766e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.00046602699876530096,
+   "heuristic": "min-fill",
+   "intermediate_support": 32,
+   "joint": 64,
+   "limbs": 3,
+   "params": {
+    "factors": 40,
+    "family": "grid",
+    "size": 5,
+    "variables": 25
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 1571,
+   "samples_seconds": [
+    0.00046602699876530096,
+    0.00022766100300941616,
+    0.0002705120059545152
+   ],
+   "warm_median_seconds": 0.0002490865044819657,
+   "warm_min_seconds": 0.00022766100300941616,
+   "width": 5,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 96
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00034394400427117944,
+   "params": {
+    "factors": 40,
+    "family": "grid",
+    "size": 5,
+    "variables": 25
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00034394400427117944,
+    0.00028054299764335155
+   ],
+   "warm_median_seconds": 0.00028054299764335155,
+   "warm_min_seconds": 0.00028054299764335155
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0003740379979717545,
+   "params": {
+    "factors": 40,
+    "family": "grid",
+    "size": 5,
+    "variables": 25
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003740379979717545,
+    0.0003248310022172518
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.0003248310022172518,
+   "warm_min_seconds": 0.0003248310022172518
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0008637369974167086,
+   "params": {
+    "factors": 60,
+    "family": "grid",
+    "size": 6,
+    "variables": 36
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008637369974167086,
+    0.0008245689969044179
+   ],
+   "warm_median_seconds": 0.0008245689969044179,
+   "warm_min_seconds": 0.0008245689969044179
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.00014096700033405796,
+   "params": {
+    "factors": 60,
+    "family": "grid",
+    "size": 6,
+    "variables": 36
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 4,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 128,
+    "limbs": 4,
+    "order": [
+     "g0_0",
+     "g0_5",
+     "g5_0",
+     "g5_5",
+     "g0_1",
+     "g0_4",
+     "g1_0",
+     "g1_5",
+     "g4_0",
+     "g4_5",
+     "g5_1",
+     "g5_4",
+     "g1_1",
+     "g0_2",
+     "g1_4",
+     "g2_0",
+     "g2_5",
+     "g4_1",
+     "g4_4",
+     "g5_2",
+     "g1_2",
+     "g2_1",
+     "g2_3",
+     "g3_2",
+     "g3_4",
+     "g4_3",
+     "g0_3",
+     "g1_3",
+     "g2_2",
+     "g2_4",
+     "g3_0",
+     "g3_1",
+     "g3_3",
+     "g3_5",
+     "g4_2",
+     "g5_3"
+    ],
+    "products": 3775,
+    "support": 64,
+    "total": 108865.1,
+    "width": 6
+   },
+   "samples_seconds": [
+    0.00014096700033405796,
+    0.00011581800208659843
+   ],
+   "warm_median_seconds": 0.00011581800208659843,
+   "warm_min_seconds": 0.00011581800208659843
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.000755307002691552,
+   "heuristic": "min-fill",
+   "intermediate_support": 64,
+   "joint": 128,
+   "limbs": 4,
+   "params": {
+    "factors": 60,
+    "family": "grid",
+    "size": 6,
+    "variables": 36
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 3775,
+   "samples_seconds": [
+    0.000755307002691552,
+    0.00037868000072194263,
+    0.0003352350031491369
+   ],
+   "warm_median_seconds": 0.00035695750193553977,
+   "warm_min_seconds": 0.0003352350031491369,
+   "width": 6,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 145
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0004270069985068403,
+   "params": {
+    "factors": 60,
+    "family": "grid",
+    "size": 6,
+    "variables": 36
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004270069985068403,
+    0.0004425209990586154
+   ],
+   "warm_median_seconds": 0.0004425209990586154,
+   "warm_min_seconds": 0.0004425209990586154
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0005803989988635294,
+   "params": {
+    "factors": 60,
+    "family": "grid",
+    "size": 6,
+    "variables": 36
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005803989988635294,
+    0.0005842309983563609
+   ],
+   "ties": 2,
+   "warm_median_seconds": 0.0005842309983563609,
+   "warm_min_seconds": 0.0005842309983563609
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0018409779950161465,
+   "params": {
+    "factors": 112,
+    "family": "grid",
+    "size": 8,
+    "variables": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0018409779950161465,
+    0.0014060550020076334
+   ],
+   "warm_median_seconds": 0.0014060550020076334,
+   "warm_min_seconds": 0.0014060550020076334
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0003238520002923906,
+   "params": {
+    "factors": 112,
+    "family": "grid",
+    "size": 8,
+    "variables": 64
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 4,
+    "chosen": 1,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-degree",
+    "joint": 2048,
+    "limbs": 8,
+    "order": [
+     "g0_0",
+     "g0_7",
+     "g7_0",
+     "g7_7",
+     "g0_1",
+     "g0_3",
+     "g0_5",
+     "g1_0",
+     "g1_7",
+     "g3_0",
+     "g3_7",
+     "g5_0",
+     "g5_7",
+     "g7_1",
+     "g7_3",
+     "g7_5",
+     "g0_6",
+     "g1_1",
+     "g1_4",
+     "g1_6",
+     "g2_2",
+     "g2_5",
+     "g3_3",
+     "g4_1",
+     "g4_4",
+     "g4_6",
+     "g5_2",
+     "g5_5",
+     "g6_0",
+     "g6_1",
+     "g6_4",
+     "g6_6",
+     "g6_7",
+     "g7_6",
+     "g0_2",
+     "g2_7",
+     "g7_2",
+     "g1_2",
+     "g2_1",
+     "g2_0",
+     "g2_6",
+     "g1_5",
+     "g5_3",
+     "g5_6",
+     "g6_5",
+     "g2_4",
+     "g3_1",
+     "g3_5",
+     "g6_2",
+     "g3_2",
+     "g3_6",
+     "g4_7",
+     "g4_5",
+     "g0_4",
+     "g1_3",
+     "g2_3",
+     "g3_4",
+     "g4_0",
+     "g4_2",
+     "g4_3",
+     "g5_1",
+     "g5_4",
+     "g6_3",
+     "g7_4"
+    ],
+    "products": 21887,
+    "support": 1024,
+    "total": 529957.9,
+    "width": 10
+   },
+   "samples_seconds": [
+    0.0003238520002923906,
+    0.00028917199961142614
+   ],
+   "warm_median_seconds": 0.00028917199961142614,
+   "warm_min_seconds": 0.00028917199961142614
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0026759889951790683,
+   "heuristic": "min-degree",
+   "intermediate_support": 1024,
+   "joint": 2048,
+   "limbs": 8,
+   "params": {
+    "factors": 112,
+    "family": "grid",
+    "size": 8,
+    "variables": 64
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 21887,
+   "samples_seconds": [
+    0.0026759889951790683,
+    0.0013349729997571558,
+    0.001341442002740223
+   ],
+   "warm_median_seconds": 0.0013382075012486894,
+   "warm_min_seconds": 0.0013349729997571558,
+   "width": 10,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 264
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0017979070034925826,
+   "params": {
+    "factors": 112,
+    "family": "grid",
+    "size": 8,
+    "variables": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017979070034925826,
+    0.00153472999954829
+   ],
+   "warm_median_seconds": 0.00153472999954829,
+   "warm_min_seconds": 0.00153472999954829
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.002305306996277068,
+   "params": {
+    "factors": 112,
+    "family": "grid",
+    "size": 8,
+    "variables": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002305306996277068,
+    0.0024528790017939173
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.0024528790017939173,
+   "warm_min_seconds": 0.0024528790017939173
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.002134246999048628,
+   "params": {
+    "factors": 180,
+    "family": "grid",
+    "size": 10,
+    "variables": 100
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002134246999048628,
+    0.002235069994640071
+   ],
+   "warm_median_seconds": 0.002235069994640071,
+   "warm_min_seconds": 0.002235069994640071
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0007055480018607341,
+   "params": {
+    "factors": 180,
+    "family": "grid",
+    "size": 10,
+    "variables": 100
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 4,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 16384,
+    "limbs": 12,
+    "order": [
+     "g0_0",
+     "g0_9",
+     "g9_0",
+     "g9_9",
+     "g0_1",
+     "g0_8",
+     "g1_0",
+     "g1_9",
+     "g8_0",
+     "g8_9",
+     "g9_1",
+     "g9_8",
+     "g0_3",
+     "g0_5",
+     "g1_1",
+     "g1_8",
+     "g0_7",
+     "g2_0",
+     "g2_9",
+     "g4_0",
+     "g4_9",
+     "g6_0",
+     "g6_9",
+     "g8_1",
+     "g8_8",
+     "g9_2",
+     "g9_4",
+     "g9_6",
+     "g1_4",
+     "g1_6",
+     "g2_5",
+     "g2_7",
+     "g3_8",
+     "g3_1",
+     "g2_2",
+     "g3_6",
+     "g4_7",
+     "g5_8",
+     "g5_1",
+     "g4_2",
+     "g3_3",
+     "g8_3",
+     "g7_2",
+     "g8_5",
+     "g7_4",
+     "g6_3",
+     "g0_2",
+     "g1_2",
+     "g2_1",
+     "g3_0",
+     "g1_7",
+     "g2_8",
+     "g0_6",
+     "g3_9",
+     "g4_4",
+     "g5_5",
+     "g6_6",
+     "g7_7",
+     "g7_0",
+     "g7_1",
+     "g8_2",
+     "g9_3",
+     "g7_9",
+     "g7_8",
+     "g8_7",
+     "g9_7",
+     "g1_3",
+     "g6_1",
+     "g5_3",
+     "g6_8",
+     "g2_3",
+     "g3_2",
+     "g6_2",
+     "g7_3",
+     "g6_4",
+     "g8_4",
+     "g7_5",
+     "g6_7",
+     "g2_4",
+     "g3_7",
+     "g3_4",
+     "g4_6",
+     "g0_4",
+     "g1_5",
+     "g2_6",
+     "g3_5",
+     "g4_5",
+     "g4_1",
+     "g4_3",
+     "g4_8",
+     "g5_0",
+     "g5_2",
+     "g5_4",
+     "g5_6",
+     "g5_7",
+     "g5_9",
+     "g6_5",
+     "g7_6",
+     "g8_6",
+     "g9_5"
+    ],
+    "products": 123015,
+    "support": 8192,
+    "total": 3602414.7,
+    "width": 13
+   },
+   "samples_seconds": [
+    0.0007055480018607341,
+    0.0007068679988151416
+   ],
+   "warm_median_seconds": 0.0007068679988151416,
+   "warm_min_seconds": 0.0007068679988151416
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.016927616998145822,
+   "heuristic": "min-fill",
+   "intermediate_support": 8192,
+   "joint": 16384,
+   "limbs": 12,
+   "params": {
+    "factors": 180,
+    "family": "grid",
+    "size": 10,
+    "variables": 100
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 123015,
+   "samples_seconds": [
+    0.016927616998145822,
+    0.008173186994099524,
+    0.00776402900373796
+   ],
+   "warm_median_seconds": 0.007968607998918742,
+   "warm_min_seconds": 0.00776402900373796,
+   "width": 13,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 424
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.01703370999894105,
+   "params": {
+    "factors": 180,
+    "family": "grid",
+    "size": 10,
+    "variables": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01703370999894105,
+    0.020732477998535614
+   ],
+   "warm_median_seconds": 0.020732477998535614,
+   "warm_min_seconds": 0.020732477998535614
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.02581693600222934,
+   "params": {
+    "factors": 180,
+    "family": "grid",
+    "size": 10,
+    "variables": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02581693600222934,
+    0.02611129700380843
+   ],
+   "ties": 16,
+   "warm_median_seconds": 0.02611129700380843,
+   "warm_min_seconds": 0.02611129700380843
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.005488588998559862,
+   "params": {
+    "factors": 264,
+    "family": "grid",
+    "size": 12,
+    "variables": 144
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.005488588998559862,
+    0.0076053850061725825
+   ],
+   "warm_median_seconds": 0.0076053850061725825,
+   "warm_min_seconds": 0.0076053850061725825
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": false,
+   "dp_states": 0,
+   "first_seconds": 0.0016809389999252744,
+   "params": {
+    "factors": 264,
+    "family": "grid",
+    "size": 12,
+    "variables": 144
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 4,
+    "chosen": 0,
+    "complete": false,
+    "device": "cpu",
+    "heuristic": "min-fill",
+    "joint": 131072,
+    "limbs": 17,
+    "order": [
+     "g0_0",
+     "g0_11",
+     "g11_0",
+     "g11_11",
+     "g0_1",
+     "g0_10",
+     "g1_0",
+     "g1_11",
+     "g10_0",
+     "g10_11",
+     "g11_1",
+     "g11_10",
+     "g0_3",
+     "g0_5",
+     "g0_7",
+     "g1_1",
+     "g1_10",
+     "g0_9",
+     "g2_0",
+     "g2_11",
+     "g4_0",
+     "g4_11",
+     "g6_0",
+     "g6_11",
+     "g8_0",
+     "g8_11",
+     "g10_1",
+     "g10_10",
+     "g11_2",
+     "g11_4",
+     "g11_6",
+     "g11_8",
+     "g1_4",
+     "g1_6",
+     "g1_8",
+     "g2_5",
+     "g2_7",
+     "g2_9",
+     "g3_10",
+     "g3_1",
+     "g2_2",
+     "g3_6",
+     "g3_8",
+     "g4_7",
+     "g4_9",
+     "g5_10",
+     "g5_1",
+     "g4_2",
+     "g3_3",
+     "g5_8",
+     "g6_9",
+     "g7_10",
+     "g7_1",
+     "g6_2",
+     "g5_3",
+     "g4_4",
+     "g10_3",
+     "g9_2",
+     "g10_5",
+     "g9_4",
+     "g8_3",
+     "g10_7",
+     "g9_6",
+     "g8_5",
+     "g7_4",
+     "g0_2",
+     "g1_2",
+     "g2_1",
+     "g3_0",
+     "g0_6",
+     "g1_9",
+     "g2_10",
+     "g3_11",
+     "g5_5",
+     "g6_6",
+     "g7_0",
+     "g7_7",
+     "g7_11",
+     "g8_8",
+     "g9_9",
+     "g11_5",
+     "g11_9",
+     "g10_9",
+     "g9_10",
+     "g8_1",
+     "g10_2",
+     "g1_3",
+     "g10_8",
+     "g2_3",
+     "g3_2",
+     "g4_1",
+     "g6_4",
+     "g6_10",
+     "g7_9",
+     "g9_8",
+     "g9_0",
+     "g9_1",
+     "g8_2",
+     "g9_3",
+     "g7_2",
+     "g2_4",
+     "g2_8",
+     "g3_9",
+     "g0_8",
+     "g1_7",
+     "g9_7",
+     "g4_5",
+     "g5_7",
+     "g7_5",
+     "g8_7",
+     "g10_4",
+     "g11_3",
+     "g7_3",
+     "g8_4",
+     "g6_3",
+     "g3_4",
+     "g3_5",
+     "g4_8",
+     "g7_8",
+     "g8_9",
+     "g8_10",
+     "g9_11",
+     "g0_4",
+     "g1_5",
+     "g2_6",
+     "g3_7",
+     "g4_6",
+     "g5_6",
+     "g4_3",
+     "g4_10",
+     "g5_0",
+     "g5_2",
+     "g5_4",
+     "g5_9",
+     "g5_11",
+     "g6_1",
+     "g6_5",
+     "g6_7",
+     "g6_8",
+     "g7_6",
+     "g8_6",
+     "g9_5",
+     "g10_6",
+     "g11_7"
+    ],
+    "products": 851487,
+    "support": 65536,
+    "total": 33757520.7,
+    "width": 16
+   },
+   "samples_seconds": [
+    0.0016809389999252744,
+    0.0018343810006626882
+   ],
+   "warm_median_seconds": 0.0018343810006626882,
+   "warm_min_seconds": 0.0018343810006626882
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.24471712599915918,
+   "heuristic": "min-fill",
+   "intermediate_support": 65536,
+   "joint": 131072,
+   "limbs": 17,
+   "params": {
+    "factors": 264,
+    "family": "grid",
+    "size": 12,
+    "variables": 144
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 851487,
+   "samples_seconds": [
+    0.24471712599915918,
+    0.07017314100085059,
+    0.07011448599951109
+   ],
+   "warm_median_seconds": 0.07014381350018084,
+   "warm_min_seconds": 0.07011448599951109,
+   "width": 16,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 606
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.20512404500186676,
+   "params": {
+    "factors": 264,
+    "family": "grid",
+    "size": 12,
+    "variables": 144
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.20512404500186676,
+    0.13483721900411183
+   ],
+   "warm_median_seconds": 0.13483721900411183,
+   "warm_min_seconds": 0.13483721900411183
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.3709002320028958,
+   "params": {
+    "factors": 264,
+    "family": "grid",
+    "size": 12,
+    "variables": 144
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.3709002320028958,
+    0.1918445379997138
+   ],
+   "ties": 8,
+   "warm_median_seconds": 0.1918445379997138,
+   "warm_min_seconds": 0.1918445379997138
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0001969170043594204,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001969170043594204,
+    8.415000047534704e-05
+   ],
+   "warm_median_seconds": 8.415000047534704e-05,
+   "warm_min_seconds": 8.415000047534704e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 12,
+   "first_seconds": 3.644000389613211e-05,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 8,
+    "limbs": 1,
+    "order": [
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 27,
+    "support": 4,
+    "total": 8091.5,
+    "width": 2
+   },
+   "samples_seconds": [
+    3.644000389613211e-05,
+    1.7097998352255672e-05
+   ],
+   "warm_median_seconds": 1.7097998352255672e-05,
+   "warm_min_seconds": 1.7097998352255672e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0002414580012555234,
+   "heuristic": "exact",
+   "intermediate_support": 4,
+   "joint": 8,
+   "limbs": 1,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 27,
+   "samples_seconds": [
+    0.0002414580012555234,
+    0.00017492500046500936,
+    0.00012330699973972514
+   ],
+   "warm_median_seconds": 0.00014911600010236725,
+   "warm_min_seconds": 0.00012330699973972514,
+   "width": 2,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 9
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00016131899610627443,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016131899610627443,
+    0.0001420319968019612
+   ],
+   "warm_median_seconds": 0.0001420319968019612,
+   "warm_min_seconds": 0.0001420319968019612
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0001556269999127835,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001556269999127835,
+    0.00014638800348620862
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00014638800348620862,
+   "warm_min_seconds": 0.00014638800348620862
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 4.2369996663182974e-05,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.2369996663182974e-05,
+    4.97880027978681e-05
+   ],
+   "warm_median_seconds": 4.97880027978681e-05,
+   "warm_min_seconds": 4.97880027978681e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 3.372700302861631e-05,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.372700302861631e-05
+   ],
+   "warm_median_seconds": 3.372700302861631e-05,
+   "warm_min_seconds": 3.372700302861631e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 3.191499854438007e-05,
+   "params": {
+    "factors": 3,
+    "family": "clique",
+    "size": 3,
+    "variables": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.191499854438007e-05
+   ],
+   "warm_median_seconds": 3.191499854438007e-05,
+   "warm_min_seconds": 3.191499854438007e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.00015867500042077154,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00015867500042077154,
+    0.00017635199765209109
+   ],
+   "warm_median_seconds": 0.00017635199765209109,
+   "warm_min_seconds": 0.00017635199765209109
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 32,
+   "first_seconds": 3.221099905204028e-05,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 16,
+    "limbs": 1,
+    "order": [
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 83,
+    "support": 8,
+    "total": 10239.5,
+    "width": 3
+   },
+   "samples_seconds": [
+    3.221099905204028e-05,
+    2.6353998691774905e-05
+   ],
+   "warm_median_seconds": 2.6353998691774905e-05,
+   "warm_min_seconds": 2.6353998691774905e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0002724149962887168,
+   "heuristic": "exact",
+   "intermediate_support": 8,
+   "joint": 16,
+   "limbs": 1,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 83,
+   "samples_seconds": [
+    0.0002724149962887168,
+    0.00017025400302372873,
+    0.00011874399933731183
+   ],
+   "warm_median_seconds": 0.00014449900118052028,
+   "warm_min_seconds": 0.00011874399933731183,
+   "width": 3,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00015534499834757298,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015534499834757298,
+    0.00015297099889721721
+   ],
+   "warm_median_seconds": 0.00015297099889721721,
+   "warm_min_seconds": 0.00015297099889721721
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0001628339960006997,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001628339960006997,
+    0.00015225200331769884
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00015225200331769884,
+   "warm_min_seconds": 0.00015225200331769884
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 3.6580000596586615e-05,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.6580000596586615e-05,
+    2.8140006179455668e-05
+   ],
+   "warm_median_seconds": 2.8140006179455668e-05,
+   "warm_min_seconds": 2.8140006179455668e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 2.5850997189991176e-05,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.5850997189991176e-05
+   ],
+   "warm_median_seconds": 2.5850997189991176e-05,
+   "warm_min_seconds": 2.5850997189991176e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 9.334200149169192e-05,
+   "params": {
+    "factors": 6,
+    "family": "clique",
+    "size": 4,
+    "variables": 4
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.334200149169192e-05
+   ],
+   "warm_median_seconds": 9.334200149169192e-05,
+   "warm_min_seconds": 9.334200149169192e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.00019868499657604843,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00019868499657604843,
+    0.00023654899996472523
+   ],
+   "warm_median_seconds": 0.00023654899996472523,
+   "warm_min_seconds": 0.00023654899996472523
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 80,
+   "first_seconds": 3.7218997022137046e-05,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 32,
+    "limbs": 1,
+    "order": [
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 227,
+    "support": 16,
+    "total": 12615.5,
+    "width": 4
+   },
+   "samples_seconds": [
+    3.7218997022137046e-05,
+    2.5028995878528804e-05
+   ],
+   "warm_median_seconds": 2.5028995878528804e-05,
+   "warm_min_seconds": 2.5028995878528804e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.000316131001454778,
+   "heuristic": "exact",
+   "intermediate_support": 16,
+   "joint": 32,
+   "limbs": 1,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 227,
+   "samples_seconds": [
+    0.000316131001454778,
+    0.0001374019993818365,
+    0.00012467099440982565
+   ],
+   "warm_median_seconds": 0.00013103649689583108,
+   "warm_min_seconds": 0.00012467099440982565,
+   "width": 4,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 23
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00016856099682627246,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016856099682627246,
+    0.00015016299585113302
+   ],
+   "warm_median_seconds": 0.00015016299585113302,
+   "warm_min_seconds": 0.00015016299585113302
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00017164099699584767,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017164099699584767,
+    0.00019251499907113612
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00019251499907113612,
+   "warm_min_seconds": 0.00019251499907113612
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 5.040700489189476e-05,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.040700489189476e-05,
+    3.5051998565904796e-05
+   ],
+   "warm_median_seconds": 3.5051998565904796e-05,
+   "warm_min_seconds": 3.5051998565904796e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 3.2026997359935194e-05,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.2026997359935194e-05
+   ],
+   "warm_median_seconds": 3.2026997359935194e-05,
+   "warm_min_seconds": 3.2026997359935194e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.00022090600396040827,
+   "params": {
+    "factors": 10,
+    "family": "clique",
+    "size": 5,
+    "variables": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022090600396040827
+   ],
+   "warm_median_seconds": 0.00022090600396040827,
+   "warm_min_seconds": 0.00022090600396040827
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0002586109985713847,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002586109985713847,
+    0.00021336400095606223
+   ],
+   "warm_median_seconds": 0.00021336400095606223,
+   "warm_min_seconds": 0.00021336400095606223
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 192,
+   "first_seconds": 4.028499824926257e-05,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 64,
+    "limbs": 1,
+    "order": [
+     "k5",
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 579,
+    "support": 32,
+    "total": 15527.5,
+    "width": 5
+   },
+   "samples_seconds": [
+    4.028499824926257e-05,
+    2.779100032057613e-05
+   ],
+   "warm_median_seconds": 2.779100032057613e-05,
+   "warm_min_seconds": 2.779100032057613e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0002849340016837232,
+   "heuristic": "exact",
+   "intermediate_support": 32,
+   "joint": 64,
+   "limbs": 1,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 579,
+   "samples_seconds": [
+    0.0002849340016837232,
+    0.0001360340029350482,
+    0.00012589499965542927
+   ],
+   "warm_median_seconds": 0.00013096450129523873,
+   "warm_min_seconds": 0.00012589499965542927,
+   "width": 5,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 34
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00016219800454564393,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016219800454564393,
+    0.00022167999850353226
+   ],
+   "warm_median_seconds": 0.00022167999850353226,
+   "warm_min_seconds": 0.00022167999850353226
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00019581599917728454,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019581599917728454,
+    0.000227593001909554
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.000227593001909554,
+   "warm_min_seconds": 0.000227593001909554
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 6.0006997955497354e-05,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.0006997955497354e-05,
+    4.277400148566812e-05
+   ],
+   "warm_median_seconds": 4.277400148566812e-05,
+   "warm_min_seconds": 4.277400148566812e-05
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 4.4528998841997236e-05,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.4528998841997236e-05
+   ],
+   "warm_median_seconds": 4.4528998841997236e-05,
+   "warm_min_seconds": 4.4528998841997236e-05
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.0005032949993619695,
+   "params": {
+    "factors": 15,
+    "family": "clique",
+    "size": 6,
+    "variables": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005032949993619695
+   ],
+   "warm_median_seconds": 0.0005032949993619695,
+   "warm_min_seconds": 0.0005032949993619695
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0003874139947583899,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003874139947583899,
+    0.0003642070005298592
+   ],
+   "warm_median_seconds": 0.0003642070005298592,
+   "warm_min_seconds": 0.0003642070005298592
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 1024,
+   "first_seconds": 5.3417999879457057e-05,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 256,
+    "limbs": 2,
+    "order": [
+     "k7",
+     "k6",
+     "k5",
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 3331,
+    "support": 128,
+    "total": 33520.7,
+    "width": 7
+   },
+   "samples_seconds": [
+    5.3417999879457057e-05,
+    3.820600250037387e-05
+   ],
+   "warm_median_seconds": 3.820600250037387e-05,
+   "warm_min_seconds": 3.820600250037387e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0004498790003708564,
+   "heuristic": "exact",
+   "intermediate_support": 128,
+   "joint": 256,
+   "limbs": 2,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 3331,
+   "samples_seconds": [
+    0.0004498790003708564,
+    0.00018031799845630303,
+    0.00020191499788779765
+   ],
+   "warm_median_seconds": 0.00019111649817205034,
+   "warm_min_seconds": 0.00018031799845630303,
+   "width": 7,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 59
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0002214780033682473,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002214780033682473,
+    0.00020995600061723962
+   ],
+   "warm_median_seconds": 0.00020995600061723962,
+   "warm_min_seconds": 0.00020995600061723962
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.00025340499996673316,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00025340499996673316,
+    0.00026702699688030407
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.00026702699688030407,
+   "warm_min_seconds": 0.00026702699688030407
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 0.0001149219970102422,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001149219970102422,
+    0.00010590800229692832
+   ],
+   "warm_median_seconds": 0.00010590800229692832,
+   "warm_min_seconds": 0.00010590800229692832
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.0001592130065546371,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001592130065546371
+   ],
+   "warm_median_seconds": 0.0001592130065546371,
+   "warm_min_seconds": 0.0001592130065546371
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.0031611409940524027,
+   "params": {
+    "factors": 28,
+    "family": "clique",
+    "size": 8,
+    "variables": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0031611409940524027
+   ],
+   "warm_median_seconds": 0.0031611409940524027,
+   "warm_min_seconds": 0.0031611409940524027
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0005871219982509501,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005871219982509501,
+    0.0004930590002913959
+   ],
+   "warm_median_seconds": 0.0004930590002913959,
+   "warm_min_seconds": 0.0004930590002913959
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 5120,
+   "first_seconds": 0.00013459000183502212,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 1024,
+    "limbs": 3,
+    "order": [
+     "k9",
+     "k8",
+     "k7",
+     "k6",
+     "k5",
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 17411,
+    "support": 512,
+    "total": 138265.9,
+    "width": 9
+   },
+   "samples_seconds": [
+    0.00013459000183502212,
+    0.00010758300049928948
+   ],
+   "warm_median_seconds": 0.00010758300049928948,
+   "warm_min_seconds": 0.00010758300049928948
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.0011792470031650737,
+   "heuristic": "exact",
+   "intermediate_support": 512,
+   "joint": 1024,
+   "limbs": 3,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 17411,
+   "samples_seconds": [
+    0.0011792470031650737,
+    0.0005206719943089411,
+    0.0005462459957925603
+   ],
+   "warm_median_seconds": 0.0005334589950507507,
+   "warm_min_seconds": 0.0005206719943089411,
+   "width": 9,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 83
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.00047531900054309517,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00047531900054309517,
+    0.0004573480036924593
+   ],
+   "warm_median_seconds": 0.0004573480036924593,
+   "warm_min_seconds": 0.0004573480036924593
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.0007029169937595725,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007029169937595725,
+    0.0006590830016648397
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.0006590830016648397,
+   "warm_min_seconds": 0.0006590830016648397
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 0.0004924919994664378,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004924919994664378,
+    0.0005049050014349632
+   ],
+   "warm_median_seconds": 0.0005049050014349632,
+   "warm_min_seconds": 0.0005049050014349632
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.0009247179987141863,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009247179987141863
+   ],
+   "warm_median_seconds": 0.0009247179987141863,
+   "warm_min_seconds": 0.0009247179987141863
+  },
+  {
+   "backend": "python",
+   "case": "Python Fraction enumeration (check)",
+   "equal": true,
+   "first_seconds": 0.01924536000296939,
+   "params": {
+    "factors": 45,
+    "family": "clique",
+    "size": 10,
+    "variables": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01924536000296939
+   ],
+   "warm_median_seconds": 0.01924536000296939,
+   "warm_min_seconds": 0.01924536000296939
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.000861125998198986,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000861125998198986,
+    0.0007669650003663264
+   ],
+   "warm_median_seconds": 0.0007669650003663264,
+   "warm_min_seconds": 0.0007669650003663264
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 24576,
+   "first_seconds": 0.0004951829978381284,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 4096,
+    "limbs": 4,
+    "order": [
+     "k11",
+     "k10",
+     "k9",
+     "k8",
+     "k7",
+     "k6",
+     "k5",
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 86019,
+    "support": 2048,
+    "total": 773571.1,
+    "width": 11
+   },
+   "samples_seconds": [
+    0.0004951829978381284,
+    0.0004864410002483055
+   ],
+   "warm_median_seconds": 0.0004864410002483055,
+   "warm_min_seconds": 0.0004864410002483055
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.005060095005319454,
+   "heuristic": "exact",
+   "intermediate_support": 2048,
+   "joint": 4096,
+   "limbs": 4,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 86019,
+   "samples_seconds": [
+    0.005060095005319454,
+    0.0022541060025105253,
+    0.002364040003158152
+   ],
+   "warm_median_seconds": 0.0023090730028343387,
+   "warm_min_seconds": 0.0022541060025105253,
+   "width": 11,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 121
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.0018753249969449826,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018753249969449826,
+    0.0019601810054155067
+   ],
+   "warm_median_seconds": 0.0019601810054155067,
+   "warm_min_seconds": 0.0019601810054155067
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.003023274999577552,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003023274999577552,
+    0.002954391995444894
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.002954391995444894,
+   "warm_min_seconds": 0.002954391995444894
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 0.0024112799947033636,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024112799947033636,
+    0.002371750997554045
+   ],
+   "warm_median_seconds": 0.002371750997554045,
+   "warm_min_seconds": 0.002371750997554045
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.006708002998493612,
+   "params": {
+    "factors": 66,
+    "family": "clique",
+    "size": 12,
+    "variables": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006708002998493612
+   ],
+   "warm_median_seconds": 0.006708002998493612,
+   "warm_min_seconds": 0.006708002998493612
+  },
+  {
+   "backend": "cpu",
+   "case": "graph construction",
+   "first_seconds": 0.0015863600056036375,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0015863600056036375,
+    0.0009450629950151779
+   ],
+   "warm_median_seconds": 0.0009450629950151779,
+   "warm_min_seconds": 0.0009450629950151779
+  },
+  {
+   "backend": "cpu",
+   "case": "plan: costed candidate orders (FND-008)",
+   "complete": true,
+   "dp_states": 114688,
+   "first_seconds": 0.0022963960000197403,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "build",
+   "plan": {
+    "candidates": 2,
+    "chosen": 0,
+    "complete": true,
+    "device": "cpu",
+    "heuristic": "exact",
+    "joint": 16384,
+    "limbs": 5,
+    "order": [
+     "k13",
+     "k12",
+     "k11",
+     "k10",
+     "k9",
+     "k8",
+     "k7",
+     "k6",
+     "k5",
+     "k4",
+     "k3",
+     "k2",
+     "k1",
+     "k0"
+    ],
+    "products": 409603,
+    "support": 8192,
+    "total": 4412780.3,
+    "width": 13
+   },
+   "samples_seconds": [
+    0.0022963960000197403,
+    0.0024257690020021982
+   ],
+   "warm_median_seconds": 0.0024257690020021982,
+   "warm_min_seconds": 0.0024257690020021982
+  },
+  {
+   "backend": "cpu",
+   "case": "partition function (exact)",
+   "first_seconds": 0.02179751999938162,
+   "heuristic": "exact",
+   "intermediate_support": 8192,
+   "joint": 16384,
+   "limbs": 5,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "run",
+   "precision": "exact rational",
+   "products": 409603,
+   "samples_seconds": [
+    0.02179751999938162,
+    0.010655293997842818,
+    0.01102445899596205
+   ],
+   "warm_median_seconds": 0.010839876496902434,
+   "warm_min_seconds": 0.010655293997842818,
+   "width": 13,
+   "z_denominator_bits": 1,
+   "z_numerator_bits": 177
+  },
+  {
+   "backend": "cpu",
+   "case": "marginal of two distant variables (exact)",
+   "first_seconds": 0.009632989000238013,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009632989000238013,
+    0.00948764899658272
+   ],
+   "warm_median_seconds": 0.00948764899658272,
+   "warm_min_seconds": 0.00948764899658272
+  },
+  {
+   "backend": "cpu",
+   "case": "maximum with every tie (exact)",
+   "first_seconds": 0.01697190900449641,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01697190900449641,
+    0.01877744800003711
+   ],
+   "ties": 1,
+   "warm_median_seconds": 0.01877744800003711,
+   "warm_min_seconds": 0.01877744800003711
+  },
+  {
+   "backend": "count002",
+   "case": "COUNT-002 variable elimination (reference)",
+   "equal": true,
+   "first_seconds": 0.013122524993377738,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013122524993377738,
+    0.015238451000186615
+   ],
+   "warm_median_seconds": 0.015238451000186615,
+   "warm_min_seconds": 0.015238451000186615
+  },
+  {
+   "backend": "count002-brute",
+   "brute_force_checked": true,
+   "case": "COUNT-002 brute force over the factor universe (check)",
+   "equal": true,
+   "first_seconds": 0.06546427599823801,
+   "params": {
+    "factors": 91,
+    "family": "clique",
+    "size": 14,
+    "variables": 14
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06546427599823801
+   ],
+   "warm_median_seconds": 0.06546427599823801,
+   "warm_min_seconds": 0.06546427599823801
+  },
+  {
+   "backend": "cpu",
+   "best_candidate_joint": 8192,
+   "case": "grid partition under tensor = 2^12",
+   "every_order": false,
+   "limit": 4096,
+   "message": "factor plan: needs 131072 tensor, budget 4096",
+   "minima": {
+    "exact": false,
+    "joint": 8,
+    "support": 4,
+    "width": 4
+   },
+   "need": 131072,
+   "params": {
+    "grid": "12x12"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0017790440033422783,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "best_candidate_joint": 32768,
+   "case": "grid partition under tensor = 2^12",
+   "every_order": false,
+   "limit": 4096,
+   "message": "factor plan: needs 1048576 tensor, budget 4096",
+   "minima": {
+    "exact": false,
+    "joint": 8,
+    "support": 4,
+    "width": 5
+   },
+   "need": 1048576,
+   "params": {
+    "grid": "14x14"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.003043708005861845,
+   "refused": true,
+   "resource": "tensor"
+  }
+ ],
+ "seconds": 4.367651594999188,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget": {
+    "tensor": 4096
+   },
+   "grid": "grid partition under a tensor budget of 2^12 joint cells",
+   "largest_admitted": {
+    "grid": "8x8",
+    "joint": 2048,
+    "width": 10
+   },
+   "smallest_refused": {
+    "best_candidate_joint": 8192,
+    "every_order": false,
+    "first_candidate_need": 131072,
+    "grid": "12x12",
+    "minima": {
+     "exact": false,
+     "joint": 8,
+     "support": 4,
+     "width": 4
+    }
+   }
+  }
+ ]
+}
