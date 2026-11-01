@@ -1,0 +1,38 @@
+{
+ "guide": [
+  {"page": "preimg.md", "title": "Finite roots, residues and periodic preimages", "capabilities": "PRE-002",
+   "summary": "a predicate on a polynomial (monotone pieces between Sturm-isolated critical points, exact integer roots), a power or affine residue (congruences, CRT) or a GF(2) bit map of a stored column becomes the exact set of codes as intervals, residue classes, finite sets or Boolean cubes, with a budgeted lookup or direct fallback that never drops a solution, FND-007 laws of the transformation, the scan and the exhaustive verification on the CPU and in CUDA."}
+ ],
+ "inventory": {
+  "PRE-002": {
+   "planned_files": ["torbles/math_preimg.h", "torbles/math_preimg.c", "torbles/math_preimg_gpu.cu",
+                     "torbles/math_preimg.py", "tests/test_math_preimg.py", "bench/benchmark_math_preimg.py"],
+   "cpu": "Native exact preimages over PRE-001's codec (logical = code + offset, value = logical / 10^scale, codes over the declared domain) and predicates (y op c, c an int64 rational, or y IN up to 4096 values). Polynomial maps of degree <= 16 with rational coefficients: the integer polynomial N(L) = K p(L / 10^scale) in FND-009 big integers, its critical points (the real roots of N') isolated by INV-001's Sturm sequences and refined to width 1, the integers between them strictly monotone pieces, and on each piece two binary searches with exact big-integer evaluations give the level sets (intervals; the exact integer roots for equality; every IN value through the same pieces). Power and polynomial residues (sum c_i x^i) mod m, 1 <= m <= 2^62: the solutions per prime power of m (trial division, each prime power enumerated up to 2^24 residues) combined by the CRT for equality and IN, every residue enumerated for the other operators (m <= 2^24). Affine residues (a x + b) mod m: the linear congruences solved by gcd and modular inverses, residue classes of the period m / gcd(a, m). GF(2) bit maps XOR / AND / OR with a constant on the w low bits of logical - base (FIELD-001's bit variables): the images of the dyadic blocks of {y op c} as Boolean cubes of the stored code, or residue runs mod 2^(H+1) when the base is not the code's. Results are unions of one representation: sorted disjoint intervals (finite sets as points), residue classes of one period (a domain no larger than the period as intervals) or disjoint cubes; residues of a power-of-two period convert to low-bit cubes for bit-plane programs. Past the output budget (branches), the iterations or bytes budget or a representation limit the set falls back to a lookup bitmap (residues mod the period or the domain's codes, at most 2^26 bits, computed exactly) or to the direct exact evaluation of the predicate (polynomials in W <= 8 words under a bound proven over the domain, residues in 128-bit modular arithmetic), never dropping a solution; fallback none refuses with the exceeded resource. Each polynomial or periodic set carries an FND-007 LAW certificate of its transformation (the codec substitution, the periodicity identities) when its coefficients fit int64. The scan marks the selected rows whose present value's code is in the set and can evaluate the original predicate on every row and count mismatches; the verification checks every code of a domain of at most 2^26 codes against the direct predicate. A NULL value never satisfies.",
+   "gpu": "tr_mgpu_preimg_scan: one work item per 64-row selection word evaluates membership of each present row's code (interval binary search, residue runs, cubes, a lookup bitmap or the direct predicate, the inline functions of math_preimg.h shared with the CPU), optionally the direct predicate and its comparison, writes its own bitmap word and adds its counts with one atomic each, the smallest mismatching and undecided rows by atomic minimum. tr_mgpu_preimg_verify: one work item per 64 codes of the domain counts codes, members, true codes and mismatches with one atomic each and keeps the smallest mismatching code by atomic minimum. No barrier, no shared memory; results equal the CPU's bit for bit. The host validates the set's view and budgets the device copies before launching; the set itself is built on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
+   "limitations": ["Periodic and bit maps are defined on integer domains only (scale 0); polynomial maps have degree <= 16 and int64 rational coefficients and thresholds.",
+                   "Composite moduli are factored by trial division and prime powers enumerated up to 2^24 residues; past that (or past the CRT class limit) the set falls back to a lookup or the direct evaluation.",
+                   "Residues of a period that is not a power of two have no bit-plane program: the lookup or the direct evaluation is the candidate; a plane program is limited to 1024 engine instructions.",
+                   "The exhaustive verification covers domains of at most 2^26 codes with values within int64.",
+                   "Branch construction, critical-point isolation and certificates run on the CPU; CUDA covers the scan and the verification.",
+                   "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."]
+  }
+ },
+ "registry": {
+  "modules": [
+   {"enum": "PREIMG", "key": "preimg", "family": "preimg", "capability": "PRE-002",
+    "name": "roots, residues and periodic preimages", "comment": "roots, residues, bit cubes, fallbacks",
+    "state": "CODE_SET", "state_label": "code set", "devices": "BOTH", "finalize": 1,
+    "carriers": ["BIGQ", "BIGINT", "QINTERVAL", "CODE", "RATIONAL", "INTEGER", "GF2", "KLEENE", "ROWSET", "COUNT"],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": ["tr_preimg_preimage", "tr_preimg_set_get_info", "tr_preimg_set_branches", "tr_preimg_set_contains",
+                  "tr_preimg_set_get_view", "tr_preimg_set_lookup", "tr_preimg_set_cubes",
+                  "tr_preimg_set_certificate", "tr_preimg_scan", "tr_preimg_verify"],
+    "cuda_entry": ["tr_mgpu_preimg_scan", "tr_mgpu_preimg_verify"],
+    "impl": [["ROOTS", "BIGQ", "CPU"], ["EVAL", "BIGINT", "CPU"], ["EUCLID", "INTEGER", "CPU"],
+             ["RESIDUE", "INTEGER", "ALL"], ["BITS", "CODE", "CPU"], ["ORDER", "CODE", "ALL"],
+             ["PREDICATE", "RATIONAL", "ALL"], ["FOLD", "COUNT", "ALL"]]}
+  ]
+ }
+}
