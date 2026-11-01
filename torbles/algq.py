@@ -154,8 +154,14 @@ def gpu_lib():
         name = os.environ.get("TORBLES_GPU_LIB") or str(Path(__file__).with_name("libgpu.so"))
         if not Path(name).exists(): name = str(Path(__file__).with_name("libgpu_emu.so"))
         g = ctypes.CDLL(name)
+        if not hasattr(g, "gpu_query_tagged"):
+            raise RuntimeError(f"{name} is older than this torbles (no gpu_query_tagged): rebuild it (make, make gpu)")
         g.gpu_open.restype = vp; g.gpu_open.argtypes = [vp]
         g.gpu_query.restype = ctypes.c_int; g.gpu_query.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.POINTER(ctypes.c_double)]
+        u64p = ctypes.POINTER(ctypes.c_uint64)       # the device copies of host arrays (see _gpu_tag)
+        g.gpu_query_tagged.restype = ctypes.c_int; g.gpu_query_tagged.argtypes = [vp, ctypes.POINTER(QPlan), u64p, ctypes.POINTER(ctypes.c_double)]
+        g.gpu_cache_evict.restype = ctypes.c_int; g.gpu_cache_evict.argtypes = [vp, u64p, ctypes.c_int]
+        g.gpu_cache_entries.restype = ctypes.c_int; g.gpu_cache_entries.argtypes = [vp, u64p, u64p, ctypes.c_int]
         g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.restype = None; g.gpu_close.argtypes = [vp]
         g.gpu_mm_mode.restype = ctypes.c_int; g.gpu_mm_mode.argtypes = [ctypes.c_int]
         g.gpu_mm_name.restype = ctypes.c_char_p
@@ -823,18 +829,69 @@ class TableClosedError(RuntimeError):
 
 class _Storage:
     """the native handles of one table (see _release): at is None once the table is closed; header is the torble's
-    address until the finalizer frees it"""
-    __slots__ = ("at", "header", "pt", "sides", "gpu", "gpu_close")
-    def __init__(self): self.at = self.header = self.pt = self.gpu = self.gpu_close = None; self.sides = []
+    address until the finalizer frees it; gpu its GPU copy (glib: the GPU library); gtags the tags of its live arrays
+    that GPU handles may hold device copies of (see _gpu_tag)"""
+    __slots__ = ("at", "header", "pt", "sides", "gpu", "glib", "gtags")
+    def __init__(self): self.at = self.header = self.pt = self.gpu = self.glib = None; self.sides, self.gtags = [], set()
 
 
-def _release(s, final=True, at_free=lib.at_free, at_release=lib.at_release, pt_free=lib.pt_free):
-    """free a table's storage: the GPU copy, the plain baseline's table, the torble's planes (or mapping), then the
-    sidecars (the torble points into them); with final (the finalizer), also the torble's header, which close() keeps.
-    Each handle is cleared before it is freed. The functions are bound here, for a release at interpreter exit."""
+# Device copies of host arrays. Besides its planes (uploaded once per table: gpu_handle), a GPU query reads host arrays:
+# the value arrays of its looked-up dimension attributes (a dimension's decoded or ranked column) and its delta plane.
+# gpu.cu keeps device copies of them in the fact's handle for later queries, keyed by address, length and a tag: a
+# serial given here to one array object, never reused. An address and a length do not name an array: once an array is
+# freed, another can be allocated there with other values, by a table built later or by the same table (the ranked
+# columns of a table's copy, which sqlexec binds when a query joins a table twice, die with the copy; a delta plane
+# dies with its query). An array's copies are evicted from every handle when it is collected, and those of a table's
+# arrays when its storage is released (close, or the finalizer). An array not found among the columns of an open joined
+# table, other than the query's delta plane, has no tag (0): it is uploaded for its query only. The lock serializes the
+# GPU calls: an eviction can run in a finalizer, in whichever thread drops the last reference, during another thread's
+# GPU query.
+import itertools as _itertools, threading as _threading
+_GPU_LIVE = set()                       # the storages that hold a GPU handle
+_GPU_TAGS = {}                          # id(array) -> (weak reference to the array, its tag)
+_GPU_SERIAL = _itertools.count(1)
+_GPU_LOCK = _threading.RLock()
+
+
+def _gpu_evict(tags, live=_GPU_LIVE, lock=_GPU_LOCK):
+    """drop the device copies of these tags from every GPU handle"""
+    if not tags: return
+    arr = (ctypes.c_uint64 * len(tags))(*tags)
+    with lock:
+        for s in list(live):
+            if s.gpu: s.glib.gpu_cache_evict(s.gpu, arr, len(tags))
+
+
+def _gpu_forget(key, tag, owner, tags=_GPU_TAGS, evict=_gpu_evict):
+    """the array of this tag was collected: no query presents the tag again, and its copies are dropped"""
+    if tags.get(key, (None, 0))[1] == tag: del tags[key]
+    if owner is not None: owner.gtags.discard(tag)
+    evict((tag,))
+
+
+def _gpu_tag(arr, owner=None):
+    """the tag of host array arr in the GPU caches (see above); owner: the storage whose release drops its copies"""
+    key = id(arr); e = _GPU_TAGS.get(key)
+    if e is not None and e[0]() is arr: return e[1]
+    tag = next(_GPU_SERIAL); _GPU_TAGS[key] = (weakref.ref(arr), tag)
+    weakref.finalize(arr, _gpu_forget, key, tag, owner).atexit = False   # at exit the handles are closed: nothing to drop
+    if owner is not None: owner.gtags.add(tag)
+    return tag
+
+
+def _release(s, final=True, at_free=lib.at_free, at_release=lib.at_release, pt_free=lib.pt_free,
+             evict=_gpu_evict, live=_GPU_LIVE, lock=_GPU_LOCK):
+    """free a table's storage: the device copies of its arrays in other tables' GPU handles (see _gpu_tag), its GPU
+    copy, the plain baseline's table, the torble's planes (or mapping), then the sidecars (the torble points into
+    them); with final (the finalizer), also the torble's header, which close() keeps. Each handle is cleared before it
+    is freed. The functions are bound here, for a release at interpreter exit."""
     s.at = None
-    gpu, s.gpu = s.gpu, None
-    if gpu: s.gpu_close(gpu)
+    tags, s.gtags = s.gtags, set()
+    evict(tags)
+    with lock:
+        live.discard(s)
+        gpu, s.gpu = s.gpu, None
+        if gpu: s.glib.gpu_close(gpu)
     pt, s.pt = s.pt, None
     if pt: pt_free(pt)
     if s.header: at_release(s.header)
@@ -988,9 +1045,10 @@ class Table:
         return nat is None or nat.s.at is None
     def close(self):
         """Release the native storage now: the planes (a loaded table's file mapping), the sidecars, the plain baseline's
-        columns and the GPU copy; the relationship catalog attached to the table is closed with it. Any later use of the
-        storage, through this Table, its copies (copy.copy shares it) or the objects built on it (queries, scopes, ...),
-        raises TableClosedError; a catalog kept apart (attach=False) reports a stale table. Closing again does nothing.
+        columns, the GPU copy and the device copies of its columns held by the GPU handles of the tables it was joined
+        to; the relationship catalog attached to the table is closed with it. Any later use of the storage, through this
+        Table, its copies (copy.copy shares it) or the objects built on it (queries, scopes, ...), raises
+        TableClosedError; a catalog kept apart (attach=False) reports a stale table. Closing again does nothing.
         Only the torble's header (an empty torble) stays until the last Table object over it is collected; without
         close(), everything is freed then. Not while another thread is running a query on the table."""
         nat = self.__dict__.get("_native")
@@ -1055,7 +1113,7 @@ class Table:
             import time as _t; t0 = _t.perf_counter()
             g = gpu_lib(); h = g.gpu_open(s.at); self.gpu_upload_s = _t.perf_counter() - t0
             if not h: raise RuntimeError("GPU upload failed")
-            s.gpu, s.gpu_close = h, g.gpu_close
+            s.gpu, s.glib = h, g; _GPU_LIVE.add(s)
         return s.gpu
     def colmax(self, c):
         if c not in self._colmax: self._colmax[c] = int(self.data[c].max()) if self.n else 0
@@ -1506,6 +1564,7 @@ class Query:
     def _exec(self, dev, table, plan):
         """run a finished plan: on the GPU when asked (False if it cannot: the caller re-plans for the CPU), or on a
         CPU engine"""
+        for d in self.joins: d._storage()     # a joined table closed since the plan was compiled: TableClosedError
         self.device, self.kernel_ms = ("plain" if dev == "plain" else "cpu"), None
         import time as _time
         catalog = getattr(table, "_relationships", None)
@@ -1565,11 +1624,29 @@ class Query:
         self.kernel_ms = sum(kernel_ms) if kernel_ms else None
         return True
 
+    def _gpu_tags(self, plan):
+        """the tags of the plan's host arrays in the GPU caches (see _gpu_tag): an attribute's value array is one of the
+        decoded or ranked columns of an open joined table, which owns it; the delta plane is this query's. Any other
+        array has no tag (0)."""
+        tags = (ctypes.c_uint64 * 9)()
+        want = {}
+        for i in range(plan.nattr): want.setdefault((plan.attr_vals[i], plan.attr_n[i] * 4), []).append(i)
+        if want:
+            for t in self.joins:
+                if t.closed: continue
+                d = t.__dict__
+                for a in [*d.get("_decoded", {}).values(), *(r[1] for r in d.get("_ranked", {}).values())]:
+                    for i in want.get((a.ctypes.data, a.nbytes), ()): tags[i] = _gpu_tag(a, t._native.s)
+        xr = getattr(self, "_xrows", None)
+        if plan.xmode and xr is not None and plan.xrows == xr[0].ctypes.data: tags[8] = _gpu_tag(xr[0])
+        return tags
+
     def _exec_loop(self, dev, table, plan):
+        tags = self._gpu_tags(plan) if dev == "gpu" else None
         while True:
             if dev == "gpu":
-                ms = ctypes.c_double(0)
-                rc = gpu_lib().gpu_query(table.gpu_handle(), ctypes.byref(plan), ctypes.byref(ms))
+                ms = ctypes.c_double(0); h = table.gpu_handle()
+                with _GPU_LOCK: rc = gpu_lib().gpu_query_tagged(h, ctypes.byref(plan), tags, ctypes.byref(ms))
                 if rc != 0:
                     self._gpu_fail = "unsupported plan" if rc == -1 else "CUDA error"
                     return False

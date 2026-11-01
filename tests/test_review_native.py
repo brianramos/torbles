@@ -16,6 +16,11 @@ records) that outlive the user's last reference to their table; close() followed
 crash), double close, close of a table a live query, scope or catalog holds, copies of a table, a failed load, the
 release at interpreter exit.
 
+The GPU executor's device copies of host arrays (a looked-up attribute's values, a delta plane), which a handle keeps
+for later queries, were keyed by address and length alone: once tables (and their arrays) are freed, a new array at a
+freed one's address and length read the old one's copy. They are keyed by the array's tag too, and evicted when the
+array is collected or its table released; tested on the emulated GPU, whose kernels read the copies as a GPU's do.
+
 Under AddressSanitizer (bash tests/sanitize_math.sh test_review_native.py) a use of freed memory or a double free
 fails the run."""
 import copy
@@ -165,6 +170,38 @@ def run(q, engine):
     r = q.run(engine)
     return tuple(r) if isinstance(r, algq.MinMax) else ({k: tuple(v) if isinstance(v, algq.MinMax) else v
                                                          for k, v in r.items()} if isinstance(r, dict) else r)
+
+
+# ---------------------------------------------------------------------- the GPU executor's device copies
+def cache_entries(t):
+    """the device copies of host arrays that table t's GPU handle holds: sorted (tag, bytes)"""
+    g, h = algq.gpu_lib(), t.gpu_handle()
+    n = g.gpu_cache_entries(h, None, None, 0)
+    tags, sizes = (ctypes.c_uint64 * max(n, 1))(), (ctypes.c_uint64 * max(n, 1))()
+    g.gpu_cache_entries(h, tags, sizes, n)
+    return sorted((int(tags[i]), int(sizes[i])) for i in range(n))
+
+
+def dimension(nd, seed, values=4):
+    """a dimension of nd rows: a takes each of `values` values (a permutation), r in 0..2"""
+    rng = np.random.default_rng(seed)
+    return Table(f"d{seed}", dict(a=u32(rng.permutation(np.arange(nd) % values)), r=u32(rng.integers(0, 3, nd))))
+
+
+def lookup_star(nd=7, n=500, seed=8):
+    """a fact joined by lookup to a dimension (its fk is not stored msb first): GROUP BY a dimension attribute reads the
+    attribute's ranked column, whose device copy the fact's handle caches; fk = nd are orphans"""
+    rng = np.random.default_rng(seed)
+    dim = dimension(nd, seed)
+    return Table("f", dict(x=u32(rng.integers(0, 50, n)), fk=u32(rng.integers(0, nd + 1, n))), refs={"fk": dim}), dim
+
+
+def by_attribute(fact, dim, col="a"):
+    """rows per value of dim.col over the fact rows that join: the query, its exact answer"""
+    fk = fact.data["fk"].astype(np.int64); vals = dim.data[col].astype(np.int64)
+    want = {}
+    for v in vals[fk[fk < dim.n]].tolist(): want[(v,)] = want.get((v,), 0) + 1
+    return Query(fact, join_mode="lookup").join(dim, fact.fk).group_by(getattr(dim, col)).count(), want
 
 
 class EmptyTables(unittest.TestCase):
@@ -591,6 +628,209 @@ class Lifetimes(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stderr[-2000:])
         self.assertIn("alive: [True, True, True]", p.stdout)
         self.assertIn("released at exit: [False, False, False] [(None, None), (None, None), (None, None)]", p.stdout)
+
+    def test_close_of_a_joined_table(self):
+        """a query's compiled plan holds its dimension's arrays, not the dimension: once the dimension is closed, the
+        query raises TableClosedError on every engine (it answered from the arrays its plan kept)"""
+        fact, dim, rg, F, D, R = star(200, 6, seed=4)
+        qs = {e: Query(fact).join(dim, fact.fk).where(dim.a > 3).sum(fact.x) for e in ENGINES}
+        lookups = {e: Query(fact, join_mode="lookup").join(dim, fact.fk).group_by(dim.r).count() for e in ENGINES}
+        by_r = {}
+        for v in D["r"][F["fk"][F["fk"] < len(D["r"])]].tolist(): by_r[(v,)] = by_r.get((v,), 0) + 1
+        for e in ENGINES:
+            self.assertEqual(qs[e].run(e), oracle("join prefix, dim filter", F, D, R))
+            self.assertEqual(lookups[e].run(e), by_r)
+        dim.close()
+        for e in ENGINES:
+            for q in (qs[e], lookups[e]):
+                with self.subTest(engine=e):
+                    with self.assertRaises(TableClosedError): q.run(e)
+        self.assertEqual(Query(fact).sum(fact.x).run("gpu"), int(F["x"].sum()))     # the fact is open
+
+
+class GpuDeviceCopies(unittest.TestCase):
+    """The GPU executor's device copies of a query's host arrays (a looked-up attribute's ranked column, a delta plane),
+    on the emulated GPU, whose kernels read the copies as a GPU's do: served by address, length and the array's tag,
+    never across two arrays at one address; evicted when the array is collected or its table released. What only a
+    device shows: the copies' cudaMalloc / cudaMemcpy / cudaFree, and the kernels reading device memory."""
+
+    def setUp(self): gc.collect()
+
+    def assert_live_copies_only(self):
+        """every copy held by a live GPU handle is of a live array (one with a tag and a referent)"""
+        gc.collect()
+        live = {tag for ref, tag in algq._GPU_TAGS.values() if ref() is not None}
+        for s in list(algq._GPU_LIVE):
+            n = s.glib.gpu_cache_entries(s.gpu, None, None, 0)
+            tags = (ctypes.c_uint64 * max(n, 1))(); s.glib.gpu_cache_entries(s.gpu, tags, None, n)
+            self.assertLessEqual({int(tags[i]) for i in range(n)}, live)
+
+    def test_copies_are_served_by_address_length_and_tag(self):
+        """the cache itself, through gpu_query_tagged: a compiled lookup plan whose attribute array is ours"""
+        fact, dim = lookup_star()
+        q, want = by_attribute(fact, dim)
+        self.assertEqual(q.run("gpu"), want); self.assertEqual(q.device, "gpu")
+        plan = algq.QPlan()
+        ctypes.memmove(ctypes.addressof(plan), ctypes.addressof(q.last_plan), ctypes.sizeof(plan))
+        self.assertEqual((plan.nattr, plan.nkey), (1, 1))
+        cap = int(plan.ngroups)                                    # the key's radix: ranks are below it
+        outs = [np.zeros(cap, t) for t in (np.uint64, np.int64, np.uint64, np.int64, np.uint64)]
+        mm = plan.agg == algq.A_MM                                 # sparse output (TORBLES_GROUPBY=split: dense)
+        if mm: plan.out_key, plan.out_sum, plan.out_cnt, plan.out_sum_hi, plan.out_key_hi = (o.ctypes.data for o in outs)
+        else: plan.out_sum, plan.out_cnt = outs[1].ctypes.data, outs[2].ctypes.data
+        plan.out_cap = cap
+        ranks = np.zeros(dim.n, np.uint32)                         # in place of the dimension's ranked column
+        plan.attr_vals[0] = ranks.ctypes.data
+        fk = fact.data["fk"].astype(np.int64); fk = fk[fk < dim.n]
+        g, h = algq.gpu_lib(), fact.gpu_handle()
+
+        def groups(tag, tagged=True):
+            tags = (ctypes.c_uint64 * 9)(); tags[0] = tag; plan.out_n = 0
+            for o in outs: o[:] = 0
+            with algq._GPU_LOCK:
+                rc = g.gpu_query_tagged(h, ctypes.byref(plan), tags, None) if tagged else g.gpu_query(h, ctypes.byref(plan), None)
+            self.assertEqual(rc, 0)
+            if mm: return {int(k): int(c) for k, c in zip(outs[0][:plan.out_n], outs[2][:plan.out_n])}
+            return {k: int(c) for k, c in enumerate(outs[2]) if c}
+
+        def expect(r):
+            out = {}
+            for v in r[fk].tolist(): out[v] = out.get(v, 0) + 1
+            return out
+
+        def evict(*tags): return g.gpu_cache_evict(h, (ctypes.c_uint64 * len(tags))(*tags), len(tags))
+        base = cache_entries(fact)                                 # the query's own: the dimension's ranked column
+        def ours(): return [e for e in cache_entries(fact) if e not in base]
+        b = ranks.nbytes
+        t1, t2 = next(algq._GPU_SERIAL), next(algq._GPU_SERIAL)
+        r1 = (np.arange(dim.n) % cap).astype(np.uint32); r2 = ((r1 + 1) % cap).astype(np.uint32)
+        self.assertNotEqual(expect(r1), expect(r2))
+        ranks[:] = r1
+        self.assertEqual(groups(t1), expect(r1)); self.assertEqual(ours(), [(t1, b)])
+        ranks[:] = r2                                              # other values, at the same address, same length:
+        self.assertEqual(groups(t1), expect(r1))                   # one key, one copy (what the old key served a new array)
+        self.assertEqual(groups(t2), expect(r2)); self.assertEqual(ours(), sorted([(t1, b), (t2, b)]))
+        self.assertEqual(evict(t1), 1); self.assertEqual(ours(), [(t2, b)])
+        self.assertEqual(groups(t1), expect(r2))                   # evicted: uploaded again, as it is now
+        self.assertEqual(evict(t1, t2), 2); self.assertEqual(ours(), [])
+        self.assertEqual(groups(0), expect(r2))                    # no tag: a copy for this query only
+        self.assertEqual(groups(0, tagged=False), expect(r2))      # gpu_query: no tags
+        self.assertEqual(ours(), [])
+        filled = []                                                # a full cache (gpu.cu's NCACHE): copies for their query only
+        while len(cache_entries(fact)) < 64 and len(filled) < 100:
+            filled.append(next(algq._GPU_SERIAL)); self.assertEqual(groups(filled[-1]), expect(r2))
+        self.assertEqual(len(cache_entries(fact)), 64)
+        ranks[:] = r1; late = next(algq._GPU_SERIAL)
+        self.assertEqual(groups(late), expect(r1)); self.assertEqual(len(cache_entries(fact)), 64)
+        self.assertNotIn(late, [t for t, _ in cache_entries(fact)])
+        self.assertEqual(evict(*filled), len(filled)); self.assertEqual(cache_entries(fact), base)
+        self.assertEqual(q.run("gpu"), want)                       # the query's own copy, untouched
+
+    def test_release_evicts_the_copies_of_a_tables_arrays(self):
+        """close, and the finalizer, evict the copies of a dimension's columns from the fact's handle, while the
+        columns themselves are still referenced (so their collection is not what evicts them)"""
+        fact, dim = lookup_star()
+        q, want = by_attribute(fact, dim)
+        self.assertEqual(q.run("gpu"), want)
+        (tag,) = dim._native.s.gtags                               # its ranked column: copied to the fact's handle
+        self.assertEqual(cache_entries(fact), [(tag, dim.n * 4)])
+        self.assertEqual(q.run("gpu"), want); self.assertEqual(cache_entries(fact), [(tag, dim.n * 4)])   # reused
+        held = dim.ranked("a")[1]           # the column stays referenced: only the release can evict its copy
+        dim.close()
+        self.assertEqual(cache_entries(fact), []); self.assertEqual(dim._native.s.gtags, set())
+        with self.assertRaises(TableClosedError): q.run("gpu")
+        dim2 = dimension(dim.n, seed=21)                           # the finalizer: the last reference goes
+        q2, want2 = by_attribute(fact, dim2)
+        self.assertEqual(q2.run("gpu"), want2); self.assertEqual(len(cache_entries(fact)), 1)
+        held2, fin = dim2.ranked("a")[1], dim2._native.release     # (referenced, as held)
+        del q2, dim2; gc.collect()
+        self.assertFalse(fin.alive); self.assertEqual(cache_entries(fact), [])
+        self.assertIs(algq._GPU_TAGS[id(held2)][0](), held2)       # the column lives; its copy went with its table
+        fact.close()                                               # the fact's handle: its copies go with it
+        self.assertNotIn(fact._native.s, algq._GPU_LIVE)
+
+    def test_a_new_array_where_a_freed_one_was_reads_its_own_values(self):
+        """two array objects at one address, with one length: the ranked column of each of two dimensions joined to one
+        fact, the second made where the first was (a buffer both use). The second query reads its own values, with
+        the first one's copy still cached, and after it was evicted."""
+        fact, d1 = lookup_star(seed=8)
+        d2 = dimension(d1.n, seed=9)
+        buf = (ctypes.c_uint32 * d1.n)()
+        u1, r1 = d1.ranked("a")
+        a1 = np.frombuffer(buf, np.uint32); a1[:] = r1; d1._ranked[("a", "alg")] = (u1, a1)
+        q1, want1 = by_attribute(fact, d1)
+        self.assertEqual(q1.run("gpu"), want1)
+        (t1,) = d1._native.s.gtags; self.assertEqual(cache_entries(fact), [(t1, a1.nbytes)])
+        u2, r2 = d2.ranked("a")
+        a2 = np.frombuffer(buf, np.uint32); a2[:] = r2; d2._ranked[("a", "alg")] = (u2, a2)
+        self.assertEqual((a2.ctypes.data, a2.nbytes), (a1.ctypes.data, a1.nbytes))
+        q2, want2 = by_attribute(fact, d2)
+        fk = fact.data["fk"].astype(np.int64); fk = fk[fk < d1.n]
+        stale = {}                                                 # the answer from the first column's copy
+        for v in u2[r1[fk]].tolist(): stale[(v,)] = stale.get((v,), 0) + 1
+        self.assertNotEqual(want2, stale)
+        self.assertEqual(q2.run("gpu"), want2)
+        (t2,) = d2._native.s.gtags
+        self.assertNotEqual(t1, t2); self.assertEqual(cache_entries(fact), sorted([(t1, a1.nbytes), (t2, a2.nbytes)]))
+        d1.close(); self.assertEqual(cache_entries(fact), [(t2, a2.nbytes)])
+        self.assertEqual(q2.run("gpu"), want2)
+
+    def test_the_columns_of_a_table_bound_twice(self):
+        """sqlexec binds a table that a query joins twice as a copy (copy.copy): the ranked columns the copy makes die
+        with it while the table lives, and the next copy's (of another column, other values) are made where they were.
+        Their copies go with them; each query reads its own."""
+        fact, dim = lookup_star(seed=3)
+        for col in ("a", "r") * 3:
+            alias = copy.copy(dim)
+            q, want = by_attribute(fact, alias, col)
+            self.assertEqual(q.run("gpu"), want, col)
+            self.assertEqual(len(cache_entries(fact)), 1)
+            del q, alias; self.assert_live_copies_only()
+            self.assertEqual(cache_entries(fact), [])
+        self.assertIsNone(dim.__dict__.get("_ranked"))             # the columns were the copies' own
+
+    def test_delta_planes(self):
+        """a query over moved dimension rows (derived surrogates): its two passes read its delta plane, one copy for
+        both, dropped when the query ends; successive moves (each query a new delta plane) answer exactly"""
+        rng = np.random.default_rng(12)
+        n, N = 300, 4000; k = np.arange(1, n + 1); w = int(n).bit_length()
+        reg = rng.integers(0, 4, n)
+        def surrogate(r, keys): return (np.asarray(r, np.int64) << w) | np.asarray(keys, np.int64)
+        s_of_row = np.zeros(n + 1, np.int64); s_of_row[k] = surrogate(reg, k)
+        sg = Surrogate(w, s_of_row)
+        pick = rng.integers(0, n, N)
+        def dimension_of(region):
+            cols = {"region": np.zeros(n + 1, np.uint32), "key": np.zeros(n + 1, np.uint32)}
+            cols["region"][k] = region; cols["key"][k] = k
+            used = np.zeros(n + 1, bool); used[k] = True
+            return Table("dima", cols, used=used)
+        dim = dimension_of(reg)
+        fact = Table("fact", dict(fka=sg.s_of_row[k[pick]].astype(np.uint32), m=u32(rng.integers(0, 100, N))),
+                     msb=("fka",), refs=dict(fka=(dim, sg)))
+        xbytes = (N + 63) // 64 * 8
+        passes = []
+        loop = algq.Query._exec_loop
+        def spy(q, dev, table, plan):
+            ok = loop(q, dev, table, plan)
+            if dev == "gpu" and plan.xmode: passes.append((plan.xmode, ok, [e for e in cache_entries(fact) if e[1] == xbytes]))
+            return ok
+        algq.Query._exec_loop = spy; self.addCleanup(setattr, algq.Query, "_exec_loop", loop)
+        for step in range(4):
+            mv = rng.choice(n, 15, replace=False); reg = reg.copy(); reg[mv] = (reg[mv] + 1 + rng.integers(0, 3, 15)) % 4
+            sg.move(k[mv], surrogate(reg[mv], k[mv]))
+            dim = dimension_of(reg)                                # the dimension now
+            q = Query(fact).join(dim, fact.fka).group_by(dim.region).sum(fact.m)
+            want = {}
+            for r_, m_ in zip(reg[pick].tolist(), fact.data["m"].tolist()): want[(r_,)] = want.get((r_,), 0) + m_
+            passes.clear()
+            self.assertEqual(q.run("gpu"), want, step); self.assertEqual(q.device, "gpu")
+            self.assertEqual([p[:2] for p in passes], [(2, True), (1, True)])       # both passes on the GPU
+            (a,), (b,) = passes[0][2], passes[1][2]
+            self.assertEqual(a, b)                                 # one copy of the delta plane, for both passes
+            del q; gc.collect()
+            self.assertNotIn(a, cache_entries(fact))               # dropped with the plane
+            self.assert_live_copies_only()
+            self.assertEqual(Query(fact).join(dim, fact.fka).group_by(dim.region).sum(fact.m).run("alg"), want)
 
 
 if __name__ == "__main__":

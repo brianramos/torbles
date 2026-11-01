@@ -10,8 +10,9 @@
  *   nvcc -O3 -arch=native -shared -Xcompiler -fPIC gpu.cu -o libgpu.so            (CUDA)
  *   g++ -O2 -DEMULATE -x c++ -shared -fPIC gpu.cu -o libgpu_emu.so                 (CPU emulation, for testing)
  * The emulation runs the identical per-word code in a loop, so the logic is tested without a GPU.
- * API: gpu_open(atable) -> handle, gpu_query(handle, plan, &kernel_ms) -> 0 or -1 (unsupported: caller uses the CPU),
- *      gpu_name(), gpu_close(handle). */
+ * API: gpu_open(atable) -> handle, gpu_query_tagged(handle, plan, tags, &kernel_ms) -> 0 or -1 (unsupported: caller
+ *      uses the CPU), gpu_cache_evict(handle, tags, ntags), gpu_name(), gpu_close(handle); gpu_query(handle, plan,
+ *      &kernel_ms) is gpu_query_tagged with no tags (nothing of the query is kept on the device). */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -444,10 +445,19 @@ __global__ void kmma_test(const uint32_t *A, const uint32_t *B, int *D) {
     D[g * 8 + 2 * t] = c[0]; D[g * 8 + 2 * t + 1] = c[1]; D[(g + 8) * 8 + 2 * t] = c[2]; D[(g + 8) * 8 + 2 * t + 1] = c[3];
 }
 #endif
-/* ---------------------------------------------------------------- host side */
+/* ---------------------------------------------------------------- host side
+ * Besides the planes, a query reads host arrays: the value arrays of its looked-up dimension attributes (attr_vals) and
+ * its delta plane (xrows). A handle keeps device copies of them for later queries, keyed by the host address, the
+ * length and a tag: a 64-bit serial the caller gives one host array object and never reuses (algq.py). The address and
+ * the length do not name an array: once one is freed (with its table, or alone) another can be allocated at the same
+ * address with the same length, and its query would read the first one's copy. The caller evicts a tag's copies when
+ * its array is freed or its table released (gpu_cache_evict). Tag 0 (or a full cache): a copy for this query only. */
+#define NCACHE 64
+typedef struct { const void *host; uint64_t bytes, tag; void *dev; } centry_t;
+typedef struct { void *p[16]; int n; } dtmp_t;                 /* the device buffers of one query, freed at its end */
 typedef struct {
     gtable_t host; gtable_t *dev; uint64_t *buf; size_t bytes;
-    int ncache; const void *ck[64]; uint64_t cn[64]; uint32_t *cd[64];
+    int ncache; centry_t cache[NCACHE];                          /* device copies of host arrays (above) */
     mmp_t *dP; unsigned long long *hk, *hs, *hc; uint64_t hcap; unsigned int *dovf;    /* A_MM: planes, group hash */
     unsigned int *dins, *dnins; unsigned long long *ok, *os, *oc; int hclean;               /* insertion list, output */
     qplan_t *dq; unsigned long long *dacc; uint64_t *drs, *drc; uint64_t nrcap;
@@ -517,10 +527,15 @@ extern "C" void *gpu_open(const atable_t *t) {
     }
     h->dev = g; MMA_OK = 1; snprintf(MM_NOTE, sizeof MM_NOTE, ", emulated on the CPU"); return h;
 }
-extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
-    if (!supported(q)) return -1;
-    handle_t *h = (handle_t *)hv; int64_t tot = 0; uint64_t cnt = 0;
-    uint32_t *av[8]; for (int a = 0; a < q->nattr; a++) av[a] = (uint32_t *)q->attr_vals[a];
+/* the emulation's device memory is host memory, but its copies are copies: the kernels read them, not the caller's
+ * arrays, so a stale copy gives the wrong answer here as it would on a GPU */
+static void *dev_copy(const void *host, size_t bytes) {
+    void *d = malloc(bytes + 8); if (d && bytes) memcpy(d, host, bytes); return d;
+}
+static void dev_free(void *d) { free(d); }
+/* the query on the emulated device: hq is q with its delta plane's device copy, av the attribute arrays' */
+static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const *av, dtmp_t *, double *ms) {
+    int64_t tot = 0; uint64_t cnt = 0;
     uint64_t total = h->host.nw, *rs = NULL, *rc = NULL; int nr = 0;
     if (q->nranges) {
         rs = (uint64_t *)malloc(q->nranges * 8); rc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -541,9 +556,9 @@ extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
                 for (uint64_t vt = 0; vt < total; vt++) {
                     uint64_t w = vt;
                     if (nr) { int lo = 0, hi = nr - 1; while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rc[mid] <= vt) lo = mid; else hi = mid - 1; } w = rs[lo] + (vt - rc[lo]); }
-                    if (w < h->host.nw) word_mm(&h->host, q, av, w, &X, &tot, &cnt);
+                    if (w < h->host.nw) word_mm(&h->host, hq, av, w, &X, &tot, &cnt);
                 }
-            } else tot = mm_wide(q) ? emu_kmm<64, 64>(&h->host, q, av, &X, &cnt) : emu_kmm<128, 32>(&h->host, q, av, &X, &cnt);
+            } else tot = mm_wide(q) ? emu_kmm<64, 64>(&h->host, hq, av, &X, &cnt) : emu_kmm<128, 32>(&h->host, hq, av, &X, &cnt);
             if (!ovf) {                                         /* gather the output from the insertion list */
                 unsigned long long *ok = (unsigned long long *)malloc(cap * 24), *os = ok + cap, *oc = os + cap;
                 for (unsigned int i = 0; i < nins; i++) gather_one(&X, i, ok, os, oc);
@@ -560,13 +575,16 @@ extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
         for (uint64_t vt = 0; vt < total; vt++) {
             uint64_t w = vt;
             if (nr) { int lo = 0, hi = nr - 1; while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rc[mid] <= vt) lo = mid; else hi = mid - 1; } w = rs[lo] + (vt - rc[lo]); }
-            if (w < h->host.nw) word_g(&h->host, q, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
+            if (w < h->host.nw) word_g(&h->host, hq, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
         }
     }
     free(rs); free(rc);
     q->total_sum = tot; q->total_cnt = cnt; if (ms) *ms = 0; return 0;
 }
-extern "C" void gpu_close(void *hv) { handle_t *h = (handle_t *)hv; free(h->buf); free(h); }
+extern "C" void gpu_close(void *hv) {
+    handle_t *h = (handle_t *)hv; for (int i = 0; i < h->ncache; i++) dev_free(h->cache[i].dev);
+    free(h->buf); free(h);
+}
 #else
 __global__ void kdecode(uint64_t *p, uint64_t nw, int b) {            /* prefix XOR over a column's planes, in place */
     uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x; if (w >= nw) return;
@@ -667,25 +685,27 @@ __global__ void kgather(mmctx_t X, unsigned long long *ok, unsigned long long *o
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x, n = *X.nins;
     if (i < n && i < X.hcap) gather_one(&X, i, ok, os, oc);
 }
-extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
-    if (!supported(q)) return -1;
-    handle_t *h = (handle_t *)hv;
+static void *dev_copy(const void *host, size_t bytes) {         /* NULL: no device memory (reported) */
+    void *d = NULL; cudaError_t e = cudaMalloc(&d, bytes + 8);
+    if (e != cudaSuccess) d = NULL;
+    else if (bytes) e = cudaMemcpy(d, host, bytes, cudaMemcpyHostToDevice);
+    if (e == cudaSuccess) return d;
+    fprintf(stderr, "CUDA: %s at %s:%d\n", cudaGetErrorString(e), __FILE__, __LINE__);
+    if (d) cudaFree(d);
+    return NULL;
+}
+static void dev_free(void *d) { cudaFree(d); }
+/* the query on the device: hq is q with its delta plane's device copy, avp the attribute arrays'; the device buffers
+ * allocated here go to T, which the caller frees (on every return) */
+static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp, dtmp_t *T, double *ms) {
     static mmp_t P[MAXMP]; int np = 0;
     if (q->agg == A_MM && (np = mm_planes(h, q, P)) < 0) return -1;
     uint64_t ng = q->agg == A_MM ? 0 : q->agg == A_DOM ? (uint64_t)q->ndom : q->nkey ? q->ngroups : 0;
-    qplan_t hq = *q; int64_t *gs = 0; uint64_t *gc = 0; uint32_t *dt = 0;
-    if (q->agg == A_DOM && q->ndom) { CKI(cudaMalloc((void **)&dt, q->ndom * 4)); CKI(cudaMemcpy(dt, q->dom_t, q->ndom * 4, cudaMemcpyHostToDevice)); hq.dom_t = dt; }
-    if (ng) { CKI(cudaMalloc((void **)&gs, ng * 8)); CKI(cudaMalloc((void **)&gc, ng * 8)); CKI(cudaMemset(gs, 0, ng * 8)); CKI(cudaMemset(gc, 0, ng * 8)); }
-    if (q->xmode) {                                            /* delta plane: uploaded once, cached */
-        int f = -1; for (int i = 0; i < h->ncache; i++) if (h->ck[i] == q->xrows && h->cn[i] == ~0ULL) f = i;
-        if (f < 0) {
-            if (h->ncache == 64) return -1;
-            f = h->ncache++; h->ck[f] = q->xrows; h->cn[f] = ~0ULL;
-            CKI(cudaMalloc((void **)&h->cd[f], h->host.nw * 8)); CKI(cudaMemcpy(h->cd[f], q->xrows, h->host.nw * 8, cudaMemcpyHostToDevice));
-        }
-        hq.xrows = (const uint64_t *)h->cd[f];
-    }
-    CKI(cudaMemcpy(h->dq, &hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, 16));
+    int64_t *gs = 0; uint64_t *gc = 0; uint32_t *dt = 0;
+    if (q->agg == A_DOM && q->ndom) { CKI(cudaMalloc((void **)&dt, q->ndom * 4)); T->p[T->n++] = dt; CKI(cudaMemcpy(dt, q->dom_t, q->ndom * 4, cudaMemcpyHostToDevice)); hq->dom_t = dt; }
+    if (ng) { CKI(cudaMalloc((void **)&gs, ng * 8)); T->p[T->n++] = gs; CKI(cudaMalloc((void **)&gc, ng * 8)); T->p[T->n++] = gc;
+              CKI(cudaMemset(gs, 0, ng * 8)); CKI(cudaMemset(gc, 0, ng * 8)); }
+    CKI(cudaMemcpy(h->dq, hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, 16));
     uint64_t total = h->host.nw; int nr = 0;
     if (q->nranges) {
         uint64_t *hs = (uint64_t *)malloc(q->nranges * 8), *hc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -698,15 +718,7 @@ extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
         CKI(cudaMemcpy(h->drs, hs, nr * 8, cudaMemcpyHostToDevice)); CKI(cudaMemcpy(h->drc, hc, nr * 8, cudaMemcpyHostToDevice)); free(hs); free(hc);
     }
     avals_t av; memset(&av, 0, sizeof av);
-    for (int a = 0; a < q->nattr; a++) {                       /* dimension value arrays: uploaded once, cached */
-        int f = -1; for (int i = 0; i < h->ncache; i++) if (h->ck[i] == q->attr_vals[a] && h->cn[i] == q->attr_n[a]) f = i;
-        if (f < 0) {
-            if (h->ncache == 64) return -1;
-            f = h->ncache++; h->ck[f] = q->attr_vals[a]; h->cn[f] = q->attr_n[a];
-            CKI(cudaMalloc((void **)&h->cd[f], q->attr_n[a] * 4 + 4)); CKI(cudaMemcpy(h->cd[f], q->attr_vals[a], q->attr_n[a] * 4, cudaMemcpyHostToDevice));
-        }
-        av.p[a] = h->cd[f];
-    }
+    for (int a = 0; a < q->nattr; a++) av.p[a] = avp[a];
     cudaEvent_t e0, e1; cudaEventCreate(&e0); cudaEventCreate(&e1); float kms = 0;
     if (q->agg == A_MM) {
         if (np) CKI(cudaMemcpy(h->dP, P, np * sizeof(mmp_t), cudaMemcpyHostToDevice));
@@ -751,13 +763,12 @@ extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) {
     if (ms) *ms = kms;
     unsigned long long a[2]; CKI(cudaMemcpy(a, h->dacc, 16, cudaMemcpyDeviceToHost));
     q->total_sum = (int64_t)a[0]; q->total_cnt = a[1];
-    if (ng) { CKI(cudaMemcpy(q->out_sum, gs, ng * 8, cudaMemcpyDeviceToHost)); CKI(cudaMemcpy(q->out_cnt, gc, ng * 8, cudaMemcpyDeviceToHost)); cudaFree(gs); cudaFree(gc); }
-    if (dt) cudaFree(dt);
+    if (ng) { CKI(cudaMemcpy(q->out_sum, gs, ng * 8, cudaMemcpyDeviceToHost)); CKI(cudaMemcpy(q->out_cnt, gc, ng * 8, cudaMemcpyDeviceToHost)); }
     cudaEventDestroy(e0); cudaEventDestroy(e1);
     return 0;
 }
 extern "C" void gpu_close(void *hv) {
-    handle_t *h = (handle_t *)hv; for (int i = 0; i < h->ncache; i++) cudaFree(h->cd[i]);
+    handle_t *h = (handle_t *)hv; for (int i = 0; i < h->ncache; i++) cudaFree(h->cache[i].dev);
     cudaFree(h->buf); cudaFree(h->dev); cudaFree(h->dq); cudaFree(h->dacc); cudaFree(h->dP); cudaFree(h->dovf);
     if (h->hk) { cudaFree(h->hk); cudaFree(h->hs); cudaFree(h->hc); cudaFree(h->dins); cudaFree(h->ok); cudaFree(h->os); cudaFree(h->oc); }
     if (h->dnins) cudaFree(h->dnins);
@@ -765,3 +776,44 @@ extern "C" void gpu_close(void *hv) {
     free(h);
 }
 #endif
+
+/* ---------------------------------------------------------------- a query's host arrays on the device (handle_t) */
+/* the device copy of a host array of the query: the cached one of (host, bytes, tag), else a new copy, cached when the
+ * array has a tag and the cache has room, else freed at the end of the query (T). NULL: no device memory. */
+static void *dev_array(handle_t *h, const void *host, uint64_t bytes, uint64_t tag, dtmp_t *T) {
+    if (tag) for (int i = 0; i < h->ncache; i++) {
+        const centry_t *e = &h->cache[i];
+        if (e->tag == tag && e->host == host && e->bytes == bytes) return e->dev;
+    }
+    void *d = dev_copy(host, bytes); if (!d) return NULL;
+    if (tag && h->ncache < NCACHE) { centry_t *e = &h->cache[h->ncache++]; e->host = host; e->bytes = bytes; e->tag = tag; e->dev = d; }
+    else T->p[T->n++] = d;
+    return d;
+}
+/* tags: of attr_vals[a] at [a] (a < nattr) and of xrows at [8]; NULL: none (every copy is this query's only) */
+extern "C" int gpu_query_tagged(void *hv, qplan_t *q, const uint64_t *tags, double *ms) {
+    if (!supported(q)) return -1;
+    handle_t *h = (handle_t *)hv; qplan_t hq = *q; uint32_t *av[8] = {0}; dtmp_t T; T.n = 0; int rc = 0;
+    for (int a = 0; a < q->nattr && !rc; a++)
+        if (!(av[a] = (uint32_t *)dev_array(h, q->attr_vals[a], q->attr_n[a] * 4, tags ? tags[a] : 0, &T))) rc = -2;
+    if (!rc && q->xmode && !(hq.xrows = (const uint64_t *)dev_array(h, q->xrows, h->host.nw * 8, tags ? tags[8] : 0, &T))) rc = -2;
+    if (!rc) rc = run_query(h, q, &hq, av, &T, ms);
+    for (int i = 0; i < T.n; i++) dev_free(T.p[i]);
+    return rc;
+}
+extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) { return gpu_query_tagged(hv, q, NULL, ms); }
+/* drop the copies of these tags (their arrays were freed, or their table released); returns how many were dropped */
+extern "C" int gpu_cache_evict(void *hv, const uint64_t *tags, int ntags) {
+    handle_t *h = (handle_t *)hv; int k = 0, out = 0;
+    for (int i = 0; i < h->ncache; i++) {
+        int drop = 0; for (int j = 0; j < ntags && !drop; j++) drop = h->cache[i].tag == tags[j];
+        if (drop) { dev_free(h->cache[i].dev); out++; } else h->cache[k++] = h->cache[i];
+    }
+    h->ncache = k; return out;
+}
+/* the cached copies (tests, diagnostics): their tags and lengths in bytes, at most cap; returns how many there are */
+extern "C" int gpu_cache_entries(void *hv, uint64_t *tags, uint64_t *bytes, int cap) {
+    const handle_t *h = (const handle_t *)hv;
+    for (int i = 0; i < h->ncache && i < cap; i++) { if (tags) tags[i] = h->cache[i].tag; if (bytes) bytes[i] = h->cache[i].bytes; }
+    return h->ncache;
+}

@@ -505,7 +505,8 @@ static inline uint64_t eval_prog(const atable_t *t, const pinstr_t *prog, int n,
         case P_XOR: sp--; st[sp - 1] ^= st[sp]; break;
         case P_NOT: st[sp - 1] = ~st[sp - 1]; break;
         case P_BETWEEN: { const uint64_t *x = decode(t, D, I->col, w); int b = t->width[I->col];
-            st[sp++] = cmp_any(t, x, I->col, P_GE, I->a) & (I->b >> b && b < 32 ? ~0ULL : cmp_any(t, x, I->col, P_LE, I->b)); break; }
+            /* b < 32 first: a shift by the type's width (a 32-bit column) is undefined; as in gpu.cu */
+            st[sp++] = cmp_any(t, x, I->col, P_GE, I->a) & (b < 32 && I->b >> b ? ~0ULL : cmp_any(t, x, I->col, P_LE, I->b)); break; }
         case P_CUBE: {                               /* cube: AND of literals on the planes in mask b (an id coordinate field) */
             uint32_t mk = I->b; int hi = 31 - __builtin_clz(mk); const uint64_t *x = decode_n(t, D, I->col, w, hi + 1); uint64_t m = ~0ULL;
             while (mk) { int j = __builtin_ctz(mk); mk &= mk - 1; m &= (I->a >> j & 1) ? x[j] : ~x[j]; }
