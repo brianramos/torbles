@@ -1,0 +1,3820 @@
+{
+ "argv": [
+  "--capability",
+  "DELTA-002",
+  "--out",
+  "/home/brian/torbles_math/results/math/DELTA-002/benchmark_device_math_bilinear_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "DELTA-002",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:39:06+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_bilinear.c with DELTA-001's math_delta.c for the side (single-threaded), cuda = math_bilinear_gpu.cu and math_delta_gpu.cu (device runs only), reconstruction = the FND-004 scope, bank and DELTA-001 state of the updated rows and the join rebuilt from the side states, duckdb = the join aggregate re-executed over the updated rows (DuckDB's own threads), numpy = explicit products of Python ints in object arrays.",
+  "A join update costs the side's DELTA-001 update (one copy of the side's cells plus the delta's rows) and the cross terms of the touched keys (touched keys x GA x GB x values); a reconstruction rescans every row of the changed side and rebuilds the join over every key.",
+  "Changing join multiplicities: a key move is a delete at the old key and an insert at the new one; the other side's per-key cells give the changed matches (the T2 / T1 terms); both-side updates add the dA dB term of keys touched on both sides."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "initial scope (side A)",
+   "first_seconds": 5.232798866927624e-05,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.232798866927624e-05,
+    2.6867957785725594e-05
+   ],
+   "warm_median_seconds": 2.6867957785725594e-05,
+   "warm_min_seconds": 2.6867957785725594e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "initial side state (bank + DELTA-001 state)",
+   "first_seconds": 0.00033655099105089903,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00033655099105089903,
+    0.00037827895721420646
+   ],
+   "warm_median_seconds": 0.00037827895721420646,
+   "warm_min_seconds": 0.00037827895721420646
+  },
+  {
+   "backend": "cpu",
+   "case": "initial join state",
+   "first_seconds": 0.0014065720024518669,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0014065720024518669,
+    0.0012732020113617182
+   ],
+   "warm_median_seconds": 0.0012732020113617182,
+   "warm_min_seconds": 0.0012732020113617182
+  },
+  {
+   "backend": "cuda",
+   "case": "initial join state",
+   "first_seconds": 0.07643855200149119,
+   "join_bytes": 5976,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.07643855200149119,
+    0.0010900799534283578
+   ],
+   "warm_median_seconds": 0.0010900799534283578,
+   "warm_min_seconds": 0.0010900799534283578
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.922699347138405e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.922699347138405e-05,
+    2.8840964660048485e-05,
+    2.096995012834668e-05
+   ],
+   "warm_median_seconds": 2.4905457394197583e-05,
+   "warm_min_seconds": 2.096995012834668e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.00015088298823684454,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015088298823684454,
+    0.0001383019844070077,
+    2.2459018509835005e-05
+   ],
+   "warm_median_seconds": 8.038050145842135e-05,
+   "warm_min_seconds": 2.2459018509835005e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0020810719579458237,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020810719579458237,
+    0.0019956809701398015,
+    0.002052915981039405
+   ],
+   "warm_median_seconds": 0.002024298475589603,
+   "warm_min_seconds": 0.0019956809701398015
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.001500519982073456,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001500519982073456,
+    0.0014236010028980672
+   ],
+   "warm_median_seconds": 0.0014236010028980672,
+   "warm_min_seconds": 0.0014236010028980672
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.680998295545578e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.680998295545578e-05,
+    1.86079996638e-05,
+    1.4139979612082243e-05
+   ],
+   "warm_median_seconds": 1.6373989637941122e-05,
+   "warm_min_seconds": 1.4139979612082243e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 3.793096402660012e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.793096402660012e-05,
+    3.1491974368691444e-05,
+    2.9311981052160263e-05
+   ],
+   "warm_median_seconds": 3.0401977710425854e-05,
+   "warm_min_seconds": 2.9311981052160263e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019828989752568305,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019828989752568305,
+    0.0024710369762033224,
+    0.0017902999534271657
+   ],
+   "warm_median_seconds": 0.002130668464815244,
+   "warm_min_seconds": 0.0017902999534271657
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0014011859893798828,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014011859893798828,
+    0.0015359550016000867
+   ],
+   "warm_median_seconds": 0.0015359550016000867,
+   "warm_min_seconds": 0.0015359550016000867
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.642497075721622e-05,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.642497075721622e-05,
+    6.843399023637176e-05,
+    6.032100645825267e-05
+   ],
+   "warm_median_seconds": 6.437749834731221e-05,
+   "warm_min_seconds": 6.032100645825267e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0005365050164982677,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005365050164982677,
+    0.0005731350393034518,
+    0.0005487290327437222
+   ],
+   "warm_median_seconds": 0.000560932036023587,
+   "warm_min_seconds": 0.0005487290327437222
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0021189069957472384,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021189069957472384,
+    0.0017862949753180146,
+    0.0023740939795970917
+   ],
+   "warm_median_seconds": 0.002080194477457553,
+   "warm_min_seconds": 0.0017862949753180146
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.001427246956154704,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001427246956154704,
+    0.0014210360241122544
+   ],
+   "warm_median_seconds": 0.0014210360241122544,
+   "warm_min_seconds": 0.0014210360241122544
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.008962454041466117,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008962454041466117,
+    0.005728835996706039
+   ],
+   "warm_median_seconds": 0.005728835996706039,
+   "warm_min_seconds": 0.005728835996706039
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.36050065420568e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.36050065420568e-05,
+    2.1314015612006187e-05,
+    1.5478988643735647e-05
+   ],
+   "warm_median_seconds": 1.8396502127870917e-05,
+   "warm_min_seconds": 1.5478988643735647e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 6.525299977511168e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.525299977511168e-05,
+    3.480404848232865e-05,
+    2.0704988855868578e-05
+   ],
+   "warm_median_seconds": 2.7754518669098616e-05,
+   "warm_min_seconds": 2.0704988855868578e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0020971280173398554,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020971280173398554,
+    0.0015496720443479717,
+    0.001474292017519474
+   ],
+   "warm_median_seconds": 0.0015119820309337229,
+   "warm_min_seconds": 0.001474292017519474
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0013950900174677372,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013950900174677372,
+    0.0014471299946308136
+   ],
+   "warm_median_seconds": 0.0014471299946308136,
+   "warm_min_seconds": 0.0014471299946308136
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.505100565031171e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.505100565031171e-05,
+    1.5174970030784607e-05,
+    1.1393975000828505e-05
+   ],
+   "warm_median_seconds": 1.3284472515806556e-05,
+   "warm_min_seconds": 1.1393975000828505e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 4.072400042787194e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.072400042787194e-05,
+    3.878399729728699e-05,
+    2.8281996492296457e-05
+   ],
+   "warm_median_seconds": 3.353299689479172e-05,
+   "warm_min_seconds": 2.8281996492296457e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0016700190026313066,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016700190026313066,
+    0.0016532550216652453,
+    0.001602850970812142
+   ],
+   "warm_median_seconds": 0.0016280529962386936,
+   "warm_min_seconds": 0.001602850970812142
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0014004010008648038,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014004010008648038,
+    0.0014566209865733981
+   ],
+   "warm_median_seconds": 0.0014566209865733981,
+   "warm_min_seconds": 0.0014566209865733981
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00010022596688941121,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010022596688941121,
+    7.631699554622173e-05,
+    6.386602763086557e-05
+   ],
+   "warm_median_seconds": 7.009151158854365e-05,
+   "warm_min_seconds": 6.386602763086557e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0005676100263372064,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005676100263372064,
+    0.0005346200196072459,
+    0.000504166993778199
+   ],
+   "warm_median_seconds": 0.0005193935066927224,
+   "warm_min_seconds": 0.000504166993778199
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019535269821062684,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019535269821062684,
+    0.002090731984935701,
+    0.001743985980283469
+   ],
+   "warm_median_seconds": 0.001917358982609585,
+   "warm_min_seconds": 0.001743985980283469
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0013147650170139968,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013147650170139968,
+    0.001251620997209102
+   ],
+   "warm_median_seconds": 0.001251620997209102,
+   "warm_min_seconds": 0.001251620997209102
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.004705712024588138,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004705712024588138,
+    0.004054782970342785
+   ],
+   "warm_median_seconds": 0.004054782970342785,
+   "warm_min_seconds": 0.004054782970342785
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.087499110028148e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.087499110028148e-05,
+    1.8176971934735775e-05,
+    1.1953001376241446e-05
+   ],
+   "warm_median_seconds": 1.506498665548861e-05,
+   "warm_min_seconds": 1.1953001376241446e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 4.503101808950305e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.503101808950305e-05,
+    2.8934970032423735e-05,
+    8.222798351198435e-05
+   ],
+   "warm_median_seconds": 5.558147677220404e-05,
+   "warm_min_seconds": 2.8934970032423735e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.002134540001861751,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002134540001861751,
+    0.0015980349853634834,
+    0.001481803017668426
+   ],
+   "warm_median_seconds": 0.0015399190015159547,
+   "warm_min_seconds": 0.001481803017668426
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.001424437970854342,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001424437970854342,
+    0.0013700940180569887
+   ],
+   "warm_median_seconds": 0.0013700940180569887,
+   "warm_min_seconds": 0.0013700940180569887
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.5529996491968632e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.5529996491968632e-05,
+    1.6277015674859285e-05,
+    1.2078031431883574e-05
+   ],
+   "warm_median_seconds": 1.417752355337143e-05,
+   "warm_min_seconds": 1.2078031431883574e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 4.0974991861730814e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.0974991861730814e-05,
+    3.187701804563403e-05,
+    2.9067043215036392e-05
+   ],
+   "warm_median_seconds": 3.0472030630335212e-05,
+   "warm_min_seconds": 2.9067043215036392e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019520320347510278,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019520320347510278,
+    0.0018341320101171732,
+    0.0016415099962614477
+   ],
+   "warm_median_seconds": 0.0017378210031893104,
+   "warm_min_seconds": 0.0016415099962614477
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0013749210047535598,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013749210047535598,
+    0.0013654459617100656
+   ],
+   "warm_median_seconds": 0.0013654459617100656,
+   "warm_min_seconds": 0.0013654459617100656
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.932796142995358e-05,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.932796142995358e-05,
+    7.00039672665298e-05,
+    6.546301301568747e-05
+   ],
+   "warm_median_seconds": 6.773349014110863e-05,
+   "warm_min_seconds": 6.546301301568747e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0005313490401022136,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005313490401022136,
+    0.0005822859820909798,
+    0.0005115729873068631
+   ],
+   "warm_median_seconds": 0.0005469294846989214,
+   "warm_min_seconds": 0.0005115729873068631
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.002036892983596772,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002036892983596772,
+    0.0019221919937990606,
+    0.0020722049521282315
+   ],
+   "warm_median_seconds": 0.001997198472963646,
+   "warm_min_seconds": 0.0019221919937990606
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.00137945800088346,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00137945800088346,
+    0.001347958983387798
+   ],
+   "warm_median_seconds": 0.001347958983387798,
+   "warm_min_seconds": 0.001347958983387798
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.0046834099921397865,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0046834099921397865,
+    0.003961937967687845
+   ],
+   "warm_median_seconds": 0.003961937967687845,
+   "warm_min_seconds": 0.003961937967687845
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope (side A)",
+   "first_seconds": 0.00126680702669546,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00126680702669546,
+    0.0008741960045881569
+   ],
+   "warm_median_seconds": 0.0008741960045881569,
+   "warm_min_seconds": 0.0008741960045881569
+  },
+  {
+   "backend": "cpu",
+   "case": "initial side state (bank + DELTA-001 state)",
+   "first_seconds": 0.0009405979653820395,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009405979653820395,
+    0.0013649719767272472
+   ],
+   "warm_median_seconds": 0.0013649719767272472,
+   "warm_min_seconds": 0.0013649719767272472
+  },
+  {
+   "backend": "cpu",
+   "case": "initial join state",
+   "first_seconds": 0.0014787100371904671,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0014787100371904671,
+    0.0014437140198424459
+   ],
+   "warm_median_seconds": 0.0014437140198424459,
+   "warm_min_seconds": 0.0014437140198424459
+  },
+  {
+   "backend": "cuda",
+   "case": "initial join state",
+   "first_seconds": 0.0012216129689477384,
+   "join_bytes": 5976,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012216129689477384,
+    0.0008733680006116629
+   ],
+   "warm_median_seconds": 0.0008733680006116629,
+   "warm_min_seconds": 0.0008733680006116629
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.5415014028549194e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.5415014028549194e-05,
+    1.9275990780442953e-05,
+    1.2572039850056171e-05
+   ],
+   "warm_median_seconds": 1.5924015315249562e-05,
+   "warm_min_seconds": 1.2572039850056171e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 3.941101022064686e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.941101022064686e-05,
+    3.5887002013623714e-05,
+    2.750899875536561e-05
+   ],
+   "warm_median_seconds": 3.169800038449466e-05,
+   "warm_min_seconds": 2.750899875536561e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0014471689937636256,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014471689937636256,
+    0.0019797180430032313,
+    0.0015528720105066895
+   ],
+   "warm_median_seconds": 0.0017662950267549604,
+   "warm_min_seconds": 0.0015528720105066895
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.004679662990383804,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004679662990383804,
+    0.0038277190178632736
+   ],
+   "warm_median_seconds": 0.0038277190178632736,
+   "warm_min_seconds": 0.0038277190178632736
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.3270993046462536e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.3270993046462536e-05,
+    1.928501296788454e-05,
+    1.357303699478507e-05
+   ],
+   "warm_median_seconds": 1.6429024981334805e-05,
+   "warm_min_seconds": 1.357303699478507e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 5.407200660556555e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.407200660556555e-05,
+    3.360200207680464e-05,
+    2.5962013751268387e-05
+   ],
+   "warm_median_seconds": 2.9782007914036512e-05,
+   "warm_min_seconds": 2.5962013751268387e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019708560430444777,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019708560430444777,
+    0.0017913990304805338,
+    0.0019864869536831975
+   ],
+   "warm_median_seconds": 0.0018889429920818657,
+   "warm_min_seconds": 0.0017913990304805338
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0036327780107967556,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0036327780107967556,
+    0.0034746380406431854
+   ],
+   "warm_median_seconds": 0.0034746380406431854,
+   "warm_min_seconds": 0.0034746380406431854
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 9.690801380202174e-05,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.690801380202174e-05,
+    7.178302621468902e-05,
+    5.910499021410942e-05
+   ],
+   "warm_median_seconds": 6.544400821439922e-05,
+   "warm_min_seconds": 5.910499021410942e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0005999589920975268,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005999589920975268,
+    0.0005433920305222273,
+    0.0005190360243432224
+   ],
+   "warm_median_seconds": 0.0005312140274327248,
+   "warm_min_seconds": 0.0005190360243432224
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.002229053992778063,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002229053992778063,
+    0.002119347976986319,
+    0.0017072409973479807
+   ],
+   "warm_median_seconds": 0.0019132944871671498,
+   "warm_min_seconds": 0.0017072409973479807
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.003307676990516484,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003307676990516484,
+    0.0034055510186590254
+   ],
+   "warm_median_seconds": 0.0034055510186590254,
+   "warm_min_seconds": 0.0034055510186590254
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.07072444504592568,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07072444504592568,
+    0.07151709101162851
+   ],
+   "warm_median_seconds": 0.07151709101162851,
+   "warm_min_seconds": 0.07151709101162851
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 6.046099588274956e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.046099588274956e-05,
+    1.8713995814323425e-05,
+    1.150602474808693e-05
+   ],
+   "warm_median_seconds": 1.5110010281205177e-05,
+   "warm_min_seconds": 1.150602474808693e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 6.829295307397842e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.829295307397842e-05,
+    4.43790340796113e-05,
+    2.1273037418723106e-05
+   ],
+   "warm_median_seconds": 3.2826035749167204e-05,
+   "warm_min_seconds": 2.1273037418723106e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.00220802502008155,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00220802502008155,
+    0.0017727710073813796,
+    0.0017156100366264582
+   ],
+   "warm_median_seconds": 0.0017441905220039189,
+   "warm_min_seconds": 0.0017156100366264582
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.004001953988336027,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004001953988336027,
+    0.0035349809913896024
+   ],
+   "warm_median_seconds": 0.0035349809913896024,
+   "warm_min_seconds": 0.0035349809913896024
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.172102151438594e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.172102151438594e-05,
+    1.700903521850705e-05,
+    1.1729018297046423e-05
+   ],
+   "warm_median_seconds": 1.4369026757776737e-05,
+   "warm_min_seconds": 1.1729018297046423e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 5.991297075524926e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.991297075524926e-05,
+    3.51409544236958e-05,
+    2.9168964829295874e-05
+   ],
+   "warm_median_seconds": 3.215495962649584e-05,
+   "warm_min_seconds": 2.9168964829295874e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019573899917304516,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019573899917304516,
+    0.0014129600021988153,
+    0.0017384440288878977
+   ],
+   "warm_median_seconds": 0.0015757020155433565,
+   "warm_min_seconds": 0.0014129600021988153
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0034020079765468836,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0034020079765468836,
+    0.0033000879921019077
+   ],
+   "warm_median_seconds": 0.0033000879921019077,
+   "warm_min_seconds": 0.0033000879921019077
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.854398038238287e-05,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.854398038238287e-05,
+    6.89550070092082e-05,
+    5.6963006500154734e-05
+   ],
+   "warm_median_seconds": 6.295900675468147e-05,
+   "warm_min_seconds": 5.6963006500154734e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0005624970071949065,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005624970071949065,
+    0.0005767279653809965,
+    0.0005631640087813139
+   ],
+   "warm_median_seconds": 0.0005699459870811552,
+   "warm_min_seconds": 0.0005631640087813139
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0027275769971311092,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0027275769971311092,
+    0.0019289400079287589,
+    0.001783519983291626
+   ],
+   "warm_median_seconds": 0.0018562299956101924,
+   "warm_min_seconds": 0.001783519983291626
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0034689619787968695,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0034689619787968695,
+    0.0032861389918252826
+   ],
+   "warm_median_seconds": 0.0032861389918252826,
+   "warm_min_seconds": 0.0032861389918252826
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.06931032700231299,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06931032700231299,
+    0.07056860299780965
+   ],
+   "warm_median_seconds": 0.07056860299780965,
+   "warm_min_seconds": 0.07056860299780965
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.761900683864951e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.761900683864951e-05,
+    2.0386010874062777e-05,
+    1.3112032320350409e-05
+   ],
+   "warm_median_seconds": 1.6749021597206593e-05,
+   "warm_min_seconds": 1.3112032320350409e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.00012910598888993263,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012910598888993263,
+    7.950898725539446e-05,
+    2.0434032194316387e-05
+   ],
+   "warm_median_seconds": 4.997150972485542e-05,
+   "warm_min_seconds": 2.0434032194316387e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0023580369888804853,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023580369888804853,
+    0.0017227630014531314,
+    0.0017088019521906972
+   ],
+   "warm_median_seconds": 0.0017157824768219143,
+   "warm_min_seconds": 0.0017088019521906972
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.004623943008482456,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004623943008482456,
+    0.003941798000596464
+   ],
+   "warm_median_seconds": 0.003941798000596464,
+   "warm_min_seconds": 0.003941798000596464
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.0494004022330046e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.0494004022330046e-05,
+    2.0600971765816212e-05,
+    1.251796493306756e-05
+   ],
+   "warm_median_seconds": 1.6559468349441886e-05,
+   "warm_min_seconds": 1.251796493306756e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 9.002198930829763e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.002198930829763e-05,
+    3.4441996831446886e-05,
+    2.7958012651652098e-05
+   ],
+   "warm_median_seconds": 3.120000474154949e-05,
+   "warm_min_seconds": 2.7958012651652098e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0018165570218116045,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018165570218116045,
+    0.0014610469806939363,
+    0.001957025029696524
+   ],
+   "warm_median_seconds": 0.0017090360051952302,
+   "warm_min_seconds": 0.0014610469806939363
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.003402638016268611,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003402638016268611,
+    0.003236456017475575
+   ],
+   "warm_median_seconds": 0.003236456017475575,
+   "warm_min_seconds": 0.003236456017475575
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.892198093235493e-05,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.892198093235493e-05,
+    6.571004632860422e-05,
+    5.778297781944275e-05
+   ],
+   "warm_median_seconds": 6.174651207402349e-05,
+   "warm_min_seconds": 5.778297781944275e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0006680850056000054,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006680850056000054,
+    0.000565827009268105,
+    0.0005561350262723863
+   ],
+   "warm_median_seconds": 0.0005609810177702457,
+   "warm_min_seconds": 0.0005561350262723863
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0022261670092120767,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0022261670092120767,
+    0.0022360600414685905,
+    0.0019007159862667322
+   ],
+   "warm_median_seconds": 0.0020683880138676614,
+   "warm_min_seconds": 0.0019007159862667322
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.003428359981626272,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003428359981626272,
+    0.003497872967272997
+   ],
+   "warm_median_seconds": 0.003497872967272997,
+   "warm_min_seconds": 0.003497872967272997
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.07042480498785153,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07042480498785153,
+    0.0702026310027577
+   ],
+   "warm_median_seconds": 0.0702026310027577,
+   "warm_min_seconds": 0.0702026310027577
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update",
+   "first_seconds": 0.0007389999809674919,
+   "params": {
+    "batch": 1000,
+    "changing": "A",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007389999809674919,
+    0.0006718799704685807,
+    0.000603415013756603
+   ],
+   "warm_median_seconds": 0.0006376474921125919,
+   "warm_min_seconds": 0.000603415013756603
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update",
+   "cross_terms_nonzero": {
+    "A_dB": 0,
+    "dA_B": 4,
+    "dA_dB": 0
+   },
+   "first_seconds": 0.002624034008476883,
+   "params": {
+    "batch": 1000,
+    "changing": "A",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002624034008476883,
+    0.0022776609985157847,
+    0.0026302820187993348
+   ],
+   "touched_keys": 768,
+   "warm_median_seconds": 0.0024539715086575598,
+   "warm_min_seconds": 0.0022776609985157847
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (changed sides + join)",
+   "first_seconds": 0.004379150981549174,
+   "params": {
+    "batch": 1000,
+    "changing": "A",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004379150981549174,
+    0.0040994680020958185
+   ],
+   "warm_median_seconds": 0.0040994680020958185,
+   "warm_min_seconds": 0.0040994680020958185
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update",
+   "first_seconds": 0.0009781770058907568,
+   "params": {
+    "batch": 1000,
+    "changing": "B",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009781770058907568,
+    0.0010090760188177228,
+    0.0009183030342683196
+   ],
+   "warm_median_seconds": 0.0009636895265430212,
+   "warm_min_seconds": 0.0009183030342683196
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update",
+   "cross_terms_nonzero": {
+    "A_dB": 4,
+    "dA_B": 0,
+    "dA_dB": 0
+   },
+   "first_seconds": 0.002724546007812023,
+   "params": {
+    "batch": 1000,
+    "changing": "B",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002724546007812023,
+    0.0023113509523682296,
+    0.002180113981012255
+   ],
+   "touched_keys": 616,
+   "warm_median_seconds": 0.0022457324666902423,
+   "warm_min_seconds": 0.002180113981012255
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (changed sides + join)",
+   "first_seconds": 0.0018056730041280389,
+   "params": {
+    "batch": 1000,
+    "changing": "B",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018056730041280389,
+    0.0016824519843794405
+   ],
+   "warm_median_seconds": 0.0016824519843794405,
+   "warm_min_seconds": 0.0016824519843794405
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update",
+   "first_seconds": 0.0013322699815034866,
+   "params": {
+    "batch": 1000,
+    "changing": "both",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013322699815034866,
+    0.0013349569635465741,
+    0.0013108510174788535
+   ],
+   "warm_median_seconds": 0.0013229039905127138,
+   "warm_min_seconds": 0.0013108510174788535
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update",
+   "cross_terms_nonzero": {
+    "A_dB": 4,
+    "dA_B": 4,
+    "dA_dB": 4
+   },
+   "first_seconds": 0.0037728060269728303,
+   "params": {
+    "batch": 1000,
+    "changing": "both",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0037728060269728303,
+    0.003986869007349014,
+    0.004025014990475029
+   ],
+   "touched_keys": 916,
+   "warm_median_seconds": 0.0040059419989120215,
+   "warm_min_seconds": 0.003986869007349014
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (changed sides + join)",
+   "first_seconds": 0.003955839027184993,
+   "params": {
+    "batch": 1000,
+    "changing": "both",
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003955839027184993,
+    0.004330730007495731
+   ],
+   "warm_median_seconds": 0.004330730007495731,
+   "warm_min_seconds": 0.004330730007495731
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.00044304400216788054,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00044304400216788054,
+    0.0005307680112309754,
+    0.0005561469588428736
+   ],
+   "warm_median_seconds": 0.0005434574850369245,
+   "warm_min_seconds": 0.0005307680112309754
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.0028967150137759745,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028967150137759745,
+    0.0025210369494743645,
+    0.002344514010474086
+   ],
+   "touched_keys": 635,
+   "warm_median_seconds": 0.002432775479974225,
+   "warm_min_seconds": 0.002344514010474086
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.004484175005927682,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004484175005927682,
+    0.0049469899968244135
+   ],
+   "warm_median_seconds": 0.0049469899968244135,
+   "warm_min_seconds": 0.0049469899968244135
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.0006513840053230524,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.5,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006513840053230524,
+    0.0006516000139527023,
+    0.0006695790216326714
+   ],
+   "warm_median_seconds": 0.0006605895177926868,
+   "warm_min_seconds": 0.0006516000139527023
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.0028503669891506433,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.5,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028503669891506433,
+    0.003016999049577862,
+    0.0024130080128088593
+   ],
+   "touched_keys": 764,
+   "warm_median_seconds": 0.0027150035311933607,
+   "warm_min_seconds": 0.0024130080128088593
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0033593210391700268,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 0.5,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033593210391700268,
+    0.003337651025503874
+   ],
+   "warm_median_seconds": 0.003337651025503874,
+   "warm_min_seconds": 0.003337651025503874
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.0009093749686144292,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 1.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009093749686144292,
+    0.0008578259730711579,
+    0.0008186359773389995
+   ],
+   "warm_median_seconds": 0.0008382309752050787,
+   "warm_min_seconds": 0.0008186359773389995
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (key moves)",
+   "first_seconds": 0.002359309990424663,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 1.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002359309990424663,
+    0.002525212010368705,
+    0.0024727380368858576
+   ],
+   "touched_keys": 863,
+   "warm_median_seconds": 0.002498975023627281,
+   "warm_min_seconds": 0.0024727380368858576
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.0037482669577002525,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "move_fraction": 1.0,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0037482669577002525,
+    0.003358407993800938
+   ],
+   "warm_median_seconds": 0.003358407993800938,
+   "warm_min_seconds": 0.003358407993800938
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget join build (states = cells x values - 1)",
+   "limit": 35,
+   "message": "join: needs 36 states, budget 35",
+   "need": 36,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 4.67449426651001e-05,
+   "refused": true,
+   "resource": "states"
+  },
+  {
+   "backend": "cpu",
+   "case": "over-budget join update (iterations = touched keys x GA x GB x values - 1)",
+   "limit": 23075,
+   "message": "join update: needs 23076 iterations, budget 23075",
+   "need": 23076,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 100000,
+    "rows_b": 20000
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.6033027097582817e-05,
+   "refused": true,
+   "resource": "iterations"
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope (side A)",
+   "first_seconds": 0.010984313965309411,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010984313965309411,
+    0.009656176960561424
+   ],
+   "warm_median_seconds": 0.009656176960561424,
+   "warm_min_seconds": 0.009656176960561424
+  },
+  {
+   "backend": "cpu",
+   "case": "initial side state (bank + DELTA-001 state)",
+   "first_seconds": 0.00961170403752476,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00961170403752476,
+    0.013345321989618242
+   ],
+   "warm_median_seconds": 0.013345321989618242,
+   "warm_min_seconds": 0.013345321989618242
+  },
+  {
+   "backend": "cpu",
+   "case": "initial join state",
+   "first_seconds": 0.0014248750521801412,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0014248750521801412,
+    0.0013655709917657077
+   ],
+   "warm_median_seconds": 0.0013655709917657077,
+   "warm_min_seconds": 0.0013655709917657077
+  },
+  {
+   "backend": "cuda",
+   "case": "initial join state",
+   "first_seconds": 0.0015515430131927133,
+   "join_bytes": 5976,
+   "params": {
+    "groups_a": 4,
+    "keys": 1000,
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0015515430131927133,
+    0.00084068498108536
+   ],
+   "warm_median_seconds": 0.00084068498108536,
+   "warm_min_seconds": 0.00084068498108536
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.527800673618913e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.527800673618913e-05,
+    3.9642967749387026e-05,
+    1.9139028154313564e-05
+   ],
+   "warm_median_seconds": 2.9390997951850295e-05,
+   "warm_min_seconds": 1.9139028154313564e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 5.0753995310515165e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.0753995310515165e-05,
+    3.542902413755655e-05,
+    2.1193991415202618e-05
+   ],
+   "warm_median_seconds": 2.8311507776379585e-05,
+   "warm_min_seconds": 2.1193991415202618e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019250820041634142,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019250820041634142,
+    0.0016629979945719242,
+    0.0018404820002615452
+   ],
+   "warm_median_seconds": 0.0017517399974167347,
+   "warm_min_seconds": 0.0016629979945719242
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.03477826196467504,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03477826196467504,
+    0.03470126795582473
+   ],
+   "warm_median_seconds": 0.03470126795582473,
+   "warm_min_seconds": 0.03470126795582473
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.242798503488302e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.242798503488302e-05,
+    2.222997136414051e-05,
+    1.4824967365711927e-05
+   ],
+   "warm_median_seconds": 1.852746936492622e-05,
+   "warm_min_seconds": 1.4824967365711927e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 7.942295633256435e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.942295633256435e-05,
+    0.00010860100155696273,
+    2.5965971872210503e-05
+   ],
+   "warm_median_seconds": 6.728348671458662e-05,
+   "warm_min_seconds": 2.5965971872210503e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0023972209892235696,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023972209892235696,
+    0.0014205820043571293,
+    0.0015567339723929763
+   ],
+   "warm_median_seconds": 0.0014886579883750528,
+   "warm_min_seconds": 0.0014205820043571293
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.030444920004811138,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.030444920004811138,
+    0.028536701982375234
+   ],
+   "warm_median_seconds": 0.028536701982375234,
+   "warm_min_seconds": 0.028536701982375234
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014359800843521953,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014359800843521953,
+    8.34189704619348e-05,
+    6.311899051070213e-05
+   ],
+   "warm_median_seconds": 7.326898048631847e-05,
+   "warm_min_seconds": 6.311899051070213e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0006531790131703019,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006531790131703019,
+    0.0005543060251511633,
+    0.0005585330072790384
+   ],
+   "warm_median_seconds": 0.0005564195162151009,
+   "warm_min_seconds": 0.0005543060251511633
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0030944219906814396,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0030944219906814396,
+    0.0019173059845343232,
+    0.001724777976050973
+   ],
+   "warm_median_seconds": 0.001821041980292648,
+   "warm_min_seconds": 0.001724777976050973
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.026198197971098125,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026198197971098125,
+    0.03062729799421504
+   ],
+   "warm_median_seconds": 0.03062729799421504,
+   "warm_min_seconds": 0.03062729799421504
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.08370954298879951,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "insert",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08370954298879951,
+    0.09114413399947807
+   ],
+   "warm_median_seconds": 0.09114413399947807,
+   "warm_min_seconds": 0.09114413399947807
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 6.78329961374402e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.78329961374402e-05,
+    2.153799869120121e-05,
+    1.3520009815692902e-05
+   ],
+   "warm_median_seconds": 1.7529004253447056e-05,
+   "warm_min_seconds": 1.3520009815692902e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 7.199199171736836e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.199199171736836e-05,
+    4.4211046770215034e-05,
+    2.0937994122505188e-05
+   ],
+   "warm_median_seconds": 3.257452044636011e-05,
+   "warm_min_seconds": 2.0937994122505188e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0019218979869037867,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019218979869037867,
+    0.0017003579996526241,
+    0.001405424962285906
+   ],
+   "warm_median_seconds": 0.001552891480969265,
+   "warm_min_seconds": 0.001405424962285906
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.026766319992020726,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026766319992020726,
+    0.022750161006115377
+   ],
+   "warm_median_seconds": 0.022750161006115377,
+   "warm_min_seconds": 0.022750161006115377
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.963398143649101e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.963398143649101e-05,
+    2.188899088650942e-05,
+    1.4362973161041737e-05
+   ],
+   "warm_median_seconds": 1.8125982023775578e-05,
+   "warm_min_seconds": 1.4362973161041737e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 7.777998689562082e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.777998689562082e-05,
+    5.11059770360589e-05,
+    2.8592010494321585e-05
+   ],
+   "warm_median_seconds": 3.9848993765190244e-05,
+   "warm_min_seconds": 2.8592010494321585e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0028353629750199616,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028353629750199616,
+    0.002200794988311827,
+    0.0021823939750902355
+   ],
+   "warm_median_seconds": 0.0021915944817010313,
+   "warm_min_seconds": 0.0021823939750902355
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.025086385023314506,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025086385023314506,
+    0.023931158997584134
+   ],
+   "warm_median_seconds": 0.023931158997584134,
+   "warm_min_seconds": 0.023931158997584134
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014608795754611492,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014608795754611492,
+    7.399899186566472e-05,
+    5.705998046323657e-05
+   ],
+   "warm_median_seconds": 6.552948616445065e-05,
+   "warm_min_seconds": 5.705998046323657e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0006342019769363105,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006342019769363105,
+    0.0005638919537886977,
+    0.0005465149879455566
+   ],
+   "warm_median_seconds": 0.0005552034708671272,
+   "warm_min_seconds": 0.0005465149879455566
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.003914336964953691,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003914336964953691,
+    0.0023680799640715122,
+    0.002250882040243596
+   ],
+   "warm_median_seconds": 0.002309481002157554,
+   "warm_min_seconds": 0.002250882040243596
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.024890208966098726,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.024890208966098726,
+    0.025321029010228813
+   ],
+   "warm_median_seconds": 0.025321029010228813,
+   "warm_min_seconds": 0.025321029010228813
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.09185165498638526,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "delete",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.09185165498638526,
+    0.08918224001536146
+   ],
+   "warm_median_seconds": 0.08918224001536146,
+   "warm_min_seconds": 0.08918224001536146
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.149402517825365e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.149402517825365e-05,
+    2.1972984541207552e-05,
+    1.4490971807390451e-05
+   ],
+   "warm_median_seconds": 1.8231978174299e-05,
+   "warm_min_seconds": 1.4490971807390451e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 7.548497524112463e-05,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.548497524112463e-05,
+    4.629103932529688e-05,
+    2.2200983949005604e-05
+   ],
+   "warm_median_seconds": 3.424601163715124e-05,
+   "warm_min_seconds": 2.2200983949005604e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.002038799982983619,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002038799982983619,
+    0.001699795015156269,
+    0.0014161099679768085
+   ],
+   "warm_median_seconds": 0.0015579524915665388,
+   "warm_min_seconds": 0.0014161099679768085
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.026862124970648438,
+   "params": {
+    "batch": 1,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026862124970648438,
+    0.027454581984784454
+   ],
+   "warm_median_seconds": 0.027454581984784454,
+   "warm_min_seconds": 0.027454581984784454
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.60629996471107e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.60629996471107e-05,
+    2.2451975382864475e-05,
+    1.4168035704642534e-05
+   ],
+   "warm_median_seconds": 1.8310005543753505e-05,
+   "warm_min_seconds": 1.4168035704642534e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 6.909895455464721e-05,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.909895455464721e-05,
+    4.5129971113055944e-05,
+    2.8950977139174938e-05
+   ],
+   "warm_median_seconds": 3.704047412611544e-05,
+   "warm_min_seconds": 2.8950977139174938e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.003281305020209402,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003281305020209402,
+    0.002469476021360606,
+    0.002650164009537548
+   ],
+   "warm_median_seconds": 0.002559820015449077,
+   "warm_min_seconds": 0.002469476021360606
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.025131414993666112,
+   "params": {
+    "batch": 10,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025131414993666112,
+    0.02645110501907766
+   ],
+   "warm_median_seconds": 0.02645110501907766,
+   "warm_min_seconds": 0.02645110501907766
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00012043101014569402,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012043101014569402,
+    7.616099901497364e-05,
+    6.356299854815006e-05
+   ],
+   "warm_median_seconds": 6.986199878156185e-05,
+   "warm_min_seconds": 6.356299854815006e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.0006828589830547571,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006828589830547571,
+    0.0006062330212444067,
+    0.0005447990261018276
+   ],
+   "warm_median_seconds": 0.0005755160236731172,
+   "warm_min_seconds": 0.0005447990261018276
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained join update (side A + cross terms)",
+   "first_seconds": 0.002434587979223579,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002434587979223579,
+    0.0019753759843297303,
+    0.0018855550442822278
+   ],
+   "warm_median_seconds": 0.001930465514305979,
+   "warm_min_seconds": 0.0018855550442822278
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (side A + join)",
+   "first_seconds": 0.02453059598337859,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02453059598337859,
+    0.023820027010515332
+   ],
+   "warm_median_seconds": 0.023820027010515332,
+   "warm_min_seconds": 0.023820027010515332
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB join aggregate)",
+   "first_seconds": 0.09265272197080776,
+   "params": {
+    "batch": 1000,
+    "groups_a": 4,
+    "keys": 1000,
+    "kind": "weight",
+    "pairs": 4,
+    "rows_a": 1000000,
+    "rows_b": 20000,
+    "side": "A"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.09265272197080776,
+    0.0891304969554767
+   ],
+   "warm_median_seconds": 0.0891304969554767,
+   "warm_min_seconds": 0.0891304969554767
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: side overflow proof",
+   "first_seconds": 1.6347970813512802e-05,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "result": "refused: DELTA-001's proof (net-zero swap at 31 * 2^122)",
+   "samples_seconds": [
+    1.6347970813512802e-05,
+    6.0140155255794525e-06,
+    3.435008693486452e-06
+   ],
+   "warm_median_seconds": 4.724512109532952e-06,
+   "warm_min_seconds": 3.435008693486452e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "rebuild after the refusal (side + join)",
+   "first_seconds": 0.0016828529769554734,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016828529769554734,
+    0.0017609259812161326,
+    0.0016403759946115315
+   ],
+   "warm_median_seconds": 0.001700650987913832,
+   "warm_min_seconds": 0.0016403759946115315
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of B rows that are not there",
+   "first_seconds": 2.4406996089965105e-05,
+   "params": {},
+   "phase": "run",
+   "result": "refused: group 3, need 1000000",
+   "samples_seconds": [
+    2.4406996089965105e-05,
+    8.897972293198109e-06,
+    7.093010935932398e-06
+   ],
+   "warm_median_seconds": 7.995491614565253e-06,
+   "warm_min_seconds": 7.093010935932398e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "initial MULTISET value state",
+   "first_seconds": 0.01145621802425012,
+   "params": {
+    "groups": 64,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01145621802425012,
+    0.010424136999063194
+   ],
+   "warm_median_seconds": 0.010424136999063194,
+   "warm_min_seconds": 0.010424136999063194
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained MULTISET update (COUNT DISTINCT, MIN, MAX)",
+   "first_seconds": 0.00019128603162243962,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019128603162243962,
+    0.00024846900487318635,
+    0.000157977978233248
+   ],
+   "warm_median_seconds": 0.00020322349155321717,
+   "warm_min_seconds": 0.000157977978233248
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (value state)",
+   "first_seconds": 0.011500997003167868,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011500997003167868,
+    0.011491773999296129
+   ],
+   "warm_median_seconds": 0.011491773999296129,
+   "warm_min_seconds": 0.011491773999296129
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained MULTISET update (COUNT DISTINCT, MIN, MAX)",
+   "first_seconds": 0.0001883619697764516,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001883619697764516,
+    0.00018907099729403853,
+    0.00016253598732873797
+   ],
+   "warm_median_seconds": 0.00017580349231138825,
+   "warm_min_seconds": 0.00016253598732873797
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (value state)",
+   "first_seconds": 0.011526334972586483,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011526334972586483,
+    0.010965920984745026
+   ],
+   "warm_median_seconds": 0.010965920984745026,
+   "warm_min_seconds": 0.010965920984745026
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained MULTISET update (COUNT DISTINCT, MIN, MAX)",
+   "first_seconds": 0.0003232019953429699,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003232019953429699,
+    0.00028123200172558427,
+    0.00024634297005832195
+   ],
+   "warm_median_seconds": 0.0002637874858919531,
+   "warm_min_seconds": 0.00024634297005832195
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (value state)",
+   "first_seconds": 0.010893733007833362,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010893733007833362,
+    0.010813986998982728
+   ],
+   "warm_median_seconds": 0.010813986998982728,
+   "warm_min_seconds": 0.010813986998982728
+  },
+  {
+   "backend": "duckdb",
+   "case": "COUNT(DISTINCT), MIN, MAX (DuckDB)",
+   "first_seconds": 0.006742416007909924,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006742416007909924,
+    0.0061057680286467075
+   ],
+   "warm_median_seconds": 0.0061057680286467075,
+   "warm_min_seconds": 0.0061057680286467075
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: EXTREMUM minimum deleted",
+   "first_seconds": 1.845200313255191e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": "refused: group 0, value -500: rebuild",
+   "samples_seconds": [
+    1.845200313255191e-05,
+    7.321999873965979e-06,
+    4.856032319366932e-06
+   ],
+   "warm_median_seconds": 6.089016096666455e-06,
+   "warm_min_seconds": 4.856032319366932e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "rebuild of the EXTREMUM state",
+   "first_seconds": 0.000181259005330503,
+   "params": {
+    "groups": 64,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000181259005330503,
+    0.00017278996529057622
+   ],
+   "warm_median_seconds": 0.00017278996529057622,
+   "warm_min_seconds": 0.00017278996529057622
+  },
+  {
+   "backend": "cpu",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 9.042199235409498e-05,
+   "params": {
+    "G": 8,
+    "H": 8,
+    "K": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    9.042199235409498e-05,
+    6.898300489410758e-05,
+    6.162101635709405e-05
+   ],
+   "warm_median_seconds": 6.530201062560081e-05,
+   "warm_min_seconds": 6.162101635709405e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 0.001025861012749374,
+   "params": {
+    "G": 8,
+    "H": 8,
+    "K": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+   },
+   "samples_seconds": [
+    0.001025861012749374,
+    0.0007468769908882678,
+    0.0005926709854975343
+   ],
+   "warm_median_seconds": 0.000669773988192901,
+   "warm_min_seconds": 0.0005926709854975343
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit products (Python ints, NumPy object arrays)",
+   "first_seconds": 8.953100768849254e-05,
+   "params": {
+    "G": 8,
+    "H": 8,
+    "K": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.953100768849254e-05,
+    6.652798037976027e-05
+   ],
+   "warm_median_seconds": 6.652798037976027e-05,
+   "warm_min_seconds": 6.652798037976027e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 0.001525773957837373,
+   "params": {
+    "G": 32,
+    "H": 32,
+    "K": 32
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.001525773957837373,
+    0.001503664010670036,
+    0.0014992309734225273
+   ],
+   "warm_median_seconds": 0.0015014474920462817,
+   "warm_min_seconds": 0.0014992309734225273
+  },
+  {
+   "backend": "cuda",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 0.0013136430061422288,
+   "params": {
+    "G": 32,
+    "H": 32,
+    "K": 32
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+   },
+   "samples_seconds": [
+    0.0013136430061422288,
+    0.0012068750220350921,
+    0.00110623799264431
+   ],
+   "warm_median_seconds": 0.001156556507339701,
+   "warm_min_seconds": 0.00110623799264431
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit products (Python ints, NumPy object arrays)",
+   "first_seconds": 0.0038182749995030463,
+   "params": {
+    "G": 32,
+    "H": 32,
+    "K": 32
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0038182749995030463,
+    0.0037885670317336917
+   ],
+   "warm_median_seconds": 0.0037885670317336917,
+   "warm_min_seconds": 0.0037885670317336917
+  },
+  {
+   "backend": "cpu",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 0.009486696973908693,
+   "params": {
+    "G": 64,
+    "H": 64,
+    "K": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU"
+   },
+   "samples_seconds": [
+    0.009486696973908693,
+    0.009452585014514625,
+    0.009075033012777567
+   ],
+   "warm_median_seconds": 0.009263809013646096,
+   "warm_min_seconds": 0.009075033012777567
+  },
+  {
+   "backend": "cuda",
+   "case": "matrix-product delta (AB, dA B, A dB, dA dB, updated)",
+   "first_seconds": 0.0032515469938516617,
+   "params": {
+    "G": 64,
+    "H": 64,
+    "K": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+   },
+   "samples_seconds": [
+    0.0032515469938516617,
+    0.0026662940508686006,
+    0.00271592999342829
+   ],
+   "warm_median_seconds": 0.0026911120221484452,
+   "warm_min_seconds": 0.0026662940508686006
+  },
+  {
+   "backend": "numpy",
+   "case": "explicit products (Python ints, NumPy object arrays)",
+   "first_seconds": 0.029790908040013164,
+   "params": {
+    "G": 64,
+    "H": 64,
+    "K": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.029790908040013164,
+    0.02991394401760772
+   ],
+   "warm_median_seconds": 0.02991394401760772,
+   "warm_min_seconds": 0.02991394401760772
+  }
+ ],
+ "seconds": 2.3598284299951047,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "join build states (cells x values)",
+   "groups_a": 4,
+   "keys": 1000,
+   "largest_admitted": {
+    "states": 36
+   },
+   "pairs": 4,
+   "rows_a": 100000,
+   "rows_b": 20000,
+   "smallest_refused": {
+    "states": 35
+   }
+  },
+  {
+   "batch": 1000,
+   "grid": "join update iterations (touched keys x GA x GB x values)",
+   "groups_a": 4,
+   "keys": 1000,
+   "kind": "insert",
+   "largest_admitted": {
+    "iterations": 23076
+   },
+   "pairs": 4,
+   "rows_a": 100000,
+   "rows_b": 20000,
+   "smallest_refused": {
+    "iterations": 23075
+   }
+  }
+ ]
+}

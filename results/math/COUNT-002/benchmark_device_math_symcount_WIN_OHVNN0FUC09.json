@@ -1,0 +1,1811 @@
+{
+ "argv": [
+  "--capability",
+  "COUNT-002",
+  "--out",
+  "/home/brian/torbles_math/results/math/COUNT-002/benchmark_device_math_symcount_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "COUNT-002",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:14:36+00:00"
+ },
+ "notes": [
+  "1000 rows: the observed snapshot counts rows, the universe counts the 2^8 assignments; with bits 6 and 7 skewed the observed TRUE fraction differs from the universe's.",
+  "100000 rows: the observed snapshot counts rows, the universe counts the 2^8 assignments; with bits 6 and 7 skewed the observed TRUE fraction differs from the universe's.",
+  "1000000 rows: the observed snapshot counts rows, the universe counts the 2^8 assignments; with bits 6 and 7 skewed the observed TRUE fraction differs from the universe's.",
+  "cpu = math_symcount.c (reduced ordered BDDs, exact L-limb counts, variable elimination, bounded Shannon expansion); cuda = math_symcount_gpu.cu (one launch per diagram level; brute-force slices; device runs only); COUNT-001 / duckdb = the observed-row baselines; python = an enumeration oracle.",
+  "Refusals are recorded with the refused resource and need; nothing past a budget is extrapolated."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 0.00019463204080238938,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00019463204080238938,
+    6.22539664618671e-05
+   ],
+   "warm_median_seconds": 6.22539664618671e-05,
+   "warm_min_seconds": 6.22539664618671e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.00012139498721808195,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00012139498721808195,
+    5.7282974012196064e-05,
+    3.958900924772024e-05
+   ],
+   "warm_median_seconds": 4.843599162995815e-05,
+   "warm_min_seconds": 3.958900924772024e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "observed TRUE count (COUNT(*) WHERE)",
+   "first_seconds": 0.0010031770216301084,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": 286,
+   "samples_seconds": [
+    0.0010031770216301084,
+    0.0008509629988111556,
+    0.0008778439951129258
+   ],
+   "warm_median_seconds": 0.0008644034969620407,
+   "warm_min_seconds": 0.0008509629988111556
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 0.00020357297034934163,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "a": 15,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 138,
+    "unknown": 0,
+    "violated": 118,
+    "witness": 0
+   },
+   "samples_seconds": [
+    0.00020357297034934163,
+    5.871703615412116e-05,
+    4.568102303892374e-05
+   ],
+   "warm_median_seconds": 5.219902959652245e-05,
+   "warm_min_seconds": 4.568102303892374e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 5.393399624153972e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.393399624153972e-05,
+    3.088300582021475e-05,
+    2.4391047190874815e-05
+   ],
+   "warm_median_seconds": 2.763702650554478e-05,
+   "warm_min_seconds": 2.4391047190874815e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 7.30290194042027e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.30290194042027e-05,
+    3.201398067176342e-05,
+    2.6041001547127962e-05
+   ],
+   "warm_median_seconds": 2.902749110944569e-05,
+   "warm_min_seconds": 2.6041001547127962e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.07950789900496602,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.07950789900496602,
+    0.000741662981454283,
+    0.0007071419968269765
+   ],
+   "warm_median_seconds": 0.0007244024891406298,
+   "warm_min_seconds": 0.0007071419968269765
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 11,
+   "distinct_observed_assignments": 234,
+   "first_seconds": 3.481697058305144e-05,
+   "observed_false": 714,
+   "observed_rows": 1000,
+   "observed_true": 286,
+   "observed_unknown": 0,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.481697058305144e-05,
+    1.8162012565881014e-05,
+    1.261901343241334e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 118,
+   "universe_true": 138,
+   "unobserved_assignments": 22,
+   "warm_median_seconds": 1.5390512999147177e-05,
+   "warm_min_seconds": 1.261901343241334e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 9.522796608507633e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.522796608507633e-05,
+    6.05930108577013e-05
+   ],
+   "warm_median_seconds": 6.05930108577013e-05,
+   "warm_min_seconds": 6.05930108577013e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.00011010002344846725,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00011010002344846725,
+    8.294096915051341e-05,
+    6.784702418372035e-05
+   ],
+   "warm_median_seconds": 7.539399666711688e-05,
+   "warm_min_seconds": 6.784702418372035e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 8.000998059287667e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "run",
+   "result": {
+    "a": 44,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 92,
+    "unknown": 0,
+    "violated": 164,
+    "witness": 0
+   },
+   "samples_seconds": [
+    8.000998059287667e-05,
+    7.132400060072541e-05,
+    6.820098496973515e-05
+   ],
+   "warm_median_seconds": 6.976249278523028e-05,
+   "warm_min_seconds": 6.820098496973515e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 7.196498336270452e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.196498336270452e-05,
+    5.908001912757754e-05,
+    5.3705996833741665e-05
+   ],
+   "warm_median_seconds": 5.6393007980659604e-05,
+   "warm_min_seconds": 5.3705996833741665e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 3.8416008464992046e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    3.8416008464992046e-05,
+    2.8052018024027348e-05,
+    5.2433053497225046e-05
+   ],
+   "warm_median_seconds": 4.02425357606262e-05,
+   "warm_min_seconds": 2.8052018024027348e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.0007426919764839113,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0007426919764839113,
+    0.000910178991034627,
+    0.0008142900187522173
+   ],
+   "warm_median_seconds": 0.0008622345048934221,
+   "warm_min_seconds": 0.0008142900187522173
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 14,
+   "distinct_observed_assignments": 20,
+   "first_seconds": 2.253398997709155e-05,
+   "observed_false": 647,
+   "observed_rows": 1000,
+   "observed_true": 295,
+   "observed_unknown": 58,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.253398997709155e-05,
+    1.7411017324775457e-05,
+    1.1476979125291109e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 164,
+   "universe_true": 92,
+   "unobserved_assignments": 236,
+   "warm_median_seconds": 1.4443998225033283e-05,
+   "warm_min_seconds": 1.1476979125291109e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 0.0035713640390895307,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0035713640390895307,
+    0.0034975760499946773
+   ],
+   "warm_median_seconds": 0.0034975760499946773,
+   "warm_min_seconds": 0.0034975760499946773
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.00040794600499793887,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00040794600499793887,
+    0.00034729501930996776,
+    0.00035802600905299187
+   ],
+   "warm_median_seconds": 0.0003526605141814798,
+   "warm_min_seconds": 0.00034729501930996776
+  },
+  {
+   "backend": "duckdb",
+   "case": "observed TRUE count (COUNT(*) WHERE)",
+   "first_seconds": 0.003185768029652536,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": 26809,
+   "samples_seconds": [
+    0.003185768029652536,
+    0.0030353330075740814,
+    0.003256610012613237
+   ],
+   "warm_median_seconds": 0.003145971510093659,
+   "warm_min_seconds": 0.0030353330075740814
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 0.00017576402751728892,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "a": 15,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 138,
+    "unknown": 0,
+    "violated": 118,
+    "witness": 0
+   },
+   "samples_seconds": [
+    0.00017576402751728892,
+    5.039898678660393e-05,
+    4.437100142240524e-05
+   ],
+   "warm_median_seconds": 4.7384994104504585e-05,
+   "warm_min_seconds": 4.437100142240524e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 4.607002483680844e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.607002483680844e-05,
+    2.7031986974179745e-05,
+    2.239196328446269e-05
+   ],
+   "warm_median_seconds": 2.4711975129321218e-05,
+   "warm_min_seconds": 2.239196328446269e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 6.479100557044148e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.479100557044148e-05,
+    2.7838977985084057e-05,
+    2.490601036697626e-05
+   ],
+   "warm_median_seconds": 2.637249417603016e-05,
+   "warm_min_seconds": 2.490601036697626e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.0010978439822793007,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0010978439822793007,
+    0.0008462619734928012,
+    0.0007505520479753613
+   ],
+   "warm_median_seconds": 0.0007984070107340813,
+   "warm_min_seconds": 0.0007505520479753613
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 11,
+   "distinct_observed_assignments": 256,
+   "first_seconds": 2.14290339499712e-05,
+   "observed_false": 73191,
+   "observed_rows": 100000,
+   "observed_true": 26809,
+   "observed_unknown": 0,
+   "params": {
+    "predicate": "structured",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.14290339499712e-05,
+    1.5302037354558706e-05,
+    1.2661970686167479e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 118,
+   "universe_true": 138,
+   "unobserved_assignments": 0,
+   "warm_median_seconds": 1.3982004020363092e-05,
+   "warm_min_seconds": 1.2661970686167479e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 0.0035693070385605097,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0035693070385605097,
+    0.003561386954970658
+   ],
+   "warm_median_seconds": 0.003561386954970658,
+   "warm_min_seconds": 0.003561386954970658
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.0004848169628530741,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0004848169628530741,
+    0.0004128339933231473,
+    0.00043615297181531787
+   ],
+   "warm_median_seconds": 0.0004244934825692326,
+   "warm_min_seconds": 0.0004128339933231473
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 8.362904191017151e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "run",
+   "result": {
+    "a": 44,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 92,
+    "unknown": 0,
+    "violated": 164,
+    "witness": 0
+   },
+   "samples_seconds": [
+    8.362904191017151e-05,
+    8.898501982912421e-05,
+    8.549896301701665e-05
+   ],
+   "warm_median_seconds": 8.724199142307043e-05,
+   "warm_min_seconds": 8.549896301701665e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 6.946997018530965e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.946997018530965e-05,
+    5.6770979426801205e-05,
+    7.489998824894428e-05
+   ],
+   "warm_median_seconds": 6.583548383787274e-05,
+   "warm_min_seconds": 5.6770979426801205e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 4.5689987018704414e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    4.5689987018704414e-05,
+    2.6608002372086048e-05,
+    2.3917993530631065e-05
+   ],
+   "warm_median_seconds": 2.5262997951358557e-05,
+   "warm_min_seconds": 2.3917993530631065e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.0008901100372895598,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008901100372895598,
+    0.0008255690336227417,
+    0.000777428038418293
+   ],
+   "warm_median_seconds": 0.0008014985360205173,
+   "warm_min_seconds": 0.000777428038418293
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 14,
+   "distinct_observed_assignments": 25,
+   "first_seconds": 2.0129024051129818e-05,
+   "observed_false": 43213,
+   "observed_rows": 100000,
+   "observed_true": 49428,
+   "observed_unknown": 7359,
+   "params": {
+    "predicate": "irregular",
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0129024051129818e-05,
+    1.3883982319384813e-05,
+    1.1308002285659313e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 164,
+   "universe_true": 92,
+   "unobserved_assignments": 231,
+   "warm_median_seconds": 1.2595992302522063e-05,
+   "warm_min_seconds": 1.1308002285659313e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 0.03440179000608623,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03440179000608623,
+    0.03388458298286423
+   ],
+   "warm_median_seconds": 0.03388458298286423,
+   "warm_min_seconds": 0.03388458298286423
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.0032351940171793103,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0032351940171793103,
+    0.003198136982973665,
+    0.0032017730409279466
+   ],
+   "warm_median_seconds": 0.003199955011950806,
+   "warm_min_seconds": 0.003198136982973665
+  },
+  {
+   "backend": "duckdb",
+   "case": "observed TRUE count (COUNT(*) WHERE)",
+   "first_seconds": 0.0047984549892134964,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": 270146,
+   "samples_seconds": [
+    0.0047984549892134964,
+    0.0037169940187595785,
+    0.003479584993328899
+   ],
+   "warm_median_seconds": 0.003598289506044239,
+   "warm_min_seconds": 0.003479584993328899
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 0.00018402398563921452,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "a": 15,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 138,
+    "unknown": 0,
+    "violated": 118,
+    "witness": 0
+   },
+   "samples_seconds": [
+    0.00018402398563921452,
+    5.039398092776537e-05,
+    4.3034960981458426e-05
+   ],
+   "warm_median_seconds": 4.67144709546119e-05,
+   "warm_min_seconds": 4.3034960981458426e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 4.5227992814034224e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.5227992814034224e-05,
+    2.785999095067382e-05,
+    2.374098403379321e-05
+   ],
+   "warm_median_seconds": 2.5800487492233515e-05,
+   "warm_min_seconds": 2.374098403379321e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 6.736500654369593e-05,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.736500654369593e-05,
+    2.90359603241086e-05,
+    2.4828012101352215e-05
+   ],
+   "warm_median_seconds": 2.6931986212730408e-05,
+   "warm_min_seconds": 2.4828012101352215e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.0010913670412264764,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0010913670412264764,
+    0.0007883170037530363,
+    0.0008404359687119722
+   ],
+   "warm_median_seconds": 0.0008143764862325042,
+   "warm_min_seconds": 0.0007883170037530363
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 11,
+   "distinct_observed_assignments": 256,
+   "first_seconds": 2.0804000087082386e-05,
+   "observed_false": 729854,
+   "observed_rows": 1000000,
+   "observed_true": 270146,
+   "observed_unknown": 0,
+   "params": {
+    "predicate": "structured",
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0804000087082386e-05,
+    1.3031996786594391e-05,
+    1.0349031072109938e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 118,
+   "universe_true": 138,
+   "unobserved_assignments": 0,
+   "warm_median_seconds": 1.1690513929352164e-05,
+   "warm_min_seconds": 1.0349031072109938e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (COUNT-001: condition bitmaps, FND-007 record)",
+   "first_seconds": 0.03910139296203852,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03910139296203852,
+    0.03891483799088746
+   ],
+   "warm_median_seconds": 0.03891483799088746,
+   "warm_min_seconds": 0.03891483799088746
+  },
+  {
+   "backend": "cpu",
+   "case": "observed counts + 16 smallest violating rows (COUNT-001)",
+   "first_seconds": 0.003837432013824582,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.003837432013824582,
+    0.0036260670167393982,
+    0.003766232985071838
+   ],
+   "warm_median_seconds": 0.003696150000905618,
+   "warm_min_seconds": 0.0036260670167393982
+  },
+  {
+   "backend": "cpu",
+   "case": "universe by enumeration of the 2^8 assignments (COUNT-001)",
+   "first_seconds": 0.00011015799827873707,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "run",
+   "result": {
+    "a": 44,
+    "b": null,
+    "backend": "cpu",
+    "constraint": "holds",
+    "device": "native CPU",
+    "points": 256,
+    "rows": null,
+    "satisfied": 92,
+    "unknown": 0,
+    "violated": 164,
+    "witness": 0
+   },
+   "samples_seconds": [
+    0.00011015799827873707,
+    7.90030462667346e-05,
+    7.158599328249693e-05
+   ],
+   "warm_median_seconds": 7.529451977461576e-05,
+   "warm_min_seconds": 7.158599328249693e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: compile the predicate (COUNT-002)",
+   "first_seconds": 8.022796828299761e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.022796828299761e-05,
+    5.791004514321685e-05,
+    7.180898683145642e-05
+   ],
+   "warm_median_seconds": 6.485951598733664e-05,
+   "warm_min_seconds": 5.791004514321685e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 6.523297633975744e-05,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.523297633975744e-05,
+    2.6777968741953373e-05,
+    2.3073982447385788e-05
+   ],
+   "warm_median_seconds": 2.492597559466958e-05,
+   "warm_min_seconds": 2.3073982447385788e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "symbolic: universe count (COUNT-002)",
+   "first_seconds": 0.0013511620345525444,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0013511620345525444,
+    0.0008439659723080695,
+    0.0009534779819659889
+   ],
+   "warm_median_seconds": 0.0008987219771370292,
+   "warm_min_seconds": 0.0008439659723080695
+  },
+  {
+   "backend": "cpu",
+   "case": "symbolic: 16 witnesses of the universe (COUNT-002)",
+   "diagram_nodes": 14,
+   "distinct_observed_assignments": 25,
+   "first_seconds": 2.152996603399515e-05,
+   "observed_false": 554263,
+   "observed_rows": 1000000,
+   "observed_true": 376488,
+   "observed_unknown": 69249,
+   "params": {
+    "predicate": "irregular",
+    "rows": 1000000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.152996603399515e-05,
+    1.3609998859465122e-05,
+    1.1269992683082819e-05
+   ],
+   "universe_assignments": 256,
+   "universe_false": 164,
+   "universe_true": 92,
+   "unobserved_assignments": 231,
+   "warm_median_seconds": 1.243999577127397e-05,
+   "warm_min_seconds": 1.1269992683082819e-05,
+   "witnesses": 16
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: compile",
+   "first_seconds": 2.57010105997324e-05,
+   "params": {
+    "k": 4,
+    "nodes": 20
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.57010105997324e-05,
+    1.0279996786266565e-05,
+    5.259003955870867e-06
+   ],
+   "warm_median_seconds": 7.769500371068716e-06,
+   "warm_min_seconds": 5.259003955870867e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: symbolic count",
+   "first_seconds": 0.00010873202700167894,
+   "params": {
+    "k": 4,
+    "nodes": 20
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010873202700167894,
+    3.04830027744174e-05,
+    2.440303796902299e-05
+   ],
+   "warm_median_seconds": 2.7443020371720195e-05,
+   "warm_min_seconds": 2.440303796902299e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: native brute force",
+   "first_seconds": 4.893704317510128e-05,
+   "params": {
+    "k": 4,
+    "nodes": 20
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.893704317510128e-05,
+    2.9144983272999525e-05,
+    5.6607997976243496e-05
+   ],
+   "warm_median_seconds": 4.287649062462151e-05,
+   "warm_min_seconds": 2.9144983272999525e-05
+  },
+  {
+   "backend": "python",
+   "case": "tiny formula: Python enumeration",
+   "diagram_nodes": 4,
+   "first_seconds": 1.1354975868016481e-05,
+   "params": {
+    "k": 4,
+    "nodes": 20
+   },
+   "phase": "run",
+   "result": 4,
+   "samples_seconds": [
+    1.1354975868016481e-05
+   ],
+   "true": 4,
+   "warm_median_seconds": 1.1354975868016481e-05,
+   "warm_min_seconds": 1.1354975868016481e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: compile",
+   "first_seconds": 1.549901207908988e-05,
+   "params": {
+    "k": 8,
+    "nodes": 40
+   },
+   "phase": "build",
+   "samples_seconds": [
+    1.549901207908988e-05,
+    1.2414006050676107e-05,
+    6.730027962476015e-06
+   ],
+   "warm_median_seconds": 9.572017006576061e-06,
+   "warm_min_seconds": 6.730027962476015e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: symbolic count",
+   "first_seconds": 3.459595609456301e-05,
+   "params": {
+    "k": 8,
+    "nodes": 40
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.459595609456301e-05,
+    2.4034001398831606e-05,
+    2.2145977709442377e-05
+   ],
+   "warm_median_seconds": 2.308998955413699e-05,
+   "warm_min_seconds": 2.2145977709442377e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: native brute force",
+   "first_seconds": 3.0498020350933075e-05,
+   "params": {
+    "k": 8,
+    "nodes": 40
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.0498020350933075e-05,
+    2.4976965505629778e-05,
+    2.2402964532375336e-05
+   ],
+   "warm_median_seconds": 2.3689965019002557e-05,
+   "warm_min_seconds": 2.2402964532375336e-05
+  },
+  {
+   "backend": "python",
+   "case": "tiny formula: Python enumeration",
+   "diagram_nodes": 9,
+   "first_seconds": 0.0002550310455262661,
+   "params": {
+    "k": 8,
+    "nodes": 40
+   },
+   "phase": "run",
+   "result": 128,
+   "samples_seconds": [
+    0.0002550310455262661
+   ],
+   "true": 128,
+   "warm_median_seconds": 0.0002550310455262661,
+   "warm_min_seconds": 0.0002550310455262661
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: compile",
+   "first_seconds": 3.296794602647424e-05,
+   "params": {
+    "k": 12,
+    "nodes": 60
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.296794602647424e-05,
+    1.3319018762558699e-05,
+    7.565016858279705e-06
+   ],
+   "warm_median_seconds": 1.0442017810419202e-05,
+   "warm_min_seconds": 7.565016858279705e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: symbolic count",
+   "first_seconds": 0.00013195298379287124,
+   "params": {
+    "k": 12,
+    "nodes": 60
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013195298379287124,
+    3.3652991987764835e-05,
+    0.00018024095334112644
+   ],
+   "warm_median_seconds": 0.00010694697266444564,
+   "warm_min_seconds": 3.3652991987764835e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "tiny formula: native brute force",
+   "diagram_nodes": 13,
+   "first_seconds": 0.00011170399375259876,
+   "params": {
+    "k": 12,
+    "nodes": 60
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011170399375259876,
+    3.717199433594942e-05,
+    3.0235969461500645e-05
+   ],
+   "true": 2432,
+   "warm_median_seconds": 3.370398189872503e-05,
+   "warm_min_seconds": 3.0235969461500645e-05
+  },
+  {
+   "apply_steps": 16,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 10,
+   "first_seconds": 2.6932975742965937e-05,
+   "params": {
+    "k": 8,
+    "n": 4,
+    "order": "interleaved"
+   },
+   "peak_nodes": 26,
+   "phase": "build",
+   "samples_seconds": [
+    2.6932975742965937e-05,
+    1.3129028957337141e-05
+   ],
+   "warm_median_seconds": 1.3129028957337141e-05,
+   "warm_min_seconds": 1.3129028957337141e-05,
+   "width": 1
+  },
+  {
+   "apply_steps": 37,
+   "backend": "cpu",
+   "case": "pairs family, natural order: compile",
+   "diagram_nodes": 32,
+   "first_seconds": 8.144008461385965e-06,
+   "params": {
+    "k": 8,
+    "n": 4,
+    "order": "natural"
+   },
+   "peak_nodes": 47,
+   "phase": "build",
+   "samples_seconds": [
+    8.144008461385965e-06
+   ],
+   "warm_median_seconds": 8.144008461385965e-06,
+   "warm_min_seconds": 8.144008461385965e-06,
+   "width": 8
+  },
+  {
+   "apply_steps": 64,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 18,
+   "first_seconds": 1.900095958262682e-05,
+   "params": {
+    "k": 16,
+    "n": 8,
+    "order": "interleaved"
+   },
+   "peak_nodes": 82,
+   "phase": "build",
+   "samples_seconds": [
+    1.900095958262682e-05,
+    1.2465985491871834e-05
+   ],
+   "warm_median_seconds": 1.2465985491871834e-05,
+   "warm_min_seconds": 1.2465985491871834e-05,
+   "width": 1
+  },
+  {
+   "apply_steps": 852,
+   "backend": "cpu",
+   "case": "pairs family, natural order: compile",
+   "diagram_nodes": 512,
+   "first_seconds": 5.8492994867265224e-05,
+   "params": {
+    "k": 16,
+    "n": 8,
+    "order": "natural"
+   },
+   "peak_nodes": 767,
+   "phase": "build",
+   "samples_seconds": [
+    5.8492994867265224e-05
+   ],
+   "warm_median_seconds": 5.8492994867265224e-05,
+   "warm_min_seconds": 5.8492994867265224e-05,
+   "width": 128
+  },
+  {
+   "apply_steps": 144,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 26,
+   "first_seconds": 1.8510036170482635e-05,
+   "params": {
+    "k": 24,
+    "n": 12,
+    "order": "interleaved"
+   },
+   "peak_nodes": 170,
+   "phase": "build",
+   "samples_seconds": [
+    1.8510036170482635e-05,
+    1.3047014363110065e-05
+   ],
+   "warm_median_seconds": 1.3047014363110065e-05,
+   "warm_min_seconds": 1.3047014363110065e-05,
+   "width": 1
+  },
+  {
+   "apply_steps": 14090,
+   "backend": "cpu",
+   "case": "pairs family, natural order: compile",
+   "diagram_nodes": 8192,
+   "first_seconds": 0.0010340340086258948,
+   "params": {
+    "k": 24,
+    "n": 12,
+    "order": "natural"
+   },
+   "peak_nodes": 12287,
+   "phase": "build",
+   "samples_seconds": [
+    0.0010340340086258948
+   ],
+   "warm_median_seconds": 0.0010340340086258948,
+   "warm_min_seconds": 0.0010340340086258948,
+   "width": 2048
+  },
+  {
+   "apply_steps": 196,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 30,
+   "first_seconds": 3.0094000976532698e-05,
+   "params": {
+    "k": 28,
+    "n": 14,
+    "order": "interleaved"
+   },
+   "peak_nodes": 226,
+   "phase": "build",
+   "samples_seconds": [
+    3.0094000976532698e-05,
+    1.5199999324977398e-05
+   ],
+   "warm_median_seconds": 1.5199999324977398e-05,
+   "warm_min_seconds": 1.5199999324977398e-05,
+   "width": 1
+  },
+  {
+   "apply_steps": 56268,
+   "backend": "cpu",
+   "case": "pairs family, natural order: compile",
+   "diagram_nodes": 32768,
+   "first_seconds": 0.003267385996878147,
+   "params": {
+    "k": 28,
+    "n": 14,
+    "order": "natural"
+   },
+   "peak_nodes": 49151,
+   "phase": "build",
+   "samples_seconds": [
+    0.003267385996878147
+   ],
+   "warm_median_seconds": 0.003267385996878147,
+   "warm_min_seconds": 0.003267385996878147,
+   "width": 8192
+  },
+  {
+   "apply_steps": 256,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 34,
+   "first_seconds": 3.327097510918975e-05,
+   "params": {
+    "k": 32,
+    "n": 16,
+    "order": "interleaved"
+   },
+   "peak_nodes": 290,
+   "phase": "build",
+   "samples_seconds": [
+    3.327097510918975e-05,
+    1.9490020349621773e-05
+   ],
+   "warm_median_seconds": 1.9490020349621773e-05,
+   "warm_min_seconds": 1.9490020349621773e-05,
+   "width": 1
+  },
+  {
+   "backend": "cpu",
+   "case": "pairs family, natural order past the node budget",
+   "limit": 65536,
+   "message": "decision diagram: needs 65537 circuit, budget 65536",
+   "need": 65537,
+   "params": {
+    "k": 32,
+    "n": 16,
+    "order": "natural"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.0022078879992477596,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "apply_steps": 400,
+   "backend": "cpu",
+   "case": "pairs family, interleaved order: compile",
+   "diagram_nodes": 42,
+   "first_seconds": 3.952102269977331e-05,
+   "params": {
+    "k": 40,
+    "n": 20,
+    "order": "interleaved"
+   },
+   "peak_nodes": 442,
+   "phase": "build",
+   "samples_seconds": [
+    3.952102269977331e-05,
+    2.2159016225486994e-05
+   ],
+   "warm_median_seconds": 2.2159016225486994e-05,
+   "warm_min_seconds": 2.2159016225486994e-05,
+   "width": 1
+  },
+  {
+   "backend": "cpu",
+   "case": "pairs family, natural order past the node budget",
+   "limit": 65536,
+   "message": "decision diagram: needs 65537 circuit, budget 65536",
+   "need": 65537,
+   "params": {
+    "k": 40,
+    "n": 20,
+    "order": "natural"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.002192771004047245,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "weighted count, 40 variables, rational weights",
+   "first_seconds": 0.00019295100355520844,
+   "params": {
+    "k": 40
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00019295100355520844,
+    0.000125585007481277,
+    0.00014186202315613627
+   ],
+   "warm_median_seconds": 0.00013372351531870663,
+   "warm_min_seconds": 0.000125585007481277
+  },
+  {
+   "backend": "cuda",
+   "case": "weighted count, 40 variables, rational weights",
+   "diagram_nodes": 42,
+   "first_seconds": 0.0025871960096992552,
+   "limbs": 2,
+   "params": {
+    "k": 40
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0025871960096992552,
+    0.001772357034496963,
+    0.0024470940115861595
+   ],
+   "warm_median_seconds": 0.0021097255230415612,
+   "warm_min_seconds": 0.001772357034496963
+  },
+  {
+   "apply_steps": 613,
+   "backend": "cpu",
+   "case": "random formula, natural order: compile",
+   "diagram_nodes": 81,
+   "first_seconds": 4.5321008656173944e-05,
+   "params": {
+    "k": 16,
+    "order": "natural"
+   },
+   "peak_nodes": 388,
+   "phase": "build",
+   "samples_seconds": [
+    4.5321008656173944e-05
+   ],
+   "true": 592,
+   "warm_median_seconds": 4.5321008656173944e-05,
+   "warm_min_seconds": 4.5321008656173944e-05
+  },
+  {
+   "apply_steps": 336,
+   "backend": "cpu",
+   "case": "random formula, dfs order: compile",
+   "diagram_nodes": 35,
+   "first_seconds": 2.8937996830791235e-05,
+   "params": {
+    "k": 16,
+    "order": "dfs"
+   },
+   "peak_nodes": 282,
+   "phase": "build",
+   "samples_seconds": [
+    2.8937996830791235e-05
+   ],
+   "true": 592,
+   "warm_median_seconds": 2.8937996830791235e-05,
+   "warm_min_seconds": 2.8937996830791235e-05
+  },
+  {
+   "apply_steps": 545,
+   "backend": "cpu",
+   "case": "random formula, random order: compile",
+   "diagram_nodes": 53,
+   "first_seconds": 3.851600922644138e-05,
+   "params": {
+    "k": 16,
+    "order": "random"
+   },
+   "peak_nodes": 360,
+   "phase": "build",
+   "samples_seconds": [
+    3.851600922644138e-05
+   ],
+   "true": 592,
+   "warm_median_seconds": 3.851600922644138e-05,
+   "warm_min_seconds": 3.851600922644138e-05
+  },
+  {
+   "apply_steps": 4027,
+   "backend": "cpu",
+   "case": "random formula, natural order: compile",
+   "diagram_nodes": 377,
+   "first_seconds": 0.00018329703016206622,
+   "params": {
+    "k": 24,
+    "order": "natural"
+   },
+   "peak_nodes": 3134,
+   "phase": "build",
+   "samples_seconds": [
+    0.00018329703016206622
+   ],
+   "true": 53184,
+   "warm_median_seconds": 0.00018329703016206622,
+   "warm_min_seconds": 0.00018329703016206622
+  },
+  {
+   "apply_steps": 2016,
+   "backend": "cpu",
+   "case": "random formula, dfs order: compile",
+   "diagram_nodes": 156,
+   "first_seconds": 9.680294897407293e-05,
+   "params": {
+    "k": 24,
+    "order": "dfs"
+   },
+   "peak_nodes": 1651,
+   "phase": "build",
+   "samples_seconds": [
+    9.680294897407293e-05
+   ],
+   "true": 53184,
+   "warm_median_seconds": 9.680294897407293e-05,
+   "warm_min_seconds": 9.680294897407293e-05
+  },
+  {
+   "apply_steps": 12105,
+   "backend": "cpu",
+   "case": "random formula, random order: compile",
+   "diagram_nodes": 665,
+   "first_seconds": 0.0005016840295866132,
+   "params": {
+    "k": 24,
+    "order": "random"
+   },
+   "peak_nodes": 6077,
+   "phase": "build",
+   "samples_seconds": [
+    0.0005016840295866132
+   ],
+   "true": 53184,
+   "warm_median_seconds": 0.0005016840295866132,
+   "warm_min_seconds": 0.0005016840295866132
+  },
+  {
+   "apply_steps": 164797,
+   "backend": "cpu",
+   "case": "random formula, natural order: compile",
+   "diagram_nodes": 97071,
+   "first_seconds": 0.009374609042424709,
+   "params": {
+    "k": 32,
+    "order": "natural"
+   },
+   "peak_nodes": 125564,
+   "phase": "build",
+   "samples_seconds": [
+    0.009374609042424709
+   ],
+   "true": 2953235220,
+   "warm_median_seconds": 0.009374609042424709,
+   "warm_min_seconds": 0.009374609042424709
+  },
+  {
+   "apply_steps": 27819,
+   "backend": "cpu",
+   "case": "random formula, dfs order: compile",
+   "diagram_nodes": 12988,
+   "first_seconds": 0.0015813249628990889,
+   "params": {
+    "k": 32,
+    "order": "dfs"
+   },
+   "peak_nodes": 20472,
+   "phase": "build",
+   "samples_seconds": [
+    0.0015813249628990889
+   ],
+   "true": 2953235220,
+   "warm_median_seconds": 0.0015813249628990889,
+   "warm_min_seconds": 0.0015813249628990889
+  },
+  {
+   "apply_steps": 147338,
+   "backend": "cpu",
+   "case": "random formula, random order: compile",
+   "diagram_nodes": 73059,
+   "first_seconds": 0.007769076037220657,
+   "params": {
+    "k": 32,
+    "order": "random"
+   },
+   "peak_nodes": 90399,
+   "phase": "build",
+   "samples_seconds": [
+    0.007769076037220657
+   ],
+   "true": 2953235220,
+   "warm_median_seconds": 0.007769076037220657,
+   "warm_min_seconds": 0.007769076037220657
+  },
+  {
+   "backend": "cpu",
+   "case": "grid elimination (min-fill)",
+   "first_seconds": 4.5527005568146706e-05,
+   "limbs": 1,
+   "params": {
+    "grid": "3x3",
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.5527005568146706e-05,
+    2.6684021577239037e-05
+   ],
+   "warm_median_seconds": 2.6684021577239037e-05,
+   "warm_min_seconds": 2.6684021577239037e-05,
+   "width_min_degree": 16,
+   "width_min_fill": 16,
+   "width_natural": 16,
+   "width_random_order": 32
+  },
+  {
+   "backend": "cpu",
+   "case": "grid brute force over 2^9 assignments",
+   "first_seconds": 4.166399594396353e-05,
+   "params": {
+    "grid": "3x3",
+    "variables": 9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.166399594396353e-05
+   ],
+   "warm_median_seconds": 4.166399594396353e-05,
+   "warm_min_seconds": 4.166399594396353e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "grid elimination (min-fill)",
+   "first_seconds": 4.000996705144644e-05,
+   "limbs": 2,
+   "params": {
+    "grid": "4x4",
+    "variables": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.000996705144644e-05,
+    3.0773982871323824e-05
+   ],
+   "warm_median_seconds": 3.0773982871323824e-05,
+   "warm_min_seconds": 3.0773982871323824e-05,
+   "width_min_degree": 32,
+   "width_min_fill": 32,
+   "width_natural": 32,
+   "width_random_order": 128
+  },
+  {
+   "backend": "cpu",
+   "case": "grid elimination (min-fill)",
+   "first_seconds": 0.00011429702863097191,
+   "limbs": 4,
+   "params": {
+    "grid": "6x6",
+    "variables": 36
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011429702863097191,
+    9.315804345533252e-05
+   ],
+   "warm_median_seconds": 9.315804345533252e-05,
+   "warm_min_seconds": 9.315804345533252e-05,
+   "width_min_degree": 128,
+   "width_min_fill": 128,
+   "width_natural": 128,
+   "width_random_order": 8192
+  },
+  {
+   "backend": "cpu",
+   "case": "grid elimination (min-fill)",
+   "first_seconds": 0.0007276000105775893,
+   "limbs": 7,
+   "params": {
+    "grid": "8x8",
+    "variables": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007276000105775893,
+    0.0005717549938708544
+   ],
+   "warm_median_seconds": 0.0005717549938708544,
+   "warm_min_seconds": 0.0005717549938708544,
+   "width_min_degree": 2048,
+   "width_min_fill": 2048,
+   "width_natural": 512,
+   "width_random_order": 1048576
+  },
+  {
+   "backend": "cpu",
+   "case": "grid elimination past the 2^12 tensor budget",
+   "limit": 4096,
+   "message": "variable elimination: needs 131072 tensor, budget 4096",
+   "need": 131072,
+   "params": {
+    "grid": "12x12",
+    "variables": 144,
+    "width_min_fill": 131072
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.00046322698472067714,
+   "refused": true,
+   "resource": "tensor"
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shannon expansion",
+   "evaluations": 16,
+   "exact_false": 65083,
+   "exact_true": 453,
+   "false_hi": 65536,
+   "false_lo": 8192,
+   "first_seconds": 9.445397881790996e-05,
+   "open_branches": 15,
+   "params": {
+    "k": 16,
+    "max_evaluations": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.445397881790996e-05
+   ],
+   "status": "incomplete",
+   "true_hi": 57344,
+   "true_lo": 0,
+   "warm_median_seconds": 9.445397881790996e-05,
+   "warm_min_seconds": 9.445397881790996e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shannon expansion",
+   "evaluations": 256,
+   "exact_false": 65083,
+   "exact_true": 453,
+   "false_hi": 65536,
+   "false_lo": 16384,
+   "first_seconds": 0.0003655669861473143,
+   "open_branches": 223,
+   "params": {
+    "k": 16,
+    "max_evaluations": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003655669861473143
+   ],
+   "status": "incomplete",
+   "true_hi": 49152,
+   "true_lo": 0,
+   "warm_median_seconds": 0.0003655669861473143,
+   "warm_min_seconds": 0.0003655669861473143
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shannon expansion",
+   "evaluations": 4096,
+   "exact_false": 65083,
+   "exact_true": 453,
+   "false_hi": 65496,
+   "false_lo": 61096,
+   "first_seconds": 0.004654588003177196,
+   "open_branches": 999,
+   "params": {
+    "k": 16,
+    "max_evaluations": 4096
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004654588003177196
+   ],
+   "status": "incomplete",
+   "true_hi": 4440,
+   "true_lo": 40,
+   "warm_median_seconds": 0.004654588003177196,
+   "warm_min_seconds": 0.004654588003177196
+  },
+  {
+   "backend": "cpu",
+   "case": "bounded Shannon expansion",
+   "evaluations": 7691,
+   "exact_false": 65083,
+   "exact_true": 453,
+   "false_hi": 65083,
+   "false_lo": 65083,
+   "first_seconds": 0.008410251000896096,
+   "open_branches": 0,
+   "params": {
+    "k": 16,
+    "max_evaluations": 131072
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008410251000896096
+   ],
+   "status": "exact",
+   "true_hi": 453,
+   "true_lo": 453,
+   "warm_median_seconds": 0.008410251000896096,
+   "warm_min_seconds": 0.008410251000896096
+  }
+ ],
+ "seconds": 0.8695243340334855,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "pairs family under the natural order, 2^16 diagram nodes",
+   "largest_admitted": {
+    "n": 14,
+    "nodes": 32768,
+    "peak_nodes": 49151
+   },
+   "limit": 65536,
+   "smallest_refused": {
+    "n": 16,
+    "nodes_needed_at_least": 65537
+   }
+  }
+ ]
+}

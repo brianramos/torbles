@@ -1,0 +1,3408 @@
+{
+ "argv": [
+  "--capability",
+  "COUNT-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/COUNT-001/benchmark_device_math_count_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "COUNT-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:14:34+00:00"
+ },
+ "notes": [
+  "structured 1000 rows: covered 1000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 900, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 1000 rows: covered 1000 rows; support 8 conditions, observed 83 of 256 assignments (unobserved, never checked: 173); violations on the snapshot [0, 420, 40, 451, 0, 423, 0, 509], over the universe [0, 128, 16, 128, 0, 128, 0, 128]",
+  "structured 100000 rows: covered 100000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 90000, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 100000 rows: covered 100000 rows; support 8 conditions, observed 84 of 256 assignments (unobserved, never checked: 172); violations on the snapshot [0, 11078, 14124, 0, 26392, 25171, 0, 40834], over the universe [0, 128, 32, 0, 96, 128, 0, 128]",
+  "structured 1000000 rows: covered 1000000 rows; support 6 conditions, observed 6 of 64 assignments (unobserved, never checked: 58); violations on the snapshot [0, 0, 0, 0, 900000, 0], over the universe [32, 32, 16, 16, 16, 16]",
+  "irregular 1000000 rows: covered 1000000 rows; support 8 conditions, observed 84 of 256 assignments (unobserved, never checked: 172); violations on the snapshot [360606, 404655, 293206, 100006, 0, 899994, 202399, 405140], over the universe [96, 64, 96, 128, 16, 128, 64, 128]",
+  "The observed snapshot covers exactly the selected rows (the FND-007 record keeps their bits); the assignment universe is a separate enumeration over 2^k points. Native CPU paths are single-threaded; the CUDA path (counts with atomics, chunked extraction) is timed only with --device."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 6.606703391298652e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    6.606703391298652e-05,
+    3.3885007724165916e-05,
+    2.5443965569138527e-05
+   ],
+   "warm_median_seconds": 2.966448664665222e-05,
+   "warm_min_seconds": 2.5443965569138527e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.07086345297284424,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.07086345297284424,
+    0.0007239379920065403,
+    0.0006728860316798091
+   ],
+   "warm_median_seconds": 0.0006984120118431747,
+   "warm_min_seconds": 0.0006728860316798091
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 3.6559009458869696e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.6559009458869696e-05,
+    1.8291000742465258e-05,
+    1.1255033314228058e-05,
+    8.846982382237911e-06,
+    7.850001566112041e-06
+   ],
+   "warm_median_seconds": 1.0051007848232985e-05,
+   "warm_min_seconds": 7.850001566112041e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 2.8592010494321585e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8592010494321585e-05,
+    2.581503940746188e-05,
+    1.045601675286889e-05
+   ],
+   "warm_median_seconds": 1.8135528080165386e-05,
+   "warm_min_seconds": 1.045601675286889e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0018874119850806892,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018874119850806892,
+    0.0014795479946769774,
+    0.001492402981966734,
+    0.0015598720056004822,
+    0.001264400954823941
+   ],
+   "warm_median_seconds": 0.0014859754883218557,
+   "warm_min_seconds": 0.001264400954823941
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.0016588649596087635,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016588649596087635,
+    0.001524386985693127,
+    0.001374331011902541
+   ],
+   "warm_median_seconds": 0.001449358998797834,
+   "warm_min_seconds": 0.001374331011902541
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.00010700500570237637,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010700500570237637,
+    3.8766011130064726e-05,
+    3.5208999179303646e-05
+   ],
+   "warm_median_seconds": 3.6987505154684186e-05,
+   "warm_min_seconds": 3.5208999179303646e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.005237479985225946,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005237479985225946,
+    0.004245919990353286,
+    0.004079040023498237
+   ],
+   "warm_median_seconds": 0.004162480006925762,
+   "warm_min_seconds": 0.004079040023498237
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.0005829689907841384,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005829689907841384,
+    0.0006351449992507696
+   ],
+   "warm_median_seconds": 0.0006351449992507696,
+   "warm_min_seconds": 0.0006351449992507696
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 9.703042451292276e-06,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.703042451292276e-06,
+    9.08499350771308e-06,
+    6.410002242773771e-06
+   ],
+   "warm_median_seconds": 7.747497875243425e-06,
+   "warm_min_seconds": 6.410002242773771e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 8.496601367369294e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.496601367369294e-05,
+    6.116199074313045e-05,
+    5.549797788262367e-05
+   ],
+   "warm_median_seconds": 5.832998431287706e-05,
+   "warm_min_seconds": 5.549797788262367e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.001201959967147559,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001201959967147559,
+    0.0007577569922432303,
+    0.0006848989869467914
+   ],
+   "warm_median_seconds": 0.0007213279895950109,
+   "warm_min_seconds": 0.0006848989869467914
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 2.5941990315914154e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.5941990315914154e-05,
+    1.5222001820802689e-05,
+    1.0820978786796331e-05,
+    9.75700095295906e-06,
+    9.337964002043009e-06
+   ],
+   "warm_median_seconds": 1.0288989869877696e-05,
+   "warm_min_seconds": 9.337964002043009e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 2.249301178380847e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.249301178380847e-05,
+    1.775100827217102e-05,
+    1.3299984857439995e-05
+   ],
+   "warm_median_seconds": 1.5525496564805508e-05,
+   "warm_min_seconds": 1.3299984857439995e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0016660559922456741,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016660559922456741,
+    0.0014347690157592297,
+    0.001481653016526252,
+    0.0015974099515005946,
+    0.0014687420334666967
+   ],
+   "warm_median_seconds": 0.0014751975249964744,
+   "warm_min_seconds": 0.0014347690157592297
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.0016466000233776867,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016466000233776867,
+    0.0018569580279290676,
+    0.001441447006072849
+   ],
+   "warm_median_seconds": 0.0016492025170009583,
+   "warm_min_seconds": 0.001441447006072849
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.00015970499953255057,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00015970499953255057,
+    9.044003672897816e-05,
+    8.03329749032855e-05
+   ],
+   "warm_median_seconds": 8.538650581613183e-05,
+   "warm_min_seconds": 8.03329749032855e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.007722363981883973,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007722363981883973,
+    0.007898758980445564,
+    0.006494264991488308
+   ],
+   "warm_median_seconds": 0.007196511985966936,
+   "warm_min_seconds": 0.006494264991488308
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.0006057299906387925,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006057299906387925,
+    0.0007531000301241875
+   ],
+   "warm_median_seconds": 0.0007531000301241875,
+   "warm_min_seconds": 0.0007531000301241875
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.1467025615274906e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 47,
+    "rows": 1000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1467025615274906e-05,
+    1.0607996955513954e-05,
+    8.011003956198692e-06
+   ],
+   "warm_median_seconds": 9.309500455856323e-06,
+   "warm_min_seconds": 8.011003956198692e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.0008433640468865633,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008433640468865633,
+    0.0007866800297051668,
+    0.0007816049619577825
+   ],
+   "warm_median_seconds": 0.0007841424958314747,
+   "warm_min_seconds": 0.0007816049619577825
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.0013248379691503942,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013248379691503942,
+    0.0009076179703697562,
+    0.0007837120210751891
+   ],
+   "warm_median_seconds": 0.0008456649957224727,
+   "warm_min_seconds": 0.0007837120210751891
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0002547060139477253,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002547060139477253,
+    0.0002469750470481813,
+    0.0002575370017439127,
+    0.00025958596961572766,
+    0.0002800629590637982
+   ],
+   "warm_median_seconds": 0.0002585614856798202,
+   "warm_min_seconds": 0.0002469750470481813
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.0016705559683032334,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016705559683032334,
+    0.00171481299912557,
+    0.0015365820145234466
+   ],
+   "warm_median_seconds": 0.0016256975068245083,
+   "warm_min_seconds": 0.0015365820145234466
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0023946379660628736,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023946379660628736,
+    0.001948706980329007,
+    0.0018494739779271185,
+    0.0018026719917543232,
+    0.0016720839776098728
+   ],
+   "warm_median_seconds": 0.001826072984840721,
+   "warm_min_seconds": 0.0016720839776098728
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.005512998963240534,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005512998963240534,
+    0.005319396033883095,
+    0.004231676983181387
+   ],
+   "warm_median_seconds": 0.004775536508532241,
+   "warm_min_seconds": 0.004231676983181387
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.0005803759559057653,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005803759559057653,
+    0.0005439769593067467,
+    0.0005148530472069979
+   ],
+   "warm_median_seconds": 0.0005294150032568723,
+   "warm_min_seconds": 0.0005148530472069979
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.009476614999584854,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009476614999584854,
+    0.008213749970309436,
+    0.00913330097682774
+   ],
+   "warm_median_seconds": 0.008673525473568588,
+   "warm_min_seconds": 0.008213749970309436
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.015663409023545682,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015663409023545682,
+    0.018897759960964322
+   ],
+   "warm_median_seconds": 0.018897759960964322,
+   "warm_min_seconds": 0.018897759960964322
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 9.532028343528509e-06,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 100000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.532028343528509e-06,
+    7.829978130757809e-06,
+    6.629037670791149e-06
+   ],
+   "warm_median_seconds": 7.229507900774479e-06,
+   "warm_min_seconds": 6.629037670791149e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.00424081104574725,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00424081104574725,
+    0.004234445048496127,
+    0.004355255980044603
+   ],
+   "warm_median_seconds": 0.004294850514270365,
+   "warm_min_seconds": 0.004234445048496127
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.0020566320163197815,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0020566320163197815,
+    0.001700200024060905,
+    0.0015973380068317056
+   ],
+   "warm_median_seconds": 0.0016487690154463053,
+   "warm_min_seconds": 0.0015973380068317056
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.000361550017260015,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000361550017260015,
+    0.0003417650004848838,
+    0.0003524839994497597,
+    0.00033729500137269497,
+    0.00033120904117822647
+   ],
+   "warm_median_seconds": 0.0003395300009287894,
+   "warm_min_seconds": 0.00033120904117822647
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.0020298620220273733,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020298620220273733,
+    0.0022947340039536357,
+    0.0013549799914471805
+   ],
+   "warm_median_seconds": 0.001824856997700408,
+   "warm_min_seconds": 0.0013549799914471805
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.002750291023403406,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002750291023403406,
+    0.0019792990060523152,
+    0.0019689470063894987,
+    0.0021926970221102238,
+    0.0025060540065169334
+   ],
+   "warm_median_seconds": 0.0020859980140812695,
+   "warm_min_seconds": 0.0019689470063894987
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.006319712032563984,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006319712032563984,
+    0.006811114028096199,
+    0.004803001007530838
+   ],
+   "warm_median_seconds": 0.005807057517813519,
+   "warm_min_seconds": 0.004803001007530838
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.0011887699947692454,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011887699947692454,
+    0.0010555860353633761,
+    0.0009934399859048426
+   ],
+   "warm_median_seconds": 0.0010245130106341094,
+   "warm_min_seconds": 0.0009934399859048426
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.026514459983445704,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.026514459983445704,
+    0.022313248016871512,
+    0.023405914020258933
+   ],
+   "warm_median_seconds": 0.022859581018565223,
+   "warm_min_seconds": 0.022313248016871512
+  },
+  {
+   "backend": "duckdb",
+   "case": "the satisfying rowids of one constraint",
+   "first_seconds": 0.01330483698984608,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01330483698984608,
+    0.018958065018523484
+   ],
+   "warm_median_seconds": 0.018958065018523484,
+   "warm_min_seconds": 0.018958065018523484
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.2029020581394434e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 45,
+    "rows": 100000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2029020581394434e-05,
+    1.0338029824197292e-05,
+    7.837021257728338e-06
+   ],
+   "warm_median_seconds": 9.087525540962815e-06,
+   "warm_min_seconds": 7.837021257728338e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.008197996008675545,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008197996008675545,
+    0.0079758670181036,
+    0.00781757099321112
+   ],
+   "warm_median_seconds": 0.00789671900565736,
+   "warm_min_seconds": 0.00781757099321112
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.0031689039897173643,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0031689039897173643,
+    0.0027330529992468655,
+    0.0023271359968930483
+   ],
+   "warm_median_seconds": 0.002530094498069957,
+   "warm_min_seconds": 0.0023271359968930483
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.002455940004438162,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002455940004438162,
+    0.002431514032650739,
+    0.002430313965305686,
+    0.002451677981298417,
+    0.0024371930048801005
+   ],
+   "warm_median_seconds": 0.0024343535187654197,
+   "warm_min_seconds": 0.002430313965305686
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.015700391959398985,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015700391959398985,
+    0.016355272033251822,
+    0.015521433029789478
+   ],
+   "warm_median_seconds": 0.01593835253152065,
+   "warm_min_seconds": 0.015521433029789478
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.004580181033816189,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004580181033816189,
+    0.004498180991504341,
+    0.004202575015369803,
+    0.004288771015126258,
+    0.00410487299086526
+   ],
+   "warm_median_seconds": 0.00424567301524803,
+   "warm_min_seconds": 0.00410487299086526
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.032704092969652265,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.032704092969652265,
+    0.03435708297183737,
+    0.0318544739857316
+   ],
+   "warm_median_seconds": 0.03310577847878449,
+   "warm_min_seconds": 0.0318544739857316
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.00608370394911617,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00608370394911617,
+    0.005573628994170576,
+    0.005892176006454974
+   ],
+   "warm_median_seconds": 0.005732902500312775,
+   "warm_min_seconds": 0.005573628994170576
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.013949232001323253,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013949232001323253,
+    0.010184206999838352,
+    0.011262928019277751
+   ],
+   "warm_median_seconds": 0.010723567509558052,
+   "warm_min_seconds": 0.010184206999838352
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.0424992069602013e-05,
+   "params": {
+    "conditions": 6,
+    "constraints": 6,
+    "nodes": 9,
+    "rows": 1000000,
+    "shape": "structured"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0424992069602013e-05,
+    7.800001185387373e-06,
+    6.0820020735263824e-06
+   ],
+   "warm_median_seconds": 6.941001629456878e-06,
+   "warm_min_seconds": 6.0820020735263824e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.045106583973392844,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.045106583973392844,
+    0.0446202649618499,
+    0.042085066030267626
+   ],
+   "warm_median_seconds": 0.04335266549605876,
+   "warm_min_seconds": 0.042085066030267626
+  },
+  {
+   "backend": "cuda",
+   "case": "observed domain (condition bitmaps and FND-007 record)",
+   "first_seconds": 0.010339686996303499,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010339686996303499,
+    0.010269813996274024,
+    0.009221525979228318
+   ],
+   "warm_median_seconds": 0.009745669987751171,
+   "warm_min_seconds": 0.009221525979228318
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0032411219435743988,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0032411219435743988,
+    0.0031295380322262645,
+    0.0032923939870670438,
+    0.0031478379969485104,
+    0.003101437003351748
+   ],
+   "warm_median_seconds": 0.0031386880145873874,
+   "warm_min_seconds": 0.003101437003351748
+  },
+  {
+   "backend": "cpu",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.016307598038110882,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016307598038110882,
+    0.01773953001247719,
+    0.016587924037594348
+   ],
+   "warm_median_seconds": 0.01716372702503577,
+   "warm_min_seconds": 0.016587924037594348
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and the 16 smallest violating rows",
+   "first_seconds": 0.0062740889843553305,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0062740889843553305,
+    0.006012792000547051,
+    0.005760029016528279,
+    0.0058753659832291305,
+    0.005521702056284994
+   ],
+   "warm_median_seconds": 0.0058176974998787045,
+   "warm_min_seconds": 0.005521702056284994
+  },
+  {
+   "backend": "cuda",
+   "case": "counts and every satisfying row",
+   "first_seconds": 0.03146977198775858,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03146977198775858,
+    0.031206728017423302,
+    0.03431250300491229
+   ],
+   "warm_median_seconds": 0.032759615511167794,
+   "warm_min_seconds": 0.031206728017423302
+  },
+  {
+   "backend": "numpy-kleene",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.02609386801486835,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02609386801486835,
+    0.014679635991342366,
+    0.014652256038971245
+   ],
+   "warm_median_seconds": 0.014665946015156806,
+   "warm_min_seconds": 0.014652256038971245
+  },
+  {
+   "backend": "duckdb",
+   "case": "counts and the first violating row",
+   "first_seconds": 0.04473462898749858,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04473462898749858,
+    0.039848440035711974,
+    0.04187155899126083
+   ],
+   "warm_median_seconds": 0.0408599995134864,
+   "warm_min_seconds": 0.039848440035711974
+  },
+  {
+   "backend": "cpu",
+   "case": "the same constraints over the 2^k assignment universe",
+   "first_seconds": 1.4027988072484732e-05,
+   "params": {
+    "conditions": 8,
+    "constraints": 8,
+    "nodes": 54,
+    "rows": 1000000,
+    "shape": "irregular"
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4027988072484732e-05,
+    1.8042977899312973e-05,
+    1.7039012163877487e-05
+   ],
+   "warm_median_seconds": 1.754099503159523e-05,
+   "warm_min_seconds": 1.7039012163877487e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.212599454447627e-05,
+   "params": {
+    "k": 2,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.212599454447627e-05,
+    7.777998689562082e-06,
+    3.369990736246109e-06
+   ],
+   "warm_median_seconds": 5.573994712904096e-06,
+   "warm_min_seconds": 3.369990736246109e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.15599923953414e-06,
+   "params": {
+    "k": 2,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.15599923953414e-06
+   ],
+   "warm_median_seconds": 8.15599923953414e-06,
+   "warm_min_seconds": 8.15599923953414e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 5.229027010500431e-06,
+   "params": {
+    "k": 2,
+    "nodes": 5,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.229027010500431e-06,
+    3.5199918784201145e-06,
+    2.771965228021145e-06
+   ],
+   "warm_median_seconds": 3.1459785532206297e-06,
+   "warm_min_seconds": 2.771965228021145e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 5.0910166464746e-06,
+   "params": {
+    "k": 2,
+    "nodes": 5,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.0910166464746e-06
+   ],
+   "warm_median_seconds": 5.0910166464746e-06,
+   "warm_min_seconds": 5.0910166464746e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.775996785610914e-06,
+   "params": {
+    "k": 2,
+    "nodes": 7,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.775996785610914e-06,
+    3.430002834647894e-06,
+    2.629996743053198e-06
+   ],
+   "warm_median_seconds": 3.029999788850546e-06,
+   "warm_min_seconds": 2.629996743053198e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 3.2879761420190334e-06,
+   "params": {
+    "k": 2,
+    "nodes": 7,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.2879761420190334e-06
+   ],
+   "warm_median_seconds": 3.2879761420190334e-06,
+   "warm_min_seconds": 3.2879761420190334e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.576053470373154e-06,
+   "params": {
+    "k": 4,
+    "nodes": 9,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.576053470373154e-06,
+    3.3469987101852894e-06,
+    2.8180074878036976e-06
+   ],
+   "warm_median_seconds": 3.0825030989944935e-06,
+   "warm_min_seconds": 2.8180074878036976e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 8.121016435325146e-06,
+   "params": {
+    "k": 4,
+    "nodes": 9,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.121016435325146e-06
+   ],
+   "warm_median_seconds": 8.121016435325146e-06,
+   "warm_min_seconds": 8.121016435325146e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.1450257413089275e-06,
+   "params": {
+    "k": 4,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.1450257413089275e-06,
+    3.070977982133627e-06,
+    2.7159694582223892e-06
+   ],
+   "warm_median_seconds": 2.893473720178008e-06,
+   "warm_min_seconds": 2.7159694582223892e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.255038220435381e-06,
+   "params": {
+    "k": 4,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.255038220435381e-06
+   ],
+   "warm_median_seconds": 4.255038220435381e-06,
+   "warm_min_seconds": 4.255038220435381e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.189030732959509e-06,
+   "params": {
+    "k": 4,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.189030732959509e-06,
+    2.8579961508512497e-06,
+    2.503977157175541e-06
+   ],
+   "warm_median_seconds": 2.6809866540133953e-06,
+   "warm_min_seconds": 2.503977157175541e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 2.0470470190048218e-06,
+   "params": {
+    "k": 4,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.0470470190048218e-06
+   ],
+   "warm_median_seconds": 2.0470470190048218e-06,
+   "warm_min_seconds": 2.0470470190048218e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.348985385149717e-06,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.348985385149717e-06,
+    2.9889633879065514e-06,
+    2.5929766707122326e-06
+   ],
+   "warm_median_seconds": 2.790970029309392e-06,
+   "warm_min_seconds": 2.5929766707122326e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.0329997166991234e-05,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0329997166991234e-05
+   ],
+   "warm_median_seconds": 1.0329997166991234e-05,
+   "warm_min_seconds": 1.0329997166991234e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 3.94799280911684e-06,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.94799280911684e-06,
+    3.268010914325714e-06,
+    2.795015461742878e-06
+   ],
+   "warm_median_seconds": 3.031513188034296e-06,
+   "warm_min_seconds": 2.795015461742878e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 1.0001996997743845e-05,
+   "params": {
+    "k": 6,
+    "nodes": 3,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0001996997743845e-05
+   ],
+   "warm_median_seconds": 1.0001996997743845e-05,
+   "warm_min_seconds": 1.0001996997743845e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.144967533648014e-06,
+   "params": {
+    "k": 6,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.144967533648014e-06,
+    3.123015630990267e-06,
+    2.701010089367628e-06
+   ],
+   "warm_median_seconds": 2.9120128601789474e-06,
+   "warm_min_seconds": 2.701010089367628e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 5.618960130959749e-06,
+   "params": {
+    "k": 6,
+    "nodes": 2,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.618960130959749e-06
+   ],
+   "warm_median_seconds": 5.618960130959749e-06,
+   "warm_min_seconds": 5.618960130959749e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.18099807575345e-06,
+   "params": {
+    "k": 8,
+    "nodes": 5,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.18099807575345e-06,
+    2.9900111258029938e-06,
+    2.638960722833872e-06
+   ],
+   "warm_median_seconds": 2.814485924318433e-06,
+   "warm_min_seconds": 2.638960722833872e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.5922002755105495e-05,
+   "params": {
+    "k": 8,
+    "nodes": 5,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.5922002755105495e-05
+   ],
+   "warm_median_seconds": 4.5922002755105495e-05,
+   "warm_min_seconds": 4.5922002755105495e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 3.92901711165905e-06,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.92901711165905e-06,
+    3.055029083043337e-06,
+    2.593034878373146e-06
+   ],
+   "warm_median_seconds": 2.8240319807082415e-06,
+   "warm_min_seconds": 2.593034878373146e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 3.6318961065262556e-05,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.6318961065262556e-05
+   ],
+   "warm_median_seconds": 3.6318961065262556e-05,
+   "warm_min_seconds": 3.6318961065262556e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 3.655033651739359e-06,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.655033651739359e-06,
+    2.9570073820650578e-06,
+    2.6529887691140175e-06
+   ],
+   "warm_median_seconds": 2.8049980755895376e-06,
+   "warm_min_seconds": 2.6529887691140175e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.4831016566604376e-05,
+   "params": {
+    "k": 8,
+    "nodes": 4,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.4831016566604376e-05
+   ],
+   "warm_median_seconds": 4.4831016566604376e-05,
+   "warm_min_seconds": 4.4831016566604376e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.0130107663571835e-06,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.0130107663571835e-06,
+    3.02301486954093e-06,
+    2.4479813873767853e-06
+   ],
+   "warm_median_seconds": 2.7354981284588575e-06,
+   "warm_min_seconds": 2.4479813873767853e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.0001182850101031363,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001182850101031363
+   ],
+   "warm_median_seconds": 0.0001182850101031363,
+   "warm_min_seconds": 0.0001182850101031363
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.711037036031485e-06,
+   "params": {
+    "k": 10,
+    "nodes": 10,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.711037036031485e-06,
+    3.497989382594824e-06,
+    2.972956281155348e-06
+   ],
+   "warm_median_seconds": 3.235472831875086e-06,
+   "warm_min_seconds": 2.972956281155348e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.0004320979933254421,
+   "params": {
+    "k": 10,
+    "nodes": 10,
+    "trial": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004320979933254421
+   ],
+   "warm_median_seconds": 0.0004320979933254421,
+   "warm_min_seconds": 0.0004320979933254421
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 4.474015440791845e-06,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.474015440791845e-06,
+    3.4669646993279457e-06,
+    2.7609639801084995e-06
+   ],
+   "warm_median_seconds": 3.1139643397182226e-06,
+   "warm_min_seconds": 2.7609639801084995e-06
+  },
+  {
+   "backend": "python-brute-force",
+   "case": "universe count by enumeration (tiny formula)",
+   "first_seconds": 0.00013795000268146396,
+   "params": {
+    "k": 10,
+    "nodes": 3,
+    "trial": 2
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013795000268146396
+   ],
+   "warm_median_seconds": 0.00013795000268146396,
+   "warm_min_seconds": 0.00013795000268146396
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.0673014912754297e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0673014912754297e-05,
+    7.434980943799019e-06,
+    6.115995347499847e-06
+   ],
+   "warm_median_seconds": 6.775488145649433e-06,
+   "warm_min_seconds": 6.115995347499847e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0023446750128641725,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0023446750128641725,
+    0.0015208639670163393,
+    0.0016912980354391038
+   ],
+   "warm_median_seconds": 0.0016060810012277216,
+   "warm_min_seconds": 0.0015208639670163393
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.0561023373156786e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0561023373156786e-05,
+    7.193011697381735e-06,
+    6.029964424669743e-06
+   ],
+   "warm_median_seconds": 6.611488061025739e-06,
+   "warm_min_seconds": 6.029964424669743e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0014983940054662526,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014983940054662526,
+    0.0016126560512930155,
+    0.0016851599793881178
+   ],
+   "warm_median_seconds": 0.0016489080153405666,
+   "warm_min_seconds": 0.0016126560512930155
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.2692005839198828e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2692005839198828e-05,
+    9.039998985826969e-06,
+    7.293012458831072e-06
+   ],
+   "warm_median_seconds": 8.16650572232902e-06,
+   "warm_min_seconds": 7.293012458831072e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.001489860995206982,
+   "params": {
+    "assignments": 4096,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 12,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001489860995206982,
+    0.0017221400048583746,
+    0.0014470369787886739
+   ],
+   "warm_median_seconds": 0.0015845884918235242,
+   "warm_min_seconds": 0.0014470369787886739
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.4823977835476398e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4823977835476398e-05,
+    1.1217955034226179e-05,
+    9.360024705529213e-06
+   ],
+   "warm_median_seconds": 1.0288989869877696e-05,
+   "warm_min_seconds": 9.360024705529213e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0019527780241332948,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019527780241332948,
+    0.0017970339977182448,
+    0.0013826939975842834
+   ],
+   "warm_median_seconds": 0.001589863997651264,
+   "warm_min_seconds": 0.0013826939975842834
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.487100962549448e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.487100962549448e-05,
+    1.131498720496893e-05,
+    9.96195012703538e-06
+   ],
+   "warm_median_seconds": 1.0638468666002154e-05,
+   "warm_min_seconds": 9.96195012703538e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0014981399872340262,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014981399872340262,
+    0.0014159500133246183,
+    0.00160162802785635
+   ],
+   "warm_median_seconds": 0.0015087890205904841,
+   "warm_min_seconds": 0.0014159500133246183
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 1.466000685468316e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.466000685468316e-05,
+    1.1019001249223948e-05,
+    9.284005500376225e-06
+   ],
+   "warm_median_seconds": 1.0151503374800086e-05,
+   "warm_min_seconds": 9.284005500376225e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0017545099835842848,
+   "params": {
+    "assignments": 4096,
+    "cones": 155,
+    "evaluated": 53,
+    "k": 12,
+    "nodes": 53,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017545099835842848,
+    0.001776452991180122,
+    0.001606677018571645
+   ],
+   "warm_median_seconds": 0.0016915650048758835,
+   "warm_min_seconds": 0.001606677018571645
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 3.711995668709278e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.711995668709278e-05,
+    2.976600080728531e-05,
+    2.6932975742965937e-05
+   ],
+   "warm_median_seconds": 2.8349488275125623e-05,
+   "warm_min_seconds": 2.6932975742965937e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0017845400143414736,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017845400143414736,
+    0.0018204369698651135,
+    0.0018850030028261244
+   ],
+   "warm_median_seconds": 0.001852719986345619,
+   "warm_min_seconds": 0.0018204369698651135
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 3.26730078086257e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.26730078086257e-05,
+    2.6896013878285885e-05,
+    2.4509034119546413e-05
+   ],
+   "warm_median_seconds": 2.570252399891615e-05,
+   "warm_min_seconds": 2.4509034119546413e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0017618449637666345,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017618449637666345,
+    0.0018342140247114003,
+    0.0019966120016761124
+   ],
+   "warm_median_seconds": 0.0019154130131937563,
+   "warm_min_seconds": 0.0018342140247114003
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 2.9056041967123747e-05,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9056041967123747e-05,
+    2.481701085343957e-05,
+    2.2851978428661823e-05
+   ],
+   "warm_median_seconds": 2.3834494641050696e-05,
+   "warm_min_seconds": 2.2851978428661823e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.001934478001203388,
+   "params": {
+    "assignments": 4096,
+    "cones": 422,
+    "evaluated": 142,
+    "k": 12,
+    "nodes": 142,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001934478001203388,
+    0.001859532028902322,
+    0.0018311010207980871
+   ],
+   "warm_median_seconds": 0.0018453165248502046,
+   "warm_min_seconds": 0.0018311010207980871
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00013425399083644152,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013425399083644152,
+    0.00012977799633517861,
+    0.00011163402814418077
+   ],
+   "warm_median_seconds": 0.0001207060122396797,
+   "warm_min_seconds": 0.00011163402814418077
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00390401401091367,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00390401401091367,
+    0.003262715006712824,
+    0.0032165279844775796
+   ],
+   "warm_median_seconds": 0.003239621495595202,
+   "warm_min_seconds": 0.0032165279844775796
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0001346549834124744,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001346549834124744,
+    0.00012455496471375227,
+    0.00010627199662849307
+   ],
+   "warm_median_seconds": 0.00011541348067112267,
+   "warm_min_seconds": 0.00010627199662849307
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.003335472021717578,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003335472021717578,
+    0.003843541955575347,
+    0.0034625909756869078
+   ],
+   "warm_median_seconds": 0.0036530664656311274,
+   "warm_min_seconds": 0.0034625909756869078
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00013235700316727161,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013235700316727161,
+    0.00011622003512457013,
+    0.00010750000365078449
+   ],
+   "warm_median_seconds": 0.00011186001938767731,
+   "warm_min_seconds": 0.00010750000365078449
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.003772901021875441,
+   "params": {
+    "assignments": 4096,
+    "cones": 1382,
+    "evaluated": 462,
+    "k": 12,
+    "nodes": 462,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003772901021875441,
+    0.0036724780220538378,
+    0.003976401989348233
+   ],
+   "warm_median_seconds": 0.0038244400057010353,
+   "warm_min_seconds": 0.0036724780220538378
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 4.945899127051234e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.945899127051234e-05,
+    4.349596565589309e-05,
+    4.227797035127878e-05
+   ],
+   "warm_median_seconds": 4.2886968003585935e-05,
+   "warm_min_seconds": 4.227797035127878e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002073782030493021,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002073782030493021,
+    0.0020879440126009285,
+    0.0018669060082174838
+   ],
+   "warm_median_seconds": 0.001977425010409206,
+   "warm_min_seconds": 0.0018669060082174838
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 9.6399977337569e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.6399977337569e-05,
+    7.304595783352852e-05,
+    8.84140026755631e-05
+   ],
+   "warm_median_seconds": 8.072998025454581e-05,
+   "warm_min_seconds": 7.304595783352852e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0020343000069260597,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020343000069260597,
+    0.001973631966393441,
+    0.0020336599554866552
+   ],
+   "warm_median_seconds": 0.002003645960940048,
+   "warm_min_seconds": 0.001973631966393441
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 5.000201053917408e-05,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.000201053917408e-05,
+    4.671397618949413e-05,
+    4.525698022916913e-05
+   ],
+   "warm_median_seconds": 4.598547820933163e-05,
+   "warm_min_seconds": 4.525698022916913e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.001955126994289458,
+   "params": {
+    "assignments": 65536,
+    "cones": 74,
+    "evaluated": 26,
+    "k": 16,
+    "nodes": 26,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001955126994289458,
+    0.001753217016812414,
+    0.0019995879847556353
+   ],
+   "warm_median_seconds": 0.0018764025007840246,
+   "warm_min_seconds": 0.001753217016812414
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00010833103442564607,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010833103442564607,
+    9.891600348055363e-05,
+    9.747600415721536e-05
+   ],
+   "warm_median_seconds": 9.819600381888449e-05,
+   "warm_min_seconds": 9.747600415721536e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002326786983758211,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002326786983758211,
+    0.0025029079988598824,
+    0.002017129969317466
+   ],
+   "warm_median_seconds": 0.002260018984088674,
+   "warm_min_seconds": 0.002017129969317466
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0001028460101224482,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001028460101224482,
+    9.943201439455152e-05,
+    0.00010541197843849659
+   ],
+   "warm_median_seconds": 0.00010242199641652405,
+   "warm_min_seconds": 9.943201439455152e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002107381005771458,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002107381005771458,
+    0.0023616600083187222,
+    0.001670486992225051
+   ],
+   "warm_median_seconds": 0.0020160735002718866,
+   "warm_min_seconds": 0.001670486992225051
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00010827602818608284,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010827602818608284,
+    0.00010519596980884671,
+    0.0001017559552565217
+   ],
+   "warm_median_seconds": 0.00010347596253268421,
+   "warm_min_seconds": 0.0001017559552565217
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0018853479996323586,
+   "params": {
+    "assignments": 65536,
+    "cones": 176,
+    "evaluated": 60,
+    "k": 16,
+    "nodes": 60,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018853479996323586,
+    0.001909074024297297,
+    0.00188625103328377
+   ],
+   "warm_median_seconds": 0.0018976625287905335,
+   "warm_min_seconds": 0.00188625103328377
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00019669794710353017,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019669794710353017,
+    0.00018977501895278692,
+    0.00018695503240451217
+   ],
+   "warm_median_seconds": 0.00018836502567864954,
+   "warm_min_seconds": 0.00018695503240451217
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002345703018363565,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002345703018363565,
+    0.0023008289863355458,
+    0.0023315029684454203
+   ],
+   "warm_median_seconds": 0.002316165977390483,
+   "warm_min_seconds": 0.0023008289863355458
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00019532401347532868,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019532401347532868,
+    0.00018986500799655914,
+    0.00018733501201495528
+   ],
+   "warm_median_seconds": 0.0001886000100057572,
+   "warm_min_seconds": 0.00018733501201495528
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002247010008431971,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002247010008431971,
+    0.0024083449970930815,
+    0.002448470040690154
+   ],
+   "warm_median_seconds": 0.0024284075188916177,
+   "warm_min_seconds": 0.0024083449970930815
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0002342240186408162,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002342240186408162,
+    0.00019141699885949492,
+    0.0001867719693109393
+   ],
+   "warm_median_seconds": 0.00018909448408521712,
+   "warm_min_seconds": 0.0001867719693109393
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0025120960199274123,
+   "params": {
+    "assignments": 65536,
+    "cones": 335,
+    "evaluated": 113,
+    "k": 16,
+    "nodes": 113,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025120960199274123,
+    0.0024287310079671443,
+    0.00208731199381873
+   ],
+   "warm_median_seconds": 0.002258021500892937,
+   "warm_min_seconds": 0.00208731199381873
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.000676723022479564,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000676723022479564,
+    0.000797974003944546,
+    0.0007145219715312123
+   ],
+   "warm_median_seconds": 0.0007562479877378792,
+   "warm_min_seconds": 0.0007145219715312123
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.004952315997797996,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004952315997797996,
+    0.0049454200197942555,
+    0.0049964229692704976
+   ],
+   "warm_median_seconds": 0.0049709214945323765,
+   "warm_min_seconds": 0.0049454200197942555
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0006625690148212016,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006625690148212016,
+    0.0006809179903939366,
+    0.0006501050083898008
+   ],
+   "warm_median_seconds": 0.0006655114993918687,
+   "warm_min_seconds": 0.0006501050083898008
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.004858466039877385,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004858466039877385,
+    0.005248157016467303,
+    0.0051748830010183156
+   ],
+   "warm_median_seconds": 0.005211520008742809,
+   "warm_min_seconds": 0.0051748830010183156
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0006744840065948665,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006744840065948665,
+    0.0006901149754412472,
+    0.0006622090004384518
+   ],
+   "warm_median_seconds": 0.0006761619879398495,
+   "warm_min_seconds": 0.0006622090004384518
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.005263972037937492,
+   "params": {
+    "assignments": 65536,
+    "cones": 1127,
+    "evaluated": 377,
+    "k": 16,
+    "nodes": 377,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005263972037937492,
+    0.004893495002761483,
+    0.004840873007196933
+   ],
+   "warm_median_seconds": 0.004867184004979208,
+   "warm_min_seconds": 0.004840873007196933
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0007644870202057064,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007644870202057064,
+    0.0007592930342070758,
+    0.0007474099984392524
+   ],
+   "warm_median_seconds": 0.0007533515163231641,
+   "warm_min_seconds": 0.0007474099984392524
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002121975994668901,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "natural",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002121975994668901,
+    0.002194679982494563,
+    0.00213119899854064
+   ],
+   "warm_median_seconds": 0.0021629394905176014,
+   "warm_min_seconds": 0.00213119899854064
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0007372840191237628,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007372840191237628,
+    0.0007307149935513735,
+    0.0007808429654687643
+   ],
+   "warm_median_seconds": 0.0007557789795100689,
+   "warm_min_seconds": 0.0007307149935513735
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0026202519657090306,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "reversed",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026202519657090306,
+    0.0020617300178855658,
+    0.002153382054530084
+   ],
+   "warm_median_seconds": 0.002107556036207825,
+   "warm_min_seconds": 0.0020617300178855658
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0007806170033290982,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007806170033290982,
+    0.0007443490321747959,
+    0.0007650770130567253
+   ],
+   "warm_median_seconds": 0.0007547130226157606,
+   "warm_min_seconds": 0.0007443490321747959
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.002361349994316697,
+   "params": {
+    "assignments": 1048576,
+    "cones": 89,
+    "evaluated": 31,
+    "k": 20,
+    "nodes": 31,
+    "order": "shuffled",
+    "width": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002361349994316697,
+    0.0021075939876027405,
+    0.002202085976023227
+   ],
+   "warm_median_seconds": 0.0021548399818129838,
+   "warm_min_seconds": 0.0021075939876027405
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0016297559486702085,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016297559486702085,
+    0.0016128629795275629,
+    0.0016135320183821023
+   ],
+   "warm_median_seconds": 0.0016131974989548326,
+   "warm_min_seconds": 0.0016128629795275629
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.003041208954527974,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "natural",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003041208954527974,
+    0.0030508750351145864,
+    0.002969135995954275
+   ],
+   "warm_median_seconds": 0.0030100055155344307,
+   "warm_min_seconds": 0.002969135995954275
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.001633579027839005,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001633579027839005,
+    0.0016260529519058764,
+    0.0016356869600713253
+   ],
+   "warm_median_seconds": 0.0016308699559886009,
+   "warm_min_seconds": 0.0016260529519058764
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0031472319969907403,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "reversed",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0031472319969907403,
+    0.002909801958594471,
+    0.0028707500314339995
+   ],
+   "warm_median_seconds": 0.0028902759950142354,
+   "warm_min_seconds": 0.0028707500314339995
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0016137109487317502,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016137109487317502,
+    0.0015947530046105385,
+    0.0015894639655016363
+   ],
+   "warm_median_seconds": 0.0015921084850560874,
+   "warm_min_seconds": 0.0015894639655016363
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0027439380064606667,
+   "params": {
+    "assignments": 1048576,
+    "cones": 179,
+    "evaluated": 61,
+    "k": 20,
+    "nodes": 61,
+    "order": "shuffled",
+    "width": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0027439380064606667,
+    0.0025006020441651344,
+    0.0026120839756913483
+   ],
+   "warm_median_seconds": 0.0025563430099282414,
+   "warm_min_seconds": 0.0025006020441651344
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.003747440001461655,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003747440001461655,
+    0.003776240977458656,
+    0.0037330129998736084
+   ],
+   "warm_median_seconds": 0.003754626988666132,
+   "warm_min_seconds": 0.0037330129998736084
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0066152350045740604,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "natural",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0066152350045740604,
+    0.008801065036095679,
+    0.00483889295719564
+   ],
+   "warm_median_seconds": 0.006819978996645659,
+   "warm_min_seconds": 0.00483889295719564
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0038200150011107326,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0038200150011107326,
+    0.003815484989900142,
+    0.003715815953910351
+   ],
+   "warm_median_seconds": 0.0037656504719052464,
+   "warm_min_seconds": 0.003715815953910351
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.00546746194595471,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "reversed",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00546746194595471,
+    0.005595936032477766,
+    0.005252022005151957
+   ],
+   "warm_median_seconds": 0.005423979018814862,
+   "warm_min_seconds": 0.005252022005151957
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.003773518023081124,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003773518023081124,
+    0.003965211973991245,
+    0.0037995559978298843
+   ],
+   "warm_median_seconds": 0.0038823839859105647,
+   "warm_min_seconds": 0.0037995559978298843
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.0059094460448250175,
+   "params": {
+    "assignments": 1048576,
+    "cones": 452,
+    "evaluated": 152,
+    "k": 20,
+    "nodes": 152,
+    "order": "shuffled",
+    "width": 256
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0059094460448250175,
+    0.00507553800707683,
+    0.005176048027351499
+   ],
+   "warm_median_seconds": 0.005125793017214164,
+   "warm_min_seconds": 0.00507553800707683
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.011384156998246908,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011384156998246908,
+    0.011480974033474922,
+    0.011473119026049972
+   ],
+   "warm_median_seconds": 0.011477046529762447,
+   "warm_min_seconds": 0.011473119026049972
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.012661646993365139,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "natural",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012661646993365139,
+    0.00875298900064081,
+    0.008711025002412498
+   ],
+   "warm_median_seconds": 0.008732007001526654,
+   "warm_min_seconds": 0.008711025002412498
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.010805686993990093,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.010805686993990093,
+    0.010941107990220189,
+    0.01093342702370137
+   ],
+   "warm_median_seconds": 0.01093726750696078,
+   "warm_min_seconds": 0.01093342702370137
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.009082837961614132,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "reversed",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009082837961614132,
+    0.008883061993401498,
+    0.008785511017777026
+   ],
+   "warm_median_seconds": 0.008834286505589262,
+   "warm_min_seconds": 0.008785511017777026
+  },
+  {
+   "backend": "cpu",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.011395838984753937,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011395838984753937,
+    0.01138411700958386,
+    0.011380110983736813
+   ],
+   "warm_median_seconds": 0.011382113996660337,
+   "warm_min_seconds": 0.011380110983736813
+  },
+  {
+   "backend": "cuda",
+   "case": "universe count by enumeration (bounded circuit)",
+   "first_seconds": 0.008921459026169032,
+   "params": {
+    "assignments": 1048576,
+    "cones": 1217,
+    "evaluated": 407,
+    "k": 20,
+    "nodes": 407,
+    "order": "shuffled",
+    "width": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008921459026169032,
+    0.00853340100729838,
+    0.008357827959116548
+   ],
+   "warm_median_seconds": 0.008445614483207464,
+   "warm_min_seconds": 0.008357827959116548
+  },
+  {
+   "backend": "cpu",
+   "case": "universe of 21 conditions (default support 2^20)",
+   "limit": 1048576,
+   "message": "assignment universe: needs 2097152 support, budget 1048576",
+   "need": 2097152,
+   "params": {
+    "k": 21
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.763303928077221e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "constraint set one node past its circuit budget",
+   "limit": 56,
+   "message": "constraint set: needs 57 circuit, budget 56",
+   "need": 57,
+   "params": {
+    "nodes": 57
+   },
+   "phase": "refusal",
+   "refusal_seconds": 6.516202120110393e-05,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "every satisfying row within the output budget",
+   "first_seconds": 4.3392996303737164e-05,
+   "params": {
+    "output": 25522
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.3392996303737164e-05
+   ],
+   "warm_median_seconds": 4.3392996303737164e-05,
+   "warm_min_seconds": 4.3392996303737164e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "every satisfying row one past the output budget",
+   "limit": 25521,
+   "message": "constraint counts: needs 25522 output, budget 25521",
+   "need": 25522,
+   "params": {
+    "output": 25521
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.684098970144987e-05,
+   "refused": true,
+   "resource": "output"
+  }
+ ],
+ "seconds": 2.8526797619997524,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "assignment universe (support 2^20)",
+   "largest_admitted": {
+    "k": 20
+   },
+   "smallest_refused": {
+    "k": 21
+   }
+  },
+  {
+   "grid": "constraint set nodes (circuit budget)",
+   "largest_admitted": {
+    "budget": 57,
+    "nodes": 57
+   },
+   "smallest_refused": {
+    "budget": 56,
+    "nodes": 57
+   }
+  },
+  {
+   "grid": "satisfying rows returned (output budget)",
+   "largest_admitted": {
+    "output": 25522
+   },
+   "smallest_refused": {
+    "output": 25521
+   }
+  }
+ ]
+}

@@ -1,0 +1,7538 @@
+{
+ "argv": [
+  "--capability",
+  "MULTI-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/MULTI-001/benchmark_device_math_multi_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "MULTI-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:13:25+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_multi.c (and the FND-004 bank for the finest level, single-threaded), cuda = math_multi_gpu.cu certification / contrasts and math_bank_gpu.cu for the finest bank (device runs only; the hierarchy's rollups and localized updates are CPU code), reconstruction = the FND-004 bank built directly on every level's scope from the rows, duckdb = GROUP BY per level with COUNT and SUM in HUGEINT (DuckDB's own threads), python-fractions = the oracle of the contrasts.",
+  "Scopes, certification, the finest bank and the rollups are timed apart; a request returns an independent copy of a level's bank, so its cost grows with groups x terms, not with rows. Rollup work is counted in cells (groups x (terms + 1)) visited.",
+  "Localized changes: the local update visits the dirty children and the touched parents; with every leaf changed (and on skewed levels where the dirty children are most of a level) it falls back to a full rollup (strategy 'rollup'), and the gain over the reconstruction is then only the rows not rescanned. The DELTA-001 path rescans no rows but deletes and inserts every changed row, which costs more than a rebuild when all leaves change."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.014195861003827304,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014195861003827304
+   ],
+   "warm_median_seconds": 0.014195861003827304,
+   "warm_min_seconds": 0.014195861003827304
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.002227357996162027,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002227357996162027,
+    0.001972902042325586
+   ],
+   "warm_median_seconds": 0.001972902042325586,
+   "warm_min_seconds": 0.001972902042325586
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006261763977818191,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006261763977818191,
+    0.006172206019982696
+   ],
+   "warm_median_seconds": 0.006172206019982696,
+   "warm_min_seconds": 0.006172206019982696
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.0725352699519135,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0725352699519135,
+    0.003122022026218474
+   ],
+   "warm_median_seconds": 0.003122022026218474,
+   "warm_min_seconds": 0.003122022026218474
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.003272656991612166,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003272656991612166,
+    0.0031322669819928706
+   ],
+   "warm_median_seconds": 0.0031322669819928706,
+   "warm_min_seconds": 0.0031322669819928706
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0008590230136178434,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008590230136178434,
+    0.0019806920317932963,
+    0.0007025409722700715
+   ],
+   "warm_median_seconds": 0.001341616502031684,
+   "warm_min_seconds": 0.0007025409722700715
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2065036,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    380
+   ],
+   "level_cells": [
+    0,
+    56
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    1
+   ],
+   "rollup_cells": 56
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 5.776301259174943e-05,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    5.776301259174943e-05,
+    1.724000321701169e-05,
+    1.2155971489846706e-05,
+    1.0346993803977966e-05,
+    1.0503979865461588e-05,
+    9.542971383780241e-06,
+    9.47597436606884e-06,
+    9.725976269692183e-06,
+    1.1034018825739622e-05,
+    9.967014193534851e-06
+   ],
+   "warm_median_seconds": 1.0346993803977966e-05,
+   "warm_min_seconds": 9.47597436606884e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.228495966643095e-05,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.228495966643095e-05,
+    1.0632036719471216e-05,
+    9.70897963270545e-06,
+    9.056995622813702e-06,
+    8.821021765470505e-06,
+    8.58004204928875e-06,
+    8.189992513507605e-06,
+    8.38498817756772e-06,
+    8.34400998428464e-06,
+    8.306000381708145e-06
+   ],
+   "warm_median_seconds": 8.58004204928875e-06,
+   "warm_min_seconds": 8.189992513507605e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 0.0006443209713324904,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    0.0006443209713324904,
+    3.3612013794481754e-05,
+    1.837196759879589e-05,
+    1.637800596654415e-05,
+    1.4099990949034691e-05,
+    1.3029028195887804e-05,
+    1.2142001651227474e-05,
+    1.2186996173113585e-05,
+    1.2842006981372833e-05,
+    1.1553987860679626e-05
+   ],
+   "warm_median_seconds": 1.3029028195887804e-05,
+   "warm_min_seconds": 1.1553987860679626e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.01254108501598239,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01254108501598239,
+    0.012337348947767168
+   ],
+   "warm_median_seconds": 0.012337348947767168,
+   "warm_min_seconds": 0.012337348947767168
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.012724398984573781,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012724398984573781
+   ],
+   "warm_median_seconds": 0.012724398984573781,
+   "warm_min_seconds": 0.012724398984573781
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.0019700260017998517,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0019700260017998517,
+    0.001929106016177684
+   ],
+   "warm_median_seconds": 0.001929106016177684,
+   "warm_min_seconds": 0.001929106016177684
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.007153650978580117,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007153650978580117,
+    0.006623534020036459
+   ],
+   "warm_median_seconds": 0.006623534020036459,
+   "warm_min_seconds": 0.006623534020036459
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.00226395798381418,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00226395798381418,
+    0.0030081329750828445
+   ],
+   "warm_median_seconds": 0.0030081329750828445,
+   "warm_min_seconds": 0.0030081329750828445
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0033642739872448146,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0033642739872448146,
+    0.00302886898862198
+   ],
+   "warm_median_seconds": 0.00302886898862198,
+   "warm_min_seconds": 0.00302886898862198
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0009295929921790957,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009295929921790957,
+    0.000717335962690413,
+    0.0005873520276509225
+   ],
+   "warm_median_seconds": 0.0006523439951706678,
+   "warm_min_seconds": 0.0005873520276509225
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2065036,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    380
+   ],
+   "level_cells": [
+    0,
+    56
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    1
+   ],
+   "rollup_cells": 56
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 4.1696999687701464e-05,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.1696999687701464e-05,
+    1.2226984836161137e-05,
+    9.844021406024694e-06,
+    9.241048246622086e-06,
+    8.502043783664703e-06,
+    9.324983693659306e-06,
+    9.535986464470625e-06,
+    8.764967788010836e-06,
+    8.36601248010993e-06,
+    8.698028977960348e-06
+   ],
+   "warm_median_seconds": 9.241048246622086e-06,
+   "warm_min_seconds": 8.36601248010993e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0328018106520176e-05,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0328018106520176e-05,
+    9.315030183643103e-06,
+    8.750008419156075e-06,
+    1.0540999937802553e-05,
+    8.454022463411093e-06,
+    8.334987796843052e-06,
+    8.64500179886818e-06,
+    8.390983566641808e-06,
+    8.208968210965395e-06,
+    8.24598828330636e-06
+   ],
+   "warm_median_seconds": 8.454022463411093e-06,
+   "warm_min_seconds": 8.208968210965395e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.480102168396115e-05,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.480102168396115e-05,
+    1.839397009462118e-05,
+    1.4279969036579132e-05,
+    1.3092008884996176e-05,
+    1.2157019227743149e-05,
+    1.2864999007433653e-05,
+    1.1724012438207865e-05,
+    1.1158990673720837e-05,
+    1.2646021787077188e-05,
+    1.1890020687133074e-05
+   ],
+   "warm_median_seconds": 1.2646021787077188e-05,
+   "warm_min_seconds": 1.1158990673720837e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.012173672032076865,
+   "params": {
+    "groups": 8,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012173672032076865,
+    0.012578336987644434
+   ],
+   "warm_median_seconds": 0.012578336987644434,
+   "warm_min_seconds": 0.012578336987644434
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.011384262004867196,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011384262004867196
+   ],
+   "warm_median_seconds": 0.011384262004867196,
+   "warm_min_seconds": 0.011384262004867196
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.0009637780021876097,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009637780021876097,
+    0.0016202020342461765
+   ],
+   "warm_median_seconds": 0.0016202020342461765,
+   "warm_min_seconds": 0.0016202020342461765
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006525861972477287,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006525861972477287,
+    0.006346754031255841
+   ],
+   "warm_median_seconds": 0.006346754031255841,
+   "warm_min_seconds": 0.006346754031255841
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.0024080249713733792,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0024080249713733792,
+    0.002664636995177716
+   ],
+   "warm_median_seconds": 0.002664636995177716,
+   "warm_min_seconds": 0.002664636995177716
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0029649449861608446,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0029649449861608446,
+    0.002555457002017647
+   ],
+   "warm_median_seconds": 0.002555457002017647,
+   "warm_min_seconds": 0.002555457002017647
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.000813294027466327,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000813294027466327,
+    0.0006453169626183808,
+    0.0006092920084483922
+   ],
+   "warm_median_seconds": 0.0006273044855333865,
+   "warm_min_seconds": 0.0006092920084483922
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2073772,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    380
+   ],
+   "level_cells": [
+    0,
+    448
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    1
+   ],
+   "rollup_cells": 448
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 4.267296753823757e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.267296753823757e-05,
+    1.1691998224705458e-05,
+    9.98697942122817e-06,
+    8.70897201821208e-06,
+    8.353032171726227e-06,
+    8.177012205123901e-06,
+    8.22299625724554e-06,
+    7.85401789471507e-06,
+    8.049013558775187e-06,
+    7.911992724984884e-06
+   ],
+   "warm_median_seconds": 8.22299625724554e-06,
+   "warm_min_seconds": 7.85401789471507e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0125047992914915e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0125047992914915e-05,
+    8.30204226076603e-06,
+    8.099013939499855e-06,
+    7.702969014644623e-06,
+    8.022994734346867e-06,
+    7.872993592172861e-06,
+    7.36297806724906e-06,
+    7.8519806265831e-06,
+    7.822003681212664e-06,
+    7.710012141615152e-06
+   ],
+   "warm_median_seconds": 7.8519806265831e-06,
+   "warm_min_seconds": 7.36297806724906e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.306003054603934e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.306003054603934e-05,
+    1.7821963410824537e-05,
+    1.342699397355318e-05,
+    1.1781987268477678e-05,
+    1.1249969247728586e-05,
+    1.1046009603887796e-05,
+    1.2884964235126972e-05,
+    1.1206022463738918e-05,
+    1.1307012755423784e-05,
+    1.0607996955513954e-05
+   ],
+   "warm_median_seconds": 1.1307012755423784e-05,
+   "warm_min_seconds": 1.0607996955513954e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.012427506037056446,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012427506037056446,
+    0.01219184702495113
+   ],
+   "warm_median_seconds": 0.01219184702495113,
+   "warm_min_seconds": 0.01219184702495113
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.008509473991580307,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008509473991580307
+   ],
+   "warm_median_seconds": 0.008509473991580307,
+   "warm_min_seconds": 0.008509473991580307
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.0010613070335239172,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010613070335239172,
+    0.0008740319753997028
+   ],
+   "warm_median_seconds": 0.0008740319753997028,
+   "warm_min_seconds": 0.0008740319753997028
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006229083985090256,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006229083985090256,
+    0.006330066011287272
+   ],
+   "warm_median_seconds": 0.006330066011287272,
+   "warm_min_seconds": 0.006330066011287272
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.002554790989961475,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002554790989961475,
+    0.0030028249602764845
+   ],
+   "warm_median_seconds": 0.0030028249602764845,
+   "warm_min_seconds": 0.0030028249602764845
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0026031360030174255,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0026031360030174255,
+    0.002425707003567368
+   ],
+   "warm_median_seconds": 0.002425707003567368,
+   "warm_min_seconds": 0.002425707003567368
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0006800720002502203,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006800720002502203,
+    0.0007056649774312973,
+    0.0005764540401287377
+   ],
+   "warm_median_seconds": 0.0006410595087800175,
+   "warm_min_seconds": 0.0005764540401287377
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2073772,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    380
+   ],
+   "level_cells": [
+    0,
+    448
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    1
+   ],
+   "rollup_cells": 448
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 3.6168028600513935e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.6168028600513935e-05,
+    1.1701020412147045e-05,
+    1.0251998901367188e-05,
+    9.469047654420137e-06,
+    9.163981303572655e-06,
+    8.933013305068016e-06,
+    8.647970389574766e-06,
+    8.806993719190359e-06,
+    8.679984603077173e-06,
+    8.57602572068572e-06
+   ],
+   "warm_median_seconds": 8.933013305068016e-06,
+   "warm_min_seconds": 8.57602572068572e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0536983609199524e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0536983609199524e-05,
+    8.743023499846458e-06,
+    8.232018444687128e-06,
+    8.211995009332895e-06,
+    8.256000000983477e-06,
+    8.054019417613745e-06,
+    8.457980584353209e-06,
+    8.050003089010715e-06,
+    8.036033250391483e-06,
+    8.109025657176971e-06
+   ],
+   "warm_median_seconds": 8.211995009332895e-06,
+   "warm_min_seconds": 8.036033250391483e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.4756976421922445e-05,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.4756976421922445e-05,
+    1.6539008356630802e-05,
+    1.4216057024896145e-05,
+    1.2971984688192606e-05,
+    1.4904013369232416e-05,
+    1.3176992069929838e-05,
+    1.2443982996046543e-05,
+    1.2290023732930422e-05,
+    1.1613999959081411e-05,
+    1.1961034033447504e-05
+   ],
+   "warm_median_seconds": 1.2971984688192606e-05,
+   "warm_min_seconds": 1.1613999959081411e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.012506180966738611,
+   "params": {
+    "groups": 64,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.012506180966738611,
+    0.012862915988080204
+   ],
+   "warm_median_seconds": 0.012862915988080204,
+   "warm_min_seconds": 0.012862915988080204
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.008899888023734093,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008899888023734093
+   ],
+   "warm_median_seconds": 0.008899888023734093,
+   "warm_min_seconds": 0.008899888023734093
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.001093389990273863,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001093389990273863,
+    0.0010908739641308784
+   ],
+   "warm_median_seconds": 0.0010908739641308784,
+   "warm_min_seconds": 0.0010908739641308784
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.0065366560011170805,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0065366560011170805,
+    0.006454985006712377
+   ],
+   "warm_median_seconds": 0.006454985006712377,
+   "warm_min_seconds": 0.006454985006712377
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.002241716021671891,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002241716021671891,
+    0.00208461401052773
+   ],
+   "warm_median_seconds": 0.00208461401052773,
+   "warm_min_seconds": 0.00208461401052773
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0027529990184120834,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0027529990184120834,
+    0.0026430669822730124
+   ],
+   "warm_median_seconds": 0.0026430669822730124,
+   "warm_min_seconds": 0.0026430669822730124
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.00079113501124084,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00079113501124084,
+    0.0007896010065451264,
+    0.0006400410202331841
+   ],
+   "warm_median_seconds": 0.0007148210133891553,
+   "warm_min_seconds": 0.0006400410202331841
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2223532,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    1
+   ],
+   "rollup_cells": 7168
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 4.847400123253465e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.847400123253465e-05,
+    1.6439007595181465e-05,
+    1.3595039490610361e-05,
+    1.345097552984953e-05,
+    1.3598008081316948e-05,
+    1.3117969501763582e-05,
+    1.2927979696542025e-05,
+    1.2817035894840956e-05,
+    1.2732984032481909e-05,
+    1.2586999218910933e-05
+   ],
+   "warm_median_seconds": 1.3117969501763582e-05,
+   "warm_min_seconds": 1.2586999218910933e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0838964954018593e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0838964954018593e-05,
+    9.43097984418273e-06,
+    8.889997843652964e-06,
+    1.0201998520642519e-05,
+    8.87800706550479e-06,
+    8.744013030081987e-06,
+    8.726026862859726e-06,
+    8.698028977960348e-06,
+    8.312985301017761e-06,
+    8.400995284318924e-06
+   ],
+   "warm_median_seconds": 8.744013030081987e-06,
+   "warm_min_seconds": 8.312985301017761e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.416696563363075e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.416696563363075e-05,
+    1.5251978766173124e-05,
+    1.331098610535264e-05,
+    1.1424010153859854e-05,
+    1.1403986718505621e-05,
+    1.1066964361816645e-05,
+    1.0907999239861965e-05,
+    1.0518997441977262e-05,
+    1.0634015779942274e-05,
+    1.0701012797653675e-05
+   ],
+   "warm_median_seconds": 1.1066964361816645e-05,
+   "warm_min_seconds": 1.0518997441977262e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.013178314024116844,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013178314024116844,
+    0.013234123995061964
+   ],
+   "warm_median_seconds": 0.013234123995061964,
+   "warm_min_seconds": 0.013234123995061964
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.047324593004304916,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.047324593004304916,
+    0.04961437900783494
+   ],
+   "warm_median_seconds": 0.04961437900783494,
+   "warm_min_seconds": 0.04961437900783494
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.012819568975828588,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012819568975828588
+   ],
+   "warm_median_seconds": 0.012819568975828588,
+   "warm_min_seconds": 0.012819568975828588
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.0011120789567939937,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011120789567939937,
+    0.0008922269917093217
+   ],
+   "warm_median_seconds": 0.0008922269917093217,
+   "warm_min_seconds": 0.0008922269917093217
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006545301992446184,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006545301992446184,
+    0.006398879981134087
+   ],
+   "warm_median_seconds": 0.006398879981134087,
+   "warm_min_seconds": 0.006398879981134087
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.002146258018910885,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002146258018910885,
+    0.0023981750127859414
+   ],
+   "warm_median_seconds": 0.0023981750127859414,
+   "warm_min_seconds": 0.0023981750127859414
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0029366359813138843,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0029366359813138843,
+    0.0029946479480713606
+   ],
+   "warm_median_seconds": 0.0029946479480713606,
+   "warm_min_seconds": 0.0029946479480713606
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0007905490347184241,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007905490347184241,
+    0.0014383630477823317,
+    0.0006112830014899373
+   ],
+   "warm_median_seconds": 0.0010248230246361345,
+   "warm_min_seconds": 0.0006112830014899373
+  },
+  {
+   "backend": "cpu",
+   "bytes": 2223532,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    1
+   ],
+   "rollup_cells": 7168
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 5.124998278915882e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    5.124998278915882e-05,
+    0.00014078099047765136,
+    1.6714970115572214e-05,
+    1.4420016668736935e-05,
+    1.3681012205779552e-05,
+    1.3888988178223372e-05,
+    1.2258999049663544e-05,
+    1.15020084194839e-05,
+    1.1708005331456661e-05,
+    1.159904059022665e-05
+   ],
+   "warm_median_seconds": 1.3681012205779552e-05,
+   "warm_min_seconds": 1.15020084194839e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0633026249706745e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0633026249706745e-05,
+    8.180970326066017e-06,
+    7.562979590147734e-06,
+    7.867987733334303e-06,
+    7.656984962522984e-06,
+    7.710012141615152e-06,
+    7.3899864219129086e-06,
+    7.561990059912205e-06,
+    7.744005415588617e-06,
+    7.525028195232153e-06
+   ],
+   "warm_median_seconds": 7.656984962522984e-06,
+   "warm_min_seconds": 7.3899864219129086e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.489298978820443e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.489298978820443e-05,
+    1.6109959688037634e-05,
+    1.2444041203707457e-05,
+    1.1535012163221836e-05,
+    1.0902003850787878e-05,
+    1.108500873669982e-05,
+    1.0818010196089745e-05,
+    1.2416974641382694e-05,
+    1.1850963346660137e-05,
+    1.0905961971729994e-05
+   ],
+   "warm_median_seconds": 1.1535012163221836e-05,
+   "warm_min_seconds": 1.0818010196089745e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.013068789965473115,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013068789965473115,
+    0.013594474003184587
+   ],
+   "warm_median_seconds": 0.013594474003184587,
+   "warm_min_seconds": 0.013594474003184587
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.0452434720355086,
+   "params": {
+    "groups": 1024,
+    "levels": 2,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0452434720355086,
+    0.045547956018708646
+   ],
+   "warm_median_seconds": 0.045547956018708646,
+   "warm_min_seconds": 0.045547956018708646
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.02351977297803387,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02351977297803387
+   ],
+   "warm_median_seconds": 0.02351977297803387,
+   "warm_min_seconds": 0.02351977297803387
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.0073101979796774685,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0073101979796774685,
+    0.007126239011995494
+   ],
+   "warm_median_seconds": 0.007126239011995494,
+   "warm_min_seconds": 0.007126239011995494
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006704328989144415,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006704328989144415,
+    0.006203494966030121
+   ],
+   "warm_median_seconds": 0.006203494966030121,
+   "warm_min_seconds": 0.006203494966030121
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.0089800949790515,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0089800949790515,
+    0.012104958004783839
+   ],
+   "warm_median_seconds": 0.012104958004783839,
+   "warm_min_seconds": 0.012104958004783839
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0034711789921857417,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0034711789921857417,
+    0.003320086980238557
+   ],
+   "warm_median_seconds": 0.003320086980238557,
+   "warm_min_seconds": 0.003320086980238557
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.003246941021643579,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003246941021643579,
+    0.0032688089995644987,
+    0.0038090370362624526
+   ],
+   "warm_median_seconds": 0.0035389230179134756,
+   "warm_min_seconds": 0.0032688089995644987
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10192140,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    836,
+    532,
+    380
+   ],
+   "level_cells": [
+    0,
+    56,
+    28,
+    14
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    4,
+    2,
+    1
+   ],
+   "rollup_cells": 98
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.739302236586809e-05,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.739302236586809e-05,
+    1.3597018551081419e-05,
+    1.015298767015338e-05,
+    9.158044122159481e-06,
+    8.917006198316813e-06,
+    9.258976206183434e-06,
+    8.5469800978899e-06,
+    8.555012755095959e-06,
+    8.311995770782232e-06,
+    8.435046765953302e-06
+   ],
+   "warm_median_seconds": 8.917006198316813e-06,
+   "warm_min_seconds": 8.311995770782232e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.0743970051407814e-05,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.0743970051407814e-05,
+    9.261013474315405e-06,
+    8.612987585365772e-06,
+    8.52398807182908e-06,
+    8.425035048276186e-06,
+    8.284987416118383e-06,
+    9.190000128000975e-06,
+    8.471019100397825e-06,
+    8.386035915464163e-06,
+    8.079980034381151e-06
+   ],
+   "warm_median_seconds": 8.471019100397825e-06,
+   "warm_min_seconds": 8.079980034381151e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.0628015995025635e-05,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.0628015995025635e-05,
+    1.6712001524865627e-05,
+    1.4696037396788597e-05,
+    1.2697011698037386e-05,
+    1.2197007890790701e-05,
+    1.2221978977322578e-05,
+    1.189397880807519e-05,
+    1.1245952919125557e-05,
+    1.1229014489799738e-05,
+    1.0786985512822866e-05
+   ],
+   "warm_median_seconds": 1.2197007890790701e-05,
+   "warm_min_seconds": 1.0786985512822866e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.025363502034451813,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025363502034451813,
+    0.025695671036373824
+   ],
+   "warm_median_seconds": 0.025695671036373824,
+   "warm_min_seconds": 0.025695671036373824
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.01957817899528891,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01957817899528891
+   ],
+   "warm_median_seconds": 0.01957817899528891,
+   "warm_min_seconds": 0.01957817899528891
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.007259901030920446,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007259901030920446,
+    0.007380385999567807
+   ],
+   "warm_median_seconds": 0.007380385999567807,
+   "warm_min_seconds": 0.007380385999567807
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006526109995320439,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006526109995320439,
+    0.006176366994623095
+   ],
+   "warm_median_seconds": 0.006176366994623095,
+   "warm_min_seconds": 0.006176366994623095
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.008523003023583442,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008523003023583442,
+    0.012250684027094394
+   ],
+   "warm_median_seconds": 0.012250684027094394,
+   "warm_min_seconds": 0.012250684027094394
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0033806650317274034,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0033806650317274034,
+    0.0029813750297762454
+   ],
+   "warm_median_seconds": 0.0029813750297762454,
+   "warm_min_seconds": 0.0029813750297762454
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0032297620200552046,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0032297620200552046,
+    0.003273327019996941,
+    0.0029153680079616606
+   ],
+   "warm_median_seconds": 0.003094347513979301,
+   "warm_min_seconds": 0.0029153680079616606
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10192140,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    836,
+    532,
+    380
+   ],
+   "level_cells": [
+    0,
+    56,
+    28,
+    14
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    2,
+    1,
+    1
+   ],
+   "rollup_cells": 98
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 8.545699529349804e-05,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    8.545699529349804e-05,
+    1.3463024515658617e-05,
+    1.0726973414421082e-05,
+    8.698028977960348e-06,
+    8.267001248896122e-06,
+    8.278002496808767e-06,
+    8.133996743708849e-06,
+    7.694005034863949e-06,
+    7.505994290113449e-06,
+    7.837021257728338e-06
+   ],
+   "warm_median_seconds": 8.267001248896122e-06,
+   "warm_min_seconds": 7.505994290113449e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 9.773997589945793e-06,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    9.773997589945793e-06,
+    8.235976565629244e-06,
+    7.865019142627716e-06,
+    7.726019248366356e-06,
+    7.479975465685129e-06,
+    7.6639698818326e-06,
+    7.868977263569832e-06,
+    8.748960681259632e-06,
+    7.4239796958863735e-06,
+    7.4239796958863735e-06
+   ],
+   "warm_median_seconds": 7.726019248366356e-06,
+   "warm_min_seconds": 7.4239796958863735e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.98589763790369e-05,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.98589763790369e-05,
+    1.5366007573902607e-05,
+    1.2322037946432829e-05,
+    1.1390016879886389e-05,
+    1.14989816211164e-05,
+    1.1241994798183441e-05,
+    1.122400863096118e-05,
+    1.1760042980313301e-05,
+    1.1035008355975151e-05,
+    1.1106021702289581e-05
+   ],
+   "warm_median_seconds": 1.1390016879886389e-05,
+   "warm_min_seconds": 1.1035008355975151e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.02529144403524697,
+   "params": {
+    "groups": 8,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     4,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02529144403524697,
+    0.025104765023570508
+   ],
+   "warm_median_seconds": 0.025104765023570508,
+   "warm_min_seconds": 0.025104765023570508
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.016675734019372612,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.016675734019372612
+   ],
+   "warm_median_seconds": 0.016675734019372612,
+   "warm_min_seconds": 0.016675734019372612
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.004281779984012246,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004281779984012246,
+    0.0037661870010197163
+   ],
+   "warm_median_seconds": 0.0037661870010197163,
+   "warm_min_seconds": 0.0037661870010197163
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006975304975640029,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006975304975640029,
+    0.00648979505058378
+   ],
+   "warm_median_seconds": 0.00648979505058378,
+   "warm_min_seconds": 0.00648979505058378
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.008029929012991488,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008029929012991488,
+    0.007494128018151969
+   ],
+   "warm_median_seconds": 0.007494128018151969,
+   "warm_min_seconds": 0.007494128018151969
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.002677613985724747,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002677613985724747,
+    0.002577014034613967
+   ],
+   "warm_median_seconds": 0.002577014034613967,
+   "warm_min_seconds": 0.002577014034613967
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0031562859658151865,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0031562859658151865,
+    0.0028905130457133055,
+    0.0033503469894640148
+   ],
+   "warm_median_seconds": 0.00312043001758866,
+   "warm_min_seconds": 0.0028905130457133055
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10203060,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    2660,
+    836,
+    380
+   ],
+   "level_cells": [
+    0,
+    448,
+    112,
+    28
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    16,
+    4,
+    1
+   ],
+   "rollup_cells": 588
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 8.024199632927775e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    8.024199632927775e-05,
+    1.3421988114714622e-05,
+    9.834999218583107e-06,
+    8.744013030081987e-06,
+    9.598967153578997e-06,
+    8.775969035923481e-06,
+    9.074981790035963e-06,
+    8.982024155557156e-06,
+    8.829985745251179e-06,
+    8.616014383733273e-06
+   ],
+   "warm_median_seconds": 8.982024155557156e-06,
+   "warm_min_seconds": 8.616014383733273e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.1830998118966818e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.1830998118966818e-05,
+    9.15199052542448e-06,
+    7.94499646872282e-06,
+    7.492955774068832e-06,
+    7.983995601534843e-06,
+    7.565016858279705e-06,
+    7.718976121395826e-06,
+    7.694005034863949e-06,
+    7.860013283789158e-06,
+    7.755006663501263e-06
+   ],
+   "warm_median_seconds": 7.755006663501263e-06,
+   "warm_min_seconds": 7.492955774068832e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.11149812862277e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.11149812862277e-05,
+    1.6138015780597925e-05,
+    1.3276003301143646e-05,
+    1.2296019122004509e-05,
+    1.1523952707648277e-05,
+    1.1372962035238743e-05,
+    1.1198979336768389e-05,
+    1.1168012861162424e-05,
+    1.182197593152523e-05,
+    1.1687981896102428e-05
+   ],
+   "warm_median_seconds": 1.1687981896102428e-05,
+   "warm_min_seconds": 1.1168012861162424e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.025304123002570122,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025304123002570122,
+    0.024981116992421448
+   ],
+   "warm_median_seconds": 0.024981116992421448,
+   "warm_min_seconds": 0.024981116992421448
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.01684619195293635,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01684619195293635
+   ],
+   "warm_median_seconds": 0.01684619195293635,
+   "warm_min_seconds": 0.01684619195293635
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.004437077965121716,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004437077965121716,
+    0.003713879967108369
+   ],
+   "warm_median_seconds": 0.003713879967108369,
+   "warm_min_seconds": 0.003713879967108369
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006852519989479333,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006852519989479333,
+    0.006251621001865715
+   ],
+   "warm_median_seconds": 0.006251621001865715,
+   "warm_min_seconds": 0.006251621001865715
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.014442538027651608,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014442538027651608,
+    0.01240964699536562
+   ],
+   "warm_median_seconds": 0.01240964699536562,
+   "warm_min_seconds": 0.01240964699536562
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.002844122995156795,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002844122995156795,
+    0.002588848990853876
+   ],
+   "warm_median_seconds": 0.002588848990853876,
+   "warm_min_seconds": 0.002588848990853876
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0031653150217607617,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0031653150217607617,
+    0.0033003080170601606,
+    0.003321585012599826
+   ],
+   "warm_median_seconds": 0.0033109465148299932,
+   "warm_min_seconds": 0.0033003080170601606
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10203060,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    2660,
+    836,
+    380
+   ],
+   "level_cells": [
+    0,
+    448,
+    112,
+    28
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    10,
+    2,
+    1
+   ],
+   "rollup_cells": 588
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.507496047765017e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.507496047765017e-05,
+    1.334404805675149e-05,
+    1.0807998478412628e-05,
+    9.518989827483892e-06,
+    9.044015314429998e-06,
+    9.43400664255023e-06,
+    8.956005331128836e-06,
+    8.939998224377632e-06,
+    8.71502561494708e-06,
+    8.87399073690176e-06
+   ],
+   "warm_median_seconds": 9.044015314429998e-06,
+   "warm_min_seconds": 8.71502561494708e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.1247990187257528e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.1247990187257528e-05,
+    9.219045750796795e-06,
+    7.807975634932518e-06,
+    8.072995115071535e-06,
+    7.69301550462842e-06,
+    7.883005309849977e-06,
+    7.739989086985588e-06,
+    7.773982360959053e-06,
+    7.66298035159707e-06,
+    7.631024345755577e-06
+   ],
+   "warm_median_seconds": 7.773982360959053e-06,
+   "warm_min_seconds": 7.631024345755577e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.976101288571954e-05,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.976101288571954e-05,
+    1.642800634726882e-05,
+    1.3793003745377064e-05,
+    1.2388045433908701e-05,
+    1.2002012226730585e-05,
+    1.1397001799196005e-05,
+    1.1439959052950144e-05,
+    1.1052004992961884e-05,
+    1.1113996151834726e-05,
+    1.0835006833076477e-05
+   ],
+   "warm_median_seconds": 1.1439959052950144e-05,
+   "warm_min_seconds": 1.0835006833076477e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.025247873971238732,
+   "params": {
+    "groups": 64,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     16,
+     4,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025247873971238732,
+    0.0252602249966003
+   ],
+   "warm_median_seconds": 0.0252602249966003,
+   "warm_min_seconds": 0.0252602249966003
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.018568622996099293,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.018568622996099293
+   ],
+   "warm_median_seconds": 0.018568622996099293,
+   "warm_min_seconds": 0.018568622996099293
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.004620786989107728,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004620786989107728,
+    0.003690772980917245
+   ],
+   "warm_median_seconds": 0.003690772980917245,
+   "warm_min_seconds": 0.003690772980917245
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006470631982665509,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006470631982665509,
+    0.006434792012441903
+   ],
+   "warm_median_seconds": 0.006434792012441903,
+   "warm_min_seconds": 0.006434792012441903
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.008592388010583818,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008592388010583818,
+    0.007431390986312181
+   ],
+   "warm_median_seconds": 0.007431390986312181,
+   "warm_min_seconds": 0.007431390986312181
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.003020134987309575,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003020134987309575,
+    0.0032644799794070423
+   ],
+   "warm_median_seconds": 0.0032644799794070423,
+   "warm_min_seconds": 0.0032644799794070423
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.0033410119940526783,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0033410119940526783,
+    0.0031423449981957674,
+    0.003371002967469394
+   ],
+   "warm_median_seconds": 0.003256673982832581,
+   "warm_min_seconds": 0.0031423449981957674
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10367172,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    15732,
+    1748,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168,
+    714,
+    70
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    102,
+    10,
+    1
+   ],
+   "rollup_cells": 7952
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 9.297800716012716e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    9.297800716012716e-05,
+    1.7926970031112432e-05,
+    1.3225013390183449e-05,
+    1.2186996173113585e-05,
+    1.2787000741809607e-05,
+    1.2665987014770508e-05,
+    1.2267963029444218e-05,
+    1.1786993127316236e-05,
+    1.1707015801221132e-05,
+    1.1623022146522999e-05
+   ],
+   "warm_median_seconds": 1.2267963029444218e-05,
+   "warm_min_seconds": 1.1623022146522999e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.089699799194932e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.089699799194932e-05,
+    8.63696914166212e-06,
+    8.15198291093111e-06,
+    7.947965059429407e-06,
+    8.005008567124605e-06,
+    8.085044100880623e-06,
+    7.696973625570536e-06,
+    7.677008397877216e-06,
+    7.426016964018345e-06,
+    8.147035259753466e-06
+   ],
+   "warm_median_seconds": 8.005008567124605e-06,
+   "warm_min_seconds": 7.426016964018345e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 3.931502578780055e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    3.931502578780055e-05,
+    1.66630488820374e-05,
+    1.34530127979815e-05,
+    1.3121985830366611e-05,
+    1.2019998393952847e-05,
+    1.2049975339323282e-05,
+    1.1665979400277138e-05,
+    1.1257012374699116e-05,
+    1.1159980203956366e-05,
+    1.1033029295504093e-05
+   ],
+   "warm_median_seconds": 1.2019998393952847e-05,
+   "warm_min_seconds": 1.1033029295504093e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.02574242901755497,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02574242901755497,
+    0.025522347015794367
+   ],
+   "warm_median_seconds": 0.025522347015794367,
+   "warm_min_seconds": 0.025522347015794367
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.08705139596713707,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08705139596713707,
+    0.08474532701075077
+   ],
+   "warm_median_seconds": 0.08474532701075077,
+   "warm_min_seconds": 0.08474532701075077
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.01833803701447323,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01833803701447323
+   ],
+   "warm_median_seconds": 0.01833803701447323,
+   "warm_min_seconds": 0.01833803701447323
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.004199634015094489,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004199634015094489,
+    0.0035944919800385833
+   ],
+   "warm_median_seconds": 0.0035944919800385833,
+   "warm_min_seconds": 0.0035944919800385833
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.007040963973850012,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007040963973850012,
+    0.00650089600821957
+   ],
+   "warm_median_seconds": 0.00650089600821957,
+   "warm_min_seconds": 0.00650089600821957
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.008624369977042079,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008624369977042079,
+    0.011935306014493108
+   ],
+   "warm_median_seconds": 0.011935306014493108,
+   "warm_min_seconds": 0.011935306014493108
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.002879003994166851,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.002879003994166851,
+    0.0029301329632289708
+   ],
+   "warm_median_seconds": 0.0029301329632289708,
+   "warm_min_seconds": 0.0029301329632289708
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.003400003013666719,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003400003013666719,
+    0.0033972490346059203,
+    0.0033764420077204704
+   ],
+   "warm_median_seconds": 0.0033868455211631954,
+   "warm_min_seconds": 0.0033764420077204704
+  },
+  {
+   "backend": "cpu",
+   "bytes": 10367172,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    15732,
+    1748,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168,
+    714,
+    70
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    97,
+    10,
+    1
+   ],
+   "rollup_cells": 7952
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 9.833899093791842e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    9.833899093791842e-05,
+    2.3216998670250177e-05,
+    1.4581019058823586e-05,
+    1.3554003089666367e-05,
+    1.3076991308480501e-05,
+    1.2847012840211391e-05,
+    1.2804986909031868e-05,
+    1.2822041753679514e-05,
+    1.2819014955312014e-05,
+    1.2271979358047247e-05
+   ],
+   "warm_median_seconds": 1.2847012840211391e-05,
+   "warm_min_seconds": 1.2271979358047247e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.2372038327157497e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.2372038327157497e-05,
+    9.123003110289574e-06,
+    8.634990081191063e-06,
+    8.507980965077877e-06,
+    8.425966370850801e-06,
+    8.321949280798435e-06,
+    8.389994036406279e-06,
+    8.525967132300138e-06,
+    8.260016329586506e-06,
+    7.78702087700367e-06
+   ],
+   "warm_median_seconds": 8.425966370850801e-06,
+   "warm_min_seconds": 7.78702087700367e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.2252999264746904e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.2252999264746904e-05,
+    1.6564037650823593e-05,
+    1.2982985936105251e-05,
+    1.2402015272527933e-05,
+    1.1591007933020592e-05,
+    1.1238036677241325e-05,
+    1.2155971489846706e-05,
+    1.1447002179920673e-05,
+    1.1862022802233696e-05,
+    1.1098978575319052e-05
+   ],
+   "warm_median_seconds": 1.1862022802233696e-05,
+   "warm_min_seconds": 1.1098978575319052e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.025443558988627046,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.025443558988627046,
+    0.025986810971517116
+   ],
+   "warm_median_seconds": 0.025986810971517116,
+   "warm_min_seconds": 0.025986810971517116
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.08823943603783846,
+   "params": {
+    "groups": 1024,
+    "levels": 4,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     102,
+     10,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08823943603783846,
+    0.08590165700297803
+   ],
+   "warm_median_seconds": 0.08590165700297803,
+   "warm_min_seconds": 0.08590165700297803
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.03860102599719539,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03860102599719539
+   ],
+   "warm_median_seconds": 0.03860102599719539,
+   "warm_min_seconds": 0.03860102599719539
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.01239204895682633,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01239204895682633,
+    0.013575794990174472
+   ],
+   "warm_median_seconds": 0.013575794990174472,
+   "warm_min_seconds": 0.013575794990174472
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006366101966705173,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006366101966705173,
+    0.00633596203988418
+   ],
+   "warm_median_seconds": 0.00633596203988418,
+   "warm_min_seconds": 0.00633596203988418
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.02091601100983098,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.02091601100983098,
+    0.024769503972493112
+   ],
+   "warm_median_seconds": 0.024769503972493112,
+   "warm_min_seconds": 0.024769503972493112
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0036805139970965683,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0036805139970965683,
+    0.006188058003317565
+   ],
+   "warm_median_seconds": 0.006188058003317565,
+   "warm_min_seconds": 0.006188058003317565
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.007150114979594946,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007150114979594946,
+    0.006508699967525899,
+    0.0073871699860319495
+   ],
+   "warm_median_seconds": 0.0069479349767789245,
+   "warm_min_seconds": 0.006508699967525899
+  },
+  {
+   "backend": "cpu",
+   "bytes": 18446192,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    1140,
+    836,
+    684,
+    532,
+    380,
+    380,
+    380
+   ],
+   "level_cells": [
+    0,
+    56,
+    42,
+    28,
+    21,
+    14,
+    7,
+    7
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    6,
+    4,
+    3,
+    2,
+    1,
+    1,
+    1
+   ],
+   "rollup_cells": 175
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.632002234458923e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.632002234458923e-05,
+    1.3918033801019192e-05,
+    9.714975021779537e-06,
+    9.364041034132242e-06,
+    8.43801535665989e-06,
+    8.458970114588737e-06,
+    8.450995665043592e-06,
+    8.645991329103708e-06,
+    8.77998536452651e-06,
+    8.59901774674654e-06
+   ],
+   "warm_median_seconds": 8.645991329103708e-06,
+   "warm_min_seconds": 8.43801535665989e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.080299261957407e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.080299261957407e-05,
+    9.102979674935341e-06,
+    8.351984433829784e-06,
+    8.263974450528622e-06,
+    8.627015631645918e-06,
+    7.53102358430624e-06,
+    7.568043656647205e-06,
+    7.716997060924768e-06,
+    7.627008017152548e-06,
+    7.601978722959757e-06
+   ],
+   "warm_median_seconds": 7.716997060924768e-06,
+   "warm_min_seconds": 7.53102358430624e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.303100286051631e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.303100286051631e-05,
+    1.7508980818092823e-05,
+    1.4779041521251202e-05,
+    1.305801561102271e-05,
+    1.1998985428363085e-05,
+    1.1556025128811598e-05,
+    1.1480995453894138e-05,
+    1.103599788621068e-05,
+    1.2409989722073078e-05,
+    1.1297001037746668e-05
+   ],
+   "warm_median_seconds": 1.1998985428363085e-05,
+   "warm_min_seconds": 1.103599788621068e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.05193570599658415,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05193570599658415,
+    0.05154389201197773
+   ],
+   "warm_median_seconds": 0.05154389201197773,
+   "warm_min_seconds": 0.05154389201197773
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.03945749398553744,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03945749398553744
+   ],
+   "warm_median_seconds": 0.03945749398553744,
+   "warm_min_seconds": 0.03945749398553744
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.012902855989523232,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012902855989523232,
+    0.014832876971922815
+   ],
+   "warm_median_seconds": 0.014832876971922815,
+   "warm_min_seconds": 0.014832876971922815
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006335616984870285,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006335616984870285,
+    0.0062164359842427075
+   ],
+   "warm_median_seconds": 0.0062164359842427075,
+   "warm_min_seconds": 0.0062164359842427075
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.021968510991428047,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.021968510991428047,
+    0.02527238300535828
+   ],
+   "warm_median_seconds": 0.02527238300535828,
+   "warm_min_seconds": 0.02527238300535828
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.003255783987697214,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003255783987697214,
+    0.003265706996899098
+   ],
+   "warm_median_seconds": 0.003265706996899098,
+   "warm_min_seconds": 0.003265706996899098
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.00704556395066902,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00704556395066902,
+    0.008350038027856499,
+    0.007902204990386963
+   ],
+   "warm_median_seconds": 0.008126121509121731,
+   "warm_min_seconds": 0.007902204990386963
+  },
+  {
+   "backend": "cpu",
+   "bytes": 18446192,
+   "case": "retained state",
+   "level_bytes": [
+    1444,
+    1140,
+    836,
+    684,
+    532,
+    380,
+    380,
+    380
+   ],
+   "level_cells": [
+    0,
+    56,
+    42,
+    28,
+    21,
+    14,
+    7,
+    7
+   ],
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    8,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rollup_cells": 175
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.86179443821311e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.86179443821311e-05,
+    1.5520025044679642e-05,
+    1.2271979358047247e-05,
+    2.7397996746003628e-05,
+    1.939898356795311e-05,
+    1.1372962035238743e-05,
+    9.115028660744429e-06,
+    9.490991942584515e-06,
+    8.866016287356615e-06,
+    8.82899621501565e-06
+   ],
+   "warm_median_seconds": 1.1372962035238743e-05,
+   "warm_min_seconds": 8.82899621501565e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.1642987374216318e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.1642987374216318e-05,
+    9.130977559834719e-06,
+    8.782022632658482e-06,
+    8.600996807217598e-06,
+    8.536037057638168e-06,
+    8.61898297443986e-06,
+    8.615024853497744e-06,
+    8.35995888337493e-06,
+    8.34302045404911e-06,
+    8.372997399419546e-06
+   ],
+   "warm_median_seconds": 8.600996807217598e-06,
+   "warm_min_seconds": 8.34302045404911e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.234595689922571e-05,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.234595689922571e-05,
+    1.7628015484660864e-05,
+    1.5037949196994305e-05,
+    1.2997013982385397e-05,
+    1.2447009794414043e-05,
+    1.1914991773664951e-05,
+    1.2559001334011555e-05,
+    1.2214994058012962e-05,
+    1.2389966286718845e-05,
+    1.2349977623671293e-05
+   ],
+   "warm_median_seconds": 1.2447009794414043e-05,
+   "warm_min_seconds": 1.1914991773664951e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.05449965700972825,
+   "params": {
+    "groups": 8,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     8,
+     6,
+     4,
+     3,
+     2,
+     1,
+     1,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05449965700972825,
+    0.05317461397498846
+   ],
+   "warm_median_seconds": 0.05317461397498846,
+   "warm_min_seconds": 0.05317461397498846
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.053805807954631746,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.053805807954631746
+   ],
+   "warm_median_seconds": 0.053805807954631746,
+   "warm_min_seconds": 0.053805807954631746
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.012306578049901873,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012306578049901873,
+    0.01793048600666225
+   ],
+   "warm_median_seconds": 0.01793048600666225,
+   "warm_min_seconds": 0.01793048600666225
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.007152892998419702,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007152892998419702,
+    0.007177305000368506
+   ],
+   "warm_median_seconds": 0.007177305000368506,
+   "warm_min_seconds": 0.007177305000368506
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.030526991991791874,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.030526991991791874,
+    0.041309059015475214
+   ],
+   "warm_median_seconds": 0.041309059015475214,
+   "warm_min_seconds": 0.041309059015475214
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.004339912033174187,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004339912033174187,
+    0.0037273920024745166
+   ],
+   "warm_median_seconds": 0.0037273920024745166,
+   "warm_min_seconds": 0.0037273920024745166
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.010073087003547698,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.010073087003547698,
+    0.009229428018443286,
+    0.01067499996861443
+   ],
+   "warm_median_seconds": 0.009952213993528858,
+   "warm_min_seconds": 0.009229428018443286
+  },
+  {
+   "backend": "cpu",
+   "bytes": 26464288,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    5548,
+    3268,
+    1900,
+    1140,
+    684,
+    532,
+    380
+   ],
+   "level_cells": [
+    0,
+    448,
+    245,
+    140,
+    77,
+    42,
+    21,
+    14
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    35,
+    20,
+    11,
+    6,
+    3,
+    2,
+    1
+   ],
+   "rollup_cells": 987
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.952196756377816e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.952196756377816e-05,
+    1.4775025192648172e-05,
+    1.114897895604372e-05,
+    9.634008165448904e-06,
+    8.986040484160185e-06,
+    9.22300387173891e-06,
+    9.060022421181202e-06,
+    9.112991392612457e-06,
+    6.899400614202023e-05,
+    1.550704473629594e-05
+   ],
+   "warm_median_seconds": 9.634008165448904e-06,
+   "warm_min_seconds": 8.986040484160185e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 2.6570982299745083e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    2.6570982299745083e-05,
+    1.4467979781329632e-05,
+    1.033395528793335e-05,
+    8.50501237437129e-06,
+    8.283997885882854e-06,
+    8.15500970929861e-06,
+    7.820024620741606e-06,
+    7.802038453519344e-06,
+    9.457988198846579e-06,
+    8.01699934527278e-06
+   ],
+   "warm_median_seconds": 8.283997885882854e-06,
+   "warm_min_seconds": 7.802038453519344e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.116800846531987e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.116800846531987e-05,
+    1.6441976185888052e-05,
+    1.3821001630276442e-05,
+    1.2387987226247787e-05,
+    1.2317963410168886e-05,
+    1.1181982699781656e-05,
+    3.415299579501152e-05,
+    1.6095000319182873e-05,
+    1.3834971468895674e-05,
+    1.2254982721060514e-05
+   ],
+   "warm_median_seconds": 1.3821001630276442e-05,
+   "warm_min_seconds": 1.1181982699781656e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.052323165989946574,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.052323165989946574,
+    0.05447030800860375
+   ],
+   "warm_median_seconds": 0.05447030800860375,
+   "warm_min_seconds": 0.05447030800860375
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.03710143797798082,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.03710143797798082
+   ],
+   "warm_median_seconds": 0.03710143797798082,
+   "warm_min_seconds": 0.03710143797798082
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.011294833035208285,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.011294833035208285,
+    0.010969797032885253
+   ],
+   "warm_median_seconds": 0.010969797032885253,
+   "warm_min_seconds": 0.010969797032885253
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006554414983838797,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006554414983838797,
+    0.006701247009914368
+   ],
+   "warm_median_seconds": 0.006701247009914368,
+   "warm_min_seconds": 0.006701247009914368
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.023624319001100957,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.023624319001100957,
+    0.030002104002051055
+   ],
+   "warm_median_seconds": 0.030002104002051055,
+   "warm_min_seconds": 0.030002104002051055
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0026918919757008553,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0026918919757008553,
+    0.002656330994796008
+   ],
+   "warm_median_seconds": 0.002656330994796008,
+   "warm_min_seconds": 0.002656330994796008
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.009161341993603855,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.009161341993603855,
+    0.008990326023194939,
+    0.008367051021195948
+   ],
+   "warm_median_seconds": 0.008678688522195444,
+   "warm_min_seconds": 0.008367051021195948
+  },
+  {
+   "backend": "cpu",
+   "bytes": 26464288,
+   "case": "retained state",
+   "level_bytes": [
+    9956,
+    5548,
+    3268,
+    1900,
+    1140,
+    684,
+    532,
+    380
+   ],
+   "level_cells": [
+    0,
+    448,
+    245,
+    140,
+    77,
+    42,
+    21,
+    14
+   ],
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    64,
+    14,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "rollup_cells": 987
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 7.211504271253943e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    7.211504271253943e-05,
+    1.4451972674578428e-05,
+    1.0010029654949903e-05,
+    9.330979082733393e-06,
+    8.88004433363676e-06,
+    8.769973646849394e-06,
+    8.54796962812543e-06,
+    8.632021490484476e-06,
+    8.572009392082691e-06,
+    8.759030606597662e-06
+   ],
+   "warm_median_seconds": 8.769973646849394e-06,
+   "warm_min_seconds": 8.54796962812543e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.1054042261093855e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.1054042261093855e-05,
+    8.773989975452423e-06,
+    8.461007382720709e-06,
+    8.207978680729866e-06,
+    8.694012649357319e-06,
+    8.050992619246244e-06,
+    8.350005373358727e-06,
+    8.14005034044385e-06,
+    8.037954103201628e-06,
+    8.112983778119087e-06
+   ],
+   "warm_median_seconds": 8.207978680729866e-06,
+   "warm_min_seconds": 8.037954103201628e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.04070015065372e-05,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.04070015065372e-05,
+    1.6489007975906134e-05,
+    1.4775956515222788e-05,
+    1.3771001249551773e-05,
+    1.2492004316300154e-05,
+    3.5721983294934034e-05,
+    1.7655023839324713e-05,
+    1.2740027159452438e-05,
+    1.1341995559632778e-05,
+    1.229200279340148e-05
+   ],
+   "warm_median_seconds": 1.3771001249551773e-05,
+   "warm_min_seconds": 1.1341995559632778e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.050292227999307215,
+   "params": {
+    "groups": 64,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     64,
+     35,
+     20,
+     11,
+     6,
+     3,
+     2,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.050292227999307215,
+    0.05038254603277892
+   ],
+   "warm_median_seconds": 0.05038254603277892,
+   "warm_min_seconds": 0.05038254603277892
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.0349093209952116,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0349093209952116
+   ],
+   "warm_median_seconds": 0.0349093209952116,
+   "warm_min_seconds": 0.0349093209952116
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.01076807000208646,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.01076807000208646,
+    0.011105059005785733
+   ],
+   "warm_median_seconds": 0.011105059005785733,
+   "warm_min_seconds": 0.011105059005785733
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.006499095994513482,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006499095994513482,
+    0.006533399980980903
+   ],
+   "warm_median_seconds": 0.006533399980980903,
+   "warm_min_seconds": 0.006533399980980903
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.020560731005389243,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.020560731005389243,
+    0.023056650010403246
+   ],
+   "warm_median_seconds": 0.023056650010403246,
+   "warm_min_seconds": 0.023056650010403246
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.0030760220251977444,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0030760220251977444,
+    0.0029530780157074332
+   ],
+   "warm_median_seconds": 0.0029530780157074332,
+   "warm_min_seconds": 0.0029530780157074332
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.008957167039625347,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008957167039625347,
+    0.009096983005292714,
+    0.008990794012788683
+   ],
+   "warm_median_seconds": 0.009043888509040698,
+   "warm_min_seconds": 0.008990794012788683
+  },
+  {
+   "backend": "cpu",
+   "bytes": 26696260,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    57988,
+    21660,
+    8284,
+    3268,
+    1292,
+    684,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168,
+    2660,
+    987,
+    371,
+    140,
+    49,
+    21
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    380,
+    141,
+    53,
+    20,
+    7,
+    3,
+    1
+   ],
+   "rollup_cells": 11396
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 9.994901483878493e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    9.994901483878493e-05,
+    2.220005262643099e-05,
+    1.4842953532934189e-05,
+    1.3771001249551773e-05,
+    1.3823970220983028e-05,
+    1.3698008842766285e-05,
+    1.2792006600648165e-05,
+    1.335999695584178e-05,
+    1.296499976888299e-05,
+    1.3065000530332327e-05
+   ],
+   "warm_median_seconds": 1.3698008842766285e-05,
+   "warm_min_seconds": 1.2792006600648165e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.1860975064337254e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.1860975064337254e-05,
+    9.560957551002502e-06,
+    8.97503923624754e-06,
+    8.927017915993929e-06,
+    8.57701525092125e-06,
+    8.306989911943674e-06,
+    8.377945050597191e-06,
+    8.506001904606819e-06,
+    8.476024959236383e-06,
+    8.50501237437129e-06
+   ],
+   "warm_median_seconds": 8.506001904606819e-06,
+   "warm_min_seconds": 8.306989911943674e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.222994903102517e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.222994903102517e-05,
+    1.663900911808014e-05,
+    1.4121003914624453e-05,
+    1.2658943887799978e-05,
+    1.1567026376724243e-05,
+    1.2050033546984196e-05,
+    1.2510980013757944e-05,
+    1.1808006092905998e-05,
+    1.1325988452881575e-05,
+    1.1797994375228882e-05
+   ],
+   "warm_median_seconds": 1.2050033546984196e-05,
+   "warm_min_seconds": 1.1325988452881575e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.05028999695787206,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05028999695787206,
+    0.05161340703489259
+   ],
+   "warm_median_seconds": 0.05161340703489259,
+   "warm_min_seconds": 0.05161340703489259
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.17367581999860704,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.17367581999860704,
+    0.19354058301541954
+   ],
+   "warm_median_seconds": 0.19354058301541954,
+   "warm_min_seconds": 0.19354058301541954
+  },
+  {
+   "backend": "cpu",
+   "case": "scopes",
+   "first_seconds": 0.050654506019782275,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.050654506019782275
+   ],
+   "warm_median_seconds": 0.050654506019782275,
+   "warm_min_seconds": 0.050654506019782275
+  },
+  {
+   "backend": "cpu",
+   "case": "certification",
+   "first_seconds": 0.014067184994928539,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014067184994928539,
+    0.013952814042568207
+   ],
+   "warm_median_seconds": 0.013952814042568207,
+   "warm_min_seconds": 0.013952814042568207
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank",
+   "first_seconds": 0.007801903004292399,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007801903004292399,
+    0.007884996011853218
+   ],
+   "warm_median_seconds": 0.007884996011853218,
+   "warm_min_seconds": 0.007884996011853218
+  },
+  {
+   "backend": "cuda",
+   "case": "certification",
+   "first_seconds": 0.026701655995566398,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.026701655995566398,
+    0.02891824400285259
+   ],
+   "warm_median_seconds": 0.02891824400285259,
+   "warm_min_seconds": 0.02891824400285259
+  },
+  {
+   "backend": "cuda",
+   "case": "finest bank",
+   "first_seconds": 0.003476699988823384,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003476699988823384,
+    0.004645507025998086
+   ],
+   "warm_median_seconds": 0.004645507025998086,
+   "warm_min_seconds": 0.004645507025998086
+  },
+  {
+   "backend": "cpu",
+   "case": "hierarchy (rollups)",
+   "first_seconds": 0.012153024028521031,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.012153024028521031,
+    0.010174781025853008,
+    0.009273239993490279
+   ],
+   "warm_median_seconds": 0.009724010509671643,
+   "warm_min_seconds": 0.009273239993490279
+  },
+  {
+   "backend": "cpu",
+   "bytes": 26696260,
+   "case": "retained state",
+   "level_bytes": [
+    155876,
+    57988,
+    21660,
+    8284,
+    3268,
+    1292,
+    684,
+    380
+   ],
+   "level_cells": [
+    0,
+    7168,
+    2660,
+    987,
+    371,
+    140,
+    49,
+    21
+   ],
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "measure",
+   "present": [
+    1024,
+    186,
+    37,
+    4,
+    2,
+    1,
+    1,
+    1
+   ],
+   "rollup_cells": 11396
+  },
+  {
+   "backend": "cpu",
+   "case": "request finest bank",
+   "first_seconds": 0.00010076601756736636,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    0.00010076601756736636,
+    2.567900810390711e-05,
+    1.624802825972438e-05,
+    1.4017976354807615e-05,
+    1.398700987920165e-05,
+    1.3484968803822994e-05,
+    1.3231008779257536e-05,
+    1.3059994671493769e-05,
+    1.2879027053713799e-05,
+    1.3141019735485315e-05
+   ],
+   "warm_median_seconds": 1.3484968803822994e-05,
+   "warm_min_seconds": 1.2879027053713799e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "request coarsest bank",
+   "first_seconds": 1.21330376714468e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    1.21330376714468e-05,
+    1.0087969712913036e-05,
+    9.187962859869003e-06,
+    8.690985850989819e-06,
+    8.653034456074238e-06,
+    8.473987691104412e-06,
+    8.269969839602709e-06,
+    8.740986231714487e-06,
+    8.248025551438332e-06,
+    8.488015737384558e-06
+   ],
+   "warm_median_seconds": 8.653034456074238e-06,
+   "warm_min_seconds": 8.248025551438332e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "request one coarse state",
+   "first_seconds": 4.322000313550234e-05,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "warm",
+   "result": 500000,
+   "samples_seconds": [
+    4.322000313550234e-05,
+    1.7824990209192038e-05,
+    1.3465003576129675e-05,
+    1.2008007615804672e-05,
+    1.1920987162739038e-05,
+    1.1486001312732697e-05,
+    1.217902172356844e-05,
+    1.1718017049133778e-05,
+    1.2364995200186968e-05,
+    1.2231001164764166e-05
+   ],
+   "warm_median_seconds": 1.217902172356844e-05,
+   "warm_min_seconds": 1.1486001312732697e-05
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (every level from rows)",
+   "first_seconds": 0.05572850099997595,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05572850099997595,
+    0.05716422200202942
+   ],
+   "warm_median_seconds": 0.05716422200202942,
+   "warm_min_seconds": 0.05716422200202942
+  },
+  {
+   "backend": "duckdb",
+   "case": "DuckDB GROUP BY (every level)",
+   "first_seconds": 0.19008269300684333,
+   "params": {
+    "groups": 1024,
+    "levels": 8,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     380,
+     141,
+     53,
+     20,
+     7,
+     3,
+     1
+    ],
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.19008269300684333,
+    0.17209745798027143
+   ],
+   "warm_median_seconds": 0.17209745798027143,
+   "warm_min_seconds": 0.17209745798027143
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.048676815000362694,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.048676815000362694,
+    0.04900699097197503
+   ],
+   "warm_median_seconds": 0.04900699097197503,
+   "warm_min_seconds": 0.04900699097197503
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.006475678994320333,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006475678994320333,
+    0.006412043992895633
+   ],
+   "warm_median_seconds": 0.006412043992895633,
+   "warm_min_seconds": 0.006412043992895633
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.0010904839728027582,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010904839728027582,
+    0.0012411639909259975,
+    0.0008816689951345325
+   ],
+   "warm_median_seconds": 0.001061416493030265,
+   "warm_min_seconds": 0.0008816689951345325
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.0010601530084386468,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010601530084386468,
+    0.0006475819973275065
+   ],
+   "warm_median_seconds": 0.0006475819973275065,
+   "warm_min_seconds": 0.0006475819973275065
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.00020419101929292083,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00020419101929292083,
+    0.00019498600158840418,
+    0.00020555901573970914
+   ],
+   "warm_median_seconds": 0.00020027250866405666,
+   "warm_min_seconds": 0.00019498600158840418
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0009413099614903331,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009413099614903331,
+    0.0012303849798627198,
+    0.0008982179570011795
+   ],
+   "warm_median_seconds": 0.0010643014684319496,
+   "warm_min_seconds": 0.0008982179570011795
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 10,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    210,
+    196,
+    119
+   ],
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4931,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "local",
+    "local",
+    "local"
+   ]
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.040936802979558706,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.040936802979558706,
+    0.04786086396779865
+   ],
+   "warm_median_seconds": 0.04786086396779865,
+   "warm_min_seconds": 0.04786086396779865
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.006448203988838941,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006448203988838941,
+    0.006272199971135706
+   ],
+   "warm_median_seconds": 0.006272199971135706,
+   "warm_min_seconds": 0.006272199971135706
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.0011225389898754656,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011225389898754656,
+    0.001196335011627525,
+    0.0008385569672100246
+   ],
+   "warm_median_seconds": 0.0010174459894187748,
+   "warm_min_seconds": 0.0008385569672100246
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.008087977999821305,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008087977999821305,
+    0.007582072983495891
+   ],
+   "warm_median_seconds": 0.007582072983495891,
+   "warm_min_seconds": 0.007582072983495891
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.001938475004862994,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001938475004862994,
+    0.001971767982468009,
+    0.0018977349973283708
+   ],
+   "warm_median_seconds": 0.00193475148989819,
+   "warm_min_seconds": 0.0018977349973283708
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0014294119901023805,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014294119901023805,
+    0.0015885879984125495,
+    0.0011385370162315667
+   ],
+   "warm_median_seconds": 0.001363562507322058,
+   "warm_min_seconds": 0.0011385370162315667
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 102,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    1925,
+    896,
+    112
+   ],
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 50043,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "local",
+    "rollup",
+    "rollup"
+   ]
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.032026322034653276,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.032026322034653276,
+    0.036413674999494106
+   ],
+   "warm_median_seconds": 0.036413674999494106,
+   "warm_min_seconds": 0.036413674999494106
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.006382671010214835,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006382671010214835,
+    0.00631674297619611
+   ],
+   "warm_median_seconds": 0.00631674297619611,
+   "warm_min_seconds": 0.00631674297619611
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.001442420994862914,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001442420994862914,
+    0.0013985219993628561,
+    0.000922402017749846
+   ],
+   "warm_median_seconds": 0.001160462008556351,
+   "warm_min_seconds": 0.000922402017749846
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.08786444301949814,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.08786444301949814,
+    0.09106584003893659
+   ],
+   "warm_median_seconds": 0.09106584003893659,
+   "warm_min_seconds": 0.09106584003893659
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.01846584997838363,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01846584997838363,
+    0.01876295800320804,
+    0.018843156984075904
+   ],
+   "warm_median_seconds": 0.018803057493641973,
+   "warm_min_seconds": 0.01876295800320804
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0015576370060443878,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015576370060443878,
+    0.0015995890134945512,
+    0.0012646359973587096
+   ],
+   "warm_median_seconds": 0.0014321125054266304,
+   "warm_min_seconds": 0.0012646359973587096
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 1024,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    7168,
+    896,
+    112
+   ],
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "balanced",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "rollup",
+    "rollup",
+    "rollup"
+   ]
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.036664968996774405,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.036664968996774405,
+    0.047180731024127454
+   ],
+   "warm_median_seconds": 0.047180731024127454,
+   "warm_min_seconds": 0.047180731024127454
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.006413660012185574,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006413660012185574,
+    0.006282971997279674
+   ],
+   "warm_median_seconds": 0.006282971997279674,
+   "warm_min_seconds": 0.006282971997279674
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.001346719975117594,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001346719975117594,
+    0.0014064779970794916,
+    0.0009372170316055417
+   ],
+   "warm_median_seconds": 0.0011718475143425167,
+   "warm_min_seconds": 0.0009372170316055417
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.0008706629741936922,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008706629741936922,
+    0.0006232490413822234
+   ],
+   "warm_median_seconds": 0.0006232490413822234,
+   "warm_min_seconds": 0.0006232490413822234
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.0002020859974436462,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002020859974436462,
+    0.00019477098248898983,
+    0.00018218799959868193
+   ],
+   "warm_median_seconds": 0.00018847949104383588,
+   "warm_min_seconds": 0.00018218799959868193
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0011921559926122427,
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011921559926122427,
+    0.0012346890289336443,
+    0.0009702779934741557
+   ],
+   "warm_median_seconds": 0.0011024835112039,
+   "warm_min_seconds": 0.0009702779934741557
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 10,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    161,
+    49,
+    21
+   ],
+   "params": {
+    "changed_leaves": 10,
+    "changed_rows": 4781,
+    "fraction": 0.01,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "local",
+    "local",
+    "local"
+   ]
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.031864649965427816,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.031864649965427816,
+    0.036930118047166616
+   ],
+   "warm_median_seconds": 0.036930118047166616,
+   "warm_min_seconds": 0.036930118047166616
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.0063910839962773025,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0063910839962773025,
+    0.006230956001672894
+   ],
+   "warm_median_seconds": 0.006230956001672894,
+   "warm_min_seconds": 0.006230956001672894
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.0010618329979479313,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010618329979479313,
+    0.0015296390047296882,
+    0.0011309320107102394
+   ],
+   "warm_median_seconds": 0.0013302855077199638,
+   "warm_min_seconds": 0.0011309320107102394
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.008410629001446068,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008410629001446068,
+    0.007816714001819491
+   ],
+   "warm_median_seconds": 0.007816714001819491,
+   "warm_min_seconds": 0.007816714001819491
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.0017424429534003139,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017424429534003139,
+    0.0018696709885261953,
+    0.0018361859838478267
+   ],
+   "warm_median_seconds": 0.001852928486187011,
+   "warm_min_seconds": 0.0018361859838478267
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0009829570190049708,
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009829570190049708,
+    0.0011291299597360194,
+    0.0009207829716615379
+   ],
+   "warm_median_seconds": 0.0010249564656987786,
+   "warm_min_seconds": 0.0009207829716615379
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 102,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    1596,
+    385,
+    105
+   ],
+   "params": {
+    "changed_leaves": 102,
+    "changed_rows": 49738,
+    "fraction": 0.1,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "local",
+    "local",
+    "local"
+   ]
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scopes, maps, bank, rollups)",
+   "first_seconds": 0.03307954699266702,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03307954699266702,
+    0.03340080101042986
+   ],
+   "warm_median_seconds": 0.03340080101042986,
+   "warm_min_seconds": 0.03340080101042986
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank rebuilt",
+   "first_seconds": 0.00672339100856334,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00672339100856334,
+    0.006435677001718432
+   ],
+   "warm_median_seconds": 0.006435677001718432,
+   "warm_min_seconds": 0.006435677001718432
+  },
+  {
+   "backend": "cpu",
+   "case": "local update of the coarse levels",
+   "first_seconds": 0.0010428630048409104,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010428630048409104,
+    0.0010975559707731009,
+    0.0008305849623866379
+   ],
+   "warm_median_seconds": 0.0009640704665798694,
+   "warm_min_seconds": 0.0008305849623866379
+  },
+  {
+   "backend": "cpu",
+   "case": "delta of the changed rows (DELTA-001)",
+   "first_seconds": 0.08946223004022613,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.08946223004022613,
+    0.09339258301770315
+   ],
+   "warm_median_seconds": 0.09339258301770315,
+   "warm_min_seconds": 0.09339258301770315
+  },
+  {
+   "backend": "cpu",
+   "case": "finest bank by the delta (DELTA-001)",
+   "first_seconds": 0.018751233001239598,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.018751233001239598,
+    0.019070662965532392,
+    0.01842644199496135
+   ],
+   "warm_median_seconds": 0.01874855248024687,
+   "warm_min_seconds": 0.01842644199496135
+  },
+  {
+   "backend": "cpu",
+   "case": "local update from the delta's bank",
+   "first_seconds": 0.0015082390164025128,
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015082390164025128,
+    0.0015090249944478273,
+    0.0008986159809865057
+   ],
+   "warm_median_seconds": 0.0012038204877171665,
+   "warm_min_seconds": 0.0008986159809865057
+  },
+  {
+   "backend": "cpu",
+   "case": "localized work",
+   "changed": 1024,
+   "complete_cells": 8176,
+   "level_cells": [
+    7168,
+    7168,
+    896,
+    112
+   ],
+   "params": {
+    "changed_leaves": 1024,
+    "changed_rows": 500000,
+    "fraction": 1.0,
+    "rows": 500000,
+    "shape": "skewed",
+    "sizes": [
+     1024,
+     128,
+     16,
+     1
+    ]
+   },
+   "phase": "measure",
+   "strategy": [
+    "copy",
+    "rollup",
+    "rollup",
+    "rollup"
+   ]
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0008579719578847289,
+   "params": {
+    "child_groups": 1024,
+    "kind": "mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008579719578847289,
+    0.0007619839743711054,
+    0.0007460080087184906
+   ],
+   "warm_median_seconds": 0.000753995991544798,
+   "warm_min_seconds": 0.0007460080087184906
+  },
+  {
+   "backend": "cuda",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0013882550410926342,
+   "params": {
+    "child_groups": 1024,
+    "kind": "mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013882550410926342,
+    0.0008788560517132282,
+    0.0007376259891316295
+   ],
+   "warm_median_seconds": 0.0008082410204224288,
+   "warm_min_seconds": 0.0007376259891316295
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (exact ints)",
+   "first_seconds": 0.0007389759994111955,
+   "params": {
+    "child_groups": 1024,
+    "kind": "mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007389759994111955,
+    0.0007913500303402543,
+    0.00048745202366262674
+   ],
+   "warm_median_seconds": 0.0006394010270014405,
+   "warm_min_seconds": 0.00048745202366262674
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (Fractions with decoded keys)",
+   "first_seconds": 0.004168117011431605,
+   "params": {
+    "child_groups": 1024,
+    "kind": "mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004168117011431605,
+    0.004371794988401234
+   ],
+   "warm_median_seconds": 0.004371794988401234,
+   "warm_min_seconds": 0.004371794988401234
+  },
+  {
+   "backend": "python-fractions",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0044370680116117,
+   "params": {
+    "child_groups": 1024,
+    "kind": "mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0044370680116117
+   ],
+   "warm_median_seconds": 0.0044370680116117,
+   "warm_min_seconds": 0.0044370680116117
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.00016553502064198256,
+   "params": {
+    "child_groups": 1024,
+    "kind": "total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00016553502064198256,
+    0.00011429103324189782,
+    8.898298256099224e-05
+   ],
+   "warm_median_seconds": 0.00010163700790144503,
+   "warm_min_seconds": 8.898298256099224e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0011114149820059538,
+   "params": {
+    "child_groups": 1024,
+    "kind": "total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011114149820059538,
+    0.0010389360249973834,
+    0.0007925519603304565
+   ],
+   "warm_median_seconds": 0.0009157439926639199,
+   "warm_min_seconds": 0.0007925519603304565
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (exact ints)",
+   "first_seconds": 0.0006926680216565728,
+   "params": {
+    "child_groups": 1024,
+    "kind": "total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006926680216565728,
+    0.0005840029916726053,
+    0.00043013301910832524
+   ],
+   "warm_median_seconds": 0.0005070680053904653,
+   "warm_min_seconds": 0.00043013301910832524
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (Fractions with decoded keys)",
+   "first_seconds": 0.003471159958280623,
+   "params": {
+    "child_groups": 1024,
+    "kind": "total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003471159958280623,
+    0.0036569780204445124
+   ],
+   "warm_median_seconds": 0.0036569780204445124,
+   "warm_min_seconds": 0.0036569780204445124
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0004880460328422487,
+   "params": {
+    "child_groups": 1024,
+    "kind": "share",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004880460328422487,
+    0.00048096501268446445,
+    0.0004508779966272414
+   ],
+   "warm_median_seconds": 0.0004659215046558529,
+   "warm_min_seconds": 0.0004508779966272414
+  },
+  {
+   "backend": "cuda",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0011104210279881954,
+   "params": {
+    "child_groups": 1024,
+    "kind": "share",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011104210279881954,
+    0.0008734379662200809,
+    0.0008173219976015389
+   ],
+   "warm_median_seconds": 0.0008453799819108099,
+   "warm_min_seconds": 0.0008173219976015389
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (exact ints)",
+   "first_seconds": 0.0005454529891721904,
+   "params": {
+    "child_groups": 1024,
+    "kind": "share",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005454529891721904,
+    0.0005258159944787621,
+    0.0015819310210645199
+   ],
+   "warm_median_seconds": 0.001053873507771641,
+   "warm_min_seconds": 0.0005258159944787621
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (Fractions with decoded keys)",
+   "first_seconds": 0.004146515973843634,
+   "params": {
+    "child_groups": 1024,
+    "kind": "share",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004146515973843634,
+    0.004562410991638899
+   ],
+   "warm_median_seconds": 0.004562410991638899,
+   "warm_min_seconds": 0.004562410991638899
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0007266880129463971,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007266880129463971,
+    0.0007028930122032762,
+    0.0006578320171684027
+   ],
+   "warm_median_seconds": 0.0006803625146858394,
+   "warm_min_seconds": 0.0006578320171684027
+  },
+  {
+   "backend": "cuda",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0012795180082321167,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012795180082321167,
+    0.0009875780087895691,
+    0.0009653419838286936
+   ],
+   "warm_median_seconds": 0.0009764599963091314,
+   "warm_min_seconds": 0.0009653419838286936
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (exact ints)",
+   "first_seconds": 0.0028315450181253254,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028315450181253254,
+    0.0008000280358828604,
+    0.006979787023738027
+   ],
+   "warm_median_seconds": 0.0038899075298104435,
+   "warm_min_seconds": 0.0008000280358828604
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (Fractions with decoded keys)",
+   "first_seconds": 0.004025992995593697,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_mean",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004025992995593697,
+    0.003998827014584094
+   ],
+   "warm_median_seconds": 0.003998827014584094,
+   "warm_min_seconds": 0.003998827014584094
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.00019025302026420832,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019025302026420832,
+    0.00012947502546012402,
+    0.00010121497325599194
+   ],
+   "warm_median_seconds": 0.00011534499935805798,
+   "warm_min_seconds": 0.00010121497325599194
+  },
+  {
+   "backend": "cuda",
+   "case": "contrasts (native cells)",
+   "first_seconds": 0.0015887640183791518,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015887640183791518,
+    0.0011315220035612583,
+    0.0011055590002797544
+   ],
+   "warm_median_seconds": 0.0011185405019205064,
+   "warm_min_seconds": 0.0011055590002797544
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (exact ints)",
+   "first_seconds": 0.0005703010247088969,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005703010247088969,
+    0.0005341999931260943,
+    0.0006130069959908724
+   ],
+   "warm_median_seconds": 0.0005736034945584834,
+   "warm_min_seconds": 0.0005341999931260943
+  },
+  {
+   "backend": "cpu",
+   "case": "contrasts formatted (Fractions with decoded keys)",
+   "first_seconds": 0.003712305973749608,
+   "params": {
+    "child_groups": 1024,
+    "kind": "sibling_total",
+    "rows": 500000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003712305973749608,
+    0.0036989309592172503
+   ],
+   "warm_median_seconds": 0.0036989309592172503,
+   "warm_min_seconds": 0.0036989309592172503
+  }
+ ],
+ "seconds": 5.748192166967783,
+ "seed": 2026,
+ "thresholds": []
+}

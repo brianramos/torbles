@@ -1,0 +1,2308 @@
+{
+ "argv": [
+  "--capability",
+  "BOOL-002",
+  "--out",
+  "/home/brian/torbles_math/results/math/BOOL-002/benchmark_device_math_influence_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "BOOL-002",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:14:11+00:00"
+ },
+ "notes": [
+  "k=4, sharing=0.0: total influence 53717/25000 (max sensitivity 4)",
+  "k=4, sharing=0.6: total influence 54431/50000 (max sensitivity 3)",
+  "k=4, sharing=0.9: total influence 55571/50000 (max sensitivity 3)",
+  "k=8, sharing=0.0: total influence 345433/100000 (max sensitivity 6)",
+  "k=8, sharing=0.6: total influence 124433/50000 (max sensitivity 5)",
+  "k=8, sharing=0.9: total influence 208697/100000 (max sensitivity 7)",
+  "k=16, sharing=0.0: total influence 207327/100000 (max sensitivity 10)",
+  "k=16, sharing=0.6: total influence 170237/50000 (max sensitivity 11)",
+  "k=16, sharing=0.9: total influence 418047/100000 (max sensitivity 12)",
+  "every row, order 1: first term sensitive 0, unknown 29617 of 100000 points",
+  "every row, order 2: first term sensitive 4935, unknown 29427 of 100000 points",
+  "every row, order 3: first term sensitive 0, unknown 20484 of 100000 points",
+  "sparse 1% of rows, order 1: first term sensitive 0, unknown 311 of 1018 points",
+  "sparse 1% of rows, order 2: first term sensitive 150, unknown 401 of 1018 points",
+  "sparse 1% of rows, order 3: first term sensitive 0, unknown 208 of 1018 points",
+  "NULL-conditioned (half NULL), order 1: first term sensitive 0, unknown 74857 of 100000 points",
+  "NULL-conditioned (half NULL), order 2: first term sensitive 5323, unknown 74857 of 100000 points",
+  "NULL-conditioned (half NULL), order 3: first term sensitive 0, unknown 74857 of 100000 points",
+  "Native CPU paths are single-threaded. Influence = coordinate sensitivity of the predicate (the measure of the points where its XOR derivative is TRUE), under the declared measure; not a causal effect."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0005628630169667304,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 4,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 65452,
+    "total_sensitive": 214868
+   },
+   "samples_seconds": [
+    0.0005628630169667304,
+    0.00040705897845327854,
+    0.00039881496923044324,
+    0.00038542202673852444
+   ],
+   "warm_median_seconds": 0.00039881496923044324,
+   "warm_min_seconds": 0.00038542202673852444
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.06945624900981784,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 4,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 65452,
+    "total_sensitive": 214868
+   },
+   "samples_seconds": [
+    0.06945624900981784,
+    0.001092082995455712,
+    0.0010257299873046577,
+    0.0009477370185777545
+   ],
+   "warm_median_seconds": 0.0010257299873046577,
+   "warm_min_seconds": 0.0009477370185777545
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0006649669958278537,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006649669958278537,
+    0.0005375900072976947,
+    0.0005135830142535269
+   ],
+   "warm_median_seconds": 0.0005255865107756108,
+   "warm_min_seconds": 0.0005135830142535269
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.04094685101881623,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.04094685101881623
+   ],
+   "warm_median_seconds": 0.04094685101881623,
+   "warm_min_seconds": 0.04094685101881623
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0005901299882680178,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 3,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 72795,
+    "total_sensitive": 108862
+   },
+   "samples_seconds": [
+    0.0005901299882680178,
+    0.0005258010351099074,
+    0.0005300689954310656,
+    0.0005269680405035615
+   ],
+   "warm_median_seconds": 0.0005269680405035615,
+   "warm_min_seconds": 0.0005258010351099074
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0014894120395183563,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 3,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 72795,
+    "total_sensitive": 108862
+   },
+   "samples_seconds": [
+    0.0014894120395183563,
+    0.001288125989958644,
+    0.0010057460167445242,
+    0.0009761020191945136
+   ],
+   "warm_median_seconds": 0.0010057460167445242,
+   "warm_min_seconds": 0.0009761020191945136
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0007197330123744905,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007197330123744905,
+    0.0006659170030616224,
+    0.0006961459876038134
+   ],
+   "warm_median_seconds": 0.0006810314953327179,
+   "warm_min_seconds": 0.0006659170030616224
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.07642913499148563,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07642913499148563
+   ],
+   "warm_median_seconds": 0.07642913499148563,
+   "warm_min_seconds": 0.07642913499148563
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0006020370055921376,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 3,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 65452,
+    "total_sensitive": 111142
+   },
+   "samples_seconds": [
+    0.0006020370055921376,
+    0.0005271940026432276,
+    0.000626957044005394,
+    0.0005824640393257141
+   ],
+   "warm_median_seconds": 0.0005824640393257141,
+   "warm_min_seconds": 0.0005271940026432276
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0012916880077682436,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 3,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 65452,
+    "total_sensitive": 111142
+   },
+   "samples_seconds": [
+    0.0012916880077682436,
+    0.0014010309823788702,
+    0.0009737220243550837,
+    0.0009449759963899851
+   ],
+   "warm_median_seconds": 0.0009737220243550837,
+   "warm_min_seconds": 0.0009449759963899851
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0007555370102636516,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007555370102636516,
+    0.0006672649760730565,
+    0.0006876239785924554
+   ],
+   "warm_median_seconds": 0.0006774444773327559,
+   "warm_min_seconds": 0.0006672649760730565
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.08270232001086697,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08270232001086697
+   ],
+   "warm_median_seconds": 0.08270232001086697,
+   "warm_min_seconds": 0.08270232001086697
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0009591279667802155,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 6,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 56991,
+    "total_sensitive": 345433
+   },
+   "samples_seconds": [
+    0.0009591279667802155,
+    0.0010174859780818224,
+    0.0010506740072742105,
+    0.0009819460101425648
+   ],
+   "warm_median_seconds": 0.0010174859780818224,
+   "warm_min_seconds": 0.0009819460101425648
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0016792580136097968,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 6,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 56991,
+    "total_sensitive": 345433
+   },
+   "samples_seconds": [
+    0.0016792580136097968,
+    0.0015005799941718578,
+    0.001356285996735096,
+    0.0011818960192613304
+   ],
+   "warm_median_seconds": 0.001356285996735096,
+   "warm_min_seconds": 0.0011818960192613304
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0014007959980517626,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014007959980517626,
+    0.00133251998340711,
+    0.001325245015323162
+   ],
+   "warm_median_seconds": 0.001328882499365136,
+   "warm_min_seconds": 0.001325245015323162
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.16009374702116475,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.16009374702116475
+   ],
+   "warm_median_seconds": 0.16009374702116475,
+   "warm_min_seconds": 0.16009374702116475
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0015941680176183581,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 5,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 64959,
+    "total_sensitive": 248866
+   },
+   "samples_seconds": [
+    0.0015941680176183581,
+    0.0015214720042422414,
+    0.00144902803003788,
+    0.001404934038873762
+   ],
+   "warm_median_seconds": 0.00144902803003788,
+   "warm_min_seconds": 0.001404934038873762
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.002090792986564338,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 5,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 64959,
+    "total_sensitive": 248866
+   },
+   "samples_seconds": [
+    0.002090792986564338,
+    0.0017596199759282172,
+    0.0018435679958201945,
+    0.0017256070277653635
+   ],
+   "warm_median_seconds": 0.0017596199759282172,
+   "warm_min_seconds": 0.0017256070277653635
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0020016200141981244,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020016200141981244,
+    0.0019800590234808624,
+    0.0019374779658392072
+   ],
+   "warm_median_seconds": 0.0019587684946600348,
+   "warm_min_seconds": 0.0019374779658392072
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.24211366300005466,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.24211366300005466
+   ],
+   "warm_median_seconds": 0.24211366300005466,
+   "warm_min_seconds": 0.24211366300005466
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.002157648967113346,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 59933,
+    "total_sensitive": 208697
+   },
+   "samples_seconds": [
+    0.002157648967113346,
+    0.001994427992030978,
+    0.0018769900198094547,
+    0.0018537899595685303
+   ],
+   "warm_median_seconds": 0.0018769900198094547,
+   "warm_min_seconds": 0.0018537899595685303
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0023250270169228315,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 59933,
+    "total_sensitive": 208697
+   },
+   "samples_seconds": [
+    0.0023250270169228315,
+    0.002124777005519718,
+    0.002134228008799255,
+    0.0018747560097835958
+   ],
+   "warm_median_seconds": 0.002124777005519718,
+   "warm_min_seconds": 0.0018747560097835958
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.0026934040361084044,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026934040361084044,
+    0.0026192549848929048,
+    0.0026633120141923428
+   ],
+   "warm_median_seconds": 0.0026412834995426238,
+   "warm_min_seconds": 0.0026192549848929048
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.5890445979894139,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.5890445979894139
+   ],
+   "warm_median_seconds": 0.5890445979894139,
+   "warm_min_seconds": 0.5890445979894139
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0032658129930496216,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 10,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 58645,
+    "total_sensitive": 207327
+   },
+   "samples_seconds": [
+    0.0032658129930496216,
+    0.0031766570173203945,
+    0.003104684001300484,
+    0.0030597600270994008
+   ],
+   "warm_median_seconds": 0.003104684001300484,
+   "warm_min_seconds": 0.0030597600270994008
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0031865600030869246,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 10,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 58645,
+    "total_sensitive": 207327
+   },
+   "samples_seconds": [
+    0.0031865600030869246,
+    0.002816551015712321,
+    0.0027995050186291337,
+    0.002782566996756941
+   ],
+   "warm_median_seconds": 0.0027995050186291337,
+   "warm_min_seconds": 0.002782566996756941
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.005029194988310337,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005029194988310337,
+    0.005181736021768302,
+    0.005050291016232222
+   ],
+   "warm_median_seconds": 0.005116013519000262,
+   "warm_min_seconds": 0.005050291016232222
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 0.7908166499692015,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.7908166499692015
+   ],
+   "warm_median_seconds": 0.7908166499692015,
+   "warm_min_seconds": 0.7908166499692015
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.003824212006293237,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 11,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 53966,
+    "total_sensitive": 340474
+   },
+   "samples_seconds": [
+    0.003824212006293237,
+    0.0037461300380527973,
+    0.0036212740233168006,
+    0.0036846030270680785
+   ],
+   "warm_median_seconds": 0.0036846030270680785,
+   "warm_min_seconds": 0.0036212740233168006
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.0034726690500974655,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 11,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 53966,
+    "total_sensitive": 340474
+   },
+   "samples_seconds": [
+    0.0034726690500974655,
+    0.0030867140158079565,
+    0.0030311670270748436,
+    0.00295833102427423
+   ],
+   "warm_median_seconds": 0.0030311670270748436,
+   "warm_min_seconds": 0.00295833102427423
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.005747039976995438,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005747039976995438,
+    0.005933345993980765,
+    0.0056937719928100705
+   ],
+   "warm_median_seconds": 0.005813558993395418,
+   "warm_min_seconds": 0.0056937719928100705
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 1.4426372459856793,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4426372459856793
+   ],
+   "warm_median_seconds": 1.4426372459856793,
+   "warm_min_seconds": 1.4426372459856793
+  },
+  {
+   "backend": "cpu",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.004576351959258318,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 12,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 54993,
+    "total_sensitive": 418047
+   },
+   "samples_seconds": [
+    0.004576351959258318,
+    0.004445986996870488,
+    0.004442497040145099,
+    0.004449108964763582
+   ],
+   "warm_median_seconds": 0.004445986996870488,
+   "warm_min_seconds": 0.004442497040145099
+  },
+  {
+   "backend": "cuda",
+   "case": "every influence at once, shared masks (empirical)",
+   "first_seconds": 0.00503985199611634,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 12,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 54993,
+    "total_sensitive": 418047
+   },
+   "samples_seconds": [
+    0.00503985199611634,
+    0.004286989977117628,
+    0.004077214980497956,
+    0.00428109202766791
+   ],
+   "warm_median_seconds": 0.00428109202766791,
+   "warm_min_seconds": 0.004077214980497956
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "influences, one shared-mask pass per condition (BOOL-001)",
+   "first_seconds": 0.007121015049051493,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007121015049051493,
+    0.0074006590293720365,
+    0.007043796009384096
+   ],
+   "warm_median_seconds": 0.007222227519378066,
+   "warm_min_seconds": 0.007043796009384096
+  },
+  {
+   "backend": "duckdb",
+   "case": "influences, one SQL query per condition",
+   "first_seconds": 3.6046519899973646,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.6046519899973646
+   ],
+   "warm_median_seconds": 3.6046519899973646,
+   "warm_min_seconds": 3.6046519899973646
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 8.384097600355744e-05,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "points": 256,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 8,
+    "measure": "uniform",
+    "points": 256,
+    "sensitivity_known": 256,
+    "total_sensitive": 1120
+   },
+   "samples_seconds": [
+    8.384097600355744e-05,
+    3.8443016819655895e-05,
+    3.0473980586975813e-05,
+    2.718600444495678e-05
+   ],
+   "warm_median_seconds": 3.0473980586975813e-05,
+   "warm_min_seconds": 2.718600444495678e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.001875558984465897,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "points": 256,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 8,
+    "measure": "uniform",
+    "points": 256,
+    "sensitivity_known": 256,
+    "total_sensitive": 1120
+   },
+   "samples_seconds": [
+    0.001875558984465897,
+    0.0011102819698862731,
+    0.0009123100317083299,
+    0.0012644020025618374
+   ],
+   "warm_median_seconds": 0.0011102819698862731,
+   "warm_min_seconds": 0.0009123100317083299
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.00010784098412841558,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "points": 256,
+    "terms": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010784098412841558,
+    3.5370991099625826e-05,
+    2.7406029403209686e-05
+   ],
+   "warm_median_seconds": 3.1388510251417756e-05,
+   "warm_min_seconds": 2.7406029403209686e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 5.4769974667578936e-05,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 256
+   },
+   "samples_seconds": [
+    5.4769974667578936e-05,
+    3.8097030483186245e-05,
+    3.2117997761815786e-05,
+    3.1006988137960434e-05
+   ],
+   "warm_median_seconds": 3.2117997761815786e-05,
+   "warm_min_seconds": 3.1006988137960434e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0009872490190900862,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 256
+   },
+   "samples_seconds": [
+    0.0009872490190900862,
+    0.00099941500229761,
+    0.0009206479880958796,
+    0.0010005810181610286
+   ],
+   "warm_median_seconds": 0.00099941500229761,
+   "warm_min_seconds": 0.0009206479880958796
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 9.030400542542338e-05,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.030400542542338e-05,
+    5.387701094150543e-05,
+    3.709900192916393e-05
+   ],
+   "warm_median_seconds": 4.548800643533468e-05,
+   "warm_min_seconds": 3.709900192916393e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 6.240000948309898e-05,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 256
+   },
+   "samples_seconds": [
+    6.240000948309898e-05,
+    4.193501081317663e-05,
+    3.614701563492417e-05,
+    3.229000139981508e-05
+   ],
+   "warm_median_seconds": 3.614701563492417e-05,
+   "warm_min_seconds": 3.229000139981508e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0011525970185175538,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 256
+   },
+   "samples_seconds": [
+    0.0011525970185175538,
+    0.0011743459617719054,
+    0.0011073480127379298,
+    0.0010981709929183125
+   ],
+   "warm_median_seconds": 0.0011073480127379298,
+   "warm_min_seconds": 0.0010981709929183125
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 8.617102866992354e-05,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "points": 256,
+    "terms": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.617102866992354e-05,
+    4.897895269095898e-05,
+    4.042801447212696e-05
+   ],
+   "warm_median_seconds": 4.470348358154297e-05,
+   "warm_min_seconds": 4.042801447212696e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 9.188603144139051e-05,
+   "params": {
+    "conditions": 12,
+    "order": 1,
+    "points": 4096,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 8,
+    "measure": "uniform",
+    "points": 4096,
+    "sensitivity_known": 4096,
+    "total_sensitive": 25088
+   },
+   "samples_seconds": [
+    9.188603144139051e-05,
+    6.326701259240508e-05,
+    5.7187979109585285e-05,
+    5.440897075459361e-05
+   ],
+   "warm_median_seconds": 5.7187979109585285e-05,
+   "warm_min_seconds": 5.440897075459361e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0009991920087486506,
+   "params": {
+    "conditions": 12,
+    "order": 1,
+    "points": 4096,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 8,
+    "measure": "uniform",
+    "points": 4096,
+    "sensitivity_known": 4096,
+    "total_sensitive": 25088
+   },
+   "samples_seconds": [
+    0.0009991920087486506,
+    0.000947360007558018,
+    0.0021529599907808006,
+    0.0010439619654789567
+   ],
+   "warm_median_seconds": 0.0010439619654789567,
+   "warm_min_seconds": 0.000947360007558018
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.00019539002096280456,
+   "params": {
+    "conditions": 12,
+    "order": 1,
+    "points": 4096,
+    "terms": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00019539002096280456,
+    0.0001560780219733715,
+    0.0001462879590690136
+   ],
+   "warm_median_seconds": 0.00015118299052119255,
+   "warm_min_seconds": 0.0001462879590690136
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 9.995501022785902e-05,
+   "params": {
+    "conditions": 12,
+    "order": 2,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 4096
+   },
+   "samples_seconds": [
+    9.995501022785902e-05,
+    6.581400521099567e-05,
+    6.0843012761324644e-05,
+    5.7864002883434296e-05
+   ],
+   "warm_median_seconds": 6.0843012761324644e-05,
+   "warm_min_seconds": 5.7864002883434296e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0010238970280624926,
+   "params": {
+    "conditions": 12,
+    "order": 2,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 4096
+   },
+   "samples_seconds": [
+    0.0010238970280624926,
+    0.0009648730047047138,
+    0.0009346089791506529,
+    0.0010802469914779067
+   ],
+   "warm_median_seconds": 0.0009648730047047138,
+   "warm_min_seconds": 0.0009346089791506529
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.0003519119927659631,
+   "params": {
+    "conditions": 12,
+    "order": 2,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003519119927659631,
+    0.00026170298224315047,
+    0.00024479400599375367
+   ],
+   "warm_median_seconds": 0.00025324849411845207,
+   "warm_min_seconds": 0.00024479400599375367
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 9.884900646284223e-05,
+   "params": {
+    "conditions": 12,
+    "order": 3,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 4096
+   },
+   "samples_seconds": [
+    9.884900646284223e-05,
+    8.035398786887527e-05,
+    7.587199797853827e-05,
+    7.442699279636145e-05
+   ],
+   "warm_median_seconds": 7.587199797853827e-05,
+   "warm_min_seconds": 7.442699279636145e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.00111655198270455,
+   "params": {
+    "conditions": 12,
+    "order": 3,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 4096
+   },
+   "samples_seconds": [
+    0.00111655198270455,
+    0.0011276460136286914,
+    0.001181163010187447,
+    0.0010564579861238599
+   ],
+   "warm_median_seconds": 0.0011276460136286914,
+   "warm_min_seconds": 0.0010564579861238599
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.0005001759855076671,
+   "params": {
+    "conditions": 12,
+    "order": 3,
+    "points": 4096,
+    "terms": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005001759855076671,
+    0.0004688489716500044,
+    0.0004582550027407706
+   ],
+   "warm_median_seconds": 0.0004635519871953875,
+   "warm_min_seconds": 0.0004582550027407706
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0005093700019642711,
+   "params": {
+    "conditions": 16,
+    "order": 1,
+    "points": 65536,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 14,
+    "measure": "uniform",
+    "points": 65536,
+    "sensitivity_known": 65536,
+    "total_sensitive": 405600
+   },
+   "samples_seconds": [
+    0.0005093700019642711,
+    0.0005057379603385925,
+    0.0004624249995686114,
+    0.0004529249854385853
+   ],
+   "warm_median_seconds": 0.0004624249995686114,
+   "warm_min_seconds": 0.0004529249854385853
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0014440309605561197,
+   "params": {
+    "conditions": 16,
+    "order": 1,
+    "points": 65536,
+    "terms": 0
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 14,
+    "measure": "uniform",
+    "points": 65536,
+    "sensitivity_known": 65536,
+    "total_sensitive": 405600
+   },
+   "samples_seconds": [
+    0.0014440309605561197,
+    0.0012820899719372392,
+    0.0012122810003347695,
+    0.001223648025188595
+   ],
+   "warm_median_seconds": 0.001223648025188595,
+   "warm_min_seconds": 0.0012122810003347695
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.0028187829884700477,
+   "params": {
+    "conditions": 16,
+    "order": 1,
+    "points": 65536,
+    "terms": 0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028187829884700477,
+    0.0027723200037144125,
+    0.0027452699723653495
+   ],
+   "warm_median_seconds": 0.002758794988039881,
+   "warm_min_seconds": 0.0027452699723653495
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0004579240339808166,
+   "params": {
+    "conditions": 16,
+    "order": 2,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 65536
+   },
+   "samples_seconds": [
+    0.0004579240339808166,
+    0.0004408409586176276,
+    0.0004292649682611227,
+    0.0004237020038999617
+   ],
+   "warm_median_seconds": 0.0004292649682611227,
+   "warm_min_seconds": 0.0004237020038999617
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0013500410132110119,
+   "params": {
+    "conditions": 16,
+    "order": 2,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 65536
+   },
+   "samples_seconds": [
+    0.0013500410132110119,
+    0.0012087940122000873,
+    0.0012415029923431575,
+    0.0011686589568853378
+   ],
+   "warm_median_seconds": 0.0012087940122000873,
+   "warm_min_seconds": 0.0011686589568853378
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.004184412013273686,
+   "params": {
+    "conditions": 16,
+    "order": 2,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004184412013273686,
+    0.00420346501050517,
+    0.004210849991068244
+   ],
+   "warm_median_seconds": 0.004207157500786707,
+   "warm_min_seconds": 0.00420346501050517
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0007082070223987103,
+   "params": {
+    "conditions": 16,
+    "order": 3,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 65536
+   },
+   "samples_seconds": [
+    0.0007082070223987103,
+    0.0006549900281243026,
+    0.0007372499676421285,
+    0.0006581670022569597
+   ],
+   "warm_median_seconds": 0.0006581670022569597,
+   "warm_min_seconds": 0.0006549900281243026
+  },
+  {
+   "backend": "cuda",
+   "case": "uniform measure: truth table, every influence + terms",
+   "first_seconds": 0.0014518860261887312,
+   "params": {
+    "conditions": 16,
+    "order": 3,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "every one of the 2^k assignments of the conditions, each once (the truth table)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "uniform",
+    "points": 65536
+   },
+   "samples_seconds": [
+    0.0014518860261887312,
+    0.001276627997867763,
+    0.001262697041966021,
+    0.0012847009929828346
+   ],
+   "warm_median_seconds": 0.001276627997867763,
+   "warm_min_seconds": 0.001262697041966021
+  },
+  {
+   "backend": "cpu-bool001",
+   "case": "uniform measure: BOOL-001 cone re-evaluation on generated words",
+   "first_seconds": 0.007645587029401213,
+   "params": {
+    "conditions": 16,
+    "order": 3,
+    "points": 65536,
+    "terms": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007645587029401213,
+    0.007705314958002418,
+    0.0076410999754443765
+   ],
+   "warm_median_seconds": 0.007673207466723397,
+   "warm_min_seconds": 0.0076410999754443765
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.001271133020054549,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 60616,
+    "total_sensitive": 176090
+   },
+   "samples_seconds": [
+    0.001271133020054549,
+    0.0012476569972932339,
+    0.0012646950199268758,
+    0.0012146799708716571
+   ],
+   "warm_median_seconds": 0.0012476569972932339,
+   "warm_min_seconds": 0.0012146799708716571
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0023260160232894123,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 60616,
+    "total_sensitive": 176090
+   },
+   "samples_seconds": [
+    0.0023260160232894123,
+    0.0017322450294159353,
+    0.0018977639847435057,
+    0.0018873770022764802
+   ],
+   "warm_median_seconds": 0.0018873770022764802,
+   "warm_min_seconds": 0.0017322450294159353
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0024397330125793815,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.0024397330125793815,
+    0.0024215629673562944,
+    0.002388505032286048,
+    0.002422655001282692
+   ],
+   "warm_median_seconds": 0.0024215629673562944,
+   "warm_min_seconds": 0.002388505032286048
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.002904625958763063,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.002904625958763063,
+    0.0025108010158874094,
+    0.0026731580146588385,
+    0.0028153349994681776
+   ],
+   "warm_median_seconds": 0.0026731580146588385,
+   "warm_min_seconds": 0.0025108010158874094
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.00593958399258554,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.00593958399258554,
+    0.0060351419961079955,
+    0.005941137031186372,
+    0.007080151000991464
+   ],
+   "warm_median_seconds": 0.0060351419961079955,
+   "warm_min_seconds": 0.005941137031186372
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.005450549011584371,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.005450549011584371,
+    0.005048258986789733,
+    0.005146652983967215,
+    0.005197193997446448
+   ],
+   "warm_median_seconds": 0.005146652983967215,
+   "warm_min_seconds": 0.005048258986789733
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0006219919887371361,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 5,
+    "measure": "empirical",
+    "points": 1018,
+    "sensitivity_known": 595,
+    "total_sensitive": 1729
+   },
+   "samples_seconds": [
+    0.0006219919887371361,
+    0.0005756340106017888,
+    0.0005778599879704416,
+    0.0006677870405837893
+   ],
+   "warm_median_seconds": 0.0005778599879704416,
+   "warm_min_seconds": 0.0005756340106017888
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0016453079879283905,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 5,
+    "measure": "empirical",
+    "points": 1018,
+    "sensitivity_known": 595,
+    "total_sensitive": 1729
+   },
+   "samples_seconds": [
+    0.0016453079879283905,
+    0.0014740760088898242,
+    0.0014800059725530446,
+    0.0015117809525690973
+   ],
+   "warm_median_seconds": 0.0014800059725530446,
+   "warm_min_seconds": 0.0014740760088898242
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0012186389649286866,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 1018
+   },
+   "samples_seconds": [
+    0.0012186389649286866,
+    0.0011813099845312536,
+    0.0011606169864535332,
+    0.0011660680174827576
+   ],
+   "warm_median_seconds": 0.0011660680174827576,
+   "warm_min_seconds": 0.0011606169864535332
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0021051489748060703,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 1018
+   },
+   "samples_seconds": [
+    0.0021051489748060703,
+    0.0018544819904491305,
+    0.0018600709736347198,
+    0.0018016640096902847
+   ],
+   "warm_median_seconds": 0.0018544819904491305,
+   "warm_min_seconds": 0.0018016640096902847
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0029834610177204013,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 1018
+   },
+   "samples_seconds": [
+    0.0029834610177204013,
+    0.002958594006486237,
+    0.0029569640173576772,
+    0.0029724049963988364
+   ],
+   "warm_median_seconds": 0.002958594006486237,
+   "warm_min_seconds": 0.0029569640173576772
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.003066092962399125,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 1018
+   },
+   "samples_seconds": [
+    0.003066092962399125,
+    0.0028166150441393256,
+    0.0028424059855751693,
+    0.002790630969684571
+   ],
+   "warm_median_seconds": 0.0028166150441393256,
+   "warm_min_seconds": 0.002790630969684571
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0012382669956423342,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 25143,
+    "total_sensitive": 69410
+   },
+   "samples_seconds": [
+    0.0012382669956423342,
+    0.001222004008013755,
+    0.001179029990453273,
+    0.0012128520174883306
+   ],
+   "warm_median_seconds": 0.0012128520174883306,
+   "warm_min_seconds": 0.001179029990453273
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0018597510061226785,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "max_sensitivity": 7,
+    "measure": "empirical",
+    "points": 100000,
+    "sensitivity_known": 25143,
+    "total_sensitive": 69410
+   },
+   "samples_seconds": [
+    0.0018597510061226785,
+    0.0015970810200087726,
+    0.0017874439945444465,
+    0.0015962239704094827
+   ],
+   "warm_median_seconds": 0.0015970810200087726,
+   "warm_min_seconds": 0.0015962239704094827
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.002901828964240849,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.002901828964240849,
+    0.0028612319729290903,
+    0.0028449599631130695,
+    0.002832375990692526
+   ],
+   "warm_median_seconds": 0.0028449599631130695,
+   "warm_min_seconds": 0.002832375990692526
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.0031574310269206762,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.0031574310269206762,
+    0.0028171369922347367,
+    0.002840374014340341,
+    0.002902237989474088
+   ],
+   "warm_median_seconds": 0.002840374014340341,
+   "warm_min_seconds": 0.0028171369922347367
+  },
+  {
+   "backend": "cpu",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.005701967980712652,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "native CPU",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.005701967980712652,
+    0.005705580988433212,
+    0.005669834034051746,
+    0.005701076006516814
+   ],
+   "warm_median_seconds": 0.005701076006516814,
+   "warm_min_seconds": 0.005669834034051746
+  },
+  {
+   "backend": "cuda",
+   "case": "empirical measure: every influence + terms",
+   "first_seconds": 0.005226916982792318,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cuda",
+    "causal": false,
+    "description": "the selected stored rows of the scope, each once (only the assignments the rows hold)",
+    "device": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)",
+    "interpretation": "coordinate sensitivity of the predicate: how often substituting the condition(s), with every other condition held at the point's own value, changes the predicate's value; a property of the predicate over the declared points, not a causal effect of the condition",
+    "measure": "empirical",
+    "points": 100000
+   },
+   "samples_seconds": [
+    0.005226916982792318,
+    0.004785920958966017,
+    0.00491512700682506,
+    0.004812034021597356
+   ],
+   "warm_median_seconds": 0.004812034021597356,
+   "warm_min_seconds": 0.004785920958966017
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure at the default support limit",
+   "first_seconds": 0.0059377289726398885,
+   "params": {
+    "conditions": 20,
+    "points": 1048576
+   },
+   "phase": "run",
+   "result": 2,
+   "samples_seconds": [
+    0.0059377289726398885
+   ],
+   "warm_median_seconds": 0.0059377289726398885,
+   "warm_min_seconds": 0.0059377289726398885
+  },
+  {
+   "backend": "cpu",
+   "case": "uniform measure past the default support limit",
+   "limit": 1048576,
+   "message": "assignment domain: needs 2097152 support, budget 1048576",
+   "need": 2097152,
+   "params": {
+    "conditions": 21,
+    "points": 2097152
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.44420550391078e-05,
+   "refused": true,
+   "resource": "support"
+  }
+ ],
+ "seconds": 7.901675128028728,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "uniform measure conditions (default budget)",
+   "largest_admitted": {
+    "conditions": 20,
+    "points": 1048576
+   },
+   "smallest_refused": {
+    "conditions": 21,
+    "points": 2097152
+   }
+  }
+ ]
+}

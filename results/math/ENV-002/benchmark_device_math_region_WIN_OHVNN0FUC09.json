@@ -1,0 +1,4029 @@
+{
+ "argv": [
+  "--capability",
+  "ENV-002",
+  "--out",
+  "/home/brian/torbles_math/results/math/ENV-002/benchmark_device_math_region_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "ENV-002",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:16:10+00:00"
+ },
+ "notes": [
+  "lookups: the index, region and all-class lookups (and CUDA with --device), the NumPy exact int64 and the Fraction baselines give the same winner at every value; build and lookups are timed apart so build + m lookups can be set against m all-group evaluations",
+  "refused as unsupported: d = 5 (parameter regions: outside the capability's declared scope)",
+  "refused as unsupported: quadratic without a contract (parameter regions: outside the capability's declared scope)"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "boundaries": 10,
+   "boundary_kinds": "[('inner', 3), ('wall', 7)]",
+   "bytes": 18352,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.0021641809726133943,
+   "incidences": 13,
+   "index_nodes": 1,
+   "lps": 6,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 28,
+   "regions": 3,
+   "samples_seconds": [
+    0.0021641809726133943,
+    0.00153538299491629,
+    0.0014744370128028095
+   ],
+   "vertices": 8,
+   "warm_median_seconds": 0.0015049100038595498,
+   "warm_min_seconds": 0.0014744370128028095
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00042634696001186967,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00042634696001186967,
+    6.333604687824845e-05,
+    4.612398333847523e-05
+   ],
+   "warm_median_seconds": 5.473001510836184e-05,
+   "warm_min_seconds": 4.612398333847523e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.08500052097951993,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.08500052097951993,
+    0.0013925019884482026,
+    0.0013707909965887666
+   ],
+   "warm_median_seconds": 0.0013816464925184846,
+   "warm_min_seconds": 0.0013707909965887666
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 6.694899639114738e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    6.694899639114738e-05,
+    4.739401629194617e-05,
+    5.443196278065443e-05
+   ],
+   "warm_median_seconds": 5.09129895363003e-05,
+   "warm_min_seconds": 4.739401629194617e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0013978999922983348,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0013978999922983348,
+    0.0012203179649077356,
+    0.0012235040194354951
+   ],
+   "warm_median_seconds": 0.0012219109921716154,
+   "warm_min_seconds": 0.0012203179649077356
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 6.285595009103417e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    6.285595009103417e-05,
+    4.5988999772816896e-05,
+    4.188797902315855e-05
+   ],
+   "warm_median_seconds": 4.393848939798772e-05,
+   "warm_min_seconds": 4.188797902315855e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0012844440061599016,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0012844440061599016,
+    0.001323182019405067,
+    0.0014456880162470043
+   ],
+   "warm_median_seconds": 0.0013844350178260356,
+   "warm_min_seconds": 0.001323182019405067
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 7.494300371035933e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.494300371035933e-05,
+    2.8778973501175642e-05
+   ],
+   "warm_median_seconds": 2.8778973501175642e-05,
+   "warm_min_seconds": 2.8778973501175642e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 6.869499338790774e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.869499338790774e-05,
+    1.2923963367938995e-05,
+    5.664012860506773e-06
+   ],
+   "warm_median_seconds": 9.293988114222884e-06,
+   "warm_min_seconds": 5.664012860506773e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 5.534000229090452e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.534000229090452e-05
+   ],
+   "warm_median_seconds": 5.534000229090452e-05,
+   "warm_min_seconds": 5.534000229090452e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00010575097985565662,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00010575097985565662,
+    7.31569598428905e-05,
+    8.274998981505632e-05
+   ],
+   "warm_median_seconds": 7.795347482897341e-05,
+   "warm_min_seconds": 7.31569598428905e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0012531509855762124,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0012531509855762124,
+    0.0013045520172454417,
+    0.0013132159947417676
+   ],
+   "warm_median_seconds": 0.0013088840059936047,
+   "warm_min_seconds": 0.0013045520172454417
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 8.345401147380471e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    8.345401147380471e-05,
+    6.371003109961748e-05,
+    6.004399619996548e-05
+   ],
+   "warm_median_seconds": 6.187701364979148e-05,
+   "warm_min_seconds": 6.004399619996548e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0013984650140628219,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0013984650140628219,
+    0.001331547973677516,
+    0.0012350609758868814
+   ],
+   "warm_median_seconds": 0.0012833044747821987,
+   "warm_min_seconds": 0.0012350609758868814
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 8.473702473565936e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    8.473702473565936e-05,
+    6.794900400564075e-05,
+    6.947602378204465e-05
+   ],
+   "warm_median_seconds": 6.87125138938427e-05,
+   "warm_min_seconds": 6.794900400564075e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.001182425010483712,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001182425010483712,
+    0.0013661640114150941,
+    0.0013440469629131258
+   ],
+   "warm_median_seconds": 0.00135510548716411,
+   "warm_min_seconds": 0.0013440469629131258
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00022604299010708928,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00022604299010708928,
+    0.00019217899534851313
+   ],
+   "warm_median_seconds": 0.00019217899534851313,
+   "warm_min_seconds": 0.00019217899534851313
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 2.8449983801692724e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8449983801692724e-05,
+    1.04979844763875e-05,
+    7.086026016622782e-06
+   ],
+   "warm_median_seconds": 8.792005246505141e-06,
+   "warm_min_seconds": 7.086026016622782e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.0016938640037551522,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016938640037551522
+   ],
+   "warm_median_seconds": 0.0016938640037551522,
+   "warm_min_seconds": 0.0016938640037551522
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002948576002381742,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002948576002381742,
+    0.0024410480400547385,
+    0.0022721589775756
+   ],
+   "warm_median_seconds": 0.0023566035088151693,
+   "warm_min_seconds": 0.0022721589775756
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0023904279805719852,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0023904279805719852,
+    0.002867530973162502,
+    0.0022066389792598784
+   ],
+   "warm_median_seconds": 0.0025370849762111902,
+   "warm_min_seconds": 0.0022066389792598784
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0023574240040034056,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0023574240040034056,
+    0.0023648299975320697,
+    0.002427465980872512
+   ],
+   "warm_median_seconds": 0.0023961479892022908,
+   "warm_min_seconds": 0.0023648299975320697
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.002440169977489859,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002440169977489859,
+    0.002572797005996108,
+    0.0025049509713426232
+   ],
+   "warm_median_seconds": 0.0025388739886693656,
+   "warm_min_seconds": 0.0025049509713426232
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.002496905974112451,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002496905974112451,
+    0.0024966300115920603,
+    0.0024836829979903996
+   ],
+   "warm_median_seconds": 0.00249015650479123,
+   "warm_min_seconds": 0.0024836829979903996
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0026652190135791898,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0026652190135791898,
+    0.0024229090195149183,
+    0.002649239031597972
+   ],
+   "warm_median_seconds": 0.002536074025556445,
+   "warm_min_seconds": 0.0024229090195149183
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0187297550146468,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0187297550146468,
+    0.015887807996477932
+   ],
+   "warm_median_seconds": 0.015887807996477932,
+   "warm_min_seconds": 0.015887807996477932
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00033843197161331773,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 8,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00033843197161331773,
+    0.0002740760101005435,
+    0.0002626660279929638
+   ],
+   "warm_median_seconds": 0.00026837101904675364,
+   "warm_min_seconds": 0.0002626660279929638
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 28,
+   "boundary_kinds": "[('inner', 14), ('wall', 14)]",
+   "bytes": 69568,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.006480415991973132,
+   "incidences": 42,
+   "index_nodes": 11,
+   "lps": 12,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 90,
+   "regions": 9,
+   "samples_seconds": [
+    0.006480415991973132,
+    0.005840417987201363,
+    0.005747712042648345
+   ],
+   "vertices": 20,
+   "warm_median_seconds": 0.005794065014924854,
+   "warm_min_seconds": 0.005747712042648345
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00011800898937508464,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00011800898937508464,
+    5.1329960115253925e-05,
+    4.3993000872433186e-05
+   ],
+   "warm_median_seconds": 4.7661480493843555e-05,
+   "warm_min_seconds": 4.3993000872433186e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00166746397735551,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00166746397735551,
+    0.0013142279931344092,
+    0.0009243490057997406
+   ],
+   "warm_median_seconds": 0.0011192884994670749,
+   "warm_min_seconds": 0.0009243490057997406
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 6.909499643370509e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    6.909499643370509e-05,
+    5.2099989261478186e-05,
+    4.7779001761227846e-05
+   ],
+   "warm_median_seconds": 4.9939495511353016e-05,
+   "warm_min_seconds": 4.7779001761227846e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0008978400146588683,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0008978400146588683,
+    0.0009070900268852711,
+    0.0008903639973141253
+   ],
+   "warm_median_seconds": 0.0008987270120996982,
+   "warm_min_seconds": 0.0008903639973141253
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 6.461498560383916e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    6.461498560383916e-05,
+    4.4868967961519957e-05,
+    4.1345017962157726e-05
+   ],
+   "warm_median_seconds": 4.310699296183884e-05,
+   "warm_min_seconds": 4.1345017962157726e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0009321050019934773,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0009321050019934773,
+    0.0012175929732620716,
+    0.0012768009910359979
+   ],
+   "warm_median_seconds": 0.0012471969821490347,
+   "warm_min_seconds": 0.0012175929732620716
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 5.8928970247507095e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    5.8928970247507095e-05,
+    3.30650364048779e-05
+   ],
+   "warm_median_seconds": 3.30650364048779e-05,
+   "warm_min_seconds": 3.30650364048779e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 4.215404624119401e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.215404624119401e-05,
+    1.43299694173038e-05,
+    9.925977792590857e-06
+   ],
+   "warm_median_seconds": 1.2127973604947329e-05,
+   "warm_min_seconds": 9.925977792590857e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.00014564202865585685,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00014564202865585685
+   ],
+   "warm_median_seconds": 0.00014564202865585685,
+   "warm_min_seconds": 0.00014564202865585685
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 9.865296306088567e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    9.865296306088567e-05,
+    6.941397441551089e-05,
+    6.514898268505931e-05
+   ],
+   "warm_median_seconds": 6.72814785502851e-05,
+   "warm_min_seconds": 6.514898268505931e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.001319998991675675,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001319998991675675,
+    0.0013313250383362174,
+    0.0013188239536248147
+   ],
+   "warm_median_seconds": 0.001325074495980516,
+   "warm_min_seconds": 0.0013188239536248147
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00013288395712152123,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00013288395712152123,
+    8.101598359644413e-05,
+    7.651600753888488e-05
+   ],
+   "warm_median_seconds": 7.87659955676645e-05,
+   "warm_min_seconds": 7.651600753888488e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0012614359729923308,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0012614359729923308,
+    0.0013792949612252414,
+    0.0013037020107731223
+   ],
+   "warm_median_seconds": 0.0013414984859991819,
+   "warm_min_seconds": 0.0013037020107731223
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0001580289681442082,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0001580289681442082,
+    0.0001287129707634449,
+    0.0001258149859495461
+   ],
+   "warm_median_seconds": 0.0001272639783564955,
+   "warm_min_seconds": 0.0001258149859495461
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0013001519837416708,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0013001519837416708,
+    0.0013400340103544295,
+    0.0013306059991009533
+   ],
+   "warm_median_seconds": 0.0013353200047276914,
+   "warm_min_seconds": 0.0013306059991009533
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00021250901045277715,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021250901045277715,
+    0.0001812499831430614
+   ],
+   "warm_median_seconds": 0.0001812499831430614,
+   "warm_min_seconds": 0.0001812499831430614
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 4.7508045099675655e-05,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7508045099675655e-05,
+    2.4270964786410332e-05,
+    2.127897460013628e-05
+   ],
+   "warm_median_seconds": 2.2774969693273306e-05,
+   "warm_min_seconds": 2.127897460013628e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.01251230901107192,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01251230901107192
+   ],
+   "warm_median_seconds": 0.01251230901107192,
+   "warm_min_seconds": 0.01251230901107192
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002295646001584828,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002295646001584828,
+    0.002321906969882548,
+    0.002139965014066547
+   ],
+   "warm_median_seconds": 0.0022309359919745475,
+   "warm_min_seconds": 0.002139965014066547
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002780900977086276,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002780900977086276,
+    0.002529880963265896,
+    0.00199675903422758
+   ],
+   "warm_median_seconds": 0.002263319998746738,
+   "warm_min_seconds": 0.00199675903422758
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0034459399757906795,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0034459399757906795,
+    0.003505443048197776,
+    0.003453107026871294
+   ],
+   "warm_median_seconds": 0.003479275037534535,
+   "warm_min_seconds": 0.003453107026871294
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.002346566994674504,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002346566994674504,
+    0.002306154987309128,
+    0.0021413519862107933
+   ],
+   "warm_median_seconds": 0.0022237534867599607,
+   "warm_min_seconds": 0.0021413519862107933
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.008517405949532986,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.008517405949532986,
+    0.00865729502402246,
+    0.008563818002585322
+   ],
+   "warm_median_seconds": 0.00861055651330389,
+   "warm_min_seconds": 0.008563818002585322
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0025799720315262675,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0025799720315262675,
+    0.00234117399668321,
+    0.002160073025152087
+   ],
+   "warm_median_seconds": 0.0022506235109176487,
+   "warm_min_seconds": 0.002160073025152087
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.01748371700523421,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01748371700523421,
+    0.016313686966896057
+   ],
+   "warm_median_seconds": 0.016313686966896057,
+   "warm_min_seconds": 0.016313686966896057
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0018906280165538192,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018906280165538192,
+    0.0012149380054324865,
+    0.001176118035800755
+   ],
+   "warm_median_seconds": 0.0011955280206166208,
+   "warm_min_seconds": 0.001176118035800755
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 39,
+   "boundary_kinds": "[('inner', 28), ('wall', 11)]",
+   "bytes": 644920,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 1024,
+   "first_seconds": 0.04039320000447333,
+   "incidences": 68,
+   "index_nodes": 63,
+   "lps": 23,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false
+   },
+   "phase": "build",
+   "pivots": 221,
+   "regions": 14,
+   "samples_seconds": [
+    0.04039320000447333
+   ],
+   "vertices": 27,
+   "warm_median_seconds": 0.04039320000447333,
+   "warm_min_seconds": 0.04039320000447333
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00020555703667923808,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00020555703667923808,
+    0.0001250079949386418,
+    0.00011503603309392929
+   ],
+   "warm_median_seconds": 0.00012002201401628554,
+   "warm_min_seconds": 0.00011503603309392929
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0015821210108697414,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0015821210108697414,
+    0.001212049974128604,
+    0.0013574460172094405
+   ],
+   "warm_median_seconds": 0.0012847479956690222,
+   "warm_min_seconds": 0.001212049974128604
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0001448660041205585,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0001448660041205585,
+    0.00012127100490033627,
+    0.00011615100083872676
+   ],
+   "warm_median_seconds": 0.00011871100286953151,
+   "warm_min_seconds": 0.00011615100083872676
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0011616479605436325,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0011616479605436325,
+    0.0010852639679796994,
+    0.0012919619912281632
+   ],
+   "warm_median_seconds": 0.0011886129796039313,
+   "warm_min_seconds": 0.0010852639679796994
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00015325500862672925,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00015325500862672925,
+    0.00012598204193636775,
+    0.00011740002082660794
+   ],
+   "warm_median_seconds": 0.00012169103138148785,
+   "warm_min_seconds": 0.00011740002082660794
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0017345160013064742,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0017345160013064742,
+    0.002137890027370304,
+    0.001744209963362664
+   ],
+   "warm_median_seconds": 0.001941049995366484,
+   "warm_min_seconds": 0.001744209963362664
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.00012814102228730917,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012814102228730917,
+    9.938603034242988e-05
+   ],
+   "warm_median_seconds": 9.938603034242988e-05,
+   "warm_min_seconds": 9.938603034242988e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0001251550274901092,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001251550274901092,
+    9.234098251909018e-05,
+    8.983997395262122e-05
+   ],
+   "warm_median_seconds": 9.10904782358557e-05,
+   "warm_min_seconds": 8.983997395262122e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.0020269440137781203,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020269440137781203
+   ],
+   "warm_median_seconds": 0.0020269440137781203,
+   "warm_min_seconds": 0.0020269440137781203
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00017872999887913465,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00017872999887913465,
+    0.00013792497338727117,
+    0.00013200001558288932
+   ],
+   "warm_median_seconds": 0.00013496249448508024,
+   "warm_min_seconds": 0.00013200001558288932
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0014619379653595388,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0014619379653595388,
+    0.001116216997615993,
+    0.0017151969950646162
+   ],
+   "warm_median_seconds": 0.0014157069963403046,
+   "warm_min_seconds": 0.001116216997615993
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0001926789991557598,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0001926789991557598,
+    0.00015722197713330388,
+    0.0001503879902884364
+   ],
+   "warm_median_seconds": 0.00015380498371087015,
+   "warm_min_seconds": 0.0001503879902884364
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0021116769639775157,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0021116769639775157,
+    0.0014338720357045531,
+    0.0013315830146893859
+   ],
+   "warm_median_seconds": 0.0013827275251969695,
+   "warm_min_seconds": 0.0013315830146893859
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.001515544019639492,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001515544019639492,
+    0.0014708749949932098,
+    0.0014917910448275506
+   ],
+   "warm_median_seconds": 0.0014813330199103802,
+   "warm_min_seconds": 0.0014708749949932098
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0020821219659410417,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0020821219659410417,
+    0.0018749579903669655,
+    0.0017649639630690217
+   ],
+   "warm_median_seconds": 0.0018199609767179936,
+   "warm_min_seconds": 0.0017649639630690217
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0002961650025099516,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002961650025099516,
+    0.00042794301407411695
+   ],
+   "warm_median_seconds": 0.00042794301407411695,
+   "warm_min_seconds": 0.00042794301407411695
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00035272701643407345,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00035272701643407345,
+    0.00027395301731303334,
+    0.0002795840264298022
+   ],
+   "warm_median_seconds": 0.00027676852187141776,
+   "warm_min_seconds": 0.00027395301731303334
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.19472741102799773,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.19472741102799773
+   ],
+   "warm_median_seconds": 0.19472741102799773,
+   "warm_min_seconds": 0.19472741102799773
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0028099609771743417,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0028099609771743417,
+    0.002268960000947118,
+    0.002233909966889769
+   ],
+   "warm_median_seconds": 0.0022514349839184433,
+   "warm_min_seconds": 0.002233909966889769
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0029555369983427227,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0029555369983427227,
+    0.002241270965896547,
+    0.0024625189835205674
+   ],
+   "warm_median_seconds": 0.002351894974708557,
+   "warm_min_seconds": 0.002241270965896547
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.004310861986596137,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004310861986596137,
+    0.004227439989335835,
+    0.004082644009031355
+   ],
+   "warm_median_seconds": 0.004155041999183595,
+   "warm_min_seconds": 0.004082644009031355
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00252323696622625,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00252323696622625,
+    0.0030125469784252346,
+    0.002604538982268423
+   ],
+   "warm_median_seconds": 0.0028085429803468287,
+   "warm_min_seconds": 0.002604538982268423
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.13416125101502985,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.13416125101502985,
+    0.1347026249859482,
+    0.13440310099394992
+   ],
+   "warm_median_seconds": 0.13455286298994906,
+   "warm_min_seconds": 0.13440310099394992
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.003979069006163627,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.003979069006163627,
+    0.003355753025971353,
+    0.006283628987148404
+   ],
+   "warm_median_seconds": 0.004819691006559879,
+   "warm_min_seconds": 0.003355753025971353
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.014913104998413473,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.014913104998413473,
+    0.01611887401668355
+   ],
+   "warm_median_seconds": 0.01611887401668355,
+   "warm_min_seconds": 0.01611887401668355
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.03520759998355061,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 1024,
+    "upper": false,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03520759998355061,
+    0.032933617010712624,
+    0.0329392229905352
+   ],
+   "warm_median_seconds": 0.03293642000062391,
+   "warm_min_seconds": 0.032933617010712624
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 14), ('wall', 11)]",
+   "bytes": 33464,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.003955591993872076,
+   "incidences": 39,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 65,
+   "regions": 8,
+   "samples_seconds": [
+    0.003955591993872076,
+    0.0036620799801312387,
+    0.003654791973531246
+   ],
+   "vertices": 18,
+   "warm_median_seconds": 0.0036584359768312424,
+   "warm_min_seconds": 0.003654791973531246
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00011928699677810073,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00011928699677810073,
+    6.517901783809066e-05,
+    4.8241985496133566e-05
+   ],
+   "warm_median_seconds": 5.671050166711211e-05,
+   "warm_min_seconds": 4.8241985496133566e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0014339819899760187,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0014339819899760187,
+    0.0013829419622197747,
+    0.001374226005282253
+   ],
+   "warm_median_seconds": 0.0013785839837510139,
+   "warm_min_seconds": 0.001374226005282253
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 5.7384022511541843e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    5.7384022511541843e-05,
+    4.312698729336262e-05,
+    3.934401320293546e-05
+   ],
+   "warm_median_seconds": 4.123550024814904e-05,
+   "warm_min_seconds": 3.934401320293546e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0008041239925660193,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0008041239925660193,
+    0.0008114210213534534,
+    0.0007505469839088619
+   ],
+   "warm_median_seconds": 0.0007809840026311576,
+   "warm_min_seconds": 0.0007505469839088619
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 5.455705104395747e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    5.455705104395747e-05,
+    4.340300802141428e-05,
+    4.108098801225424e-05
+   ],
+   "warm_median_seconds": 4.224199801683426e-05,
+   "warm_min_seconds": 4.108098801225424e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0007124569965526462,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0007124569965526462,
+    0.0008199209696613252,
+    0.0008055889629758894
+   ],
+   "warm_median_seconds": 0.0008127549663186073,
+   "warm_min_seconds": 0.0008055889629758894
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 4.421797348186374e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.421797348186374e-05,
+    2.5568006094545126e-05
+   ],
+   "warm_median_seconds": 2.5568006094545126e-05,
+   "warm_min_seconds": 2.5568006094545126e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 3.058504080399871e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.058504080399871e-05,
+    7.3080300353467464e-06,
+    4.336994607001543e-06
+   ],
+   "warm_median_seconds": 5.822512321174145e-06,
+   "warm_min_seconds": 4.336994607001543e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 3.431597724556923e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.431597724556923e-05
+   ],
+   "warm_median_seconds": 3.431597724556923e-05,
+   "warm_min_seconds": 3.431597724556923e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00010315398685634136,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00010315398685634136,
+    6.62769889459014e-05,
+    6.150000263005495e-05
+   ],
+   "warm_median_seconds": 6.388849578797817e-05,
+   "warm_min_seconds": 6.150000263005495e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0008533939835615456,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0008533939835615456,
+    0.0008764620288275182,
+    0.0012883510207757354
+   ],
+   "warm_median_seconds": 0.0010824065248016268,
+   "warm_min_seconds": 0.0008764620288275182
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 8.694897405803204e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    8.694897405803204e-05,
+    6.989500252529979e-05,
+    6.77880016155541e-05
+   ],
+   "warm_median_seconds": 6.884150207042694e-05,
+   "warm_min_seconds": 6.77880016155541e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0012429190101101995,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0012429190101101995,
+    0.0009269570000469685,
+    0.0012734310002997518
+   ],
+   "warm_median_seconds": 0.0011001940001733601,
+   "warm_min_seconds": 0.0009269570000469685
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 9.864300955086946e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    9.864300955086946e-05,
+    7.201603148132563e-05,
+    6.649404531344771e-05
+   ],
+   "warm_median_seconds": 6.925503839738667e-05,
+   "warm_min_seconds": 6.649404531344771e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.001529674045741558,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001529674045741558,
+    0.0012456970289349556,
+    0.0007918219780549407
+   ],
+   "warm_median_seconds": 0.0010187595034949481,
+   "warm_min_seconds": 0.0007918219780549407
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0002047030138783157,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002047030138783157,
+    0.00018452299991622567
+   ],
+   "warm_median_seconds": 0.00018452299991622567,
+   "warm_min_seconds": 0.00018452299991622567
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 2.6787049137055874e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.6787049137055874e-05,
+    1.0090996511280537e-05,
+    6.901042070239782e-06
+   ],
+   "warm_median_seconds": 8.49601929076016e-06,
+   "warm_min_seconds": 6.901042070239782e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.001455351011827588,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001455351011827588
+   ],
+   "warm_median_seconds": 0.001455351011827588,
+   "warm_min_seconds": 0.001455351011827588
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002615544945001602,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002615544945001602,
+    0.0025946319801732898,
+    0.0025555469910614192
+   ],
+   "warm_median_seconds": 0.0025750894856173545,
+   "warm_min_seconds": 0.0025555469910614192
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0028988250414840877,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0028988250414840877,
+    0.0025371150113642216,
+    0.0020277349976822734
+   ],
+   "warm_median_seconds": 0.0022824250045232475,
+   "warm_min_seconds": 0.0020277349976822734
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00329359999159351,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00329359999159351,
+    0.003226220957003534,
+    0.005599047988653183
+   ],
+   "warm_median_seconds": 0.004412634472828358,
+   "warm_min_seconds": 0.003226220957003534
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0023089509923011065,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0023089509923011065,
+    0.0019023219938389957,
+    0.002145887992810458
+   ],
+   "warm_median_seconds": 0.002024104993324727,
+   "warm_min_seconds": 0.0019023219938389957
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.002347194997128099,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002347194997128099,
+    0.002345253014937043,
+    0.0023341799969784915
+   ],
+   "warm_median_seconds": 0.0023397165059577674,
+   "warm_min_seconds": 0.0023341799969784915
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0021880660206079483,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0021880660206079483,
+    0.0018637979519553483,
+    0.002118799020536244
+   ],
+   "warm_median_seconds": 0.001991298486245796,
+   "warm_min_seconds": 0.0018637979519553483
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.015652994043193758,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.015652994043193758,
+    0.01933815801749006
+   ],
+   "warm_median_seconds": 0.01933815801749006,
+   "warm_min_seconds": 0.01933815801749006
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00033773703034967184,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 8,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00033773703034967184,
+    0.00027270300779491663,
+    0.00026639201678335667
+   ],
+   "warm_median_seconds": 0.00026954751228913665,
+   "warm_min_seconds": 0.00026639201678335667
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 157), ('wall', 36)]",
+   "bytes": 267704,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.051903507963288575,
+   "incidences": 350,
+   "index_nodes": 125,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 843,
+   "regions": 64,
+   "samples_seconds": [
+    0.051903507963288575,
+    0.052701416017953306,
+    0.05192532198270783
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.05231336900033057,
+   "warm_min_seconds": 0.05192532198270783
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.00015373300993815064,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00015373300993815064,
+    7.880100747570395e-05,
+    8.87360074557364e-05
+   ],
+   "warm_median_seconds": 8.376850746572018e-05,
+   "warm_min_seconds": 7.880100747570395e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0024053099914453924,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0024053099914453924,
+    0.0016289520426653326,
+    0.0025421049795113504
+   ],
+   "warm_median_seconds": 0.0020855285110883415,
+   "warm_min_seconds": 0.0016289520426653326
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00010076595935970545,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00010076595935970545,
+    7.546995766460896e-05,
+    6.849499186500907e-05
+   ],
+   "warm_median_seconds": 7.198247476480901e-05,
+   "warm_min_seconds": 6.849499186500907e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.001442745968233794,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001442745968233794,
+    0.0014473309856839478,
+    0.001355733023956418
+   ],
+   "warm_median_seconds": 0.001401532004820183,
+   "warm_min_seconds": 0.001355733023956418
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 9.255600161850452e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    9.255600161850452e-05,
+    7.089501013979316e-05,
+    6.806995952501893e-05
+   ],
+   "warm_median_seconds": 6.948248483240604e-05,
+   "warm_min_seconds": 6.806995952501893e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0014865020057186484,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0014865020057186484,
+    0.0015534660196863115,
+    0.0014408329734578729
+   ],
+   "warm_median_seconds": 0.0014971494965720922,
+   "warm_min_seconds": 0.0014408329734578729
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 7.904903031885624e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.904903031885624e-05,
+    5.0950038712471724e-05
+   ],
+   "warm_median_seconds": 5.0950038712471724e-05,
+   "warm_min_seconds": 5.0950038712471724e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 3.673398168757558e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.673398168757558e-05,
+    1.1074007488787174e-05,
+    8.459959644824266e-06
+   ],
+   "warm_median_seconds": 9.76698356680572e-06,
+   "warm_min_seconds": 8.459959644824266e-06
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.00012665399117395282,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012665399117395282
+   ],
+   "warm_median_seconds": 0.00012665399117395282,
+   "warm_min_seconds": 0.00012665399117395282
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0001263470039702952,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0001263470039702952,
+    9.367999155074358e-05,
+    8.749100379645824e-05
+   ],
+   "warm_median_seconds": 9.058549767360091e-05,
+   "warm_min_seconds": 8.749100379645824e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0013718119589611888,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0013718119589611888,
+    0.0014352499856613576,
+    0.001383903028909117
+   ],
+   "warm_median_seconds": 0.0014095765072852373,
+   "warm_min_seconds": 0.001383903028909117
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0002564690075814724,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0002564690075814724,
+    0.0002039829851128161,
+    0.0002705089864321053
+   ],
+   "warm_median_seconds": 0.0002372459857724607,
+   "warm_min_seconds": 0.0002039829851128161
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.001517147000413388,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001517147000413388,
+    0.0015454150270670652,
+    0.0015163740026764572
+   ],
+   "warm_median_seconds": 0.0015308945148717612,
+   "warm_min_seconds": 0.0015163740026764572
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00018635898595675826,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00018635898595675826,
+    0.00017922400729730725,
+    0.00015248899580910802
+   ],
+   "warm_median_seconds": 0.00016585650155320764,
+   "warm_min_seconds": 0.00015248899580910802
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.001354458974674344,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.001354458974674344,
+    0.0014047320000827312,
+    0.0012902499875053763
+   ],
+   "warm_median_seconds": 0.0013474909937940538,
+   "warm_min_seconds": 0.0012902499875053763
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0002751700230874121,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002751700230874121,
+    0.00020938803208991885
+   ],
+   "warm_median_seconds": 0.00020938803208991885,
+   "warm_min_seconds": 0.00020938803208991885
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 4.370301030576229e-05,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.370301030576229e-05,
+    2.36259656958282e-05,
+    2.0197010599076748e-05
+   ],
+   "warm_median_seconds": 2.1911488147452474e-05,
+   "warm_min_seconds": 2.0197010599076748e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.011301652004476637,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.011301652004476637
+   ],
+   "warm_median_seconds": 0.011301652004476637,
+   "warm_min_seconds": 0.011301652004476637
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0028345470200292766,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0028345470200292766,
+    0.00276612100424245,
+    0.0026830629794858396
+   ],
+   "warm_median_seconds": 0.002724591991864145,
+   "warm_min_seconds": 0.0026830629794858396
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002129257016349584,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002129257016349584,
+    0.002282509987708181,
+    0.0019837950239889324
+   ],
+   "warm_median_seconds": 0.0021331525058485568,
+   "warm_min_seconds": 0.0019837950239889324
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.012819103023502976,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.012819103023502976,
+    0.01266612799372524,
+    0.01280987000791356
+   ],
+   "warm_median_seconds": 0.0127379990008194,
+   "warm_min_seconds": 0.01266612799372524
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.002718809002544731,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002718809002544731,
+    0.0038843430229462683,
+    0.002375493000727147
+   ],
+   "warm_median_seconds": 0.0031299180118367076,
+   "warm_min_seconds": 0.002375493000727147
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.009066778991837054,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.009066778991837054,
+    0.00889292499050498,
+    0.00892372999805957
+   ],
+   "warm_median_seconds": 0.008908327494282275,
+   "warm_min_seconds": 0.00889292499050498
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0028499230393208563,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0028499230393208563,
+    0.002493156003765762,
+    0.0023618420236743987
+   ],
+   "warm_median_seconds": 0.0024274990137200803,
+   "warm_min_seconds": 0.0023618420236743987
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.019540136971045285,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.019540136971045285,
+    0.015978795010596514
+   ],
+   "warm_median_seconds": 0.015978795010596514,
+   "warm_min_seconds": 0.015978795010596514
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0018123789923265576,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018123789923265576,
+    0.001223756989929825,
+    0.0012884769821539521
+   ],
+   "warm_median_seconds": 0.0012561169860418886,
+   "warm_min_seconds": 0.001223756989929825
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 3073,
+   "boundary_kinds": "[('inner', 2951), ('wall', 122)]",
+   "bytes": 4397128,
+   "case": "regions build (classes, regions, vertices, boundaries, kd-tree index)",
+   "claim": "exact",
+   "classes": 1024,
+   "first_seconds": 1.067650057026185,
+   "incidences": 6024,
+   "index_nodes": 2127,
+   "lps": 1025,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true
+   },
+   "phase": "build",
+   "pivots": 15600,
+   "regions": 1024,
+   "samples_seconds": [
+    1.067650057026185
+   ],
+   "vertices": 2050,
+   "warm_median_seconds": 1.067650057026185,
+   "warm_min_seconds": 1.067650057026185
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0014866059646010399,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0014866059646010399,
+    0.0007223379798233509,
+    0.0011455979547463357
+   ],
+   "warm_median_seconds": 0.0009339679672848433,
+   "warm_min_seconds": 0.0007223379798233509
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.003362730029039085,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.003362730029039085,
+    0.0026459689834155142,
+    0.0029609979828819633
+   ],
+   "warm_median_seconds": 0.0028034834831487387,
+   "warm_min_seconds": 0.0026459689834155142
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.0007192660123109818,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0007192660123109818,
+    0.000729743973352015,
+    0.0006858799606561661
+   ],
+   "warm_median_seconds": 0.0007078119670040905,
+   "warm_min_seconds": 0.0006858799606561661
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.003107035008724779,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.003107035008724779,
+    0.0035972250043414533,
+    0.0034334579831920564
+   ],
+   "warm_median_seconds": 0.003515341493766755,
+   "warm_min_seconds": 0.0034334579831920564
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0007827230147086084,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0007827230147086084,
+    0.0006643470260314643,
+    0.0007502110092900693
+   ],
+   "warm_median_seconds": 0.0007072790176607668,
+   "warm_min_seconds": 0.0006643470260314643
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0030409779865294695,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0030409779865294695,
+    0.0033090090146288276,
+    0.003251235990319401
+   ],
+   "warm_median_seconds": 0.0032801225024741143,
+   "warm_min_seconds": 0.003251235990319401
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0006936579593457282,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0006936579593457282,
+    0.0006922410102561116
+   ],
+   "warm_median_seconds": 0.0006922410102561116,
+   "warm_min_seconds": 0.0006922410102561116
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.00011952698696404696,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011952698696404696,
+    7.946300320327282e-05,
+    9.647099068388343e-05
+   ],
+   "warm_median_seconds": 8.796699694357812e-05,
+   "warm_min_seconds": 7.946300320327282e-05
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.0018237030017189682,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018237030017189682
+   ],
+   "warm_median_seconds": 0.0018237030017189682,
+   "warm_min_seconds": 0.0018237030017189682
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.0007692190119996667,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0007692190119996667,
+    0.0007659110124222934,
+    0.0007146209827624261
+   ],
+   "warm_median_seconds": 0.0007402659975923598,
+   "warm_min_seconds": 0.0007146209827624261
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.002422233985271305,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.002422233985271305,
+    0.002835571998730302,
+    0.002695464005228132
+   ],
+   "warm_median_seconds": 0.002765518001979217,
+   "warm_min_seconds": 0.002695464005228132
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.00319982401560992,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00319982401560992,
+    0.003038969007320702,
+    0.0029901060042902827
+   ],
+   "warm_median_seconds": 0.0030145375058054924,
+   "warm_min_seconds": 0.0029901060042902827
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.004659302008803934,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.004659302008803934,
+    0.007593818008899689,
+    0.004907427995931357
+   ],
+   "warm_median_seconds": 0.006250623002415523,
+   "warm_min_seconds": 0.004907427995931357
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00206475896993652,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00206475896993652,
+    0.002055948949418962,
+    0.001992544042877853
+   ],
+   "warm_median_seconds": 0.0020242464961484075,
+   "warm_min_seconds": 0.001992544042877853
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.0031549640116281807,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.0031549640116281807,
+    0.0029907419811934233,
+    0.003221830993425101
+   ],
+   "warm_median_seconds": 0.003106286487309262,
+   "warm_min_seconds": 0.0029907419811934233
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.0009552349802106619,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009552349802106619,
+    0.0008886639843694866
+   ],
+   "warm_median_seconds": 0.0008886639843694866,
+   "warm_min_seconds": 0.0008886639843694866
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.0007914400193840265,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007914400193840265,
+    0.000260327011346817,
+    0.0002532040234655142
+   ],
+   "warm_median_seconds": 0.0002567655174061656,
+   "warm_min_seconds": 0.0002532040234655142
+  },
+  {
+   "backend": "python",
+   "case": "all-group evaluation (Python Fractions)",
+   "first_seconds": 0.1801088450010866,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 100
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1801088450010866
+   ],
+   "warm_median_seconds": 0.1801088450010866,
+   "warm_min_seconds": 0.1801088450010866
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.005684176983777434,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.005684176983777434,
+    0.004655222990550101,
+    0.004157911986112595
+   ],
+   "warm_median_seconds": 0.004406567488331348,
+   "warm_min_seconds": 0.004157911986112595
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (index; int64 value arrays, array answers)",
+   "first_seconds": 0.008837120025418699,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.008837120025418699,
+    0.005325815000105649,
+    0.003898668976034969
+   ],
+   "warm_median_seconds": 0.004612241988070309,
+   "warm_min_seconds": 0.003898668976034969
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.23426635604118928,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.23426635604118928,
+    0.2363289279746823,
+    0.2382342650089413
+   ],
+   "warm_median_seconds": 0.2372815964918118,
+   "warm_min_seconds": 0.2363289279746823
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (regions; int64 value arrays, array answers)",
+   "first_seconds": 0.007959513983223587,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.007959513983223587,
+    0.006246497971005738,
+    0.005893535970244557
+   ],
+   "warm_median_seconds": 0.006070016970625147,
+   "warm_min_seconds": 0.005893535970244557
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.1308753020130098,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.1308753020130098,
+    0.13187764899339527,
+    0.13399596000090241
+   ],
+   "warm_median_seconds": 0.13293680449714884,
+   "warm_min_seconds": 0.13187764899339527
+  },
+  {
+   "backend": "cuda",
+   "case": "lookup (all; int64 value arrays, array answers)",
+   "first_seconds": 0.00655413803178817,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "result": {},
+   "samples_seconds": [
+    0.00655413803178817,
+    0.004644451022613794,
+    0.004423901962582022
+   ],
+   "warm_median_seconds": 0.004534176492597908,
+   "warm_min_seconds": 0.004423901962582022
+  },
+  {
+   "backend": "cpu",
+   "case": "lookup (index; Fraction tuples, one dict per value)",
+   "first_seconds": 0.018241055018734187,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.018241055018734187,
+    0.026435883017256856
+   ],
+   "warm_median_seconds": 0.026435883017256856,
+   "warm_min_seconds": 0.026435883017256856
+  },
+  {
+   "backend": "numpy",
+   "case": "all-group evaluation (NumPy exact int64, argmin / argmax)",
+   "first_seconds": 0.03429016500012949,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 1024,
+    "upper": true,
+    "values": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03429016500012949,
+    0.034068907028995454,
+    0.03357691696146503
+   ],
+   "warm_median_seconds": 0.03382291199523024,
+   "warm_min_seconds": 0.03357691696146503
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 31,
+   "boundary_kinds": "[('inner', 19), ('wall', 12)]",
+   "bytes": 74328,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.008278099994640797,
+   "incidences": 50,
+   "index_nodes": 13,
+   "lps": 14,
+   "params": {
+    "coincident": 0,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 122,
+   "regions": 10,
+   "samples_seconds": [
+    0.008278099994640797,
+    0.008067253977060318
+   ],
+   "tied_regions": 0,
+   "vertices": 22,
+   "warm_median_seconds": 0.008067253977060318,
+   "warm_min_seconds": 0.008067253977060318
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 14), ('wall', 11)]",
+   "bytes": 66936,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 56,
+   "first_seconds": 0.006932482996489853,
+   "incidences": 39,
+   "index_nodes": 9,
+   "lps": 13,
+   "params": {
+    "coincident": 8,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 111,
+   "regions": 8,
+   "samples_seconds": [
+    0.006932482996489853,
+    0.006752006011083722
+   ],
+   "tied_regions": 1,
+   "vertices": 18,
+   "warm_median_seconds": 0.006752006011083722,
+   "warm_min_seconds": 0.006752006011083722
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 13), ('wall', 12)]",
+   "bytes": 65912,
+   "case": "coincident functions",
+   "claim": "exact",
+   "classes": 32,
+   "first_seconds": 0.0089957169839181,
+   "incidences": 38,
+   "index_nodes": 9,
+   "lps": 11,
+   "params": {
+    "coincident": 32,
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 97,
+   "regions": 8,
+   "samples_seconds": [
+    0.0089957169839181,
+    0.005935465975198895
+   ],
+   "tied_regions": 5,
+   "vertices": 18,
+   "warm_median_seconds": 0.005935465975198895,
+   "warm_min_seconds": 0.005935465975198895
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 25,
+   "boundary_kinds": "[('inner', 13), ('wall', 12)]",
+   "bytes": 33128,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.004161491000559181,
+   "incidences": 38,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 2,
+    "groups": 8
+   },
+   "phase": "build",
+   "pivots": 83,
+   "regions": 8,
+   "samples_seconds": [
+    0.004161491000559181
+   ],
+   "vertices": 18,
+   "warm_median_seconds": 0.004161491000559181,
+   "warm_min_seconds": 0.004161491000559181
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 9,
+   "boundary_kinds": "[('inner', 7), ('wall', 2)]",
+   "bytes": 17128,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 8,
+   "first_seconds": 0.0017545960145071149,
+   "incidences": 16,
+   "index_nodes": 1,
+   "lps": 9,
+   "params": {
+    "d": 1,
+    "groups": 8
+   },
+   "phase": "build",
+   "pivots": 53,
+   "regions": 8,
+   "samples_seconds": [
+    0.0017545960145071149,
+    0.0017146699829027057
+   ],
+   "vertices": 9,
+   "warm_median_seconds": 0.0017146699829027057,
+   "warm_min_seconds": 0.0017146699829027057
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 7,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.0005023960256949067,
+   "params": {
+    "d": 1,
+    "groups": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005023960256949067,
+    0.00037016498390585184
+   ],
+   "warm_median_seconds": 0.00037016498390585184,
+   "warm_min_seconds": 0.00037016498390585184
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 159), ('wall', 34)]",
+   "bytes": 264312,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.05559799901675433,
+   "incidences": 352,
+   "index_nodes": 101,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 876,
+   "regions": 64,
+   "samples_seconds": [
+    0.05559799901675433
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.05559799901675433,
+   "warm_min_seconds": 0.05559799901675433
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 65,
+   "boundary_kinds": "[('inner', 63), ('wall', 2)]",
+   "bytes": 104712,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.013847415975760669,
+   "incidences": 128,
+   "index_nodes": 33,
+   "lps": 65,
+   "params": {
+    "d": 1,
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 397,
+   "regions": 64,
+   "samples_seconds": [
+    0.013847415975760669,
+    0.01351461501326412
+   ],
+   "vertices": 65,
+   "warm_median_seconds": 0.01351461501326412,
+   "warm_min_seconds": 0.01351461501326412
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 63,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.0028685450088232756,
+   "params": {
+    "d": 1,
+    "groups": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0028685450088232756,
+    0.0026551540358923376
+   ],
+   "warm_median_seconds": 0.0026551540358923376,
+   "warm_min_seconds": 0.0026551540358923376
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 769,
+   "boundary_kinds": "[('inner', 713), ('wall', 56)]",
+   "bytes": 1087112,
+   "case": "breakpoints: tangent planes (d = 2)",
+   "claim": "exact",
+   "classes": 256,
+   "first_seconds": 0.2465592270018533,
+   "incidences": 1482,
+   "index_nodes": 505,
+   "lps": 257,
+   "params": {
+    "d": 2,
+    "groups": 256
+   },
+   "phase": "build",
+   "pivots": 3716,
+   "regions": 256,
+   "samples_seconds": [
+    0.2465592270018533
+   ],
+   "vertices": 514,
+   "warm_median_seconds": 0.2465592270018533,
+   "warm_min_seconds": 0.2465592270018533
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 257,
+   "boundary_kinds": "[('inner', 255), ('wall', 2)]",
+   "bytes": 405128,
+   "case": "breakpoints: tangent lines (d = 1)",
+   "claim": "exact",
+   "classes": 256,
+   "first_seconds": 0.05434096901444718,
+   "incidences": 512,
+   "index_nodes": 143,
+   "lps": 257,
+   "params": {
+    "d": 1,
+    "groups": 256
+   },
+   "phase": "build",
+   "pivots": 1521,
+   "regions": 256,
+   "samples_seconds": [
+    0.05434096901444718,
+    0.05487247201381251
+   ],
+   "vertices": 257,
+   "warm_median_seconds": 0.05487247201381251,
+   "warm_min_seconds": 0.05487247201381251
+  },
+  {
+   "backend": "env001",
+   "breakpoints": 255,
+   "case": "breakpoints: ENV-001 envelope (d = 1 baseline)",
+   "first_seconds": 0.020000514981802553,
+   "params": {
+    "d": 1,
+    "groups": 256
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.020000514981802553,
+    0.018236936011817306
+   ],
+   "warm_median_seconds": 0.018236936011817306,
+   "warm_min_seconds": 0.018236936011817306
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 4,
+   "boundary_kinds": "[('inner', 2), ('wall', 2)]",
+   "bytes": 38496,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.002144027967005968,
+   "incidences": 6,
+   "index_nodes": 3,
+   "lps": 4,
+   "params": {
+    "d": 1,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 12,
+   "regions": 3,
+   "samples_seconds": [
+    0.002144027967005968
+   ],
+   "vertices": 4,
+   "warm_median_seconds": 0.002144027967005968,
+   "warm_min_seconds": 0.002144027967005968
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 65,
+   "boundary_kinds": "[('inner', 63), ('wall', 2)]",
+   "bytes": 103880,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.01176419499097392,
+   "incidences": 128,
+   "index_nodes": 33,
+   "lps": 65,
+   "params": {
+    "d": 1,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 336,
+   "regions": 64,
+   "samples_seconds": [
+    0.01176419499097392
+   ],
+   "vertices": 65,
+   "warm_median_seconds": 0.01176419499097392,
+   "warm_min_seconds": 0.01176419499097392
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 22,
+   "boundary_kinds": "[('inner', 12), ('wall', 10)]",
+   "bytes": 63776,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.005854586022906005,
+   "incidences": 34,
+   "index_nodes": 7,
+   "lps": 11,
+   "params": {
+    "d": 2,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 82,
+   "regions": 7,
+   "samples_seconds": [
+    0.005854586022906005
+   ],
+   "vertices": 16,
+   "warm_median_seconds": 0.005854586022906005,
+   "warm_min_seconds": 0.005854586022906005
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 193,
+   "boundary_kinds": "[('inner', 158), ('wall', 35)]",
+   "bytes": 264984,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.05378160794498399,
+   "incidences": 351,
+   "index_nodes": 103,
+   "lps": 65,
+   "params": {
+    "d": 2,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 842,
+   "regions": 64,
+   "samples_seconds": [
+    0.05378160794498399
+   ],
+   "vertices": 130,
+   "warm_median_seconds": 0.05378160794498399,
+   "warm_min_seconds": 0.05378160794498399
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 79,
+   "boundary_kinds": "[('inner', 46), ('wall', 33)]",
+   "bytes": 190008,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.03108296199934557,
+   "incidences": 194,
+   "index_nodes": 121,
+   "lps": 21,
+   "params": {
+    "d": 3,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 368,
+   "regions": 14,
+   "samples_seconds": [
+    0.03108296199934557
+   ],
+   "vertices": 68,
+   "warm_median_seconds": 0.03108296199934557,
+   "warm_min_seconds": 0.03108296199934557
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 421,
+   "boundary_kinds": "[('inner', 326), ('wall', 95)]",
+   "bytes": 845304,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.19872306601610035,
+   "incidences": 1238,
+   "index_nodes": 451,
+   "lps": 65,
+   "params": {
+    "d": 3,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 1584,
+   "regions": 64,
+   "samples_seconds": [
+    0.19872306601610035
+   ],
+   "vertices": 360,
+   "warm_median_seconds": 0.19872306601610035,
+   "warm_min_seconds": 0.19872306601610035
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 255,
+   "boundary_kinds": "[('inner', 161), ('wall', 94)]",
+   "bytes": 1161368,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.12927025597309694,
+   "incidences": 1293,
+   "index_nodes": 1367,
+   "lps": 34,
+   "params": {
+    "d": 4,
+    "family": "random",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 857,
+   "regions": 28,
+   "samples_seconds": [
+    0.12927025597309694
+   ],
+   "vertices": 348,
+   "warm_median_seconds": 0.12927025597309694,
+   "warm_min_seconds": 0.12927025597309694
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 757,
+   "boundary_kinds": "[('inner', 565), ('wall', 192)]",
+   "bytes": 3797144,
+   "case": "dimension",
+   "claim": "exact",
+   "classes": 64,
+   "first_seconds": 0.6954283179948106,
+   "incidences": 4717,
+   "index_nodes": 4523,
+   "lps": 65,
+   "params": {
+    "d": 4,
+    "family": "tangent",
+    "groups": 64
+   },
+   "phase": "build",
+   "pivots": 2759,
+   "regions": 64,
+   "samples_seconds": [
+    0.6954283179948106
+   ],
+   "vertices": 1136,
+   "warm_median_seconds": 0.6954283179948106,
+   "warm_min_seconds": 0.6954283179948106
+  },
+  {
+   "backend": "cpu",
+   "case": "build at the output limit",
+   "first_seconds": 0.05591287004062906,
+   "params": {
+    "groups": 64,
+    "output": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05591287004062906
+   ],
+   "warm_median_seconds": 0.05591287004062906,
+   "warm_min_seconds": 0.05591287004062906
+  },
+  {
+   "backend": "cpu",
+   "case": "build one past the output limit",
+   "limit": 63,
+   "message": "parameter regions: needs 64 output, budget 63",
+   "need": 64,
+   "params": {
+    "groups": 64,
+    "output": 63
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.04783602798124775,
+   "refused": true,
+   "resource": "output"
+  },
+  {
+   "backend": "cpu",
+   "case": "build at the support limit",
+   "first_seconds": 0.05541273800190538,
+   "params": {
+    "groups": 64,
+    "support": 359
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05541273800190538
+   ],
+   "warm_median_seconds": 0.05541273800190538,
+   "warm_min_seconds": 0.05541273800190538
+  },
+  {
+   "backend": "cpu",
+   "case": "build one past the support limit",
+   "limit": 358,
+   "message": "parameter regions: needs 359 support, budget 358",
+   "need": 359,
+   "params": {
+    "groups": 64,
+    "support": 358
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.04754820198286325,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "boundaries": 92,
+   "boundary_kinds": "[('cell', 64), ('inner', 12), ('wall', 16)]",
+   "bytes": 115432,
+   "case": "quadratics under the piecewise-linear contract (approximate)",
+   "claim": "approximate",
+   "classes": 48,
+   "error": "1/16",
+   "first_seconds": 0.00625229999423027,
+   "incidences": 106,
+   "index_nodes": 16,
+   "lps": 31,
+   "params": {
+    "d": 2,
+    "error_budget": "1/10",
+    "groups": 3,
+    "pieces": 4
+   },
+   "phase": "build",
+   "pivots": 141,
+   "regions": 28,
+   "samples_seconds": [
+    0.00625229999423027
+   ],
+   "vertices": 82,
+   "warm_median_seconds": 0.00625229999423027,
+   "warm_min_seconds": 0.00625229999423027
+  }
+ ],
+ "seconds": 6.373457481036894,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "regions build, output (nonempty regions)",
+   "largest_admitted": {
+    "output": 64
+   },
+   "need_reported": 64,
+   "smallest_refused": {
+    "output": 63
+   }
+  },
+  {
+   "grid": "regions build, support (incidences)",
+   "largest_admitted": {
+    "support": 359
+   },
+   "need_reported": 359,
+   "smallest_refused": {
+    "support": 358
+   }
+  }
+ ]
+}

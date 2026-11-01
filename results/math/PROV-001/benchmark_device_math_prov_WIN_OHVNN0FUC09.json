@@ -1,0 +1,1864 @@
+{
+ "argv": [
+  "--capability",
+  "PROV-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/PROV-001/benchmark_device_math_prov_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "PROV-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:38:15+00:00"
+ },
+ "notes": [
+  "cpu = math_prov.c (hash-consed DAG, K-relation operators, one valuation at a time); cuda = math_prov_gpu.cu (one work item per valuation; device runs only); duckdb = the query re-executed (bag multiplicities by GROUP BY ALL / COUNT(*)); reconstruction = a new native store per deletion.",
+  "Annotation limits are the store's (nodes, child entries, bytes); an operator refuses before adding a node when its bound does not fit. An expansion is budgeted by its number of derivations before it starts; the factored DAG is evaluated without expanding."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.003572774992790073,
+   "params": {
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003572774992790073,
+    0.0013321050209924579
+   ],
+   "warm_median_seconds": 0.0013321050209924579,
+   "warm_min_seconds": 0.0013321050209924579
+  },
+  {
+   "annotation_bytes": 41128,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 590,
+   "dag_nodes": 608,
+   "first_seconds": 0.0005858379881829023,
+   "hash_hits": 0,
+   "output_tuples": 111,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005858379881829023,
+    0.0002522100112400949
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.0002522100112400949,
+   "warm_min_seconds": 0.0002522100112400949
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0001541430247016251,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0001541430247016251,
+    9.897502604871988e-05,
+    8.623802568763494e-05
+   ],
+   "warm_median_seconds": 9.260652586817741e-05,
+   "warm_min_seconds": 8.623802568763494e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 8.061795961111784e-05,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.061795961111784e-05,
+    7.714203093200922e-05,
+    7.321801967918873e-05
+   ],
+   "warm_median_seconds": 7.518002530559897e-05,
+   "warm_min_seconds": 7.321801967918873e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2459,
+   "first_seconds": 0.006480444979388267,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2459,
+   "samples_seconds": [
+    0.006480444979388267
+   ],
+   "warm_median_seconds": 0.006480444979388267,
+   "warm_min_seconds": 0.006480444979388267
+  },
+  {
+   "annotation_bytes": 82088,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 3777,
+   "dag_nodes": 1786,
+   "first_seconds": 0.000490425038151443,
+   "hash_hits": 0,
+   "output_tuples": 111,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000490425038151443,
+    0.00031970301643013954
+   ],
+   "shared_nodes": 284,
+   "warm_median_seconds": 0.00031970301643013954,
+   "warm_min_seconds": 0.00031970301643013954
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.00012839800911024213,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00012839800911024213,
+    9.752099867910147e-05,
+    8.976703975349665e-05
+   ],
+   "warm_median_seconds": 9.364401921629906e-05,
+   "warm_min_seconds": 8.976703975349665e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 8.247100049629807e-05,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.247100049629807e-05,
+    8.573202649131417e-05,
+    7.507501868531108e-05
+   ],
+   "warm_median_seconds": 8.040352258831263e-05,
+   "warm_min_seconds": 7.507501868531108e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2459,
+   "first_seconds": 0.007391189981717616,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2459,
+   "samples_seconds": [
+    0.007391189981717616
+   ],
+   "warm_median_seconds": 0.007391189981717616,
+   "warm_min_seconds": 0.007391189981717616
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.0015587930101901293,
+   "params": {
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015587930101901293,
+    0.0013812429970130324
+   ],
+   "warm_median_seconds": 0.0013812429970130324,
+   "warm_min_seconds": 0.0013812429970130324
+  },
+  {
+   "annotation_bytes": 41128,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 523,
+   "dag_nodes": 543,
+   "first_seconds": 0.0002994770184159279,
+   "hash_hits": 0,
+   "output_tuples": 37,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0002994770184159279,
+    0.00023668300127610564
+   ],
+   "shared_nodes": 12,
+   "warm_median_seconds": 0.00023668300127610564,
+   "warm_min_seconds": 0.00023668300127610564
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.00012800999684259295,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00012800999684259295,
+    7.83340074121952e-05,
+    7.212703349068761e-05
+   ],
+   "warm_median_seconds": 7.523052045144141e-05,
+   "warm_min_seconds": 7.212703349068761e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 7.104699034243822e-05,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.104699034243822e-05,
+    0.00011417904170230031,
+    6.974599091336131e-05
+   ],
+   "warm_median_seconds": 9.196251630783081e-05,
+   "warm_min_seconds": 6.974599091336131e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2816,
+   "first_seconds": 0.0030103980097919703,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2816,
+   "samples_seconds": [
+    0.0030103980097919703
+   ],
+   "warm_median_seconds": 0.0030103980097919703,
+   "warm_min_seconds": 0.0030103980097919703
+  },
+  {
+   "annotation_bytes": 41128,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 797,
+   "dag_nodes": 660,
+   "first_seconds": 0.00023060903185978532,
+   "hash_hits": 0,
+   "output_tuples": 37,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00023060903185978532,
+    0.00020919903181493282
+   ],
+   "shared_nodes": 76,
+   "warm_median_seconds": 0.00020919903181493282,
+   "warm_min_seconds": 0.00020919903181493282
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 8.216098649427295e-05,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    8.216098649427295e-05,
+    7.071101572364569e-05,
+    6.76129711791873e-05
+   ],
+   "warm_median_seconds": 6.916199345141649e-05,
+   "warm_min_seconds": 6.76129711791873e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 6.773899076506495e-05,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.773899076506495e-05,
+    6.539799505844712e-05,
+    6.352300988510251e-05
+   ],
+   "warm_median_seconds": 6.446050247177482e-05,
+   "warm_min_seconds": 6.352300988510251e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2816,
+   "first_seconds": 0.0030681350035592914,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2816,
+   "samples_seconds": [
+    0.0030681350035592914
+   ],
+   "warm_median_seconds": 0.0030681350035592914,
+   "warm_min_seconds": 0.0030681350035592914
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.001280280004721135,
+   "params": {
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001280280004721135,
+    0.0012000819551758468
+   ],
+   "warm_median_seconds": 0.0012000819551758468,
+   "warm_min_seconds": 0.0012000819551758468
+  },
+  {
+   "annotation_bytes": 24744,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 404,
+   "dag_nodes": 419,
+   "first_seconds": 0.00027760601369664073,
+   "hash_hits": 0,
+   "output_tuples": 8,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00027760601369664073,
+    0.00020713201956823468
+   ],
+   "shared_nodes": 2,
+   "warm_median_seconds": 0.00020713201956823468,
+   "warm_min_seconds": 0.00020713201956823468
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.00011125800665467978,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00011125800665467978,
+    7.462501525878906e-05,
+    6.965600186958909e-05
+   ],
+   "warm_median_seconds": 7.214050856418908e-05,
+   "warm_min_seconds": 6.965600186958909e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 9.31419781409204e-05,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    9.31419781409204e-05,
+    6.63790269754827e-05,
+    6.255100015550852e-05
+   ],
+   "warm_median_seconds": 6.446501356549561e-05,
+   "warm_min_seconds": 6.255100015550852e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2816,
+   "first_seconds": 0.001639359979890287,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2816,
+   "samples_seconds": [
+    0.001639359979890287
+   ],
+   "warm_median_seconds": 0.001639359979890287,
+   "warm_min_seconds": 0.001639359979890287
+  },
+  {
+   "annotation_bytes": 24744,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 410,
+   "dag_nodes": 422,
+   "first_seconds": 0.00019953999435529113,
+   "hash_hits": 0,
+   "output_tuples": 8,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00019953999435529113,
+    0.00019394000992178917
+   ],
+   "shared_nodes": 3,
+   "warm_median_seconds": 0.00019394000992178917,
+   "warm_min_seconds": 0.00019394000992178917
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 7.12469918653369e-05,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    7.12469918653369e-05,
+    6.568897515535355e-05,
+    6.34430325590074e-05
+   ],
+   "warm_median_seconds": 6.456600385718048e-05,
+   "warm_min_seconds": 6.34430325590074e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 6.394099909812212e-05,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    6.394099909812212e-05,
+    6.0970953200012445e-05,
+    5.989702185615897e-05
+   ],
+   "warm_median_seconds": 6.043398752808571e-05,
+   "warm_min_seconds": 5.989702185615897e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "expanded size (N[X] of every output)",
+   "expanded_monomials": 2816,
+   "first_seconds": 0.0016889669932425022,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 200
+   },
+   "phase": "run",
+   "result": 2816,
+   "samples_seconds": [
+    0.0016889669932425022
+   ],
+   "warm_median_seconds": 0.0016889669932425022,
+   "warm_min_seconds": 0.0016889669932425022
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.00189363700337708,
+   "params": {
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00189363700337708,
+    0.0016974189784377813
+   ],
+   "warm_median_seconds": 0.0016974189784377813,
+   "warm_min_seconds": 0.0016974189784377813
+  },
+  {
+   "annotation_bytes": 164008,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 2535,
+   "dag_nodes": 2553,
+   "first_seconds": 0.0010592110338620842,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010592110338620842,
+    0.0011891490430571139
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.0011891490430571139,
+   "warm_min_seconds": 0.0011891490430571139
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.00039297499461099505,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00039297499461099505,
+    0.0003235519980080426,
+    0.00042922800639644265
+   ],
+   "warm_median_seconds": 0.0003763900022022426,
+   "warm_min_seconds": 0.0003235519980080426
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.000253527017775923,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000253527017775923,
+    0.0002501229755580425,
+    0.00023712700931355357
+   ],
+   "warm_median_seconds": 0.00024362499243579805,
+   "warm_min_seconds": 0.00023712700931355357
+  },
+  {
+   "annotation_bytes": 327848,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 15458,
+   "dag_nodes": 7121,
+   "first_seconds": 0.0013193550403229892,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013193550403229892,
+    0.0012809170293621719
+   ],
+   "shared_nodes": 701,
+   "warm_median_seconds": 0.0012809170293621719,
+   "warm_min_seconds": 0.0012809170293621719
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0004152769688516855,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0004152769688516855,
+    0.00030273396987468004,
+    0.0002776790061034262
+   ],
+   "warm_median_seconds": 0.00029020648798905313,
+   "warm_min_seconds": 0.0002776790061034262
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0002478559617884457,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0002478559617884457,
+    0.00024523900356143713,
+    0.0002452000044286251
+   ],
+   "warm_median_seconds": 0.0002452195039950311,
+   "warm_min_seconds": 0.0002452000044286251
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.0018323360127396882,
+   "params": {
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018323360127396882,
+    0.0017857380444183946
+   ],
+   "warm_median_seconds": 0.0017857380444183946,
+   "warm_min_seconds": 0.0017857380444183946
+  },
+  {
+   "annotation_bytes": 164008,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 2431,
+   "dag_nodes": 2449,
+   "first_seconds": 0.0010132600436918437,
+   "hash_hits": 0,
+   "output_tuples": 111,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010132600436918437,
+    0.0009361589909531176
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.0009361589909531176,
+   "warm_min_seconds": 0.0009361589909531176
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0004830129910260439,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0004830129910260439,
+    0.00026849302230402827,
+    0.000246877025347203
+   ],
+   "warm_median_seconds": 0.00025768502382561564,
+   "warm_min_seconds": 0.000246877025347203
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.00024951202794909477,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00024951202794909477,
+    0.00023253698600456119,
+    0.00022705900482833385
+   ],
+   "warm_median_seconds": 0.00022979799541644752,
+   "warm_min_seconds": 0.00022705900482833385
+  },
+  {
+   "annotation_bytes": 180392,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 6422,
+   "dag_nodes": 3907,
+   "first_seconds": 0.0010425089858472347,
+   "hash_hits": 0,
+   "output_tuples": 111,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0010425089858472347,
+    0.0009917429997585714
+   ],
+   "shared_nodes": 320,
+   "warm_median_seconds": 0.0009917429997585714,
+   "warm_min_seconds": 0.0009917429997585714
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0004069739952683449,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0004069739952683449,
+    0.00027212902205064893,
+    0.0002487670280970633
+   ],
+   "warm_median_seconds": 0.0002604480250738561,
+   "warm_min_seconds": 0.0002487670280970633
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.00023556995438411832,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00023556995438411832,
+    0.0002366530243307352,
+    0.00023068598238751292
+   ],
+   "warm_median_seconds": 0.00023366950335912406,
+   "warm_min_seconds": 0.00023068598238751292
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.001957633998245001,
+   "params": {
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001957633998245001,
+    0.001598270027898252
+   ],
+   "warm_median_seconds": 0.001598270027898252,
+   "warm_min_seconds": 0.001598270027898252
+  },
+  {
+   "annotation_bytes": 164008,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 2135,
+   "dag_nodes": 2153,
+   "first_seconds": 0.0009315229835920036,
+   "hash_hits": 0,
+   "output_tuples": 46,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0009315229835920036,
+    0.0009677889756858349
+   ],
+   "shared_nodes": 11,
+   "warm_median_seconds": 0.0009677889756858349,
+   "warm_min_seconds": 0.0009677889756858349
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0003002550220116973,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0003002550220116973,
+    0.00023466499987989664,
+    0.0002251449623145163
+   ],
+   "warm_median_seconds": 0.00022990498109720647,
+   "warm_min_seconds": 0.0002251449623145163
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0002723969519138336,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0002723969519138336,
+    0.000229722005315125,
+    0.00023270701058208942
+   ],
+   "warm_median_seconds": 0.0002312145079486072,
+   "warm_min_seconds": 0.000229722005315125
+  },
+  {
+   "annotation_bytes": 164008,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 2530,
+   "dag_nodes": 2320,
+   "first_seconds": 0.0008453669724985957,
+   "hash_hits": 0,
+   "output_tuples": 46,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008453669724985957,
+    0.0008241250179708004
+   ],
+   "shared_nodes": 88,
+   "warm_median_seconds": 0.0008241250179708004,
+   "warm_min_seconds": 0.0008241250179708004
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0002520860289223492,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0002520860289223492,
+    0.00024302804376929998,
+    0.00022292102221399546
+   ],
+   "warm_median_seconds": 0.00023297453299164772,
+   "warm_min_seconds": 0.00022292102221399546
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.00021700200159102678,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00021700200159102678,
+    0.0002184850163757801,
+    0.00021703500533476472
+   ],
+   "warm_median_seconds": 0.0002177600108552724,
+   "warm_min_seconds": 0.00021703500533476472
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.006283444992732257,
+   "params": {
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006283444992732257,
+    0.006190448999404907
+   ],
+   "warm_median_seconds": 0.006190448999404907,
+   "warm_min_seconds": 0.006190448999404907
+  },
+  {
+   "annotation_bytes": 655528,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 9016,
+   "dag_nodes": 9034,
+   "first_seconds": 0.0038900059880688787,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0038900059880688787,
+    0.00414765503956005
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.00414765503956005,
+   "warm_min_seconds": 0.00414765503956005
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.001261672005057335,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001261672005057335,
+    0.0008608570205979049,
+    0.0008384769898839295
+   ],
+   "warm_median_seconds": 0.0008496670052409172,
+   "warm_min_seconds": 0.0008384769898839295
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.000885221001226455,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000885221001226455,
+    0.0008796090260148048,
+    0.0008647739887237549
+   ],
+   "warm_median_seconds": 0.0008721915073692799,
+   "warm_min_seconds": 0.0008647739887237549
+  },
+  {
+   "annotation_bytes": 721064,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 26930,
+   "dag_nodes": 15338,
+   "first_seconds": 0.004829128040000796,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.004829128040000796,
+    0.00595389399677515
+   ],
+   "shared_nodes": 918,
+   "warm_median_seconds": 0.00595389399677515,
+   "warm_min_seconds": 0.00595389399677515
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.001126830989960581,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001126830989960581,
+    0.0009344539721496403,
+    0.000912681978661567
+   ],
+   "warm_median_seconds": 0.0009235679754056036,
+   "warm_min_seconds": 0.000912681978661567
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0009408590267412364,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 1,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0009408590267412364,
+    0.0009281699894927442,
+    0.0008620790322311223
+   ],
+   "warm_median_seconds": 0.0008951245108619332,
+   "warm_min_seconds": 0.0008620790322311223
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.006542373972479254,
+   "params": {
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006542373972479254,
+    0.006740007025655359
+   ],
+   "warm_median_seconds": 0.006740007025655359,
+   "warm_min_seconds": 0.006740007025655359
+  },
+  {
+   "annotation_bytes": 655528,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 8824,
+   "dag_nodes": 8842,
+   "first_seconds": 0.0038141360273584723,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0038141360273584723,
+    0.0035556209622882307
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.0035556209622882307,
+   "warm_min_seconds": 0.0035556209622882307
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.001318996015470475,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001318996015470475,
+    0.0008588669588789344,
+    0.0008475449867546558
+   ],
+   "warm_median_seconds": 0.0008532059728167951,
+   "warm_min_seconds": 0.0008475449867546558
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0008677450241521001,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008677450241521001,
+    0.0008297919994220138,
+    0.001000009011477232
+   ],
+   "warm_median_seconds": 0.0009149005054496229,
+   "warm_min_seconds": 0.0008297919994220138
+  },
+  {
+   "annotation_bytes": 721064,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 21632,
+   "dag_nodes": 13370,
+   "first_seconds": 0.0037407780182547867,
+   "hash_hits": 0,
+   "output_tuples": 128,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0037407780182547867,
+    0.0038863279623910785
+   ],
+   "shared_nodes": 696,
+   "warm_median_seconds": 0.0038863279623910785,
+   "warm_min_seconds": 0.0038863279623910785
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0012653690064325929,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0012653690064325929,
+    0.0009581290069036186,
+    0.0008849879959598184
+   ],
+   "warm_median_seconds": 0.0009215585014317185,
+   "warm_min_seconds": 0.0008849879959598184
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0008956789970397949,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 4,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008956789970397949,
+    0.000878196966368705,
+    0.0008622750174254179
+   ],
+   "warm_median_seconds": 0.0008702359918970615,
+   "warm_min_seconds": 0.0008622750174254179
+  },
+  {
+   "backend": "duckdb",
+   "case": "bag multiplicities (GROUP BY)",
+   "first_seconds": 0.006693464994896203,
+   "params": {
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006693464994896203,
+    0.006460029981099069
+   ],
+   "warm_median_seconds": 0.006460029981099069,
+   "warm_min_seconds": 0.006460029981099069
+  },
+  {
+   "annotation_bytes": 655528,
+   "backend": "cpu",
+   "case": "annotated query: shared derivations (group, then join)",
+   "child_entries": 8428,
+   "dag_nodes": 8446,
+   "first_seconds": 0.0033573450054973364,
+   "hash_hits": 0,
+   "output_tuples": 107,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0033573450054973364,
+    0.0032129029859788716
+   ],
+   "shared_nodes": 16,
+   "warm_median_seconds": 0.0032129029859788716,
+   "warm_min_seconds": 0.0032129029859788716
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0009787189774215221,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0009787189774215221,
+    0.0008490449981763959,
+    0.0011027749860659242
+   ],
+   "warm_median_seconds": 0.00097590999212116,
+   "warm_min_seconds": 0.0008490449981763959
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.000866354035679251,
+   "params": {
+    "derivations": "shared derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000866354035679251,
+    0.0011419939692132175,
+    0.0008841580129228532
+   ],
+   "warm_median_seconds": 0.0010130759910680354,
+   "warm_min_seconds": 0.0008841580129228532
+  },
+  {
+   "annotation_bytes": 655528,
+   "backend": "cpu",
+   "case": "annotated query: independent derivations (join, then group)",
+   "child_entries": 12293,
+   "dag_nodes": 9861,
+   "first_seconds": 0.003477595979347825,
+   "hash_hits": 0,
+   "output_tuples": 107,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.003477595979347825,
+    0.003295707982033491
+   ],
+   "shared_nodes": 321,
+   "warm_median_seconds": 0.003295707982033491,
+   "warm_min_seconds": 0.003295707982033491
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicities (N at 1)",
+   "first_seconds": 0.0008588869823142886,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008588869823142886,
+    0.0008637660066597164,
+    0.0008344890084117651
+   ],
+   "warm_median_seconds": 0.0008491275075357407,
+   "warm_min_seconds": 0.0008344890084117651
+  },
+  {
+   "backend": "cpu",
+   "case": "existence (B at 1)",
+   "first_seconds": 0.0008886110153980553,
+   "params": {
+    "derivations": "independent derivations",
+    "duplicates": 16,
+    "rows": 4000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0008886110153980553,
+    0.0008363639935851097,
+    0.0008368580020032823
+   ],
+   "warm_median_seconds": 0.000836610997794196,
+   "warm_min_seconds": 0.0008363639935851097
+  },
+  {
+   "backend": "cpu",
+   "case": "evaluation plan (the cone)",
+   "cone_nodes": 2653,
+   "first_seconds": 5.7887984439730644e-05,
+   "outputs": 124,
+   "params": {},
+   "phase": "build",
+   "samples_seconds": [
+    5.7887984439730644e-05,
+    3.121403278782964e-05,
+    1.692102523520589e-05
+   ],
+   "warm_median_seconds": 2.4067529011517763e-05,
+   "warm_min_seconds": 1.692102523520589e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.0003745980211533606,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0003745980211533606,
+    0.00023368897382169962,
+    0.00022291502682492137
+   ],
+   "warm_median_seconds": 0.0002283020003233105,
+   "warm_min_seconds": 0.00022291502682492137
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.00021303101675584912,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00021303101675584912,
+    0.0002705529914237559,
+    0.00020816799951717257
+   ],
+   "warm_median_seconds": 0.00023936049547046423,
+   "warm_min_seconds": 0.00020816799951717257
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.07345458498457447,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.07345458498457447,
+    0.0018906129989773035,
+    0.001962157024536282
+   ],
+   "warm_median_seconds": 0.0019263850117567927,
+   "warm_min_seconds": 0.0018906129989773035
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.001533699978608638,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001533699978608638,
+    0.001543153019156307,
+    0.0015626499662175775
+   ],
+   "warm_median_seconds": 0.0015529014926869422,
+   "warm_min_seconds": 0.001543153019156307
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per deletion (native)",
+   "first_seconds": 0.0014697820297442377,
+   "params": {
+    "reconstructed": 1,
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014697820297442377
+   ],
+   "warm_median_seconds": 0.0014697820297442377,
+   "warm_min_seconds": 0.0014697820297442377
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per deletion",
+   "first_seconds": 0.002645844011567533,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002645844011567533
+   ],
+   "warm_median_seconds": 0.002645844011567533,
+   "warm_min_seconds": 0.002645844011567533
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.001614482025615871,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001614482025615871,
+    0.0017455019988119602,
+    0.0016050070407800376
+   ],
+   "warm_median_seconds": 0.001675254519795999,
+   "warm_min_seconds": 0.0016050070407800376
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.000787772994954139,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.000787772994954139,
+    0.0008081939886324108,
+    0.0008072659838944674
+   ],
+   "warm_median_seconds": 0.0008077299862634391,
+   "warm_min_seconds": 0.0008072659838944674
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.003458589024376124,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.003458589024376124,
+    0.00356460502371192,
+    0.0034890819806605577
+   ],
+   "warm_median_seconds": 0.0035268435021862388,
+   "warm_min_seconds": 0.0034890819806605577
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.001986421993933618,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.001986421993933618,
+    0.002020674990490079,
+    0.00214411603519693
+   ],
+   "warm_median_seconds": 0.0020823955128435045,
+   "warm_min_seconds": 0.002020674990490079
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per deletion (native)",
+   "first_seconds": 0.12816161900991574,
+   "params": {
+    "reconstructed": 100,
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.12816161900991574
+   ],
+   "warm_median_seconds": 0.12816161900991574,
+   "warm_min_seconds": 0.12816161900991574
+  },
+  {
+   "backend": "duckdb",
+   "case": "query re-executed per deletion",
+   "first_seconds": 0.15989359299419448,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.15989359299419448
+   ],
+   "warm_median_seconds": 0.15989359299419448,
+   "warm_min_seconds": 0.15989359299419448
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.015589980990625918,
+   "params": {
+    "requests": 1000,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.015589980990625918,
+    0.015552720986306667,
+    0.014626819000113755
+   ],
+   "warm_median_seconds": 0.015089769993210211,
+   "warm_min_seconds": 0.014626819000113755
+  },
+  {
+   "backend": "cpu",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.006006448995321989,
+   "params": {
+    "requests": 1000,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.006006448995321989,
+    0.006173675006721169,
+    0.006202944030519575
+   ],
+   "warm_median_seconds": 0.006188309518620372,
+   "warm_min_seconds": 0.006173675006721169
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (count)",
+   "first_seconds": 0.013397029018960893,
+   "params": {
+    "requests": 1000,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.013397029018960893,
+    0.014914256986230612,
+    0.014457804965786636
+   ],
+   "warm_median_seconds": 0.014686030976008624,
+   "warm_min_seconds": 0.014457804965786636
+  },
+  {
+   "backend": "cuda",
+   "case": "source deletions in one batch (bool)",
+   "first_seconds": 0.006367516005411744,
+   "params": {
+    "requests": 1000,
+    "rows": 1000
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.006367516005411744,
+    0.0058162189670838416,
+    0.005897699040360749
+   ],
+   "warm_median_seconds": 0.005856959003722295,
+   "warm_min_seconds": 0.0058162189670838416
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction per deletion (native)",
+   "first_seconds": 1.2978973030112684,
+   "params": {
+    "reconstructed": 1000,
+    "requests": 1000,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.2978973030112684
+   ],
+   "warm_median_seconds": 1.2978973030112684,
+   "warm_min_seconds": 1.2978973030112684
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: N[X] expansions",
+   "first_seconds": 0.0004172300104983151,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004172300104983151
+   ],
+   "warm_median_seconds": 0.0004172300104983151,
+   "warm_min_seconds": 0.0004172300104983151
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal witnesses (B)",
+   "first_seconds": 0.0004077559569850564,
+   "params": {
+    "requests": 1,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0004077559569850564
+   ],
+   "warm_median_seconds": 0.0004077559569850564,
+   "warm_min_seconds": 0.0004077559569850564
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: N[X] expansions",
+   "first_seconds": 0.056966509961057454,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.056966509961057454
+   ],
+   "warm_median_seconds": 0.056966509961057454,
+   "warm_min_seconds": 0.056966509961057454
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal witnesses (B)",
+   "first_seconds": 0.05666048894636333,
+   "params": {
+    "requests": 100,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05666048894636333
+   ],
+   "warm_median_seconds": 0.05666048894636333,
+   "warm_min_seconds": 0.05666048894636333
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: N[X] expansions",
+   "first_seconds": 0.06351957400329411,
+   "params": {
+    "requests": 124,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06351957400329411
+   ],
+   "warm_median_seconds": 0.06351957400329411,
+   "warm_min_seconds": 0.06351957400329411
+  },
+  {
+   "backend": "cpu",
+   "case": "explanations: minimal witnesses (B)",
+   "first_seconds": 0.07902441103942692,
+   "params": {
+    "requests": 124,
+    "rows": 1000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07902441103942692
+   ],
+   "warm_median_seconds": 0.07902441103942692,
+   "warm_min_seconds": 0.07902441103942692
+  },
+  {
+   "backend": "cpu",
+   "case": "self-join (correlated derivations: squared variables)",
+   "first_seconds": 0.000293615972623229,
+   "params": {
+    "rows": 300
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000293615972623229,
+    0.0002275420119985938
+   ],
+   "warm_median_seconds": 0.0002275420119985938,
+   "warm_min_seconds": 0.0002275420119985938
+  },
+  {
+   "backend": "cpu",
+   "case": "multiplicity valuations (N)",
+   "first_seconds": 0.0012387559982016683,
+   "params": {
+    "valuations": 100
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0012387559982016683,
+    0.001119243970606476,
+    0.0011788089759647846
+   ],
+   "warm_median_seconds": 0.0011490264732856303,
+   "warm_min_seconds": 0.001119243970606476
+  },
+  {
+   "backend": "cuda",
+   "case": "multiplicity valuations (N)",
+   "first_seconds": 0.0035245409817434847,
+   "params": {
+    "valuations": 100
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0035245409817434847,
+    0.0030781300156377256,
+    0.003039082046598196
+   ],
+   "warm_median_seconds": 0.003058606031117961,
+   "warm_min_seconds": 0.003039082046598196
+  },
+  {
+   "backend": "duckdb",
+   "case": "self-join on duplicated rows",
+   "first_seconds": 0.0015219820197671652,
+   "params": {},
+   "phase": "run",
+   "samples_seconds": [
+    0.0015219820197671652,
+    0.001315228990279138
+   ],
+   "warm_median_seconds": 0.001315228990279138,
+   "warm_min_seconds": 0.001315228990279138
+  },
+  {
+   "backend": "cpu",
+   "case": "join past the annotation limit (2^14 nodes)",
+   "limit": 16384,
+   "message": "join: needs 17426 circuit, budget 16384",
+   "need": 17426,
+   "params": {
+    "pairs": 16384,
+    "rows": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 3.032101085409522e-05,
+   "refused": true,
+   "resource": "circuit"
+  },
+  {
+   "backend": "cpu",
+   "case": "expansion past the support budget (40^7 derivations, a factored DAG of a few nodes)",
+   "limit": 1048576,
+   "message": "expansion: needs 163840000000 support, budget 1048576",
+   "need": 163840000000,
+   "params": {
+    "dag_nodes": 49
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.3566011805087328e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "the same annotation evaluated factored (N at 1)",
+   "first_seconds": 6.7105982452631e-05,
+   "params": {
+    "dag_nodes": 49
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.7105982452631e-05,
+    3.6693993024528027e-05,
+    3.257201751694083e-05
+   ],
+   "warm_median_seconds": 3.463300527073443e-05,
+   "warm_min_seconds": 3.257201751694083e-05
+  }
+ ],
+ "seconds": 2.4869122960371897,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "join of n x 16 matching tuples under 2^14 DAG nodes",
+   "largest_admitted": {
+    "nodes": 8722,
+    "pairs": 8192,
+    "rows": 512
+   },
+   "limit": 16384,
+   "smallest_refused": {
+    "pairs": 16384,
+    "rows": 1024
+   }
+  }
+ ]
+}

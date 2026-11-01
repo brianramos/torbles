@@ -1,0 +1,3934 @@
+{
+ "argv": [
+  "--capability",
+  "DELTA-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/DELTA-001/benchmark_device_math_delta_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "DELTA-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:39:01+00:00"
+ },
+ "notes": [
+  "Backends: cpu = math_delta.c (single-threaded), cuda = math_delta_gpu.cu (device runs only), reconstruction = the FND-004 scope and bank of the updated rows (math_bank.c), duckdb = GROUP BY with SUM(weight * term) in HUGEINT over the updated bag (DuckDB's own threads).",
+  "An update costs the delta's rows times the terms plus one copy of the state's cells (groups x terms: the new state is an independent immutable object); it does not depend on the rows of the state. A reconstruction rescans every row. The initial build is timed apart from each update.",
+  "Group moves are a delete and an insert of the moved rows: a batch of k moves is 2k delta rows; the move frequency changes the touched groups, not the work per row.",
+  "Bilinear joins (one versus both changing sides of a join) belong to DELTA-002 (a later wave): DELTA-001 maintains linear (single-table) states, so the join cases of the inventory's second benchmark case are not measured here; the group-move frequency and the comparison of every update with complete reconstruction, refusals and rebuilds included, are."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.0003481799503788352,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0003481799503788352,
+    5.295401206240058e-05
+   ],
+   "warm_median_seconds": 5.295401206240058e-05,
+   "warm_min_seconds": 5.295401206240058e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 7.423001807183027e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.423001807183027e-05,
+    4.012300632894039e-05
+   ],
+   "warm_median_seconds": 4.012300632894039e-05,
+   "warm_min_seconds": 4.012300632894039e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 9.089201921597123e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.089201921597123e-05,
+    2.242601476609707e-05
+   ],
+   "state_bytes": 31532,
+   "warm_median_seconds": 2.242601476609707e-05,
+   "warm_min_seconds": 2.242601476609707e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.4769007470458746e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.4769007470458746e-05,
+    2.2630963940173388e-05,
+    1.6791047528386116e-05
+   ],
+   "warm_median_seconds": 1.9711005734279752e-05,
+   "warm_min_seconds": 1.6791047528386116e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 8.14005034044385e-06,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.14005034044385e-06,
+    9.25001222640276e-06,
+    4.200031980872154e-06
+   ],
+   "warm_median_seconds": 6.725022103637457e-06,
+   "warm_min_seconds": 4.200031980872154e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.07319631497375667,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07319631497375667,
+    0.0009108309750445187,
+    0.0011757020256482065
+   ],
+   "warm_median_seconds": 0.0010432665003463626,
+   "warm_min_seconds": 0.0009108309750445187
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0001916780020110309,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001916780020110309,
+    8.732499554753304e-05
+   ],
+   "warm_median_seconds": 8.732499554753304e-05,
+   "warm_min_seconds": 8.732499554753304e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.5743036530911922e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.5743036530911922e-05,
+    1.8394028302282095e-05,
+    1.3442011550068855e-05
+   ],
+   "warm_median_seconds": 1.5918019926175475e-05,
+   "warm_min_seconds": 1.3442011550068855e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.50500475987792e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.50500475987792e-06,
+    4.749977961182594e-06,
+    3.9279693737626076e-06
+   ],
+   "warm_median_seconds": 4.338973667472601e-06,
+   "warm_min_seconds": 3.9279693737626076e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0007601429824717343,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007601429824717343,
+    0.000677399046253413,
+    0.0007873899885453284
+   ],
+   "warm_median_seconds": 0.0007323945173993707,
+   "warm_min_seconds": 0.000677399046253413
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00012709898874163628,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012709898874163628,
+    7.698102854192257e-05
+   ],
+   "warm_median_seconds": 7.698102854192257e-05,
+   "warm_min_seconds": 7.698102854192257e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.030100096017122e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.030100096017122e-05,
+    7.23850098438561e-05,
+    5.736300954595208e-05
+   ],
+   "warm_median_seconds": 6.487400969490409e-05,
+   "warm_min_seconds": 5.736300954595208e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.8120004571974277e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8120004571974277e-05,
+    2.5630986783653498e-05,
+    2.469797618687153e-05
+   ],
+   "warm_median_seconds": 2.5164481485262513e-05,
+   "warm_min_seconds": 2.469797618687153e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0007861990015953779,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007861990015953779,
+    0.0007158079533837736,
+    0.001249650027602911
+   ],
+   "warm_median_seconds": 0.0009827289904933423,
+   "warm_min_seconds": 0.0007158079533837736
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0001424369984306395,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001424369984306395,
+    0.00010466400999575853
+   ],
+   "warm_median_seconds": 0.00010466400999575853,
+   "warm_min_seconds": 0.00010466400999575853
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.005658248963300139,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005658248963300139,
+    0.002907520974986255
+   ],
+   "warm_median_seconds": 0.002907520974986255,
+   "warm_min_seconds": 0.002907520974986255
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.3517986088991165e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.3517986088991165e-05,
+    1.9975006580352783e-05,
+    1.4906981959939003e-05
+   ],
+   "warm_median_seconds": 1.7440994270145893e-05,
+   "warm_min_seconds": 1.4906981959939003e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.1609983630478382e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1609983630478382e-05,
+    5.608017090708017e-06,
+    3.1380332075059414e-06
+   ],
+   "warm_median_seconds": 4.373025149106979e-06,
+   "warm_min_seconds": 3.1380332075059414e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012580789625644684,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012580789625644684,
+    0.001057692978065461,
+    0.0009995339787565172
+   ],
+   "warm_median_seconds": 0.001028613478410989,
+   "warm_min_seconds": 0.0009995339787565172
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0001584339770488441,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001584339770488441,
+    7.234996883198619e-05
+   ],
+   "warm_median_seconds": 7.234996883198619e-05,
+   "warm_min_seconds": 7.234996883198619e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.485798904672265e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.485798904672265e-05,
+    1.6996986232697964e-05,
+    1.2089032679796219e-05
+   ],
+   "warm_median_seconds": 1.4543009456247091e-05,
+   "warm_min_seconds": 1.2089032679796219e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.668975740671158e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.668975740671158e-06,
+    6.126007065176964e-06,
+    3.759050741791725e-06
+   ],
+   "warm_median_seconds": 4.9425289034843445e-06,
+   "warm_min_seconds": 3.759050741791725e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0010456949821673334,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010456949821673334,
+    0.0009658550261519849,
+    0.0008830659789964557
+   ],
+   "warm_median_seconds": 0.0009244605025742203,
+   "warm_min_seconds": 0.0008830659789964557
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00011982599971815944,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011982599971815944,
+    6.884295726194978e-05
+   ],
+   "warm_median_seconds": 6.884295726194978e-05,
+   "warm_min_seconds": 6.884295726194978e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.130601443350315e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.130601443350315e-05,
+    6.545503856614232e-05,
+    5.699502071365714e-05
+   ],
+   "warm_median_seconds": 6.122502963989973e-05,
+   "warm_min_seconds": 5.699502071365714e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.788100391626358e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.788100391626358e-05,
+    2.548698103055358e-05,
+    2.3885979317128658e-05
+   ],
+   "warm_median_seconds": 2.468648017384112e-05,
+   "warm_min_seconds": 2.3885979317128658e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.000807053002063185,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000807053002063185,
+    0.000792561040725559,
+    0.0007434409926645458
+   ],
+   "warm_median_seconds": 0.0007680010166950524,
+   "warm_min_seconds": 0.0007434409926645458
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 7.170898607000709e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.170898607000709e-05,
+    4.351499956101179e-05
+   ],
+   "warm_median_seconds": 4.351499956101179e-05,
+   "warm_min_seconds": 4.351499956101179e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.00320978497620672,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00320978497620672,
+    0.002180990995839238
+   ],
+   "warm_median_seconds": 0.002180990995839238,
+   "warm_min_seconds": 0.002180990995839238
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.722899757325649e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.722899757325649e-05,
+    1.9042985513806343e-05,
+    1.2251024600118399e-05
+   ],
+   "warm_median_seconds": 1.564700505696237e-05,
+   "warm_min_seconds": 1.2251024600118399e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.0033021681010723e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0033021681010723e-05,
+    5.541020072996616e-06,
+    2.9659713618457317e-06
+   ],
+   "warm_median_seconds": 4.253495717421174e-06,
+   "warm_min_seconds": 2.9659713618457317e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001022165990434587,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001022165990434587,
+    0.0007949310238473117,
+    0.0007669490296393633
+   ],
+   "warm_median_seconds": 0.0007809400267433375,
+   "warm_min_seconds": 0.0007669490296393633
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00011599302524700761,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011599302524700761,
+    7.549399742856622e-05
+   ],
+   "warm_median_seconds": 7.549399742856622e-05,
+   "warm_min_seconds": 7.549399742856622e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.6235997211188078e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.6235997211188078e-05,
+    1.4994002413004637e-05,
+    1.1271040420979261e-05
+   ],
+   "warm_median_seconds": 1.3132521416991949e-05,
+   "warm_min_seconds": 1.1271040420979261e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 6.983987987041473e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.983987987041473e-06,
+    4.258996341377497e-06,
+    3.23000131174922e-06
+   ],
+   "warm_median_seconds": 3.7444988265633583e-06,
+   "warm_min_seconds": 3.23000131174922e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0007421529735438526,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007421529735438526,
+    0.0008496149675920606,
+    0.0010254899971187115
+   ],
+   "warm_median_seconds": 0.000937552482355386,
+   "warm_min_seconds": 0.0008496149675920606
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00010099099017679691,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010099099017679691,
+    6.534997373819351e-05
+   ],
+   "warm_median_seconds": 6.534997373819351e-05,
+   "warm_min_seconds": 6.534997373819351e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.015594746917486e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.015594746917486e-05,
+    6.386596942320466e-05,
+    5.9764948673546314e-05
+   ],
+   "warm_median_seconds": 6.181545904837549e-05,
+   "warm_min_seconds": 5.9764948673546314e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.8488982934504747e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8488982934504747e-05,
+    2.5872024707496166e-05,
+    2.365803811699152e-05
+   ],
+   "warm_median_seconds": 2.4765031412243843e-05,
+   "warm_min_seconds": 2.365803811699152e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0009382839780300856,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009382839780300856,
+    0.0009633759618736804,
+    0.0009542590123601258
+   ],
+   "warm_median_seconds": 0.0009588174871169031,
+   "warm_min_seconds": 0.0009542590123601258
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0001388629898428917,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001388629898428917,
+    9.003002196550369e-05
+   ],
+   "warm_median_seconds": 9.003002196550369e-05,
+   "warm_min_seconds": 9.003002196550369e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.00218834396218881,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00218834396218881,
+    0.0019991419976577163
+   ],
+   "warm_median_seconds": 0.0019991419976577163,
+   "warm_min_seconds": 0.0019991419976577163
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.513699630275369e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.513699630275369e-05,
+    1.8800958059728146e-05,
+    1.317501300945878e-05
+   ],
+   "warm_median_seconds": 1.5987985534593463e-05,
+   "warm_min_seconds": 1.317501300945878e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.911003194749355e-06,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.911003194749355e-06,
+    4.769011866301298e-06,
+    2.974993549287319e-06
+   ],
+   "warm_median_seconds": 3.872002707794309e-06,
+   "warm_min_seconds": 2.974993549287319e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0013388789957389235,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013388789957389235,
+    0.000989737978670746,
+    0.0010011470294557512
+   ],
+   "warm_median_seconds": 0.0009954425040632486,
+   "warm_min_seconds": 0.000989737978670746
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00011559599079191685,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00011559599079191685,
+    7.15689966455102e-05
+   ],
+   "warm_median_seconds": 7.15689966455102e-05,
+   "warm_min_seconds": 7.15689966455102e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 2.2935972083359957e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    2.2935972083359957e-05,
+    1.5196041204035282e-05,
+    1.1717027518898249e-05
+   ],
+   "warm_median_seconds": 1.3456534361466765e-05,
+   "warm_min_seconds": 1.1717027518898249e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.707974873483181e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.707974873483181e-06,
+    5.412031896412373e-06,
+    3.923021722584963e-06
+   ],
+   "warm_median_seconds": 4.667526809498668e-06,
+   "warm_min_seconds": 3.923021722584963e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.000960844976361841,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000960844976361841,
+    0.0010148800211027265,
+    0.0009399880073033273
+   ],
+   "warm_median_seconds": 0.0009774340142030269,
+   "warm_min_seconds": 0.0009399880073033273
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 9.49399545788765e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.49399545788765e-05,
+    6.487499922513962e-05
+   ],
+   "warm_median_seconds": 6.487499922513962e-05,
+   "warm_min_seconds": 6.487499922513962e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00012266298290342093,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012266298290342093,
+    0.0001222280552610755,
+    0.00011519395047798753
+   ],
+   "warm_median_seconds": 0.00011871100286953151,
+   "warm_min_seconds": 0.00011519395047798753
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.8855028580874205e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.8855028580874205e-05,
+    4.5994005631655455e-05,
+    4.564004484564066e-05
+   ],
+   "warm_median_seconds": 4.581702523864806e-05,
+   "warm_min_seconds": 4.564004484564066e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0010704500018619,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010704500018619,
+    0.0010633000056259334,
+    0.0010452009737491608
+   ],
+   "warm_median_seconds": 0.001054250489687547,
+   "warm_min_seconds": 0.0010452009737491608
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 9.888299973681569e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.888299973681569e-05,
+    6.517901783809066e-05
+   ],
+   "warm_median_seconds": 6.517901783809066e-05,
+   "warm_min_seconds": 6.517901783809066e-05
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.0020110549521632493,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020110549521632493,
+    0.002013544028159231
+   ],
+   "warm_median_seconds": 0.002013544028159231,
+   "warm_min_seconds": 0.002013544028159231
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 2.0131992641836405e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 1001, have 10",
+   "samples_seconds": [
+    2.0131992641836405e-05,
+    8.811999578028917e-06,
+    6.247952114790678e-06
+   ],
+   "warm_median_seconds": 7.529975846409798e-06,
+   "warm_min_seconds": 6.247952114790678e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.0017737880116328597,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017737880116328597,
+    0.001471865049097687
+   ],
+   "warm_median_seconds": 0.001471865049097687,
+   "warm_min_seconds": 0.001471865049097687
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 0.0013258949620649219,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013258949620649219,
+    0.001341118011623621
+   ],
+   "warm_median_seconds": 0.001341118011623621,
+   "warm_min_seconds": 0.001341118011623621
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 0.00014176900731399655,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014176900731399655,
+    0.0011563290026970208
+   ],
+   "state_bytes": 2122908,
+   "warm_median_seconds": 0.0011563290026970208,
+   "warm_min_seconds": 0.0011563290026970208
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.182202974334359e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.182202974334359e-05,
+    1.858198083937168e-05,
+    2.1198997274041176e-05
+   ],
+   "warm_median_seconds": 1.989048905670643e-05,
+   "warm_min_seconds": 1.858198083937168e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 8.376955520361662e-06,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.376955520361662e-06,
+    5.2879913710057735e-06,
+    3.133027348667383e-06
+   ],
+   "warm_median_seconds": 4.210509359836578e-06,
+   "warm_min_seconds": 3.133027348667383e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012903079623356462,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012903079623356462,
+    0.0014293830026872456,
+    0.0010354240075685084
+   ],
+   "warm_median_seconds": 0.001232403505127877,
+   "warm_min_seconds": 0.0010354240075685084
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.004104173043742776,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004104173043742776,
+    0.003277236013673246
+   ],
+   "warm_median_seconds": 0.003277236013673246,
+   "warm_min_seconds": 0.003277236013673246
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.960495814681053e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.960495814681053e-05,
+    3.65849700756371e-05,
+    2.0592007786035538e-05
+   ],
+   "warm_median_seconds": 2.858848893083632e-05,
+   "warm_min_seconds": 2.0592007786035538e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.050010703504086e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.050010703504086e-06,
+    5.3229741752147675e-06,
+    3.2199895940721035e-06
+   ],
+   "warm_median_seconds": 4.2714818846434355e-06,
+   "warm_min_seconds": 3.2199895940721035e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0011683870106935501,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011683870106935501,
+    0.001021298987325281,
+    0.0010287199984304607
+   ],
+   "warm_median_seconds": 0.0010250094928778708,
+   "warm_min_seconds": 0.001021298987325281
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0024930450017564,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024930450017564,
+    0.003144645015709102
+   ],
+   "warm_median_seconds": 0.003144645015709102,
+   "warm_min_seconds": 0.003144645015709102
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 9.574997238814831e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.574997238814831e-05,
+    6.662000669166446e-05,
+    5.8838981203734875e-05
+   ],
+   "warm_median_seconds": 6.272949394769967e-05,
+   "warm_min_seconds": 5.8838981203734875e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.027904313057661e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.027904313057661e-05,
+    2.5447981897741556e-05,
+    2.3751985281705856e-05
+   ],
+   "warm_median_seconds": 2.4599983589723706e-05,
+   "warm_min_seconds": 2.3751985281705856e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001027168007567525,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001027168007567525,
+    0.0007576029747724533,
+    0.000778881018050015
+   ],
+   "warm_median_seconds": 0.0007682419964112341,
+   "warm_min_seconds": 0.0007576029747724533
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0025349230272695422,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025349230272695422,
+    0.0026459769578650594
+   ],
+   "warm_median_seconds": 0.0026459769578650594,
+   "warm_min_seconds": 0.0026459769578650594
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.006767778017092496,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006767778017092496,
+    0.00865719304420054
+   ],
+   "warm_median_seconds": 0.00865719304420054,
+   "warm_min_seconds": 0.00865719304420054
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.79979969188571e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.79979969188571e-05,
+    2.0229024812579155e-05,
+    1.2715987395495176e-05
+   ],
+   "warm_median_seconds": 1.6472506104037166e-05,
+   "warm_min_seconds": 1.2715987395495176e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.1211028322577477e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1211028322577477e-05,
+    5.7460274547338486e-06,
+    2.8730137273669243e-06
+   ],
+   "warm_median_seconds": 4.3095205910503864e-06,
+   "warm_min_seconds": 2.8730137273669243e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012017210246995091,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012017210246995091,
+    0.00075735297286883,
+    0.0006871579680591822
+   ],
+   "warm_median_seconds": 0.0007222554704640061,
+   "warm_min_seconds": 0.0006871579680591822
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0028709640027955174,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028709640027955174,
+    0.0027495810063555837
+   ],
+   "warm_median_seconds": 0.0027495810063555837,
+   "warm_min_seconds": 0.0027495810063555837
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 4.563899710774422e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.563899710774422e-05,
+    1.6717996913939714e-05,
+    1.1730007827281952e-05
+   ],
+   "warm_median_seconds": 1.4224002370610833e-05,
+   "warm_min_seconds": 1.1730007827281952e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 7.346970960497856e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.346970960497856e-06,
+    5.156965926289558e-06,
+    3.3460091799497604e-06
+   ],
+   "warm_median_seconds": 4.2514875531196594e-06,
+   "warm_min_seconds": 3.3460091799497604e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001194573997054249,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001194573997054249,
+    0.0012150410329923034,
+    0.0012238420313224196
+   ],
+   "warm_median_seconds": 0.0012194415321573615,
+   "warm_min_seconds": 0.0012150410329923034
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.002601318003144115,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002601318003144115,
+    0.0024456370156258345
+   ],
+   "warm_median_seconds": 0.0024456370156258345,
+   "warm_min_seconds": 0.0024456370156258345
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 9.395298548042774e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.395298548042774e-05,
+    7.8729004599154e-05,
+    6.58530043438077e-05
+   ],
+   "warm_median_seconds": 7.229100447148085e-05,
+   "warm_min_seconds": 6.58530043438077e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.078300505876541e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.078300505876541e-05,
+    2.6960973627865314e-05,
+    2.416397910565138e-05
+   ],
+   "warm_median_seconds": 2.5562476366758347e-05,
+   "warm_min_seconds": 2.416397910565138e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0010483639780431986,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010483639780431986,
+    0.0010306629701517522,
+    0.0007764629554003477
+   ],
+   "warm_median_seconds": 0.00090356296277605,
+   "warm_min_seconds": 0.0007764629554003477
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0024696459877304733,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024696459877304733,
+    0.0023558210232295096
+   ],
+   "warm_median_seconds": 0.0023558210232295096,
+   "warm_min_seconds": 0.0023558210232295096
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.008509034989401698,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008509034989401698,
+    0.0060987250180915
+   ],
+   "warm_median_seconds": 0.0060987250180915,
+   "warm_min_seconds": 0.0060987250180915
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.6731048971414566e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.6731048971414566e-05,
+    2.111494541168213e-05,
+    1.5468045603483915e-05
+   ],
+   "warm_median_seconds": 1.8291495507583022e-05,
+   "warm_min_seconds": 1.5468045603483915e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.1103053111582994e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1103053111582994e-05,
+    5.804002285003662e-06,
+    2.7679488994181156e-06
+   ],
+   "warm_median_seconds": 4.285975592210889e-06,
+   "warm_min_seconds": 2.7679488994181156e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0011083720019087195,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011083720019087195,
+    0.0010125769767910242,
+    0.000977665011305362
+   ],
+   "warm_median_seconds": 0.000995120994048193,
+   "warm_min_seconds": 0.000977665011305362
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.002886259986553341,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002886259986553341,
+    0.002616257988847792
+   ],
+   "warm_median_seconds": 0.002616257988847792,
+   "warm_min_seconds": 0.002616257988847792
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.157701576128602e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.157701576128602e-05,
+    1.8001999706029892e-05,
+    1.3170007150620222e-05
+   ],
+   "warm_median_seconds": 1.5586003428325057e-05,
+   "warm_min_seconds": 1.3170007150620222e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 8.185976184904575e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.185976184904575e-06,
+    4.783971235156059e-06,
+    3.3100368455052376e-06
+   ],
+   "warm_median_seconds": 4.047004040330648e-06,
+   "warm_min_seconds": 3.3100368455052376e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0008460500393994153,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008460500393994153,
+    0.0007261819555424154,
+    0.0007281639846041799
+   ],
+   "warm_median_seconds": 0.0007271729700732976,
+   "warm_min_seconds": 0.0007261819555424154
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.002561439003329724,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002561439003329724,
+    0.0024617789895273745
+   ],
+   "warm_median_seconds": 0.0024617789895273745,
+   "warm_min_seconds": 0.0024617789895273745
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.323899237439036e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.323899237439036e-05,
+    6.772601045668125e-05,
+    5.9583981055766344e-05
+   ],
+   "warm_median_seconds": 6.36549957562238e-05,
+   "warm_min_seconds": 5.9583981055766344e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.92810145765543e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.92810145765543e-05,
+    2.577202394604683e-05,
+    2.3831031285226345e-05
+   ],
+   "warm_median_seconds": 2.4801527615636587e-05,
+   "warm_min_seconds": 2.3831031285226345e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0009837260004132986,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009837260004132986,
+    0.0007908879779279232,
+    0.0007537840283475816
+   ],
+   "warm_median_seconds": 0.0007723360031377524,
+   "warm_min_seconds": 0.0007537840283475816
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0024093950050882995,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024093950050882995,
+    0.002420672040898353
+   ],
+   "warm_median_seconds": 0.002420672040898353,
+   "warm_min_seconds": 0.002420672040898353
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.006181676988489926,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.006181676988489926,
+    0.006317269988358021
+   ],
+   "warm_median_seconds": 0.006317269988358021,
+   "warm_min_seconds": 0.006317269988358021
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 5.679402966052294e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.679402966052294e-05,
+    2.1157029550522566e-05,
+    1.4202028978616e-05
+   ],
+   "warm_median_seconds": 1.7679529264569283e-05,
+   "warm_min_seconds": 1.4202028978616e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.0564981494098902e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0564981494098902e-05,
+    5.938985850661993e-06,
+    2.975983079522848e-06
+   ],
+   "warm_median_seconds": 4.457484465092421e-06,
+   "warm_min_seconds": 2.975983079522848e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0011530340416356921,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011530340416356921,
+    0.0009085909696295857,
+    0.0009520230232737958
+   ],
+   "warm_median_seconds": 0.0009303069964516908,
+   "warm_min_seconds": 0.0009085909696295857
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00268855900503695,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00268855900503695,
+    0.0025739470147527754
+   ],
+   "warm_median_seconds": 0.0025739470147527754,
+   "warm_min_seconds": 0.0025739470147527754
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 3.327196463942528e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.327196463942528e-05,
+    2.478697570040822e-05,
+    1.2072967365384102e-05
+   ],
+   "warm_median_seconds": 1.842997153289616e-05,
+   "warm_min_seconds": 1.2072967365384102e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 8.805014658719301e-06,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.805014658719301e-06,
+    6.049987860023975e-06,
+    4.0130107663571835e-06
+   ],
+   "warm_median_seconds": 5.031499313190579e-06,
+   "warm_min_seconds": 4.0130107663571835e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0010847029625438154,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010847029625438154,
+    0.0009026369662024081,
+    0.000762406038120389
+   ],
+   "warm_median_seconds": 0.0008325215021613985,
+   "warm_min_seconds": 0.000762406038120389
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.002540946996305138,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002540946996305138,
+    0.0024269039859063923
+   ],
+   "warm_median_seconds": 0.0024269039859063923,
+   "warm_min_seconds": 0.0024269039859063923
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014023500261828303,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014023500261828303,
+    0.0001338549773208797,
+    0.00012040400179103017
+   ],
+   "warm_median_seconds": 0.00012712948955595493,
+   "warm_min_seconds": 0.00012040400179103017
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.694104427471757e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.694104427471757e-05,
+    5.4936972446739674e-05,
+    4.558695945888758e-05
+   ],
+   "warm_median_seconds": 5.0261965952813625e-05,
+   "warm_min_seconds": 4.558695945888758e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0011156130349263549,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011156130349263549,
+    0.0008306510280817747,
+    0.0008775130263529718
+   ],
+   "warm_median_seconds": 0.0008540820272173733,
+   "warm_min_seconds": 0.0008306510280817747
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.002491188992280513,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002491188992280513,
+    0.0024077569833025336
+   ],
+   "warm_median_seconds": 0.0024077569833025336,
+   "warm_min_seconds": 0.0024077569833025336
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.0063855579937808216,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0063855579937808216,
+    0.005958524998277426
+   ],
+   "warm_median_seconds": 0.005958524998277426,
+   "warm_min_seconds": 0.005958524998277426
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 2.0274019334465265e-05,
+   "params": {
+    "groups": 64,
+    "rows": 100000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 100001, have 1503",
+   "samples_seconds": [
+    2.0274019334465265e-05,
+    1.122098183259368e-05,
+    6.291025783866644e-06
+   ],
+   "warm_median_seconds": 8.756003808230162e-06,
+   "warm_min_seconds": 6.291025783866644e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "initial scope",
+   "first_seconds": 0.014515148010104895,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.014515148010104895,
+    0.014064072049222887
+   ],
+   "warm_median_seconds": 0.014064072049222887,
+   "warm_min_seconds": 0.014064072049222887
+  },
+  {
+   "backend": "cpu",
+   "case": "initial FND-004 bank",
+   "first_seconds": 0.013428972975816578,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.013428972975816578,
+    0.013370831962674856
+   ],
+   "warm_median_seconds": 0.013370831962674856,
+   "warm_min_seconds": 0.013370831962674856
+  },
+  {
+   "backend": "cpu",
+   "case": "initial maintained state",
+   "first_seconds": 0.009718936984427273,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.009718936984427273,
+    0.01007682498311624
+   ],
+   "state_bytes": 21135404,
+   "warm_median_seconds": 0.01007682498311624,
+   "warm_min_seconds": 0.01007682498311624
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.0001106279669329524,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001106279669329524,
+    2.974102972075343e-05,
+    1.5043944586068392e-05
+   ],
+   "warm_median_seconds": 2.239248715341091e-05,
+   "warm_min_seconds": 1.5043944586068392e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.3570999726653099e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3570999726653099e-05,
+    7.328984793275595e-06,
+    3.3190008252859116e-06
+   ],
+   "warm_median_seconds": 5.323992809280753e-06,
+   "warm_min_seconds": 3.3190008252859116e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0013312489609234035,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013312489609234035,
+    0.0008393150055781007,
+    0.0009993489948101342
+   ],
+   "warm_median_seconds": 0.0009193320001941174,
+   "warm_min_seconds": 0.0008393150055781007
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.03917442198144272,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03917442198144272,
+    0.03456855198601261
+   ],
+   "warm_median_seconds": 0.03456855198601261,
+   "warm_min_seconds": 0.03456855198601261
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.92719835974276e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.92719835974276e-05,
+    2.5814981199800968e-05,
+    3.271899186074734e-05
+   ],
+   "warm_median_seconds": 2.9266986530274153e-05,
+   "warm_min_seconds": 2.5814981199800968e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.6434001736342907e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.6434001736342907e-05,
+    8.495990186929703e-06,
+    3.8350117392838e-06
+   ],
+   "warm_median_seconds": 6.1655009631067514e-06,
+   "warm_min_seconds": 3.8350117392838e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012200720375403762,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012200720375403762,
+    0.00100225699134171,
+    0.0008155289688147604
+   ],
+   "warm_median_seconds": 0.0009088929800782353,
+   "warm_min_seconds": 0.0008155289688147604
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.043477347993757576,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.043477347993757576,
+    0.035536554001737386
+   ],
+   "warm_median_seconds": 0.035536554001737386,
+   "warm_min_seconds": 0.035536554001737386
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00017074699280783534,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00017074699280783534,
+    8.38650157675147e-05,
+    6.326596485450864e-05
+   ],
+   "warm_median_seconds": 7.356549031101167e-05,
+   "warm_min_seconds": 6.326596485450864e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.645598189905286e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.645598189905286e-05,
+    2.790195867419243e-05,
+    2.4942040909081697e-05
+   ],
+   "warm_median_seconds": 2.6421999791637063e-05,
+   "warm_min_seconds": 2.4942040909081697e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0016068910481408238,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016068910481408238,
+    0.0011504919966682792,
+    0.0010640789987519383
+   ],
+   "warm_median_seconds": 0.0011072854977101088,
+   "warm_min_seconds": 0.0010640789987519383
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.034412704000715166,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.034412704000715166,
+    0.03297898202436045
+   ],
+   "warm_median_seconds": 0.03297898202436045,
+   "warm_min_seconds": 0.03297898202436045
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.01471980899805203,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "insert",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.01471980899805203,
+    0.013281610037665814
+   ],
+   "warm_median_seconds": 0.013281610037665814,
+   "warm_min_seconds": 0.013281610037665814
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.84100266173482e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.84100266173482e-05,
+    2.3689994122833014e-05,
+    1.4643999747931957e-05
+   ],
+   "warm_median_seconds": 1.9166996935382485e-05,
+   "warm_min_seconds": 1.4643999747931957e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.3373035471886396e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3373035471886396e-05,
+    6.680958904325962e-06,
+    3.3899559639394283e-06
+   ],
+   "warm_median_seconds": 5.035457434132695e-06,
+   "warm_min_seconds": 3.3899559639394283e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001537918986286968,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001537918986286968,
+    0.0009408880141563714,
+    0.0007655640365555882
+   ],
+   "warm_median_seconds": 0.0008532260253559798,
+   "warm_min_seconds": 0.0007655640365555882
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.03132925002137199,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03132925002137199,
+    0.03124516096431762
+   ],
+   "warm_median_seconds": 0.03124516096431762,
+   "warm_min_seconds": 0.03124516096431762
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.786095375195146e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.786095375195146e-05,
+    2.3243017494678497e-05,
+    1.3347016647458076e-05
+   ],
+   "warm_median_seconds": 1.8295017071068287e-05,
+   "warm_min_seconds": 1.3347016647458076e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.3586017303168774e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3586017303168774e-05,
+    7.25302379578352e-06,
+    3.530003596097231e-06
+   ],
+   "warm_median_seconds": 5.391513695940375e-06,
+   "warm_min_seconds": 3.530003596097231e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0019406949868425727,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019406949868425727,
+    0.0007891000132076442,
+    0.0012777059455402195
+   ],
+   "warm_median_seconds": 0.0010334029793739319,
+   "warm_min_seconds": 0.0007891000132076442
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.031289438949897885,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.031289438949897885,
+    0.031232976994942874
+   ],
+   "warm_median_seconds": 0.031232976994942874,
+   "warm_min_seconds": 0.031232976994942874
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00014202104648575187,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014202104648575187,
+    7.483497029170394e-05,
+    6.149400724098086e-05
+   ],
+   "warm_median_seconds": 6.81644887663424e-05,
+   "warm_min_seconds": 6.149400724098086e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.5304983612149954e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.5304983612149954e-05,
+    2.7492002118378878e-05,
+    2.4510954972356558e-05
+   ],
+   "warm_median_seconds": 2.6001478545367718e-05,
+   "warm_min_seconds": 2.4510954972356558e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0013708589831367135,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013708589831367135,
+    0.001068906974978745,
+    0.0007746190531179309
+   ],
+   "warm_median_seconds": 0.0009217630140483379,
+   "warm_min_seconds": 0.0007746190531179309
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.031002253002952784,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.031002253002952784,
+    0.031227129977196455
+   ],
+   "warm_median_seconds": 0.031227129977196455,
+   "warm_min_seconds": 0.031227129977196455
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013984349963720888,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "delete",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013984349963720888,
+    0.012383237946778536
+   ],
+   "warm_median_seconds": 0.012383237946778536,
+   "warm_min_seconds": 0.012383237946778536
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.685599848628044e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.685599848628044e-05,
+    2.2921012714505196e-05,
+    1.5350000467151403e-05
+   ],
+   "warm_median_seconds": 1.91355065908283e-05,
+   "warm_min_seconds": 1.5350000467151403e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.3665005099028349e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3665005099028349e-05,
+    6.6050561144948006e-06,
+    3.5169650800526142e-06
+   ],
+   "warm_median_seconds": 5.061010597273707e-06,
+   "warm_min_seconds": 3.5169650800526142e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0016307629994116724,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016307629994116724,
+    0.0010543229873292148,
+    0.0007441039779223502
+   ],
+   "warm_median_seconds": 0.0008992134826257825,
+   "warm_min_seconds": 0.0007441039779223502
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.028657954011578113,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.028657954011578113,
+    0.02918242395389825
+   ],
+   "warm_median_seconds": 0.02918242395389825,
+   "warm_min_seconds": 0.02918242395389825
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.27869919501245e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.27869919501245e-05,
+    3.295100759714842e-05,
+    1.5696976333856583e-05
+   ],
+   "warm_median_seconds": 2.43239919655025e-05,
+   "warm_min_seconds": 1.5696976333856583e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.3993994798511267e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3993994798511267e-05,
+    7.1160029619932175e-06,
+    3.8199941627681255e-06
+   ],
+   "warm_median_seconds": 5.4679985623806715e-06,
+   "warm_min_seconds": 3.8199941627681255e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012793379719369113,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012793379719369113,
+    0.0007958189817145467,
+    0.0007368280203081667
+   ],
+   "warm_median_seconds": 0.0007663235010113567,
+   "warm_min_seconds": 0.0007368280203081667
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.029047465010080487,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.029047465010080487,
+    0.029610511963255703
+   ],
+   "warm_median_seconds": 0.029610511963255703,
+   "warm_min_seconds": 0.029610511963255703
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00012327299918979406,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012327299918979406,
+    8.569000056013465e-05,
+    6.513099651783705e-05
+   ],
+   "warm_median_seconds": 7.541049853898585e-05,
+   "warm_min_seconds": 6.513099651783705e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 3.4321972634643316e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.4321972634643316e-05,
+    2.7004978619515896e-05,
+    2.4705019313842058e-05
+   ],
+   "warm_median_seconds": 2.5854998966678977e-05,
+   "warm_min_seconds": 2.4705019313842058e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012247100239619613,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012247100239619613,
+    0.0008645519847050309,
+    0.0009804799919947982
+   ],
+   "warm_median_seconds": 0.0009225159883499146,
+   "warm_min_seconds": 0.0008645519847050309
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.035397116967942566,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.035397116967942566,
+    0.03189241903601214
+   ],
+   "warm_median_seconds": 0.03189241903601214,
+   "warm_min_seconds": 0.03189241903601214
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013705660996492952,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "weight",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013705660996492952,
+    0.013263299013487995
+   ],
+   "warm_median_seconds": 0.013263299013487995,
+   "warm_min_seconds": 0.013263299013487995
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 8.068099850788713e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.068099850788713e-05,
+    2.4453969672322273e-05,
+    1.5440979041159153e-05
+   ],
+   "warm_median_seconds": 1.9947474356740713e-05,
+   "warm_min_seconds": 1.5440979041159153e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.1777970939874649e-05,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.1777970939874649e-05,
+    5.9889862313866615e-06,
+    3.227032721042633e-06
+   ],
+   "warm_median_seconds": 4.608009476214647e-06,
+   "warm_min_seconds": 3.227032721042633e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001162536966148764,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001162536966148764,
+    0.0012596199521794915,
+    0.0008296000305563211
+   ],
+   "warm_median_seconds": 0.0010446099913679063,
+   "warm_min_seconds": 0.0008296000305563211
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.030954623012803495,
+   "params": {
+    "batch": 1,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.030954623012803495,
+    0.03185174701502547
+   ],
+   "warm_median_seconds": 0.03185174701502547,
+   "warm_min_seconds": 0.03185174701502547
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 7.505598478019238e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    7.505598478019238e-05,
+    2.2494990844279528e-05,
+    1.482199877500534e-05
+   ],
+   "warm_median_seconds": 1.8658494809642434e-05,
+   "warm_min_seconds": 1.482199877500534e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.7979007679969072e-05,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.7979007679969072e-05,
+    8.600007276982069e-06,
+    4.441011697053909e-06
+   ],
+   "warm_median_seconds": 6.520509487017989e-06,
+   "warm_min_seconds": 4.441011697053909e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0011987470206804574,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011987470206804574,
+    0.0007656249799765646,
+    0.0006999360048212111
+   ],
+   "warm_median_seconds": 0.0007327804923988879,
+   "warm_min_seconds": 0.0006999360048212111
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.029701696010306478,
+   "params": {
+    "batch": 10,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.029701696010306478,
+    0.029329176002647728
+   ],
+   "warm_median_seconds": 0.029329176002647728,
+   "warm_min_seconds": 0.029329176002647728
+  },
+  {
+   "backend": "cpu",
+   "case": "delta construction",
+   "first_seconds": 0.00022149499272927642,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00022149499272927642,
+    0.00014057400403544307,
+    0.00012634904123842716
+   ],
+   "warm_median_seconds": 0.00013346152263693511,
+   "warm_min_seconds": 0.00012634904123842716
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.7317007556557655e-05,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7317007556557655e-05,
+    3.948697121813893e-05,
+    3.619695780798793e-05
+   ],
+   "warm_median_seconds": 3.784196451306343e-05,
+   "warm_min_seconds": 3.619695780798793e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.002025733992923051,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002025733992923051,
+    0.0011902459664270282,
+    0.00122136902064085
+   ],
+   "warm_median_seconds": 0.0012058074935339391,
+   "warm_min_seconds": 0.0011902459664270282
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.03056195197859779,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.03056195197859779,
+    0.029373449040576816
+   ],
+   "warm_median_seconds": 0.029373449040576816,
+   "warm_min_seconds": 0.029373449040576816
+  },
+  {
+   "backend": "duckdb",
+   "case": "complete reconstruction (DuckDB GROUP BY)",
+   "first_seconds": 0.013766303018201143,
+   "params": {
+    "batch": 1000,
+    "groups": 64,
+    "kind": "move",
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.013766303018201143,
+    0.012528036022558808
+   ],
+   "warm_median_seconds": 0.012528036022558808,
+   "warm_min_seconds": 0.012528036022558808
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: delete of rows that are not there",
+   "first_seconds": 2.067600144073367e-05,
+   "params": {
+    "groups": 64,
+    "rows": 1000000,
+    "terms": 6
+   },
+   "phase": "run",
+   "result": "refused: group 0, need 1000001, have 15674",
+   "samples_seconds": [
+    2.067600144073367e-05,
+    7.894006557762623e-06,
+    5.134963430464268e-06
+   ],
+   "warm_median_seconds": 6.514484994113445e-06,
+   "warm_min_seconds": 5.134963430464268e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "refusal: overflow proof (net-zero swap at 31 * 2^122)",
+   "first_seconds": 9.068986400961876e-06,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "result": "refused: the overflow proof does not hold",
+   "samples_seconds": [
+    9.068986400961876e-06,
+    4.928966518491507e-06,
+    2.604967448860407e-06
+   ],
+   "warm_median_seconds": 3.7669669836759567e-06,
+   "warm_min_seconds": 2.604967448860407e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "rebuild after the refusal",
+   "first_seconds": 6.785901496186852e-05,
+   "params": {
+    "rows": 31
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.785901496186852e-05,
+    4.128401633352041e-05,
+    3.273098263889551e-05
+   ],
+   "warm_median_seconds": 3.700749948620796e-05,
+   "warm_min_seconds": 3.273098263889551e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.133698530495167e-05,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.133698530495167e-05,
+    3.809202462434769e-05,
+    4.114600596949458e-05
+   ],
+   "warm_median_seconds": 3.9619015296921134e-05,
+   "warm_min_seconds": 3.809202462434769e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0013767890050075948,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013767890050075948,
+    0.000807022035587579,
+    0.0009792969794943929
+   ],
+   "warm_median_seconds": 0.0008931595075409859,
+   "warm_min_seconds": 0.000807022035587579
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.00274527701549232,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00274527701549232,
+    0.002573192003183067
+   ],
+   "warm_median_seconds": 0.002573192003183067,
+   "warm_min_seconds": 0.002573192003183067
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.080403596162796e-05,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.080403596162796e-05,
+    3.67600005120039e-05,
+    3.5331002436578274e-05
+   ],
+   "warm_median_seconds": 3.6045501474291086e-05,
+   "warm_min_seconds": 3.5331002436578274e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0009591149864718318,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009591149864718318,
+    0.0010039960034191608,
+    0.0008131549693644047
+   ],
+   "warm_median_seconds": 0.0009085754863917828,
+   "warm_min_seconds": 0.0008131549693644047
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0025163289974443614,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 0.5,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025163289974443614,
+    0.002538653032388538
+   ],
+   "warm_median_seconds": 0.002538653032388538,
+   "warm_min_seconds": 0.002538653032388538
+  },
+  {
+   "backend": "cpu",
+   "case": "delta shape",
+   "deleted": 1000,
+   "inserted": 1000,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "measure",
+   "rows": 2000,
+   "touched": 64
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 4.7693029046058655e-05,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    4.7693029046058655e-05,
+    4.4530024752020836e-05,
+    5.7959987316280603e-05
+   ],
+   "warm_median_seconds": 5.124500603415072e-05,
+   "warm_min_seconds": 4.4530024752020836e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0010202350094914436,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010202350094914436,
+    0.0009296120260842144,
+    0.0007431479752995074
+   ],
+   "warm_median_seconds": 0.0008363800006918609,
+   "warm_min_seconds": 0.0007431479752995074
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (scope + bank)",
+   "first_seconds": 0.0025238519883714616,
+   "params": {
+    "batch": 1000,
+    "move_fraction": 1.0,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025238519883714616,
+    0.0023892109747976065
+   ],
+   "warm_median_seconds": 0.0023892109747976065,
+   "warm_min_seconds": 0.0023892109747976065
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.0017329180263914168,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0017329180263914168,
+    0.0018651059945113957
+   ],
+   "warm_median_seconds": 0.0018651059945113957,
+   "warm_min_seconds": 0.0018651059945113957
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 3.585201920941472e-05,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.585201920941472e-05,
+    1.9219995010644197e-05,
+    1.4377001207321882e-05
+   ],
+   "warm_median_seconds": 1.679849810898304e-05,
+   "warm_min_seconds": 1.4377001207321882e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.80700133368373e-06,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.80700133368373e-06,
+    6.652029696851969e-06,
+    3.583962097764015e-06
+   ],
+   "warm_median_seconds": 5.117995897307992e-06,
+   "warm_min_seconds": 3.583962097764015e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.001571912958752364,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001571912958752364,
+    0.0007984120165929198,
+    0.0007534240139648318
+   ],
+   "warm_median_seconds": 0.0007759180152788758,
+   "warm_min_seconds": 0.0007534240139648318
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.001080486981663853,
+   "params": {
+    "change": "selection",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001080486981663853,
+    0.001079150999430567
+   ],
+   "warm_median_seconds": 0.001079150999430567,
+   "warm_min_seconds": 0.001079150999430567
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.0015337479999288917,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0015337479999288917,
+    0.0013644210412167013
+   ],
+   "warm_median_seconds": 0.0013644210412167013,
+   "warm_min_seconds": 0.0013644210412167013
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 3.0432012863457203e-05,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.0432012863457203e-05,
+    1.92299485206604e-05,
+    1.4272984117269516e-05
+   ],
+   "warm_median_seconds": 1.6751466318964958e-05,
+   "warm_min_seconds": 1.4272984117269516e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 8.331029675900936e-06,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    8.331029675900936e-06,
+    5.809997674077749e-06,
+    3.923021722584963e-06
+   ],
+   "warm_median_seconds": 4.866509698331356e-06,
+   "warm_min_seconds": 3.923021722584963e-06
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0009413139778189361,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0009413139778189361,
+    0.0009627150138840079,
+    0.000785270007327199
+   ],
+   "warm_median_seconds": 0.0008739925106056035,
+   "warm_min_seconds": 0.000785270007327199
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0010651269694790244,
+   "params": {
+    "change": "selection",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010651269694790244,
+    0.001059149974025786
+   ],
+   "warm_median_seconds": 0.001059149974025786,
+   "warm_min_seconds": 0.001059149974025786
+  },
+  {
+   "backend": "cpu",
+   "case": "new scope (engine decode)",
+   "first_seconds": 0.0013439430040307343,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0013439430040307343,
+    0.0013509769923985004
+   ],
+   "warm_median_seconds": 0.0013509769923985004,
+   "warm_min_seconds": 0.0013509769923985004
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.00012587103992700577,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012587103992700577,
+    8.291099220514297e-05,
+    7.481296779587865e-05
+   ],
+   "warm_median_seconds": 7.886198000051081e-05,
+   "warm_min_seconds": 7.481296779587865e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 2.8843001928180456e-05,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.8843001928180456e-05,
+    2.5872956030070782e-05,
+    2.4061999283730984e-05
+   ],
+   "warm_median_seconds": 2.4967477656900883e-05,
+   "warm_min_seconds": 2.4061999283730984e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "maintained update",
+   "first_seconds": 0.0012373850331641734,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012373850331641734,
+    0.0009780959808267653,
+    0.000774614978581667
+   ],
+   "warm_median_seconds": 0.0008763554797042161,
+   "warm_min_seconds": 0.000774614978581667
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0010728540364652872,
+   "params": {
+    "change": "selection",
+    "changed": 1000,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010728540364652872,
+    0.0011007980210706592
+   ],
+   "warm_median_seconds": 0.0011007980210706592,
+   "warm_min_seconds": 0.0011007980210706592
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.00048807496204972267,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00048807496204972267,
+    0.0005018900264985859,
+    0.00045992800733074546
+   ],
+   "warm_median_seconds": 0.0004809090169146657,
+   "warm_min_seconds": 0.00045992800733074546
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 1.0312942322343588e-05,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.0312942322343588e-05,
+    6.165006197988987e-06,
+    3.7860008887946606e-06
+   ],
+   "warm_median_seconds": 4.975503543391824e-06,
+   "warm_min_seconds": 3.7860008887946606e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0010844309581443667,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 1,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010844309581443667,
+    0.0010486860410310328
+   ],
+   "warm_median_seconds": 0.0010486860410310328,
+   "warm_min_seconds": 0.0010486860410310328
+  },
+  {
+   "backend": "cpu",
+   "case": "diff of two scopes",
+   "first_seconds": 0.0004674309748224914,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004674309748224914,
+    0.0004890909767709672,
+    0.0004656740347854793
+   ],
+   "warm_median_seconds": 0.0004773825057782233,
+   "warm_min_seconds": 0.0004656740347854793
+  },
+  {
+   "backend": "cpu",
+   "case": "maintained update",
+   "first_seconds": 9.102979674935341e-06,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.102979674935341e-06,
+    5.694979336112738e-06,
+    4.371977411210537e-06
+   ],
+   "warm_median_seconds": 5.033478373661637e-06,
+   "warm_min_seconds": 4.371977411210537e-06
+  },
+  {
+   "backend": "reconstruction",
+   "case": "complete reconstruction (bank of the new scope)",
+   "first_seconds": 0.0012262720265425742,
+   "params": {
+    "change": "t.flip of x",
+    "changed": 10,
+    "rows": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012262720265425742,
+    0.0010801669559441507
+   ],
+   "warm_median_seconds": 0.0010801669559441507,
+   "warm_min_seconds": 0.0010801669559441507
+  }
+ ],
+ "seconds": 1.5580001039779745,
+ "seed": 2026,
+ "thresholds": []
+}

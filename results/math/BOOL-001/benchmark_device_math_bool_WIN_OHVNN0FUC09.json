@@ -1,0 +1,2275 @@
+{
+ "argv": [
+  "--capability",
+  "BOOL-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/BOOL-001/benchmark_device_math_bool_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "BOOL-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:13:59+00:00"
+ },
+ "notes": [
+  "k=4 sharing=0.0: independent == shared-mask: True; duckdb == native: True",
+  "k=4 sharing=0.6: independent == shared-mask: True; duckdb == native: True",
+  "k=4 sharing=0.9: independent == shared-mask: True; duckdb == native: True",
+  "k=8 sharing=0.0: independent == shared-mask: True; duckdb == native: True",
+  "k=8 sharing=0.6: independent == shared-mask: True; duckdb == native: True",
+  "k=8 sharing=0.9: independent == shared-mask: True; duckdb == native: True",
+  "k=16 sharing=0.0: independent == shared-mask: True; duckdb == native: True",
+  "k=16 sharing=0.6: independent == shared-mask: True; duckdb == native: True",
+  "k=16 sharing=0.9: independent == shared-mask: True; duckdb == native: True",
+  "every row, order 1: unknown points of the first query 34417 of 100000",
+  "every row, order 2: unknown points of the first query 31801 of 100000",
+  "every row, order 3: unknown points of the first query 25454 of 100000",
+  "every row: DuckDB order-2 histogram == native: True",
+  "sparse 1% of rows, order 1: unknown points of the first query 313 of 1018",
+  "sparse 1% of rows, order 2: unknown points of the first query 325 of 1018",
+  "sparse 1% of rows, order 3: unknown points of the first query 343 of 1018",
+  "sparse 1% of rows: DuckDB order-2 histogram == native: True",
+  "NULL-conditioned (half NULL), order 1: unknown points of the first query 74857 of 100000",
+  "NULL-conditioned (half NULL), order 2: unknown points of the first query 74857 of 100000",
+  "NULL-conditioned (half NULL), order 3: unknown points of the first query 74857 of 100000",
+  "NULL-conditioned (half NULL): DuckDB order-2 histogram == native: True",
+  "Native CPU paths are single-threaded. cpu-independent = tr_bool_direct (one cofactor per pass, row by row, conditions re-read from the scope); shared masks = tr_bool_differences (conditions evaluated once, the base schedule once per word, only the cone of S per assignment)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.0018176870071329176,
+   "params": {
+    "conditions": 4,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 112624,
+   "samples_seconds": [
+    0.0018176870071329176,
+    0.001700119988527149,
+    0.001635932014323771
+   ],
+   "warm_median_seconds": 0.00166802600142546,
+   "warm_min_seconds": 0.001635932014323771
+  },
+  {
+   "backend": "cuda",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.06974384898785502,
+   "params": {
+    "conditions": 4,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 112624,
+   "samples_seconds": [
+    0.06974384898785502,
+    0.0017269939999096096,
+    0.001712149998638779
+   ],
+   "warm_median_seconds": 0.0017195719992741942,
+   "warm_min_seconds": 0.001712149998638779
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 9.161198977380991e-05,
+   "params": {
+    "conditions": 4,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.161198977380991e-05,
+    3.680802183225751e-05,
+    2.33739847317338e-05
+   ],
+   "warm_median_seconds": 3.0091003281995654e-05,
+   "warm_min_seconds": 2.33739847317338e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0005136370309628546,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005136370309628546,
+    0.00041445798706263304,
+    0.0003996460000053048,
+    0.00040385499596595764,
+    0.0003966999938711524
+   ],
+   "warm_median_seconds": 0.00040175049798563123,
+   "warm_min_seconds": 0.0003966999938711524
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.005849211011081934,
+   "params": {
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005849211011081934,
+    0.0008393999887630343,
+    0.0007547910208813846,
+    0.0009231489966623485,
+    0.0011716149747371674
+   ],
+   "warm_median_seconds": 0.0008812744927126914,
+   "warm_min_seconds": 0.0007547910208813846
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.022662378032691777,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.022662378032691777,
+    0.022757757978979498
+   ],
+   "warm_median_seconds": 0.022757757978979498,
+   "warm_min_seconds": 0.022757757978979498
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.035711653996258974,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 14,
+    "nodes": 14,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.035711653996258974
+   ],
+   "warm_median_seconds": 0.035711653996258974,
+   "warm_min_seconds": 0.035711653996258974
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.0001003720099106431,
+   "params": {
+    "conditions": 4,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0001003720099106431,
+    3.095500869676471e-05,
+    2.289004623889923e-05
+   ],
+   "warm_median_seconds": 2.692252746783197e-05,
+   "warm_min_seconds": 2.289004623889923e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0005860730307176709,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005860730307176709,
+    0.0005310649867169559,
+    0.0006994990399107337,
+    0.0006258600042201579,
+    0.0005490549956448376
+   ],
+   "warm_median_seconds": 0.0005874574999324977,
+   "warm_min_seconds": 0.0005310649867169559
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.001513892028015107,
+   "params": {
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001513892028015107,
+    0.0011344689992256463,
+    0.001111358986236155,
+    0.0011230590171180665,
+    0.0010744359460659325
+   ],
+   "warm_median_seconds": 0.0011172090016771108,
+   "warm_min_seconds": 0.0010744359460659325
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.02686810801969841,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.02686810801969841,
+    0.026876377989538014
+   ],
+   "warm_median_seconds": 0.026876377989538014,
+   "warm_min_seconds": 0.026876377989538014
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.05899127299198881,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 18,
+    "nodes": 18,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05899127299198881
+   ],
+   "warm_median_seconds": 0.05899127299198881,
+   "warm_min_seconds": 0.05899127299198881
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00012818200048059225,
+   "params": {
+    "conditions": 4,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00012818200048059225,
+    3.877596464008093e-05,
+    2.4061999283730984e-05
+   ],
+   "warm_median_seconds": 3.1418981961905956e-05,
+   "warm_min_seconds": 2.4061999283730984e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0005886040162295103,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005886040162295103,
+    0.0005421079695224762,
+    0.00052980100736022,
+    0.0005175039987079799,
+    0.0005430619930848479
+   ],
+   "warm_median_seconds": 0.0005359544884413481,
+   "warm_min_seconds": 0.0005175039987079799
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0012546069920063019,
+   "params": {
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012546069920063019,
+    0.0009715539636090398,
+    0.0009431460057385266,
+    0.0008589660283178091,
+    0.000849094009026885
+   ],
+   "warm_median_seconds": 0.0009010560170281678,
+   "warm_min_seconds": 0.000849094009026885
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.028277895995415747,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.028277895995415747,
+    0.02827839500969276
+   ],
+   "warm_median_seconds": 0.02827839500969276,
+   "warm_min_seconds": 0.02827839500969276
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.07366570696467534,
+   "params": {
+    "cofactors": 8,
+    "conditions": 4,
+    "evaluated": 19,
+    "nodes": 19,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.07366570696467534
+   ],
+   "warm_median_seconds": 0.07366570696467534,
+   "warm_min_seconds": 0.07366570696467534
+  },
+  {
+   "backend": "cpu",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.0035759760066866875,
+   "params": {
+    "conditions": 8,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 212656,
+   "samples_seconds": [
+    0.0035759760066866875,
+    0.003356153960339725,
+    0.003339329967275262
+   ],
+   "warm_median_seconds": 0.0033477419638074934,
+   "warm_min_seconds": 0.003339329967275262
+  },
+  {
+   "backend": "cuda",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.0027074519894085824,
+   "params": {
+    "conditions": 8,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 212656,
+   "samples_seconds": [
+    0.0027074519894085824,
+    0.0022314920206554234,
+    0.0026241400046274066
+   ],
+   "warm_median_seconds": 0.002427816012641415,
+   "warm_min_seconds": 0.0022314920206554234
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 8.468300802633166e-05,
+   "params": {
+    "conditions": 8,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "build",
+   "samples_seconds": [
+    8.468300802633166e-05,
+    3.548996755853295e-05,
+    2.8709997422993183e-05
+   ],
+   "warm_median_seconds": 3.209998249076307e-05,
+   "warm_min_seconds": 2.8709997422993183e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0010077329934574664,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010077329934574664,
+    0.0009366180165670812,
+    0.000918289995752275,
+    0.0009101979667320848,
+    0.0008991609793156385
+   ],
+   "warm_median_seconds": 0.0009142439812421799,
+   "warm_min_seconds": 0.0008991609793156385
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0013690919731743634,
+   "params": {
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013690919731743634,
+    0.0016517869662493467,
+    0.0011160540161654353,
+    0.0011358680203557014,
+    0.0011001179809682071
+   ],
+   "warm_median_seconds": 0.0011259610182605684,
+   "warm_min_seconds": 0.0011001179809682071
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.08788370300317183,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.08788370300317183,
+    0.0875028790323995
+   ],
+   "warm_median_seconds": 0.0875028790323995,
+   "warm_min_seconds": 0.0875028790323995
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.13241359096718952,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 23,
+    "nodes": 23,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.13241359096718952
+   ],
+   "warm_median_seconds": 0.13241359096718952,
+   "warm_min_seconds": 0.13241359096718952
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00014101900160312653,
+   "params": {
+    "conditions": 8,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00014101900160312653,
+    4.933896707370877e-05,
+    3.464397741481662e-05
+   ],
+   "warm_median_seconds": 4.1991472244262695e-05,
+   "warm_min_seconds": 3.464397741481662e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0015840250416658819,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015840250416658819,
+    0.001530112000182271,
+    0.0014705200446769595,
+    0.0014563699951395392,
+    0.0014135500532574952
+   ],
+   "warm_median_seconds": 0.0014634450199082494,
+   "warm_min_seconds": 0.0014135500532574952
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0014540590345859528,
+   "params": {
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0014540590345859528,
+    0.0010257450048811734,
+    0.0010314940009266138,
+    0.0010051780263893306,
+    0.00113042100565508
+   ],
+   "warm_median_seconds": 0.0010286195029038936,
+   "warm_min_seconds": 0.0010051780263893306
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.10580817796289921,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.10580817796289921,
+    0.10702439496526495
+   ],
+   "warm_median_seconds": 0.10702439496526495,
+   "warm_min_seconds": 0.10702439496526495
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.21581453800899908,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 31,
+    "nodes": 31,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.21581453800899908
+   ],
+   "warm_median_seconds": 0.21581453800899908,
+   "warm_min_seconds": 0.21581453800899908
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00013892498100176454,
+   "params": {
+    "conditions": 8,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00013892498100176454,
+    5.8384030126035213e-05,
+    4.091998562216759e-05
+   ],
+   "warm_median_seconds": 4.96520078741014e-05,
+   "warm_min_seconds": 4.091998562216759e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0020758570171892643,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020758570171892643,
+    0.002146964950952679,
+    0.001933849009219557,
+    0.0019058199832215905,
+    0.0018900909926742315
+   ],
+   "warm_median_seconds": 0.0019198344962205738,
+   "warm_min_seconds": 0.0018900909926742315
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0015017480473034084,
+   "params": {
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015017480473034084,
+    0.0011130240163765848,
+    0.001215411990415305,
+    0.0010315139661543071,
+    0.0011151969665661454
+   ],
+   "warm_median_seconds": 0.001114110491471365,
+   "warm_min_seconds": 0.0010315139661543071
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.11617824895074591,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.11617824895074591,
+    0.1165108349523507
+   ],
+   "warm_median_seconds": 0.1165108349523507,
+   "warm_min_seconds": 0.1165108349523507
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.5434855020139366,
+   "params": {
+    "cofactors": 16,
+    "conditions": 8,
+    "evaluated": 37,
+    "nodes": 37,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.5434855020139366
+   ],
+   "warm_median_seconds": 0.5434855020139366,
+   "warm_min_seconds": 0.5434855020139366
+  },
+  {
+   "backend": "cpu",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.00684673001524061,
+   "params": {
+    "conditions": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 412720,
+   "samples_seconds": [
+    0.00684673001524061,
+    0.006622104963753372,
+    0.00659221998648718
+   ],
+   "warm_median_seconds": 0.006607162475120276,
+   "warm_min_seconds": 0.00659221998648718
+  },
+  {
+   "backend": "cuda",
+   "case": "condition masks (state construction)",
+   "first_seconds": 0.0035731319803744555,
+   "params": {
+    "conditions": 16,
+    "rows": 100000
+   },
+   "phase": "build",
+   "result": 412720,
+   "samples_seconds": [
+    0.0035731319803744555,
+    0.0025668879970908165,
+    0.002297927043400705
+   ],
+   "warm_median_seconds": 0.0024324075202457607,
+   "warm_min_seconds": 0.002297927043400705
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00010229600593447685,
+   "params": {
+    "conditions": 16,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00010229600593447685,
+    6.260100053623319e-05,
+    4.624301800504327e-05
+   ],
+   "warm_median_seconds": 5.442200927063823e-05,
+   "warm_min_seconds": 4.624301800504327e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.0033287969999946654,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0033287969999946654,
+    0.0031479769968427718,
+    0.003155126003548503,
+    0.0030779559747315943,
+    0.0030840919935144484
+   ],
+   "warm_median_seconds": 0.00311603449517861,
+   "warm_min_seconds": 0.0030779559747315943
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.002159884956199676,
+   "params": {
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002159884956199676,
+    0.0018621119670569897,
+    0.0018730119918473065,
+    0.0018908499623648822,
+    0.0017321179620921612
+   ],
+   "warm_median_seconds": 0.001867561979452148,
+   "warm_min_seconds": 0.0017321179620921612
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.32600328396074474,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.32600328396074474,
+    0.3280338970362209
+   ],
+   "warm_median_seconds": 0.3280338970362209,
+   "warm_min_seconds": 0.3280338970362209
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 0.6957231260021217,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 47,
+    "nodes": 47,
+    "rows": 100000,
+    "sharing": 0.0
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.6957231260021217
+   ],
+   "warm_median_seconds": 0.6957231260021217,
+   "warm_min_seconds": 0.6957231260021217
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00016385799972340465,
+   "params": {
+    "conditions": 16,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016385799972340465,
+    6.882095476612449e-05,
+    5.106697790324688e-05
+   ],
+   "warm_median_seconds": 5.994396633468568e-05,
+   "warm_min_seconds": 5.106697790324688e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.003692331025376916,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.003692331025376916,
+    0.0035938830114901066,
+    0.0035864540259353817,
+    0.0035674130194820464,
+    0.003562447032891214
+   ],
+   "warm_median_seconds": 0.003576933522708714,
+   "warm_min_seconds": 0.003562447032891214
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.002004473004490137,
+   "params": {
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002004473004490137,
+    0.0014444880071096122,
+    0.0014010739978402853,
+    0.0017464669654145837,
+    0.0016550240106880665
+   ],
+   "warm_median_seconds": 0.0015497560088988394,
+   "warm_min_seconds": 0.0014010739978402853
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.33279808901716024,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.33279808901716024,
+    0.3329912970075384
+   ],
+   "warm_median_seconds": 0.3329912970075384,
+   "warm_min_seconds": 0.3329912970075384
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 1.3649334629881196,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 50,
+    "nodes": 50,
+    "rows": 100000,
+    "sharing": 0.6
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.3649334629881196
+   ],
+   "warm_median_seconds": 1.3649334629881196,
+   "warm_min_seconds": 1.3649334629881196
+  },
+  {
+   "backend": "cpu",
+   "case": "program construction",
+   "first_seconds": 0.00016116799088194966,
+   "params": {
+    "conditions": 16,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.00016116799088194966,
+    7.987301796674728e-05,
+    5.889998283237219e-05
+   ],
+   "warm_median_seconds": 6.938650039955974e-05,
+   "warm_min_seconds": 5.889998283237219e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.004765603982377797,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004765603982377797,
+    0.0046639079810120165,
+    0.004550328012555838,
+    0.004533006984274834,
+    0.004488092963583767
+   ],
+   "warm_median_seconds": 0.004541667498415336,
+   "warm_min_seconds": 0.004488092963583767
+  },
+  {
+   "backend": "cuda",
+   "case": "first differences + cofactors, shared masks",
+   "first_seconds": 0.002088126027956605,
+   "params": {
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002088126027956605,
+    0.001846041006501764,
+    0.0016809990047477186,
+    0.001691124984063208,
+    0.001594563014805317
+   ],
+   "warm_median_seconds": 0.0016860619944054633,
+   "warm_min_seconds": 0.001594563014805317
+  },
+  {
+   "backend": "cpu-independent",
+   "case": "first-difference cofactors, independent evaluation",
+   "first_seconds": 0.37648265302414075,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.37648265302414075,
+    0.3810189649811946
+   ],
+   "warm_median_seconds": 0.3810189649811946,
+   "warm_min_seconds": 0.3810189649811946
+  },
+  {
+   "backend": "duckdb",
+   "case": "first-difference cofactors, one SQL query each",
+   "first_seconds": 3.369143285031896,
+   "params": {
+    "cofactors": 32,
+    "conditions": 16,
+    "evaluated": 61,
+    "nodes": 61,
+    "rows": 100000,
+    "sharing": 0.9
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.369143285031896
+   ],
+   "warm_median_seconds": 3.369143285031896,
+   "warm_min_seconds": 3.369143285031896
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 6.65480038151145e-05,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "points": 256,
+    "queries": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.65480038151145e-05,
+    3.171397838741541e-05,
+    2.6608991902321577e-05,
+    2.483901334926486e-05,
+    2.347002737224102e-05
+   ],
+   "warm_median_seconds": 2.572400262579322e-05,
+   "warm_min_seconds": 2.347002737224102e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0019622810068540275,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "points": 256,
+    "queries": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019622810068540275,
+    0.001163339999038726,
+    0.000992351968307048,
+    0.0009570160182192922,
+    0.0010865619988180697
+   ],
+   "warm_median_seconds": 0.0010394569835625589,
+   "warm_min_seconds": 0.0009570160182192922
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.00012169696856290102,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "points": 256,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00012169696856290102,
+    6.227398989722133e-05,
+    4.044495290145278e-05,
+    3.887299681082368e-05,
+    3.421102883294225e-05
+   ],
+   "warm_median_seconds": 3.965897485613823e-05,
+   "warm_min_seconds": 3.421102883294225e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.001149962015915662,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "points": 256,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001149962015915662,
+    0.0013123059761710465,
+    0.0011137339752167463,
+    0.001307716011069715,
+    0.0011102490243501961
+   ],
+   "warm_median_seconds": 0.0012107249931432307,
+   "warm_min_seconds": 0.0011102490243501961
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 7.707905024290085e-05,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "points": 256,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.707905024290085e-05,
+    3.968901000916958e-05,
+    2.9315007850527763e-05,
+    2.6087043806910515e-05,
+    2.4688022676855326e-05
+   ],
+   "warm_median_seconds": 2.770102582871914e-05,
+   "warm_min_seconds": 2.4688022676855326e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0012744110426865518,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "points": 256,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012744110426865518,
+    0.0014769919798709452,
+    0.0010739649878814816,
+    0.0013421219773590565,
+    0.0012461910373531282
+   ],
+   "warm_median_seconds": 0.0012941565073560923,
+   "warm_min_seconds": 0.0010739649878814816
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 7.36570218577981e-05,
+   "params": {
+    "conditions": 8,
+    "order": 4,
+    "points": 256,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.36570218577981e-05,
+    3.036495763808489e-05,
+    2.6070978492498398e-05,
+    2.3832020815461874e-05,
+    2.2872001864016056e-05
+   ],
+   "warm_median_seconds": 2.4951499653980136e-05,
+   "warm_min_seconds": 2.2872001864016056e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0013351700035855174,
+   "params": {
+    "conditions": 8,
+    "order": 4,
+    "points": 256,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013351700035855174,
+    0.001342681993264705,
+    0.0013156640343368053,
+    0.0019517820328474045,
+    0.0013964000390842557
+   ],
+   "warm_median_seconds": 0.0013695410161744803,
+   "warm_min_seconds": 0.0013156640343368053
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.00013140100054442883,
+   "params": {
+    "conditions": 8,
+    "order": 8,
+    "points": 256,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00013140100054442883,
+    7.793400436639786e-05,
+    7.172097684815526e-05,
+    7.19450181350112e-05,
+    7.023697253316641e-05
+   ],
+   "warm_median_seconds": 7.183299749158323e-05,
+   "warm_min_seconds": 7.023697253316641e-05
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.004460510041099042,
+   "params": {
+    "conditions": 8,
+    "order": 8,
+    "points": 256,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004460510041099042,
+    0.004491157014854252,
+    0.0044560820097103715,
+    0.004346774949226528,
+    0.004316011967603117
+   ],
+   "warm_median_seconds": 0.00440142847946845,
+   "warm_min_seconds": 0.004316011967603117
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.00017549196491017938,
+   "params": {
+    "conditions": 12,
+    "order": 1,
+    "points": 4096,
+    "queries": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00017549196491017938,
+    0.0001302589662373066,
+    0.00013312901137396693,
+    0.00011811999138444662,
+    0.00011179799912497401
+   ],
+   "warm_median_seconds": 0.0001241894788108766,
+   "warm_min_seconds": 0.00011179799912497401
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0011794079910032451,
+   "params": {
+    "conditions": 12,
+    "order": 1,
+    "points": 4096,
+    "queries": 12
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0011794079910032451,
+    0.001062937022652477,
+    0.0010752739617601037,
+    0.0010468970285728574,
+    0.0010667159804143012
+   ],
+   "warm_median_seconds": 0.001064826501533389,
+   "warm_min_seconds": 0.0010468970285728574
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.00023961300030350685,
+   "params": {
+    "conditions": 12,
+    "order": 2,
+    "points": 4096,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00023961300030350685,
+    0.00022453098790720105,
+    0.0006144509534351528,
+    0.00021880998974666,
+    0.0002200400340370834
+   ],
+   "warm_median_seconds": 0.00022228551097214222,
+   "warm_min_seconds": 0.00021880998974666
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.001179357001092285,
+   "params": {
+    "conditions": 12,
+    "order": 2,
+    "points": 4096,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001179357001092285,
+    0.0012230510474182665,
+    0.0012542210170067847,
+    0.0011797440238296986,
+    0.0011061099939979613
+   ],
+   "warm_median_seconds": 0.0012013975356239825,
+   "warm_min_seconds": 0.0011061099939979613
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0001995679922401905,
+   "params": {
+    "conditions": 12,
+    "order": 3,
+    "points": 4096,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0001995679922401905,
+    0.00018929998623207211,
+    0.00017311802366748452,
+    0.00017131899949163198,
+    0.00017084297724068165
+   ],
+   "warm_median_seconds": 0.00017221851157955825,
+   "warm_min_seconds": 0.00017084297724068165
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0013286860194057226,
+   "params": {
+    "conditions": 12,
+    "order": 3,
+    "points": 4096,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0013286860194057226,
+    0.0013688780018128455,
+    0.0011537770042195916,
+    0.0012416940298862755,
+    0.0010822969488799572
+   ],
+   "warm_median_seconds": 0.0011977355170529336,
+   "warm_min_seconds": 0.0010822969488799572
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0002599889994598925,
+   "params": {
+    "conditions": 12,
+    "order": 4,
+    "points": 4096,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0002599889994598925,
+    0.0002311660209670663,
+    0.0002262920024804771,
+    0.00022493902361020446,
+    0.00022406101925298572
+   ],
+   "warm_median_seconds": 0.00022561551304534078,
+   "warm_min_seconds": 0.00022406101925298572
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.001442762033548206,
+   "params": {
+    "conditions": 12,
+    "order": 4,
+    "points": 4096,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001442762033548206,
+    0.0012927569914609194,
+    0.0016624510171823204,
+    0.0013143389951437712,
+    0.0014529760228469968
+   ],
+   "warm_median_seconds": 0.001383657508995384,
+   "warm_min_seconds": 0.0012927569914609194
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0012101830216124654,
+   "params": {
+    "conditions": 12,
+    "order": 8,
+    "points": 4096,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0012101830216124654,
+    0.0011729230172932148,
+    0.0011602230370044708,
+    0.0011799139901995659,
+    0.0011707410449162126
+   ],
+   "warm_median_seconds": 0.0011718320311047137,
+   "warm_min_seconds": 0.0011602230370044708
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.005813234951347113,
+   "params": {
+    "conditions": 12,
+    "order": 8,
+    "points": 4096,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005813234951347113,
+    0.005769539973698556,
+    0.005685782001819462,
+    0.005604478006716818,
+    0.005510062037501484
+   ],
+   "warm_median_seconds": 0.00564513000426814,
+   "warm_min_seconds": 0.005510062037501484
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0024239380145445466,
+   "params": {
+    "conditions": 16,
+    "order": 1,
+    "points": 65536,
+    "queries": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0024239380145445466,
+    0.0024082279996946454,
+    0.0024069700157269835,
+    0.0024276449694298208,
+    0.002420036995317787
+   ],
+   "warm_median_seconds": 0.002414132497506216,
+   "warm_min_seconds": 0.0024069700157269835
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0017491570324636996,
+   "params": {
+    "conditions": 16,
+    "order": 1,
+    "points": 65536,
+    "queries": 16
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017491570324636996,
+    0.0015896990080364048,
+    0.001545914972666651,
+    0.0016048060497269034,
+    0.001643216994125396
+   ],
+   "warm_median_seconds": 0.0015972525288816541,
+   "warm_min_seconds": 0.001545914972666651
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0040677140350453556,
+   "params": {
+    "conditions": 16,
+    "order": 2,
+    "points": 65536,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0040677140350453556,
+    0.004096691962331533,
+    0.004050241026561707,
+    0.004018670995719731,
+    0.00404029997298494
+   ],
+   "warm_median_seconds": 0.0040452704997733235,
+   "warm_min_seconds": 0.004018670995719731
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.002306743001099676,
+   "params": {
+    "conditions": 16,
+    "order": 2,
+    "points": 65536,
+    "queries": 10
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002306743001099676,
+    0.0017753909924067557,
+    0.0020410279976204038,
+    0.0014911139733158052,
+    0.0016189420130103827
+   ],
+   "warm_median_seconds": 0.0016971665027085692,
+   "warm_min_seconds": 0.0014911139733158052
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0034395200200378895,
+   "params": {
+    "conditions": 16,
+    "order": 3,
+    "points": 65536,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0034395200200378895,
+    0.0034217939828522503,
+    0.003594808978959918,
+    0.003585350001230836,
+    0.003439537016674876
+   ],
+   "warm_median_seconds": 0.003512443508952856,
+   "warm_min_seconds": 0.0034217939828522503
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.002034544013440609,
+   "params": {
+    "conditions": 16,
+    "order": 3,
+    "points": 65536,
+    "queries": 5
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002034544013440609,
+    0.0017212870297953486,
+    0.0017197830020450056,
+    0.0017838769708760083,
+    0.0017502040136605501
+   ],
+   "warm_median_seconds": 0.0017357455217279494,
+   "warm_min_seconds": 0.0017197830020450056
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.004943298001307994,
+   "params": {
+    "conditions": 16,
+    "order": 4,
+    "points": 65536,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004943298001307994,
+    0.004953688010573387,
+    0.005076917004771531,
+    0.0051573270466178656,
+    0.004997231008019298
+   ],
+   "warm_median_seconds": 0.0050370740063954145,
+   "warm_min_seconds": 0.004953688010573387
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.0028043349739164114,
+   "params": {
+    "conditions": 16,
+    "order": 4,
+    "points": 65536,
+    "queries": 3
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0028043349739164114,
+    0.0027285009855404496,
+    0.002556063001975417,
+    0.0026536170043982565,
+    0.0025936110178008676
+   ],
+   "warm_median_seconds": 0.002623614011099562,
+   "warm_min_seconds": 0.002556063001975417
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.028957239992450923,
+   "params": {
+    "conditions": 16,
+    "order": 8,
+    "points": 65536,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.028957239992450923,
+    0.029147050983738154,
+    0.02907713601598516,
+    0.029042463982477784,
+    0.02895634702872485
+   ],
+   "warm_median_seconds": 0.029059799999231473,
+   "warm_min_seconds": 0.02895634702872485
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, uniform measure",
+   "first_seconds": 0.031126380956266075,
+   "params": {
+    "conditions": 16,
+    "order": 8,
+    "points": 65536,
+    "queries": 1
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.031126380956266075,
+    0.03052438801387325,
+    0.03051727102138102,
+    0.030731856008060277,
+    0.03062363003846258
+   ],
+   "warm_median_seconds": 0.030574009026167914,
+   "warm_min_seconds": 0.03051727102138102
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0017749369726516306,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017749369726516306,
+    0.0017291759722866118,
+    0.0017232390237040818,
+    0.0017115109949372709,
+    0.0017302600317634642
+   ],
+   "warm_median_seconds": 0.0017262074979953468,
+   "warm_min_seconds": 0.0017115109949372709
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0017859600484371185,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017859600484371185,
+    0.00161272898549214,
+    0.0009562830091454089,
+    0.0011884180130437016,
+    0.001001287018880248
+   ],
+   "warm_median_seconds": 0.0010948525159619749,
+   "warm_min_seconds": 0.0009562830091454089
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.004187333979643881,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004187333979643881,
+    0.004178892995696515,
+    0.0044522680109366775,
+    0.004181800992228091,
+    0.004200078954454511
+   ],
+   "warm_median_seconds": 0.004190939973341301,
+   "warm_min_seconds": 0.004178892995696515
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0016854499699547887,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016854499699547887,
+    0.0017853380413725972,
+    0.0019466039957478642,
+    0.0015359430108219385,
+    0.0015946150524541736
+   ],
+   "warm_median_seconds": 0.0016899765469133854,
+   "warm_min_seconds": 0.0015359430108219385
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.004059228987898678,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004059228987898678,
+    0.004046748974360526,
+    0.004054426040966064,
+    0.004113277944270521,
+    0.004031928954645991
+   ],
+   "warm_median_seconds": 0.004050587507663295,
+   "warm_min_seconds": 0.004031928954645991
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0017544690053910017,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0017544690053910017,
+    0.0013337730197235942,
+    0.001288514002226293,
+    0.0013948359992355108,
+    0.0014982289867475629
+   ],
+   "warm_median_seconds": 0.0013643045094795525,
+   "warm_min_seconds": 0.001288514002226293
+  },
+  {
+   "backend": "duckdb",
+   "case": "order-2 signed difference histogram",
+   "first_seconds": 0.09872560400981456,
+   "params": {
+    "rows": 100000,
+    "scope": "every row",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "-2": 61,
+    "0": 69388,
+    "1": 1,
+    "2": 23,
+    "unknown": 30527
+   },
+   "samples_seconds": [
+    0.09872560400981456,
+    0.09821140399435535
+   ],
+   "warm_median_seconds": 0.09821140399435535,
+   "warm_min_seconds": 0.09821140399435535
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0008535470115020871,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008535470115020871,
+    0.0007996810018084943,
+    0.0007893680012784898,
+    0.0007943280506879091,
+    0.0008067520102486014
+   ],
+   "warm_median_seconds": 0.0007970045262482017,
+   "warm_min_seconds": 0.0007893680012784898
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0015250029973685741,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015250029973685741,
+    0.0013218870153650641,
+    0.0013686470338143408,
+    0.0011652240063995123,
+    0.001164490997325629
+   ],
+   "warm_median_seconds": 0.0012435555108822882,
+   "warm_min_seconds": 0.001164490997325629
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0019145469996146858,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019145469996146858,
+    0.00192947598407045,
+    0.0019016409642063081,
+    0.0019306630128994584,
+    0.0019060029881075025
+   ],
+   "warm_median_seconds": 0.0019177394860889763,
+   "warm_min_seconds": 0.0019016409642063081
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0018422799766995013,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018422799766995013,
+    0.0019873789860866964,
+    0.0016537070041522384,
+    0.0018211000133305788,
+    0.0016264260048046708
+   ],
+   "warm_median_seconds": 0.0017374035087414086,
+   "warm_min_seconds": 0.0016264260048046708
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0020554400398395956,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0020554400398395956,
+    0.0021803179988637567,
+    0.002020923013333231,
+    0.002010710013564676,
+    0.0020045810379087925
+   ],
+   "warm_median_seconds": 0.0020158165134489536,
+   "warm_min_seconds": 0.0020045810379087925
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0015039729769341648,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0015039729769341648,
+    0.0014291260158643126,
+    0.001316531968768686,
+    0.0015122349723242223,
+    0.0014332489809021354
+   ],
+   "warm_median_seconds": 0.001431187498383224,
+   "warm_min_seconds": 0.001316531968768686
+  },
+  {
+   "backend": "duckdb",
+   "case": "order-2 signed difference histogram",
+   "first_seconds": 0.05554986896459013,
+   "params": {
+    "rows": 100000,
+    "scope": "sparse 1% of rows",
+    "selected": 1018
+   },
+   "phase": "run",
+   "result": {
+    "0": 710,
+    "unknown": 308
+   },
+   "samples_seconds": [
+    0.05554986896459013,
+    0.05512553598964587
+   ],
+   "warm_median_seconds": 0.05512553598964587,
+   "warm_min_seconds": 0.05512553598964587
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0019575509941205382,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0019575509941205382,
+    0.0019311399664729834,
+    0.0019588099676184356,
+    0.001960261957719922,
+    0.0019128809799440205
+   ],
+   "warm_median_seconds": 0.0019449749670457095,
+   "warm_min_seconds": 0.0019128809799440205
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.001945091993547976,
+   "params": {
+    "conditions": 8,
+    "order": 1,
+    "queries": 8,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001945091993547976,
+    0.0015064250328578055,
+    0.0019644779968075454,
+    0.0014089729520492256,
+    0.0011810080031864345
+   ],
+   "warm_median_seconds": 0.0014576989924535155,
+   "warm_min_seconds": 0.0011810080031864345
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.004214949964080006,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004214949964080006,
+    0.004189014958683401,
+    0.004354691016487777,
+    0.004226669960189611,
+    0.004225660988595337
+   ],
+   "warm_median_seconds": 0.004226165474392474,
+   "warm_min_seconds": 0.004189014958683401
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.002144358993973583,
+   "params": {
+    "conditions": 8,
+    "order": 2,
+    "queries": 10,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002144358993973583,
+    0.001938296016305685,
+    0.002139488991815597,
+    0.0020502200350165367,
+    0.002470143954269588
+   ],
+   "warm_median_seconds": 0.0020948545134160668,
+   "warm_min_seconds": 0.001938296016305685
+  },
+  {
+   "backend": "cpu",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.004265505005605519,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.004265505005605519,
+    0.004243291972670704,
+    0.0042618539882823825,
+    0.004306651011575013,
+    0.004339924023952335
+   ],
+   "warm_median_seconds": 0.004284252499928698,
+   "warm_min_seconds": 0.004243291972670704
+  },
+  {
+   "backend": "cuda",
+   "case": "signed + XOR differences, empirical measure",
+   "first_seconds": 0.0021658490295521915,
+   "params": {
+    "conditions": 8,
+    "order": 3,
+    "queries": 5,
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0021658490295521915,
+    0.00169466802617535,
+    0.0016054000006988645,
+    0.0018705130205489695,
+    0.0019758050329983234
+   ],
+   "warm_median_seconds": 0.0017825905233621597,
+   "warm_min_seconds": 0.0016054000006988645
+  },
+  {
+   "backend": "duckdb",
+   "case": "order-2 signed difference histogram",
+   "first_seconds": 0.13422023196471855,
+   "params": {
+    "rows": 100000,
+    "scope": "NULL-conditioned (half NULL)",
+    "selected": 100000
+   },
+   "phase": "run",
+   "result": {
+    "-2": 69,
+    "0": 25020,
+    "2": 54,
+    "unknown": 74857
+   },
+   "samples_seconds": [
+    0.13422023196471855,
+    0.13382994895800948
+   ],
+   "warm_median_seconds": 0.13382994895800948,
+   "warm_min_seconds": 0.13382994895800948
+  },
+  {
+   "backend": "cpu",
+   "case": "assignment domain at the default support limit",
+   "first_seconds": 0.0006048569921404123,
+   "params": {
+    "conditions": 20,
+    "points": 1048576
+   },
+   "phase": "run",
+   "result": 1048576,
+   "samples_seconds": [
+    0.0006048569921404123
+   ],
+   "warm_median_seconds": 0.0006048569921404123,
+   "warm_min_seconds": 0.0006048569921404123
+  },
+  {
+   "backend": "cpu",
+   "case": "assignment domain past the default support limit",
+   "limit": 1048576,
+   "message": "assignment domain: needs 2097152 support, budget 1048576",
+   "need": 2097152,
+   "params": {
+    "conditions": 21,
+    "points": 2097152
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.89139973372221e-05,
+   "refused": true,
+   "resource": "support"
+  },
+  {
+   "backend": "cpu",
+   "case": "order-12 difference within a 2^12 cofactor tensor",
+   "first_seconds": 0.4430925960186869,
+   "params": {
+    "order": 12,
+    "tensor_limit": 4096
+   },
+   "phase": "run",
+   "result": 0,
+   "samples_seconds": [
+    0.4430925960186869
+   ],
+   "warm_median_seconds": 0.4430925960186869,
+   "warm_min_seconds": 0.4430925960186869
+  },
+  {
+   "backend": "cpu",
+   "case": "order-13 difference past a 2^12 cofactor tensor",
+   "limit": 4096,
+   "message": "differences: needs 8192 tensor, budget 4096",
+   "need": 8192,
+   "params": {
+    "order": 13,
+    "tensor_limit": 4096
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.00013190502068027854,
+   "refused": true,
+   "resource": "tensor"
+  }
+ ],
+ "seconds": 11.65260368102463,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "assignment points (default budget)",
+   "largest_admitted": {
+    "conditions": 20,
+    "points": 1048576
+   },
+   "smallest_refused": {
+    "conditions": 21,
+    "points": 2097152
+   }
+  },
+  {
+   "grid": "difference order (tensor 2^12)",
+   "largest_admitted": {
+    "order": 12
+   },
+   "smallest_refused": {
+    "order": 13
+   }
+  }
+ ]
+}

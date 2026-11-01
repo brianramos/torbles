@@ -1,0 +1,6792 @@
+{
+ "argv": [
+  "--capability",
+  "FND-006",
+  "--out",
+  "/home/brian/torbles_math/results/math/FND-006/benchmark_device_math_reduce_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "FND-006",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:10:02+00:00"
+ },
+ "notes": [
+  "200000 rows; outputs (1, 3, 6, 15); selectivity (0.01, 0.1, 1.0); groups (4, 256, 4096); 5 samples per measurement (sample 0 the first execution, the rest warm reuse of the same plan)",
+  "thresholds: 4 outputs (banks and counts) over 5000 rows, 64 groups; a sparse histogram's final state is checked once its cells are counted, so its limit is data-dependent and not part of this grid"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00046609697164967656,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4010702.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6429240.0,
+    "shared_products": 0,
+    "states": 28,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00046609697164967656
+   ],
+   "warm_median_seconds": 0.00046609697164967656,
+   "warm_min_seconds": 0.00046609697164967656
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0006603689980693161,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 11700,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 11700,
+    "rows_visited": 1983,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.0006603689980693161,
+    0.0005547309992834926,
+    0.0005027209990657866,
+    0.00047406397061422467,
+    0.0005374070024117827
+   ],
+   "warm_median_seconds": 0.0005200640007387847,
+   "warm_min_seconds": 0.00047406397061422467
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.007258351950440556,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 1983,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16205321
+   },
+   "samples_seconds": [
+    0.007258351950440556,
+    0.005707456963136792,
+    0.005820824997499585,
+    0.005877439980395138,
+    0.005661554052494466
+   ],
+   "warm_median_seconds": 0.005764140980318189,
+   "warm_min_seconds": 0.005661554052494466
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.07089622499188408,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 5028808,
+    "words_visited": 0,
+    "workspace_bytes": 5391668
+   },
+   "samples_seconds": [
+    0.07089622499188408,
+    0.00255762500455603,
+    0.0021967109641991556,
+    0.002477964968420565,
+    0.0024335600319318473
+   ],
+   "warm_median_seconds": 0.0024557625001762062,
+   "warm_min_seconds": 0.0021967109641991556
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.011080419004429132,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 1983,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 7425704,
+    "words_visited": 9375,
+    "workspace_bytes": 23631025
+   },
+   "samples_seconds": [
+    0.011080419004429132,
+    0.010183394013438374,
+    0.009764746995642781,
+    0.00952548295026645,
+    0.00938709796173498
+   ],
+   "warm_median_seconds": 0.009645114972954616,
+   "warm_min_seconds": 0.00938709796173498
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00035705603659152985,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8623850.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20100156.0,
+    "shared_products": 6,
+    "states": 84,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.00035705603659152985
+   ],
+   "warm_median_seconds": 0.00035705603659152985,
+   "warm_min_seconds": 0.00035705603659152985
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.002319106017239392,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 27744,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 19722,
+    "rows_visited": 1983,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.002319106017239392,
+    0.0022122719674371183,
+    0.002096243028063327,
+    0.002121083962265402,
+    0.0020666749915108085
+   ],
+   "warm_median_seconds": 0.0021086634951643646,
+   "warm_min_seconds": 0.0020666749915108085
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.018541308003477752,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 4748,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16259257
+   },
+   "samples_seconds": [
+    0.018541308003477752,
+    0.01828343898523599,
+    0.017667078005615622,
+    0.01919684902532026,
+    0.018738813989330083
+   ],
+   "warm_median_seconds": 0.018511126487283036,
+   "warm_min_seconds": 0.017667078005615622
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.004306293034460396,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028656,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 5030480,
+    "words_visited": 0,
+    "workspace_bytes": 5831252
+   },
+   "samples_seconds": [
+    0.004306293034460396,
+    0.003573462017811835,
+    0.003160619002301246,
+    0.003308134968392551,
+    0.003755121026188135
+   ],
+   "warm_median_seconds": 0.003440798493102193,
+   "warm_min_seconds": 0.003160619002301246
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.031098998966626823,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 4748,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 22277112,
+    "words_visited": 28125,
+    "workspace_bytes": 23884961
+   },
+   "samples_seconds": [
+    0.031098998966626823,
+    0.02863507898291573,
+    0.030909830005839467,
+    0.030502078006975353,
+    0.028975486988201737
+   ],
+   "warm_median_seconds": 0.029738782497588545,
+   "warm_min_seconds": 0.02863507898291573
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003798420075327158,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10236995.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31406704.0,
+    "shared_products": 12,
+    "states": 445,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0003798420075327158
+   ],
+   "warm_median_seconds": 0.0003798420075327158,
+   "warm_min_seconds": 0.0003798420075327158
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.003614686953369528,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 40135,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 23202,
+    "rows_visited": 1983,
+    "scans": 1,
+    "state_bytes": 14861,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.003614686953369528,
+    0.0035500230151228607,
+    0.0034039460006169975,
+    0.003431004995945841,
+    0.0034815300023183227
+   ],
+   "warm_median_seconds": 0.003456267499132082,
+   "warm_min_seconds": 0.0034039460006169975
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.030069075990468264,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 8625,
+    "scans": 18,
+    "state_bytes": 14861,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 34725456
+   },
+   "samples_seconds": [
+    0.030069075990468264,
+    0.029897399013862014,
+    0.02975388098275289,
+    0.028290736954659224,
+    0.029583711992017925
+   ],
+   "warm_median_seconds": 0.029668796487385407,
+   "warm_min_seconds": 0.028290736954659224
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.005041423020884395,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 14861,
+    "transfer_bytes": 5042168,
+    "words_visited": 0,
+    "workspace_bytes": 6068152
+   },
+   "samples_seconds": [
+    0.005041423020884395,
+    0.004720426979474723,
+    0.003961145004723221,
+    0.003592461987864226,
+    0.0034730209736153483
+   ],
+   "warm_median_seconds": 0.0037768034962937236,
+   "warm_min_seconds": 0.0034730209736153483
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.049092973000369966,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 8625,
+    "scans": 18,
+    "state_bytes": 14861,
+    "transfer_bytes": 33776572,
+    "words_visited": 56250,
+    "workspace_bytes": 23888310
+   },
+   "samples_seconds": [
+    0.049092973000369966,
+    0.03344967699376866,
+    0.03166000603232533,
+    0.030064820952247828,
+    0.031118292012251914
+   ],
+   "warm_median_seconds": 0.03138914902228862,
+   "warm_min_seconds": 0.030064820952247828
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003519990132190287,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 16645147.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 74932064.0,
+    "shared_products": 42,
+    "states": 1215,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.0003519990132190287
+   ],
+   "warm_median_seconds": 0.0003519990132190287,
+   "warm_min_seconds": 0.0003519990132190287
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.003685357980430126,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 85503,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 23202,
+    "rows_visited": 1983,
+    "scans": 1,
+    "state_bytes": 41895,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.003685357980430126,
+    0.0036602100008167326,
+    0.0035306669888086617,
+    0.003533601004164666,
+    0.003562450991012156
+   ],
+   "warm_median_seconds": 0.003548025997588411,
+   "warm_min_seconds": 0.0035306669888086617
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.042281487956643105,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19926,
+    "scans": 45,
+    "state_bytes": 41895,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 34735742
+   },
+   "samples_seconds": [
+    0.042281487956643105,
+    0.041884284990374,
+    0.0425539729767479,
+    0.04084737302036956,
+    0.041329845029395074
+   ],
+   "warm_median_seconds": 0.041607065009884536,
+   "warm_min_seconds": 0.04084737302036956
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.004954987030941993,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 41895,
+    "transfer_bytes": 5066784,
+    "words_visited": 0,
+    "workspace_bytes": 6881024
+   },
+   "samples_seconds": [
+    0.004954987030941993,
+    0.003630257968325168,
+    0.003582714998628944,
+    0.003548213979229331,
+    0.003564251004718244
+   ],
+   "warm_median_seconds": 0.003573483001673594,
+   "warm_min_seconds": 0.003548213979229331
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.08114597998792306,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19926,
+    "scans": 45,
+    "state_bytes": 41895,
+    "transfer_bytes": 79051740,
+    "words_visited": 140625,
+    "workspace_bytes": 23898596
+   },
+   "samples_seconds": [
+    0.08114597998792306,
+    0.08007136796368286,
+    0.07419205200858414,
+    0.07673136005178094,
+    0.07756264600902796
+   ],
+   "warm_median_seconds": 0.07714700303040445,
+   "warm_min_seconds": 0.07419205200858414
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00028549099806696177,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4010702.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6429240.0,
+    "shared_products": 0,
+    "states": 28,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00028549099806696177
+   ],
+   "warm_median_seconds": 0.00028549099806696177,
+   "warm_min_seconds": 0.00028549099806696177
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0011608580243773758,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 117865,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 117865,
+    "rows_visited": 19975,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.0011608580243773758,
+    0.001063991046976298,
+    0.001083452021703124,
+    0.0010642120032571256,
+    0.0010621760156936944
+   ],
+   "warm_median_seconds": 0.0010641015251167119,
+   "warm_min_seconds": 0.0010621760156936944
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.00468816002830863,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19975,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16205321
+   },
+   "samples_seconds": [
+    0.00468816002830863,
+    0.004279315995518118,
+    0.004170875996351242,
+    0.004123289021663368,
+    0.004245071962941438
+   ],
+   "warm_median_seconds": 0.00420797397964634,
+   "warm_min_seconds": 0.004123289021663368
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.003302231023553759,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 5028808,
+    "words_visited": 0,
+    "workspace_bytes": 5391668
+   },
+   "samples_seconds": [
+    0.003302231023553759,
+    0.002863302011974156,
+    0.0026019970537163317,
+    0.0027394950157031417,
+    0.0026669439976103604
+   ],
+   "warm_median_seconds": 0.002703219506656751,
+   "warm_min_seconds": 0.0026019970537163317
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.007662624993827194,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19975,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 7425704,
+    "words_visited": 9375,
+    "workspace_bytes": 23631025
+   },
+   "samples_seconds": [
+    0.007662624993827194,
+    0.006758029048796743,
+    0.007169303018599749,
+    0.007660382019821554,
+    0.0069633719976991415
+   ],
+   "warm_median_seconds": 0.007066337508149445,
+   "warm_min_seconds": 0.006758029048796743
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.0027771260356530547,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0027771260356530547,
+    0.002236058993730694,
+    0.0019593380275182426,
+    0.0017482680268585682,
+    0.0019101690268144011
+   ],
+   "warm_median_seconds": 0.0019347535271663219,
+   "warm_min_seconds": 0.0017482680268585682
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00034056795993819833,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8623850.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20100156.0,
+    "shared_products": 6,
+    "states": 84,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.00034056795993819833
+   ],
+   "warm_median_seconds": 0.00034056795993819833,
+   "warm_min_seconds": 0.00034056795993819833
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.00330941699212417,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 279931,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 198898,
+    "rows_visited": 19975,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.00330941699212417,
+    0.003117351036053151,
+    0.0031240660464391112,
+    0.0031160300131887197,
+    0.0031261530239135027
+   ],
+   "warm_median_seconds": 0.003120708541246131,
+   "warm_min_seconds": 0.0031160300131887197
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.01431619399227202,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 47972,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16259257
+   },
+   "samples_seconds": [
+    0.01431619399227202,
+    0.013330510992091149,
+    0.01358658797107637,
+    0.015132927044760436,
+    0.015103111043572426
+   ],
+   "warm_median_seconds": 0.014344849507324398,
+   "warm_min_seconds": 0.013330510992091149
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.005966613010969013,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028656,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 5030480,
+    "words_visited": 0,
+    "workspace_bytes": 5831252
+   },
+   "samples_seconds": [
+    0.005966613010969013,
+    0.005410184036009014,
+    0.004521152994129807,
+    0.004630270006600767,
+    0.004139015974942595
+   ],
+   "warm_median_seconds": 0.004575711500365287,
+   "warm_min_seconds": 0.004139015974942595
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.02146921696839854,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 47972,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 22277112,
+    "words_visited": 28125,
+    "workspace_bytes": 23884961
+   },
+   "samples_seconds": [
+    0.02146921696839854,
+    0.022518662037327886,
+    0.02398772002197802,
+    0.02310915000271052,
+    0.022600244032219052
+   ],
+   "warm_median_seconds": 0.022854697017464787,
+   "warm_min_seconds": 0.022518662037327886
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.007591882953420281,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.007591882953420281,
+    0.006619255989789963,
+    0.005981864000204951,
+    0.005836642987560481,
+    0.006323275971226394
+   ],
+   "warm_median_seconds": 0.006152569985715672,
+   "warm_min_seconds": 0.005836642987560481
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00035659398417919874,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10236995.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31406704.0,
+    "shared_products": 12,
+    "states": 445,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.00035659398417919874
+   ],
+   "warm_median_seconds": 0.00035659398417919874,
+   "warm_min_seconds": 0.00035659398417919874
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.005080914008431137,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 404832,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 233745,
+    "rows_visited": 19975,
+    "scans": 1,
+    "state_bytes": 15804,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.005080914008431137,
+    0.004981471982318908,
+    0.004809597972780466,
+    0.00479816400911659,
+    0.004759726987686008
+   ],
+   "warm_median_seconds": 0.004803880990948528,
+   "warm_min_seconds": 0.004759726987686008
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.024476405000314116,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 86932,
+    "scans": 18,
+    "state_bytes": 15804,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 34725456
+   },
+   "samples_seconds": [
+    0.024476405000314116,
+    0.02372633304912597,
+    0.02304319298127666,
+    0.023816212022211403,
+    0.023211669991724193
+   ],
+   "warm_median_seconds": 0.02346900152042508,
+   "warm_min_seconds": 0.02304319298127666
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.005692038976121694,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 15804,
+    "transfer_bytes": 5042168,
+    "words_visited": 0,
+    "workspace_bytes": 6068152
+   },
+   "samples_seconds": [
+    0.005692038976121694,
+    0.00469915202120319,
+    0.004728314001113176,
+    0.004592152021359652,
+    0.0049098830204457045
+   ],
+   "warm_median_seconds": 0.004713733011158183,
+   "warm_min_seconds": 0.004592152021359652
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.03719086799537763,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 86932,
+    "scans": 18,
+    "state_bytes": 15804,
+    "transfer_bytes": 33776572,
+    "words_visited": 56250,
+    "workspace_bytes": 23888310
+   },
+   "samples_seconds": [
+    0.03719086799537763,
+    0.03718997596297413,
+    0.035986000031698495,
+    0.036669086024630815,
+    0.038917651982046664
+   ],
+   "warm_median_seconds": 0.03692953099380247,
+   "warm_min_seconds": 0.035986000031698495
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.011524991015903652,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.011524991015903652,
+    0.010400344035588205,
+    0.009643643978051841,
+    0.009208247996866703,
+    0.010593744984362274
+   ],
+   "warm_median_seconds": 0.010021994006820023,
+   "warm_min_seconds": 0.009208247996866703
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003723419504240155,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 16645147.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 74932064.0,
+    "shared_products": 42,
+    "states": 1215,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.0003723419504240155
+   ],
+   "warm_median_seconds": 0.0003723419504240155,
+   "warm_min_seconds": 0.0003723419504240155
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.006132583017461002,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 862886,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 233745,
+    "rows_visited": 19975,
+    "scans": 1,
+    "state_bytes": 44724,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.006132583017461002,
+    0.005892058019526303,
+    0.0057856900384649634,
+    0.005737804982345551,
+    0.00568433798616752
+   ],
+   "warm_median_seconds": 0.005761747510405257,
+   "warm_min_seconds": 0.00568433798616752
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.057576088001951575,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200871,
+    "scans": 45,
+    "state_bytes": 44724,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 34735742
+   },
+   "samples_seconds": [
+    0.057576088001951575,
+    0.0567981640342623,
+    0.05718940496444702,
+    0.05719846999272704,
+    0.05679412797326222
+   ],
+   "warm_median_seconds": 0.05699378449935466,
+   "warm_min_seconds": 0.05679412797326222
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.007750097953248769,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 44724,
+    "transfer_bytes": 5066784,
+    "words_visited": 0,
+    "workspace_bytes": 6881024
+   },
+   "samples_seconds": [
+    0.007750097953248769,
+    0.007628660008776933,
+    0.007393867010250688,
+    0.007401247974485159,
+    0.007420928974170238
+   ],
+   "warm_median_seconds": 0.007411088474327698,
+   "warm_min_seconds": 0.007393867010250688
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.09818823297973722,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200871,
+    "scans": 45,
+    "state_bytes": 44724,
+    "transfer_bytes": 79051740,
+    "words_visited": 140625,
+    "workspace_bytes": 23898596
+   },
+   "samples_seconds": [
+    0.09818823297973722,
+    0.09392570197815076,
+    0.0918811850133352,
+    0.08853259700117633,
+    0.09015521797118708
+   ],
+   "warm_median_seconds": 0.09101820149226114,
+   "warm_min_seconds": 0.08853259700117633
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.024880465993192047,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.024880465993192047,
+    0.023225200013257563,
+    0.02358952903887257,
+    0.023398443998303264,
+    0.023641761043109
+   ],
+   "warm_median_seconds": 0.023493986518587917,
+   "warm_min_seconds": 0.023225200013257563
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003411689540371299,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4010702.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6429240.0,
+    "shared_products": 0,
+    "states": 28,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.0003411689540371299
+   ],
+   "warm_median_seconds": 0.0003411689540371299,
+   "warm_min_seconds": 0.0003411689540371299
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.004554074024781585,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 1179924,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1179924,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.004554074024781585,
+    0.0044983779662288725,
+    0.004354151024017483,
+    0.004395361989736557,
+    0.004349038994405419
+   ],
+   "warm_median_seconds": 0.00437475650687702,
+   "warm_min_seconds": 0.004349038994405419
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.007169259013608098,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16205321
+   },
+   "samples_seconds": [
+    0.007169259013608098,
+    0.007241888029966503,
+    0.006838404980953783,
+    0.0066995350061915815,
+    0.006672240968327969
+   ],
+   "warm_median_seconds": 0.006768969993572682,
+   "warm_min_seconds": 0.006672240968327969
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.007184070011135191,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 608,
+    "transfer_bytes": 5028808,
+    "words_visited": 0,
+    "workspace_bytes": 5391668
+   },
+   "samples_seconds": [
+    0.007184070011135191,
+    0.0065859450260177255,
+    0.006576238956768066,
+    0.006544556992594153,
+    0.006718601973261684
+   ],
+   "warm_median_seconds": 0.006581091991392896,
+   "warm_min_seconds": 0.006544556992594153
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.008371268049813807,
+   "params": {
+    "groups": 4,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 608,
+    "transfer_bytes": 7425704,
+    "words_visited": 9375,
+    "workspace_bytes": 23631025
+   },
+   "samples_seconds": [
+    0.008371268049813807,
+    0.007216060010250658,
+    0.007576208037789911,
+    0.00702150200959295,
+    0.007248497975524515
+   ],
+   "warm_median_seconds": 0.007232278992887586,
+   "warm_min_seconds": 0.00702150200959295
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00027360604144632816,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8623850.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20100156.0,
+    "shared_products": 6,
+    "states": 84,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.00027360604144632816
+   ],
+   "warm_median_seconds": 0.00027360604144632816,
+   "warm_min_seconds": 0.00027360604144632816
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.01128929399419576,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 2800134,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1990029,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.01128929399419576,
+    0.011380387004464865,
+    0.011191948025953025,
+    0.011480268032755703,
+    0.01099148899083957
+   ],
+   "warm_median_seconds": 0.011286167515208945,
+   "warm_min_seconds": 0.01099148899083957
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.024043979006819427,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 480056,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16259257
+   },
+   "samples_seconds": [
+    0.024043979006819427,
+    0.023697933997027576,
+    0.02461389801464975,
+    0.023817200039047748,
+    0.023865009017754346
+   ],
+   "warm_median_seconds": 0.023841104528401047,
+   "warm_min_seconds": 0.023697933997027576
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.016266121994704008,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5028656,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1824,
+    "transfer_bytes": 5030480,
+    "words_visited": 0,
+    "workspace_bytes": 5831252
+   },
+   "samples_seconds": [
+    0.016266121994704008,
+    0.015343351988121867,
+    0.015675336006097496,
+    0.0154461829806678,
+    0.015263648994732648
+   ],
+   "warm_median_seconds": 0.015394767484394833,
+   "warm_min_seconds": 0.015263648994732648
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.026994860032573342,
+   "params": {
+    "groups": 4,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 480056,
+    "scans": 9,
+    "state_bytes": 1824,
+    "transfer_bytes": 22277112,
+    "words_visited": 28125,
+    "workspace_bytes": 23884961
+   },
+   "samples_seconds": [
+    0.026994860032573342,
+    0.025323374022264034,
+    0.026143683004193008,
+    0.029950914962682873,
+    0.026788739021867514
+   ],
+   "warm_median_seconds": 0.02646621101303026,
+   "warm_min_seconds": 0.025323374022264034
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0002980810240842402,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10236995.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31406704.0,
+    "shared_products": 12,
+    "states": 445,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0002980810240842402
+   ],
+   "warm_median_seconds": 0.0002980810240842402,
+   "warm_min_seconds": 0.0002980810240842402
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.016305906989146024,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 4050093,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2339772,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 15804,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.016305906989146024,
+    0.016197193996049464,
+    0.01620761799858883,
+    0.01621464896015823,
+    0.0161532640340738
+   ],
+   "warm_median_seconds": 0.016202405997319147,
+   "warm_min_seconds": 0.0161532640340738
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.03841826197458431,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 870096,
+    "scans": 18,
+    "state_bytes": 15804,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 34725456
+   },
+   "samples_seconds": [
+    0.03841826197458431,
+    0.0383357010432519,
+    0.038428970030508935,
+    0.04173830000218004,
+    0.039137126004789025
+   ],
+   "warm_median_seconds": 0.03878304801764898,
+   "warm_min_seconds": 0.0383357010432519
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.01997126900823787,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029200,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 15804,
+    "transfer_bytes": 5042168,
+    "words_visited": 0,
+    "workspace_bytes": 6068152
+   },
+   "samples_seconds": [
+    0.01997126900823787,
+    0.019703377038240433,
+    0.019185337994713336,
+    0.01909432397224009,
+    0.01873571699252352
+   ],
+   "warm_median_seconds": 0.019139830983476713,
+   "warm_min_seconds": 0.01873571699252352
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.044606168987229466,
+   "params": {
+    "groups": 4,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 870096,
+    "scans": 18,
+    "state_bytes": 15804,
+    "transfer_bytes": 33776572,
+    "words_visited": 56250,
+    "workspace_bytes": 23888310
+   },
+   "samples_seconds": [
+    0.044606168987229466,
+    0.04459383600624278,
+    0.04330402996856719,
+    0.044058897998183966,
+    0.045648748986423016
+   ],
+   "warm_median_seconds": 0.044326367002213374,
+   "warm_min_seconds": 0.04330402996856719
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00027864897856488824,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 16645147.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 74932064.0,
+    "shared_products": 42,
+    "states": 1215,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.00027864897856488824
+   ],
+   "warm_median_seconds": 0.00027864897856488824,
+   "warm_min_seconds": 0.00027864897856488824
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.025561719958204776,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 8630583,
+    "decoded_bytes": 5025016,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2339772,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 44724,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.025561719958204776,
+    0.02512811403721571,
+    0.025182478944770992,
+    0.025265179050620645,
+    0.02526021603262052
+   ],
+   "warm_median_seconds": 0.025221347488695756,
+   "warm_min_seconds": 0.02512811403721571
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.09596883197082207,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2010288,
+    "scans": 45,
+    "state_bytes": 44724,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 34735742
+   },
+   "samples_seconds": [
+    0.09596883197082207,
+    0.09487664699554443,
+    0.09658869501436129,
+    0.09521402802783996,
+    0.09453945601126179
+   ],
+   "warm_median_seconds": 0.0950453375116922,
+   "warm_min_seconds": 0.09453945601126179
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.033676136983558536,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 44724,
+    "transfer_bytes": 5066784,
+    "words_visited": 0,
+    "workspace_bytes": 6881024
+   },
+   "samples_seconds": [
+    0.033676136983558536,
+    0.033391089003998786,
+    0.03321627696277574,
+    0.03319188300520182,
+    0.033841153024695814
+   ],
+   "warm_median_seconds": 0.03330368298338726,
+   "warm_min_seconds": 0.03319188300520182
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.11166917899390683,
+   "params": {
+    "groups": 4,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2010288,
+    "scans": 45,
+    "state_bytes": 44724,
+    "transfer_bytes": 79051740,
+    "words_visited": 140625,
+    "workspace_bytes": 23898596
+   },
+   "samples_seconds": [
+    0.11166917899390683,
+    0.1094610330183059,
+    0.10984757001278922,
+    0.10900930099887773,
+    0.10923970700241625
+   ],
+   "warm_median_seconds": 0.10935037001036108,
+   "warm_min_seconds": 0.10900930099887773
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00040409795474261045,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4026830.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6445368.0,
+    "shared_products": 0,
+    "states": 1792,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00040409795474261045
+   ],
+   "warm_median_seconds": 0.00040409795474261045,
+   "warm_min_seconds": 0.00040409795474261045
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0007386659854091704,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 12305,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 12305,
+    "rows_visited": 2084,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.0007386659854091704,
+    0.0006106900400482118,
+    0.000514815968926996,
+    0.0005089439800940454,
+    0.0004990590387023985
+   ],
+   "warm_median_seconds": 0.0005118799745105207,
+   "warm_min_seconds": 0.0004990590387023985
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.008095917000900954,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2084,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16321241
+   },
+   "samples_seconds": [
+    0.008095917000900954,
+    0.002995645976625383,
+    0.002977392985485494,
+    0.0031427060021087527,
+    0.002945205953437835
+   ],
+   "warm_median_seconds": 0.0029865194810554385,
+   "warm_min_seconds": 0.002945205953437835
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.002925935958046466,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 5068120,
+    "words_visited": 0,
+    "workspace_bytes": 5430980
+   },
+   "samples_seconds": [
+    0.002925935958046466,
+    0.0026809140108525753,
+    0.0023178699775598943,
+    0.0021377369994297624,
+    0.0021594460122287273
+   ],
+   "warm_median_seconds": 0.002238657994894311,
+   "warm_min_seconds": 0.0021377369994297624
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.006043674016837031,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2084,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 7464008,
+    "words_visited": 9375,
+    "workspace_bytes": 23785249
+   },
+   "samples_seconds": [
+    0.006043674016837031,
+    0.005746848997659981,
+    0.006042296998202801,
+    0.005724905000533909,
+    0.005720629007555544
+   ],
+   "warm_median_seconds": 0.005735876999096945,
+   "warm_min_seconds": 0.005720629007555544
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0002742129727266729,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8672234.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20148540.0,
+    "shared_products": 6,
+    "states": 5376,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.0002742129727266729
+   ],
+   "warm_median_seconds": 0.0002742129727266729,
+   "warm_min_seconds": 0.0002742129727266729
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0022994279861450195,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 29369,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 20837,
+    "rows_visited": 2084,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.0022994279861450195,
+    0.0021859760163351893,
+    0.002231599995866418,
+    0.002154183981474489,
+    0.0021887270268052816
+   ],
+   "warm_median_seconds": 0.0021873515215702355,
+   "warm_min_seconds": 0.002154183981474489
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.009641377022489905,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 5025,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16528393
+   },
+   "samples_seconds": [
+    0.009641377022489905,
+    0.009456524974666536,
+    0.009422434028238058,
+    0.009379627997986972,
+    0.009572223003488034
+   ],
+   "warm_median_seconds": 0.009439479501452297,
+   "warm_min_seconds": 0.009379627997986972
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.004042414017021656,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029664,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 5146400,
+    "words_visited": 0,
+    "workspace_bytes": 5947172
+   },
+   "samples_seconds": [
+    0.004042414017021656,
+    0.0030648880056105554,
+    0.003021406999323517,
+    0.0027598579763434827,
+    0.003001553996000439
+   ],
+   "warm_median_seconds": 0.003011480497661978,
+   "warm_min_seconds": 0.0027598579763434827
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.01926535798702389,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 5025,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 22392024,
+    "words_visited": 28125,
+    "workspace_bytes": 24192401
+   },
+   "samples_seconds": [
+    0.01926535798702389,
+    0.01785035099601373,
+    0.018406565010081977,
+    0.018107165000401437,
+    0.017753076972439885
+   ],
+   "warm_median_seconds": 0.017978757998207584,
+   "warm_min_seconds": 0.017753076972439885
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00029033998725935817,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10509659.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31514056.0,
+    "shared_products": 12,
+    "states": 28417,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.00029033998725935817
+   ],
+   "warm_median_seconds": 0.00029033998725935817,
+   "warm_min_seconds": 0.00029033998725935817
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.003994258004240692,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 42434,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 24411,
+    "rows_visited": 2084,
+    "scans": 1,
+    "state_bytes": 197980,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.003994258004240692,
+    0.0036248849937692285,
+    0.003550207009539008,
+    0.003649736987426877,
+    0.003560576995369047
+   ],
+   "warm_median_seconds": 0.0035927309945691377,
+   "warm_min_seconds": 0.003550207009539008
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.017673389986157417,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 9105,
+    "scans": 18,
+    "state_bytes": 197980,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 35894232
+   },
+   "samples_seconds": [
+    0.017673389986157417,
+    0.017112708010245115,
+    0.017186503973789513,
+    0.016639019013382494,
+    0.017065196007024497
+   ],
+   "warm_median_seconds": 0.017088952008634806,
+   "warm_min_seconds": 0.016639019013382494
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.0043181299697607756,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 197980,
+    "transfer_bytes": 5859656,
+    "words_visited": 0,
+    "workspace_bytes": 6885640
+   },
+   "samples_seconds": [
+    0.0043181299697607756,
+    0.0036161260213702917,
+    0.0038778799935244024,
+    0.003252551017794758,
+    0.003583232988603413
+   ],
+   "warm_median_seconds": 0.0035996795049868524,
+   "warm_min_seconds": 0.003252551017794758
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.03310529299778864,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 9105,
+    "scans": 18,
+    "state_bytes": 197980,
+    "transfer_bytes": 34613359,
+    "words_visited": 56250,
+    "workspace_bytes": 24278406
+   },
+   "samples_seconds": [
+    0.03310529299778864,
+    0.03778930299449712,
+    0.03245573601452634,
+    0.03333293000468984,
+    0.032024757005274296
+   ],
+   "warm_median_seconds": 0.03289433300960809,
+   "warm_min_seconds": 0.032024757005274296
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003172339638695121,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 17384515.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 75175496.0,
+    "shared_products": 42,
+    "states": 76815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.0003172339638695121
+   ],
+   "warm_median_seconds": 0.0003172339638695121,
+   "warm_min_seconds": 0.0003172339638695121
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.004396554024424404,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 90586,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 24411,
+    "rows_visited": 2084,
+    "scans": 1,
+    "state_bytes": 403764,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.004396554024424404,
+    0.003963505965657532,
+    0.0038670329959131777,
+    0.003917643043678254,
+    0.0039331119623966515
+   ],
+   "warm_median_seconds": 0.003925377503037453,
+   "warm_min_seconds": 0.0038670329959131777
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.04341745201963931,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 21063,
+    "scans": 45,
+    "state_bytes": 403764,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 36154502
+   },
+   "samples_seconds": [
+    0.04341745201963931,
+    0.04330144397681579,
+    0.042703414044808596,
+    0.042355437006335706,
+    0.042366334004327655
+   ],
+   "warm_median_seconds": 0.042534874024568126,
+   "warm_min_seconds": 0.042355437006335706
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.005512431031093001,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5031576,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 403764,
+    "transfer_bytes": 7329744,
+    "words_visited": 0,
+    "workspace_bytes": 9143984
+   },
+   "samples_seconds": [
+    0.005512431031093001,
+    0.005171313998289406,
+    0.004963388026226312,
+    0.005018836003728211,
+    0.004795946995727718
+   ],
+   "warm_median_seconds": 0.004991112014977261,
+   "warm_min_seconds": 0.004795946995727718
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.08609048899961635,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 21063,
+    "scans": 45,
+    "state_bytes": 403764,
+    "transfer_bytes": 81374613,
+    "words_visited": 140625,
+    "workspace_bytes": 24538676
+   },
+   "samples_seconds": [
+    0.08609048899961635,
+    0.0796784539707005,
+    0.07743297499837354,
+    0.07780975004425272,
+    0.0801423920202069
+   ],
+   "warm_median_seconds": 0.07874410200747661,
+   "warm_min_seconds": 0.07743297499837354
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00033483299193903804,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4026830.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6445368.0,
+    "shared_products": 0,
+    "states": 1792,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00033483299193903804
+   ],
+   "warm_median_seconds": 0.00033483299193903804,
+   "warm_min_seconds": 0.00033483299193903804
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.001175247016362846,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 118553,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 118553,
+    "rows_visited": 20080,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.001175247016362846,
+    0.0011530100018717349,
+    0.0011144750169478357,
+    0.001078624976798892,
+    0.001074628031346947
+   ],
+   "warm_median_seconds": 0.0010965499968733639,
+   "warm_min_seconds": 0.001074628031346947
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.00469121104106307,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 20080,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16321241
+   },
+   "samples_seconds": [
+    0.00469121104106307,
+    0.004593364952597767,
+    0.004420257988385856,
+    0.004066606983542442,
+    0.00409305898938328
+   ],
+   "warm_median_seconds": 0.004256658488884568,
+   "warm_min_seconds": 0.004066606983542442
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.00351228000363335,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 5068120,
+    "words_visited": 0,
+    "workspace_bytes": 5430980
+   },
+   "samples_seconds": [
+    0.00351228000363335,
+    0.002805004012770951,
+    0.0030026889871805906,
+    0.0028269289759919047,
+    0.0027107069618068635
+   ],
+   "warm_median_seconds": 0.0028159664943814278,
+   "warm_min_seconds": 0.0027107069618068635
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.007246400986332446,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 20080,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 7464008,
+    "words_visited": 9375,
+    "workspace_bytes": 23785249
+   },
+   "samples_seconds": [
+    0.007246400986332446,
+    0.006698893033899367,
+    0.006904089008457959,
+    0.0066890360321849585,
+    0.0070440800045616925
+   ],
+   "warm_median_seconds": 0.006801491021178663,
+   "warm_min_seconds": 0.0066890360321849585
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.0035944340052083135,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0035944340052083135,
+    0.0029646449838764966,
+    0.0025992380105890334,
+    0.0023547179880551994,
+    0.0022738039842806756
+   ],
+   "warm_median_seconds": 0.0024769779993221164,
+   "warm_min_seconds": 0.0022738039842806756
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003218849888071418,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8672234.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20148540.0,
+    "shared_products": 6,
+    "states": 5376,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.0003218849888071418
+   ],
+   "warm_median_seconds": 0.0003218849888071418,
+   "warm_min_seconds": 0.0003218849888071418
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.003420757013373077,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 282245,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 200399,
+    "rows_visited": 20080,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.003420757013373077,
+    0.0032691749511286616,
+    0.0032473000464960933,
+    0.003283431986346841,
+    0.0032520020031370223
+   ],
+   "warm_median_seconds": 0.003260588477132842,
+   "warm_min_seconds": 0.0032473000464960933
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.013848836999386549,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 48322,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16528393
+   },
+   "samples_seconds": [
+    0.013848836999386549,
+    0.013559959013946354,
+    0.013075823953840882,
+    0.013058440003078431,
+    0.013007982983253896
+   ],
+   "warm_median_seconds": 0.013067131978459656,
+   "warm_min_seconds": 0.013007982983253896
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.0050332979881204665,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029664,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 5146400,
+    "words_visited": 0,
+    "workspace_bytes": 5947172
+   },
+   "samples_seconds": [
+    0.0050332979881204665,
+    0.004362754989415407,
+    0.004269447992555797,
+    0.004190319043118507,
+    0.004398563993163407
+   ],
+   "warm_median_seconds": 0.004316101490985602,
+   "warm_min_seconds": 0.004190319043118507
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.022165579022839665,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 48322,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 22392024,
+    "words_visited": 28125,
+    "workspace_bytes": 24192401
+   },
+   "samples_seconds": [
+    0.022165579022839665,
+    0.020447906979825348,
+    0.02176736103137955,
+    0.021755189984105527,
+    0.021149107022210956
+   ],
+   "warm_median_seconds": 0.02145214850315824,
+   "warm_min_seconds": 0.020447906979825348
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.00903197197476402,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.00903197197476402,
+    0.007538143021520227,
+    0.007104335003532469,
+    0.00759056000970304,
+    0.007276414020452648
+   ],
+   "warm_median_seconds": 0.007407278520986438,
+   "warm_min_seconds": 0.007104335003532469
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003433019737713039,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10509659.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31514056.0,
+    "shared_products": 12,
+    "states": 28417,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0003433019737713039
+   ],
+   "warm_median_seconds": 0.0003433019737713039,
+   "warm_min_seconds": 0.0003433019737713039
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0055569070391356945,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 408000,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 235179,
+    "rows_visited": 20080,
+    "scans": 1,
+    "state_bytes": 461077,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.0055569070391356945,
+    0.0051839640364050865,
+    0.005217369005549699,
+    0.005542500992305577,
+    0.005348831997253001
+   ],
+   "warm_median_seconds": 0.00528310050140135,
+   "warm_min_seconds": 0.0051839640364050865
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.025120754959061742,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 87584,
+    "scans": 18,
+    "state_bytes": 461077,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 35894232
+   },
+   "samples_seconds": [
+    0.025120754959061742,
+    0.023004868999123573,
+    0.023686711967457086,
+    0.023531812999863178,
+    0.024016703013330698
+   ],
+   "warm_median_seconds": 0.02360926248366013,
+   "warm_min_seconds": 0.023004868999123573
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.0066400879877619445,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 461077,
+    "transfer_bytes": 5859656,
+    "words_visited": 0,
+    "workspace_bytes": 6885640
+   },
+   "samples_seconds": [
+    0.0066400879877619445,
+    0.00631060398882255,
+    0.006233137974049896,
+    0.005901124968659133,
+    0.006015763967297971
+   ],
+   "warm_median_seconds": 0.006124450970673934,
+   "warm_min_seconds": 0.005901124968659133
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.04325557698030025,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 87584,
+    "scans": 18,
+    "state_bytes": 461077,
+    "transfer_bytes": 34948329,
+    "words_visited": 56250,
+    "workspace_bytes": 24278406
+   },
+   "samples_seconds": [
+    0.04325557698030025,
+    0.04227124503813684,
+    0.042330205033067614,
+    0.041786644025705755,
+    0.043850422953255475
+   ],
+   "warm_median_seconds": 0.04230072503560223,
+   "warm_min_seconds": 0.041786644025705755
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.019091689959168434,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.019091689959168434,
+    0.017171341984067112,
+    0.016868533042725176,
+    0.01642851304495707,
+    0.016148134018294513
+   ],
+   "warm_median_seconds": 0.016648523043841124,
+   "warm_min_seconds": 0.016148134018294513
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00035330798709765077,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 17384515.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 75175496.0,
+    "shared_products": 42,
+    "states": 76815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.00035330798709765077
+   ],
+   "warm_median_seconds": 0.00035330798709765077,
+   "warm_min_seconds": 0.00035330798709765077
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.007477250008378178,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 870268,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 235179,
+    "rows_visited": 20080,
+    "scans": 1,
+    "state_bytes": 1193055,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.007477250008378178,
+    0.0068987249978818,
+    0.006837673019617796,
+    0.006866901007015258,
+    0.006979613972362131
+   ],
+   "warm_median_seconds": 0.006882813002448529,
+   "warm_min_seconds": 0.006837673019617796
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.05893285199999809,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 202512,
+    "scans": 45,
+    "state_bytes": 1193055,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 36154502
+   },
+   "samples_seconds": [
+    0.05893285199999809,
+    0.05684944201493636,
+    0.057020734006073326,
+    0.057798660011030734,
+    0.057032638986129314
+   ],
+   "warm_median_seconds": 0.05702668649610132,
+   "warm_min_seconds": 0.05684944201493636
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.011276097036898136,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5031576,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1193055,
+    "transfer_bytes": 7329744,
+    "words_visited": 0,
+    "workspace_bytes": 9143984
+   },
+   "samples_seconds": [
+    0.011276097036898136,
+    0.009402402967680246,
+    0.009299532976001501,
+    0.009695806016679853,
+    0.00927324901567772
+   ],
+   "warm_median_seconds": 0.009350967971840873,
+   "warm_min_seconds": 0.00927324901567772
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.10937574098352343,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 202512,
+    "scans": 45,
+    "state_bytes": 1193055,
+    "transfer_bytes": 82379523,
+    "words_visited": 140625,
+    "workspace_bytes": 24538676
+   },
+   "samples_seconds": [
+    0.10937574098352343,
+    0.11147210100898519,
+    0.11433883896097541,
+    0.11058524099644274,
+    0.10960079298820347
+   ],
+   "warm_median_seconds": 0.11102867100271396,
+   "warm_min_seconds": 0.10960079298820347
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.040955954988021404,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.040955954988021404,
+    0.044271513004787266,
+    0.052953745995182544,
+    0.04197533999104053,
+    0.040466645965352654
+   ],
+   "warm_median_seconds": 0.0431234264979139,
+   "warm_min_seconds": 0.040466645965352654
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0004094070172868669,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 4026830.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6445368.0,
+    "shared_products": 0,
+    "states": 1792,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.0004094070172868669
+   ],
+   "warm_median_seconds": 0.0004094070172868669,
+   "warm_min_seconds": 0.0004094070172868669
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.004538231005426496,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 1180033,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1180033,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.004538231005426496,
+    0.004406587977427989,
+    0.004351909970864654,
+    0.0044694539974443614,
+    0.004394429037347436
+   ],
+   "warm_median_seconds": 0.004400508507387713,
+   "warm_min_seconds": 0.004351909970864654
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.007654170040041208,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 16321241
+   },
+   "samples_seconds": [
+    0.007654170040041208,
+    0.007055749010760337,
+    0.006949114962480962,
+    0.006765132013242692,
+    0.006817879038862884
+   ],
+   "warm_median_seconds": 0.006883497000671923,
+   "warm_min_seconds": 0.006765132013242692
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.00921547698089853,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 38912,
+    "transfer_bytes": 5068120,
+    "words_visited": 0,
+    "workspace_bytes": 5430980
+   },
+   "samples_seconds": [
+    0.00921547698089853,
+    0.008480622025672346,
+    0.008005316951312125,
+    0.00819565897108987,
+    0.00805722299264744
+   ],
+   "warm_median_seconds": 0.008126440981868654,
+   "warm_min_seconds": 0.008005316951312125
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.010152916016522795,
+   "params": {
+    "groups": 256,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 38912,
+    "transfer_bytes": 7464008,
+    "words_visited": 9375,
+    "workspace_bytes": 23785249
+   },
+   "samples_seconds": [
+    0.010152916016522795,
+    0.008500352036207914,
+    0.008175175986252725,
+    0.008604583039414138,
+    0.008646651986055076
+   ],
+   "warm_median_seconds": 0.008552467537811026,
+   "warm_min_seconds": 0.008175175986252725
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00031788897467777133,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 8672234.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20148540.0,
+    "shared_products": 6,
+    "states": 5376,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.00031788897467777133
+   ],
+   "warm_median_seconds": 0.00031788897467777133,
+   "warm_min_seconds": 0.00031788897467777133
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.011553463991731405,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 2799211,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1989622,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.011553463991731405,
+    0.011531765980180353,
+    0.01148374198237434,
+    0.011701276001986116,
+    0.011520402040332556
+   ],
+   "warm_median_seconds": 0.011526084010256454,
+   "warm_min_seconds": 0.01148374198237434
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.024328140018042177,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 479952,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 16528393
+   },
+   "samples_seconds": [
+    0.024328140018042177,
+    0.025098534009885043,
+    0.02416458900552243,
+    0.025250441976822913,
+    0.02401911502238363
+   ],
+   "warm_median_seconds": 0.024631561507703736,
+   "warm_min_seconds": 0.02401911502238363
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.01915147597901523,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5029664,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 116736,
+    "transfer_bytes": 5146400,
+    "words_visited": 0,
+    "workspace_bytes": 5947172
+   },
+   "samples_seconds": [
+    0.01915147597901523,
+    0.018249831977300346,
+    0.018146643007639796,
+    0.018453716998919845,
+    0.018298580951523036
+   ],
+   "warm_median_seconds": 0.01827420646441169,
+   "warm_min_seconds": 0.018146643007639796
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.03550990199437365,
+   "params": {
+    "groups": 256,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 479952,
+    "scans": 9,
+    "state_bytes": 116736,
+    "transfer_bytes": 22392024,
+    "words_visited": 28125,
+    "workspace_bytes": 24192401
+   },
+   "samples_seconds": [
+    0.03550990199437365,
+    0.034126001002732664,
+    0.02950094500556588,
+    0.026460648979991674,
+    0.02614039200125262
+   ],
+   "warm_median_seconds": 0.027980796992778778,
+   "warm_min_seconds": 0.02614039200125262
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003320019459351897,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 10509659.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 31514056.0,
+    "shared_products": 12,
+    "states": 28417,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0003320019459351897
+   ],
+   "warm_median_seconds": 0.0003320019459351897,
+   "warm_min_seconds": 0.0003320019459351897
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.019241595990024507,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 4049107,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2340099,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 999817,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.019241595990024507,
+    0.018138049985282123,
+    0.01791555096860975,
+    0.017990850959904492,
+    0.0178458119626157
+   ],
+   "warm_median_seconds": 0.01795320096425712,
+   "warm_min_seconds": 0.0178458119626157
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.04049470304744318,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 869769,
+    "scans": 18,
+    "state_bytes": 999817,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 35894232
+   },
+   "samples_seconds": [
+    0.04049470304744318,
+    0.0392970250104554,
+    0.03928458702284843,
+    0.038811762002296746,
+    0.03904867096571252
+   ],
+   "warm_median_seconds": 0.03916662899428047,
+   "warm_min_seconds": 0.038811762002296746
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.023396911972668022,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5030208,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 999817,
+    "transfer_bytes": 5859656,
+    "words_visited": 0,
+    "workspace_bytes": 6885640
+   },
+   "samples_seconds": [
+    0.023396911972668022,
+    0.022404210991226137,
+    0.021432787005323917,
+    0.021811323007568717,
+    0.021356070006731898
+   ],
+   "warm_median_seconds": 0.021622055006446317,
+   "warm_min_seconds": 0.021356070006731898
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.04856471699895337,
+   "params": {
+    "groups": 256,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 869769,
+    "scans": 18,
+    "state_bytes": 999817,
+    "transfer_bytes": 35424216,
+    "words_visited": 56250,
+    "workspace_bytes": 24278406
+   },
+   "samples_seconds": [
+    0.04856471699895337,
+    0.04761014902032912,
+    0.04574175999732688,
+    0.04194238601485267,
+    0.04211196495452896
+   ],
+   "warm_median_seconds": 0.04392686247592792,
+   "warm_min_seconds": 0.04194238601485267
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00025389797519892454,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 17384515.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 75175496.0,
+    "shared_products": 42,
+    "states": 76815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.00025389797519892454
+   ],
+   "warm_median_seconds": 0.00025389797519892454,
+   "warm_min_seconds": 0.00025389797519892454
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.031125936016906053,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 8627189,
+    "decoded_bytes": 5026024,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2340099,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 2809275,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.031125936016906053,
+    0.03016259300056845,
+    0.029902977985329926,
+    0.03132036799797788,
+    0.03155750496080145
+   ],
+   "warm_median_seconds": 0.030741480499273166,
+   "warm_min_seconds": 0.029902977985329926
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.10027605999493971,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2009307,
+    "scans": 45,
+    "state_bytes": 2809275,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 36154502
+   },
+   "samples_seconds": [
+    0.10027605999493971,
+    0.09875264501897618,
+    0.09798093896824867,
+    0.09821615205146372,
+    0.09650920698186383
+   ],
+   "warm_median_seconds": 0.0980985455098562,
+   "warm_min_seconds": 0.09650920698186383
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.03823337401263416,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5031576,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 2809275,
+    "transfer_bytes": 7329744,
+    "words_visited": 0,
+    "workspace_bytes": 9143984
+   },
+   "samples_seconds": [
+    0.03823337401263416,
+    0.038687743013724685,
+    0.03978931804886088,
+    0.03942905500298366,
+    0.03845265001291409
+   ],
+   "warm_median_seconds": 0.03905839900835417,
+   "warm_min_seconds": 0.03845265001291409
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.12396712100598961,
+   "params": {
+    "groups": 256,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2009307,
+    "scans": 45,
+    "state_bytes": 2809275,
+    "transfer_bytes": 83807184,
+    "words_visited": 140625,
+    "workspace_bytes": 24538676
+   },
+   "samples_seconds": [
+    0.12396712100598961,
+    0.1106383019941859,
+    0.13040060899220407,
+    0.13701687898719683,
+    0.13435301696881652
+   ],
+   "warm_median_seconds": 0.1323768129805103,
+   "warm_min_seconds": 0.1106383019941859
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00032889394788071513,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "repeated@cuda",
+    "fused_total": 4272590.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6691128.0,
+    "shared_products": 0,
+    "states": 28672,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00032889394788071513
+   ],
+   "warm_median_seconds": 0.00032889394788071513,
+   "warm_min_seconds": 0.00032889394788071513
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.001634739979635924,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 11972,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 11972,
+    "rows_visited": 2025,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.001634739979635924,
+    0.0008553870138712227,
+    0.0009375939844176173,
+    0.0007908249972388148,
+    0.0008140190038830042
+   ],
+   "warm_median_seconds": 0.0008347030088771135,
+   "warm_min_seconds": 0.0007908249972388148
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.007498283986933529,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2025,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 18087641
+   },
+   "samples_seconds": [
+    0.007498283986933529,
+    0.0030730789876542985,
+    0.0031464340281672776,
+    0.003035428002476692,
+    0.0030569740338250995
+   ],
+   "warm_median_seconds": 0.003065026510739699,
+   "warm_min_seconds": 0.003035428002476692
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.00534859299659729,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5044568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 5667160,
+    "words_visited": 0,
+    "workspace_bytes": 6030020
+   },
+   "samples_seconds": [
+    0.00534859299659729,
+    0.0036406589788384736,
+    0.003712679957970977,
+    0.003700772998854518,
+    0.0036655329749919474
+   ],
+   "warm_median_seconds": 0.0036831529869232327,
+   "warm_min_seconds": 0.0036406589788384736
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.00844522996339947,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2025,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 8047688,
+    "words_visited": 9375,
+    "workspace_bytes": 26135329
+   },
+   "samples_seconds": [
+    0.00844522996339947,
+    0.007099956041201949,
+    0.006936254969332367,
+    0.007056962000206113,
+    0.006879613036289811
+   ],
+   "warm_median_seconds": 0.00699660848476924,
+   "warm_min_seconds": 0.006879613036289811
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003273650072515011,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 9409514.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20885820.0,
+    "shared_products": 6,
+    "states": 86016,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.0003273650072515011
+   ],
+   "warm_median_seconds": 0.0003273650072515011,
+   "warm_min_seconds": 0.0003273650072515011
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0029682250460609794,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 28430,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 20201,
+    "rows_visited": 2025,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.0029682250460609794,
+    0.002612459007650614,
+    0.0025566520052962005,
+    0.002505175012629479,
+    0.002525110961869359
+   ],
+   "warm_median_seconds": 0.0025408814835827798,
+   "warm_min_seconds": 0.002505175012629479
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.011062307981774211,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 4861,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 20629513
+   },
+   "samples_seconds": [
+    0.011062307981774211,
+    0.009874271985609084,
+    0.009710988961160183,
+    0.010209073952864856,
+    0.009746363968588412
+   ],
+   "warm_median_seconds": 0.009810317977098748,
+   "warm_min_seconds": 0.009710988961160183
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.006764488993212581,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045024,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 6912800,
+    "words_visited": 0,
+    "workspace_bytes": 7713572
+   },
+   "samples_seconds": [
+    0.006764488993212581,
+    0.0057329669944010675,
+    0.005342963966540992,
+    0.005467423005029559,
+    0.005785787012428045
+   ],
+   "warm_median_seconds": 0.005600194999715313,
+   "warm_min_seconds": 0.005342963966540992
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.02413332596188411,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 4861,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 24143064,
+    "words_visited": 28125,
+    "workspace_bytes": 28877201
+   },
+   "samples_seconds": [
+    0.02413332596188411,
+    0.022670027043204755,
+    0.022097630018834025,
+    0.023016603954602033,
+    0.022285804036073387
+   ],
+   "warm_median_seconds": 0.02247791553963907,
+   "warm_min_seconds": 0.022097630018834025
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003331580082885921,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 14664539.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 33149896.0,
+    "shared_products": 12,
+    "states": 454657,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0003331580082885921
+   ],
+   "warm_median_seconds": 0.0003331580082885921,
+   "warm_min_seconds": 0.0003331580082885921
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.010380130028352141,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 41120,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 23766,
+    "rows_visited": 2025,
+    "scans": 1,
+    "state_bytes": 2592623,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.010380130028352141,
+    0.009214696008712053,
+    0.007126373995561153,
+    0.006026278017088771,
+    0.00544343504589051
+   ],
+   "warm_median_seconds": 0.006576326006324962,
+   "warm_min_seconds": 0.00544343504589051
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.018475023040082306,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 8800,
+    "scans": 18,
+    "state_bytes": 2592623,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 48133400
+   },
+   "samples_seconds": [
+    0.018475023040082306,
+    0.017361846985295415,
+    0.01815205701859668,
+    0.0236228930298239,
+    0.018006386002525687
+   ],
+   "warm_median_seconds": 0.018079221510561183,
+   "warm_min_seconds": 0.017361846985295415
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.012295955966692418,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 2592623,
+    "transfer_bytes": 18316616,
+    "words_visited": 0,
+    "workspace_bytes": 19342600
+   },
+   "samples_seconds": [
+    0.012295955966692418,
+    0.00987033499404788,
+    0.009760254994034767,
+    0.010269219987094402,
+    0.009769928990863264
+   ],
+   "warm_median_seconds": 0.009820131992455572,
+   "warm_min_seconds": 0.009760254994034767
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.040244924020953476,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 8800,
+    "scans": 18,
+    "state_bytes": 2592623,
+    "transfer_bytes": 46965064,
+    "words_visited": 56250,
+    "workspace_bytes": 45686576
+   },
+   "samples_seconds": [
+    0.040244924020953476,
+    0.03895837697200477,
+    0.039130397024564445,
+    0.041788087983150035,
+    0.04100452899001539
+   ],
+   "warm_median_seconds": 0.040067463007289916,
+   "warm_min_seconds": 0.03895837697200477
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00035595998633652925,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 28651075.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 78884936.0,
+    "shared_products": 42,
+    "states": 1228815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.00035595998633652925
+   ],
+   "warm_median_seconds": 0.00035595998633652925,
+   "warm_min_seconds": 0.00035595998633652925
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.03146065602777526,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 87622,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 23766,
+    "rows_visited": 2025,
+    "scans": 1,
+    "state_bytes": 4730733,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.03146065602777526,
+    0.02691664098529145,
+    0.017364632978569716,
+    0.010243364027701318,
+    0.009149601042736322
+   ],
+   "warm_median_seconds": 0.013803998503135517,
+   "warm_min_seconds": 0.009149601042736322
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.04426042700652033,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 20325,
+    "scans": 45,
+    "state_bytes": 4730733,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 52202950
+   },
+   "samples_seconds": [
+    0.04426042700652033,
+    0.04405219800537452,
+    0.042986990010831505,
+    0.04439845198066905,
+    0.0427215569652617
+   ],
+   "warm_median_seconds": 0.04351959400810301,
+   "warm_min_seconds": 0.0427215569652617
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.021153567009605467,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5046936,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 4730733,
+    "transfer_bytes": 41812944,
+    "words_visited": 0,
+    "workspace_bytes": 43627184
+   },
+   "samples_seconds": [
+    0.021153567009605467,
+    0.02000650903210044,
+    0.02407414303161204,
+    0.03219846199499443,
+    0.029889277007896453
+   ],
+   "warm_median_seconds": 0.026981710019754246,
+   "warm_min_seconds": 0.02000650903210044
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.12233249598648399,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.01
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 20325,
+    "scans": 45,
+    "state_bytes": 4730733,
+    "transfer_bytes": 115572768,
+    "words_visited": 140625,
+    "workspace_bytes": 49756126
+   },
+   "samples_seconds": [
+    0.12233249598648399,
+    0.09618761402089149,
+    0.0970535579835996,
+    0.09485135501017794,
+    0.09544800501316786
+   ],
+   "warm_median_seconds": 0.09581780951702967,
+   "warm_min_seconds": 0.09485135501017794
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003557359450496733,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "repeated@cuda",
+    "fused_total": 4272590.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6691128.0,
+    "shared_products": 0,
+    "states": 28672,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.0003557359450496733
+   ],
+   "warm_median_seconds": 0.0003557359450496733,
+   "warm_min_seconds": 0.0003557359450496733
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.0013391089742071927,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 117654,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 117654,
+    "rows_visited": 19933,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.0013391089742071927,
+    0.001244531013071537,
+    0.0012253489694558084,
+    0.0012218750198371708,
+    0.0012254060129635036
+   ],
+   "warm_median_seconds": 0.001225377491209656,
+   "warm_min_seconds": 0.0012218750198371708
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.004800063034053892,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19933,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 18087641
+   },
+   "samples_seconds": [
+    0.004800063034053892,
+    0.0043280700338073075,
+    0.004465973004698753,
+    0.004651774012017995,
+    0.004480694013182074
+   ],
+   "warm_median_seconds": 0.004473333508940414,
+   "warm_min_seconds": 0.0043280700338073075
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.004658958001527935,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5044568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 5667160,
+    "words_visited": 0,
+    "workspace_bytes": 6030020
+   },
+   "samples_seconds": [
+    0.004658958001527935,
+    0.003971274010837078,
+    0.004280678986106068,
+    0.003927834972273558,
+    0.0039176419959403574
+   ],
+   "warm_median_seconds": 0.003949554491555318,
+   "warm_min_seconds": 0.0039176419959403574
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.009249369031749666,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 19933,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 8047688,
+    "words_visited": 9375,
+    "workspace_bytes": 26135329
+   },
+   "samples_seconds": [
+    0.009249369031749666,
+    0.00912626797799021,
+    0.008504614001139998,
+    0.008408332010731101,
+    0.008653240976855159
+   ],
+   "warm_median_seconds": 0.008578927488997579,
+   "warm_min_seconds": 0.008408332010731101
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.011239041981752962,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.011239041981752962,
+    0.010643696994520724,
+    0.01055701298173517,
+    0.010466379986610264,
+    0.01098754903068766
+   ],
+   "warm_median_seconds": 0.010600354988127947,
+   "warm_min_seconds": 0.010466379986610264
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00040145497769117355,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 9409514.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20885820.0,
+    "shared_products": 6,
+    "states": 86016,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.00040145497769117355
+   ],
+   "warm_median_seconds": 0.00040145497769117355,
+   "warm_min_seconds": 0.00040145497769117355
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.004119617980904877,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 278898,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 198276,
+    "rows_visited": 19933,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.004119617980904877,
+    0.003715027996804565,
+    0.0037345829769037664,
+    0.003730975033249706,
+    0.00368014897685498
+   ],
+   "warm_median_seconds": 0.0037230015150271356,
+   "warm_min_seconds": 0.00368014897685498
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.014765597006771713,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 47785,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 20629513
+   },
+   "samples_seconds": [
+    0.014765597006771713,
+    0.014074236969463527,
+    0.013926266983617097,
+    0.013801480003166944,
+    0.014548239996656775
+   ],
+   "warm_median_seconds": 0.014000251976540312,
+   "warm_min_seconds": 0.013801480003166944
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.009714648011140525,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045024,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 6912800,
+    "words_visited": 0,
+    "workspace_bytes": 7713572
+   },
+   "samples_seconds": [
+    0.009714648011140525,
+    0.006987477943766862,
+    0.0066417010384611785,
+    0.006451416003983468,
+    0.006994399009272456
+   ],
+   "warm_median_seconds": 0.00681458949111402,
+   "warm_min_seconds": 0.006451416003983468
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.026985206990502775,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 47785,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 24143064,
+    "words_visited": 28125,
+    "workspace_bytes": 28877201
+   },
+   "samples_seconds": [
+    0.026985206990502775,
+    0.025798988004680723,
+    0.027216580987442285,
+    0.02901414199732244,
+    0.027220760006457567
+   ],
+   "warm_median_seconds": 0.027218670496949926,
+   "warm_min_seconds": 0.025798988004680723
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.0309760719537735,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.0309760719537735,
+    0.031999240978620946,
+    0.03343348001362756,
+    0.039411722973454744,
+    0.03178369998931885
+   ],
+   "warm_median_seconds": 0.03271636049612425,
+   "warm_min_seconds": 0.03178369998931885
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0004025649977847934,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 14664539.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 33149896.0,
+    "shared_products": 12,
+    "states": 454657,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.0004025649977847934
+   ],
+   "warm_median_seconds": 0.0004025649977847934,
+   "warm_min_seconds": 0.0004025649977847934
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.010843306954484433,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 403493,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 233364,
+    "rows_visited": 19933,
+    "scans": 1,
+    "state_bytes": 2914514,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.010843306954484433,
+    0.007865590043365955,
+    0.007591118977870792,
+    0.007566642016172409,
+    0.00807953905314207
+   ],
+   "warm_median_seconds": 0.007728354510618374,
+   "warm_min_seconds": 0.007566642016172409
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.02653778501553461,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 86533,
+    "scans": 18,
+    "state_bytes": 2914514,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 48133400
+   },
+   "samples_seconds": [
+    0.02653778501553461,
+    0.025290643970947713,
+    0.02544073003809899,
+    0.024751713033765554,
+    0.02476909599499777
+   ],
+   "warm_median_seconds": 0.02502986998297274,
+   "warm_min_seconds": 0.024751713033765554
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.0171251569991,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 2914514,
+    "transfer_bytes": 18316616,
+    "words_visited": 0,
+    "workspace_bytes": 19342600
+   },
+   "samples_seconds": [
+    0.0171251569991,
+    0.016308346996083856,
+    0.016417705977801234,
+    0.016855994996149093,
+    0.015717700007371604
+   ],
+   "warm_median_seconds": 0.016363026486942545,
+   "warm_min_seconds": 0.015717700007371604
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.059466652979608625,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 86533,
+    "scans": 18,
+    "state_bytes": 2914514,
+    "transfer_bytes": 47292613,
+    "words_visited": 56250,
+    "workspace_bytes": 45686576
+   },
+   "samples_seconds": [
+    0.059466652979608625,
+    0.05969154502963647,
+    0.05505883600562811,
+    0.06664717401145026,
+    0.057102348015177995
+   ],
+   "warm_median_seconds": 0.058396946522407234,
+   "warm_min_seconds": 0.05505883600562811
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.04779953300021589,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.04779953300021589,
+    0.050433331984095275,
+    0.04888369800755754,
+    0.050523859972599894,
+    0.059212777006905526
+   ],
+   "warm_median_seconds": 0.050478595978347585,
+   "warm_min_seconds": 0.04888369800755754
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00044640799751505256,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 28651075.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 78884936.0,
+    "shared_products": 42,
+    "states": 1228815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.00044640799751505256
+   ],
+   "warm_median_seconds": 0.00044640799751505256,
+   "warm_min_seconds": 0.00044640799751505256
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.021908397029619664,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 859461,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 233364,
+    "rows_visited": 19933,
+    "scans": 1,
+    "state_bytes": 5696406,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.021908397029619664,
+    0.018280010030139238,
+    0.019005628011655062,
+    0.017057753051631153,
+    0.01835970499087125
+   ],
+   "warm_median_seconds": 0.018319857510505244,
+   "warm_min_seconds": 0.017057753051631153
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.06275820301380008,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 199800,
+    "scans": 45,
+    "state_bytes": 5696406,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 52202950
+   },
+   "samples_seconds": [
+    0.06275820301380008,
+    0.0607807679916732,
+    0.06088116700993851,
+    0.060867755964864045,
+    0.06161996303126216
+   ],
+   "warm_median_seconds": 0.06087446148740128,
+   "warm_min_seconds": 0.0607807679916732
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.036919515987392515,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5046936,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 5696406,
+    "transfer_bytes": 41812944,
+    "words_visited": 0,
+    "workspace_bytes": 43627184
+   },
+   "samples_seconds": [
+    0.036919515987392515,
+    0.035546016006264836,
+    0.039741372980643064,
+    0.0357950379839167,
+    0.03527399699669331
+   ],
+   "warm_median_seconds": 0.03567052699509077,
+   "warm_min_seconds": 0.03527399699669331
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.13410579704213887,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 199800,
+    "scans": 45,
+    "state_bytes": 5696406,
+    "transfer_bytes": 116555415,
+    "words_visited": 140625,
+    "workspace_bytes": 49756126
+   },
+   "samples_seconds": [
+    0.13410579704213887,
+    0.11716920300386846,
+    0.11101732199313119,
+    0.11974121496314183,
+    0.1177580010262318
+   ],
+   "warm_median_seconds": 0.11746360201505013,
+   "warm_min_seconds": 0.11101732199313119
+  },
+  {
+   "backend": "duckdb",
+   "case": "independent queries",
+   "first_seconds": 0.09965721203479916,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 0.1
+   },
+   "phase": "first+warm",
+   "samples_seconds": [
+    0.09965721203479916,
+    0.11357618699548766,
+    0.09671507397433743,
+    0.11186493403511122,
+    0.09742918802658096
+   ],
+   "warm_median_seconds": 0.10464706103084609,
+   "warm_min_seconds": 0.09671507397433743
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.00042809598380699754,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "repeated@cuda",
+    "fused_total": 4272590.0,
+    "merged_nodes": 0,
+    "nodes": 1,
+    "products": 6,
+    "repeated_total": 6691128.0,
+    "shared_products": 0,
+    "states": 28672,
+    "term_rows": 6
+   },
+   "samples_seconds": [
+    0.00042809598380699754
+   ],
+   "warm_median_seconds": 0.00042809598380699754,
+   "warm_min_seconds": 0.00042809598380699754
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.005244959029369056,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 1180240,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1180240,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 236
+   },
+   "samples_seconds": [
+    0.005244959029369056,
+    0.005038339004386216,
+    0.004919152008369565,
+    0.004870273056440055,
+    0.0048152010422199965
+   ],
+   "warm_median_seconds": 0.00489471253240481,
+   "warm_min_seconds": 0.0048152010422199965
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.00798419798957184,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 0,
+    "words_visited": 9375,
+    "workspace_bytes": 18087641
+   },
+   "samples_seconds": [
+    0.00798419798957184,
+    0.007246118038892746,
+    0.007455434009898454,
+    0.0072018729988485575,
+    0.006946246023289859
+   ],
+   "warm_median_seconds": 0.007223995518870652,
+   "warm_min_seconds": 0.006946246023289859
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.013142776035238057,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5044568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 622592,
+    "transfer_bytes": 5667160,
+    "words_visited": 0,
+    "workspace_bytes": 6030020
+   },
+   "samples_seconds": [
+    0.013142776035238057,
+    0.009557490993756801,
+    0.009010418027173728,
+    0.009287927008699626,
+    0.009379351045936346
+   ],
+   "warm_median_seconds": 0.009333639027317986,
+   "warm_min_seconds": 0.009010418027173728
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.010627876035869122,
+   "params": {
+    "groups": 4096,
+    "outputs": 1,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 7200000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 2,
+    "native_calls": 3,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 200000,
+    "scans": 3,
+    "state_bytes": 622592,
+    "transfer_bytes": 8047688,
+    "words_visited": 9375,
+    "workspace_bytes": 26135329
+   },
+   "samples_seconds": [
+    0.010627876035869122,
+    0.010443195002153516,
+    0.010796024987939745,
+    0.010632084973622113,
+    0.010346608003601432
+   ],
+   "warm_median_seconds": 0.010537639987887815,
+   "warm_min_seconds": 0.010346608003601432
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003555190050974488,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 9409514.0,
+    "merged_nodes": 0,
+    "nodes": 5,
+    "products": 12,
+    "repeated_total": 20885820.0,
+    "shared_products": 6,
+    "states": 86016,
+    "term_rows": 18
+   },
+   "samples_seconds": [
+    0.0003555190050974488
+   ],
+   "warm_median_seconds": 0.0003555190050974488,
+   "warm_min_seconds": 0.0003555190050974488
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.013071169960312545,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 2802556,
+    "decoded_bytes": 5025000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 1991398,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 468
+   },
+   "samples_seconds": [
+    0.013071169960312545,
+    0.01274799497332424,
+    0.013434285996481776,
+    0.012885404983535409,
+    0.012782259029336274
+   ],
+   "warm_median_seconds": 0.012833832006435841,
+   "warm_min_seconds": 0.01274799497332424
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.02520937699591741,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 480285,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 0,
+    "words_visited": 28125,
+    "workspace_bytes": 20629513
+   },
+   "samples_seconds": [
+    0.02520937699591741,
+    0.024867916014045477,
+    0.025160534016322345,
+    0.025001828034874052,
+    0.024355122994165868
+   ],
+   "warm_median_seconds": 0.024934872024459764,
+   "warm_min_seconds": 0.024355122994165868
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.02128876798087731,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045024,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 1867776,
+    "transfer_bytes": 6912800,
+    "words_visited": 0,
+    "workspace_bytes": 7713572
+   },
+   "samples_seconds": [
+    0.02128876798087731,
+    0.021572790981736034,
+    0.021545655035879463,
+    0.021319367981050164,
+    0.021052262978628278
+   ],
+   "warm_median_seconds": 0.021432511508464813,
+   "warm_min_seconds": 0.021052262978628278
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.04180678800912574,
+   "params": {
+    "groups": 4096,
+    "outputs": 3,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 21600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 7,
+    "native_calls": 9,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 480285,
+    "scans": 9,
+    "state_bytes": 1867776,
+    "transfer_bytes": 24143064,
+    "words_visited": 28125,
+    "workspace_bytes": 28877201
+   },
+   "samples_seconds": [
+    0.04180678800912574,
+    0.034051413007546216,
+    0.0282802659785375,
+    0.02936721104197204,
+    0.02963988302508369
+   ],
+   "warm_median_seconds": 0.029503547033527866,
+   "warm_min_seconds": 0.0282802659785375
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.000374850002117455,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 14664539.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 33149896.0,
+    "shared_products": 12,
+    "states": 454657,
+    "term_rows": 24
+   },
+   "samples_seconds": [
+    0.000374850002117455
+   ],
+   "warm_median_seconds": 0.000374850002117455,
+   "warm_min_seconds": 0.000374850002117455
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.031359383021481335,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 4053182,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2340720,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 5792099,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 552
+   },
+   "samples_seconds": [
+    0.031359383021481335,
+    0.026944736018776894,
+    0.027856041968334466,
+    0.028474262973759323,
+    0.026753460988402367
+   ],
+   "warm_median_seconds": 0.02740038899355568,
+   "warm_min_seconds": 0.026753460988402367
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.046561629977077246,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 870168,
+    "scans": 18,
+    "state_bytes": 5792099,
+    "transfer_bytes": 0,
+    "words_visited": 56250,
+    "workspace_bytes": 48133400
+   },
+   "samples_seconds": [
+    0.046561629977077246,
+    0.04471905395621434,
+    0.04521609301446006,
+    0.04523295402759686,
+    0.044612638012040406
+   ],
+   "warm_median_seconds": 0.0449675734853372,
+   "warm_min_seconds": 0.044612638012040406
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.03463291999651119,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5045568,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 5792099,
+    "transfer_bytes": 18316616,
+    "words_visited": 0,
+    "workspace_bytes": 19342600
+   },
+   "samples_seconds": [
+    0.03463291999651119,
+    0.032983110984787345,
+    0.033190813031978905,
+    0.033161948958877474,
+    0.028004279010929167
+   ],
+   "warm_median_seconds": 0.03307252997183241,
+   "warm_min_seconds": 0.028004279010929167
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.056128946016542614,
+   "params": {
+    "groups": 4096,
+    "outputs": 6,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 32400000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 15,
+    "native_calls": 18,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 870168,
+    "scans": 18,
+    "state_bytes": 5792099,
+    "transfer_bytes": 50624314,
+    "words_visited": 56250,
+    "workspace_bytes": 45686576
+   },
+   "samples_seconds": [
+    0.056128946016542614,
+    0.05395382602000609,
+    0.05377723398851231,
+    0.06267608399502933,
+    0.06221471802564338
+   ],
+   "warm_median_seconds": 0.058084272022824734,
+   "warm_min_seconds": 0.05377723398851231
+  },
+  {
+   "backend": "cpu",
+   "case": "construction",
+   "first_seconds": 0.0003730740281753242,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "build",
+   "result": {
+    "chosen": "fused@cuda",
+    "fused_total": 28651075.0,
+    "merged_nodes": 0,
+    "nodes": 8,
+    "products": 12,
+    "repeated_total": 78884936.0,
+    "shared_products": 42,
+    "states": 1228815,
+    "term_rows": 54
+   },
+   "samples_seconds": [
+    0.0003730740281753242
+   ],
+   "warm_median_seconds": 0.0003730740281753242,
+   "warm_min_seconds": 0.0003730740281753242
+  },
+  {
+   "backend": "cpu",
+   "case": "fused",
+   "first_seconds": 0.08749211899703369,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 8638586,
+    "decoded_bytes": 5041384,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 2340720,
+    "rows_visited": 200000,
+    "scans": 1,
+    "state_bytes": 14329161,
+    "transfer_bytes": 0,
+    "words_visited": 3125,
+    "workspace_bytes": 660
+   },
+   "samples_seconds": [
+    0.08749211899703369,
+    0.08378651301609352,
+    0.08392505400115624,
+    0.08020558697171509,
+    0.08364487800281495
+   ],
+   "warm_median_seconds": 0.08371569550945424,
+   "warm_min_seconds": 0.08020558697171509
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated",
+   "first_seconds": 0.10835236898856238,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cpu",
+    "items": 0,
+    "kernels": 0,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2010504,
+    "scans": 45,
+    "state_bytes": 14329161,
+    "transfer_bytes": 0,
+    "words_visited": 140625,
+    "workspace_bytes": 52202950
+   },
+   "samples_seconds": [
+    0.10835236898856238,
+    0.1075441800057888,
+    0.10709826298989356,
+    0.1066395069938153,
+    0.1060867760097608
+   ],
+   "warm_median_seconds": 0.10686888499185443,
+   "warm_min_seconds": 0.1060867760097608
+  },
+  {
+   "backend": "cuda",
+   "case": "fused",
+   "first_seconds": 0.06889242399483919,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 5046936,
+    "device": "cuda",
+    "items": 782,
+    "kernels": 1,
+    "native_calls": 1,
+    "plan": "fused",
+    "products": 0,
+    "rows_visited": 0,
+    "scans": 1,
+    "state_bytes": 14329161,
+    "transfer_bytes": 41812944,
+    "words_visited": 0,
+    "workspace_bytes": 43627184
+   },
+   "samples_seconds": [
+    0.06889242399483919,
+    0.0667423929553479,
+    0.05850618099793792,
+    0.06238606001716107,
+    0.05741649097763002
+   ],
+   "warm_median_seconds": 0.060446120507549495,
+   "warm_min_seconds": 0.05741649097763002
+  },
+  {
+   "backend": "cuda",
+   "case": "repeated",
+   "first_seconds": 0.12454823596635833,
+   "params": {
+    "groups": 4096,
+    "outputs": 15,
+    "rows": 200000,
+    "selectivity": 1.0
+   },
+   "phase": "first+warm",
+   "result": {
+    "accumulations": 0,
+    "decoded_bytes": 75600000,
+    "device": "cuda",
+    "items": 0,
+    "kernels": 39,
+    "native_calls": 45,
+    "plan": "repeated",
+    "products": 0,
+    "rows_visited": 2010504,
+    "scans": 45,
+    "state_bytes": 14329161,
+    "transfer_bytes": 126550518,
+    "words_visited": 140625,
+    "workspace_bytes": 49756126
+   },
+   "samples_seconds": [
+    0.12454823596635833,
+    0.12754248298006132,
+    0.13642628700472414,
+    0.1378814090276137,
+    0.13632301200414076
+   ],
+   "warm_median_seconds": 0.13637464950443245,
+   "warm_min_seconds": 0.12754248298006132
+  },
+  {
+   "backend": "cpu",
+   "case": "fused at the states limit",
+   "first_seconds": 0.0001480600330978632,
+   "params": {
+    "need": 1345,
+    "resource": "states"
+   },
+   "phase": "limit",
+   "result": 4,
+   "samples_seconds": [
+    0.0001480600330978632
+   ],
+   "warm_median_seconds": 0.0001480600330978632,
+   "warm_min_seconds": 0.0001480600330978632
+  },
+  {
+   "backend": "cpu",
+   "case": "fused one state past the limit",
+   "limit": 1344,
+   "message": "fused reduction (fused@cpu): needs 1345 states, budget 1344",
+   "need": 1345,
+   "params": {
+    "limit": 1344,
+    "resource": "states"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 2.251600380986929e-05,
+   "refused": true,
+   "resource": "states"
+  },
+  {
+   "backend": "cpu",
+   "case": "fused at the bytes limit",
+   "first_seconds": 0.00013137300265952945,
+   "params": {
+    "need": 65366,
+    "resource": "bytes"
+   },
+   "phase": "limit",
+   "result": 4,
+   "samples_seconds": [
+    0.00013137300265952945
+   ],
+   "warm_median_seconds": 0.00013137300265952945,
+   "warm_min_seconds": 0.00013137300265952945
+  },
+  {
+   "backend": "cpu",
+   "case": "fused one byte past the limit",
+   "limit": 65365,
+   "message": "fused reduction (fused@cpu): needs 65366 bytes, budget 65365",
+   "need": 65366,
+   "params": {
+    "limit": 65365,
+    "resource": "bytes"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.2982985936105251e-05,
+   "refused": true,
+   "resource": "bytes"
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated at the states limit",
+   "first_seconds": 0.0003862240118905902,
+   "params": {
+    "need": 1729,
+    "resource": "states"
+   },
+   "phase": "limit",
+   "result": 4,
+   "samples_seconds": [
+    0.0003862240118905902
+   ],
+   "warm_median_seconds": 0.0003862240118905902,
+   "warm_min_seconds": 0.0003862240118905902
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated one state past the limit",
+   "limit": 1728,
+   "message": "fused reduction (repeated@cpu): needs 1729 states, budget 1728",
+   "need": 1729,
+   "params": {
+    "limit": 1728,
+    "resource": "states"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.1947995517402887e-05,
+   "refused": true,
+   "resource": "states"
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated at the bytes limit",
+   "first_seconds": 0.0003730829921551049,
+   "params": {
+    "need": 529035,
+    "resource": "bytes"
+   },
+   "phase": "limit",
+   "result": 4,
+   "samples_seconds": [
+    0.0003730829921551049
+   ],
+   "warm_median_seconds": 0.0003730829921551049,
+   "warm_min_seconds": 0.0003730829921551049
+  },
+  {
+   "backend": "cpu",
+   "case": "repeated one byte past the limit",
+   "limit": 529034,
+   "message": "fused reduction (repeated@cpu): needs 529035 bytes, budget 529034",
+   "need": 529035,
+   "params": {
+    "limit": 529034,
+    "resource": "bytes"
+   },
+   "phase": "refusal",
+   "refusal_seconds": 1.775601413100958e-05,
+   "refused": true,
+   "resource": "bytes"
+  }
+ ],
+ "seconds": 20.134603736980353,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "fused states",
+   "largest_admitted": {
+    "states": 1345
+   },
+   "smallest_refused": {
+    "states": 1344
+   }
+  },
+  {
+   "grid": "fused bytes",
+   "largest_admitted": {
+    "bytes": 65366
+   },
+   "smallest_refused": {
+    "bytes": 65365
+   }
+  },
+  {
+   "grid": "repeated states",
+   "largest_admitted": {
+    "states": 1729
+   },
+   "smallest_refused": {
+    "states": 1728
+   }
+  },
+  {
+   "grid": "repeated bytes",
+   "largest_admitted": {
+    "bytes": 529035
+   },
+   "smallest_refused": {
+    "bytes": 529034
+   }
+  }
+ ]
+}

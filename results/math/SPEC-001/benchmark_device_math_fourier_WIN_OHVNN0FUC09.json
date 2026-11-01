@@ -1,0 +1,1405 @@
+{
+ "argv": [
+  "--capability",
+  "SPEC-001",
+  "--out",
+  "/home/brian/torbles_math/results/math/SPEC-001/benchmark_device_math_fourier_WIN_OHVNN0FUC09.json",
+  "--device"
+ ],
+ "capability": "SPEC-001",
+ "device": {
+  "emulated": false,
+  "library": "/home/brian/torbles_math/torbles/libmathgpu.so",
+  "name": "NVIDIA GeForce RTX 5090 Laptop GPU (compute 12.0)"
+ },
+ "device_run": true,
+ "machine": {
+  "commit": "15056b1fc92e0921a8623ce2f6a128a3df1d8c90",
+  "cores": 24,
+  "cpu": "Intel(R) Core(TM) Ultra 9 290HX Plus",
+  "dirty_worktree": true,
+  "host": "WIN-OHVNN0FUC09",
+  "libraries": {
+   "torbles/libalg.so": "704e33ee0e8a80e286a98ca4fb1e322f2680c14c3ce1ecaa07df6099ef703894",
+   "torbles/libgpu.so": "507a9c6d40418cb8b8d8e102fea2745690b67632de75d8a7f4a427fd12598b02",
+   "torbles/libgpu_emu.so": "6ece6ca552649f0b81aad73603fa565db3f4949da58fac53ecf8e3a13bcea35d",
+   "torbles/libmathgpu.so": "3abc0d55d1c9daf074f070ac6b6db090736686f39e5b0d033fb61682b039e349",
+   "torbles/libmathgpu_emu.so": "584a36bd55293cec9c5a87d53b7d40a5a1077786d2cae972729e82a52a062694"
+  },
+  "numpy": "2.5.4",
+  "python": "3.14.4",
+  "when": "2026-11-01T18:13:09+00:00"
+ },
+ "notes": [
+  "direct numpy evaluation not run for 10000 requests x 8 frequencies (8.00e+08 complex exponentials); not extrapolated",
+  "direct numpy evaluation not run for 10000 requests x 32 frequencies (3.20e+09 complex exponentials); not extrapolated",
+  "CUDA is timed only with --device; actions, derivatives and the Walsh inverse run on the CPU. Total wall time 8.3 s."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.008041595981922,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.008041595981922,
+    0.008740780991502106,
+    0.008481224009301513
+   ],
+   "warm_median_seconds": 0.00861100250040181,
+   "warm_min_seconds": 0.008481224009301513
+  },
+  {
+   "backend": "cuda",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.08044457901269197,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 2.2737367544323206e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.08044457901269197,
+    0.0024160530301742256,
+    0.002101174963172525
+   ],
+   "warm_median_seconds": 0.0022586139966733754,
+   "warm_min_seconds": 0.002101174963172525
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.0003653560415841639,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 1,
+   "samples_seconds": [
+    0.0003653560415841639,
+    0.0002348489942960441,
+    0.0002131420187652111
+   ],
+   "warm_median_seconds": 0.0002239955065306276,
+   "warm_min_seconds": 0.0002131420187652111
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 3.188702976331115e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    3.188702976331115e-05,
+    1.8396996892988682e-05,
+    1.4161982107907534e-05,
+    1.5794008504599333e-05,
+    1.1036987416446209e-05
+   ],
+   "warm_median_seconds": 1.4977995306253433e-05,
+   "warm_min_seconds": 1.1036987416446209e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.007728603028226644,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007728603028226644,
+    0.007791916956193745,
+    0.007711308018770069
+   ],
+   "warm_median_seconds": 0.007751612487481907,
+   "warm_min_seconds": 0.007711308018770069
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 3.7184974644333124e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    3.7184974644333124e-05,
+    1.7870974261313677e-05,
+    1.2753007467836142e-05
+   ],
+   "warm_median_seconds": 1.531199086457491e-05,
+   "warm_min_seconds": 1.2753007467836142e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 1.4142016880214214e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.4142016880214214e-05,
+    1.0285992175340652e-05,
+    8.144008461385965e-06
+   ],
+   "warm_median_seconds": 9.215000318363309e-06,
+   "warm_min_seconds": 8.144008461385965e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.0002600779989734292,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 1,
+   "samples_seconds": [
+    0.0002600779989734292,
+    0.00021225702948868275
+   ],
+   "warm_median_seconds": 0.00021225702948868275,
+   "warm_min_seconds": 0.00021225702948868275
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.00019633100600913167,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    0.00019633100600913167,
+    0.00016839802265167236,
+    0.00016003998462110758
+   ],
+   "warm_median_seconds": 0.00016421900363638997,
+   "warm_min_seconds": 0.00016003998462110758
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 6.649800343438983e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    6.649800343438983e-05,
+    6.244995165616274e-05,
+    6.25120010226965e-05
+   ],
+   "warm_median_seconds": 6.248097633942962e-05,
+   "warm_min_seconds": 6.244995165616274e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.02102021803148091,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 100,
+   "samples_seconds": [
+    0.02102021803148091,
+    0.021323577966541052
+   ],
+   "warm_median_seconds": 0.021323577966541052,
+   "warm_min_seconds": 0.021323577966541052
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.016340712027158588,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.1368683772161603e-12
+   },
+   "samples_seconds": [
+    0.016340712027158588,
+    0.016435035970062017
+   ],
+   "warm_median_seconds": 0.016435035970062017,
+   "warm_min_seconds": 0.016435035970062017
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.005465158959850669,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005465158959850669,
+    0.007921645999886096,
+    0.005280572979245335
+   ],
+   "warm_median_seconds": 0.006601109489565715,
+   "warm_min_seconds": 0.005280572979245335
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 2.177338891022373,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 1,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 10000,
+   "samples_seconds": [
+    2.177338891022373
+   ],
+   "warm_median_seconds": 2.177338891022373,
+   "warm_min_seconds": 2.177338891022373
+  },
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.061989701993297786,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.061989701993297786,
+    0.06070997699862346,
+    0.060956004017498344
+   ],
+   "warm_median_seconds": 0.0608329905080609,
+   "warm_min_seconds": 0.06070997699862346
+  },
+  {
+   "backend": "cuda",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.002383848011959344,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 4.547473508864641e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.002383848011959344,
+    0.002044372959062457,
+    0.0021676589967682958
+   ],
+   "warm_median_seconds": 0.0021060159779153764,
+   "warm_min_seconds": 0.002044372959062457
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.0018351099570281804,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 8,
+   "samples_seconds": [
+    0.0018351099570281804,
+    0.00168424699222669,
+    0.00166229996830225
+   ],
+   "warm_median_seconds": 0.00167327348026447,
+   "warm_min_seconds": 0.00166229996830225
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 7.223698776215315e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    7.223698776215315e-05,
+    2.704199869185686e-05,
+    1.8416030798107386e-05,
+    1.4418968930840492e-05,
+    1.4272984117269516e-05
+   ],
+   "warm_median_seconds": 1.641749986447394e-05,
+   "warm_min_seconds": 1.4272984117269516e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.007727992022410035,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007727992022410035,
+    0.0077219639788381755,
+    0.007865782012231648
+   ],
+   "warm_median_seconds": 0.007793872995534912,
+   "warm_min_seconds": 0.0077219639788381755
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 9.034102549776435e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 1.8189894035458565e-12
+   },
+   "samples_seconds": [
+    9.034102549776435e-05,
+    2.774101449176669e-05,
+    1.8719991203397512e-05
+   ],
+   "warm_median_seconds": 2.3230502847582102e-05,
+   "warm_min_seconds": 1.8719991203397512e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 1.5232013538479805e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.5232013538479805e-05,
+    9.954965207725763e-06,
+    9.423994924873114e-06
+   ],
+   "warm_median_seconds": 9.689480066299438e-06,
+   "warm_min_seconds": 9.423994924873114e-06
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.0017839049687609076,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 8,
+   "samples_seconds": [
+    0.0017839049687609076,
+    0.0017405080143362284
+   ],
+   "warm_median_seconds": 0.0017405080143362284,
+   "warm_min_seconds": 0.0017405080143362284
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.0009141579503193498,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 2.2737367544323206e-12
+   },
+   "samples_seconds": [
+    0.0009141579503193498,
+    0.0009065489866770804,
+    0.0009315710049122572
+   ],
+   "warm_median_seconds": 0.0009190599957946688,
+   "warm_min_seconds": 0.0009065489866770804
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 9.624299127608538e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    9.624299127608538e-05,
+    8.740398334339261e-05,
+    9.670003782957792e-05
+   ],
+   "warm_median_seconds": 9.205201058648527e-05,
+   "warm_min_seconds": 8.740398334339261e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.17080962599720806,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 800,
+   "samples_seconds": [
+    0.17080962599720806,
+    0.1688930350355804
+   ],
+   "warm_median_seconds": 0.1688930350355804,
+   "warm_min_seconds": 0.1688930350355804
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.08664504397893324,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 2.2737367544323206e-12
+   },
+   "samples_seconds": [
+    0.08664504397893324,
+    0.0868548639700748
+   ],
+   "warm_median_seconds": 0.0868548639700748,
+   "warm_min_seconds": 0.0868548639700748
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.008586190000642091,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 8,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008586190000642091,
+    0.008667987945955247,
+    0.008484290970955044
+   ],
+   "warm_median_seconds": 0.008576139458455145,
+   "warm_min_seconds": 0.008484290970955044
+  },
+  {
+   "backend": "cpu",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.24283427104819566,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.24283427104819566,
+    0.24305041099432856,
+    0.24311997002223507
+   ],
+   "warm_median_seconds": 0.2430851905082818,
+   "warm_min_seconds": 0.24305041099432856
+  },
+  {
+   "backend": "cuda",
+   "case": "new-frequency construction (basis build: scan, certified sums)",
+   "first_seconds": 0.0025770309730432928,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": {
+    "max_width": 9.094947017729282e-13,
+    "scale": 105
+   },
+   "samples_seconds": [
+    0.0025770309730432928,
+    0.002090680005494505,
+    0.0019503080402500927
+   ],
+   "warm_median_seconds": 0.002020494022872299,
+   "warm_min_seconds": 0.0019503080402500927
+  },
+  {
+   "backend": "numpy",
+   "case": "features (numpy float64, uncertified)",
+   "first_seconds": 0.0068545269896276295,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "result": 32,
+   "samples_seconds": [
+    0.0068545269896276295,
+    0.006661093037109822,
+    0.006661185005214065
+   ],
+   "warm_median_seconds": 0.006661139021161944,
+   "warm_min_seconds": 0.006661093037109822
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a request for a subset (hit, no scan)",
+   "first_seconds": 0.00010440300684422255,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00010440300684422255,
+    3.3706019166857004e-05,
+    2.662499900907278e-05,
+    2.3470958694815636e-05,
+    2.2716005332767963e-05
+   ],
+   "warm_median_seconds": 2.5047978851944208e-05,
+   "warm_min_seconds": 2.2716005332767963e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "retained basis: a new frequency (a new construction)",
+   "first_seconds": 0.007752912992145866,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "rows": 10000
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.007752912992145866,
+    0.007687344972509891,
+    0.0076595990103669465
+   ],
+   "warm_median_seconds": 0.007673471991438419,
+   "warm_min_seconds": 0.0076595990103669465
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 7.927202386781573e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    7.927202386781573e-05,
+    4.9351947382092476e-05,
+    4.502298543229699e-05
+   ],
+   "warm_median_seconds": 4.7187466407194734e-05,
+   "warm_min_seconds": 4.502298543229699e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 2.9059010557830334e-05,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    2.9059010557830334e-05,
+    1.607497688382864e-05,
+    1.3197015505284071e-05
+   ],
+   "warm_median_seconds": 1.4635996194556355e-05,
+   "warm_min_seconds": 1.3197015505284071e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.0068546009715646505,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 1,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 32,
+   "samples_seconds": [
+    0.0068546009715646505,
+    0.006853628030512482
+   ],
+   "warm_median_seconds": 0.006853628030512482,
+   "warm_min_seconds": 0.006853628030512482
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.003347580961417407,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    0.003347580961417407,
+    0.0032679279684089124,
+    0.0034441890311427414
+   ],
+   "warm_median_seconds": 0.003356058499775827,
+   "warm_min_seconds": 0.0032679279684089124
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.0003020470030605793,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0003020470030605793,
+    0.0001909190323203802,
+    0.00016388494987040758
+   ],
+   "warm_median_seconds": 0.0001774019910953939,
+   "warm_min_seconds": 0.00016388494987040758
+  },
+  {
+   "backend": "numpy",
+   "case": "direct evaluation (numpy, rescans the rows per request)",
+   "first_seconds": 0.6922416799934581,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 100,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": 3200,
+   "samples_seconds": [
+    0.6922416799934581,
+    0.6876399560132995
+   ],
+   "warm_median_seconds": 0.6876399560132995,
+   "warm_min_seconds": 0.6876399560132995
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis actions (translation and phase)",
+   "first_seconds": 0.3333109639934264,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "result": {
+    "max_width": 4.547473508864641e-12
+   },
+   "samples_seconds": [
+    0.3333109639934264,
+    0.33973857102682814
+   ],
+   "warm_median_seconds": 0.33973857102682814,
+   "warm_min_seconds": 0.33973857102682814
+  },
+  {
+   "backend": "cpu",
+   "case": "fixed-basis characteristic function F / W (no shift)",
+   "first_seconds": 0.016271535016130656,
+   "params": {
+    "dimensions": 2,
+    "frequencies": 32,
+    "requests": 10000,
+    "rows": 10000
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.016271535016130656,
+    0.017048799025360495,
+    0.018755832978058606
+   ],
+   "warm_median_seconds": 0.01790231600170955,
+   "warm_min_seconds": 0.017048799025360495
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.0005731010460294783,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005731010460294783,
+    0.000594751036260277
+   ],
+   "warm_median_seconds": 0.000594751036260277,
+   "warm_min_seconds": 0.000594751036260277
+  },
+  {
+   "backend": "cuda",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.0012189099797978997,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012189099797978997,
+    0.0009982020128518343
+   ],
+   "warm_median_seconds": 0.0009982020128518343,
+   "warm_min_seconds": 0.0009982020128518343
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 5.992001388221979e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 12,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 3,
+    "states": 8
+   },
+   "samples_seconds": [
+    5.992001388221979e-05,
+    1.6415026038885117e-05,
+    1.094199251383543e-05
+   ],
+   "warm_median_seconds": 1.3678509276360273e-05,
+   "warm_min_seconds": 1.094199251383543e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 9.589199908077717e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    9.589199908077717e-05,
+    2.0952022168785334e-05
+   ],
+   "warm_median_seconds": 2.0952022168785334e-05,
+   "warm_min_seconds": 2.0952022168785334e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.0001235899981111288,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 8
+   },
+   "samples_seconds": [
+    0.0001235899981111288,
+    2.21910304389894e-05,
+    1.3172975741326809e-05
+   ],
+   "warm_median_seconds": 1.7682003090158105e-05,
+   "warm_min_seconds": 1.3172975741326809e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 5.048804450780153e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 3,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    5.048804450780153e-05,
+    3.386900061741471e-05,
+    2.0442006643861532e-05
+   ],
+   "warm_median_seconds": 2.7155503630638123e-05,
+   "warm_min_seconds": 2.0442006643861532e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 2.5013985577970743e-05,
+   "params": {
+    "k": 3,
+    "rows": 2000,
+    "states": 8
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    2.5013985577970743e-05,
+    9.391980711370707e-06,
+    7.2480179369449615e-06
+   ],
+   "warm_median_seconds": 8.319999324157834e-06,
+   "warm_min_seconds": 7.2480179369449615e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.0051672609988600016,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0051672609988600016,
+    0.00502050801878795
+   ],
+   "warm_median_seconds": 0.00502050801878795,
+   "warm_min_seconds": 0.00502050801878795
+  },
+  {
+   "backend": "cuda",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.0012551139807328582,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012551139807328582,
+    0.0013189860037527978
+   ],
+   "warm_median_seconds": 0.0013189860037527978,
+   "warm_min_seconds": 0.0013189860037527978
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 7.28410086594522e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 192,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 6,
+    "states": 64
+   },
+   "samples_seconds": [
+    7.28410086594522e-05,
+    3.2058043871074915e-05,
+    2.639804733917117e-05
+   ],
+   "warm_median_seconds": 2.9228045605123043e-05,
+   "warm_min_seconds": 2.639804733917117e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 3.3938034903258085e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    3.3938034903258085e-05,
+    1.6761012375354767e-05
+   ],
+   "warm_median_seconds": 1.6761012375354767e-05,
+   "warm_min_seconds": 1.6761012375354767e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 4.931294824928045e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 64
+   },
+   "samples_seconds": [
+    4.931294824928045e-05,
+    1.4602032024413347e-05,
+    1.0373012628406286e-05
+   ],
+   "warm_median_seconds": 1.2487522326409817e-05,
+   "warm_min_seconds": 1.0373012628406286e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 5.803996464237571e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 6,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    5.803996464237571e-05,
+    5.320605123415589e-05,
+    4.422594793140888e-05
+   ],
+   "warm_median_seconds": 4.871599958278239e-05,
+   "warm_min_seconds": 4.422594793140888e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 2.2658961825072765e-05,
+   "params": {
+    "k": 6,
+    "rows": 2000,
+    "states": 64
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    2.2658961825072765e-05,
+    1.1775002349168062e-05,
+    1.0741001460701227e-05
+   ],
+   "warm_median_seconds": 1.1258001904934645e-05,
+   "warm_min_seconds": 1.0741001460701227e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.09160039498237893,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.09160039498237893,
+    0.09399865998420864
+   ],
+   "warm_median_seconds": 0.09399865998420864,
+   "warm_min_seconds": 0.09399865998420864
+  },
+  {
+   "backend": "cuda",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.006031204015016556,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.006031204015016556,
+    0.00598614098271355
+   ],
+   "warm_median_seconds": 0.00598614098271355,
+   "warm_min_seconds": 0.00598614098271355
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.0005296270246617496,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 5120,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 10,
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.0005296270246617496,
+    0.00045450800098478794,
+    0.0004515289911068976
+   ],
+   "warm_median_seconds": 0.00045301849604584277,
+   "warm_min_seconds": 0.0004515289911068976
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 4.864897346124053e-05,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    4.864897346124053e-05,
+    2.379500074312091e-05
+   ],
+   "warm_median_seconds": 2.379500074312091e-05,
+   "warm_min_seconds": 2.379500074312091e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.00011551199713721871,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 1024
+   },
+   "samples_seconds": [
+    0.00011551199713721871,
+    4.1649036575108767e-05,
+    3.41779668815434e-05
+   ],
+   "warm_median_seconds": 3.791350172832608e-05,
+   "warm_min_seconds": 3.41779668815434e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 0.0005001039826311171,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 10,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    0.0005001039826311171,
+    0.000504360010381788,
+    0.00048483198042958975
+   ],
+   "warm_median_seconds": 0.0004945959954056889,
+   "warm_min_seconds": 0.00048483198042958975
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 4.361197352409363e-05,
+   "params": {
+    "k": 10,
+    "rows": 2000,
+    "states": 1024
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    4.361197352409363e-05,
+    2.8567970730364323e-05,
+    2.6429013814777136e-05
+   ],
+   "warm_median_seconds": 2.749849227257073e-05,
+   "warm_min_seconds": 2.6429013814777136e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.39444104698486626,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.39444104698486626,
+    0.39359765499830246
+   ],
+   "warm_median_seconds": 0.39359765499830246,
+   "warm_min_seconds": 0.39359765499830246
+  },
+  {
+   "backend": "cuda",
+   "case": "Walsh basis: forward from the rows (rows x 2^k exact characters)",
+   "first_seconds": 0.028078944014851004,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.028078944014851004,
+    0.023559311986900866
+   ],
+   "warm_median_seconds": 0.023559311986900866,
+   "warm_min_seconds": 0.023559311986900866
+  },
+  {
+   "backend": "cpu",
+   "case": "Walsh basis: exact inverse (SPEC-002 inverse of the 2^k coefficients)",
+   "first_seconds": 0.0018521339516155422,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "butterflies": 24576,
+    "exact": true,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)",
+    "passes": 12,
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.0018521339516155422,
+    0.0017651529633440077,
+    0.0017758319736458361
+   ],
+   "warm_median_seconds": 0.001770492468494922,
+   "warm_min_seconds": 0.0017651529633440077
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: LATTICE-001 histogram of the bits (unweighted)",
+   "first_seconds": 5.2322051487863064e-05,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "build",
+   "samples_seconds": [
+    5.2322051487863064e-05,
+    3.84689774364233e-05
+   ],
+   "warm_median_seconds": 3.84689774364233e-05,
+   "warm_min_seconds": 3.84689774364233e-05
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: forward transform (k 2^(k-1) butterflies)",
+   "first_seconds": 0.00021346198627725244,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "normalization": "forward: W(S) = sum_x v(x) (-1)^|S and x| (unnormalized, exact integers)",
+    "states": 4096
+   },
+   "samples_seconds": [
+    0.00021346198627725244,
+    0.00014141196152195334,
+    0.00013261201092973351
+   ],
+   "warm_median_seconds": 0.00013701198622584343,
+   "warm_min_seconds": 0.00013261201092973351
+  },
+  {
+   "backend": "spec002",
+   "case": "SPEC-002 baseline: inverse transform",
+   "first_seconds": 0.002084054984152317,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "device": "native CPU",
+    "k": 12,
+    "normalization": "inverse: v(x) = 2^-k sum_S W(S) (-1)^|S and x| (divided by 2^k, exact dyadic rationals)"
+   },
+   "samples_seconds": [
+    0.002084054984152317,
+    0.002385093946941197,
+    0.0019133160240016878
+   ],
+   "warm_median_seconds": 0.0021492049854714423,
+   "warm_min_seconds": 0.0019133160240016878
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy baseline: bincount + fast Walsh-Hadamard (int64, unchecked)",
+   "first_seconds": 7.744895992800593e-05,
+   "params": {
+    "k": 12,
+    "rows": 2000,
+    "states": 4096
+   },
+   "phase": "run",
+   "result": {
+    "equal": true
+   },
+   "samples_seconds": [
+    7.744895992800593e-05,
+    6.078701699152589e-05,
+    5.6564982514828444e-05
+   ],
+   "warm_median_seconds": 5.8675999753177166e-05,
+   "warm_min_seconds": 5.6564982514828444e-05
+  }
+ ],
+ "seconds": 8.325698420987464,
+ "seed": 2026,
+ "thresholds": []
+}
