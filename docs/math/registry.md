@@ -113,6 +113,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 75 | kapprox | approximate spectral feature kernels | KERNEL-002 | approximate kernel features | `tr_kapprox_plan_create` | `tr_mgpu_kapprox_sums` |
 | 76 | dyn.operator | closed-observable dynamics | DYN-001 | transfer operators | `tr_dyn_map_from_sym` | `tr_mgpu_dyn_apply` |
 | 77 | dyn.powers | operator powers and recurrences | DYN-002 | operator powers | `tr_dyn_power_make` | `tr_mgpu_dyn_powmod`, `tr_mgpu_dyn_evolvemod` |
+| 78 | reduce | fused multi-output reduction | FND-006 | fused outputs | `tr_reduce_compile` | `tr_mgpu_reduce_fused`, `tr_mgpu_reduce_fused_device`, `tr_mgpu_reduce_states_arena`, `tr_mgpu_reduce_states_copy`, `tr_mgpu_reduce_states_free` |
+| 79 | program | query family programs | META-002 | query program | `tr_prog_compile` | `tr_mgpu_program_finalize`, `tr_mgpu_program_run` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

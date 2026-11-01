@@ -544,20 +544,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-003](#fnd-003), [FND-005](#fnd-005)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_reduce.c): a request over a FND-004 scope (BOOL-001 conditions, a shared Kleene predicate DAG, up to 16 groupings: the scope's own, another scope of exactly the same rows, or either mapped onto coarse groups; up to 1024 outputs, each a FND-004 moment basis in SQL or listwise validity or a DIST-001 histogram, with its own predicate and grouping) is compiled (equal conditions and nodes merged, distinct monomials collected as shared products, every term's 127-bit bound proven from the scope's extremes before anything runs) and executed by a fused plan, one traversal of the selection words in which each condition and node is evaluated once per word and each product at most once per row for every output term that uses it, every output keeping its own rows, validity counts and group presence; or by the preserved repeated plan, the independent reductions one by one (BOOL-001 masks, a derived scope per output, tr_bank_build / tr_dist_hist_build). Both give identical states, equal to independent FND-004 / DIST-001 reductions and DuckDB in the tests. Each plan's need (tr_reduce_need) is checked before anything is allocated and bounds every later check of the run (the repeated plan's from each derived scope's shape, with FND-004's and DIST-001's own need formulas for the device builds), except the occupied cells of sparse histograms, checked once counted. Candidates (fused, repeated) x (CPU, CUDA) are costed with FND-008's components (tr_reg_candidate, fusion credited as FND-008 does), budget-checked and chosen, and a force (fused | repeated [@cpu | @cuda], TORBLES_MATH_REDUCE_FORCE) runs exactly that plan or refuses. Runs are atomic: an overflow proof, a budget (a sparse state known after counting, one output of the repeated plan), a device or adoption failure exposes no output.
 
-GPU: New CUDA fused reducer must be implemented and independently benchmarked; not inherited from the stage MVP.
+GPU: CUDA kernel math_reduce_gpu.cu (tr_mgpu_reduce_fused): the fused pass on the device, one work item per contiguous slice of selection words producing every output's contribution of its rows with the same per-word helpers as the CPU loop; bank outputs accumulate locally while the group stays the same and flush with integer atomics (128-bit sums with the two-word atomic), histogram cells add one atomic per row; device copies (only the columns read, each group-id array once) and per-item scratch budgeted before allocation; no barriers or shared memory; the arenas are adopted after consistency checks, equal bit for bit to the CPU (scrambled emulation). tr_mgpu_reduce_fused_device keeps the states on the device for META-002's finalization kernel. The repeated plan on CUDA runs FND-004's and DIST-001's own CUDA builds per derived scope.
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Checked before allocation (math_budgets.h): compile checks circuit = conditions + nodes and output = outputs before allocating, then the plan's bytes; a run checks its plan's need (tr_reduce_need: variables, degree, support, circuit, output, states, bytes; on CUDA the device copies and per-item scratch, or FND-004's / DIST-001's device needs per derived scope) before it allocates anything; the need bounds every later check except the occupied cells of sparse histograms, checked once counted.
+- Representation limits (UnsupportedError): 1024 outputs, 16 groupings, 64 conditions, 65536 nodes, 65536 bank terms, 4096 distinct products; FND-004 / DIST-001 limits per output.
+- Refusals are atomic (no output of a refused run exists): AlgebraBudgetError (resource, need, limit), OverflowError (an unprovable 127-bit term or weight bound, before anything runs), ValueError, DomainError, StaleStateError.
 
 Implementation targets (proposed until the capability is validated):
 
+- `torbles/math_reduce.h`
 - `torbles/math_reduce.c`
 - `torbles/math_reduce_gpu.cu`
+- `torbles/math_reduce.py`
 - `tests/test_math_fused_reduce.py`
+- `bench/benchmark_math_reduce.py`
 
 Acceptance tests:
 
@@ -568,6 +572,15 @@ Benchmark cases:
 
 - Benchmark 1, 3, 6 and 15 basis outputs across selectivity/group-domain regimes.
 - Record actual scan/kernel count, decoded bytes, workspace, construction and first/reuse times.
+
+Additional limits:
+
+- Fused histogram outputs count in a dense scratch over the base scope's domain: a domain too wide is over budget for the fused plan (the repeated plan on the CPU sorts; DIST-001's device build has the same bound).
+- The overflow proof uses the base scope's extremes for every output: a filtered output whose own rows would prove a tighter bound is still refused.
+- The repeated plan's needs are bounds from the derived scopes' shapes (the base scope's rows, int64 columns, a sparse histogram's cells bounded by the selected rows): conservative for selective outputs.
+- The repeated CUDA plan evaluates predicates and builds the derived scopes on the host and is orchestrated from Python through native calls; sparse fused outputs are compacted on the host.
+- Plan costs are hand-set relative estimates (cost basis estimate), not calibrated times; the CPU paths are single-threaded.
+- Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run.
 
 <a id="fnd-007"></a>
 
@@ -4685,20 +4698,24 @@ Exactness: Exact semantics must be specified for the stated domain; floating or 
 
 Dependencies: [FND-001](#fnd-001), [FND-005](#fnd-005), [FND-010](#fnd-010), [FND-012](#fnd-012), [FND-006](#fnd-006), [FND-008](#fnd-008)
 
-Native CPU: New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.
+Native CPU: Native C (math_program.c): a family of queries (a BOOL-001 predicate, a FND-006 grouping, scalar or grouped, measures COUNT(*), COUNT / SUM / AVG of integer polynomials, DIST-001 histograms) over one scope is compiled into one program: conditions canonicalized to integer intervals (x > 0 and x >= 1 are one condition), predicates hash-consed under identities of SQL's Kleene logic only (constants, double negation, De Morgan with complementary conditions, associative-commutative flattening, idempotence; each node negated once; a TRUE predicate is no filter), optionally merged by a bounded universal search; per (predicate class, grouping) one SQL-mode FND-006 bank for the polynomials whose canonical monomials each read exactly the measure's written columns, one listwise bank per other written column set (SQL validity of the written expression kept when terms cancel), one histogram per spec, all built by one FND-006 plan (one fused traversal); per-query finalization (exact 256-bit contractions of the shared 128-bit sums, SQL NULLs, present groups or the scalar row). A run checks its whole need (tr_prog_need: the pass and the finalization) first. Every query records its predicate class and proof, the states it reads and their sharers, its value slots and bytes, the pass and finalization devices per measure; states live for one run, or (declared) for later runs of the same program on its fresh scope. Universal comparison of two queries' predicates: equivalent (canonical form or the 3^k search with per-column feasibility), different with a witness row, unknown (BIT, column comparisons) or budget-limited, with grouping and measure equality by value semantics; snapshot comparison: the rows where they differ on this snapshot.
 
-GPU: Planned separately; a CPU implementation or emulation is not a CUDA implementation.
+GPU: CUDA kernel math_program_gpu.cu: the per-output finalization, one work item per (measure, group) slot with the shared inline slot evaluator (no atomics, no barriers), over states copied from the host (tr_mgpu_program_finalize) or left on the device by FND-006's fused kernel (tr_mgpu_program_run: the fused pass and the finalization in two launches without a host round trip of the states); device copies budgeted first; equal to the CPU values bit for bit (scrambled emulation).
 
 Bounds:
 
-- Bound input dimensionality, support/state size and output size.
-- Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
+- Compile: circuit = conditions + nodes, output = queries, support = polynomial terms before allocating; circuit = canonical conditions + nodes after canonicalization; iterations = the proof search's assignments (a pair past the budget stays apart, recorded); output = queries + value slots and bytes = the program and 72 bytes per slot once the tables exist; FND-006's own checks.
+- A run checks its whole need first (tr_prog_need: the FND-006 pass and the finalization, output = the larger, bytes = their sum); compare: iterations = 3^k for the k conditions read (outcome budget past it).
+- Representation limits (UnsupportedError): 4096 queries, 16384 measures, 65536 terms, 1024 terms per measure, 64 canonical conditions.
 
 Implementation targets (proposed until the capability is validated):
 
-- `torbles/math_meta.c`
-- `torbles/math_meta.h`
-- `tests/test_math_meta.py`
+- `torbles/math_program.h`
+- `torbles/math_program.c`
+- `torbles/math_program_gpu.cu`
+- `torbles/math_program.py`
+- `tests/test_math_program.py`
+- `bench/benchmark_math_program.py`
 
 Acceptance tests:
 
@@ -4709,6 +4726,15 @@ Benchmark cases:
 
 - Compare families of 1/8/32/128 related queries with shared and disjoint filters/measures; report proof/common-subexpression construction and actual shared scans.
 - Use equivalent, one-row-different and universally-different query pairs; separate snapshot checking from universal proof search and retain unknown/budget-limited outcomes.
+
+Additional limits:
+
+- The universal search decides interval, NE and NULL conditions column by column; BIT and column comparisons leave a differing assignment undecided (unknown). META-001 (math_equiv) holds the decision procedures for measures, implication and containment; META-002's compare covers WHERE predicates only, with measures compared canonically.
+- Compile-time merging by search compares only predicates with the same canonical condition support; the canonical form does not distribute AND over OR or absorb.
+- Witness rows respect declared nullability only (no keys, references, type ranges or other schema constraints).
+- Measures are COUNT, SUM and AVG of int64-coefficient polynomials and histograms (no MIN, MAX, variance or ratios of different measures).
+- Snapshot lifetimes are kept in the Python program object (reuse decided by the native scope freshness checks); the CPU paths are single-threaded.
+- Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run.
 
 ## TOPO: Finite geometry and topology
 

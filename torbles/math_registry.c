@@ -102,7 +102,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "query parts",
     "factor graph",
     "approximate kernel features",
-    "transfer operators", "operator powers"};
+    "transfer operators", "operator powers",
+    "fused outputs",
+    "query program"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -854,6 +856,25 @@ static const tr_reg_module modules[] = {
                    "tr_dyn_evolution_adopt", "tr_dyn_charpoly", "tr_dyn_recurrence_make", "tr_dyn_recurrence_term",
                    "tr_dyn_float_power"},
      .cuda_entry = {"tr_mgpu_dyn_powmod", "tr_mgpu_dyn_evolvemod"}},
+    {FAMILY(TR_REG_M_REDUCE, "reduce", "reduce", "FND-006", "fused multi-output reduction"),
+     .state_kind = TR_REG_STATE_FUSED_OUTPUTS, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(CODE) | CB(INTEGER) | CB(INT128) | CB(COUNT) | CB(KLEENE),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_reduce_compile", "tr_reduce_choose", "tr_reduce_run", "tr_reduce_need", "tr_reduce_derive",
+                   "tr_reduce_stage_create", "tr_reduce_stage_finish", "tr_reduce_stage_put_bank",
+                   "tr_reduce_stage_put_hist", "tr_reduce_result_bank", "tr_reduce_result_hist", "tr_reduce_get_view"},
+     .cuda_entry = {"tr_mgpu_reduce_fused", "tr_mgpu_reduce_fused_device", "tr_mgpu_reduce_states_arena",
+                    "tr_mgpu_reduce_states_copy", "tr_mgpu_reduce_states_free"}},
+    {FAMILY(TR_REG_M_PROGRAM, "program", "program", "META-002", "query family programs"),
+     .state_kind = TR_REG_STATE_QUERY_PROGRAM, .devices = TR_REG_ON_BOTH, .finalize = 3,
+     .carriers = CB(INTEGER) | CB(INT128) | CB(BIGINT) | CB(BIGQ) | CB(COUNT) | CB(KLEENE),
+     .laws_relied = TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_DOMAIN | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_prog_compile", "tr_prog_finalize", "tr_prog_need", "tr_prog_compare",
+                   "tr_prog_snapshot_compare", "tr_prog_final_view_get", "tr_prog_final_need", "tr_prog_query_get",
+                   "tr_prog_measure_get", "tr_prog_output_get", "tr_prog_get_info", "tr_prog_reduce_plan"},
+     .cuda_entry = {"tr_mgpu_program_finalize", "tr_mgpu_program_run"}},
 };
 #undef BUILTIN
 #undef FAMILY

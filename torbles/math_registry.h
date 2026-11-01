@@ -970,7 +970,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_KAPPROX = 75,           /* KERNEL-002 approximate spectral feature kernels */
        TR_REG_M_DYN_OPERATOR = 76,      /* DYN-001 finite closed-observable dynamics */
        TR_REG_M_DYN_POWERS = 77,        /* DYN-002 repeated operator powers and semigroups */
-       TR_REG_M_END = 78 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_REDUCE = 78,            /* FND-006 fused multi-output basis reduction */
+       TR_REG_M_PROGRAM = 79,           /* META-002 query families as one multi-output program */
+       TR_REG_M_END = 80 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -1036,7 +1038,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_KERNEL_APPROX = 64,     /* per group: certified sums of declared approximate kernel features, weight statistics, the error record */
        TR_REG_STATE_TRANSFER_OPERATOR = 65, /* a closed basis, the exact transfer matrix of declared dynamics (or a certified truncation), evolved moments */
        TR_REG_STATE_OPERATOR_POWERS = 66,   /* exact powers N^n / D^n, modular residues, characteristic and minimal recurrences, float bounds */
-       TR_REG_STATE_KINDS = 67 };
+       TR_REG_STATE_FUSED_OUTPUTS = 67,     /* per output of one traversal: grouped moments or histogram cells of its own predicate and grouping */
+       TR_REG_STATE_QUERY_PROGRAM = 68,     /* canonical predicates and shared states of a query family, finalization tables and value slots */
+       TR_REG_STATE_KINDS = 69 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1430,6 +1434,14 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_DYN_POWERS, POWERS, GFP, TR__ALL), TR__I(TR_REG_M_DYN_POWERS, POWERS, BIGINT, TR__CPU),
     TR__I(TR_REG_M_DYN_POWERS, CRT, GFP, TR__CPU), TR__I(TR_REG_M_DYN_POWERS, DIVIDE, BIGQ, TR__CPU),
     TR__I(TR_REG_M_DYN_POWERS, ENCLOSE, INTERVAL, TR__CPU),
+    /* 78 FND-006 fused multi-output basis reduction */
+    TR__I(TR_REG_M_REDUCE, PREDICATE, INTEGER, TR__ALL), TR__I(TR_REG_M_REDUCE, LOGIC, KLEENE, TR__ALL),
+    TR__I(TR_REG_M_REDUCE, POWERS, INTEGER, TR__ALL), TR__I(TR_REG_M_REDUCE, FOLD, INT128, TR__ALL),
+    TR__I(TR_REG_M_REDUCE, FOLD, COUNT, TR__ALL), TR__I(TR_REG_M_REDUCE, HISTOGRAM, CODE, TR__ALL),
+    /* 79 META-002 query families as one multi-output program */
+    TR__I(TR_REG_M_PROGRAM, PREDICATE, INTEGER, TR__CPU), TR__I(TR_REG_M_PROGRAM, LOGIC, KLEENE, TR__CPU),
+    TR__I(TR_REG_M_PROGRAM, CONTRACT, INT128, TR__ALL), TR__I(TR_REG_M_PROGRAM, FOLD, BIGINT, TR__ALL),
+    TR__I(TR_REG_M_PROGRAM, FOLD, COUNT, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU
