@@ -37,6 +37,13 @@ INF = float("inf")
 
 
 # ---------------------------------------------------------------------- the declared semantics, by hand
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def reference(src, dst, w=None, directed=True, dedup=False, loops="keep", combine="refuse", extra=()):
     """dictionary, canonical edges (tail, head, w, m) sorted, entries (u, v, w, m) sorted by (u, v, w)"""
     w = [1] * len(src) if w is None else [Fraction(x) for x in w]
@@ -468,7 +475,7 @@ class Graph(unittest.TestCase):
                     self.assertEqual(got.count, len(want))
                     cu = G.expand(F, direction=direction, backend="cuda")
                     self.assertEqual(cu, got)
-                    self.assertEqual(cu.backend, "cuda-emulated")
+                    self.assertEqual(cu.backend, cuda_label())
                     got = G.expand(F, direction=direction, exclude=X)
                     self.assertEqual(got.ids(), sorted(set(want) - set(excl)))
                     self.assertEqual(G.expand(F, direction=direction, exclude=X, backend="cuda"), got)

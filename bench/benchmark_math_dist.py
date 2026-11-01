@@ -70,13 +70,15 @@ def dist001(bench, rng):
                 bench.measure("histogram", "numpy", lambda: len(np.unique(stacked, axis=0, return_counts=True)[1]),
                               repeats=3, phase="run", **p)
                 for repr_ in ("sparse", "dense"):
-                    need = md.need(scope, names, repr=repr_)
-                    over = [r for r, v in need.items() if v > budget.limits[r]]
-                    if over:
-                        bench.refusal("histogram", "cpu", lambda: md.histogram(scope, names, repr=repr_, budget=budget),
-                                      repr=repr_, **p)
-                        continue
                     for backend in bench.backends():
+                        # the device needs its copies besides the adopted state, so its need is checked on its own
+                        need = md.need(scope, names, repr=repr_, backend=backend)
+                        over = [r for r, v in need.items() if v > budget.limits[r]]
+                        if over:
+                            bench.refusal("histogram", backend,
+                                          lambda: md.histogram(scope, names, repr=repr_, backend=backend, budget=budget),
+                                          repr=repr_, **p)
+                            continue
                         h = bench.measure("histogram", backend,
                                           lambda: md.histogram(scope, names, repr=repr_, backend=backend),
                                           repeats=3, phase="build", repr=repr_, **p)

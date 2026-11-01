@@ -37,6 +37,13 @@ P61 = (1 << 61) - 1
 
 
 # ---------------------------------------------------------------------- oracles: cells and incidences
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def oracle_complex(occ, ext):
     """the closure of the occupied positions occ (0-based tuples) of an extent ext: {k: [Khalimsky tuples]} in
     increasing linear index, the index of each cell, and the incidences (faces, signs) per k"""
@@ -694,7 +701,7 @@ class Topo(unittest.TestCase):
             self.assertEqual((cpu["rows"]["null_rows"], cpu["rows"]["outside_rows"]), (1, 1))
             for key in ("rows", "cells", "boundary", "euler", "boundary_euler"):
                 self.assertEqual(cpu[key], gpu[key])
-            self.assertEqual(gpu["backend"], "cuda-emulated")
+            self.assertEqual(gpu["backend"], cuda_label())
 
     def test_topo001_budgets_at_the_limit_and_one_past(self):
         occ = random_occ(random.Random(1206), (6, 6), 0.5)

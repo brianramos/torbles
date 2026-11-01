@@ -26,6 +26,11 @@ from torbles.math_domains import CarrierError, DomainError
 from torbles.math_errors import NoSolutionError, UnsupportedError
 from torbles.mathematics import AlgebraBudgetError
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
 
 def bag(values):
     out = {}
@@ -169,7 +174,7 @@ class Convolution(unittest.TestCase):
                     self.assertEqual(g, want[:order] if order else want)
         self.assertGreater(max(abs(v) for v in mc.convolve([[top] * 16], [[top] * 16])[0]), 1 << 127)
         self.assertEqual((mc.convolve([[1]], [[2]]).backend, mc.convolve([[1]], [[2]], backend="cuda").backend),
-                         ("cpu", "cuda-emulated"))
+                         ("cpu", cuda_label()))
         # per-key conditional products in parallel over keys: the raw words and the adopted state equal the CPU's
         for seed in (1, 2):
             r = np.random.default_rng(seed)
@@ -181,7 +186,7 @@ class Convolution(unittest.TestCase):
             fa, fb = mc.family(md.histogram(s, ["x"])), mc.family(md.histogram(s, ["y"]))
             cpu, gpu = mc.conditional(fa, fb), mc.conditional(fa, fb, backend="cuda")
             self.assertTrue(cpu.equal(gpu))
-            self.assertEqual(gpu.backend, "cuda-emulated")
+            self.assertEqual(gpu.backend, cuda_label())
             va, vb = fa._view(), fb._view()
             ooff = np.zeros(K + 1, dtype=np.uint64)
             total, pairs = mc.C.c_uint64(), mc.C.c_uint64()

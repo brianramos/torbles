@@ -31,6 +31,11 @@ from torbles.mathematics import AlgebraBudgetError
 
 SEED = 2003
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
 
 def obj(values):
     return pd.Series(values, dtype=object)
@@ -244,7 +249,7 @@ class Disc003(unittest.TestCase):
             d = md.Delta.between(s, s2)
             ev_cpu, ev_dev = tr.evaluate(d, backend="cpu"), tr.evaluate(d, backend="cuda")
             self.assertEqual(strip(ev_cpu), strip(ev_dev), step)
-            self.assertEqual(ev_dev["backend"], "cuda-emulated")
+            self.assertEqual(ev_dev["backend"], cuda_label())
             tr = tr.update(d, scope=s2)
             trc = trc.update(md.Delta.between(s, s2), scope=s2, backend="cuda")
             same_tracker(self, tr, trc)

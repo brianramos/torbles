@@ -30,6 +30,13 @@ from torbles.mathematics import AlgebraBudgetError
 
 
 # ---------------------------------------------------------------------- the oracle: exhaustive enumeration
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 class Oracle:
     """the joint of a factor graph given as {name: labels} and [(scope, {labels tuple: Fraction})], enumerated"""
 
@@ -284,7 +291,7 @@ class Prob002(unittest.TestCase):
         self.assertEqual([r.status for r in out], [0 if orc.Z(e) else -6 for e in batch])
         # the planner's own CUDA candidate (devices=("cuda",)) gives the same exact answers
         dev = G.likelihood(batch, backend="cuda")
-        self.assertEqual(dev.backend, "cuda-emulated")
+        self.assertEqual(dev.backend, cuda_label())
         self.assertEqual([(r.Z_e, r.probability) for r in dev], [(r.Z_e, r.probability) for r in b])
         self.assertEqual(q.run(np.array([[1, 2]], np.uint32))[0].table, orc.marginal(["c"], {"a": 1, "e": 2}))
         self.assertIs(G.normalizer(), G.normalizer())                 # computed once, natively

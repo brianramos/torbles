@@ -42,6 +42,13 @@ EMPIRICAL = []                               # (kernel, D, seed, op, empirical e
 
 
 # ------------------------------------------------------------------ the decimal oracle
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def D(q):
     q = Fraction(q)
     return Decimal(q.numerator) / Decimal(q.denominator)
@@ -171,7 +178,7 @@ class Kapprox(unittest.TestCase):
         self.assertEqual(a.info["maxsq"], b.info["maxsq"])
         self.assertEqual(a.info["id"], b.info["id"])
         self.assertEqual(a.record, b.record)
-        self.assertEqual(b.backend, "cuda-emulated")
+        self.assertEqual(b.backend, cuda_label())
         x, y = a.mmd2(0, 1), b.mmd2(0, 1)
         self.assertEqual((x.value, x.error, x.terms), (y.value, y.error, y.terms))
 

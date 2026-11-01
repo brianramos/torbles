@@ -31,6 +31,7 @@ from math_bench import Bench
 from torbles import math_bank as mbk, math_conv as mc, math_factor as mf, math_tensor as mt
 from torbles.math_budgets import Budget
 from torbles.mathematics import AlgebraBudgetError
+from torbles.math_errors import UnsupportedError
 
 
 # ---------------------------------------------------------------------- case 1: retained likelihood states
@@ -188,8 +189,18 @@ def case2(bench, rng):
             s = plan.summary()
             bench.records[-1].update(plan=s, complete=plan.info["complete"], dp_states=plan.info["dp_states"])
             for backend in bench.backends():
-                r = bench.measure("partition function (exact)", backend,
-                                  lambda: G.partition(backend=backend, budget=BIG), repeats=3, phase="run", **p)
+                try:
+                    out = bench.measure("partition function (exact)", backend,
+                                        lambda: G.partition(backend=backend, budget=BIG), repeats=3, phase="run", **p)
+                except UnsupportedError as e:              # the device path declares a narrower scope than the CPU's
+                    if backend == "cpu":
+                        raise
+                    bench.note(f"partition function on the device refused for {kind} {size}: {e}")
+                    continue
+                if backend == "cpu":
+                    r = out
+                elif out.Z_e != r.Z_e:
+                    raise SystemExit(f"PROB-002: the device partition function differs from the CPU's at {p}")
             Z = r.Z_e
             rec = dict(width=s["width"], joint=s["joint"], intermediate_support=s["support"], products=s["products"],
                        limbs=s["limbs"], heuristic=s["heuristic"], precision="exact rational",

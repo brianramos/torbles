@@ -35,6 +35,11 @@ R2_ROWS = [(1, 20), (5, 50)]
 TABLES = {"R": (R_ROWS, ["k", "a"]), "S": (S_ROWS, ["k", "b"]), "T": (T_ROWS, ["b", "c"]), "R2": (R2_ROWS, ["k", "a"])}
 LABELS = [(n, i) for n in ("R", "S", "T", "R2") for i in range(len(TABLES[n][0]))]
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
 
 def cols(rows, names):
     return {n: [row[c] for row in rows] for c, n in enumerate(names)}
@@ -169,7 +174,7 @@ class Explanations(unittest.TestCase):
         cpu = ex.delete(deletions)
         cpu_raw = ex._last
         gpu = ex.delete(deletions, backend="cuda")
-        self.assertEqual(gpu.backend, "cuda-emulated")
+        self.assertEqual(gpu.backend, cuda_label())
         self.assertTrue(all(np.array_equal(a, b) if isinstance(a, np.ndarray) else a == b
                             for a, b in zip(cpu_raw, ex._last)))         # the same bytes
         full = st.evaluate(rels, "count", deletions=deletions)          # PROV-001: the whole DAG re-evaluated

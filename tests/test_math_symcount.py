@@ -28,6 +28,10 @@ from torbles.math_budgets import Budget
 from torbles.math_errors import UnsupportedError
 from torbles.mathematics import AlgebraBudgetError
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
 
 
 def kleene(op, a, b=None):
@@ -177,7 +181,7 @@ class SymbolicCounts(unittest.TestCase):
                     gpu_raw, L2, _, dev = d.raw(w, backend="cuda")
                     self.assertTrue(np.array_equal(cpu_raw, gpu_raw) and L == L2)
                 g = d.count(weights=weights, backend="cuda")
-                self.assertEqual((g.true, g.false, g.unknown, g.backend), (cw.true, cw.false, cw.unknown, "cuda-emulated"))
+                self.assertEqual((g.true, g.false, g.unknown, g.backend), (cw.true, cw.false, cw.unknown, cuda_label()))
                 # witnesses: the first models in lexicographic order of the levels
                 for m in (1, 3, 1 << k):
                     got = [as_mask(w) for w in d.witnesses(m)]

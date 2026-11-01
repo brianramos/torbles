@@ -32,6 +32,13 @@ getcontext().prec = 80
 
 
 # ---------------------------------------------------------------------- oracles
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def dec(q):
     q = Fraction(q)
     return Decimal(q.numerator) / Decimal(q.denominator)
@@ -555,7 +562,7 @@ class Prob001(unittest.TestCase):
         cpu = E.evaluate(st, (tn, td), groups=groups, grad=True, hess=True)
         gpu = E.evaluate(st, (tn, td), groups=groups, grad=True, hess=True, backend="cuda")
         self.assertTrue(cpu.equal(gpu))
-        self.assertEqual(gpu.backend, "cuda-emulated")
+        self.assertEqual(gpu.backend, cuda_label())
         for i in (0, 57, 119):
             self.assertEqual(cpu.exact(i), gpu.exact(i))
         M = mp.categorical(S, features=lambda x: (x % 5, Fraction(x, 3)))

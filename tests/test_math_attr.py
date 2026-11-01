@@ -38,6 +38,13 @@ import duckdb
 
 
 # ---------------------------------------------------------------------- oracles (Python Fractions, every coalition)
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def members(S, n):
     return [i for i in range(n) if (S >> i) & 1]
 
@@ -230,7 +237,7 @@ class Attribution(unittest.TestCase):
             cpu, gpu = ma.exhaustive(g), ma.exhaustive(g, backend="cuda")
             self.assertEqual((cpu["numerators"], cpu["shapley"], cpu["banzhaf"]),
                              (gpu["numerators"], gpu["shapley"], gpu["banzhaf"]))   # bit for bit
-            self.assertEqual(gpu["backend"], "cuda-emulated")
+            self.assertEqual(gpu["backend"], cuda_label())
             self.assertEqual(cpu["denominators"], dict(shapley=math.factorial(n), banzhaf=2 ** (n - 1)))
             self.assertEqual([Fraction(x, math.factorial(n)) for x in cpu["numerators"]["shapley"]], want_sh)
         # provenance games against values recomputed in DuckDB (independent of the native evaluation)

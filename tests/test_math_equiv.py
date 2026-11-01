@@ -29,6 +29,13 @@ T_, F_, U_ = 1, 0, None
 
 
 # ------------------------------------------------------------------ oracles
+
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
+
 def cmp(op, x, y):
     return {"=": x == y, "<>": x != y, "<": x < y, "<=": x <= y, ">": x > y, ">=": x >= y}[op]
 
@@ -165,7 +172,7 @@ def both(test, s, scope, qs, **kw):
     """the CPU result, after asserting that the CUDA path gives identical evidence and verdicts"""
     cpu = s.check(scope, qs, backend="cpu", **kw)
     gpu = s.check(scope, qs, backend="cuda", **kw)
-    test.assertEqual(gpu.backend, "cuda-emulated")
+    test.assertEqual(gpu.backend, cuda_label())
     test.assertEqual([strip(x) for x in cpu], [strip(x) for x in gpu])
     return cpu
 

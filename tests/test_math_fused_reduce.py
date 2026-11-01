@@ -32,6 +32,11 @@ COLS = ["x", "d", "y", "w"]
 SCALES = {"x": 0, "d": 2, "y": 0, "w": 0}
 VARIANTS = (("fused", "cpu"), ("fused", "cuda"), ("repeated", "cpu"), ("repeated", "cuda"))
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
 
 def obj(values):
     return pd.Series(values, dtype=object)
@@ -231,8 +236,8 @@ class FusedReduce(unittest.TestCase):
             self.assertTrue(res.equal(results[("fused", "cpu")]), v)
             for name in SPECS:                                  # value by value, not only the native comparison
                 self.assertEqual(res[name].states(), results[("fused", "cpu")][name].states(), (v, name))
-        self.assertEqual(results[("fused", "cuda")].backend, "cuda-emulated")
-        self.assertEqual(results[("repeated", "cuda")].backend, "cuda-emulated")
+        self.assertEqual(results[("fused", "cuda")].backend, cuda_label())
+        self.assertEqual(results[("repeated", "cuda")].backend, cuda_label())
         self.assertEqual(results[("fused", "cpu")].backend, "cpu")
 
     def test_fnd006_outputs_match_duckdb_executing_each_output_separately(self):
@@ -551,7 +556,7 @@ class FusedReduce(unittest.TestCase):
         self.assertEqual(res.plan["choice"]["reason"], "forced")
         self.assertTrue(all(c["reason"] in ("not forced", "forced", "over budget") for c in res.plan["candidates"]))
         res2 = plan.run(force="repeated@cuda")             # a force naming the device adds its candidates
-        self.assertEqual((res2.plan_kind, res2.backend), ("repeated", "cuda-emulated"))
+        self.assertEqual((res2.plan_kind, res2.backend), ("repeated", cuda_label()))
         self.assertTrue(res.equal(res2))
         os.environ["TORBLES_MATH_REDUCE_FORCE"] = "repeated"
         try:

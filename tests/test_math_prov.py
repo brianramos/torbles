@@ -29,6 +29,11 @@ R_ROWS = [(1, 10), (1, 20), (2, 30), (None, 40), (1, 10)]          # a duplicate
 S_ROWS = [(1, 5), (2, 6), (2, 7), (3, 8)]
 T_ROWS = [(5, 100), (6, 100), (6, 200), (7, 300)]
 
+def cuda_label():
+    """the backend label of a CUDA result: "cuda" on a device, "cuda-emulated" when the kernels run in the emulation"""
+    from torbles import math_gpu
+    return "cuda-emulated" if math_gpu.device()["emulated"] else "cuda"
+
 
 def m(*labels):
     return tuple(sorted(labels))
@@ -132,7 +137,7 @@ class Provenance(unittest.TestCase):
             gpu = st.evaluate(rel, "count", deletions=dels, backend="cuda")
             bcpu = st.evaluate(rel, "bool", deletions=dels)
             bgpu = st.evaluate(rel, "bool", deletions=dels, backend="cuda")
-            self.assertEqual((cpu.semiring, bcpu.semiring, gpu.backend), ("N", "B", "cuda-emulated"))
+            self.assertEqual((cpu.semiring, bcpu.semiring, gpu.backend), ("N", "B", cuda_label()))
             self.assertEqual((cpu.values, bcpu.values), (gpu.values, bgpu.values))
             for w, d in enumerate(dels):
                 views(d)
