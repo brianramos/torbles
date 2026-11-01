@@ -4806,7 +4806,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `3833d4d1d856591a0f2080e9ecb42e5545209163`.
+Measured runtime: `1210be2bef60895317177211ec5aa4c6f08a0d4b`.
 
 - tests: [results/math/META-001/tests_test_math_equiv.json](results/math/META-001/tests_test_math_equiv.json)
 - tests: [results/math/META-001/sanitized_test_math_equiv.json](results/math/META-001/sanitized_test_math_equiv.json)
