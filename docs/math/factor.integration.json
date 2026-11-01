@@ -1,0 +1,125 @@
+{
+ "guide": [
+  {
+   "page": "factor.md",
+   "title": "Factorized probabilistic inference",
+   "capabilities": "PROB-002",
+   "summary": "bounded factor graphs over discrete variables with declared finite supports (factors: exact rational tables, TENSOR-001 count tensors mapped by value, PROB-001 categorical models and retained statistics; data factors of one source only under a GEN-002 independence declaration), evidence by restriction; the partition function, P(e), marginals of any variable set and conditional marginals by sum-product elimination, the maximum with every tied assignment and the k best by max-product, exact rationals throughout (L-limb integers over the factors' denominators, FND-009 reduction), along an order chosen by FND-008 among costed candidates (an exact subset DP, min-fill, min-degree, min-weight, weighted fill, natural, reverse, given) under treewidth (degree) and intermediate-support (tensor, support) budgets, refused with a proof for every order when the DP or a lower bound shows it; the elimination steps run equal on the CPU and in CUDA; COUNT-002 (elimination, brute force, decision diagrams) and TENSOR-002 as alternative backends for weighted model counts."
+  }
+ ],
+ "inventory": {
+  "PROB-002": {
+   "planned_files": [
+    "torbles/math_factor.h",
+    "torbles/math_factor.c",
+    "torbles/math_factor_gpu.cu",
+    "torbles/math_factor.py",
+    "tests/test_math_factor.py",
+    "bench/benchmark_math_factor.py"
+   ],
+   "cpu": "Native C (math_factor.c; the elimination step tr_factor_cell inline in math_factor.h): factor graphs of n <= 4096 variables with declared finite supports (1..2^16 logical values or the NULL category, distinct, with a decimal scale) and factors over scopes of <= 31 variables built from explicit nonnegative rationals, one group of a dense or sparse TENSOR-001 tensor (count axes mapped by value with equal scales, index axes by index; a nonzero cell outside the declared values refused with the factor, axis and value), a PROB-001 categorical model with one request's weights or exact probabilities (support points mapped by value, every other cell 0) or one group of PROB-001 retained statistics; each factor scaled to integers over the lcm of its denominators (< 2^126); data factors record their scope's source (GEN-002's rule) and two of one source are admitted only under a covering GEN-002 independence declaration (refused otherwise with the pair, the source digest and the reason). Query shapes (kept variables in order, evidence variables, sum / max / k-best, R requests) are planned by simulating bucket elimination for each candidate order (an exact dynamic program over the subsets of the eliminated variables, at most 14 by default and 64 free variables, minimizing the total joint cells among the orders whose every step fits the degree / tensor / support budgets and proving infeasibility for every order otherwise; min-fill, min-degree, min-weight, weighted min-fill, natural, reverse and a given order), each on the CPU or the device, with exact per-candidate width (the induced width), largest joint table, largest intermediate table, products, arena, host and device bytes and limbs, costed by component and chosen by FND-008's tr_planner_choose (the cheapest admissible, the first on a tie; a force runs exactly its candidate or refuses); refusals carry the evidence of every candidate, whether they are proven for every order (the DP or a minor-min-width / first-step / output lower bound past its limit) and the exact minima or lower bounds of width, joint and support. Programs run every step as dense messages in a per-request arena: sums (and, for max, the maxima, the minimum index reaching them and the number of maximizing completions) of products of operand entries over the eliminated variable's values in exact L-limb integers (COUNT-002's arithmetic; L proven from the factors' maxima and the domain sizes), evidence by per-request base offsets; answers are adopted natively from the CPU or device arena: Z_e and Z_e / D, P(e) = Z_e / Z from the retained normalizer, marginal tables P(q | e) over any kept variables, conditional tables P(q | r, e) (undefined where P(r | e) = 0), the maximum weight, its probability, the exact number of maximizers and every tied maximizer (decoded through the tight values, sorted lexicographically, refused past the output budget with the exact count), and the k best by lists of the top k with ties per message cell decoded through backpointers (canonical order: weight decreasing, then lexicographic; the ties beyond k counted); all values canonical rationals with FND-009 big integers. Alternative backends of the weighted model count Z_e: COUNT-002's variable elimination and brute force over the restricted tables, a COUNT-002 decision diagram of the parameter encoding of binary graphs counted with literal weights, and TENSOR-002's costed contraction of the dense scaled tables.",
+   "gpu": "CUDA kernel math_factor_gpu.cu: tr_mgpu_factor_eliminate runs an elimination program with one launch per step (later steps read earlier messages) and one work item per (request, output cell) evaluating the shared tr_factor_cell into its own slots: exact L-limb sums of the products of 128-bit scaled input entries and L-limb messages over the eliminated variable's values and, for max programs, the maximum, its minimum index (argmax ties broken by the minimum index) and the count of maximizing completions; no atomics on values (an overflow flag by atomic OR, excluded by the host's L proof), 7 L words of local scratch per item (L <= 16 on the device, else the CUDA candidate is rejected); the host checks the program, every request's evidence bases and the budget (bytes = every device copy, states = R x arena) before allocating; the raw arena equals the CPU's bit for bit in any thread order and is adopted by the same native answer code.",
+   "limitations": [
+    "Factors are exact nonnegative rational tables (explicit, count tensors, categorical models, retained masses): exponential-family factors (certified enclosures) are refused, and requests past every budget are refused, never answered with certified bounds or an extrapolation.",
+    "The exact subset DP that proves a refusal for every order runs for at most 14 eliminated variables by default (dp_limit up to 24) and 64 free variables, within the iterations budget; beyond it the heuristic candidates may miss an order that fits, and a refusal is then proven only when a lower bound (minor-min-width treewidth bound, the first step's table, the output table) exceeds its limit.",
+    "Refusals report FND-008's first over-budget candidate (resource, need, limit); the plan evidence lists every candidate's needs, and the minima are exact only when the DP ran.",
+    "Every message of a program is kept in the arena (the decoders read them): memory is the whole arena per request; the CPU loops are single-threaded; the CUDA kernel holds at most 16 limbs (1024-bit values) per work item.",
+    "Evidence fixes one declared value per observed variable (no soft evidence); the maximum and the k best are over every unobserved variable (no marginal MAP); the k best and every decode run on the CPU.",
+    "Data factors take one group's state; the independence declaration is the caller's statement, never verified against the data; products of PROB-001 statistics are refused as factors.",
+    "Alternative backends are bounded by their own capabilities: the decision diagram needs binary variables and at most 64 program variables (variables plus parameters), TENSOR-002 at most 8 tables over 16 variables with scopes of 8 and every contraction step's bound below 2^127, COUNT-002 elimination int64 rational entries.",
+    "Cost rates are hand-set relative estimates (not calibrated); the CUDA timings need --device on an actual GPU."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "FACTOR_GRAPH",
+    "label": "factor graph",
+    "comment": "a factor graph over declared finite supports: scaled exact tables, data sources, costed elimination programs and their message arenas"
+   }
+  ],
+  "new_operators": [
+   {
+    "name": "ELIMINATE",
+    "label": "eliminate",
+    "comment": "sum-product and max-product variable elimination of a factor graph along a costed order (exact messages)",
+    "requires": "TR_REG_RING | TR_LAW_ORDERED",
+    "input": null,
+    "output": null
+   }
+  ],
+  "modules": [
+   {
+    "enum": "FACTOR",
+    "key": "factor",
+    "family": "factor",
+    "capability": "PROB-002",
+    "name": "factorized inference",
+    "comment": "factorized probabilistic inference over bounded factor graphs",
+    "state": "FACTOR_GRAPH",
+    "state_label": "factor graph",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "COUNT",
+     "RATIONAL",
+     "BIGINT",
+     "BIGQ"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN",
+    "cpu_entry": [
+     "tr_factor_graph_create",
+     "tr_factor_plan_create",
+     "tr_factor_prog_create",
+     "tr_factor_prog_bases",
+     "tr_factor_eliminate",
+     "tr_factor_answer_create",
+     "tr_factor_kbest",
+     "tr_factor_alternative",
+     "tr_factor_plan_get",
+     "tr_factor_prog_need",
+     "tr_factor_graph_table",
+     "tr_factor_answer_value"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_factor_eliminate"
+    ],
+    "impl": [
+     [
+      "ELIMINATE",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "MULTIPLY",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "ORDER",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "MODEL_COUNT",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "NORMALIZE",
+      "BIGQ",
+      "CPU"
+     ],
+     [
+      "DIVIDE",
+      "BIGQ",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
