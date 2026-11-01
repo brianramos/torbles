@@ -1,0 +1,989 @@
+{
+ "argv": [
+  "--capability",
+  "PROB-001",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/PROB-001/benchmark_cpu_math_prob_vm.json"
+ ],
+ "capability": "PROB-001",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "40e4d463b0e30e7a2e78fde12ae5c7831010b78f",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": false,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "bf6f0a8f063cd60c1eb7b9cb9c440c4eec2e5b31801796d60cace7a00b14a163",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "e1bcfcbcabc5a876338db1aea0091f87709483e1d848a83c51b9e722a2b15d21"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T01:31:25+00:00"
+ },
+ "notes": [
+  "Inventory case 2 (factorized inference: vary graph size and elimination width on brute-force-checked tiny instances and bounded larger models; report intermediate support and precision) belongs to PROB-002 (factorized probabilistic inference), which is not implemented here: not measured.",
+  "CUDA timings exist only with --device on an actual GPU; without it the CUDA path is not timed (the tests check its emulated results bit for bit against the CPU).",
+  "NumPy and DuckDB baselines are uncertified float64. The *_deviation fields are the largest distance of a NumPy float answer outside its certified enclosure, relative to the magnitude of the terms it cancels: float64's own error, which grows with |theta . T| (exponents up to about 10^4 at 1024 points give relative errors up to |theta . T| 2^-53)."
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, the one scan)",
+   "first_seconds": 0.0005960550006420817,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005960550006420817,
+    0.00037889899977017194,
+    0.0003833880000456702
+   ],
+   "warm_median_seconds": 0.00038114349990792107,
+   "warm_min_seconds": 0.00037889899977017194
+  },
+  {
+   "backend": "cpu",
+   "case": "statistics aligned to the declared support (no row read)",
+   "first_seconds": 0.0007739100001344923,
+   "observed": 8,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0007739100001344923,
+    0.0007735959989076946,
+    0.0002204429983976297
+   ],
+   "state_bytes": 1213248,
+   "warm_median_seconds": 0.0004970194986526622,
+   "warm_min_seconds": 0.0002204429983976297
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.00018663800074136816,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00018663800074136816,
+    0.0001222120008605998,
+    8.211300155380741e-05,
+    6.145399675006047e-05
+   ],
+   "warm_median_seconds": 8.211300155380741e-05,
+   "warm_min_seconds": 6.145399675006047e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.0002938490033557173,
+   "grad_deviation": 0.0,
+   "hess_deviation": 2.13312094549584e-17,
+   "loglik_deviation": 0.0,
+   "logz_deviation": 0.0,
+   "max_loglik_width": 1.1641532182693481e-10,
+   "max_logz_width": 3.552713678800501e-15,
+   "max_z_rel_width": 1.50675396450674e-34,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.0002938490033557173,
+    6.150599801912904e-05,
+    3.866599945467897e-05,
+    2.9026999982306734e-05
+   ],
+   "warm_median_seconds": 3.866599945467897e-05,
+   "warm_min_seconds": 2.9026999982306734e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.0008505019977746997,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008505019977746997,
+    0.0005926040030317381
+   ],
+   "warm_median_seconds": 0.0005926040030317381,
+   "warm_min_seconds": 0.0005926040030317381
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.008530125000106636,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008530125000106636,
+    0.005089858997962438
+   ],
+   "warm_median_seconds": 0.005089858997962438,
+   "warm_min_seconds": 0.005089858997962438
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.000147335998917697,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.000147335998917697,
+    6.359100007102825e-05,
+    5.686199801857583e-05,
+    5.227199653745629e-05
+   ],
+   "warm_median_seconds": 5.686199801857583e-05,
+   "warm_min_seconds": 5.227199653745629e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.0018116319988621399,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0018116319988621399,
+    0.0019063090003328398,
+    0.0018626109995238949,
+    0.0017842679990280885
+   ],
+   "warm_median_seconds": 0.0018626109995238949,
+   "warm_min_seconds": 0.0017842679990280885
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.00027558500005397946,
+   "grad_deviation": 1.3762994473774927e-16,
+   "hess_deviation": 2.190266278861108e-16,
+   "loglik_deviation": 0.0,
+   "logz_deviation": 1.4923435688114756e-16,
+   "max_loglik_width": 2.3283064365386963e-10,
+   "max_logz_width": 3.552713678800501e-15,
+   "max_z_rel_width": 2.770113649315452e-34,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.00027558500005397946,
+    8.859599984134547e-05,
+    6.560499969054945e-05,
+    6.028200004948303e-05
+   ],
+   "warm_median_seconds": 6.560499969054945e-05,
+   "warm_min_seconds": 6.028200004948303e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.0640900030011835,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0640900030011835,
+    0.05849068500174326
+   ],
+   "warm_median_seconds": 0.05849068500174326,
+   "warm_min_seconds": 0.05849068500174326
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.34780532799777575,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.34780532799777575,
+    0.3368468379994738
+   ],
+   "warm_median_seconds": 0.3368468379994738,
+   "warm_min_seconds": 0.3368468379994738
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.0007896620008978061,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007896620008978061,
+    0.0006684030013275333,
+    0.0006057740029064007,
+    0.0006207209989952389
+   ],
+   "warm_median_seconds": 0.0006207209989952389,
+   "warm_min_seconds": 0.0006057740029064007
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.16095303600013722,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.16095303600013722,
+    0.18022430500059272,
+    0.15289437499814085,
+    0.1434850869991351
+   ],
+   "warm_median_seconds": 0.15289437499814085,
+   "warm_min_seconds": 0.1434850869991351
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.0036153300025034696,
+   "grad_deviation": 5.017899366526154e-16,
+   "hess_deviation": 8.703616257338673e-16,
+   "loglik_deviation": 1.6559480068730068e-16,
+   "logz_deviation": 3.444872045527977e-16,
+   "max_loglik_width": 4.656612873077393e-10,
+   "max_logz_width": 7.105427357601002e-15,
+   "max_z_rel_width": 2.7854282284286007e-34,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.0036153300025034696,
+    0.0030292060000647325,
+    0.0027823249984066933,
+    0.0027934559984714724
+   ],
+   "warm_median_seconds": 0.0027934559984714724,
+   "warm_min_seconds": 0.0027823249984066933
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.05630538600235013,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 8
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.05630538600235013,
+    0.05742790000294917,
+    0.05850268900030642,
+    0.05629862799833063
+   ],
+   "warm_median_seconds": 0.05742790000294917,
+   "warm_min_seconds": 0.05629862799833063
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, the one scan)",
+   "first_seconds": 0.000358192999556195,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.000358192999556195,
+    0.0003131929988740012,
+    0.00029201299912529066
+   ],
+   "warm_median_seconds": 0.00030260299899964593,
+   "warm_min_seconds": 0.00029201299912529066
+  },
+  {
+   "backend": "cpu",
+   "case": "statistics aligned to the declared support (no row read)",
+   "first_seconds": 0.0005985030002193525,
+   "observed": 64,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0005985030002193525,
+    0.0007250790004036389,
+    0.0001456120007787831
+   ],
+   "state_bytes": 1215544,
+   "warm_median_seconds": 0.000435345500591211,
+   "warm_min_seconds": 0.0001456120007787831
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.00021254400053294376,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00021254400053294376,
+    0.00013411200052360073,
+    0.00013746199692832306,
+    0.00014060899775358848
+   ],
+   "warm_median_seconds": 0.00013746199692832306,
+   "warm_min_seconds": 0.00013411200052360073
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.00013953300003777258,
+   "grad_deviation": 1.1744852043194995e-16,
+   "hess_deviation": 1.3084977480614033e-16,
+   "loglik_deviation": 0.0,
+   "logz_deviation": 0.0,
+   "max_loglik_width": 6.984919309616089e-10,
+   "max_logz_width": 1.4210854715202004e-14,
+   "max_z_rel_width": 6.6584829442467235e-34,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.00013953300003777258,
+    4.0191000152844936e-05,
+    7.716699838056229e-05,
+    3.030500010936521e-05
+   ],
+   "warm_median_seconds": 4.0191000152844936e-05,
+   "warm_min_seconds": 3.030500010936521e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.0005792089978058357,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0005792089978058357,
+    0.0005870280001545325
+   ],
+   "warm_median_seconds": 0.0005870280001545325,
+   "warm_min_seconds": 0.0005870280001545325
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.005183368997677462,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005183368997677462,
+    0.005139287000929471
+   ],
+   "warm_median_seconds": 0.005139287000929471,
+   "warm_min_seconds": 0.005139287000929471
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.00028191000092192553,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00028191000092192553,
+    0.00010644099893397652,
+    8.146400068653747e-05,
+    7.35849971533753e-05
+   ],
+   "warm_median_seconds": 8.146400068653747e-05,
+   "warm_min_seconds": 7.35849971533753e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.008907080999051686,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.008907080999051686,
+    0.009100234998186352,
+    0.009137797002040315,
+    0.00869971800057101
+   ],
+   "warm_median_seconds": 0.009100234998186352,
+   "warm_min_seconds": 0.00869971800057101
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.0003553509995981585,
+   "grad_deviation": 2.970295497395134e-16,
+   "hess_deviation": 2.4011065690313734e-15,
+   "loglik_deviation": 1.5871444973604592e-16,
+   "logz_deviation": 2.2801131310015985e-16,
+   "max_loglik_width": 2.3283064365386963e-09,
+   "max_logz_width": 5.684341886080802e-14,
+   "max_z_rel_width": 1.02181049924091e-33,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.0003553509995981585,
+    0.0001653299987083301,
+    0.00013228500029072165,
+    0.00017213500177604146
+   ],
+   "warm_median_seconds": 0.0001653299987083301,
+   "warm_min_seconds": 0.00013228500029072165
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.055907947000378044,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.055907947000378044,
+    0.05497673600257258
+   ],
+   "warm_median_seconds": 0.05497673600257258,
+   "warm_min_seconds": 0.05497673600257258
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.346526774999802,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.346526774999802,
+    0.3670882599981269
+   ],
+   "warm_median_seconds": 0.3670882599981269,
+   "warm_min_seconds": 0.3670882599981269
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.007954931999847759,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007954931999847759,
+    0.012065438000718132,
+    0.007970650000061141,
+    0.011760299999878043
+   ],
+   "warm_median_seconds": 0.011760299999878043,
+   "warm_min_seconds": 0.007970650000061141
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 1.5760140559978026,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    1.5760140559978026,
+    1.6184827680008311,
+    1.4930755620007403,
+    1.6570593329997791
+   ],
+   "warm_median_seconds": 1.6184827680008311,
+   "warm_min_seconds": 1.4930755620007403
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.04261857099845656,
+   "grad_deviation": 5.237002173454088e-15,
+   "hess_deviation": 1.2773032181595811e-14,
+   "loglik_deviation": 1.9608507794086021e-16,
+   "logz_deviation": 1.4455677815317544e-15,
+   "max_loglik_width": 4.6566128730773926e-09,
+   "max_logz_width": 5.684341886080802e-14,
+   "max_z_rel_width": 1.028473360551965e-33,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.04261857099845656,
+    0.023782230000506388,
+    0.023054929999489104,
+    0.02258426399930613
+   ],
+   "warm_median_seconds": 0.023054929999489104,
+   "warm_min_seconds": 0.02258426399930613
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.4333093320019543,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 64
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.4333093320019543,
+    0.380650359998981,
+    0.3662985570008459,
+    0.3506223590011359
+   ],
+   "warm_median_seconds": 0.3662985570008459,
+   "warm_min_seconds": 0.3506223590011359
+  },
+  {
+   "backend": "cpu",
+   "case": "histogram (DIST-001, the one scan)",
+   "first_seconds": 0.0004637079982785508,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0004637079982785508,
+    0.00042369299990241416,
+    0.0003766570007428527
+   ],
+   "warm_median_seconds": 0.0004001750003226334,
+   "warm_min_seconds": 0.0003766570007428527
+  },
+  {
+   "backend": "cpu",
+   "case": "statistics aligned to the declared support (no row read)",
+   "first_seconds": 0.0006584839975403156,
+   "observed": 974,
+   "params": {
+    "groups": 4,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0006584839975403156,
+    0.0009102859985432588,
+    0.00039703899892629124
+   ],
+   "state_bytes": 1254904,
+   "warm_median_seconds": 0.000653662498734775,
+   "warm_min_seconds": 0.00039703899892629124
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.0016131119991769083,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0016131119991769083,
+    0.0016168100009963382,
+    0.0018558330011728685,
+    0.0017592789990885649
+   ],
+   "warm_median_seconds": 0.0017592789990885649,
+   "warm_min_seconds": 0.0016168100009963382
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.0002312600008735899,
+   "grad_deviation": 0.0,
+   "hess_deviation": 2.614547189687064e-17,
+   "loglik_deviation": 0.0,
+   "logz_deviation": 0.0,
+   "max_loglik_width": 4.6566128730773926e-09,
+   "max_logz_width": 5.684341886080802e-14,
+   "max_z_rel_width": 2.407540838240322e-32,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.0002312600008735899,
+    9.028400017996319e-05,
+    0.00010992500028805807,
+    0.00015021199942566454
+   ],
+   "warm_median_seconds": 0.00010992500028805807,
+   "warm_min_seconds": 9.028400017996319e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.0008594770006311592,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0008594770006311592,
+    0.0007458699983544648
+   ],
+   "warm_median_seconds": 0.0007458699983544648,
+   "warm_min_seconds": 0.0007458699983544648
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.005789722999907099,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.005789722999907099,
+    0.005433369002275867
+   ],
+   "warm_median_seconds": 0.005433369002275867,
+   "warm_min_seconds": 0.005433369002275867
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.0007696350003243424,
+   "params": {
+    "groups": 4,
+    "requests": 1,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0007696350003243424,
+    0.0005979910019959789,
+    0.0005369029968278483,
+    0.0005519500009540934
+   ],
+   "warm_median_seconds": 0.0005519500009540934,
+   "warm_min_seconds": 0.0005369029968278483
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 0.1478490889967361,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.1478490889967361,
+    0.14752210000006016,
+    0.1348642769989965,
+    0.1407483540024259
+   ],
+   "warm_median_seconds": 0.1407483540024259,
+   "warm_min_seconds": 0.1348642769989965
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 0.00462966399936704,
+   "grad_deviation": 3.200053906846013e-16,
+   "hess_deviation": 5.987716916291072e-16,
+   "loglik_deviation": 1.355265805326448e-16,
+   "logz_deviation": 1.8574619762931013e-16,
+   "max_loglik_width": 3.725290298461914e-08,
+   "max_logz_width": 9.094947017729282e-13,
+   "max_z_rel_width": 1.8905363162798972e-31,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    0.00462966399936704,
+    0.00307215599968913,
+    0.0030523249988618772,
+    0.003219375998014584
+   ],
+   "warm_median_seconds": 0.00307215599968913,
+   "warm_min_seconds": 0.0030523249988618772
+  },
+  {
+   "backend": "numpy",
+   "case": "repeated support enumeration with a rescan per request (numpy bincount)",
+   "first_seconds": 0.06413267699826974,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.06413267699826974,
+    0.06645971599937184
+   ],
+   "warm_median_seconds": 0.06645971599937184,
+   "warm_min_seconds": 0.06645971599937184
+  },
+  {
+   "backend": "duckdb",
+   "case": "repeated support enumeration with a rescan per request (DuckDB SQL)",
+   "first_seconds": 0.4189374250017863,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.4189374250017863,
+    0.44415571900026407
+   ],
+   "warm_median_seconds": 0.44415571900026407,
+   "warm_min_seconds": 0.44415571900026407
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "first_seconds": 0.049725239998224424,
+   "params": {
+    "groups": 4,
+    "requests": 100,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.049725239998224424,
+    0.046226940998167265,
+    0.07234159499785164,
+    0.049373003999789944
+   ],
+   "warm_median_seconds": 0.049373003999789944,
+   "warm_min_seconds": 0.046226940998167265
+  },
+  {
+   "backend": "cpu",
+   "case": "exponential family: Z, log Z, loglik, gradient, Hessian (retained state)",
+   "first_seconds": 18.308356592002383,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "samples_seconds": [
+    18.308356592002383,
+    27.189348849999078
+   ],
+   "warm_median_seconds": 27.189348849999078,
+   "warm_min_seconds": 27.189348849999078
+  },
+  {
+   "backend": "numpy",
+   "case": "numpy float64 enumeration from the retained counts (uncertified)",
+   "first_seconds": 2.8743591450001986,
+   "grad_deviation": 2.328495545250819e-14,
+   "hess_deviation": 3.084505565872708e-13,
+   "loglik_deviation": 6.436804792854389e-16,
+   "logz_deviation": 9.784028671550641e-15,
+   "max_loglik_width": 7.450580596923828e-08,
+   "max_logz_width": 9.094947017729282e-13,
+   "max_z_rel_width": 1.9672220092864574e-31,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "run",
+   "refused_requests": 0,
+   "samples_seconds": [
+    2.8743591450001986,
+    1.7833400169984088
+   ],
+   "warm_median_seconds": 1.7833400169984088,
+   "warm_min_seconds": 1.7833400169984088
+  },
+  {
+   "backend": "cpu",
+   "case": "categorical: exact Z, loglik enclosure, exact one-hot gradient (retained state)",
+   "limit": 4194304,
+   "message": "evaluation: needs 10240000 tensor, budget 4194304",
+   "need": 10240000,
+   "params": {
+    "groups": 4,
+    "requests": 10000,
+    "rows": 100000,
+    "support": 1024
+   },
+   "phase": "refusal",
+   "refusal_seconds": 0.033020655002474086,
+   "refused": true,
+   "resource": "tensor"
+  }
+ ],
+ "seconds": 64.54681470599826,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "budget": {
+    "tensor": 4194304
+   },
+   "grid": "categorical requests x support (benchmark budget tensor = 2^22)",
+   "largest_admitted": {
+    "requests": 10000,
+    "support": 64,
+    "tensor": 640000
+   },
+   "smallest_refused": {
+    "requests": 10000,
+    "support": 1024,
+    "tensor": 10240000
+   }
+  }
+ ]
+}

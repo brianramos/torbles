@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 1 |
-| planned | 26 |
-| in_progress | 36 |
+| planned | 25 |
+| in_progress | 37 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -4101,7 +4101,7 @@ Small-support distributions, partition functions and factorized inference.
 
 ### PROB-001: Small-support partition and likelihood functions
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Evaluate declared finite-support probability models, normalizers, likelihood gradients and Hessians from retained statistics.
 
@@ -4147,6 +4147,14 @@ Additional limits:
 - Products of statistics combine two states of 1..2 coordinates into at most 3, within groups (the CROSS JOIN); the independence declaration is the caller's statement, never verified against the data, and states without a data source (merged histograms) cannot be multiplied.
 - No FND-007 certificate is emitted: the support containment is checked natively at construction and reported as a refusal (FND-007 has no claim kind for membership in a finite set).
 - The benchmark's second case (factorized inference: graph size, elimination width, intermediate support and precision) belongs to PROB-002 and is not measured here.
+
+Validation receipts:
+
+Measured runtime: `40e4d463b0e30e7a2e78fde12ae5c7831010b78f`.
+
+- tests: [results/math/PROB-001/tests_test_math_prob.json](results/math/PROB-001/tests_test_math_prob.json)
+- tests: [results/math/PROB-001/sanitized_test_math_prob.json](results/math/PROB-001/sanitized_test_math_prob.json)
+- benchmarks: [results/math/PROB-001/benchmark_cpu_math_prob_vm.json](results/math/PROB-001/benchmark_cpu_math_prob_vm.json)
 
 <a id="prob-002"></a>
 
