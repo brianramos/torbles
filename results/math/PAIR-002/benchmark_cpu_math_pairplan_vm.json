@@ -1,0 +1,7698 @@
+{
+ "argv": [
+  "--capability",
+  "PAIR-002",
+  "--out",
+  "/home/claude/release/torbles-val/results/math/PAIR-002/benchmark_cpu_math_pairplan_vm.json"
+ ],
+ "capability": "PAIR-002",
+ "device": null,
+ "device_run": false,
+ "machine": {
+  "commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+  "cores": 2,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "dirty_worktree": true,
+  "host": "vm",
+  "libraries": {
+   "torbles/libalg.so": "42d3161c5c572c3fe0cdca38569310f11e20300b83a30d55957aacd9611c842c",
+   "torbles/libgpu_emu.so": "092e3b554d7cb2af87932273eec8a16647c7f1b5f0fa304a73911cb1e7099c8b",
+   "torbles/libmathgpu_emu.so": "777ade9caa751fdd8a7a64e53b76f93c054b57d691094b194d9ffe34a520b853"
+  },
+  "numpy": "2.5.3",
+  "python": "3.13.18",
+  "when": "2026-11-01T05:14:48+00:00"
+ },
+ "notes": [
+  "direct@cpu not timed at support 8, 1 requests: 45118089 planned evaluations (> 30000000)",
+  "direct@cpu not timed at support 64, 1 requests: 53227730 planned evaluations (> 30000000)",
+  "support@cpu not timed at support 64, 10000 requests: 36440128 planned evaluations (> 30000000)",
+  "direct@cpu not timed at support 64, 1 requests: 433122714 planned evaluations (> 30000000)",
+  "support@cpu not timed at support 64, 10000 requests: 36583264 planned evaluations (> 30000000)",
+  "support@cpu not timed at support 1024, 100 requests: 83604686 planned evaluations (> 30000000)",
+  "support@cpu not timed at support 1024, 100 requests: 86504246 planned evaluations (> 30000000)",
+  "cpu = math_pairplan.c (single-threaded); cuda = math_pairplan_gpu.cu, one work item per request tile (device runs only, --device); numpy = broadcasting over every pair (explicit) or select + sort + searchsorted per request (reconstruction); duckdb = self-joins.",
+  "Support sorting (the retained support table, the retained PAIR-001 prefix state, the KERNEL-001 feature state) is measured apart from the request batches; 'built per call' runs include their state build. planned_costs / planned_total are the FND-008 relative work units of each candidate (not time), recorded next to the measured times.",
+  "total wall time 7.6 s"
+ ],
+ "quick": false,
+ "records": [
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0003901590025634505,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 2011043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11139.2,
+    "support@cpu": 53219.2
+   },
+   "samples_seconds": [
+    0.0003901590025634505,
+    8.490400068694726e-05,
+    9.511300595477223e-05
+   ],
+   "warm_median_seconds": 9.000850332085975e-05,
+   "warm_min_seconds": 8.490400068694726e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 36,
+   "first_seconds": 0.0006233530002646148,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 36,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0006233530002646148,
+    0.0004728249987238087,
+    0.00036590999661711976,
+    0.000386591003916692,
+    0.0003753929995582439
+   ],
+   "warm_median_seconds": 0.00038099200173746794,
+   "warm_min_seconds": 0.00036590999661711976
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 8,
+   "first_seconds": 0.00017467299767304212,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00017467299767304212,
+    0.00015102599718375131,
+    0.00010790800297399983,
+    0.00017142700380645692,
+    0.0001247930049430579
+   ],
+   "warm_median_seconds": 0.0001379095010634046,
+   "warm_min_seconds": 0.00010790800297399983
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 500500,
+   "first_seconds": 0.004026912996778265,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 500500,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.004026912996778265,
+    0.004063335996761452,
+    0.003951999999117106,
+    0.004134157999942545,
+    0.004001541994512081
+   ],
+   "warm_median_seconds": 0.004032438995636767,
+   "warm_min_seconds": 0.003951999999117106
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001409539981978014,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001409539981978014,
+    0.00013538100029109046,
+    0.00013162899995222688,
+    0.00013084999955026433,
+    0.00015309599984902889
+   ],
+   "warm_median_seconds": 0.00013350500012165867,
+   "warm_min_seconds": 0.00013084999955026433
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.07577410199883161,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 1306349,
+   "samples_seconds": [
+    0.07577410199883161,
+    0.005168042996956501
+   ],
+   "warm_median_seconds": 0.005168042996956501,
+   "warm_min_seconds": 0.005168042996956501
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.012565003999043256,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 1306349,
+   "samples_seconds": [
+    0.012565003999043256,
+    0.008787501996266656
+   ],
+   "warm_median_seconds": 0.008787501996266656,
+   "warm_min_seconds": 0.008787501996266656
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00023802599753253162,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11171.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.00023802599753253162,
+    6.432000373024493e-05,
+    5.1003000407945365e-05
+   ],
+   "warm_median_seconds": 5.766150206909515e-05,
+   "warm_min_seconds": 5.1003000407945365e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.000390337998396717,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.000390337998396717,
+    0.0003242530001443811,
+    0.0003524810017552227,
+    0.00039119199936976656,
+    0.00033916100073838606
+   ],
+   "warm_median_seconds": 0.00034582100124680437,
+   "warm_min_seconds": 0.0003242530001443811
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 16,
+   "first_seconds": 0.00018619799811858684,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00018619799811858684,
+    0.00012327400327194482,
+    0.00010838700109161437,
+    0.00010586399730527773,
+    0.00011415399785619229
+   ],
+   "warm_median_seconds": 0.00011127049947390333,
+   "warm_min_seconds": 0.00010586399730527773
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.00786704100028146,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.00786704100028146,
+    0.007970024998940062,
+    0.0077016029972583055,
+    0.007715173996984959,
+    0.007778144994517788
+   ],
+   "warm_median_seconds": 0.0077466594957513735,
+   "warm_min_seconds": 0.0077016029972583055
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00016768500063335523,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00016768500063335523,
+    0.0001151730029960163,
+    0.00012862500443588942,
+    0.00011868000001413748,
+    0.00012148800306022167
+   ],
+   "warm_median_seconds": 0.00012008400153717957,
+   "warm_min_seconds": 0.0001151730029960163
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0038345819993992336,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 2622816,
+   "samples_seconds": [
+    0.0038345819993992336,
+    0.002884830995753873
+   ],
+   "warm_median_seconds": 0.002884830995753873,
+   "warm_min_seconds": 0.002884830995753873
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.006388889996742364,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 2622816,
+   "samples_seconds": [
+    0.006388889996742364,
+    0.0063655310004833154
+   ],
+   "warm_median_seconds": 0.0063655310004833154,
+   "warm_min_seconds": 0.0063655310004833154
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00022036000154912472,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11139.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.00022036000154912472,
+    7.973099855007604e-05,
+    5.683799827238545e-05
+   ],
+   "warm_median_seconds": 6.828449841123074e-05,
+   "warm_min_seconds": 5.683799827238545e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.0003840669960482046,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0003840669960482046,
+    0.0003650290018413216,
+    0.0007498010018025525,
+    0.00041314899863209575,
+    0.0003394699961063452
+   ],
+   "warm_median_seconds": 0.00038908900023670867,
+   "warm_min_seconds": 0.0003394699961063452
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 8,
+   "first_seconds": 0.00012723200052278116,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00012723200052278116,
+    0.00010980100341839716,
+    0.00010625399590935558,
+    0.00013987300189910457,
+    0.00010820599709404632
+   ],
+   "warm_median_seconds": 0.00010900350025622174,
+   "warm_min_seconds": 0.00010625399590935558
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.008630291995359585,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.008630291995359585,
+    0.00875290699332254,
+    0.008512216001690831,
+    0.0085500659988611,
+    0.008615704005933367
+   ],
+   "warm_median_seconds": 0.008582885002397234,
+   "warm_min_seconds": 0.008512216001690831
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00015017999976407737,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00015017999976407737,
+    0.00011904299753950909,
+    0.0001100369991036132,
+    0.00010757800191640854,
+    0.00010404000204289332
+   ],
+   "warm_median_seconds": 0.00010880750051001087,
+   "warm_min_seconds": 0.00010404000204289332
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0027271860017208382,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0027271860017208382,
+    0.003661343995190691
+   ],
+   "warm_median_seconds": 0.003661343995190691,
+   "warm_min_seconds": 0.003661343995190691
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.008807290003460366,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 999000,
+   "samples_seconds": [
+    0.008807290003460366,
+    0.00882365700090304
+   ],
+   "warm_median_seconds": 0.00882365700090304,
+   "warm_min_seconds": 0.00882365700090304
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00017171199579024687,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11171.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.00017171199579024687,
+    6.121300248196349e-05,
+    5.19640016136691e-05
+   ],
+   "warm_median_seconds": 5.658850204781629e-05,
+   "warm_min_seconds": 5.19640016136691e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.00037645200063707307,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00037645200063707307,
+    0.00034904199856100604,
+    0.00031346700416179374,
+    0.00029994900251040235,
+    0.00032063999969977885
+   ],
+   "warm_median_seconds": 0.0003170535019307863,
+   "warm_min_seconds": 0.00029994900251040235
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 16,
+   "first_seconds": 0.00013114699686411768,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013114699686411768,
+    0.00011518300016177818,
+    0.0001093199971364811,
+    0.00011540199921000749,
+    0.00010292800288880244
+   ],
+   "warm_median_seconds": 0.00011225149864912964,
+   "warm_min_seconds": 0.00010292800288880244
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.0084222570003476,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0084222570003476,
+    0.008545094002329279,
+    0.008627117997093592,
+    0.008531152998330072,
+    0.009385247998579871
+   ],
+   "warm_median_seconds": 0.008586105999711435,
+   "warm_min_seconds": 0.008531152998330072
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00020216600387357175,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00020216600387357175,
+    0.00012215299648232758,
+    0.00010804299381561577,
+    0.00010332700185244903,
+    0.00037695199716836214
+   ],
+   "warm_median_seconds": 0.00011509799514897168,
+   "warm_min_seconds": 0.00010332700185244903
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0026347289967816323,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026347289967816323,
+    0.0024867960019037127
+   ],
+   "warm_median_seconds": 0.0024867960019037127,
+   "warm_min_seconds": 0.0024867960019037127
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.00577008600521367,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 939213,
+   "samples_seconds": [
+    0.00577008600521367,
+    0.00541340700146975
+   ],
+   "warm_median_seconds": 0.00541340700146975,
+   "warm_min_seconds": 0.00541340700146975
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00015174799773376435,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 6492643.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11139.2,
+    "support@cpu": 53219.2
+   },
+   "samples_seconds": [
+    0.00015174799773376435,
+    6.018100248184055e-05,
+    5.027099541621283e-05
+   ],
+   "warm_median_seconds": 5.522599894902669e-05,
+   "warm_min_seconds": 5.027099541621283e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 36,
+   "first_seconds": 0.0004259449997334741,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 36,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0004259449997334741,
+    0.0003270129964221269,
+    0.0002961129939649254,
+    0.0003096130021731369,
+    0.0004034429948660545
+   ],
+   "warm_median_seconds": 0.0003183129992976319,
+   "warm_min_seconds": 0.0002961129939649254
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 8,
+   "first_seconds": 0.0001353370025753975,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001353370025753975,
+    0.00010760599980130792,
+    0.0001038959962897934,
+    0.00012615200103027746,
+    0.00011257800360908732
+   ],
+   "warm_median_seconds": 0.00011009200170519762,
+   "warm_min_seconds": 0.0001038959962897934
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1620900,
+   "first_seconds": 0.011873969000589568,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1620900,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.011873969000589568,
+    0.012043906004691962,
+    0.012252254004124552,
+    0.013132801002939232,
+    0.013075199000013527
+   ],
+   "warm_median_seconds": 0.01266372650206904,
+   "warm_min_seconds": 0.012043906004691962
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00020645100448746234,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00020645100448746234,
+    0.00012076300481567159,
+    0.0001307099955738522,
+    0.00011651899694697931,
+    0.0001063939998857677
+   ],
+   "warm_median_seconds": 0.00011864100088132545,
+   "warm_min_seconds": 0.0001063939998857677
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.2378559659991879,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 4214416,
+   "samples_seconds": [
+    0.2378559659991879,
+    0.017538416002935264
+   ],
+   "warm_median_seconds": 0.017538416002935264,
+   "warm_min_seconds": 0.017538416002935264
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.01906930300174281,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 4214416,
+   "samples_seconds": [
+    0.01906930300174281,
+    0.02808238899888238
+   ],
+   "warm_median_seconds": 0.02808238899888238,
+   "warm_min_seconds": 0.02808238899888238
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00020376499742269516,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11171.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.00020376499742269516,
+    7.322800229303539e-05,
+    5.266399966785684e-05
+   ],
+   "warm_median_seconds": 6.294600098044612e-05,
+   "warm_min_seconds": 5.266399966785684e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.0003878530042129569,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0003878530042129569,
+    0.0003662129965960048,
+    0.00037825799518032,
+    0.00031147200206760317,
+    0.00033261399948969483
+   ],
+   "warm_median_seconds": 0.0003494134980428498,
+   "warm_min_seconds": 0.00031147200206760317
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 16,
+   "first_seconds": 0.00012784300633938983,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00012784300633938983,
+    0.00010907999967457727,
+    0.00010306000331183895,
+    0.0001064750031218864,
+    0.00011068799358326942
+   ],
+   "warm_median_seconds": 0.00010777750139823183,
+   "warm_min_seconds": 0.00010306000331183895
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.00282977399911033,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.00282977399911033,
+    0.0027989340014755726,
+    0.0028478140011429787,
+    0.0032682399978511967,
+    0.002675982999789994
+   ],
+   "warm_median_seconds": 0.0028233740013092756,
+   "warm_min_seconds": 0.002675982999789994
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00012695199984591454,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00012695199984591454,
+    0.00014917400403646752,
+    0.0001077859997167252,
+    0.00011117300164187327,
+    0.0001029819977702573
+   ],
+   "warm_median_seconds": 0.00010947950067929924,
+   "warm_min_seconds": 0.0001029819977702573
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0012596230008057319,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 948930,
+   "samples_seconds": [
+    0.0012596230008057319,
+    0.0007029010012047365
+   ],
+   "warm_median_seconds": 0.0007029010012047365,
+   "warm_min_seconds": 0.0007029010012047365
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.003942562005249783,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 948930,
+   "samples_seconds": [
+    0.003942562005249783,
+    0.003470461997494567
+   ],
+   "warm_median_seconds": 0.003470461997494567,
+   "warm_min_seconds": 0.003470461997494567
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001563969999551773,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 12969043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11139.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.0001563969999551773,
+    6.463599856942892e-05,
+    5.359799979487434e-05
+   ],
+   "warm_median_seconds": 5.911699918215163e-05,
+   "warm_min_seconds": 5.359799979487434e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.0005181439992156811,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0005181439992156811,
+    0.0005029960011597723,
+    0.00040286200237460434,
+    0.0005144090027897619,
+    0.00035751300310948864
+   ],
+   "warm_median_seconds": 0.0004529290017671883,
+   "warm_min_seconds": 0.00035751300310948864
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 8,
+   "first_seconds": 0.00013342700549401343,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013342700549401343,
+    0.0001123710026149638,
+    0.00010999500227626413,
+    0.00010291299986420199,
+    0.00010071900032926351
+   ],
+   "warm_median_seconds": 0.00010645400107023306,
+   "warm_min_seconds": 0.00010071900032926351
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 3240000,
+   "first_seconds": 0.025843449002422858,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 3240000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.025843449002422858,
+    0.0270941210037563,
+    0.026730035999207757,
+    0.027820568000606727,
+    0.027107835005153902
+   ],
+   "warm_median_seconds": 0.0271009780044551,
+   "warm_min_seconds": 0.026730035999207757
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0002392999958829023,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002392999958829023,
+    0.00015576399891870096,
+    0.00011102999997092411,
+    0.00010618299711495638,
+    0.00014070299948798493
+   ],
+   "warm_median_seconds": 0.00012586649972945452,
+   "warm_min_seconds": 0.00010618299711495638
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.007848490997275803,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.007848490997275803,
+    0.007921947006252594
+   ],
+   "warm_median_seconds": 0.007921947006252594,
+   "warm_min_seconds": 0.007921947006252594
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.02481610399991041,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 3238200,
+   "samples_seconds": [
+    0.02481610399991041,
+    0.02584732900140807
+   ],
+   "warm_median_seconds": 0.02584732900140807,
+   "warm_min_seconds": 0.02584732900140807
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00019912499556085095,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11171.2,
+    "support@cpu": 53331.2
+   },
+   "samples_seconds": [
+    0.00019912499556085095,
+    6.438999844249338e-05,
+    5.232499825069681e-05
+   ],
+   "warm_median_seconds": 5.8357498346595094e-05,
+   "warm_min_seconds": 5.232499825069681e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.00041431600402574986,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 4272,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00041431600402574986,
+    0.0003569859982235357,
+    0.0003528119996190071,
+    0.00033986999915214255,
+    0.00032834499870659783
+   ],
+   "warm_median_seconds": 0.00034634099938557483,
+   "warm_min_seconds": 0.00032834499870659783
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 16,
+   "first_seconds": 0.0001717060004011728,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001717060004011728,
+    0.00011782500223489478,
+    0.00010329899669159204,
+    0.00010239799303235486,
+    9.929800580721349e-05
+   ],
+   "warm_median_seconds": 0.00010284849486197345,
+   "warm_min_seconds": 9.929800580721349e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.0029385479938355274,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0029385479938355274,
+    0.0029857889967388473,
+    0.0028603089958778583,
+    0.002848479001841042,
+    0.0029941940010758117
+   ],
+   "warm_median_seconds": 0.002923048996308353,
+   "warm_min_seconds": 0.002848479001841042
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00014665399794466794,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 16,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 4264,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00014665399794466794,
+    0.0001105010014725849,
+    0.0001015759989968501,
+    0.00010050100536318496,
+    9.877599950414151e-05
+   ],
+   "warm_median_seconds": 0.00010103850218001753,
+   "warm_min_seconds": 9.877599950414151e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.001134097998146899,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001134097998146899,
+    0.0008658920050947927
+   ],
+   "warm_median_seconds": 0.0008658920050947927,
+   "warm_min_seconds": 0.0008658920050947927
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.003153270998154767,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 8,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 341701,
+   "samples_seconds": [
+    0.003153270998154767,
+    0.002807425000355579
+   ],
+   "warm_median_seconds": 0.002807425000355579,
+   "warm_min_seconds": 0.002807425000355579
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00015539699961664155,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 2011043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11811.2,
+    "support@cpu": 61619.2
+   },
+   "samples_seconds": [
+    0.00015539699961664155,
+    6.11080031376332e-05,
+    5.181900633033365e-05
+   ],
+   "warm_median_seconds": 5.646350473398343e-05,
+   "warm_min_seconds": 5.181900633033365e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 2080,
+   "first_seconds": 0.0005594300018856302,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 2080,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11440,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0005594300018856302,
+    0.000397155003156513,
+    0.00036886800080537796,
+    0.00039689700497547165,
+    0.00041710199730005115
+   ],
+   "warm_median_seconds": 0.0003970260040659923,
+   "warm_min_seconds": 0.00036886800080537796
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.00013706299796467647,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013706299796467647,
+    0.00011867800640175119,
+    0.00015984199853846803,
+    0.00012777499796357006,
+    0.00012063400208717212
+   ],
+   "warm_median_seconds": 0.0001242045000253711,
+   "warm_min_seconds": 0.00011867800640175119
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 500500,
+   "first_seconds": 0.004163511002843734,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 500500,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.004163511002843734,
+    0.0039932820000103675,
+    0.003920036993804388,
+    0.004026565999083687,
+    0.0039302930017584
+   ],
+   "warm_median_seconds": 0.003961787500884384,
+   "warm_min_seconds": 0.003920036993804388
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001525150000816211,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001525150000816211,
+    0.0001372659971821122,
+    0.00012851299834437668,
+    0.0001089269935619086,
+    0.00015226600226014853
+   ],
+   "warm_median_seconds": 0.00013288949776324444,
+   "warm_min_seconds": 0.0001089269935619086
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.00932727700273972,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 10626365,
+   "samples_seconds": [
+    0.00932727700273972,
+    0.004304769994632807
+   ],
+   "warm_median_seconds": 0.004304769994632807,
+   "warm_min_seconds": 0.004304769994632807
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.007335869995586108,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 10626365,
+   "samples_seconds": [
+    0.007335869995586108,
+    0.0071193170006154105
+   ],
+   "warm_median_seconds": 0.0071193170006154105,
+   "warm_min_seconds": 0.0071193170006154105
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001480369974160567,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 12067.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.0001480369974160567,
+    6.540300091728568e-05,
+    5.090700142318383e-05
+   ],
+   "warm_median_seconds": 5.8155001170234755e-05,
+   "warm_min_seconds": 5.090700142318383e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 4096,
+   "first_seconds": 0.0004522949966485612,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11440,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0004522949966485612,
+    0.00039346900302916765,
+    0.00036940700374543667,
+    0.00038654599484289065,
+    0.00042555099935270846
+   ],
+   "warm_median_seconds": 0.00039000749893602915,
+   "warm_min_seconds": 0.00036940700374543667
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 128,
+   "first_seconds": 0.0001282319935853593,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001282319935853593,
+    0.00011210800585104153,
+    0.00014986099995439872,
+    0.00010824900527950376,
+    0.00010412099800305441
+   ],
+   "warm_median_seconds": 0.00011017850556527264,
+   "warm_min_seconds": 0.00010412099800305441
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.007499428000301123,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.007499428000301123,
+    0.007773653000185732,
+    0.00751910000690259,
+    0.007141933994716965,
+    0.007333575995289721
+   ],
+   "warm_median_seconds": 0.0074263380010961555,
+   "warm_min_seconds": 0.007141933994716965
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001596630027052015,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001596630027052015,
+    0.00011812199954874814,
+    0.00015822500427020714,
+    0.00013870499969925731,
+    0.00012432199582690373
+   ],
+   "warm_median_seconds": 0.00013151349776308052,
+   "warm_min_seconds": 0.00011812199954874814
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.003406935000384692,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 21170708,
+   "samples_seconds": [
+    0.003406935000384692,
+    0.00252088499837555
+   ],
+   "warm_median_seconds": 0.00252088499837555,
+   "warm_min_seconds": 0.00252088499837555
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.007403914998576511,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 21170708,
+   "samples_seconds": [
+    0.007403914998576511,
+    0.006082908999815118
+   ],
+   "warm_median_seconds": 0.006082908999815118,
+   "warm_min_seconds": 0.006082908999815118
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00019112399604637176,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11811.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.00019112399604637176,
+    7.095000182744116e-05,
+    5.607899947790429e-05
+   ],
+   "warm_median_seconds": 6.351450065267272e-05,
+   "warm_min_seconds": 5.607899947790429e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 4096,
+   "first_seconds": 0.00045898400276200846,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11440,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00045898400276200846,
+    0.0008451000030618161,
+    0.0005116060056025162,
+    0.0004156889990554191,
+    0.00037967499520163983
+   ],
+   "warm_median_seconds": 0.0004636475023289677,
+   "warm_min_seconds": 0.00037967499520163983
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.0001542550016893074,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001542550016893074,
+    0.00011100999836344272,
+    0.00010341600136598572,
+    0.00010897000174736604,
+    0.00010184400161961094
+   ],
+   "warm_median_seconds": 0.00010619300155667588,
+   "warm_min_seconds": 0.00010184400161961094
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.009307448999607004,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.009307448999607004,
+    0.009357992996228859,
+    0.00955519300623564,
+    0.00942117100203177,
+    0.009338367002783343
+   ],
+   "warm_median_seconds": 0.009389581999130314,
+   "warm_min_seconds": 0.009338367002783343
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00015182499919319525,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00015182499919319525,
+    0.00011932699999306351,
+    0.00010805999772856012,
+    0.00016380900342483073,
+    0.00011375400208635256
+   ],
+   "warm_median_seconds": 0.00011654050103970803,
+   "warm_min_seconds": 0.00010805999772856012
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.002601361004053615,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002601361004053615,
+    0.0024032229994190857
+   ],
+   "warm_median_seconds": 0.0024032229994190857,
+   "warm_min_seconds": 0.0024032229994190857
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.009560330996464472,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 999000,
+   "samples_seconds": [
+    0.009560330996464472,
+    0.00885589599783998
+   ],
+   "warm_median_seconds": 0.00885589599783998,
+   "warm_min_seconds": 0.00885589599783998
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00014838499919278547,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 12067.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.00014838499919278547,
+    6.25829998170957e-05,
+    5.080299888504669e-05
+   ],
+   "warm_median_seconds": 5.6692999351071194e-05,
+   "warm_min_seconds": 5.080299888504669e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 4096,
+   "first_seconds": 0.00045687099918723106,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11440,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00045687099918723106,
+    0.00043630700383801013,
+    0.00039305000245803967,
+    0.0003739460007636808,
+    0.00039733900484861806
+   ],
+   "warm_median_seconds": 0.00039519450365332887,
+   "warm_min_seconds": 0.0003739460007636808
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 128,
+   "first_seconds": 0.00013179099914850667,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013179099914850667,
+    0.0001555319977342151,
+    0.00011330400593578815,
+    0.0001111250021494925,
+    0.0001103570029954426
+   ],
+   "warm_median_seconds": 0.00011221450404264033,
+   "warm_min_seconds": 0.0001103570029954426
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.009457006999582518,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.009457006999582518,
+    0.008679523998580407,
+    0.00889373300014995,
+    0.00927687300281832,
+    0.009090077001019381
+   ],
+   "warm_median_seconds": 0.008991905000584666,
+   "warm_min_seconds": 0.008679523998580407
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00015621400234522298,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8856,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00015621400234522298,
+    0.0001373170016449876,
+    0.00011933100176975131,
+    0.00011574100062716752,
+    0.00010953300079563633
+   ],
+   "warm_median_seconds": 0.00011753600119845942,
+   "warm_min_seconds": 0.00010953300079563633
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0026824160013347864,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0026824160013347864,
+    0.0025037380037247203
+   ],
+   "warm_median_seconds": 0.0025037380037247203,
+   "warm_min_seconds": 0.0025037380037247203
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0066410050058038905,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 1011907,
+   "samples_seconds": [
+    0.0066410050058038905,
+    0.005138551001437008
+   ],
+   "warm_median_seconds": 0.005138551001437008,
+   "warm_min_seconds": 0.005138551001437008
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00021113199909450486,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 6492643.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11811.2,
+    "support@cpu": 61619.2
+   },
+   "samples_seconds": [
+    0.00021113199909450486,
+    6.209500133991241e-05,
+    8.138300472637638e-05
+   ],
+   "warm_median_seconds": 7.17390030331444e-05,
+   "warm_min_seconds": 6.209500133991241e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 2080,
+   "first_seconds": 0.0005049000028520823,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 2080,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11376,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0005049000028520823,
+    0.00041939900256693363,
+    0.000414324997109361,
+    0.0003832760048680939,
+    0.00038890200085006654
+   ],
+   "warm_median_seconds": 0.00040161349897971377,
+   "warm_min_seconds": 0.0003832760048680939
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.00012767699809046462,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00012767699809046462,
+    0.00012378199608065188,
+    0.00010979299986502156,
+    0.00010554600157774985,
+    0.00010411800030851737
+   ],
+   "warm_median_seconds": 0.0001076695007213857,
+   "warm_min_seconds": 0.00010411800030851737
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1620900,
+   "first_seconds": 0.012564201002533082,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1620900,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.012564201002533082,
+    0.013143748998118099,
+    0.014613091996579897,
+    0.012466558997402899,
+    0.012913607999507803
+   ],
+   "warm_median_seconds": 0.013028678498812951,
+   "warm_min_seconds": 0.012466558997402899
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00019173799955751747,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00019173799955751747,
+    0.00015271200390998274,
+    0.00013041700003668666,
+    0.0001115970007958822,
+    0.00010646200098562986
+   ],
+   "warm_median_seconds": 0.00012100700041628443,
+   "warm_min_seconds": 0.00010646200098562986
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.026949352999508847,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 34739140,
+   "samples_seconds": [
+    0.026949352999508847,
+    0.015752191000501625
+   ],
+   "warm_median_seconds": 0.015752191000501625,
+   "warm_min_seconds": 0.015752191000501625
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.019820005996734835,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 34739140,
+   "samples_seconds": [
+    0.019820005996734835,
+    0.01849505399877671
+   ],
+   "warm_median_seconds": 0.01849505399877671,
+   "warm_min_seconds": 0.01849505399877671
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0002133819943992421,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 12067.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.0002133819943992421,
+    6.494099943665788e-05,
+    5.085600423626602e-05
+   ],
+   "warm_median_seconds": 5.7898501836461946e-05,
+   "warm_min_seconds": 5.085600423626602e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 4032,
+   "first_seconds": 0.0004575139973894693,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4032,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11376,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0004575139973894693,
+    0.00041301800229121,
+    0.000411569002608303,
+    0.00047792599798412994,
+    0.00045345300168264657
+   ],
+   "warm_median_seconds": 0.0004332355019869283,
+   "warm_min_seconds": 0.000411569002608303
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 127,
+   "first_seconds": 0.000139288000355009,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 127,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.000139288000355009,
+    0.00011291100236121565,
+    0.00012378900282783434,
+    0.0001356959983240813,
+    0.00015408600302180275
+   ],
+   "warm_median_seconds": 0.00012974250057595782,
+   "warm_min_seconds": 0.00011291100236121565
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.002799752001010347,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.002799752001010347,
+    0.0028743259972543456,
+    0.0028504559959401377,
+    0.0028378299975884147,
+    0.0028013769988319837
+   ],
+   "warm_median_seconds": 0.002844142996764276,
+   "warm_min_seconds": 0.0028013769988319837
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001236989992321469,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 127,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001236989992321469,
+    0.00011023100523743778,
+    0.00014080900291446596,
+    0.00011695699504343793,
+    0.00010895999730564654
+   ],
+   "warm_median_seconds": 0.00011359400014043786,
+   "warm_min_seconds": 0.00010895999730564654
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0013397430011536926,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 7832764,
+   "samples_seconds": [
+    0.0013397430011536926,
+    0.0008450140012428164
+   ],
+   "warm_median_seconds": 0.0008450140012428164,
+   "warm_min_seconds": 0.0008450140012428164
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0038799929970991798,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 7832764,
+   "samples_seconds": [
+    0.0038799929970991798,
+    0.0036811099998885766
+   ],
+   "warm_median_seconds": 0.0036811099998885766,
+   "warm_min_seconds": 0.0036811099998885766
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001690459976089187,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 12969043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 11811.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.0001690459976089187,
+    6.217500049388036e-05,
+    5.5046999477781355e-05
+   ],
+   "warm_median_seconds": 5.861099998583086e-05,
+   "warm_min_seconds": 5.5046999477781355e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 4096,
+   "first_seconds": 0.0004535000043688342,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11376,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0004535000043688342,
+    0.0003947329969378188,
+    0.00039433000347344205,
+    0.00043572600407060236,
+    0.00040335700032301247
+   ],
+   "warm_median_seconds": 0.00039904499863041565,
+   "warm_min_seconds": 0.00039433000347344205
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 64,
+   "first_seconds": 0.00013171000318834558,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013171000318834558,
+    0.00010927599942078814,
+    0.0001106650015572086,
+    0.00011087700113421306,
+    0.00010654299694579095
+   ],
+   "warm_median_seconds": 0.00010997050048899837,
+   "warm_min_seconds": 0.00010654299694579095
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 3240000,
+   "first_seconds": 0.030393687993637286,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 3240000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.030393687993637286,
+    0.0296992239964311,
+    0.028256033001525793,
+    0.028522061002149712,
+    0.02794872800586745
+   ],
+   "warm_median_seconds": 0.028389047001837753,
+   "warm_min_seconds": 0.02794872800586745
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00035472500167088583,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00035472500167088583,
+    0.00025280499539803714,
+    0.00018748099682852626,
+    0.00013649699394591153,
+    0.0001100430017686449
+   ],
+   "warm_median_seconds": 0.0001619889953872189,
+   "warm_min_seconds": 0.0001100430017686449
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.009117265995882917,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.009117265995882917,
+    0.0077742640060023405
+   ],
+   "warm_median_seconds": 0.0077742640060023405,
+   "warm_min_seconds": 0.0077742640060023405
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.023561982001410797,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 3238200,
+   "samples_seconds": [
+    0.023561982001410797,
+    0.024337679999007378
+   ],
+   "warm_median_seconds": 0.024337679999007378,
+   "warm_min_seconds": 0.024337679999007378
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001928850033436902,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 12067.2,
+    "support@cpu": 69683.2
+   },
+   "samples_seconds": [
+    0.0001928850033436902,
+    6.21959989075549e-05,
+    5.349500133888796e-05
+   ],
+   "warm_median_seconds": 5.784550012322143e-05,
+   "warm_min_seconds": 5.349500133888796e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 4032,
+   "first_seconds": 0.00046274899796117097,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4032,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 11376,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00046274899796117097,
+    0.00039663999632466584,
+    0.0004033900040667504,
+    0.00038658000266877934,
+    0.000383546001103241
+   ],
+   "warm_median_seconds": 0.0003916099994967226,
+   "warm_min_seconds": 0.000383546001103241
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 127,
+   "first_seconds": 0.00013215899525675923,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 127,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00013215899525675923,
+    0.00011348800035193563,
+    0.0001069149948307313,
+    0.00011217799328733236,
+    0.0001024430021061562
+   ],
+   "warm_median_seconds": 0.00010954649405903183,
+   "warm_min_seconds": 0.0001024430021061562
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.0028979510025237687,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0028979510025237687,
+    0.002711046996410005,
+    0.0028419309965102,
+    0.0030289060014183633,
+    0.0026991999984602444
+   ],
+   "warm_median_seconds": 0.0027764889964601025,
+   "warm_min_seconds": 0.0026991999984602444
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001961919988389127,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 127,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 8815,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0001961919988389127,
+    0.00011558799451449886,
+    0.00010210600157734007,
+    9.720399975776672e-05,
+    0.00010449600085848942
+   ],
+   "warm_median_seconds": 0.00010330100121791475,
+   "warm_min_seconds": 9.720399975776672e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.001043914002366364,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.001043914002366364,
+    0.0008184399994206615
+   ],
+   "warm_median_seconds": 0.0008184399994206615,
+   "warm_min_seconds": 0.0008184399994206615
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.003273714995884802,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 64,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 338080,
+   "samples_seconds": [
+    0.003273714995884802,
+    0.0028411609964678064
+   ],
+   "warm_median_seconds": 0.0028411609964678064,
+   "warm_min_seconds": 0.0028411609964678064
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001592519984114915,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 2011043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 23139.2,
+    "support@cpu": 2059043.2
+   },
+   "samples_seconds": [
+    0.0001592519984114915,
+    6.995999865466729e-05,
+    5.3101997764315456e-05
+   ],
+   "warm_median_seconds": 6.153099820949137e-05,
+   "warm_min_seconds": 5.3101997764315456e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 193753,
+   "first_seconds": 0.002005472000746522,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 193753,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 82928,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.002005472000746522,
+    0.0018100189990946092,
+    0.0018071239974233322,
+    0.0017970019980566576,
+    0.001824245002353564
+   ],
+   "warm_median_seconds": 0.0018085714982589707,
+   "warm_min_seconds": 0.0017970019980566576
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 622,
+   "first_seconds": 0.00020735299767693505,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 622,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00020735299767693505,
+    0.00015338299999712035,
+    0.00013668199972016737,
+    0.00013758999557467178,
+    0.00013263300206745043
+   ],
+   "warm_median_seconds": 0.00013713599764741957,
+   "warm_min_seconds": 0.00013263300206745043
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 500500,
+   "first_seconds": 0.0042450979963177815,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 500500,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0042450979963177815,
+    0.0036876250014756806,
+    0.003735345002496615,
+    0.0037548299951595254,
+    0.004354864999186248
+   ],
+   "warm_median_seconds": 0.0037450874988280702,
+   "warm_min_seconds": 0.0036876250014756806
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0002566269977251068,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 622,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002566269977251068,
+    0.000160372001118958,
+    0.0001826450024964288,
+    0.0001518119970569387,
+    0.0001365510033792816
+   ],
+   "warm_median_seconds": 0.00015609199908794835,
+   "warm_min_seconds": 0.0001365510033792816
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.00952902200515382,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 172799963,
+   "samples_seconds": [
+    0.00952902200515382,
+    0.004407450003782287
+   ],
+   "warm_median_seconds": 0.004407450003782287,
+   "warm_min_seconds": 0.004407450003782287
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.008638000996143091,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 172799963,
+   "samples_seconds": [
+    0.008638000996143091,
+    0.00699383099708939
+   ],
+   "warm_median_seconds": 0.00699383099708939,
+   "warm_min_seconds": 0.00699383099708939
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001562649995321408,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 27139.2,
+    "support@cpu": 4057043.2
+   },
+   "samples_seconds": [
+    0.0001562649995321408,
+    6.242800009204075e-05,
+    5.137299740454182e-05
+   ],
+   "warm_median_seconds": 5.6900498748291284e-05,
+   "warm_min_seconds": 5.137299740454182e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 387506,
+   "first_seconds": 0.0032323739942512475,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 387506,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 82928,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0032323739942512475,
+    0.0033947959964280017,
+    0.003576621995307505,
+    0.003149750999000389,
+    0.004004409005574416
+   ],
+   "warm_median_seconds": 0.0034857089958677534,
+   "warm_min_seconds": 0.003149750999000389
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 1245,
+   "first_seconds": 0.00028162499802419916,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1245,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00028162499802419916,
+    0.00022871900000609457,
+    0.00021446400205604732,
+    0.0002221489994553849,
+    0.0002975050010718405
+   ],
+   "warm_median_seconds": 0.00022543399973073974,
+   "warm_min_seconds": 0.00021446400205604732
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.009647687002143357,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.009647687002143357,
+    0.014693860000988934,
+    0.0077108180048526265,
+    0.007363716002146248,
+    0.007982078997883946
+   ],
+   "warm_median_seconds": 0.007846448501368286,
+   "warm_min_seconds": 0.007363716002146248
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00025055599689949304,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1245,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00025055599689949304,
+    0.00020883799879811704,
+    0.00018883200391428545,
+    0.0001739670042297803,
+    0.00016881000192370266
+   ],
+   "warm_median_seconds": 0.00018139950407203287,
+   "warm_min_seconds": 0.00016881000192370266
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0036878989994875155,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 342702028,
+   "samples_seconds": [
+    0.0036878989994875155,
+    0.0026379840055597015
+   ],
+   "warm_median_seconds": 0.0026379840055597015,
+   "warm_min_seconds": 0.0026379840055597015
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.00650282199785579,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 342702028,
+   "samples_seconds": [
+    0.00650282199785579,
+    0.006173761998070404
+   ],
+   "warm_median_seconds": 0.006173761998070404,
+   "warm_min_seconds": 0.006173761998070404
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00017091500194510445,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 23139.2,
+    "support@cpu": 4057043.2
+   },
+   "samples_seconds": [
+    0.00017091500194510445,
+    6.323299749055877e-05,
+    5.2688003052026033e-05
+   ],
+   "warm_median_seconds": 5.79605002712924e-05,
+   "warm_min_seconds": 5.2688003052026033e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 386884,
+   "first_seconds": 0.00398277300701011,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 386884,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 82928,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00398277300701011,
+    0.003107345000898931,
+    0.003689426004712004,
+    0.002960277000966016,
+    0.0028250090035726316
+   ],
+   "warm_median_seconds": 0.0030338110009324737,
+   "warm_min_seconds": 0.0028250090035726316
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 622,
+   "first_seconds": 0.00017887199646793306,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 622,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00017887199646793306,
+    0.00018288199498783797,
+    0.00014780899800825864,
+    0.00013777200365439057,
+    0.00023377300385618582
+   ],
+   "warm_median_seconds": 0.0001653454964980483,
+   "warm_min_seconds": 0.00013777200365439057
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.008752244000788778,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.008752244000788778,
+    0.008963980995758902,
+    0.008675586999743246,
+    0.01019319100305438,
+    0.009255728997231927
+   ],
+   "warm_median_seconds": 0.009109854996495415,
+   "warm_min_seconds": 0.008675586999743246
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00025004300550790504,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 622,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00025004300550790504,
+    0.00017282600310863927,
+    0.00021231699793133885,
+    0.0001740160005283542,
+    0.00015051400259835646
+   ],
+   "warm_median_seconds": 0.00017342100181849673,
+   "warm_min_seconds": 0.00015051400259835646
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.002580129999842029,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.002580129999842029,
+    0.002429592997941654
+   ],
+   "warm_median_seconds": 0.002429592997941654,
+   "warm_min_seconds": 0.002429592997941654
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.010186941995925736,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 999000,
+   "samples_seconds": [
+    0.010186941995925736,
+    0.008600635999755468
+   ],
+   "warm_median_seconds": 0.008600635999755468,
+   "warm_min_seconds": 0.008600635999755468
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00014123199798632413,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 4009043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 27139.2,
+    "support@cpu": 4057043.2
+   },
+   "samples_seconds": [
+    0.00014123199798632413,
+    6.0163998568896204e-05,
+    4.962499951943755e-05
+   ],
+   "warm_median_seconds": 5.489449904416688e-05,
+   "warm_min_seconds": 4.962499951943755e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 387506,
+   "first_seconds": 0.0032588980029686354,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 387506,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 82928,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0032588980029686354,
+    0.0032004499953472987,
+    0.003288433996203821,
+    0.003083256000536494,
+    0.003265557999839075
+   ],
+   "warm_median_seconds": 0.003233003997593187,
+   "warm_min_seconds": 0.003083256000536494
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 1245,
+   "first_seconds": 0.0002834509941749275,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1245,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002834509941749275,
+    0.00017857799684861675,
+    0.0002059639955405146,
+    0.00017408200073987246,
+    0.0001518520002719015
+   ],
+   "warm_median_seconds": 0.0001763299987942446,
+   "warm_min_seconds": 0.0001518520002719015
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 1000000,
+   "first_seconds": 0.009206775001075584,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1000000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.009206775001075584,
+    0.009155286999884993,
+    0.009254602002329193,
+    0.010303251001460012,
+    0.009712086997751612
+   ],
+   "warm_median_seconds": 0.009483344500040403,
+   "warm_min_seconds": 0.009155286999884993
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0002494209984433837,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1245,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 54653,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002494209984433837,
+    0.00020245400082785636,
+    0.00017179299902636558,
+    0.00014897400251356885,
+    0.00014657300198450685
+   ],
+   "warm_median_seconds": 0.0001603835007699672,
+   "warm_min_seconds": 0.00014657300198450685
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0025611500022932887,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0025611500022932887,
+    0.0024902820005081594
+   ],
+   "warm_median_seconds": 0.0024902820005081594,
+   "warm_min_seconds": 0.0024902820005081594
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.006741132994648069,
+   "params": {
+    "imbalance": "1:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 1033513,
+   "samples_seconds": [
+    0.006741132994648069,
+    0.005854461000126321
+   ],
+   "warm_median_seconds": 0.005854461000126321,
+   "warm_min_seconds": 0.005854461000126321
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00017165600002044812,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 6492643.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 21683.2,
+    "support@cpu": 2154691.2
+   },
+   "samples_seconds": [
+    0.00017165600002044812,
+    0.00010784299956867471,
+    7.473800360457972e-05
+   ],
+   "warm_median_seconds": 9.129050158662722e-05,
+   "warm_min_seconds": 7.473800360457972e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 364231,
+   "first_seconds": 0.0036978569987695664,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 364231,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 69488,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0036978569987695664,
+    0.0034287399976165034,
+    0.005193417993723415,
+    0.004600820000632666,
+    0.006690989001072012
+   ],
+   "warm_median_seconds": 0.0048971189971780404,
+   "warm_min_seconds": 0.0034287399976165034
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 853,
+   "first_seconds": 0.0003417839980102144,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 853,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0003417839980102144,
+    0.0002570849974290468,
+    0.00022232199989957735,
+    0.00023860399960540235,
+    0.00024821799888741225
+   ],
+   "warm_median_seconds": 0.0002434109992464073,
+   "warm_min_seconds": 0.00022232199989957735
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 1620900,
+   "first_seconds": 0.023614169003849383,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1620900,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.023614169003849383,
+    0.023628931994608138,
+    0.023255013999005314,
+    0.02327585400053067,
+    0.023521637995145284
+   ],
+   "warm_median_seconds": 0.023398745997837977,
+   "warm_min_seconds": 0.023255013999005314
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00036433700006455183,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 853,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00036433700006455183,
+    0.0002589110008557327,
+    0.00022198499937076122,
+    0.00021447699691634625,
+    0.00021484099852386862
+   ],
+   "warm_median_seconds": 0.00021841299894731492,
+   "warm_min_seconds": 0.00021447699691634625
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.2958685039993725,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 551236678,
+   "samples_seconds": [
+    0.2958685039993725,
+    0.016645384996081702
+   ],
+   "warm_median_seconds": 0.016645384996081702,
+   "warm_min_seconds": 0.016645384996081702
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.018746713001746684,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 551236678,
+   "samples_seconds": [
+    0.018746713001746684,
+    0.018912296996859368
+   ],
+   "warm_median_seconds": 0.018912296996859368,
+   "warm_min_seconds": 0.018912296996859368
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00018427699978929013,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 22483.2,
+    "support@cpu": 874691.2
+   },
+   "samples_seconds": [
+    0.00018427699978929013,
+    6.489400402642787e-05,
+    5.026700091548264e-05
+   ],
+   "warm_median_seconds": 5.758050247095525e-05,
+   "warm_min_seconds": 5.026700091548264e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via support (state built per call)",
+   "evaluations": 155246,
+   "first_seconds": 0.0016937999971560203,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 155246,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 69488,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0016937999971560203,
+    0.0015944210026646033,
+    0.0016179650046979077,
+    0.0016060609996202402,
+    0.0015465769974980503
+   ],
+   "warm_median_seconds": 0.0016002410011424217,
+   "warm_min_seconds": 0.0015465769974980503
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via prefix (state built per call)",
+   "evaluations": 1035,
+   "first_seconds": 0.00025543700030539185,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1035,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00025543700030539185,
+    0.0001946340053109452,
+    0.00017169700004160404,
+    0.00016840400348883122,
+    0.00016273200162686408
+   ],
+   "warm_median_seconds": 0.00017005050176521763,
+   "warm_min_seconds": 0.00016273200162686408
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.0027980219965684228,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0027980219965684228,
+    0.0027568830046220683,
+    0.0027872550053871237,
+    0.003576228002202697,
+    0.0029991179981152527
+   ],
+   "warm_median_seconds": 0.002893186501751188,
+   "warm_min_seconds": 0.0027568830046220683
+  },
+  {
+   "backend": "cpu",
+   "case": "abs via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00021734400070272386,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1035,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00021734400070272386,
+    0.00021253799786791205,
+    0.000168985003256239,
+    0.00016143699758686125,
+    0.00016218300152104348
+   ],
+   "warm_median_seconds": 0.00016558400238864124,
+   "warm_min_seconds": 0.00016143699758686125
+  },
+  {
+   "backend": "numpy",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0022184639965416864,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 121023138,
+   "samples_seconds": [
+    0.0022184639965416864,
+    0.0008781459982856177
+   ],
+   "warm_median_seconds": 0.0008781459982856177,
+   "warm_min_seconds": 0.0008781459982856177
+  },
+  {
+   "backend": "duckdb",
+   "case": "abs, explicit pairs",
+   "first_seconds": 0.0038966920037637465,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "abs",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 121023138,
+   "samples_seconds": [
+    0.0038966920037637465,
+    0.004665940999984741
+   ],
+   "warm_median_seconds": 0.004665940999984741,
+   "warm_min_seconds": 0.004665940999984741
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00014507600280921906,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 12969043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 21683.2,
+    "support@cpu": 4249795.2
+   },
+   "samples_seconds": [
+    0.00014507600280921906,
+    6.343299901345745e-05,
+    4.9748996389098465e-05
+   ],
+   "warm_median_seconds": 5.6590997701277956e-05,
+   "warm_min_seconds": 4.9748996389098465e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 727609,
+   "first_seconds": 0.005500167004356626,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 727609,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 69488,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.005500167004356626,
+    0.0052642279988504015,
+    0.00540153600013582,
+    0.005710523000743706,
+    0.005782453001302201
+   ],
+   "warm_median_seconds": 0.005556029500439763,
+   "warm_min_seconds": 0.0052642279988504015
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 853,
+   "first_seconds": 0.00023745300131849945,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 853,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00023745300131849945,
+    0.0001688169941189699,
+    0.00018506400374462828,
+    0.00017153500084532425,
+    0.00016707400209270418
+   ],
+   "warm_median_seconds": 0.00017017599748214707,
+   "warm_min_seconds": 0.00016707400209270418
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 3240000,
+   "first_seconds": 0.03658668999560177,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 3240000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.03658668999560177,
+    0.04000841100059915,
+    0.0372614850057289,
+    0.03257476600265363,
+    0.03202653500193264
+   ],
+   "warm_median_seconds": 0.034918125504191266,
+   "warm_min_seconds": 0.03202653500193264
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0004467250037123449,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 853,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0004467250037123449,
+    0.00022963400260778144,
+    0.00019838599837385118,
+    0.0002364250030950643,
+    0.00023700999736320227
+   ],
+   "warm_median_seconds": 0.00023302950285142288,
+   "warm_min_seconds": 0.00019838599837385118
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.00802845299767796,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.00802845299767796,
+    0.008761999997659586
+   ],
+   "warm_median_seconds": 0.008761999997659586,
+   "warm_min_seconds": 0.008761999997659586
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.025130026995611843,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "within class 0",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 3238200,
+   "samples_seconds": [
+    0.025130026995611843,
+    0.02607345399883343
+   ],
+   "warm_median_seconds": 0.02607345399883343,
+   "warm_min_seconds": 0.02607345399883343
+  },
+  {
+   "backend": "cpu",
+   "case": "plan",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00019596199854277074,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1449043.2,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 22483.2,
+    "support@cpu": 874691.2
+   },
+   "samples_seconds": [
+    0.00019596199854277074,
+    6.754600326530635e-05,
+    4.9055997806135565e-05
+   ],
+   "warm_median_seconds": 5.830100053572096e-05,
+   "warm_min_seconds": 4.9055997806135565e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via support (state built per call)",
+   "evaluations": 155246,
+   "first_seconds": 0.0014344630035338923,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 155246,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 69488,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0014344630035338923,
+    0.0012976959988009185,
+    0.001281153003219515,
+    0.0014869279984850436,
+    0.0014285599972936325
+   ],
+   "warm_median_seconds": 0.0013631279980472755,
+   "warm_min_seconds": 0.001281153003219515
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via prefix (state built per call)",
+   "evaluations": 1035,
+   "first_seconds": 0.00020154400408500805,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1035,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00020154400408500805,
+    0.00016857300215633586,
+    0.00014489000022877008,
+    0.00014361899957293645,
+    0.0001423900030204095
+   ],
+   "warm_median_seconds": 0.00014425449990085326,
+   "warm_min_seconds": 0.0001423900030204095
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via direct (state built per call)",
+   "evaluations": 360000,
+   "first_seconds": 0.002955712996481452,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 360000,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 51248,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.002955712996481452,
+    0.004410706998896785,
+    0.003115834995696787,
+    0.0032252419987344183,
+    0.003237335004087072
+   ],
+   "warm_median_seconds": 0.003231288501410745,
+   "warm_min_seconds": 0.003115834995696787
+  },
+  {
+   "backend": "cpu",
+   "case": "mann_whitney via the planner's choice",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0002361410006415099,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1035,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46043,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002361410006415099,
+    0.00018803599959937856,
+    0.00016742199659347534,
+    0.00014474400086328387,
+    0.00014135500532574952
+   ],
+   "warm_median_seconds": 0.0001560829987283796,
+   "warm_min_seconds": 0.00014135500532574952
+  },
+  {
+   "backend": "numpy",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.0010967710040858947,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "samples_seconds": [
+    0.0010967710040858947,
+    0.0009095429995795712
+   ],
+   "warm_median_seconds": 0.0009095429995795712,
+   "warm_min_seconds": 0.0009095429995795712
+  },
+  {
+   "backend": "duckdb",
+   "case": "mann_whitney, explicit pairs",
+   "first_seconds": 0.004775935005454812,
+   "params": {
+    "imbalance": "9:1",
+    "pairs": "across",
+    "rows": 2000,
+    "statistic": "mann_whitney",
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "run",
+   "result": 376980,
+   "samples_seconds": [
+    0.004775935005454812,
+    0.0030468510012724437
+   ],
+   "warm_median_seconds": 0.0030468510012724437,
+   "warm_min_seconds": 0.0030468510012724437
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 128,
+   "first_seconds": 0.06464212599530583,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.06464212599530583,
+    0.05206058700423455,
+    0.04982473100244533
+   ],
+   "state_bytes": 12672,
+   "warm_median_seconds": 0.05094265900333994,
+   "warm_min_seconds": 0.04982473100244533
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 128,
+   "first_seconds": 0.0008511440028087236,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008511440028087236,
+    0.0007512209995184094,
+    0.000728209997760132
+   ],
+   "state_bytes": 9416,
+   "warm_median_seconds": 0.0007397154986392707,
+   "warm_min_seconds": 0.000728209997760132
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001829210013966076,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 180976736.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 2078.0,
+    "support@cpu": 2302.0
+   },
+   "samples_seconds": [
+    0.0001829210013966076,
+    3.617500624386594e-05
+   ],
+   "warm_median_seconds": 3.617500624386594e-05,
+   "warm_min_seconds": 3.617500624386594e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 64,
+   "first_seconds": 4.326700582168996e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 2302.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    4.326700582168996e-05,
+    2.708999818423763e-05,
+    2.15600011870265e-05,
+    2.065599983325228e-05,
+    2.0455998310353607e-05
+   ],
+   "warm_median_seconds": 2.110800051013939e-05,
+   "warm_min_seconds": 2.0455998310353607e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 8,
+   "first_seconds": 3.0471004720311612e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 2078.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 9416,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    3.0471004720311612e-05,
+    2.201500319642946e-05,
+    1.9818995497189462e-05,
+    2.09319987334311e-05,
+    2.0441002561710775e-05
+   ],
+   "warm_median_seconds": 2.0686500647570938e-05,
+   "warm_min_seconds": 1.9818995497189462e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 8.999995770864189e-07,
+   "params": {
+    "classes": 16,
+    "requests": 0,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    8.999995770864189e-07
+   ],
+   "warm_median_seconds": 8.999995770864189e-07,
+   "warm_min_seconds": 8.999995770864189e-07
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00013054399460088462,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 10570.0,
+    "support@cpu": 28298.0
+   },
+   "samples_seconds": [
+    0.00013054399460088462,
+    0.00011108800390502438
+   ],
+   "warm_median_seconds": 0.00011108800390502438,
+   "warm_min_seconds": 0.00011108800390502438
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 5672,
+   "first_seconds": 0.00011266500223428011,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 28298.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 5672,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00011266500223428011,
+    0.00013100799696985632,
+    0.00010097500489791855,
+    8.545500168111175e-05,
+    8.27269977889955e-05
+   ],
+   "warm_median_seconds": 9.321500328951515e-05,
+   "warm_min_seconds": 8.27269977889955e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 1240,
+   "first_seconds": 8.392000017920509e-05,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 10570.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1240,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 9416,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    8.392000017920509e-05,
+    8.077199890976772e-05,
+    5.510400660568848e-05,
+    5.422400136012584e-05,
+    5.508399772224948e-05
+   ],
+   "warm_median_seconds": 5.509400216396898e-05,
+   "warm_min_seconds": 5.422400136012584e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 0.014660293003544211,
+   "params": {
+    "classes": 16,
+    "requests": 11,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.014660293003544211
+   ],
+   "warm_median_seconds": 0.014660293003544211,
+   "warm_min_seconds": 0.014660293003544211
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0076209999970160425,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 861434.0,
+    "support@cpu": 2668218.0
+   },
+   "samples_seconds": [
+    0.0076209999970160425,
+    0.009541706000163686
+   ],
+   "warm_median_seconds": 0.009541706000163686,
+   "warm_min_seconds": 0.009541706000163686
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 576552,
+   "first_seconds": 0.008126310996885877,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 2668218.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 576552,
+    "name": "support@cpu",
+    "native_requests": 10000,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.008126310996885877,
+    0.008514149005350191
+   ],
+   "warm_median_seconds": 0.008514149005350191,
+   "warm_min_seconds": 0.008514149005350191
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 124856,
+   "first_seconds": 0.004384301995742135,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 861434.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 124856,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 9416,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.004384301995742135,
+    0.005876964001799934
+   ],
+   "warm_median_seconds": 0.005876964001799934,
+   "warm_min_seconds": 0.005876964001799934
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 128,
+   "first_seconds": 0.05083689599996433,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05083689599996433,
+    0.046836654997605365,
+    0.0464120600008755
+   ],
+   "state_bytes": 12672,
+   "warm_median_seconds": 0.04662435749924043,
+   "warm_min_seconds": 0.0464120600008755
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 128,
+   "first_seconds": 0.0011776279934565537,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0011776279934565537,
+    0.0011404179967939854,
+    0.001096990003134124
+   ],
+   "state_bytes": 12488,
+   "warm_median_seconds": 0.0011187039999640547,
+   "warm_min_seconds": 0.001096990003134124
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00016880999464774504,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 23799240.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 2078.0,
+    "support@cpu": 2190.0
+   },
+   "samples_seconds": [
+    0.00016880999464774504,
+    3.8163001590874046e-05
+   ],
+   "warm_median_seconds": 3.8163001590874046e-05,
+   "warm_min_seconds": 3.8163001590874046e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 36,
+   "first_seconds": 4.0074002754408866e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2190.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 36,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    4.0074002754408866e-05,
+    2.4315006157848984e-05,
+    2.2965999960433692e-05,
+    1.95419997908175e-05,
+    2.008199953706935e-05
+   ],
+   "warm_median_seconds": 2.152399974875152e-05,
+   "warm_min_seconds": 1.95419997908175e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 8,
+   "first_seconds": 3.6070996429771185e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2078.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 8,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 12488,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    3.6070996429771185e-05,
+    2.4879998818505555e-05,
+    3.250299778301269e-05,
+    2.0821004000026733e-05,
+    2.0376995962578803e-05
+   ],
+   "warm_median_seconds": 2.2850501409266144e-05,
+   "warm_min_seconds": 2.0376995962578803e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via direct (built per call)",
+   "chosen": false,
+   "evaluations": 5798715,
+   "first_seconds": 0.054765631997724995,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 23799240.5,
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 5798715,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 4804480,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.054765631997724995,
+    0.05139052799495403,
+    0.05724084800021956,
+    0.09124631399754435,
+    0.06622470999718644
+   ],
+   "warm_median_seconds": 0.061732778998703,
+   "warm_min_seconds": 0.05139052799495403
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00022420599998440593,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 10346.0,
+    "support@cpu": 28074.0
+   },
+   "samples_seconds": [
+    0.00022420599998440593,
+    0.000105135994090233
+   ],
+   "warm_median_seconds": 0.000105135994090233,
+   "warm_min_seconds": 0.000105135994090233
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 5616,
+   "first_seconds": 0.00012360600521788,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 28074.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 5616,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00012360600521788,
+    9.750400204211473e-05,
+    8.682400221005082e-05,
+    0.00011907600128324702,
+    9.433599916519597e-05
+   ],
+   "warm_median_seconds": 9.592000060365535e-05,
+   "warm_min_seconds": 8.682400221005082e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 1184,
+   "first_seconds": 7.049000123515725e-05,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 10346.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 1184,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 12488,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    7.049000123515725e-05,
+    6.144800136098638e-05,
+    5.327999679138884e-05,
+    8.801899821264669e-05,
+    7.464900409104303e-05
+   ],
+   "warm_median_seconds": 6.80485027260147e-05,
+   "warm_min_seconds": 5.327999679138884e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.013156385000911541,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 860314.0,
+    "support@cpu": 2676730.0
+   },
+   "samples_seconds": [
+    0.013156385000911541,
+    0.013983848999487236
+   ],
+   "warm_median_seconds": 0.013983848999487236,
+   "warm_min_seconds": 0.013983848999487236
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 578680,
+   "first_seconds": 0.012003627001831774,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2676730.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 578680,
+    "name": "support@cpu",
+    "native_requests": 10000,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.012003627001831774,
+    0.011737772001652047
+   ],
+   "warm_median_seconds": 0.011737772001652047,
+   "warm_min_seconds": 0.011737772001652047
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 124576,
+   "first_seconds": 0.005763630993897095,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 860314.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 124576,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 12488,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.005763630993897095,
+    0.005535341995710041
+   ],
+   "warm_median_seconds": 0.005535341995710041,
+   "warm_min_seconds": 0.005535341995710041
+  },
+  {
+   "backend": "cpu",
+   "case": "feature state (retained KERNEL-001, degree 2)",
+   "first_seconds": 0.05748024999775225,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05748024999775225,
+    0.056805159998475574
+   ],
+   "warm_median_seconds": 0.056805159998475574,
+   "warm_min_seconds": 0.056805159998475574
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via support (retained)",
+   "chosen": false,
+   "evaluations": 64,
+   "first_seconds": 6.260399823077023e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2814.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 64,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    6.260399823077023e-05,
+    3.672199818538502e-05
+   ],
+   "warm_median_seconds": 3.672199818538502e-05,
+   "warm_min_seconds": 3.672199818538502e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 3,
+   "first_seconds": 3.320800169603899e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2052.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 3,
+    "name": "features@cpu:dense",
+    "native_requests": 1,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    3.320800169603899e-05,
+    2.565800241427496e-05
+   ],
+   "warm_median_seconds": 2.565800241427496e-05,
+   "warm_min_seconds": 2.565800241427496e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via support (retained)",
+   "chosen": false,
+   "evaluations": 5812,
+   "first_seconds": 0.00016180999955395237,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 75354.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 5812,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00016180999955395237,
+    0.0001288779967580922
+   ],
+   "warm_median_seconds": 0.0001288779967580922,
+   "warm_min_seconds": 0.0001288779967580922
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 387,
+   "first_seconds": 0.0001062360024661757,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 6384.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 387,
+    "name": "features@cpu:dense",
+    "native_requests": 129,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    0.0001062360024661757,
+    9.985799988498911e-05
+   ],
+   "warm_median_seconds": 9.985799988498911e-05,
+   "warm_min_seconds": 9.985799988498911e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via support (retained)",
+   "chosen": false,
+   "evaluations": 578372,
+   "first_seconds": 0.00863589200162096,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 7302474.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 578372,
+    "name": "support@cpu",
+    "native_requests": 10000,
+    "state_bytes": 12672,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.00863589200162096,
+    0.008643888999358751
+   ],
+   "warm_median_seconds": 0.008643888999358751,
+   "warm_min_seconds": 0.008643888999358751
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 38256,
+   "first_seconds": 0.007441832996846642,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 8,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 438522.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 38256,
+    "name": "features@cpu:dense",
+    "native_requests": 12752,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    0.007441832996846642,
+    0.00787889300409006
+   ],
+   "warm_median_seconds": 0.00787889300409006,
+   "warm_min_seconds": 0.00787889300409006
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 1024,
+   "first_seconds": 0.05584230599924922,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05584230599924922,
+    0.04756388900568709,
+    0.04856060200108914
+   ],
+   "state_bytes": 70016,
+   "warm_median_seconds": 0.04806224550338811,
+   "warm_min_seconds": 0.04756388900568709
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 1024,
+   "first_seconds": 0.0008330810014740564,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0008330810014740564,
+    0.0008081649939413182,
+    0.0006719509983668104
+   ],
+   "state_bytes": 46152,
+   "warm_median_seconds": 0.0007400579961540643,
+   "warm_min_seconds": 0.0006719509983668104
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.000125865000882186,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 213415300.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 2558.0,
+    "support@cpu": 18430.0
+   },
+   "samples_seconds": [
+    0.000125865000882186,
+    3.0748000426683575e-05
+   ],
+   "warm_median_seconds": 3.0748000426683575e-05,
+   "warm_min_seconds": 3.0748000426683575e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 4096,
+   "first_seconds": 7.44989956729114e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 18430.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    7.44989956729114e-05,
+    9.304800187237561e-05,
+    5.5652999435551465e-05,
+    5.695300205843523e-05,
+    5.352799780666828e-05
+   ],
+   "warm_median_seconds": 5.630300074699335e-05,
+   "warm_min_seconds": 5.352799780666828e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 128,
+   "first_seconds": 3.1461000617127866e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 2558.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 46152,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    3.1461000617127866e-05,
+    2.442700497340411e-05,
+    2.195499837398529e-05,
+    4.69980004709214e-05,
+    3.192100120941177e-05
+   ],
+   "warm_median_seconds": 2.817400309140794e-05,
+   "warm_min_seconds": 2.195499837398529e-05
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 1.0950025171041489e-06,
+   "params": {
+    "classes": 16,
+    "requests": 0,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.0950025171041489e-06
+   ],
+   "warm_median_seconds": 1.0950025171041489e-06,
+   "warm_min_seconds": 1.0950025171041489e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001286289989366196,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 42730.0,
+    "support@cpu": 1466602.0
+   },
+   "samples_seconds": [
+    0.0001286289989366196,
+    0.00013430299441097304
+   ],
+   "warm_median_seconds": 0.00013430299441097304,
+   "warm_min_seconds": 0.00013430299441097304
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 365248,
+   "first_seconds": 0.0027831609986606054,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 1466602.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 365248,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0027831609986606054,
+    0.002795829997921828,
+    0.002970726003695745,
+    0.003190557996276766,
+    0.0028568759953486733
+   ],
+   "warm_median_seconds": 0.002913800999522209,
+   "warm_min_seconds": 0.002795829997921828
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 9280,
+   "first_seconds": 0.0002744550001807511,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 42730.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 9280,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 46152,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.0002744550001807511,
+    0.0002799869980663061,
+    0.0006184430021676235,
+    0.00024427099560853094,
+    0.00025139899662462994
+   ],
+   "warm_median_seconds": 0.00026569299734546803,
+   "warm_min_seconds": 0.00024427099560853094
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 0.012973038996278774,
+   "params": {
+    "classes": 16,
+    "requests": 8,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.012973038996278774
+   ],
+   "warm_median_seconds": 0.012973038996278774,
+   "warm_min_seconds": 0.012973038996278774
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.009734901999763679,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 4349466.0,
+    "support@cpu": 146122522.0
+   },
+   "samples_seconds": [
+    0.009734901999763679,
+    0.012370779004413635
+   ],
+   "warm_median_seconds": 0.012370779004413635,
+   "warm_min_seconds": 0.012370779004413635
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 996864,
+   "first_seconds": 0.031154903997958172,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 64,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 4349466.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 996864,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 46152,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.031154903997958172,
+    0.03007843800151022
+   ],
+   "warm_median_seconds": 0.03007843800151022,
+   "warm_min_seconds": 0.03007843800151022
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 1024,
+   "first_seconds": 0.06520737699611345,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.06520737699611345,
+    0.0514015510052559,
+    0.050700000996585004
+   ],
+   "state_bytes": 70016,
+   "warm_median_seconds": 0.05105077600092045,
+   "warm_min_seconds": 0.050700000996585004
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 1024,
+   "first_seconds": 0.001236172000062652,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.001236172000062652,
+    0.0012679440042120405,
+    0.0011185050025233068
+   ],
+   "state_bytes": 70728,
+   "warm_median_seconds": 0.0011932245033676736,
+   "warm_min_seconds": 0.0011185050025233068
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00012061400047969073,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 1733095236.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 2558.0,
+    "support@cpu": 18430.0
+   },
+   "samples_seconds": [
+    0.00012061400047969073,
+    3.1940995540935546e-05
+   ],
+   "warm_median_seconds": 3.1940995540935546e-05,
+   "warm_min_seconds": 3.1940995540935546e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 4096,
+   "first_seconds": 7.994200132088736e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 18430.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 4096,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    7.994200132088736e-05,
+    5.8647005062084645e-05,
+    5.261500336928293e-05,
+    6.641400250373408e-05,
+    6.489900260930881e-05
+   ],
+   "warm_median_seconds": 6.177300383569673e-05,
+   "warm_min_seconds": 5.261500336928293e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 128,
+   "first_seconds": 5.393600440584123e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2558.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 128,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 70728,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    5.393600440584123e-05,
+    3.0121998861432076e-05,
+    3.8890000723768026e-05,
+    3.219099744455889e-05,
+    3.5451004805509e-05
+   ],
+   "warm_median_seconds": 3.3821001125033945e-05,
+   "warm_min_seconds": 3.0121998861432076e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00013794400001643226,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 42730.0,
+    "support@cpu": 1450474.0
+   },
+   "samples_seconds": [
+    0.00013794400001643226,
+    0.0001008039980661124
+   ],
+   "warm_median_seconds": 0.0001008039980661124,
+   "warm_min_seconds": 0.0001008039980661124
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 361216,
+   "first_seconds": 0.0028702440031338483,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 1450474.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 361216,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0028702440031338483,
+    0.002977705000375863,
+    0.002887260001443792,
+    0.0029396399986580946,
+    0.002902977998019196
+   ],
+   "warm_median_seconds": 0.0029213089983386453,
+   "warm_min_seconds": 0.002887260001443792
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 9280,
+   "first_seconds": 0.00025925000227289274,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 42730.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 9280,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 70728,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.00025925000227289274,
+    0.0002567819974501617,
+    0.0002338679987587966,
+    0.00022716399689670652,
+    0.0002225339994765818
+   ],
+   "warm_median_seconds": 0.00023051599782775156,
+   "warm_min_seconds": 0.0002225339994765818
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00808442600100534,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 4353818.0,
+    "support@cpu": 146695066.0
+   },
+   "samples_seconds": [
+    0.00808442600100534,
+    0.007867489999625832
+   ],
+   "warm_median_seconds": 0.007867489999625832,
+   "warm_min_seconds": 0.007867489999625832
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 997952,
+   "first_seconds": 0.02356856199912727,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 4353818.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 997952,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 70728,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.02356856199912727,
+    0.02372275599918794
+   ],
+   "warm_median_seconds": 0.02372275599918794,
+   "warm_min_seconds": 0.02372275599918794
+  },
+  {
+   "backend": "cpu",
+   "case": "feature state (retained KERNEL-001, degree 2)",
+   "first_seconds": 0.06727516600221861,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.06727516600221861,
+    0.0570996379974531
+   ],
+   "warm_median_seconds": 0.0570996379974531,
+   "warm_min_seconds": 0.0570996379974531
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via support (retained)",
+   "chosen": false,
+   "evaluations": 2080,
+   "first_seconds": 0.0002459270035615191,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 27006.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 2080,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.0002459270035615191,
+    9.312200563726947e-05
+   ],
+   "warm_median_seconds": 9.312200563726947e-05,
+   "warm_min_seconds": 9.312200563726947e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 3,
+   "first_seconds": 5.564199818763882e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2052.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 3,
+    "name": "features@cpu:dense",
+    "native_requests": 1,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    5.564199818763882e-05,
+    4.368699592305347e-05
+   ],
+   "warm_median_seconds": 4.368699592305347e-05,
+   "warm_min_seconds": 4.368699592305347e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via support (retained)",
+   "chosen": false,
+   "evaluations": 381376,
+   "first_seconds": 0.006984143001318444,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 4582122.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 381376,
+    "name": "support@cpu",
+    "native_requests": 100,
+    "state_bytes": 70016,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.006984143001318444,
+    0.0070088209977257065
+   ],
+   "warm_median_seconds": 0.0070088209977257065,
+   "warm_min_seconds": 0.0070088209977257065
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 402,
+   "first_seconds": 0.00021058499987702817,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 6414.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 402,
+    "name": "features@cpu:dense",
+    "native_requests": 134,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    0.00021058499987702817,
+    0.00014946600276743993
+   ],
+   "warm_median_seconds": 0.00014946600276743993,
+   "warm_min_seconds": 0.00014946600276743993
+  },
+  {
+   "backend": "cpu",
+   "case": "(x y + 1)^2 via features (retained)",
+   "chosen": true,
+   "evaluations": 38556,
+   "first_seconds": 0.0083687229998759,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 64,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 439122.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 1,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 38556,
+    "name": "features@cpu:dense",
+    "native_requests": 12852,
+    "state_bytes": 13176,
+    "strategy": "features"
+   },
+   "samples_seconds": [
+    0.0083687229998759,
+    0.007456302999344189
+   ],
+   "warm_median_seconds": 0.007456302999344189,
+   "warm_min_seconds": 0.007456302999344189
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 15578,
+   "first_seconds": 0.0566923520018463,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0566923520018463,
+    0.058110841004236136,
+    0.05900348700379254
+   ],
+   "state_bytes": 1001472,
+   "warm_median_seconds": 0.05855716400401434,
+   "warm_min_seconds": 0.058110841004236136
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 15578,
+   "first_seconds": 0.0012568500023917295,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0012568500023917295,
+    0.0011738600005628541,
+    0.0011960680058109574
+   ],
+   "state_bytes": 642866,
+   "warm_median_seconds": 0.0011849640031869058,
+   "warm_min_seconds": 0.0011738600005628541
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00013956700422568247,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 12379296.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 5238.0,
+    "support@cpu": 2549262.0
+   },
+   "samples_seconds": [
+    0.00013956700422568247,
+    3.1503004720434546e-05
+   ],
+   "warm_median_seconds": 3.1503004720434546e-05,
+   "warm_min_seconds": 3.1503004720434546e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 636804,
+   "first_seconds": 0.004847575997700915,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 2549262.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 636804,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 1001472,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.004847575997700915,
+    0.004777028996613808,
+    0.004726661994936876,
+    0.004832608996366616,
+    0.005192345000978094
+   ],
+   "warm_median_seconds": 0.004804818996490212,
+   "warm_min_seconds": 0.004726661994936876
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 798,
+   "first_seconds": 9.194100130116567e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 5238.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 798,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 642866,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    9.194100130116567e-05,
+    6.270000449148938e-05,
+    4.092699964530766e-05,
+    3.58280012733303e-05,
+    3.3809003070928156e-05
+   ],
+   "warm_median_seconds": 3.837750045931898e-05,
+   "warm_min_seconds": 3.3809003070928156e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via direct (built per call)",
+   "chosen": false,
+   "evaluations": 2968729,
+   "first_seconds": 0.028322423000645358,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 12379296.5,
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 2968729,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 4804480,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.028322423000645358,
+    0.027391731993702706,
+    0.027719033001631033,
+    0.027192545996513218,
+    0.027585737996560056
+   ],
+   "warm_median_seconds": 0.02748873499513138,
+   "warm_min_seconds": 0.027192545996513218
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 1.286003680434078e-06,
+   "params": {
+    "classes": 16,
+    "requests": 0,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    1.286003680434078e-06
+   ],
+   "warm_median_seconds": 1.286003680434078e-06,
+   "warm_min_seconds": 1.286003680434078e-06
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001306409976677969,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 623026.0,
+    "support@cpu": 334424354.0
+   },
+   "samples_seconds": [
+    0.0001306409976677969,
+    9.308200242230669e-05
+   ],
+   "warm_median_seconds": 9.308200242230669e-05,
+   "warm_min_seconds": 9.308200242230669e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 154354,
+   "first_seconds": 0.003521833998092916,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 623026.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 154354,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 642866,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.003521833998092916,
+    0.0035103759946650825,
+    0.0035333230043761432,
+    0.0035188429974368773,
+    0.003499408994684927
+   ],
+   "warm_median_seconds": 0.00351460949605098,
+   "warm_min_seconds": 0.003499408994684927
+  },
+  {
+   "backend": "numpy",
+   "case": "|x - y| across classes (reconstruction: select + sort + searchsorted per request)",
+   "first_seconds": 0.02904469400527887,
+   "params": {
+    "classes": 16,
+    "requests": 15,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "one-shot",
+   "samples_seconds": [
+    0.02904469400527887
+   ],
+   "warm_median_seconds": 0.02904469400527887,
+   "warm_min_seconds": 0.02904469400527887
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.006990615998802241,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 61201506.0,
+    "support@cpu": "over budget"
+   },
+   "samples_seconds": [
+    0.006990615998802241,
+    0.006854867999209091
+   ],
+   "warm_median_seconds": 0.006854867999209091,
+   "warm_min_seconds": 0.006854867999209091
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 15209874,
+   "first_seconds": 0.348296735995973,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 1024,
+    "weights": false
+   },
+   "phase": "first+warm",
+   "planned_total": 61201506.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 15209874,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 642866,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.348296735995973,
+    0.35693614200135926
+   ],
+   "warm_median_seconds": 0.35693614200135926,
+   "warm_min_seconds": 0.35693614200135926
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained support table)",
+   "entries": 15578,
+   "first_seconds": 0.05554611299885437,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.05554611299885437,
+    0.060662238000077195,
+    0.05617270399670815
+   ],
+   "state_bytes": 1001472,
+   "warm_median_seconds": 0.05841747099839267,
+   "warm_min_seconds": 0.05617270399670815
+  },
+  {
+   "backend": "cpu",
+   "case": "support sorting (retained PAIR-001 prefix state)",
+   "entries": 15578,
+   "first_seconds": 0.0018032480002148077,
+   "params": {
+    "classes": 16,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "build",
+   "samples_seconds": [
+    0.0018032480002148077,
+    0.0017682940015220083,
+    0.0017715119975036941
+   ],
+   "state_bytes": 1016738,
+   "warm_median_seconds": 0.0017699029995128512,
+   "warm_min_seconds": 0.0017682940015220083
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.00012515299749793485,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": 12246124.5,
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 5318.0,
+    "support@cpu": 2678542.0
+   },
+   "samples_seconds": [
+    0.00012515299749793485,
+    3.27949965139851e-05
+   ],
+   "warm_median_seconds": 3.27949965139851e-05,
+   "warm_min_seconds": 3.27949965139851e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via support (retained)",
+   "chosen": false,
+   "evaluations": 669124,
+   "first_seconds": 0.005119740999361966,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 2678542.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 0,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 669124,
+    "name": "support@cpu",
+    "native_requests": 1,
+    "state_bytes": 1001472,
+    "strategy": "support"
+   },
+   "samples_seconds": [
+    0.005119740999361966,
+    0.005194502002268564,
+    0.0049967539962381124,
+    0.004943828003888484,
+    0.005004234000807628
+   ],
+   "warm_median_seconds": 0.00500049399852287,
+   "warm_min_seconds": 0.004943828003888484
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 818,
+   "first_seconds": 8.1821002822835e-05,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 5318.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 818,
+    "name": "prefix@cpu",
+    "native_requests": 1,
+    "state_bytes": 1016738,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    8.1821002822835e-05,
+    4.09640051657334e-05,
+    3.382199793122709e-05,
+    3.248399298172444e-05,
+    3.181200008839369e-05
+   ],
+   "warm_median_seconds": 3.3152995456475765e-05,
+   "warm_min_seconds": 3.181200008839369e-05
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via direct (built per call)",
+   "chosen": false,
+   "evaluations": 2910436,
+   "first_seconds": 0.026117768000403885,
+   "params": {
+    "classes": 16,
+    "requests": 1,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 12246124.5,
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 2910436,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 4804480,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.026117768000403885,
+    0.02579980200243881,
+    0.026640692005457822,
+    0.027235299996391404,
+    0.026985678996425122
+   ],
+   "warm_median_seconds": 0.026813185500941472,
+   "warm_min_seconds": 0.02579980200243881
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.0001984550035558641,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 639354.0,
+    "support@cpu": 346022594.0
+   },
+   "samples_seconds": [
+    0.0001984550035558641,
+    0.00011217300198040903
+   ],
+   "warm_median_seconds": 0.00011217300198040903,
+   "warm_min_seconds": 0.00011217300198040903
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 158436,
+   "first_seconds": 0.003808665001997724,
+   "params": {
+    "classes": 16,
+    "requests": 100,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 639354.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 158436,
+    "name": "prefix@cpu",
+    "native_requests": 100,
+    "state_bytes": 1016738,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.003808665001997724,
+    0.003830820001894608,
+    0.003820072997768875,
+    0.003665087999252137,
+    0.003635797998867929
+   ],
+   "warm_median_seconds": 0.003742580498510506,
+   "warm_min_seconds": 0.003635797998867929
+  },
+  {
+   "backend": "cpu",
+   "case": "plan with the retained states",
+   "chosen": "prefix@cpu",
+   "first_seconds": 0.008393808995606378,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "plan",
+   "planned_costs": {
+    "direct@cpu": "over budget",
+    "features@cpu:dense": "refused",
+    "features@cpu:sparse": "refused",
+    "prefix@cpu": 61145730.0,
+    "support@cpu": "over budget"
+   },
+   "samples_seconds": [
+    0.008393808995606378,
+    0.007694865998928435
+   ],
+   "warm_median_seconds": 0.007694865998928435,
+   "warm_min_seconds": 0.007694865998928435
+  },
+  {
+   "backend": "cpu",
+   "case": "|x - y| via prefix (retained)",
+   "chosen": true,
+   "evaluations": 15195930,
+   "first_seconds": 0.36118103800254175,
+   "params": {
+    "classes": 16,
+    "requests": 10000,
+    "rows": 200000,
+    "support": 1024,
+    "weights": true
+   },
+   "phase": "first+warm",
+   "planned_total": 61145730.0,
+   "result": {
+    "backend": "cpu",
+    "built": false,
+    "candidate": 3,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 15195930,
+    "name": "prefix@cpu",
+    "native_requests": 10000,
+    "state_bytes": 1016738,
+    "strategy": "prefix"
+   },
+   "samples_seconds": [
+    0.36118103800254175,
+    0.3426346039996133
+   ],
+   "warm_median_seconds": 0.3426346039996133,
+   "warm_min_seconds": 0.3426346039996133
+  },
+  {
+   "backend": "cpu",
+   "case": "an arbitrary similarity via direct pairs at the pair budget",
+   "first_seconds": 0.0006066900023142807,
+   "params": {
+    "pairs": 39856
+   },
+   "phase": "run",
+   "result": {
+    "backend": "cpu",
+    "built": true,
+    "candidate": 4,
+    "device": "cpu",
+    "device_name": "native CPU",
+    "evaluations": 39856,
+    "name": "direct@cpu",
+    "native_requests": 1,
+    "state_bytes": 12848,
+    "strategy": "direct"
+   },
+   "samples_seconds": [
+    0.0006066900023142807,
+    0.0005319460033206269
+   ],
+   "warm_median_seconds": 0.0005319460033206269,
+   "warm_min_seconds": 0.0005319460033206269
+  },
+  {
+   "backend": "cpu",
+   "case": "the same one past the pair budget",
+   "limit": 39855,
+   "message": "pairwise plan: forced candidate refused: needs 39856 iterations, budget 39855",
+   "need": 39856,
+   "params": {
+    "pairs": 39856
+   },
+   "phase": "refusal",
+   "refusal_seconds": 7.175600330810994e-05,
+   "refused": true,
+   "resource": "iterations"
+  }
+ ],
+ "seconds": 7.580718953999167,
+ "seed": 2026,
+ "thresholds": [
+  {
+   "grid": "direct pairs against the declared pair budget (iterations)",
+   "largest_admitted": {
+    "budget": 39856,
+    "pairs": 39856
+   },
+   "smallest_refused": {
+    "budget": 39855,
+    "pairs": 39856
+   }
+  }
+ ]
+}

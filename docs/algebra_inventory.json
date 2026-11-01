@@ -745,10 +745,10 @@
      "results/math/FND-005/benchmark_cpu_math_registry_vm.json",
      "results/math/FND-005/benchmark_device_math_registry_WIN_OHVNN0FUC09.json"
     ],
-    "measured_runtime_commit": "00f63ab97ae8685403b2b44d7d37d366626ebf88",
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
     "source_sha256": {
-     "torbles/math_registry.h": "d5965383455b8b3388c65bb10ce07bd1cabb03879d00af0d28352c7ccb444c85",
-     "torbles/math_registry.c": "7cb3c3620f45c566d725b4937ebae62a1f5c90a1cbf46fb7c248f271ba1d2fcb",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_registry.c": "c37de3b5cef0c10b2b1e1741e256b332b20dea14caa9e623173142d8735aa43f",
      "torbles/math_registry_gpu.cu": "70c98679315089365f90d659775c269c6d10433d57ebc4d23c56ac502b9a6086",
      "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
      "tests/test_math_registry.py": "c964a3fc750b0ed19227b4354a8f1a3563f14984fa7c867dae93dd5efe9cd5d3",
@@ -1016,9 +1016,9 @@
      "torbles/math_planner.py": "ffe88e92285d1e615f6f445f51b22d880f2ac4a813fbebbc5b238c8f5c4b7ea7",
      "tests/test_math_planner.py": "8a6c04db5d2970e5b5ca083a63c93628a19f03d3ac85f33fdf9fa166b486f291",
      "bench/benchmark_math_planner.py": "e686189af3275170a1af760220aa52ea5cd688e1c02994a1a713ecce8c1dc0f6",
-     "torbles/math_registry.c": "7cb3c3620f45c566d725b4937ebae62a1f5c90a1cbf46fb7c248f271ba1d2fcb",
+     "torbles/math_registry.c": "c37de3b5cef0c10b2b1e1741e256b332b20dea14caa9e623173142d8735aa43f",
      "torbles/math_registry_gpu.cu": "70c98679315089365f90d659775c269c6d10433d57ebc4d23c56ac502b9a6086",
-     "torbles/math_registry.h": "d5965383455b8b3388c65bb10ce07bd1cabb03879d00af0d28352c7ccb444c85",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
      "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
      "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
      "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
@@ -1048,7 +1048,7 @@
      "torbles/math_lattice.c": "893aebcf561a3bb091965593c2b74b61e0430d2f9f7a5adadfac0b06dac4b881",
      "torbles/math_spec.c": "2f6e51a2c33ac7e3d801a11a1c6bf5edb5103500caa88bb0af09814eadd0ae4f"
     },
-    "measured_runtime_commit": "00f63ab97ae8685403b2b44d7d37d366626ebf88",
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
     "tests": [
      "results/math/FND-008/tests_test_math_planner.json",
      "results/math/FND-008/sanitized_test_math_planner.json"
@@ -3220,7 +3220,7 @@
    "id": "PAIR-002",
    "family_id": "PAIR",
    "title": "Structured pairwise query planning",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -3262,7 +3262,75 @@
     "At most 8 feature columns; Mann-Whitney over one column; an unordered pair set needs a symmetric kernel (refused per request otherwise); results are limited to 1024 bits (an unprovable magnitude rejects the support and direct candidates); the sorted prefix needs nonnegative weights and class masses below 2^64.",
     "The CUDA tile kernel uses 255 registers with a 576-byte stack frame and register spills (1024-bit arithmetic); its work items are tiles, so a single small request has little parallelism; the CPU loops are single-threaded."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_pairplan.h": "fb2c60fc2eaac9c414ba961a84846a2ed24cbea235bf312cd219684e8f5789b0",
+     "torbles/math_pairplan.c": "c7620adfc1ec9fb41ba95508e2e0c8a94895b7f944200d626a73f329fa62d77f",
+     "torbles/math_pairplan_gpu.cu": "29caed42b393c848ec1ceab54ea3f72886659b8fb606822c49537d971fa5392c",
+     "torbles/math_pairplan.py": "d59e2cc7185ab923baa35abc91000482ab9c426b90c708e42b5e0f94bc252392",
+     "tests/test_math_pairplan.py": "5a5347b59c485d06ae0928e58eab2466e919771d68ab832a66543d55f152d6a3",
+     "bench/benchmark_math_pairplan.py": "96d5ea117ec0df5150d61331348f7b6792b16b2927bb1a6abe00ae7812edea11",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_dist.h": "398d90f7d7d503e20de8bbbef0c1c03ea7998d71f3ef568211999ee79a715108",
+     "torbles/math_pair.h": "f95ed771f1e772c0bbee7d6e786511d8b4ab98c1b075add36ea3d62229ab41d4",
+     "torbles/math_kernel.h": "0c8d737ae34f13a91cd3bb53db2711f5bb75bef86753ba4da95f632807aa75a7",
+     "torbles/math_planner.h": "d8353315be260c8aea379fb6eb2e232094d3d70f8be21972b992199a9f121d49",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_kernel.py": "0e596c6a48806673ca98e40985c7ca583e10caf25b72639ccdac72f977bd0d13",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_dist.py": "27ffa1e1d92aec48e3297c2d09c6800b12b47bb276edc4d8463dd57708352762",
+     "torbles/math_pair.py": "58bbfbb95245c8e40b127ac233b9e5619d9740a51aa9aae57502f4930203dd35",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_registry.c": "c37de3b5cef0c10b2b1e1741e256b332b20dea14caa9e623173142d8735aa43f",
+     "torbles/math_dist.c": "c7c131d643112c852c46ab3213d86ddb3f1c50d5cf31d965a4b5c358cb9179dc",
+     "torbles/math_pair.c": "afd82ed36c565cd085d1d76b5c33a1b2ee68e05ecaff03599ecf0001fa1e4178",
+     "torbles/math_kernel.c": "1e84777f567a3ec31b07fca924449dd168029f36c7ebff09b4628029b4776208",
+     "torbles/math_planner.c": "127a5f83322c03ab8f61f36011f3e2d32d3baf5a5a173951e8ac252b4f8b3e4c",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/PAIR-002/tests_test_math_pairplan.json",
+     "results/math/PAIR-002/sanitized_test_math_pairplan.json"
+    ],
+    "benchmarks": [
+     "results/math/PAIR-002/benchmark_cpu_math_pairplan_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_pairplan_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/PAIR-002/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/PAIR-002/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "LIN-001",
@@ -3572,7 +3640,7 @@
    "id": "TENSOR-001",
    "family_id": "TENSOR",
    "title": "Sparse and factored moment tensors",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -3612,13 +3680,69 @@
     "A factored form's bound is a conservative sum over its terms, so some factored operations refuse what the dense form computes; count tensors have no factored form.",
     "The CPU loops are single-threaded; the device sparse build sorts its hash table on the host."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3",
+     "torbles/math_tensor_gpu.cu": "5f9f649cb4c6f1d1b437a852494c50b9dcd8f66e92ea4823deb2cccf564cd28d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "tests/test_math_tensor.py": "06f05a0167645474fd18cb0880f2470ce079097ef40438cd2f67a7253a175e4d",
+     "bench/benchmark_math_tensor.py": "b9f51a0d3fe3de6fdf8d703227211d6660d6f1bf3aec55590441cf1fb74ef0f3",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/math_planner.h": "d8353315be260c8aea379fb6eb2e232094d3d70f8be21972b992199a9f121d49",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_registry.c": "c37de3b5cef0c10b2b1e1741e256b332b20dea14caa9e623173142d8735aa43f",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/math_planner.c": "127a5f83322c03ab8f61f36011f3e2d32d3baf5a5a173951e8ac252b4f8b3e4c",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/TENSOR-001/tests_test_math_tensor.json",
+     "results/math/TENSOR-001/sanitized_test_math_tensor.json"
+    ],
+    "benchmarks": [
+     "results/math/TENSOR-001/benchmark_cpu_math_tensor_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_tensor_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/TENSOR-001/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/TENSOR-001/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "TENSOR-002",
    "family_id": "TENSOR",
    "title": "Costed contraction planning",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -3657,13 +3781,69 @@
     "No factored contraction kernel: factored operands are expanded (costed and budgeted); the CUDA contraction is dense only (sparse candidates run on the CPU).",
     "Sparse sizes in a plan are exact upper bounds, not the data's actual supports; the rates are hand-set estimates in relative work units (not calibrated times); traces within one tensor are not supported."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3",
+     "torbles/math_tensor_gpu.cu": "5f9f649cb4c6f1d1b437a852494c50b9dcd8f66e92ea4823deb2cccf564cd28d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "tests/test_math_tensor.py": "06f05a0167645474fd18cb0880f2470ce079097ef40438cd2f67a7253a175e4d",
+     "bench/benchmark_math_tensor.py": "b9f51a0d3fe3de6fdf8d703227211d6660d6f1bf3aec55590441cf1fb74ef0f3",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/math_planner.h": "d8353315be260c8aea379fb6eb2e232094d3d70f8be21972b992199a9f121d49",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_registry.c": "c37de3b5cef0c10b2b1e1741e256b332b20dea14caa9e623173142d8735aa43f",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/math_planner.c": "127a5f83322c03ab8f61f36011f3e2d32d3baf5a5a173951e8ac252b4f8b3e4c",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/TENSOR-002/tests_test_math_tensor.json",
+     "results/math/TENSOR-002/sanitized_test_math_tensor.json"
+    ],
+    "benchmarks": [
+     "results/math/TENSOR-002/benchmark_cpu_math_tensor_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_tensor_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/TENSOR-002/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/TENSOR-002/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "KERNEL-001",
    "family_id": "KERNEL",
    "title": "Exact finite-feature kernel embeddings",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -3702,13 +3882,69 @@
     "The feature tensor stores (n + 1)^D cells per group (dense, or sparse at the data's support), so the tensor budget bounds the dimension and degree; listwise only (a row with a NULL feature column does not contribute).",
     "Answers are limited to 1024 bits (refused beyond) and are unreduced num / den natively; the CUDA query kernel has a 1984-byte stack frame with register spills and runs one work item per request."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_kernel.h": "0c8d737ae34f13a91cd3bb53db2711f5bb75bef86753ba4da95f632807aa75a7",
+     "torbles/math_kernel.c": "1e84777f567a3ec31b07fca924449dd168029f36c7ebff09b4628029b4776208",
+     "torbles/math_kernel_gpu.cu": "4fa85a5ba1e94c5645fed13e1160258c65b7fff7b0d76a54c33d846b42130238",
+     "torbles/math_kernel.py": "0e596c6a48806673ca98e40985c7ca583e10caf25b72639ccdac72f977bd0d13",
+     "tests/test_math_kernel.py": "d347a934ce569f5a30540bccce785d9666837eda7b7d4d045691b4d1ceacd404",
+     "bench/benchmark_math_kernel.py": "6529b1717e165da455dbef827a7d3305a4bbf51dc25b15085275e4ea1a5b4df8",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/KERNEL-001/tests_test_math_kernel.json",
+     "results/math/KERNEL-001/sanitized_test_math_kernel.json"
+    ],
+    "benchmarks": [
+     "results/math/KERNEL-001/benchmark_cpu_math_kernel_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_kernel_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/KERNEL-001/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/KERNEL-001/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "KERNEL-002",
    "family_id": "KERNEL",
    "title": "Approximate spectral feature kernels",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -3752,7 +3988,89 @@
     "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.",
     "No FND-007 certificate is emitted: an approximate kernel quantity is neither a row relation nor a polynomial law; the answers carry their own error records."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_kapprox.h": "c668a9cee3cf2a3ef7e3a0fc3d66f0b091c33f47987189a4a2d051d6d30f1f9a",
+     "torbles/math_kapprox.c": "2819bf049f52fea647037d5f96299a74e1b28b9c13dd210955f080b76c5507d7",
+     "torbles/math_kapprox_gpu.cu": "bc8c86702eb13ab4249705baeeb5dd75b4180b2032b814738d298d769f888985",
+     "torbles/math_kapprox.py": "2ec6a9fe2ce72f5472392e80986db10e2b29524ca227684cfd45b4984e26a06c",
+     "tests/test_math_kapprox.py": "fa9c4735e364c935a52fb3cdf66434b995d9139c093baf319c61741b746a8d14",
+     "bench/benchmark_math_kapprox.py": "1fd06862d38cd65e8e7b768040d5cdd59c747df3eeb161fcb00f200d325dc676",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_carriers.h": "a88cd9594e47dac4153c6f0a470e0509eb00352971f2f691858c51c5bd8ccb33",
+     "torbles/math_calc.h": "a623ba10cdaf6e4127956c22b81c9236849ccef57f20a185e85a80c9a4b8d9fe",
+     "torbles/math_fourier.h": "14d603d8e964532a75ea967d9cd328030401965dbd00d09e65722c502076c2e3",
+     "torbles/math_kernel.h": "0c8d737ae34f13a91cd3bb53db2711f5bb75bef86753ba4da95f632807aa75a7",
+     "torbles/math_approx.h": "05014558df053d695cc7925461b70e8a7ce8c4719dbbfc6e2a24185a9429569b",
+     "torbles/math_certificates.h": "147ffccb196e31be4f72073e24a0b2086000bb987708b8ac4bd2e74767be7a3e",
+     "torbles/math_persist.h": "d1f7c2a260f2d1e88119ba809afe353d3c6e1cb06ddfab8ef78fab027f742a87",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_kernel.py": "0e596c6a48806673ca98e40985c7ca583e10caf25b72639ccdac72f977bd0d13",
+     "torbles/math_carriers.py": "e17eba2ccfee281c63551b186b34591580032b3a2f2c3ed9e66fb96131510ef2",
+     "torbles/math_fourier.py": "5229d7b4732fdcaaf92ac3898a43ab1e11e3dc5703aafb1b392271138c164739",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/math_persist.py": "8e4e02b7ceb3d3bcebadaf8699ba3bb9b7209f17a82f1e420b91a75a5c243c73",
+     "torbles/math_certificates.py": "87db90fcdf0af353d1c2c238b3773f85eaa5506d77b7bef1cc620abd90038b10",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_spec.h": "0e5ced34f096f7d6ae974822c7b2f99628aec61daab91ae2b50473414120808c",
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_unc.h": "708ee6ac07044839a28364a5629d52ec6e705bd1c6589a0d9c11a6c4fc30c980",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_dist.h": "398d90f7d7d503e20de8bbbef0c1c03ea7998d71f3ef568211999ee79a715108",
+     "torbles/math_lin.h": "40a3bb2cc7f3b257692a85b1770cb1aded8c0c7e5a1d4a95b319c02833d6f890",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "torbles/math_spec.py": "185f92ab88558409d141162968884118ea9b51303c2cc48c71743ca0633226b3",
+     "torbles/math_dist.py": "27ffa1e1d92aec48e3297c2d09c6800b12b47bb276edc4d8463dd57708352762",
+     "torbles/math_lin.py": "9c1b5d528a987ed74af650e1d45a1f6995d2a2eb5f6f9feba1b726112c8192df",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_lattice.py": "ce83aaa89bc7298f6acb4b4b9d2ee69f641adb5c4eca3eaaf51d2ee00977c603",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_bool.py": "8bd9999153d24ff44ea71ea1a63a22782a640df7d4e4ec682fd34a168f16d286",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_carriers.c": "ea734330a844c356ae342c4092779616b3f248826aabbdd0d08277a2084c3c20",
+     "torbles/math_calc.c": "9ec851fad470c8cb30d4aec6cbdb2e50586c6839f32136784341d2ed95cd5114",
+     "torbles/math_fourier.c": "92e87b74faa3093f5f5c8f54ddd9ec9e6a86d5082467bfe4edd833ce793e2852",
+     "torbles/math_kernel.c": "1e84777f567a3ec31b07fca924449dd168029f36c7ebff09b4628029b4776208",
+     "torbles/math_approx.c": "a9acbf47c8c48a14722014f1301f425dac90fee7d30365c53933ca8aa11f0865",
+     "torbles/math_certificates.c": "ef8facd8fd10698e0561c6de688c84187df909028a4b0059d216c3a777aa5dc7",
+     "torbles/math_persist.c": "18f4019e224e78fb146522374799d6b1d7fa5a49bbf5bb5a9cac63e0bebf9dd7",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/KERNEL-002/tests_test_math_kapprox.json",
+     "results/math/KERNEL-002/sanitized_test_math_kapprox.json"
+    ],
+    "benchmarks": [
+     "results/math/KERNEL-002/benchmark_cpu_math_kapprox_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_kapprox_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/KERNEL-002/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/KERNEL-002/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "SPEC-001",
@@ -4196,7 +4514,7 @@
    "id": "SYM-001",
    "family_id": "SYM",
    "title": "Closed-basis transformation actions",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -4236,13 +4554,75 @@
     "Only rotations by angles that are not multiples of 90 degrees are approximate: binary64 interval enclosures (53-bit endpoints, no multiprecision); their closure is decided structurally (an entry enclosure that is not exactly [0, 0] counts as a monomial of the image), so a basis closed only through an exact cancellation is refused.",
     "States are FND-004 banks (degree <= 4) and TENSOR-001 LISTWISE moment tensors (degree <= 8) without per-entry counts; NULL handling is listwise; the action construction and composition run on the CPU, single-threaded."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_sym.h": "1ce2945d08a52d83a9314fc395332fccbb7f2e1743308dfa1e87cb732608cef0",
+     "torbles/math_sym.c": "ad7b6a039f1e330f826263441ed871109782874484087abf2f114c014d20927b",
+     "torbles/math_sym_gpu.cu": "f09786269e1b431c8d876da778ddada11d982821207e6acfce0aa5e7738b342b",
+     "torbles/math_sym.py": "e133f3dc5129a6abe86348a8b7b91612686d3adc78454dff753710ecda9a1b05",
+     "tests/test_math_sym.py": "4525ab84761cb484cd905d8e0024a8726eed52cebf9429f1562ace613d2761ba",
+     "bench/benchmark_math_sym.py": "b62e8dcbd2de38f095ffa5415c1843a24814958a47e8b538fc2880cce29d0ccd",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_carriers.h": "a88cd9594e47dac4153c6f0a470e0509eb00352971f2f691858c51c5bd8ccb33",
+     "torbles/math_certificates.h": "147ffccb196e31be4f72073e24a0b2086000bb987708b8ac4bd2e74767be7a3e",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_carriers.py": "e17eba2ccfee281c63551b186b34591580032b3a2f2c3ed9e66fb96131510ef2",
+     "torbles/math_certificates.py": "87db90fcdf0af353d1c2c238b3773f85eaa5506d77b7bef1cc620abd90038b10",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_carriers.c": "ea734330a844c356ae342c4092779616b3f248826aabbdd0d08277a2084c3c20",
+     "torbles/math_certificates.c": "ef8facd8fd10698e0561c6de688c84187df909028a4b0059d216c3a777aa5dc7",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/SYM-001/tests_test_math_sym.json",
+     "results/math/SYM-001/sanitized_test_math_sym.json"
+    ],
+    "benchmarks": [
+     "results/math/SYM-001/benchmark_cpu_math_sym_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_sym_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/SYM-001/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/SYM-001/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "SYM-002",
    "family_id": "SYM",
    "title": "Certified data symmetries and orbit reductions",
-   "status": "planned",
+   "status": "in_progress",
    "wave": "W4",
    "depends_on": [
     "FND-001",
@@ -4282,7 +4662,69 @@
     "Orbits are those of the generated group on the observed support; generators must be integral, invertible maps or value permutations (no interval or non-integral maps); NULL coordinates are skipped or forbidden, not a category of their own.",
     "The support sort, the orbit union-find, the invariance proofs and the queries on representatives run on the CPU, single-threaded; only the verification has a CUDA kernel."
    ],
-   "validation": null
+   "validation": {
+    "source_sha256": {
+     "torbles/math_sym.h": "1ce2945d08a52d83a9314fc395332fccbb7f2e1743308dfa1e87cb732608cef0",
+     "torbles/math_sym.c": "ad7b6a039f1e330f826263441ed871109782874484087abf2f114c014d20927b",
+     "torbles/math_sym_gpu.cu": "f09786269e1b431c8d876da778ddada11d982821207e6acfce0aa5e7738b342b",
+     "torbles/math_sym.py": "e133f3dc5129a6abe86348a8b7b91612686d3adc78454dff753710ecda9a1b05",
+     "tests/test_math_sym.py": "4525ab84761cb484cd905d8e0024a8726eed52cebf9429f1562ace613d2761ba",
+     "bench/benchmark_math_sym.py": "b62e8dcbd2de38f095ffa5415c1843a24814958a47e8b538fc2880cce29d0ccd",
+     "torbles/math_num.h": "5918c0bbd0c3637e05b9b946300a6b234ddaa597424c0ba46bcf30854cf5453f",
+     "torbles/math_budgets.h": "6b84a10a738f8a34088c84d97715706813ad64e39ae3efaa675542dec2d70278",
+     "torbles/math_scope.h": "6521209d8eac02a105edf40f9f2963a9455d3e92ab9341486ecb6d578519857d",
+     "torbles/math_carriers.h": "a88cd9594e47dac4153c6f0a470e0509eb00352971f2f691858c51c5bd8ccb33",
+     "torbles/math_certificates.h": "147ffccb196e31be4f72073e24a0b2086000bb987708b8ac4bd2e74767be7a3e",
+     "torbles/math_bank.h": "a45d3499eef2e427ce637efa37a2b914eacfa3f7b1ff6e7655337f73fe158849",
+     "torbles/math_tensor.h": "193d2930a3e9ca234aa948a2175ffb5ba37a9812882a8662f1588f9cc15af250",
+     "torbles/math_handles.h": "daf39b6953d02b842678f787fd5e1f3696756a389096c19aaf23df8eea540bf7",
+     "torbles/mathematics.h": "86a87df843803f4d6c52739b7f72d31f0d3e20773ebe39356595768568c488db",
+     "torbles/math_domain.h": "bfbeb8b6f53f267309c20531131b44de9d93829b450040def7dab1133e5a9c55",
+     "torbles/math_cuda.h": "b742adb13b53872731e8ed9b39857f65a74a9e1432f90e29f1f7985360371132",
+     "torbles/math_bank.py": "f87df3149b2cc240730d5219aac66cd85d95d34b8be957cdf02fa8cde887499d",
+     "torbles/math_tensor.py": "4510c916a2d86537dae4ae4e05ee16537c45b5aab8f9a4c9f8e0fa5a221ec36c",
+     "torbles/math_budgets.py": "7bc8f07ae25c2e74b70cfe3df0fdd297333222a856f55f145f8b7bf772910c22",
+     "torbles/math_carriers.py": "e17eba2ccfee281c63551b186b34591580032b3a2f2c3ed9e66fb96131510ef2",
+     "torbles/math_certificates.py": "87db90fcdf0af353d1c2c238b3773f85eaa5506d77b7bef1cc620abd90038b10",
+     "torbles/math_domains.py": "1e5d00e9b95da08edae27010b39bd0ddcd67f0df607c6b824504485bbc8ac8c9",
+     "torbles/math_errors.py": "a8e883e92c7adc08a054aff3655645ead24bb65c8990e92f35357564f86eacd6",
+     "torbles/math_gpu.py": "c7ec139d867dabfa9b9582da1297d414a73717fded43f640727a004bfe5f1f07",
+     "torbles/mathematics.py": "dfb3576e1d9ba350c92d5e06ccf8590f6b6a0000d91163411de77b396e71a475",
+     "torbles/math_registry.h": "64d634085b0394823c6baf92eb2c2cc0e8757991bbf6ed385a8ffb93357fbede",
+     "torbles/math_state.h": "e8a0879109a94b8a31f08d52db6f6e27d3f5c93e8dff33e5adbcb06e3bdbed9e",
+     "torbles/math_registry.py": "e41795dbcb75d9245729b7951058f639101c81f22097828f48b4218f5f99cd2d",
+     "torbles/math_disc.h": "de6c3d8ad77d30b2f9ac45bddb4c50c1e3377fb297f342a66a90cd417dfc4793",
+     "torbles/math_disc.py": "63aef0175f121416fead1c9f4f25725ba525adb01bf1fe7428102cc49d351170",
+     "torbles/math_budgets.c": "3d04fba1391a670cf4c799fa64110be0c1b17c8bc9f77f4ca060a094c3e2e760",
+     "torbles/math_scope.c": "3856fc0d7af800a2723c2581bbb1461d347dcab7294411c87545d6c1965947fd",
+     "torbles/math_carriers.c": "ea734330a844c356ae342c4092779616b3f248826aabbdd0d08277a2084c3c20",
+     "torbles/math_certificates.c": "ef8facd8fd10698e0561c6de688c84187df909028a4b0059d216c3a777aa5dc7",
+     "torbles/math_bank.c": "644135c81ee51dcb694869d2a280cdd589867c6d1b654e2944f1a67b2c951990",
+     "torbles/math_tensor.c": "dfc662bb368e82eb508c45aff2993cbe2cfe98ce0a7111e557ed51d3f3de2df3",
+     "torbles/math_handles.c": "7eac3204b99768c9a27698b9d15c2d81c5bae77c23eb1c07a3d874d731da4802",
+     "torbles/mathematics.c": "96d5645da838857f2f924ec89eb2bc6211bb97235040e6ce947db323e3eb1d01",
+     "torbles/math_domain.c": "c8702c5290a364c468a93d2eedf6d5eaf272da18fd566005744709d5c3faf16b"
+    },
+    "measured_runtime_commit": "60d74e4d7c4e6672892f7f30e57396c90fdc1123",
+    "tests": [
+     "results/math/SYM-002/tests_test_math_sym.json",
+     "results/math/SYM-002/sanitized_test_math_sym.json"
+    ],
+    "benchmarks": [
+     "results/math/SYM-002/benchmark_cpu_math_sym_vm.json"
+    ],
+    "cuda": {
+     "kernels": [
+      "torbles/math_sym_gpu.cu"
+     ],
+     "compile_receipts": [
+      "results/math/SYM-002/nvcc.json"
+     ],
+     "emulated_receipts": [
+      "results/math/SYM-002/emulated.json"
+     ]
+    }
+   }
   },
   {
    "id": "DYN-001",

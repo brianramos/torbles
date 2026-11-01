@@ -14,8 +14,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 |---|---:|
 | existing | 0 |
 | partial | 0 |
-| planned | 16 |
-| in_progress | 47 |
+| planned | 9 |
+| in_progress | 54 |
 | validated | 18 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
@@ -517,7 +517,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
 
 Partial capability only: receipts validate the bounded implemented scalar/typed subset described in existing evidence and limitations; broader acceptance cases remain unimplemented. Current typed runtime passed all 48 focused tests and the full actual-CUDA quick suite. Native edge/sanitizer gates, 15,000 independent LRU operations and 200 independent public-API value/derivative checks passed. Six sequential synthetic benchmark processes retain all raw samples and source/library identities. Cache reuse saves repeated construction; typed coefficient dispatch adds measurable overhead. This validates only the declared bounded polynomial/scalar behavior, not the remaining inventory extensions.
 
@@ -695,7 +695,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `00f63ab97ae8685403b2b44d7d37d366626ebf88`.
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
 
 - tests: [results/math/FND-008/tests_test_math_planner.json](results/math/FND-008/tests_test_math_planner.json)
 - tests: [results/math/FND-008/sanitized_test_math_planner.json](results/math/FND-008/sanitized_test_math_planner.json)
@@ -2011,7 +2011,7 @@ Measured runtime: `85e58b523446b835f1f9d4c462e6a43402704d06`.
 
 ### PAIR-002: Structured pairwise query planning
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Choose support aggregation, finite-feature factorization or bounded direct pairs according to the exact statistic.
 
@@ -2054,6 +2054,14 @@ Additional limits:
 - Distinct supports in a plan without a retained state are exact upper bounds (min of the elements and the cells of the value box); the rates are hand-set relative estimates, not calibrated times, and the work model's per-evaluation operation counts are stated, not measured.
 - At most 8 feature columns; Mann-Whitney over one column; an unordered pair set needs a symmetric kernel (refused per request otherwise); results are limited to 1024 bits (an unprovable magnitude rejects the support and direct candidates); the sorted prefix needs nonnegative weights and class masses below 2^64.
 - The CUDA tile kernel uses 255 registers with a 576-byte stack frame and register spills (1024-bit arithmetic); its work items are tiles, so a single small request has little parallelism; the CPU loops are single-threaded.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/PAIR-002/tests_test_math_pairplan.json](results/math/PAIR-002/tests_test_math_pairplan.json)
+- tests: [results/math/PAIR-002/sanitized_test_math_pairplan.json](results/math/PAIR-002/sanitized_test_math_pairplan.json)
+- benchmarks: [results/math/PAIR-002/benchmark_cpu_math_pairplan_vm.json](results/math/PAIR-002/benchmark_cpu_math_pairplan_vm.json)
 
 ## LIN: Linear algebra
 
@@ -2237,7 +2245,7 @@ Sparse/factored moment tensors and contraction planning.
 
 ### TENSOR-001: Sparse and factored moment tensors
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Retain declared multi-index states without forcing dense Cartesian expansion.
 
@@ -2279,11 +2287,19 @@ Additional limits:
 - A factored form's bound is a conservative sum over its terms, so some factored operations refuse what the dense form computes; count tensors have no factored form.
 - The CPU loops are single-threaded; the device sparse build sorts its hash table on the host.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/TENSOR-001/tests_test_math_tensor.json](results/math/TENSOR-001/tests_test_math_tensor.json)
+- tests: [results/math/TENSOR-001/sanitized_test_math_tensor.json](results/math/TENSOR-001/sanitized_test_math_tensor.json)
+- benchmarks: [results/math/TENSOR-001/benchmark_cpu_math_tensor_vm.json](results/math/TENSOR-001/benchmark_cpu_math_tensor_vm.json)
+
 <a id="tensor-002"></a>
 
 ### TENSOR-002: Costed contraction planning
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Choose variable/contraction order, kernel, intermediate shape and materialization lifetime for bounded tensor networks.
 
@@ -2324,6 +2340,14 @@ Additional limits:
 - No factored contraction kernel: factored operands are expanded (costed and budgeted); the CUDA contraction is dense only (sparse candidates run on the CPU).
 - Sparse sizes in a plan are exact upper bounds, not the data's actual supports; the rates are hand-set estimates in relative work units (not calibrated times); traces within one tensor are not supported.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/TENSOR-002/tests_test_math_tensor.json](results/math/TENSOR-002/tests_test_math_tensor.json)
+- tests: [results/math/TENSOR-002/sanitized_test_math_tensor.json](results/math/TENSOR-002/sanitized_test_math_tensor.json)
+- benchmarks: [results/math/TENSOR-002/benchmark_cpu_math_tensor_vm.json](results/math/TENSOR-002/benchmark_cpu_math_tensor_vm.json)
+
 ## KERNEL: Kernel calculations
 
 Finite-feature embeddings and certified approximate kernel computations.
@@ -2332,7 +2356,7 @@ Finite-feature embeddings and certified approximate kernel computations.
 
 ### KERNEL-001: Exact finite-feature kernel embeddings
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Polynomial or explicitly finite-feature kernels reduce means, comparisons and selected pair sums to retained feature states.
 
@@ -2374,11 +2398,19 @@ Additional limits:
 - The feature tensor stores (n + 1)^D cells per group (dense, or sparse at the data's support), so the tensor budget bounds the dimension and degree; listwise only (a row with a NULL feature column does not contribute).
 - Answers are limited to 1024 bits (refused beyond) and are unreduced num / den natively; the CUDA query kernel has a 1984-byte stack frame with register spills and runs one work item per request.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/KERNEL-001/tests_test_math_kernel.json](results/math/KERNEL-001/tests_test_math_kernel.json)
+- tests: [results/math/KERNEL-001/sanitized_test_math_kernel.json](results/math/KERNEL-001/sanitized_test_math_kernel.json)
+- benchmarks: [results/math/KERNEL-001/benchmark_cpu_math_kernel_vm.json](results/math/KERNEL-001/benchmark_cpu_math_kernel_vm.json)
+
 <a id="kernel-002"></a>
 
 ### KERNEL-002: Approximate spectral feature kernels
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Offer RBF/other selected kernels through explicit finite-feature approximation, seeds, precision and error accounting.
 
@@ -2423,6 +2455,14 @@ Additional limits:
 - Kernel columns must share one decimal scale; witness points are logical values inside the declared domain; at most 16 dimensions and 2^20 frequencies.
 - The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet.
 - No FND-007 certificate is emitted: an approximate kernel quantity is neither a row relation nor a polynomial law; the answers carry their own error records.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/KERNEL-002/tests_test_math_kapprox.json](results/math/KERNEL-002/tests_test_math_kapprox.json)
+- tests: [results/math/KERNEL-002/sanitized_test_math_kapprox.json](results/math/KERNEL-002/sanitized_test_math_kapprox.json)
+- benchmarks: [results/math/KERNEL-002/benchmark_cpu_math_kapprox_vm.json](results/math/KERNEL-002/benchmark_cpu_math_kapprox_vm.json)
 
 ## SPEC: Spectral queries
 
@@ -2666,7 +2706,7 @@ Actions of translations, rotations, permutations and certified symmetries.
 
 ### SYM-001: Closed-basis transformation actions
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Translate polynomial coordinates, rotate declared coordinates, and permute features by exact or precision-declared basis-action matrices.
 
@@ -2708,11 +2748,19 @@ Additional limits:
 - Only rotations by angles that are not multiples of 90 degrees are approximate: binary64 interval enclosures (53-bit endpoints, no multiprecision); their closure is decided structurally (an entry enclosure that is not exactly [0, 0] counts as a monomial of the image), so a basis closed only through an exact cancellation is refused.
 - States are FND-004 banks (degree <= 4) and TENSOR-001 LISTWISE moment tensors (degree <= 8) without per-entry counts; NULL handling is listwise; the action construction and composition run on the CPU, single-threaded.
 
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/SYM-001/tests_test_math_sym.json](results/math/SYM-001/tests_test_math_sym.json)
+- tests: [results/math/SYM-001/sanitized_test_math_sym.json](results/math/SYM-001/sanitized_test_math_sym.json)
+- benchmarks: [results/math/SYM-001/benchmark_cpu_math_sym_vm.json](results/math/SYM-001/benchmark_cpu_math_sym_vm.json)
+
 <a id="sym-002"></a>
 
 ### SYM-002: Certified data symmetries and orbit reductions
 
-Status: **planned**. Delivery wave: **W4**.
+Status: **in_progress**. Delivery wave: **W4**.
 
 Verify multiplicity-preserving symmetries, construct orbit summaries and reduce work under those scoped certificates.
 
@@ -2753,6 +2801,14 @@ Additional limits:
 - Invariance under the reduction is a sufficient condition (polynomial identity under each generator): an invariant predicate of a non-invariant polynomial (x^2 - y^2 = 0 under a quarter turn, c = 3 under a value permutation fixing 3) is refused.
 - Orbits are those of the generated group on the observed support; generators must be integral, invertible maps or value permutations (no interval or non-integral maps); NULL coordinates are skipped or forbidden, not a category of their own.
 - The support sort, the orbit union-find, the invariance proofs and the queries on representatives run on the CPU, single-threaded; only the verification has a CUDA kernel.
+
+Validation receipts:
+
+Measured runtime: `60d74e4d7c4e6672892f7f30e57396c90fdc1123`.
+
+- tests: [results/math/SYM-002/tests_test_math_sym.json](results/math/SYM-002/tests_test_math_sym.json)
+- tests: [results/math/SYM-002/sanitized_test_math_sym.json](results/math/SYM-002/sanitized_test_math_sym.json)
+- benchmarks: [results/math/SYM-002/benchmark_cpu_math_sym_vm.json](results/math/SYM-002/benchmark_cpu_math_sym_vm.json)
 
 ## DYN: Repeated dynamics
 
