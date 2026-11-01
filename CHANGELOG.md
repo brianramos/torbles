@@ -196,10 +196,51 @@ Correctness
 - New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
   a 40-case fuzz run; `make test` runs them all.
 
+Release review
+
+An independent review of this alpha on 2026-11-01 found eight defects. Each is fixed, and its reproducers, with the
+passing controls the review listed, are regression tests: `tests/check_review_sql.py`, `tests/check_review_api.py` and
+`tests/test_review_native.py` run on the three engines in `tests/run_all.sh`, and CI runs `tests/check_min_deps.py` on
+the installed wheel. The declared dependency floor, Python 3.9, NumPy 1.22 and DuckDB 1.1, had never been installed or
+tested, and SQL did not run on it: the binder reads the syntax tree that DuckDB 2.0 serializes, every 1.x release
+serializes a different one, and even `SELECT 1` failed. The floor is now the lowest that passes, Python 3.11, NumPy
+1.23.2 and DuckDB 2.0. DuckDB 2.0 publishes no wheels for Python 3.9 or 3.10, so those versions are no longer
+supported. An older DuckDB is refused at the first use of SQL with an ImportError that names the floor, while the
+engine API keeps working, and CI installs the wheel with exactly those versions and runs the SQL tests outside the
+source tree. In SQL, the paths that lower expressions to the engine computed casts and integer and DECIMAL arithmetic
+exactly rather than in their types: SUM(CAST(i AS TINYINT)) over 100, 200 and 200 gave 500, and CAST(2147483647 AS
+INTEGER) + 1 gave 2147483648, where DuckDB raises a conversion or overflow error. Every integer and DECIMAL operation
+now checks its value against its type wherever it is computed, and fails the query only where the value is used. The
+planner keeps a cast unless interval arithmetic over the stored columns proves that it cannot fail, so the SSB queries
+keep their plans and timings. DISTINCT ON a collated expression now compares collation keys (it kept both 'a' and 'A'
+under NOCASE). The null-safe joins the review found broken in its snapshot were already fixed here, and they gain 24
+tests.
+
+On the engine API, `sum()` and `minmax()` over a nullable column read the NULL rows' placeholder code as a value (3,
+NULL and 8 summed to 14), and an all-NULL group got a value instead of NULL. An aggregate over nullable columns now
+reads only the rows where its argument is valid. With GROUP BY, a second engine query finds the groups, so a group
+with no valid row is NULL, as in SQL; the second scan is skipped when the filter already excludes the NULLs, as the
+SQL front end's own queries do. `Query.count(col)` is new. `q.sql()` rendered `minmax()` as COUNT(*), so `db.verify()`
+compared different things; it now renders every aggregate kind, validity planes and the engine's two-valued negations.
+`minmax()` over a range or inequality join, which silently counted, is refused. A table's native storage was never
+freed: twenty discarded tables of 50,000 rows left 11 MB allocated. A table now owns its planes, sidecars, plain
+columns, GPU copy and file mapping, a finalizer frees them when the last reference goes, `Table.close()` and
+`Database.close()` free them at once, and any later use raises `TableClosedError`. An empty table no longer crashes
+the interpreter in `nplanes()`, which divided by its zero word count. The few other paths that divided or indexed by
+an empty table's counts are fixed too, and every query kind is tested on empty tables. Fixing the lifetimes brought
+out a fault of the GPU executor: it kept device copies of a query's host arrays keyed by their address and length, so
+an array allocated where a freed one had been read the old one's copy. This already gave wrong answers on a GPU for a
+table joined twice in SQL, from the third statement on. A copy now belongs to one array object and is dropped when
+that array or its table is released, and a query whose joined table was closed raises `TableClosedError` on every
+engine instead of answering from its compiled plan. The emulated GPU now makes the same copies, so the tests on the
+CPU cover this. Last, a BETWEEN on a 32-bit column shifted by 32 bits in the CPU engine, which is undefined in C
+(UndefinedBehaviorSanitizer found it); the bound is tested first now.
+
 Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`
   makes a wheel for other x86-64 machines; `torbles-fuzz` console script.
-- GitHub Actions: tests and fuzzing on every push (Python 3.9 / 3.11 / 3.13), wheels and PyPI publishing on a tag.
+- GitHub Actions: tests and fuzzing on every push (Python 3.11 / 3.12 / 3.13), the wheel installed and its SQL tests
+  run with the lowest Python, NumPy and DuckDB the package allows, wheels and PyPI publishing on a tag.
 
 Changed (engine API)
 - Queries run on every core by default (0.1.0: one thread unless `set_threads` was called).
