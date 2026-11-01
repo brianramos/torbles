@@ -88,7 +88,9 @@ static const char *const state_names[TR_REG_STATE_KINDS] = {
     "support masses",
     "basis actions", "symmetry certificates",
     "approximation",
-    "refinement state"};
+    "refinement state",
+    "intervention plan",
+    "optimization program"};
 static const char *const proof_names[TR_REG_PROOFS] = {
     "domain", "snapshot", "scope", "bound", "exact_count", "catalog", "cell_domain", "refinement", "prime",
     "identity", "handle", "null_policy"};
@@ -694,6 +696,26 @@ static const tr_reg_module modules[] = {
                    "tr_refine_eval_bounds", "tr_refine_fine", "tr_refine_update_state", "tr_refine_update_prepare",
                    "tr_refine_update_rollup", "tr_refine_update_finish", "tr_refine_get_changes"},
      .cuda_entry = {"tr_mgpu_refine_bounds", "tr_mgpu_refine_rollup"}},
+    {FAMILY(TR_REG_M_INTERV, "interv", "interv", "INV-002", "constrained minimal interventions"),
+     .state_kind = TR_REG_STATE_INTERVENTION, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(BIGINT) | CB(GFP) | CB(QINTERVAL) | CB(INTERVAL) | CB(INTEGER) | CB(MINMAX) | CB(INT128) | CB(ROWSET) | CB(COUNT),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT,
+     .proofs = DATA_PROOFS | TR_PROOF_DOMAIN | TR_PROOF_BOUND | TR_PROOF_PRIME | TR_PROOF_NULL_POLICY,
+     .cpu_entry = {"tr_interv_linear", "tr_interv_linear_poly", "tr_interv_univariate", "tr_interv_grid_prepare",
+                   "tr_interv_grid_eval", "tr_interv_grid_search", "tr_interv_agg_build", "tr_interv_agg_solve",
+                   "tr_interv_agg_value", "tr_interv_result_get_info", "tr_interv_result_solution",
+                   "tr_interv_result_free"},
+     .cuda_entry = {"tr_mgpu_interv_grid"}},
+    {FAMILY(TR_REG_M_POLYOPT, "polyopt", "polyopt", "OPT-002", "convex and polynomial optimization"),
+     .state_kind = TR_REG_STATE_PROGRAM, .devices = TR_REG_ON_BOTH, .finalize = 1,
+     .carriers = CB(BIGQ) | CB(INTERVAL) | CB(QINTERVAL),
+     .laws_relied = TR_REG_FIELD | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT | TR_LAW_ENCLOSURE, .laws_guaranteed = TR_LAW_EXACT | TR_LAW_ENCLOSURE,
+     .proofs = TR_PROOF_DOMAIN | TR_PROOF_BOUND,
+     .cpu_entry = {"tr_polyopt_qp_create", "tr_polyopt_qp_from_quad", "tr_polyopt_qp_solve", "tr_polyopt_qp_value",
+                   "tr_polyopt_poly_create", "tr_polyopt_poly_value", "tr_polyopt_boxes", "tr_polyopt_minimize",
+                   "tr_polyopt_result_get_info", "tr_polyopt_result_part", "tr_polyopt_result_leaf",
+                   "tr_polyopt_result_free"},
+     .cuda_entry = {"tr_mgpu_polyopt_boxes"}},
 };
 #undef BUILTIN
 #undef FAMILY

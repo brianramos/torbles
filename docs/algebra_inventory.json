@@ -2297,13 +2297,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native minimal interventions: the change d of declared inputs (x = x0 + d) of minimal cost (weighted L1, Linf, squared L2 with rational weights, or the weighted number of changed inputs) such that the function attains a target f(x) op t (op =, !=, <, <=, >, >=) or, as a membership change, the complement of the predicate's value at x0 (decided exactly). Every result is labelled an algebraic intervention on the function as given (no causal model; causal semantics are refused as UNSUPPORTED). Linear targets (coefficients or first-slice expressions of degree <= 1, e.g. RESP-001 functions; n <= 16) under A x <= b, E x = e, boxes on x and d and the norm balls ||d||_1 <= r, ||d||_inf <= r: exact LPs (L1, Linf) and the exact projection QP (L2) by OPT-002's simplex and active-set methods, KKT-verified; L0 by supports in increasing weight (an exact feasibility LP each), every minimal support reported; strict targets on their closure with attainment decided by an LP over the optimal set (else UNATTAINED with the exact infimum); uniqueness by 2n LPs over the optimal set with a second optimal change when not unique. Univariate polynomial targets: the roots of f - t in the domain by INV-001 (exact rational roots or certified isolating intervals, refinable), the feasible set as points and open intervals decided by exact signs, the nearest feasible points on both sides compared exactly (a tie of irrational distances decided by a common root of (f - t)(x0 + y) and (f - t)(x0 - y)). Finite grids (1..8 coordinates, at most 2^24 points, any first-slice polynomial target with up to 15 polynomial constraints and linear rows): every condition as an integer polynomial in cleared numerators whose sign is decided from residues modulo verified primes (INV-001) and Garner's digits; integer cost tables over a common denominator; grid blocks pruned soundly by outward-rounded interval enclosures (FND-009); the remaining points ordered by (exact cost, grid index) and scanned in chunks; the minimum and every tie of the minimal cost listed; past the iteration budget INCOMPLETE with a proven lower bound (every cheaper point examined or pruned), the best found as upper bound and a resume rank; the output budget truncates the ties explicitly. Aggregates over the selected rows of an FND-004 scope: COUNT(*), COUNT(v), SUM(v), AVG(v) WHERE x + d op c (v may be x, then shifted too) with SQL NULL semantics, piecewise in d with exact breakpoints c - x_k from a state of sorted distinct values with prefix sums built once; every piece decided exactly so rows entering and leaving the predicate are part of the objective, never the frozen row set; staleness refused through the scope. Budgets (variables, degree, support, tensor, states, iterations, output, bytes) are checked before allocation.",
+   "gpu": "tr_mgpu_interv_grid: the batched exhaustive evaluation of a chunk of a grid plan's cost order. Launch 1: one work item per point evaluates every condition by its exact sign (residues modulo the verified primes, Garner's digits compared with (M - 1) / 2) and its integer cost, sets its bit of the feasibility bitmap by atomic OR and lowers the minimal feasible cost by atomic minimum; launch 2: one work item per point sets its tie bit (feasible and of the matched cost) by atomic OR. The results do not depend on thread order and equal the CPU's tr_interv_grid_eval bit for bit (the same inline per-point functions of math_interv.h); Grid.search(backend='cuda') runs every chunk of the exact search on it with the same answers. The plan, the order, the search loop, the LPs, the roots and the aggregates run on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_inv.c",
-    "torbles/math_inv.h",
-    "tests/test_math_inv.py"
+    "torbles/math_interv.h",
+    "torbles/math_interv.c",
+    "torbles/math_interv_gpu.cu",
+    "torbles/math_interv.py",
+    "tests/test_math_interv.py",
+    "bench/benchmark_math_interv.py"
    ],
    "acceptance_tests": [
     "Brute-force small discrete domains certify the minimum and all tie cases.",
@@ -2313,7 +2316,14 @@
     "Use linear and bounded-degree univariate targets with zero/one/multiple/no solutions and domains containing exact boundary roots; report solving separately from state construction.",
     "Sweep parameter dimension 1/2/3 and finite domains of 8/16/32 values per coordinate, retaining incomplete-search cases and proof bounds."
    ],
-   "limitations": [],
+   "limitations": [
+    "Answers are algebraic interventions on the function as given: no causal model, no claim about changing inputs in the world.",
+    "Linear targets must be linear in the changed inputs; polynomial targets in several inputs are searched only over explicit finite grids (at most 8 coordinates and 2^24 points).",
+    "Convex constraints are limited to linear rows, boxes and the L1 / Linf norm balls; general convex sets are not supported.",
+    "The L0 cost enumerates supports (2^n, budgeted) and the L1 / Linf uniqueness test costs 2n further exact LPs, which is slow at n = 16.",
+    "Aggregates shift one feature with one comparison predicate and support COUNT, SUM and AVG; changes at irrational roots are reported as isolating intervals.",
+    "The CUDA kernels have been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {
@@ -2436,13 +2446,16 @@
     "Bound input dimensionality, support/state size and output size.",
     "Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path."
    ],
-   "cpu": "New native CPU state/transform implementation required; Python may marshal and display but must not silently supply the mathematical implementation.",
-   "gpu": "Planned separately; a CPU implementation or emulation is not a CUDA implementation.",
+   "cpu": "Native exact optimization in FND-009 big rationals. Convex problems: minimize x^T H x / 2 + g^T x + c0 (H symmetric PSD, decided by LIN-002's exact inertia; H = 0 an LP) subject to A x <= b, E x = e and per-variable bounds (either side optional), declared for n <= 8 (representation 64 variables, 256 rows), also from an OPT-001 objective (matrices, a LIN-001 moment state, a first-slice polynomial). LPs by a tableau simplex over x = u - v with slacks, phase 1 with artificials and Bland's rule; QPs by a primal active-set method from the phase-1 vertex with exact equality-constrained steps (LIN-002 solves, zero-curvature descent directions from LIN-002's inconsistency certificate), ratio tests and smallest-index drops, its step budget refused as NOT_CONVERGED. Every answer is verified exactly before it is returned: OPTIMAL with multipliers satisfying stationarity, feasibility and complementary slackness, uniqueness decided (2n LPs over the optimal set, skipped when H is definite or every nonbasic reduced cost is positive) and a second optimal point when not unique; INFEASIBLE with a Farkas certificate; UNBOUNDED with a feasible anchor and a recession ray of negative curvature or of zero curvature and negative rate. An indefinite H: on an affine feasible set the reduced Hessian N^T H N decides it exactly (a curvature ray, or the convex reduced problem's optimum or rate ray); otherwise a negative direction of N^T H N or an LP ray that is a recession direction certifies unboundedness; otherwise a bounded feasible polyhedron of dimension <= 4 after exact elimination of the equalities is handed to the branch and bound (box from 2 dim LPs); else UNSUPPORTED. Polynomial problems (n <= 4, degree <= 8 per variable, dense size <= 256 per polynomial, <= 64 constraints <=, >=, =, a finite rational box): certified best-first branch and bound over dyadic boxes; batches of boxes enclosed by the natural interval extension intersected with the centered form in FND-009 outward-rounded arithmetic; boxes pruned only when a constraint is proven violated, the lower bound exceeds the incumbent, or it cannot improve the incumbent by more than the tolerance; incumbents exact (box corners and midpoints whose constraints hold exactly); the answer is [lower, upper] with upper attained exactly at a feasible witness, COMPLETE only within the declared tolerance, else INCOMPLETE with the reason (node budget, time limit, depth limit); infeasibility certified by leaf boxes each violating a constraint on its enclosure; one-variable unconstrained problems by INV-001's roots of the derivative. Budgets (variables, degree, support, tensor, iterations, output, bytes) are checked before allocation.",
+   "gpu": "tr_mgpu_polyopt_boxes: one work item per box of a branch-and-bound batch evaluates the enclosures of the objective and of every constraint (natural interval extension and centered form, FND-009's contraction-safe directed double operations) and writes its own output slot (status keep / infeasible / bound, the objective enclosure, the violated constraint, whether the box is inside every constraint); it runs the inline functions of math_polyopt.h, so it equals the CPU's tr_polyopt_boxes bit for bit, and backend='cuda' sends every batch of the search to it with the same answers. The simplex, the active set, the uniqueness and hand-off LPs, the exact incumbents and the search control stay on the CPU. Compiled with nvcc for sm_80 and tested in the emulation with scrambled thread order; not yet run on a device.",
    "existing_evidence": [],
    "planned_files": [
-    "torbles/math_opt.c",
-    "torbles/math_opt.h",
-    "tests/test_math_opt.py"
+    "torbles/math_polyopt.h",
+    "torbles/math_polyopt.c",
+    "torbles/math_polyopt_gpu.cu",
+    "torbles/math_polyopt.py",
+    "tests/test_math_polyopt.py",
+    "bench/benchmark_math_polyopt.py"
    ],
    "acceptance_tests": [
     "Compare small exhaustive feasible sets and interval-certified optima.",
@@ -2452,7 +2465,15 @@
     "Benchmark positive-definite, singular and indefinite quadratics in 1/2/4/8 parameters, with and without box constraints; report matrix/state build and solve separately.",
     "Compare repeated optimization over 1k/100k/1M source rows using shared states against full objective recomputation; retain infeasible/unbounded cases."
    ],
-   "limitations": [],
+   "limitations": [
+    "Exact big-rational pivots: the convex method is meant for n <= 8 variables and tens of rows; the uniqueness test costs 2n further LPs.",
+    "An indefinite QP over an unbounded polyhedron is decided only when the feasible set is affine or a recession direction of negative curvature is found (the reduced Hessian's negative direction or an LP ray); otherwise it is refused (copositivity is not decided).",
+    "Indefinite QPs are handed to the branch and bound only when bounded and of dimension <= 4 after the equalities; larger ones are refused.",
+    "The branch and bound is exponential in n and log(1/tolerance) and uses first-order enclosures (no relaxations): tight tolerances on flat or degenerate minima end incomplete with certified bounds.",
+    "With equality constraints a witness exists only where a dyadic box corner or midpoint satisfies them exactly; otherwise feasibility stays unknown and upper is absent.",
+    "The one-variable method's INV-001 evaluations are refused past the iteration budget instead of returning an incomplete result.",
+    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."
+   ],
    "validation": null
   },
   {

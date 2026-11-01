@@ -98,6 +98,8 @@ candidates, cost coefficients all zero (`cost_basis` `"none"`: nothing is calibr
 | 60 | sym.symmetry | certified symmetries and orbits | SYM-002 | symmetry certificates | `tr_sym_group_create` | `tr_mgpu_sym_verify` |
 | 61 | approx | explicit approximations | UNC-002 | approximation | `tr_approx_series` | `tr_mgpu_approx_eval` |
 | 62 | refine | adaptive refinement, localized updates | MULTI-002 | refinement state | `tr_refine_build` | `tr_mgpu_refine_bounds`, `tr_mgpu_refine_rollup` |
+| 63 | interv | constrained minimal interventions | INV-002 | intervention plan | `tr_interv_linear` | `tr_mgpu_interv_grid` |
+| 64 | polyopt | convex and polynomial optimization | OPT-002 | optimization program | `tr_polyopt_qp_create` | `tr_mgpu_polyopt_boxes` |
 
 `reg.module(key)` gives the whole descriptor (up to 12 entry points per device, the laws, proofs and implementation
 rows). The first-slice built-ins (1, 2) are described, not changed: their operator sets are read from the validated

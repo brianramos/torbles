@@ -943,7 +943,9 @@ enum { TR_REG_M_SCOPE = 10,             /* FND-004 data scopes */
        TR_REG_M_SYM_SYMMETRY = 60,      /* SYM-002 certified data symmetries and orbits */
        TR_REG_M_APPROX = 61,            /* UNC-002 certified series, low rank, rounding, composition */
        TR_REG_M_REFINE = 62,            /* MULTI-002 coarse-to-fine bounds, localized rollups */
-       TR_REG_M_END = 63 };             /* module ids are 1 .. TR_REG_M_END - 1 */
+       TR_REG_M_INTERV = 63,            /* INV-002 minimal-cost changes attaining a target, algebraic only */
+       TR_REG_M_POLYOPT = 64,           /* OPT-002 exact QPs and LPs, certified branch and bound */
+       TR_REG_M_END = 65 };             /* module ids are 1 .. TR_REG_M_END - 1 */
 #define TR_REG_IMPLS 32                  /* implementation rows a descriptor carries */
 #define TR_REG_ENTRIES 12                /* entry points per device a descriptor names */
 /* An operator a module implements in a carrier on devices (TR_REG_ON_*). 16 bytes. */
@@ -995,7 +997,9 @@ enum { TR_REG_STATE_NONE = 0, TR_REG_STATE_FORMAL = 1, TR_REG_STATE_MOMENT_BANK 
        TR_REG_STATE_SYMMETRY = 50,          /* a declared group, its multiset evidence and scope record, orbit summaries */
        TR_REG_STATE_APPROXIMATION = 51,     /* an approximant, its norm, assumptions, budget, error terms, provenance */
        TR_REG_STATE_REFINEMENT = 52,        /* per level: cells, abstract inputs and links; maintained leaves */
-       TR_REG_STATE_KINDS = 53 };
+       TR_REG_STATE_INTERVENTION = 53,      /* grid plans (residues, cost order) and shift aggregates (prefix sums) */
+       TR_REG_STATE_PROGRAM = 54,           /* an objective with linear or polynomial constraints and bounds */
+       TR_REG_STATE_KINDS = 55 };
 enum { TR_PROOF_DOMAIN = 1,        /* a typed domain / formal context contract (FND-001) */
        TR_PROOF_SNAPSHOT = 2,      /* the state's source identity and revision */
        TR_PROOF_SCOPE = 4,         /* the exact selected rows of a reused state */
@@ -1312,6 +1316,16 @@ static const tr_reg_impl tr_reg_impls[] = {
     TR__I(TR_REG_M_REFINE, ENCLOSE, QINTERVAL, TR__ALL), TR__I(TR_REG_M_REFINE, ROLLUP, INT128, TR__ALL),
     TR__I(TR_REG_M_REFINE, ROLLUP, COUNT, TR__ALL), TR__I(TR_REG_M_REFINE, PREDICATE, RATIONAL, TR__CPU),
     TR__I(TR_REG_M_REFINE, ORDER, BIGINT, TR__CPU), TR__I(TR_REG_M_REFINE, SUBTRACT, BIGINT, TR__CPU),
+    /* 63 INV-002 minimal-cost changes attaining a target, algebraic only */
+    TR__I(TR_REG_M_INTERV, MINIMIZE, BIGQ, TR__CPU), TR__I(TR_REG_M_INTERV, ROOTS, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_INTERV, EVAL, GFP, TR__ALL), TR__I(TR_REG_M_INTERV, CRT, GFP, TR__ALL),
+    TR__I(TR_REG_M_INTERV, ORDER, INTEGER, TR__ALL), TR__I(TR_REG_M_INTERV, FOLD, MINMAX, TR__ALL),
+    TR__I(TR_REG_M_INTERV, ENCLOSE, INTERVAL, TR__CPU), TR__I(TR_REG_M_INTERV, PREFIX, INT128, TR__CPU),
+    /* 64 OPT-002 exact QPs and LPs, certified branch and bound */
+    TR__I(TR_REG_M_POLYOPT, MINIMIZE, BIGQ, TR__CPU), TR__I(TR_REG_M_POLYOPT, SOLVE, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_POLYOPT, INERTIA, BIGQ, TR__CPU), TR__I(TR_REG_M_POLYOPT, ROOTS, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_POLYOPT, EVAL, BIGQ, TR__CPU), TR__I(TR_REG_M_POLYOPT, ORDER, BIGQ, TR__CPU),
+    TR__I(TR_REG_M_POLYOPT, ENCLOSE, INTERVAL, TR__ALL),
 };
 #undef TR__I
 #undef TR__CPU
