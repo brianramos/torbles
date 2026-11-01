@@ -1,0 +1,119 @@
+{
+ "guide": [
+  {
+   "page": "conserve.md",
+   "title": "Conservation and stability across revisions",
+   "capabilities": "DISC-003",
+   "summary": "a DISC-002 Gram kept exact under DELTA-001 signed updates; tracked identities re-verified incrementally on the delta's rows only (certified again after a DIFF bound to the new scope, held otherwise), per-identity persistence records with the first failure's witness row; declared, snapshot, stability and hypothesis evidence kept apart; declared transformations checked for conserving a quantity symbolically (a universal FND-007 law or a Nullstellensatz counterexample) or on the rows; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "DISC-003": {
+   "planned_files": [
+    "torbles/math_conserve.h",
+    "torbles/math_conserve.c",
+    "torbles/math_conserve_gpu.cu",
+    "torbles/math_conserve.py",
+    "tests/test_math_conserve.py",
+    "bench/benchmark_math_conserve.py"
+   ],
+   "cpu": "tr_cons_tracker_make builds the exact DISC-002 Gram of an unweighted EXACT plan over a FND-004 scope, verifies up to 256 DISC-002 identities exhaustively and certifies the holding ones (FND-007 snapshots); tr_cons_job_make / tr_cons_job_run evaluate only the rows of a DELTA-001 delta: the Gram increment sum w m m^T over complete rows (each moment proven against 128 bits from the delta's extremes before anything is added) and, per identity, the checked / excluded / violating / undecided weights of inserted and deleted rows with the smallest violating row of each (W-word exact evaluation, W proven from the extremes); tr_cons_tracker_update adds them (a DELTA-001 companion state refuses deltas that do not apply and deletes of rows that are not there), certifies holding identities again after a DIFF bound to the new scope (the evidence is then that scope's exhaustive evidence by induction; tr_cert_adopt) and only holds them after other deltas; tr_cons_tracker_rebind is the complete recomputation. Per identity a persistence record (certified steps, runs, streak, the first failure's step, revision, violations and witness row with its values) and four evidence classes kept apart (declared, snapshot, stability, hypothesis); only a fresh snapshot authorizes an exact rewrite (tr_cons_authorize). tr_cons_conserve expands P = q(T(x)) - q(x) exactly: zero is a universal FND-007 RING_IDENTITY law, else a counterexample point from the Nullstellensatz grid; tr_cons_law_candidates / tr_cons_law_witnesses check P = 0 on the rows (snapshot certificate or the violating rows).",
+   "gpu": "tr_mgpu_cons_delta evaluates a job's delta rows on the device: work items (moment chunk, row slice) add the exact Gram increments with two-word atomics (tr_atomic_add_wide; the host proved the 128-bit bound), work items (identity chunk, row slice) evaluate every identity exactly (DISC-002's W-word evaluation) and add their evidence counters with integer atomics and the smallest violating inserted / deleted rows with atomic minima; no barriers or shared memory, results equal to tr_cons_job_run bit for bit, adopted by tr_cons_tracker_update after consistency checks.",
+   "limitations": [
+    "plans are unweighted and EXACT (no modular or weighted Gram); at most 8 variables, 63 basis monomials (DISC-002) and 256 tracked identities",
+    "identities are certified again only on bound revisions (a DIFF of the current scope given with the new scope); ARRAYS and SCOPE deltas only hold them; a same-version table DIFF compares the selection only (DELTA-001)",
+    "the tracker re-verifies the identities it was given; new identities at a revision come from DISC-002's nullspace of the tracker's Gram (tr_cons_tracker_gram), not from the tracker",
+    "an identity whose evaluation needs more than 8 words on a delta is undecided until a rebind; a conservation counterexample search needs a grid evaluation within 8 words",
+    "transformations are polynomial maps (no division, no piecewise or conditional maps); a stability record states only what held on the revisions it lists",
+    "CUDA covers the delta evaluation only (certification, records and laws run on the CPU); it was run in the CPU emulation here, not on a physical GPU"
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "TRACKER",
+    "label": "tracker",
+    "comment": "a Gram kept current under signed deltas, identity evidence and persistence records"
+   }
+  ],
+  "new_operators": [],
+  "modules": [
+   {
+    "enum": "CONSERVE",
+    "key": "conserve",
+    "family": "conserve",
+    "capability": "DISC-003",
+    "name": "conservation across revisions",
+    "comment": "incremental identity evidence, records, laws",
+    "state": "TRACKER",
+    "state_label": "tracker",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "INT128",
+     "INTEGER",
+     "COUNT",
+     "BOOLEAN"
+    ],
+    "laws_relied": "TR_REG_RING | TR_LAW_INVERSE | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_cons_tracker_make",
+     "tr_cons_job_make",
+     "tr_cons_job_run",
+     "tr_cons_tracker_update",
+     "tr_cons_tracker_rebind",
+     "tr_cons_tracker_record",
+     "tr_cons_tracker_classes",
+     "tr_cons_authorize",
+     "tr_cons_tracker_gram",
+     "tr_cons_conserve",
+     "tr_cons_law_candidates",
+     "tr_cons_law_witnesses"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_cons_delta"
+    ],
+    "impl": [
+     [
+      "UPDATE",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "VERIFY",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "SUBTRACT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "EVAL",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "POLY_SUBSTITUTE",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "TEST",
+      "COUNT",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}

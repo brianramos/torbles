@@ -1,0 +1,132 @@
+{
+ "guide": [
+  {
+   "page": "equiv.md",
+   "title": "Scoped query equivalence and counterexamples",
+   "capabilities": "META-001",
+   "summary": "query parts (BOOL-001 predicates hash-consed into one shared DAG, canonical polynomial measures, queries) compared for equivalence, implication and containment: exhaustively on a scope's rows (snapshot proofs with FND-007 records and certificates, or the smallest differing row; measures modulo certified relations through GEOM-001) or universally over a declared domain (BDDs with integer difference logic, Nullstellensatz grids, enumeration: proofs labelled universal or domain, concrete counterexample points, or unknown with the reason); snapshot proofs never authorize beyond their scope; query families run with shared scans; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "META-001": {
+   "planned_files": [
+    "torbles/math_equiv.h",
+    "torbles/math_equiv.c",
+    "torbles/math_equiv_gpu.cu",
+    "torbles/math_equiv.py",
+    "tests/test_math_equiv.py",
+    "bench/benchmark_math_equiv.py"
+   ],
+   "cpu": "tr_equiv_set_make hash-conses predicates (BOOL-001 conditions with reduced constants, at most 64 distinct, and nodes with ordered commutative operands: one shared DAG), canonical rational measures and queries, and reports the common subexpressions; tr_equiv_check_make / tr_equiv_check_run decide questions (predicate equivalence under FILTER or Kleene semantics, implication, measure equivalence under SQL or SKIP NULL semantics, query equivalence and containment) on every selected row of a FND-004 scope: the conditions once as BOOL-001 masks, each question's cone word-parallel, measures through GEOM-001's exact pair candidate P = D (f - g); tr_equiv_check_decide labels the verdicts SNAPSHOT (an FND-007 record of the scope; for measures the snapshot certificate of P = 0 adopted from the evidence) or REFUTED with the smallest differing row, reduces measure questions modulo relation certificates first (GEOM-001 complete Groebner basis: label RELATIONS with the derived certificate) and adopts device evidence only after consistency checks (counts, truth cells, the witness re-evaluated). tr_equiv_decide never reads rows: exhaustive enumeration of a declared product, or decision procedures (per NULL pattern, reduced ordered BDDs of the TRUE / FALSE sets and every cube of their difference checked for an integer point by bounds and Bellman-Ford difference constraints with branching; measures by exact normal forms, a FND-007 RING_IDENTITY law when P = 0, NULL-pattern mismatches and Nullstellensatz grids), every counterexample re-evaluated on a synthetic one-row scope; over-budget or unsupported questions are UNKNOWN with the reason. tr_equiv_authorize: universal always, snapshot only on the exact recorded scope, domain only on a scope inside the domain, relations as FND-007 authorizes. tr_equiv_family_run computes COUNT and exact SUM per query with one shared scan or one scan per query and counts the work actually done; tr_equiv_rewrite lowers a degree <= 2 integer measure to stored codes, runs relationships_optimizer.c's tr_optimize and lifts the result back exactly as a candidate to check.",
+   "gpu": "tr_mgpu_equiv_check runs a check's questions on the device: work items (question, word block) evaluate the question's cone on the BOOL-001 condition words (the masks themselves from tr_mgpu_bool_masks) with Kleene's connectives and, for measures, GEOM-001's exact W-word pair candidates at the rows both sides read, add their counters (checked, excluded, differing, undecided, NULL mismatches, NULL rows, nine truth cells) with integer atomics and the first witness with an atomic minimum (the minimum row id); no barriers or shared memory, evidence equal to tr_equiv_check_run bit for bit, adopted by tr_equiv_check_decide after consistency checks.",
+   "limitations": [
+    "decide mode handles predicates over integer-range columns only (finite value sets need enumerate mode); BIT conditions and comparisons of columns of different scales are outside the difference-logic theory (unknown when a deciding cube needs them); at most 20 nullable columns per universal question; the BDD order is the condition order (no reordering: large predicates can reach the circuit budget and answer unknown)",
+    "measures are polynomials over logical integers; equivalence modulo relations is scoped to where the relation certificates hold (snapshot or derived certificates), never universal; query measures on cube boxes with column comparisons are unknown",
+    "representation limits: 64 distinct conditions per set, 4096 parts or questions, 128 cone nodes per question, measure pairs of one check over at most 8 columns and 256 pairs, evaluation widths up to 512 bits",
+    "families compute COUNT, present-measure counts and exact SUM only (no MIN / MAX / AVG / GROUP BY); the family runs, universal decisions and relation reductions run on the CPU only",
+    "the relationship optimizer bridge takes integer measures of degree <= 2 over catalog columns (tr_optimize's limits: 32 terms, 12 columns, 32-bit codes); relationships_stage.c (an executor transformation) is not used",
+    "snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU"
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "QUERY_PARTS",
+    "label": "query parts",
+    "comment": "hash-consed predicates (a shared condition DAG), canonical measures and queries"
+   }
+  ],
+  "new_operators": [],
+  "modules": [
+   {
+    "enum": "EQUIV",
+    "key": "equiv",
+    "family": "equiv",
+    "capability": "META-001",
+    "name": "scoped query equivalence",
+    "comment": "snapshot and universal proofs, counterexamples",
+    "state": "QUERY_PARTS",
+    "state_label": "query parts",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "KLEENE",
+     "BOOLEAN",
+     "ROWSET",
+     "COUNT",
+     "INTEGER",
+     "RATIONAL",
+     "BIGINT"
+    ],
+    "laws_relied": "TR_REG_FIELD | TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_CHAR0 | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_NULL_POLICY | TR_PROOF_DOMAIN | TR_PROOF_CATALOG",
+    "cpu_entry": [
+     "tr_equiv_set_make",
+     "tr_equiv_check_make",
+     "tr_equiv_check_run",
+     "tr_equiv_check_decide",
+     "tr_equiv_decide",
+     "tr_equiv_authorize",
+     "tr_equiv_family_run",
+     "tr_equiv_rewrite",
+     "tr_equiv_poly_from_math",
+     "tr_equiv_result_get",
+     "tr_equiv_result_point",
+     "tr_equiv_result_certificate"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_equiv_check"
+    ],
+    "impl": [
+     [
+      "PREDICATE",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "LOGIC",
+      "KLEENE",
+      "ALL"
+     ],
+     [
+      "POPCOUNT",
+      "ROWSET",
+      "ALL"
+     ],
+     [
+      "EVAL",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "TEST",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "POLY_SUB",
+      "RATIONAL",
+      "CPU"
+     ],
+     [
+      "DIVIDE",
+      "RATIONAL",
+      "CPU"
+     ],
+     [
+      "FOLD",
+      "BIGINT",
+      "CPU"
+     ]
+    ]
+   }
+  ]
+ }
+}
