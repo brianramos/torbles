@@ -1,0 +1,117 @@
+{
+ "guide": [
+  {
+   "page": "program.md",
+   "title": "Query programs",
+   "capabilities": "META-002",
+   "summary": "families of related queries compiled into one program: canonical conditions and predicates (bounded proof search), shared FND-006 states in one pass, per-query values with SQL NULLs, explanations with per-measure CPU / GPU paths, declared state lifetimes, universal and snapshot predicate comparisons; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "META-002": {
+   "planned_files": [
+    "torbles/math_program.h",
+    "torbles/math_program.c",
+    "torbles/math_program_gpu.cu",
+    "torbles/math_program.py",
+    "tests/test_math_program.py",
+    "bench/benchmark_math_program.py"
+   ],
+   "cpu": "Native C (math_program.c): a family of queries (a BOOL-001 predicate, a FND-006 grouping, scalar or grouped, measures COUNT(*), COUNT / SUM / AVG of integer polynomials, DIST-001 histograms) over one scope is compiled into one program: conditions canonicalized to integer intervals (x > 0 and x >= 1 are one condition), predicates hash-consed under identities of SQL's Kleene logic only (constants, double negation, De Morgan with complementary conditions, associative-commutative flattening, idempotence; each node negated once; a TRUE predicate is no filter), optionally merged by a bounded universal search; per (predicate class, grouping) one SQL-mode FND-006 bank for the polynomials whose canonical monomials each read exactly the measure's written columns, one listwise bank per other written column set (SQL validity of the written expression kept when terms cancel), one histogram per spec, all built by one FND-006 plan (one fused traversal); per-query finalization (exact 256-bit contractions of the shared 128-bit sums, SQL NULLs, present groups or the scalar row). A run checks its whole need (tr_prog_need: the pass and the finalization) first. Every query records its predicate class and proof, the states it reads and their sharers, its value slots and bytes, the pass and finalization devices per measure; states live for one run, or (declared) for later runs of the same program on its fresh scope. Universal comparison of two queries' predicates: equivalent (canonical form or the 3^k search with per-column feasibility), different with a witness row, unknown (BIT, column comparisons) or budget-limited, with grouping and measure equality by value semantics; snapshot comparison: the rows where they differ on this snapshot.",
+   "gpu": "CUDA kernel math_program_gpu.cu: the per-output finalization, one work item per (measure, group) slot with the shared inline slot evaluator (no atomics, no barriers), over states copied from the host (tr_mgpu_program_finalize) or left on the device by FND-006's fused kernel (tr_mgpu_program_run: the fused pass and the finalization in two launches without a host round trip of the states); device copies budgeted first; equal to the CPU values bit for bit (scrambled emulation).",
+   "budgets": [
+    "Compile: circuit = conditions + nodes, output = queries, support = polynomial terms before allocating; circuit = canonical conditions + nodes after canonicalization; iterations = the proof search's assignments (a pair past the budget stays apart, recorded); output = queries + value slots and bytes = the program and 72 bytes per slot once the tables exist; FND-006's own checks.",
+    "A run checks its whole need first (tr_prog_need: the FND-006 pass and the finalization, output = the larger, bytes = their sum); compare: iterations = 3^k for the k conditions read (outcome budget past it).",
+    "Representation limits (UnsupportedError): 4096 queries, 16384 measures, 65536 terms, 1024 terms per measure, 64 canonical conditions."
+   ],
+   "limitations": [
+    "The universal search decides interval, NE and NULL conditions column by column; BIT and column comparisons leave a differing assignment undecided (unknown). META-001 (math_equiv) holds the decision procedures for measures, implication and containment; META-002's compare covers WHERE predicates only, with measures compared canonically.",
+    "Compile-time merging by search compares only predicates with the same canonical condition support; the canonical form does not distribute AND over OR or absorb.",
+    "Witness rows respect declared nullability only (no keys, references, type ranges or other schema constraints).",
+    "Measures are COUNT, SUM and AVG of int64-coefficient polynomials and histograms (no MIN, MAX, variance or ratios of different measures).",
+    "Snapshot lifetimes are kept in the Python program object (reuse decided by the native scope freshness checks); the CPU paths are single-threaded.",
+    "Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "QUERY_PROGRAM",
+    "label": "query program",
+    "comment": "canonical predicates and shared states of a query family, finalization tables and value slots"
+   }
+  ],
+  "new_operators": [],
+  "modules": [
+   {
+    "enum": "PROGRAM",
+    "key": "program",
+    "family": "program",
+    "capability": "META-002",
+    "name": "query family programs",
+    "comment": "query families as one multi-output program",
+    "state": "QUERY_PROGRAM",
+    "state_label": "query program",
+    "devices": "BOTH",
+    "finalize": 3,
+    "carriers": [
+     "INTEGER",
+     "INT128",
+     "BIGINT",
+     "BIGQ",
+     "COUNT",
+     "KLEENE"
+    ],
+    "laws_relied": "TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_DOMAIN | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_prog_compile",
+     "tr_prog_finalize",
+     "tr_prog_need",
+     "tr_prog_compare",
+     "tr_prog_snapshot_compare",
+     "tr_prog_final_view_get",
+     "tr_prog_final_need",
+     "tr_prog_query_get",
+     "tr_prog_measure_get",
+     "tr_prog_output_get",
+     "tr_prog_get_info",
+     "tr_prog_reduce_plan"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_program_finalize",
+     "tr_mgpu_program_run"
+    ],
+    "impl": [
+     [
+      "PREDICATE",
+      "INTEGER",
+      "CPU"
+     ],
+     [
+      "LOGIC",
+      "KLEENE",
+      "CPU"
+     ],
+     [
+      "CONTRACT",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "BIGINT",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ]
+    ]
+   }
+  ]
+ }
+}

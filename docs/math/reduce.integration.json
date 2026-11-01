@@ -1,0 +1,124 @@
+{
+ "guide": [
+  {
+   "page": "reduce.md",
+   "title": "Fused reductions",
+   "capabilities": "FND-006",
+   "summary": "banks and histograms with their own predicates and groupings in one traversal of the rows (shared predicate words, decoded columns, group ids and products), the repeated plan preserved, costed and selectable; atomic runs whose needs are checked first; on the CPU and in CUDA."
+  }
+ ],
+ "inventory": {
+  "FND-006": {
+   "planned_files": [
+    "torbles/math_reduce.h",
+    "torbles/math_reduce.c",
+    "torbles/math_reduce_gpu.cu",
+    "torbles/math_reduce.py",
+    "tests/test_math_fused_reduce.py",
+    "bench/benchmark_math_reduce.py"
+   ],
+   "cpu": "Native C (math_reduce.c): a request over a FND-004 scope (BOOL-001 conditions, a shared Kleene predicate DAG, up to 16 groupings: the scope's own, another scope of exactly the same rows, or either mapped onto coarse groups; up to 1024 outputs, each a FND-004 moment basis in SQL or listwise validity or a DIST-001 histogram, with its own predicate and grouping) is compiled (equal conditions and nodes merged, distinct monomials collected as shared products, every term's 127-bit bound proven from the scope's extremes before anything runs) and executed by a fused plan, one traversal of the selection words in which each condition and node is evaluated once per word and each product at most once per row for every output term that uses it, every output keeping its own rows, validity counts and group presence; or by the preserved repeated plan, the independent reductions one by one (BOOL-001 masks, a derived scope per output, tr_bank_build / tr_dist_hist_build). Both give identical states, equal to independent FND-004 / DIST-001 reductions and DuckDB in the tests. Each plan's need (tr_reduce_need) is checked before anything is allocated and bounds every later check of the run (the repeated plan's from each derived scope's shape, with FND-004's and DIST-001's own need formulas for the device builds), except the occupied cells of sparse histograms, checked once counted. Candidates (fused, repeated) x (CPU, CUDA) are costed with FND-008's components (tr_reg_candidate, fusion credited as FND-008 does), budget-checked and chosen, and a force (fused | repeated [@cpu | @cuda], TORBLES_MATH_REDUCE_FORCE) runs exactly that plan or refuses. Runs are atomic: an overflow proof, a budget (a sparse state known after counting, one output of the repeated plan), a device or adoption failure exposes no output.",
+   "gpu": "CUDA kernel math_reduce_gpu.cu (tr_mgpu_reduce_fused): the fused pass on the device, one work item per contiguous slice of selection words producing every output's contribution of its rows with the same per-word helpers as the CPU loop; bank outputs accumulate locally while the group stays the same and flush with integer atomics (128-bit sums with the two-word atomic), histogram cells add one atomic per row; device copies (only the columns read, each group-id array once) and per-item scratch budgeted before allocation; no barriers or shared memory; the arenas are adopted after consistency checks, equal bit for bit to the CPU (scrambled emulation). tr_mgpu_reduce_fused_device keeps the states on the device for META-002's finalization kernel. The repeated plan on CUDA runs FND-004's and DIST-001's own CUDA builds per derived scope.",
+   "budgets": [
+    "Checked before allocation (math_budgets.h): compile checks circuit = conditions + nodes and output = outputs before allocating, then the plan's bytes; a run checks its plan's need (tr_reduce_need: variables, degree, support, circuit, output, states, bytes; on CUDA the device copies and per-item scratch, or FND-004's / DIST-001's device needs per derived scope) before it allocates anything; the need bounds every later check except the occupied cells of sparse histograms, checked once counted.",
+    "Representation limits (UnsupportedError): 1024 outputs, 16 groupings, 64 conditions, 65536 nodes, 65536 bank terms, 4096 distinct products; FND-004 / DIST-001 limits per output.",
+    "Refusals are atomic (no output of a refused run exists): AlgebraBudgetError (resource, need, limit), OverflowError (an unprovable 127-bit term or weight bound, before anything runs), ValueError, DomainError, StaleStateError."
+   ],
+   "limitations": [
+    "Fused histogram outputs count in a dense scratch over the base scope's domain: a domain too wide is over budget for the fused plan (the repeated plan on the CPU sorts; DIST-001's device build has the same bound).",
+    "The overflow proof uses the base scope's extremes for every output: a filtered output whose own rows would prove a tighter bound is still refused.",
+    "The repeated plan's needs are bounds from the derived scopes' shapes (the base scope's rows, int64 columns, a sparse histogram's cells bounded by the selected rows): conservative for selective outputs.",
+    "The repeated CUDA plan evaluates predicates and builds the derived scopes on the host and is orchestrated from Python through native calls; sparse fused outputs are compacted on the host.",
+    "Plan costs are hand-set relative estimates (cost basis estimate), not calibrated times; the CPU paths are single-threaded.",
+    "Measured on the CPU and the emulated kernels only here; the device receipt needs an actual GPU run."
+   ]
+  }
+ },
+ "registry": {
+  "new_states": [
+   {
+    "name": "FUSED_OUTPUTS",
+    "label": "fused outputs",
+    "comment": "per output of one traversal: grouped moments or histogram cells of its own predicate and grouping"
+   }
+  ],
+  "new_operators": [],
+  "modules": [
+   {
+    "enum": "REDUCE",
+    "key": "reduce",
+    "family": "reduce",
+    "capability": "FND-006",
+    "name": "fused multi-output reduction",
+    "comment": "fused multi-output basis reduction",
+    "state": "FUSED_OUTPUTS",
+    "state_label": "fused outputs",
+    "devices": "BOTH",
+    "finalize": 1,
+    "carriers": [
+     "CODE",
+     "INTEGER",
+     "INT128",
+     "COUNT",
+     "KLEENE"
+    ],
+    "laws_relied": "TR_REG_LATTICE | TR_LAW_ORDERED | TR_LAW_EXACT",
+    "laws_guaranteed": "TR_LAW_EXACT | TR_LAW_ASSOCIATIVE | TR_LAW_COMMUTATIVE",
+    "proofs": "DATA_PROOFS | TR_PROOF_BOUND | TR_PROOF_CELL_DOMAIN | TR_PROOF_NULL_POLICY",
+    "cpu_entry": [
+     "tr_reduce_compile",
+     "tr_reduce_choose",
+     "tr_reduce_run",
+     "tr_reduce_need",
+     "tr_reduce_derive",
+     "tr_reduce_stage_create",
+     "tr_reduce_stage_finish",
+     "tr_reduce_stage_put_bank",
+     "tr_reduce_stage_put_hist",
+     "tr_reduce_result_bank",
+     "tr_reduce_result_hist",
+     "tr_reduce_get_view"
+    ],
+    "cuda_entry": [
+     "tr_mgpu_reduce_fused",
+     "tr_mgpu_reduce_fused_device",
+     "tr_mgpu_reduce_states_arena",
+     "tr_mgpu_reduce_states_copy",
+     "tr_mgpu_reduce_states_free"
+    ],
+    "impl": [
+     [
+      "PREDICATE",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "LOGIC",
+      "KLEENE",
+      "ALL"
+     ],
+     [
+      "POWERS",
+      "INTEGER",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "INT128",
+      "ALL"
+     ],
+     [
+      "FOLD",
+      "COUNT",
+      "ALL"
+     ],
+     [
+      "HISTOGRAM",
+      "CODE",
+      "ALL"
+     ]
+    ]
+   }
+  ]
+ }
+}
