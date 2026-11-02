@@ -118,7 +118,11 @@ Queries are built as algebraic expressions (`algq.py`) and executed algebraicall
   contiguous row ranges (binary search), and only those words are evaluated
 - other GROUP BY / general measures: integers are extracted only for surviving rows
 - window analytics: the aggregated series as a polynomial S(t): moving sum = S(t)(1+...+t^6),
-  year-over-year = S(t)(1 - t^365), cumulative = S(t)/(1 - t)
+  year-over-year = S(t)(1 - t^365), cumulative = S(t)/(1 - t). SQL windows use it (`sqlexec.series_windows`): the
+  counts and sums of each (partition, order key) group come from one engine GROUP BY, a running or GROUPS frame is
+  prefix sums over the ordered groups, the rank functions are prefix sums of the counts, and under ORDER BY ... LIMIT
+  on the window's key with a frame that ends at the current row the series is cut at the last row output (docs/SQL.md,
+  Window functions)
 
 - multithreaded: 64-row words are independent; work is handed out from an atomic counter, each thread keeps its own
   totals and a small hash of its groups, and integer sums merge exactly (`set_threads(n)`)

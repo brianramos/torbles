@@ -330,6 +330,21 @@ search on that rank, every round one dominance count for all frames. Other DISTI
 aggregates, nested window functions and row pattern recognition read each frame's rows, partition by partition, in the
 same order.
 
+Many windows do not need the rows at all. A window whose value depends on its row only through the row's group of
+(PARTITION BY values, ORDER BY key) is a function of its aggregated series S(t), the count, non-NULL count and sum of
+each group: in a star block of 2^16 fact rows or more, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST, ROW_NUMBER (when no
+two rows of a partition share their key) and COUNT(*), COUNT, SUM and AVG of an integer or DECIMAL column, without
+DISTINCT, FILTER or EXCLUDE, under a RANGE frame bounded by UNBOUNDED or CURRENT ROW, a GROUPS frame with constant
+offsets or a ROWS frame whose order key is unique in its partition, with at most one ORDER BY key, and keys that are
+columns of exact, uncollated string, date, timestamp or boolean types. One engine GROUP BY of the (partition, order
+key) gives the series, on the planes or the GPU; the frame is applied to it as prefix sums over the ordered groups (a
+running aggregate is S(t) / (1 - t), a frame of GROUPS offsets a difference of two prefix sums), and each row reads
+its group's value. The series is read when the key columns have at most one group per 16 rows, or when the block is
+ordered by the window's own ORDER BY key with a LIMIT and the frame ends at the current row's peers: the rows output
+then need the series only up to the key of the last one, so the GROUP BY runs under that bound, and the block reads
+only the rows that can be output, as ORDER BY ... LIMIT does without windows. The values are those of the row-by-row
+definitions, as above.
+
 Nested window functions (T619): in the argument or FILTER of a window aggregate, `ROW_NUMBER(<row marker>)` is the
 position in the ordered partition of `BEGIN_PARTITION`, `BEGIN_FRAME`, `CURRENT_ROW`, `FRAME_ROW` (the frame row being
 aggregated), `END_FRAME` or `END_PARTITION`, and `VALUE_OF(x AT <row marker> [+ | - n] [, default])` is x at that row
