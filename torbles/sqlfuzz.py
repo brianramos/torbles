@@ -8,6 +8,7 @@ results compared: as multisets, or in order when ORDER BY fixes it; DOUBLE value
 
     python -m torbles.sqlfuzz --minutes 10
     python -m torbles.sqlfuzz --seed 7 --case 3 --query 12 -v        # replay one statement
+    TORBLES_SQL_ENGINE=gpu python -m torbles.sqlfuzz --minutes 10     # on the plain or the GPU engine (default: alg)
 
 Only syntax both engines accept is generated (ISO forms DuckDB lacks are tested in tests/check_sql.py)."""
 import argparse, re, datetime as dt, math, os, random, sys, time, traceback
@@ -19,6 +20,7 @@ import algq                                            # noqa: E402
 import fuzz                                            # noqa: E402
 from sqltypes import SqlError                          # noqa: E402
 
+ENGINE = os.environ.get("TORBLES_SQL_ENGINE", "alg")   # the engine db.sql runs on: alg, plain or gpu
 REFUSAL_TEXT = ("is not supported", "references without a match", "reference(s) without a match",
                 "more than 12 GROUP BY", "group domain too large", "LATERAL")
 
@@ -385,7 +387,7 @@ def run_one(db, con, sql, times=None):
     if times is not None: times["duckdb"] = time.perf_counter() - t0; times["rows"] = len(want)
     t0 = time.perf_counter()
     try:
-        got = db.sql(sql).rows
+        got = db.sql(sql, ENGINE).rows
         if times is not None: times["torbles"] = time.perf_counter() - t0
     except SqlError as e:
         msg = str(e)
@@ -501,7 +503,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     seed = a.seed if a.seed is not None else random.randrange(1, 10**6)
     if a.cases is None and a.minutes is None and a.case is None: a.cases = 30
-    print(f"torbles {algq.__version__} SQL differential fuzzing against DuckDB, seed {seed}", flush=True)
+    print(f"torbles {algq.__version__} SQL differential fuzzing against DuckDB, seed {seed}, engine {ENGINE}", flush=True)
     t0 = time.time()
     records = []
     tot, reasons, failures, ncase = run(seed, a.cases, a.minutes, a.queries, a.verbose, a.case, a.query,

@@ -351,8 +351,9 @@ def build_db(tables, seed, con):
     pks = {n: t[1] for n, t in tables.items() if t[1]}
     fks = {f"fact.{c}": d for c, d in tables["fact"][2].items()}
     names = list(tables)
-    if declare: db = database.from_duckdb(con, tables=names)
-    else: db = database.from_duckdb(con, tables=names, primary_keys=pks, foreign_keys=fks, keep_plain=r.random() < 0.3)
+    plain = os.environ.get("TORBLES_SQL_ENGINE") == "plain"        # the SQL fuzzer on the plain engine needs its columns
+    if declare: db = database.from_duckdb(con, tables=names, keep_plain=plain)
+    else: db = database.from_duckdb(con, tables=names, primary_keys=pks, foreign_keys=fks, keep_plain=plain or r.random() < 0.3)
     return db, declare
 
 
