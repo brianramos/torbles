@@ -273,7 +273,7 @@ with more columns than a torble holds once the hidden ones are counted, which th
 message; it now refuses them with the count and the `columns=` hint (the README's limits say which columns are
 hidden), and the fuzzers count it as a refusal. The other 36 were DuckDB's or the comparison's: 16 answers that change
 to torbles' when DuckDB runs without its statistics propagation or without its optimizer (64-bit sums its statistics
-chose that wrapped, a join filter it derived that kept a row the WHERE drops, the rounding of an optimized window), 8
+chose that wrapped, a join filter it derived that kept a row the WHERE drops, the rounding of its optimized plans), 8
 errors DuckDB's optimizer let it skip computing and raises with the optimizer off, 11 orders of rows cut by a LIMIT
 that differ only through documented differences (CORR and REGR_* NULL here and NaN there, exact here and rounded
 there), and one comparison of the fuzzer's own, which sorted -0.0 apart from 0.0. The fuzzers now ask DuckDB those
