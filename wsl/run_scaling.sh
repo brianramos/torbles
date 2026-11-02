@@ -8,11 +8,14 @@
 #   bash wsl/run_scaling.sh ["1 3 10 30 50"]        scale factors (default 1 3 10 30 50)
 # Data are generated with the official generator (serial dbgen, as always) where missing; the .tbl files are deleted
 # once DuckDB holds them. A scale factor that does not fit in memory or on disk is skipped with a note.
-# Results: results/scaling/ (one directory per run; summary scaling.json).
+# torbles runs the queries through the Python API (hand-designed derived keys, ssb_torbles.py) and as SQL text through
+# db.sql() on the tables torbles.from_duckdb loads (ssb_sql.py), on the CPU and the GPU.
+# Results: results/scaling/, or SCALING_OUT (one directory per scale factor; summary scaling.json). SCALING_THREADS=0
+# leaves out the thread sweep at SF10.
 set -uo pipefail
 SFS=${1:-"1 3 10 30 50"}
 SRC="$(cd "$(dirname "$0")/.." && pwd)"; WORK="$HOME/torbles_run"
-OUT="$SRC/results/scaling"; mkdir -p "$OUT"
+OUT="${SCALING_OUT:-$SRC/results/scaling}"; mkdir -p "$OUT"
 LOG="$OUT/scaling_$(date +%Y%m%d_%H%M%S).log"
 exec > >(tee "$LOG") 2>&1
 die() { echo; echo "STOPPED: $*"; echo "(log: $LOG)"; exit 1; }
@@ -43,6 +46,9 @@ for SF in $SFS; do
   # memory: the torble build peaks near 0.6 GiB per SF; disk: ~0.6 GB of .tbl per SF while DuckDB loads them
   NEED_MEM=$(( SF * 6 / 10 + 4 )); FREE=$(df -BG --output=avail "$HOME" | tail -1 | tr -dc 0-9)
   if [ "$NEED_MEM" -gt "$MEM" ]; then echo "skipped: needs about $NEED_MEM GiB of memory, WSL has $MEM"; continue; fi
+  if [ ! -f "$SSB_DATA/sf$SF/.complete" ] && python -c "import sys, ssb_common; sys.exit(0 if ssb_common.complete($SF) else 1)"; then
+    touch "$SSB_DATA/sf$SF/.complete"                 # a complete database without its marker: kept, not generated again
+  fi
   if [ ! -f "$SSB_DATA/sf$SF/.complete" ]; then
     NEED_DISK=$(( SF * 8 / 10 + 3 )); [ "$FREE" -lt "$NEED_DISK" ] && { echo "skipped: needs about $NEED_DISK GB of disk, $FREE GB free"; continue; }
     t0=$(date +%s); rm -rf "$SSB_DATA/sf$SF"
@@ -53,9 +59,13 @@ for SF in $SFS; do
   TORBLES_QUERIES="$SSB13" SSB_THREADS="$CORES" TORBLES_OUT_TAG=_scaling TORBLES_ENGINES="cpu-mm@$CORES,gpu-word" \
     python ssb_torbles.py "$SF" derived | grep -E "ingestion|GPU:|all results|MISMATCH|peak memory" || { echo "torbles failed for SF$SF"; continue; }
   mkdir -p "$OUT/sf$SF"; cp "$SSB_DATA/sf$SF/duckdb_results.json" "$SSB_DATA/sf$SF/torbles_derived_scaling.json" "$OUT/sf$SF/"
+  rm -f "$SSB_DATA/sf$SF/torbles_sql_scaling.json"
+  SSB_SQL_JSON="$SSB_DATA/sf$SF/torbles_sql_scaling.json" python ssb_sql.py "$SF" "$CORES" alg,gpu \
+    | grep -E "loaded in|13 SSB queries|all results|MISMATCH|failed" || echo "torbles through SQL failed for SF$SF"
+  [ -f "$SSB_DATA/sf$SF/torbles_sql_scaling.json" ] && cp "$SSB_DATA/sf$SF/torbles_sql_scaling.json" "$OUT/sf$SF/"
 done
-echo; echo "== thread scaling at SF10"
-if [ -f "$SSB_DATA/sf10/.complete" ]; then
+if [ "${SCALING_THREADS:-1}" != 0 ] && [ -f "$SSB_DATA/sf10/.complete" ]; then
+  echo; echo "== thread scaling at SF10"
   TH=""; for t in 1 2 4 8 12 16 $CORES; do [ "$t" -le "$CORES" ] && TH="$TH,$t"; done; TH=$(echo "$TH" | sed 's/^,//' | tr ',' '\n' | sort -nu | paste -sd,)
   SSB_DUCK_INMEM=1 SSB_THREADS="$TH" SSB_QUERIES="$SSB13" python ssb_duck.py 10 > /dev/null || die "DuckDB thread sweep failed"
   ENG=$(echo "$TH" | tr ',' '\n' | sed 's/^/cpu-mm@/' | paste -sd,)

@@ -3,6 +3,8 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
 """The scaling poster: a hand-built SVG (ROYGBIV on a white-gradient ground) from results/scaling/scaling.json, rendered to PNG.
     python poster_scaling.py results/scaling/scaling.json docs/img/ssb_scaling        (writes .svg and .png)
+When every scale has the SQL timings (ssb_scaling.py: torbles through db.sql()), the poster shows SQL, and the Python
+API's numbers at the largest scale go in the chart's subtitle; otherwise the Python API, as 0.1.0's poster did.
 Rendering the PNG needs Playwright with Chromium (pip install playwright; playwright install chromium) and the Inter
 font for the intended look; the SVG alone needs neither."""
 import json, sys, math, base64, os
@@ -10,6 +12,10 @@ import json, sys, math, base64, os
 S = json.load(open(sys.argv[1])); out = sys.argv[2]
 sc = sorted(S["scale"], key=lambda r: r["rows"]); T = S.get("threads")
 big = sc[-1]
+VERSION = S.get("version", "0.1.0"); STATUS = "RESEARCH PROTOTYPE" if VERSION.startswith("0.1.") else "ALPHA"
+SQL = all(r.get("sql_gpu_ms") and r.get("sql_cpu_ms") for r in sc)     # the poster's interface: SQL, else the Python API
+K_DUCK, K_CPU, K_GPU = ("duckdb_sql_ms", "sql_cpu_ms", "sql_gpu_ms") if SQL else ("duckdb_ms", "torbles_cpu_ms", "torbles_gpu_ms")
+NTH = big.get("threads") or 24
 W, H = 1600, 900
 R, O, Y, G, B, I, V = "#ff3b5c", "#ff8a1f", "#ffc21a", "#22cc6a", "#1fa2ff", "#5b6cff", "#c04dff"
 BG, CARD, LINE, GRID, INK, INK2, INK3 = "#ffffff", "#ffffff", "#e2ddf2", "#efecf8", "#15102e", "#4b4768", "#8b88a8"
@@ -94,15 +100,15 @@ el.append("".join(f'<rect width="{W}" height="{H}" fill="url(#glow{k})"/>' for k
 el.append(f'<rect width="{W}" height="7" fill="url(#rainbow)"/>')
 
 # ---------------------------------------------------------------- header
-sp = big["duckdb_ms"] / big["torbles_gpu_ms"]
+sp = big[K_DUCK] / big[K_GPU]
 el.append(bubble_word(72, 102, 74))
-el.append(text(548, 74, "v0.1.0  ·  RESEARCH PROTOTYPE", 15, INK2, 700, extra='letter-spacing="2.5"'))
+el.append(text(548, 74, f"v{VERSION}  ·  {STATUS}", 15, INK2, 700, extra='letter-spacing="2.5"'))
 el.append(text(548, 98, "OFFICIAL STAR SCHEMA BENCHMARK", 15, INK3, 600, extra='letter-spacing="2.5"'))
-el.append(text(64, 168, f"13 queries. {big['rows'] / 1e6:,.0f} million rows.", 50, INK, 800, family="'Inter Display', " + FONT, extra='letter-spacing="-1"'))
+el.append(text(64, 168, f"13 {'SQL ' if SQL else ''}queries. {big['rows'] / 1e6:,.0f} million rows.", 50, INK, 800, family="'Inter Display', " + FONT, extra='letter-spacing="-1"'))
 el.append(f'<text x="64" y="228" font-family="\'Inter Display\', {FONT}" font-size="50" font-weight="800" letter-spacing="-1">'
-          f'<tspan fill="url(#rainbow)">{fmt_ms(big["torbles_gpu_ms"])}</tspan><tspan fill="{INK}"> on a laptop GPU.</tspan></text>')
-el.append(text(64, 264, "Every result, at every scale, verified against DuckDB  ·  end to end, best of 3  ·  both engines in memory",
-               17, INK2, 400))
+          f'<tspan fill="url(#rainbow)">{fmt_ms(big[K_GPU])}</tspan><tspan fill="{INK}"> on a laptop GPU.</tspan></text>')
+el.append(text(64, 264, "Every result, at every scale, verified against DuckDB  ·  " + ("SQL text, " if SQL else "")
+               + "end to end, best of 3  ·  both engines in memory", 17, INK2, 400))
 # the hero multiplier
 _hb = f'x="1528" y="172" font-family="Bubble, \'Luckiest Guy\', Impact, sans-serif" font-size="138" text-anchor="end" letter-spacing="4" stroke-linejoin="round"'
 el.append(f'<text {_hb} transform="translate(5,8)" fill="#3a2a7a" stroke="#3a2a7a" stroke-width="20" opacity=".22">{sp:.0f}×</text>')
@@ -110,8 +116,8 @@ el.append(f'<text {_hb} fill="#140a2e" stroke="#140a2e" stroke-width="18">{sp:.0
 el.append(f'<text {_hb} fill="#ffffff" stroke="#ffffff" stroke-width="8">{sp:.0f}×</text>')
 el.append(f'<text {_hb} fill="url(#rainbow)">{sp:.0f}×</text>')
 el.append(f'<text {_hb} fill="url(#gloss)">{sp:.0f}×</text>')
-el.append(text(1536, 214, "faster than DuckDB on 24 threads", 21, INK, 700, "end"))
-el.append(text(1536, 240, f"at {big['rows'] / 1e6:,.0f}M rows: {fmt_ms(big['torbles_gpu_ms'])} vs {fmt_ms(big['duckdb_ms'])}", 16, INK2, 400, "end"))
+el.append(text(1536, 214, f"faster than DuckDB on {NTH} threads", 21, INK, 700, "end"))
+el.append(text(1536, 240, f"at {big['rows'] / 1e6:,.0f}M rows: {fmt_ms(big[K_GPU])} vs {fmt_ms(big[K_DUCK])}", 16, INK2, 400, "end"))
 
 def card(x, y, w, h, title, sub=None):
     el.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="18" fill="url(#cardg)" stroke="{LINE}" stroke-width="1.2" filter="url(#lift)"/>')
@@ -138,9 +144,12 @@ def end_labels(items, x, y_top, y_bottom, gap=40):
 # ---------------------------------------------------------------- main chart: time vs data size
 SIDE = "--side" in sys.argv          # the two side panels (lead per scale, thread sweep): off by default
 cx, cy, cw, ch = 64, 296, (936 if SIDE else 1472), 544
-card(cx, cy, cw, ch, "Time for all 13 queries as the data grows", "linear axes  ·  6M to 300M fact rows (scale factors 1 to 50)")
+_sub = f"linear axes  ·  {sc[0]['rows'] / 1e6:,.0f}M to {big['rows'] / 1e6:,.0f}M fact rows (scale factors {sc[0]['sf']} to {big['sf']})"
+if SQL: _sub += (f"  ·  the Python API at {big['rows'] / 1e6:,.0f}M rows: {fmt_ms(big['torbles_cpu_ms'])} on {NTH} CPU threads, "
+                 f"{fmt_ms(big['torbles_gpu_ms'])} on the GPU")
+card(cx, cy, cw, ch, "Time for all 13 queries as the data grows" + (", written in SQL" if SQL else ""), _sub)
 px0, px1, py0, py1 = cx + 92, cx + cw - 236, cy + ch - 62, cy + 98
-xstep, xmax = ticks(big["rows"] / 1e6 - 0.5, 6); ystep, ymax = ticks(max(r["duckdb_ms"] for r in sc) * 1.04, 5)
+xstep, xmax = ticks(big["rows"] / 1e6 - 0.5, 6); ystep, ymax = ticks(max(r[K_DUCK] for r in sc) * 1.04, 5)
 X = lambda v: px0 + (px1 - px0) * v / xmax
 Yp = lambda v: py0 - (py0 - py1) * v / ymax
 for k in range(int(round(ymax / ystep)) + 1):
@@ -151,7 +160,7 @@ for v in range(0, int(xmax) + 1, int(xstep)):
     el.append(text(X(v), py0 + 28, "0" if v == 0 else f"{v}M", 13, INK3, 500, "middle"))
 el.append(f'<line x1="{px0}" x2="{px1}" y1="{py0}" y2="{py0}" stroke="{LINE}" stroke-width="1.5"/>')
 rows = [r["rows"] / 1e6 for r in sc]
-for key, grad, area, glow in (("duckdb_ms", "gDuck", "aDuck", False), ("torbles_cpu_ms", "gCpu", "aCpu", False), ("torbles_gpu_ms", "gGpu", "aGpu", True)):
+for key, grad, area, glow in ((K_DUCK, "gDuck", "aDuck", False), (K_CPU, "gCpu", "aCpu", False), (K_GPU, "gGpu", "aGpu", True)):
     pts = [(X(x), Yp(r[key])) for x, r in zip(rows, sc)]
     el.append(f'<path d="{series_path(pts)} L {pts[-1][0]:.1f},{py0} L {pts[0][0]:.1f},{py0} Z" fill="url(#{area})"/>')
     if glow: el.append(f'<path d="{series_path(pts)}" stroke="url(#{grad})" stroke-width="12" fill="none" opacity=".35" filter="url(#soft)"/>')
@@ -159,9 +168,9 @@ for key, grad, area, glow in (("duckdb_ms", "gDuck", "aDuck", False), ("torbles_
     for i, (qx, qy) in enumerate(pts):
         col = {"gDuck": [O, O, R, R, R], "gCpu": [Y, Y, G, G, G], "gGpu": [B, B, I, V, V]}[grad][min(i, 4) if len(pts) == 5 else 0]
         el.append(f'<circle cx="{qx:.1f}" cy="{qy:.1f}" r="7" fill="{col}" stroke="{CARD}" stroke-width="3"/>')
-end_labels([(Yp(big["duckdb_ms"]), "DuckDB, 24 threads", fmt_ms(big["duckdb_ms"]), R),
-            (Yp(big["torbles_cpu_ms"]), "torbles, 24 CPU threads", fmt_ms(big["torbles_cpu_ms"]), G),
-            (Yp(big["torbles_gpu_ms"]), "torbles, GPU", fmt_ms(big["torbles_gpu_ms"]), V)], px1 + 26, py1 + 10, py0 - 8, gap=52)
+end_labels([(Yp(big[K_DUCK]), f"DuckDB, {NTH} threads", fmt_ms(big[K_DUCK]), R),
+            (Yp(big[K_CPU]), f"torbles, {NTH} CPU threads", fmt_ms(big[K_CPU]), G),
+            (Yp(big[K_GPU]), "torbles, GPU", fmt_ms(big[K_GPU]), V)], px1 + 26, py1 + 10, py0 - 8, gap=52)
 
 # ---------------------------------------------------------------- the lead, per scale factor
 bx, by, bw, bh = 1032, 276, 504, 268
@@ -169,9 +178,9 @@ if SIDE: card(bx, by, bw, bh, "The lead grows with the data", "GPU vs DuckDB on 
 if SIDE:
     cols5 = [R, O, Y, G, B, I, V]
     n = len(sc); slot = (bw - 52) / n; base = by + bh - 48; top = by + 102
-    spm = max(r["duckdb_ms"] / r["torbles_gpu_ms"] for r in sc)
+    spm = max(r[K_DUCK] / r[K_GPU] for r in sc)
     for i, r in enumerate(sc):
-        s_ = r["duckdb_ms"] / r["torbles_gpu_ms"]; h_ = (base - top) * s_ / (spm * 1.08)
+        s_ = r[K_DUCK] / r[K_GPU]; h_ = (base - top) * s_ / (spm * 1.08)
         x_ = bx + 26 + slot * i + slot * 0.16; w_ = slot * 0.68; col = cols5[min(len(cols5) - 1, round(i * (len(cols5) - 1) / max(1, n - 1)))]
         el.append(f'<rect x="{x_:.1f}" y="{base - h_:.1f}" width="{w_:.1f}" height="{h_:.1f}" rx="7" fill="{col}"/>')
         el.append(text(x_ + w_ / 2, base - h_ - 10, f"{s_:.0f}×", 22, INK, 800, "middle"))

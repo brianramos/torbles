@@ -2,7 +2,7 @@
 
 **An algebraic relational datastore on torus-encoded bit planes.** Version 0.3.0, alpha: you can install it, load
 your own tables with their types and keys, and get answers checked against DuckDB. Features are still missing and
-the API may change (see [Known limitations](#known-limitations-020)).
+the API may change (see [Known limitations](#known-limitations-030)).
 
 A *torble* is a toroidal table: it stores every column as bit planes (plane j holds bit j of 64 rows per machine
 word) laid out on a torus whose faces are XOR checks, so every row is protected and single-bit faults are found and

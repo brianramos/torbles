@@ -4,7 +4,9 @@
 """Collect a scaling run (wsl/run_scaling.sh) into scaling.json and print a summary.
     python ssb_scaling.py <results/scaling directory>
 Totals are over the 13 official SSB queries, best of 3, end to end (planning, execution, result). Only queries that
-torbles answered correctly count: a query that failed or differed from DuckDB is left out of both engines' totals."""
+torbles answered correctly count: a query that failed or differed from DuckDB is left out of both engines' totals.
+torbles is timed through the Python API (torbles_derived_scaling.json: hand-designed derived keys) and, where the run
+has it, through SQL (torbles_sql_scaling.json: ssb_sql.py, db.sql() on tables loaded by torbles.from_duckdb)."""
 import json, os, sys, glob
 
 out = sys.argv[1]
@@ -16,6 +18,8 @@ def total(times, tag, key="best", qs=SSB13):
     v = [times.get(f"{q}/{tag}", {}).get(key) for q in qs]
     return None if not qs or any(x is None for x in v) else sum(v) * 1e3
 summary = {"queries": SSB13, "scale": [], "threads": None}
+try: summary["version"] = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "VERSION")).read().strip()
+except OSError: pass
 for d in sorted(glob.glob(os.path.join(out, "sf*")), key=lambda p: int(os.path.basename(p)[2:])):
     try:
         D = json.load(open(os.path.join(d, "duckdb_results.json"))); T = json.load(open(os.path.join(d, "torbles_derived_scaling.json")))
@@ -32,6 +36,14 @@ for d in sorted(glob.glob(os.path.join(out, "sf*")), key=lambda p: int(os.path.b
                torbles_cpu_first_ms=total(T["times"], cpu, "first", qs), duckdb_in_memory=D.get("in_memory"),
                duckdb_memory_limit=D.get("memory_limit"), duckdb_load_s=D.get("load_s"),
                ingest=T.get("ingest"), gpu_upload_s=T.get("gpu_upload_s"), gpu=T.get("gpu"))
+    sq = os.path.join(d, "torbles_sql_scaling.json")
+    if os.path.exists(sq):                            # through SQL: the queries both engines answered correctly
+        Q = json.load(open(sq))
+        qq = [q for q in SSB13 if all(Q["times"].get(f"{q}/sql-{e}", {}).get("match") for e in ("alg", "gpu"))]
+        row.update(sql_answered=len(qq), sql_all_match=Q["all_match"], sql_load_s=Q.get("load_s"),
+                   sql_cpu_ms=total(Q["times"], "sql-alg", qs=qq), sql_gpu_ms=total(Q["times"], "sql-gpu", qs=qq),
+                   sql_cpu_first_ms=total(Q["times"], "sql-alg", "first", qq), sql_gpu_first_ms=total(Q["times"], "sql-gpu", "first", qq),
+                   duckdb_sql_ms=total(D["times"], f"{th}T", qs=qq))
     summary["duckdb_version"] = D.get("engine", "DuckDB").replace("DuckDB ", "")
     summary["scale"].append(row)
 td = os.path.join(out, "threads_sf10")
@@ -50,6 +62,15 @@ for r in summary["scale"]:
     if r["answered"] < len(SSB13): print(f"  SF{r['sf']}: only {r['answered']} of {len(SSB13)} queries answered correctly; totals are over those")
     print(f"{r['sf']:>4} {r['rows']:>12,} {r['duckdb_ms']:>10.1f} {r['torbles_cpu_ms']:>11.1f} {r['torbles_gpu_ms']:>11.1f} {r['gpu_kernel_ms']:>12.2f} {sp:>13.1f}x  "
           f"{str(r['all_match']):9s} {r['duckdb_first_ms']:10.1f} / {r['torbles_gpu_first_ms']:6.1f}      {r['duckdb_in_memory']} ({r['duckdb_memory_limit']})")
+if any("sql_gpu_ms" in r for r in summary["scale"]):
+    print("\nthrough SQL (db.sql on tables loaded by torbles.from_duckdb), the same totals:")
+    print(f"{'SF':>4} {'DuckDB':>10} {'SQL CPU':>10} {'SQL GPU':>10} {'GPU vs DuckDB':>14}  all match   first runs: SQL CPU / SQL GPU   load")
+    for r in summary["scale"]:
+        if "sql_gpu_ms" not in r: continue
+        if r["sql_answered"] < len(SSB13): print(f"  SF{r['sf']}: only {r['sql_answered']} of {len(SSB13)} queries answered correctly through SQL")
+        sp = r["duckdb_sql_ms"] / r["sql_gpu_ms"] if r["sql_gpu_ms"] else float("nan")
+        print(f"{r['sf']:>4} {r['duckdb_sql_ms']:>10.1f} {r['sql_cpu_ms']:>10.1f} {r['sql_gpu_ms']:>10.1f} {sp:>13.1f}x  {str(r['sql_all_match']):9s} "
+              f"{r['sql_cpu_first_ms']:10.1f} / {r['sql_gpu_first_ms']:6.1f}      {r['sql_load_s']:.1f} s")
 if summary["threads"]:
     print("\nthreads at SF10:")
     for p in summary["threads"]["points"]: print(f"  {p['threads']:>3} threads: DuckDB {p['duckdb_ms']:8.1f} ms   torbles CPU {p['torbles_cpu_ms']:8.1f} ms")

@@ -6,8 +6,11 @@ automatic key design), the 13 official queries and K1-K3 / M1-M3 run as SQL text
 copy, same threads), every answer compared. Then a few queries that leave the engine (window functions over rows,
 GROUP BY on values, string functions, row output) on a generated table: torbles runs that part as array algebra on what
 the engine returns. Times: best of 3, end to end.
-    python3 ssb_sql.py <SF> [threads, default all] [engines, default alg,gpu] [rows for the second part, default 200000]"""
-import sys, os, time
+    python3 ssb_sql.py <SF> [threads, default all] [engines, default alg,gpu] [rows for the second part, default 200000]
+SSB_SQL_JSON=<file>: the scaling sweep's form (wsl/run_scaling.sh): only the 13 official queries, each engine's first
+run and best of 3 written to <file> as JSON; DuckDB answers each query once from the database file (memory limit
+SSB_SQL_DUCK_MEMORY, default 4GB) to check torbles' answers, and is not timed here (ssb_duck.py times it in memory)."""
+import sys, os, time, json
 here = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [os.path.join(here, "..", ".."), os.path.join(here, "..", "..", "torbles")]
 import duckdb, numpy as np, pandas as pd, torbles, sqlfuzz
@@ -15,17 +18,52 @@ from ssb_common import QUERIES, EXTRA, FACT_COLS, dbfile
 
 sf = int(sys.argv[1]); threads = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] else (os.cpu_count() or 1)
 engines = (sys.argv[3] if len(sys.argv) > 3 else "alg,gpu").split(","); nrows = int(sys.argv[4]) if len(sys.argv) > 4 else 200_000
-src = dbfile(sf)
+src = dbfile(sf); JSON_OUT = os.environ.get("SSB_SQL_JSON")
 t0 = time.perf_counter()
 db = torbles.from_duckdb(src, schema=os.path.join(here, "schema.sql"), columns={"lineorder": FACT_COLS})
-print(f"SF{sf}: {db['lineorder'].n:,} fact rows, loaded in {time.perf_counter() - t0:.1f} s; {threads} threads")
+load_s = time.perf_counter() - t0
+print(f"SF{sf}: {db['lineorder'].n:,} fact rows, loaded in {load_s:.1f} s; {threads} threads", flush=True)
 torbles.set_threads(threads)
-con = duckdb.connect(); con.execute(f"SET threads = {threads}"); con.execute(f"ATTACH '{src}' AS s (READ_ONLY)")
-for t in ("lineorder", "date", "customer", "supplier", "part"): con.execute(f"CREATE TABLE {t} AS SELECT * FROM s.{t}")
-con.execute("DETACH s")
+if JSON_OUT:                                       # DuckDB checks the answers from its file (ssb_duck.py times it)
+    con = duckdb.connect(src, read_only=True); con.execute(f"SET threads = {threads}")
+    con.execute(f"SET memory_limit = '{os.environ.get('SSB_SQL_DUCK_MEMORY', '4GB')}'")
+else:
+    con = duckdb.connect(); con.execute(f"SET threads = {threads}"); con.execute(f"ATTACH '{src}' AS s (READ_ONLY)")
+    for t in ("lineorder", "date", "customer", "supplier", "part"): con.execute(f"CREATE TABLE {t} AS SELECT * FROM s.{t}")
+    con.execute("DETACH s")
+gpu = None
 if "gpu" in engines:
-    try: torbles.gpu_name()
+    try: gpu = torbles.gpu_name()
     except Exception as e: print("no GPU:", e); engines = [e_ for e_ in engines if e_ != "gpu"]
+
+if JSON_OUT:
+    out = dict(sf=sf, rows=int(db["lineorder"].n), threads=threads, load_s=load_s, gpu=gpu, version=torbles.__version__,
+               duckdb_version=duckdb.__version__, times={}, all_match=True)
+    for name, q in QUERIES.items():
+        want = con.execute(q).fetchall()
+        ordered = "order by" in q.lower()
+        for e in engines:
+            tag = f"sql-{e}"
+            try:
+                t1 = time.perf_counter(); got = db.sql(q, e).rows; first = time.perf_counter() - t1
+                ok = sqlfuzz.same(got, want, ordered, 1e-9)
+                b = None
+                for _ in range(3):
+                    t1 = time.perf_counter(); got = db.sql(q, e).rows; dt = time.perf_counter() - t1
+                    b = dt if b is None else min(b, dt)
+                    ok = ok and sqlfuzz.same(got, want, ordered, 1e-9)
+                out["times"][f"{name}/{tag}"] = dict(first=first, best=b, match=bool(ok))
+                print(f"SF{sf} {name} {tag}: first {first * 1e3:8.1f} ms  best {b * 1e3:8.1f} ms" + ("" if ok else "  DIFFERENT"), flush=True)
+            except Exception as x:
+                ok = False; out["times"][f"{name}/{tag}"] = dict(first=None, best=None, match=False, error=f"{type(x).__name__}: {x}")
+                print(f"SF{sf} {name} {tag}: failed: {type(x).__name__}: {x}", flush=True)
+            out["all_match"] = out["all_match"] and bool(ok)
+    for e in engines:
+        tot = [out["times"][f"{n}/sql-{e}"]["best"] for n in QUERIES]
+        if all(t is not None for t in tot): print(f"SF{sf} 13 SSB queries in SQL, {e}: {sum(tot) * 1e3:.1f} ms", flush=True)
+    print("all results equal DuckDB's" if out["all_match"] else "MISMATCH: some results differ from DuckDB's", flush=True)
+    json.dump(out, open(JSON_OUT, "w"), indent=1)
+    sys.exit(0 if out["all_match"] else 1)
 
 def best(f, k=3):
     b, out = None, None
