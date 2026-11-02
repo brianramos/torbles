@@ -52,7 +52,9 @@ class Gates(unittest.TestCase):
     def test_fnd012_renderer_refuses_unbacked_or_stale_validation(self):
         data = inventory()
         renderer.validate(data)                                     # the committed inventory passes
-        target = next(c for c in data["capabilities"] if c["status"] != "validated")   # any capability not yet validated
+        # each forged claim below replaces the capability's whole claim, so any capability will do: one not yet validated
+        # while there is one, else the first (once every capability is validated)
+        target = next((c for c in data["capabilities"] if c["status"] != "validated"), data["capabilities"][0])
         for change, needle in (
                 (lambda c: c.update(status="validated", validation=None), "test and benchmark receipts"),
                 (lambda c: c.update(status="validated", validation=dict(tests=["tests/test_math_gates.py"])),
