@@ -343,6 +343,15 @@ def _diff(sql, got, want, opts):
     return "\n".join(lines)
 
 
+def fuzz_connect(duckdb):
+    """DuckDB for the comparison; TORBLES_FUZZ_DUCKDB_MEMORY (e.g. 4GB) caps its memory, so that a statement whose join
+    DuckDB cannot hold fails there (and is not compared) instead of taking the machine's memory"""
+    con = duckdb.connect()
+    lim = os.environ.get("TORBLES_FUZZ_DUCKDB_MEMORY")
+    if lim: con.execute(f"SET memory_limit = '{lim}'")
+    return con
+
+
 def build_db(tables, seed, con):
     r = random.Random(seed + 99)
     declare = all(all(v is not None and v in set(tables[d][0][0].values) for v in c.values)
@@ -371,7 +380,7 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
                 if t_end is not None and time.time() > t_end: break
             cs = seed * 100003 + case
             tables = make_case(cs)
-            con = duckdb.connect()
+            con = fuzz_connect(duckdb)
             try:
                 db, declared = build_db(tables, cs, con)
             except Exception as e:

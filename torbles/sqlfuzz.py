@@ -428,7 +428,7 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
                 if t_end is not None and time.time() > t_end: break
             cs = seed * 100003 + case
             tables = make_case(cs)
-            con = duckdb.connect()
+            con = fuzz.fuzz_connect(duckdb)
             try: db, _ = fuzz.build_db(tables, cs, con)
             except Exception:
                 tot["ERROR"] += 1; failures.append((case, None, "ERROR", traceback.format_exc(limit=6)))
