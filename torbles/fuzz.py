@@ -328,6 +328,12 @@ def run_query(db, spec):
     finally:
         algq.set_groupby("mm"); algq.set_threads(1)
     if got != want or got2 != want:
+        for what in ("statistics", "optimizer"):          # DuckDB's own answer without its optimizer
+            try: alt = duck_without(db.con, what, lambda: _norm(db.sql_result(q)))
+            except Exception: continue
+            if alt == got and alt == got2:
+                return "duckdb-error", (f"DuckDB without its {'statistics propagation' if what == 'statistics' else 'optimizer'} "
+                                        "gives torbles' answer: the difference is DuckDB's optimizer")
         return "MISMATCH", _diff(sql, got if got != want else got2, want, o)
     return "ok", ""
 
@@ -408,6 +414,25 @@ def duck_rows(con, sql):
         done.set(); t.join()
 
 
+TOO_WIDE = "a torble holds"                  # the load refusal of a table with more columns than a torble (hidden ones too)
+TOO_WIDE_REASON = "LoadError: a table with more columns than a torble holds (hidden ones included)"
+
+
+def duck_without(con, what, fn, seconds=120):
+    """fn() with DuckDB's optimizer off (what="optimizer") or only its statistics propagation (what="statistics"), the
+    connection's settings restored after; a statement still running after seconds is interrupted (fn raises). Two
+    answers of DuckDB to one statement must be equal: when they differ and one is torbles', the difference is DuckDB's
+    optimizer (a 64-bit sum its statistics chose, a join filter it derived, terms it never computed)"""
+    import threading
+    if what == "optimizer": con.execute("PRAGMA disable_optimizer")
+    else: con.execute("SET disabled_optimizers = 'statistics_propagation'")
+    timer = threading.Timer(seconds, con.interrupt); timer.start()
+    try: return fn()
+    finally:
+        timer.cancel()
+        con.execute("PRAGMA enable_optimizer"); con.execute("SET disabled_optimizers = ''")
+
+
 def build_db(tables, seed, con):
     r = random.Random(seed + 99)
     declare = all(all(v is not None and v in set(tables[d][0][0].values) for v in c.values)
@@ -440,6 +465,11 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
             try:
                 db, declared = build_db(tables, cs, con)
             except Exception as e:
+                if TOO_WIDE in str(e):                        # more columns than a torble holds: refused at load
+                    tot["refused"] += 1; reasons[TOO_WIDE_REASON] = reasons.get(TOO_WIDE_REASON, 0) + 1
+                    con.close(); case += 1
+                    if only_case is not None: break
+                    continue
                 failures.append((case, None, "ERROR", "building the database: " + traceback.format_exc(limit=8)))
                 tot["ERROR"] += 1; log(f"case {case}: ERROR building\n{failures[-1][3]}")
                 if stop_on_fail or only_case is not None: break

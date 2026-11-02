@@ -160,8 +160,10 @@ class Database:
                             v = self.con.execute(f"SELECT CAST({_q(c)} IS NOT NULL AS UINTEGER) AS v FROM {self._t(name)} ORDER BY rowid").fetchnumpy()["v"]
                             data[rc + "#v"] = np.ascontiguousarray(np.asarray(v), np.uint32); nullable[rc] = rc + "#v"; codecs[rc + "#v"] = ct.BoolCodec()
             if not data: raise LoadError(f"{name}: no column could be loaded")
-            if len(data) + bool(refs) > algq.MAXCOL:
-                raise LoadError(f"{name}: {len(data)} columns; a torble holds {algq.MAXCOL - 1} (with foreign keys) - "
+            ncols = len(data) + 2 * len(extend) + bool(refs)    # a column past 32 bits adds two (its flags, its high parts)
+            if ncols > algq.MAXCOL:
+                raise LoadError(f"{name}: {ncols} columns with the hidden ones (a validity plane per nullable column, two more "
+                                f"per column past 32 bits, one for the references); a torble holds {algq.MAXCOL} - "
                                 f"choose the columns to load with add_table(..., columns=[...])")
             cluster = next((c for c in list(fk) + [c for c in data if c not in fk]
                             if c not in extend and "#" not in c and c not in nullable and n > 1 and bool(np.all(data[c][1:] >= data[c][:-1]))), None)

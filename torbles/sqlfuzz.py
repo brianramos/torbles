@@ -361,7 +361,7 @@ def _close(a, b, tol, dec_tol=None):
 
 def _sk(v):
     if v is None: return (0, "")
-    if isinstance(v, float): return (1, "%.6e" % v if v == v else "nan")
+    if isinstance(v, float): return (1, "%.6e" % (v + 0.0) if v == v else "nan")     # -0.0 sorts as 0.0 (they group as one)
     if isinstance(v, (int, Decimal)): return (1, "%.6e" % float(v))
     return (2, repr(v))
 
@@ -390,14 +390,102 @@ _DUCK_INT = {"INT8": "TINYINT", "INT16": "SMALLINT", "INT32": "INTEGER", "INT64"
 
 def _duck_overflows(con, msg):
     """torbles raised DuckDB's own integer overflow error: does DuckDB raise it too when it computes that operation in
-    that type? Then the statement's answer from DuckDB comes from not computing the value (its optimizer answers
-    COUNT(x * 3) GROUP BY x without x * 3), and the overflow is not a fault of torbles' typing."""
+    that type? Asked for a COUNT(DISTINCT ...) only, whose argument DuckDB does not compute when it is an expression of
+    the GROUP BY keys (it answers 1 per group, even without its optimizer: docs/SQL.md, Where torbles and DuckDB
+    differ); the overflow is then not a fault of torbles' typing."""
     m = _OVERFLOW.search(msg)
     if not m: return False
     t = _DUCK_INT[m.group(2)]
     try: con.execute(f"SELECT CAST({m.group(3)} AS {t}) {m.group(4)} CAST({m.group(5)} AS {t})").fetchall()
     except Exception as e: return "Overflow" in str(e)
     return False
+
+
+_ERROR_CLASSES = ("Out of Range Error", "Conversion Error", "Invalid Input Error")
+
+
+def _err_kind(msg):
+    """an error message without its operands (DuckDB prints a DECIMAL's operands as scaled integers, torbles as values)"""
+    line = msg.strip().splitlines()[0] if msg.strip() else ""
+    return re.split(r"[(!'0-9]", line, maxsplit=1)[0].strip()
+
+
+def _duck_raises_too(con, sql, msg):
+    """torbles raised a runtime error (an overflow, a failed cast) and DuckDB answered: does DuckDB raise the same
+    error without its optimizer, which otherwise skips work (statistics that prove a term constant or a plan empty,
+    filters it reorders across joins)? Then the error comes from a value the statement asks to compute (whether an
+    implementation computes it first is its own choice: ISO 9075-2 6.3.3.3), not from torbles computing too much."""
+    if not msg.startswith(_ERROR_CLASSES): return False
+    try: fuzz.duck_without(con, "optimizer", lambda: fuzz.duck_rows(con, sql))
+    except fuzz.DuckMemoryError: return False
+    except Exception as e: return _err_kind(str(e)) == _err_kind(msg)
+    return False
+
+
+def _duck_agrees_without(con, sql, got, ordered):
+    """the setting under which DuckDB gives torbles' answer ("statistics": without its statistics propagation,
+    "optimizer": without its optimizer), or None"""
+    for what in ("statistics", "optimizer"):
+        try: alt = fuzz.duck_without(con, what, lambda: fuzz.duck_rows(con, sql))
+        except Exception: continue
+        if same(got, alt, ordered): return what
+    return None
+
+
+_ORDER_LIMIT = re.compile(r"\s+order by\s+((?:\d+(?:\s+(?:asc|desc))?(?:\s+nulls\s+(?:first|last))?\s*,\s*)*"
+                          r"\d+(?:\s+(?:asc|desc))?(?:\s+nulls\s+(?:first|last))?)\s+limit\s+(\d+)\s*$", re.I)
+
+
+def _order_spec(text):
+    """[(output position, descending, NULLs first)] of ORDER BY <positions> (DuckDB's default: NULLS LAST)"""
+    out = []
+    for part in text.split(","):
+        w = part.lower().split()
+        out.append((int(w[0]) - 1, "desc" in w, "first" in w))
+    return out
+
+
+def _key_cmp(a, b, spec, tol):
+    """-1, 0, 1: row a before, tied with (keys equal within the comparison's tolerance), after row b; None when
+    the keys do not compare"""
+    for pos, desc, nf in spec:
+        x, y = a[pos], b[pos]
+        if x is None or y is None:
+            if x is None and y is None: continue
+            first = x is None if nf else y is None
+            return -1 if first else 1
+        if _close(x, y, tol): continue
+        try:
+            kx = (1, 0) if isinstance(x, float) and x != x else (0, x)       # NaN: the greatest value
+            ky = (1, 0) if isinstance(y, float) and y != y else (0, y)
+            lt = kx < ky
+        except TypeError: return None
+        return (1 if lt else -1) if desc else (-1 if lt else 1)
+    return 0
+
+
+def _ties_explain(db, con, sql, got, tol=1e-6):
+    """ORDER BY output positions, then LIMIT n, and the rows differ: are they the first n rows of the same rows? The
+    statement without its LIMIT gives equal multisets on both (values compared as everywhere: a statistic NULL in
+    torbles is NaN in DuckDB, an exact statistic is DuckDB's rounded one: docs/SQL.md), and torbles' n rows are the
+    first n of its own rows by their key values (tied keys in any order). The orders then differ only where the key
+    values differ by those documented differences."""
+    m = _ORDER_LIMIT.search(sql)
+    if not m: return False
+    spec, n = _order_spec(m.group(1)), int(m.group(2))
+    base = sql[:m.start()] + " ORDER BY " + m.group(1)
+    try: want_all = fuzz.duck_rows(con, base); got_all = db.sql(base, ENGINE).rows
+    except Exception: return False
+    if not same(got_all, want_all, False, tol): return False
+    if len(got) != min(n, len(got_all)): return False
+    for a, b in zip(got, got[1:]):                      # torbles' rows in its key order
+        if _key_cmp(a, b, spec, tol) not in (-1, 0): return False
+    rest = list(got_all)                                # its n rows are rows of its answer, none after a row left out
+    for r in got:
+        for i, x in enumerate(rest):
+            if len(r) == len(x) and all(_close(u, v, 0) for u, v in zip(r, x)): del rest[i]; break
+        else: return False
+    return not got or all(_key_cmp(x, got[-1], spec, tol) in (0, 1) for x in rest)
 
 
 def run_one(db, con, sql, times=None):
@@ -413,9 +501,11 @@ def run_one(db, con, sql, times=None):
     except SqlError as e:
         msg = str(e)
         if any(t in msg for t in REFUSAL_TEXT): return "refused", msg[:200]
-        if _duck_overflows(con, msg):
+        if "count(distinct" in sql.lower() and _duck_overflows(con, msg):
             return "duckdb-error", ("DuckDB answered without computing a value that overflows its own type (a COUNT of an "
                                     f"expression of the GROUP BY keys, say); torbles raised it: {msg[:120]}")
+        if _duck_raises_too(con, sql, msg):
+            return "duckdb-error", f"DuckDB's optimizer skipped a value that fails; without it DuckDB raises it too: {msg[:100]}"
         return "ERROR", f"SqlError: {msg}\n{traceback.format_exc(limit=6)}"
     except Exception as e:
         return "ERROR", f"{type(e).__name__}: {e}\n{traceback.format_exc(limit=8)}"
@@ -429,6 +519,13 @@ def run_one(db, con, sql, times=None):
         return "duckdb-error", f"DuckDB returned {len(want)} rows past its LIMIT {m.group(1)} (a DuckDB bug)"
     if _wrapped(got, want):
         return "duckdb-error", "DuckDB's 64-bit integer sum wrapped around (a DuckDB bug; torbles' exact sum differs by k * 2^64)"
+    what = _duck_agrees_without(con, sql, got, ordered)
+    if what:
+        return "duckdb-error", (f"DuckDB without its {'statistics propagation' if what == 'statistics' else 'optimizer'} "
+                                "gives torbles' answer: the difference is DuckDB's optimizer (a 64-bit sum its statistics chose, say)")
+    if ordered and _ties_explain(db, con, sql, got):
+        return "ok", ("(documented) rows ordered by values that differ as documented (a statistic NULL for DuckDB's NaN, "
+                      "exact for rounded): the same rows without the LIMIT")
     return "MISMATCH", f"torbles ({len(got)} rows) {got[:6]}\nduckdb  ({len(want)} rows) {want[:6]}"
 
 
@@ -456,7 +553,12 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
             tables = make_case(cs)
             con = fuzz.fuzz_connect(duckdb)
             try: db, _ = fuzz.build_db(tables, cs, con)
-            except Exception:
+            except Exception as e:
+                if fuzz.TOO_WIDE in str(e):                   # more columns than a torble holds: refused at load
+                    tot["refused"] += 1; reasons[fuzz.TOO_WIDE_REASON] = reasons.get(fuzz.TOO_WIDE_REASON, 0) + 1
+                    con.close(); case += 1
+                    if only_case is not None: break
+                    continue
                 tot["ERROR"] += 1; failures.append((case, None, "ERROR", traceback.format_exc(limit=6)))
                 log(f"case {case}: ERROR building\n{failures[-1][3]}")
                 if stop_on_fail or only_case is not None: break
@@ -475,7 +577,7 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
                     if "LEFT JOIN" in sql: feats.add("LEFT JOIN")
                     records.append(dict(seed=seed, case=case, query=qi, kind=g.kind, feats=sorted(feats), status=st,
                                         torbles=tm.get("torbles"), duckdb=tm.get("duckdb"), rows=tm.get("rows"), fact_rows=nfact))
-                if st in ("refused", "duckdb-error"):
+                if st in ("refused", "duckdb-error") or detail and st == "ok":
                     k = ("(duckdb) " if st == "duckdb-error" else "") + detail[:80]
                     reasons[k] = reasons.get(k, 0) + 1
                 if verbose and (only_query is not None or st != "ok"):

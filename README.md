@@ -336,7 +336,9 @@ dimensions, deltas, and self-extension.
   arithmetic on DOUBLE columns (load them as DECIMAL), strings, dates and booleans, and GROUP BY keys that need more
   than 128 bits together or more than 12 key columns (a 64-bit fact column takes two); SQL evaluates those on the
   engine's distinct values or on the passing rows. In the fuzzers, torbles refuses fewer queries than DuckDB rejects.
-- **Columns:** at most 30 per table (31 per torble, one hidden column for the references); `columns=` loads a subset.
+- **Columns:** at most 31 per table, hidden ones included: one for the references, a validity plane per nullable
+  column, two more per column whose values need more than 32 bits, and one (two if nullable) per foreign key with
+  references without a match. A wider table is refused at load with the count; `columns=` loads a subset.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
 - **GPU executor:** validated on one GPU only, the RTX 5090 Laptop GPU (compute 12.0, CUDA 12.4): every test on the
