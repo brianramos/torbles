@@ -540,9 +540,11 @@ static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const
     uint64_t total = h->host.nw, *rs = NULL, *rc = NULL; int nr = 0;
     if (q->nranges) {
         rs = (uint64_t *)malloc(q->nranges * 8); rc = (uint64_t *)malloc(q->nranges * 8); total = 0;
-        for (uint64_t r = 0; r < q->nranges; r++) {
+        for (uint64_t r = 0, last = 0; r < q->nranges; r++) {
             uint64_t a = q->ranges[2 * r], b = q->ranges[2 * r + 1] < h->host.nw ? q->ranges[2 * r + 1] : h->host.nw;
-            rs[nr] = a; rc[nr] = total; total += b > a ? b - a : 0; nr++;
+            if (a < last) a = last;                    /* ranges are ascending; never scan a word twice (alg.c) */
+            if (b < a) b = a;
+            rs[nr] = a; rc[nr] = total; total += b - a; nr++; last = b;
         }
     }
     if (q->agg == A_MM) {
@@ -710,9 +712,11 @@ static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp,
     uint64_t total = h->host.nw; int nr = 0;
     if (q->nranges) {
         uint64_t *hs = (uint64_t *)malloc(q->nranges * 8), *hc = (uint64_t *)malloc(q->nranges * 8); total = 0;
-        for (uint64_t r = 0; r < q->nranges; r++) {
+        for (uint64_t r = 0, last = 0; r < q->nranges; r++) {
             uint64_t a = q->ranges[2 * r], b = q->ranges[2 * r + 1] < h->host.nw ? q->ranges[2 * r + 1] : h->host.nw;
-            hs[nr] = a; hc[nr] = total; total += b > a ? b - a : 0; nr++;
+            if (a < last) a = last;                    /* ranges are ascending; never scan a word twice (alg.c) */
+            if (b < a) b = a;
+            hs[nr] = a; hc[nr] = total; total += b - a; nr++; last = b;
         }
         if ((uint64_t)nr > h->nrcap) { if (h->drs) { cudaFree(h->drs); cudaFree(h->drc); }
             CKI(cudaMalloc((void **)&h->drs, nr * 8)); CKI(cudaMalloc((void **)&h->drc, nr * 8)); h->nrcap = nr; }

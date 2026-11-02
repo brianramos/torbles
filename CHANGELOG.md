@@ -224,6 +224,22 @@ a gate test of the mathematics inventory that needed a capability not yet valida
 had validated the last ones. It is fixed, and the second run validated that capability again on the GPU, so all 81 are
 validated.
 
+A second independent review, of the work since the first (windows read from their series, the foreign key fix and the
+GPU's device copies), found four more faults, each now a regression test in `tests/test_fixes.py` or
+`tests/check_algebra.py`. Rank selection under ORDER BY ... LIMIT reads only the rows up to the k-th on the first sort
+key, and its check for windows never looked at the ORDER BY, so in `ORDER BY x, LAG(id) OVER (ORDER BY id) LIMIT 5`
+LAG was computed over those rows and other rows came out than DuckDB's. Before windows were read from their series,
+only a block with no window in its SELECT list could meet this; reading them from their series let rank selection run
+beside the SELECT list's windows, and so beside windows in the ORDER BY too. Rank selection now stays off unless every
+window of the block, in either place, is read from its series, and `tests/check_algebra.py` puts windows at any position
+of the ORDER BY. A frame offset near 2^63 (`GROUPS BETWEEN CURRENT ROW AND 9223372036854775807 FOLLOWING`) wrapped
+around in 64-bit arithmetic on the series path; offsets past every group of the partition are now capped, as on the
+rows. The GPU executor and its emulation counted twice the rows of a 64-row word that two row ranges share, which a
+filter on a dimension gives on a fact sorted by its foreign key: a count over seven keys of five rows each gave 185 on
+the GPU and 35 on the CPU, through the Python API and through SQL. This dated from 0.1.0. The ranges are now merged
+before they are planned, and the GPU executors clamp them as the CPU's do. Last, a window with two or more PARTITION BY
+columns over no rows raised a ValueError instead of returning no rows.
+
 Packaging
 
 GitHub Actions now tests on Python 3.11, 3.12 and 3.13 and adds a job that installs the wheel with exactly the lowest

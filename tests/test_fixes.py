@@ -194,4 +194,58 @@ for k in (8, 9):
         if k == 8: check(err is None and sum(got.values()) == 900, f"8 looked-up columns on {eng}: {err!r}")
         else: check(isinstance(err, ValueError) and "dimension columns through lookups" in str(err), f"9 looked-up columns on {eng}: {err!r}")
 print(f"   eight looked-up columns run, nine are refused by name, on 3 engines: {'all match' if fails == f0 else 'FAILURES'}")
+
+# ---------------------------------------------------------------- 6. row ranges that share a 64-row word
+# On a fact sorted by a foreign key, a dimension filter becomes row ranges, rounded out to 64-row words for the
+# executors; two ranges can share a word. The CPU executors scanned it once (alg.c, make_chunks); the GPU executor and
+# its emulation scanned it once per range and counted its rows again (an independent review found it; the code dated
+# from 0.1.0). The ranges are now merged before they are planned, and the GPU executors clamp them as the CPU's do.
+print("6. row ranges sharing a 64-row word, on a fact sorted by its foreign key")
+f0 = fails; runs = 0
+for nd, n, seed in ((1000, 30000, 4), (14000, 70000, 5), (300, 4000, 6)):
+    rng = np.random.default_rng(seed)
+    dc = dict(a=rng.integers(0, 50, nd).astype(np.uint32), b=rng.integers(0, 7, nd).astype(np.uint32))
+    fk = np.sort(rng.integers(0, nd, n)); x = rng.integers(0, 1000, n)
+    D = Table("d", dict(dc))
+    F = Table("f", dict(x=x.astype(np.uint32), fk=fk.astype(np.uint32)), msb=("fk",), refs={"fk": D}, cluster="fk")
+    for name, pred, sel in (("d.b = 2", lambda: D.b == 2, dc["b"][fk] == 2),
+                            ("d.a < 5", lambda: D.a < 5, dc["a"][fk] < 5),
+                            ("d.a in 7 values", lambda: D.a.isin([1, 3, 5, 7, 9, 11, 13]), np.isin(dc["a"][fk], [1, 3, 5, 7, 9, 11, 13]))):
+        want = (int(sel.sum()), int(x[sel].sum()))
+        for mode in ("auto", "factored", "expanded", "lookup"):
+            for eng in ("alg", "plain", "gpu"):
+                got = (Query(F, join_mode=mode).join(D, F.fk).where(pred()).count().run(eng),
+                       Query(F, join_mode=mode).join(D, F.fk).where(pred()).sum(F.x).run(eng))
+                runs += 1
+                check(got == want, f"{name} [nd {nd}, {mode}, {eng}]: {got} != {want}")
+# the executors themselves: word ranges that overlap are scanned once (a range restricts the scan, at the executor's
+# granularity, to words where the predicate can hold; the predicate selects the rows)
+v6 = np.zeros(64 * 8, np.uint32)
+for w in (0, 1, 2, 3, 4, 7): v6[64 * w:64 * (w + 1)] = 1
+T6 = Table("t6", dict(v=v6))
+for eng in ("alg", "plain", "gpu"):
+    q = Query(T6).where(T6.v == 1).count()
+    q._inpass = True; q._word_ranges = np.array([0, 2, 1, 4, 3, 5, 7, 8], np.uint64)    # as a pass of a partitioned run
+    runs += 1; got = q.run(eng)
+    check(got == 64 * 6, f"overlapping word ranges on {eng}: {got} rows, want {64 * 6}")
+# through SQL: a dimension with only its key and a fact loaded in foreign key order
+con = duckdb.connect()
+con.execute("CREATE TABLE dim (k INTEGER PRIMARY KEY)")
+con.execute("CREATE TABLE fact (id INTEGER PRIMARY KEY, k INTEGER REFERENCES dim(k), v INTEGER)")
+nd, per = 14_000, 5
+fkk = np.repeat(np.arange(nd), per)
+con.register("di", pd.DataFrame(dict(k=np.arange(nd))))
+con.register("fa", pd.DataFrame(dict(id=np.arange(len(fkk)), k=fkk, v=np.arange(len(fkk)) % 7)))
+con.execute("INSERT INTO dim SELECT * FROM di"); con.execute("INSERT INTO fact SELECT * FROM fa")
+import torbles
+db6 = torbles.from_duckdb(con, keep_plain=True)
+for sql in ("SELECT count(*), sum(v) FROM fact JOIN dim ON fact.k = dim.k WHERE dim.k IN (1, 3, 5, 7, 9, 11, 13)",
+            "SELECT count(*), sum(v) FROM fact JOIN dim ON fact.k = dim.k WHERE dim.k % 3 = 0 AND dim.k < 2000",
+            "SELECT dim.k % 4 AS m, count(*), sum(v) FROM fact JOIN dim ON fact.k = dim.k WHERE dim.k BETWEEN 10 AND 90 GROUP BY m ORDER BY m"):
+    want = con.execute(sql).fetchall()
+    for eng in ("alg", "plain", "gpu"):
+        runs += 1
+        got = db6.sql(sql, eng).rows
+        check(got == want, f"{sql} [{eng}]: {got} != {want}")
+print(f"   3 filters x 3 dimension sizes x 4 join forms x 3 engines, overlapping word ranges, 3 SQL statements = {runs} runs vs exact answers: {'all match' if fails == f0 else 'FAILURES'}")
 print("\nALL FIX TESTS PASSED" if fails == 0 else f"\n{fails} FAILURES")

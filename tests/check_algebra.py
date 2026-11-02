@@ -77,6 +77,12 @@ def counting(self, preds):
     return out
 sqlexec._Planner.topk_preds = counting
 COLS = ["q", "d", "v", "w", "y", "p", "s", "id", "k"]
+# windows in the ORDER BY after its first key, and windows in the SELECT list (read from their series or not): rank
+# selection reads only the rows before the k-th, so it must stay off unless every window is computed on every row
+WIN_ORDER = ["lag(v) OVER (ORDER BY id)", "lead(q, 2) OVER (ORDER BY id)", "count(*) OVER (PARTITION BY d)",
+             "min(id) OVER (PARTITION BY d ORDER BY id DESC ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING)",
+             "sum(v) OVER (PARTITION BY d ORDER BY q)", "rank() OVER (ORDER BY w)"]
+WIN_SEL = ["count(*) OVER (PARTITION BY d) AS wc", "rank() OVER (ORDER BY q) AS wr", "sum(w) OVER (PARTITION BY d ORDER BY q) AS ws"]
 for qi in range(NQ):
     nkeys = r.choice([1, 1, 2, 2, 3])
     keys = r.sample(COLS, nkeys) + (["id"] if r.random() < 0.7 else [])          # id last: a total order
@@ -93,6 +99,9 @@ for qi in range(NQ):
     lim = r.choice([1, 3, 10, 25, 100, 2000])
     off = r.choice(["", "", f" OFFSET {r.choice([1, 7, 50])}"])
     distinct = "DISTINCT " if r.random() < 0.05 else ""
+    if not distinct and r.random() < 0.2:
+        order.insert(r.randint(1, max(1, len(order) - 1)), r.choice(WIN_ORDER) + r.choice(["", " DESC"]))
+    if not distinct and r.random() < 0.2: sel += ", " + r.choice(WIN_SEL)
     sql = f"SELECT {distinct}{sel}, {', '.join(dict.fromkeys(keys))} FROM {frm}{where} ORDER BY {', '.join(order)} LIMIT {lim}{off}"
     compare(sql, "TOPK", ordered=True, duck=keys[-1] == "id")
 print(f"   rank selection used on {used.get('topk', 0)} of {NQ} queries")
@@ -215,8 +224,13 @@ WFRAME = ["", "", "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW", "RANGE BET
           "RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING", "GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW",
           "GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING", "ROWS BETWEEN 3 PRECEDING AND 1 FOLLOWING",
           "RANGE BETWEEN CURRENT ROW AND CURRENT ROW", "GROUPS BETWEEN 1 FOLLOWING AND 3 FOLLOWING",
-          "ROWS BETWEEN 2 FOLLOWING AND 1 PRECEDING", "GROUPS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING"]
-WWHERE = ["", "", " WHERE f.q > 10", " WHERE dim.region <> 'r1'", " WHERE f.y IS NOT NULL", " WHERE f.w < 100 AND f.d <> 3"]
+          "ROWS BETWEEN 2 FOLLOWING AND 1 PRECEDING", "GROUPS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING",
+          # offsets past every group, up to the largest BIGINT (they must not wrap in 64 bits)
+          "GROUPS BETWEEN CURRENT ROW AND 9223372036854775807 FOLLOWING", "GROUPS BETWEEN 9223372036854775807 PRECEDING AND 1 PRECEDING",
+          "GROUPS BETWEEN 9223372036854775807 FOLLOWING AND UNBOUNDED FOLLOWING", "ROWS BETWEEN 9223372036854775807 PRECEDING AND CURRENT ROW",
+          "GROUPS BETWEEN 1 PRECEDING AND 4611686018427387904 FOLLOWING"]
+WWHERE = ["", "", " WHERE f.q > 10", " WHERE dim.region <> 'r1'", " WHERE f.y IS NOT NULL", " WHERE f.w < 100 AND f.d <> 3",
+          " WHERE f.q < 0"]                           # no row
 WOTHER = ["lag(f.v)", "first_value(f.q)", "min(f.w)", "max(f.y)", "ntile(4)"]
 FROMS = ["fact f JOIN dim ON f.k = dim.k", "fact f JOIN dim ON f.k = dim.k",
          "fact f LEFT JOIN dim ON f.k = dim.k AND dim.cat = 1"]
@@ -241,10 +255,15 @@ for qi in range(NQ):
         tail = f" ORDER BY {order[0]}{spec}, f.id LIMIT {r.choice([1, 7, 100, 1000])}" + r.choice(["", "", " OFFSET 5"])
         ordered = True
     elif roll < 0.65:
-        tail = " ORDER BY f.id" + r.choice(["", f" LIMIT {r.choice([10, 500])}"]) + r.choice(["", " DESC"])
+        tail = " ORDER BY f.id" + r.choice(["", " DESC"]) + r.choice(["", f" LIMIT {r.choice([10, 500])}"])
         ordered = True
-    elif roll < 0.72:                             # a window in the ORDER BY
+    elif roll < 0.68:                             # a window in the ORDER BY
         tail = f" ORDER BY {wins[0]}, f.id LIMIT 50"
+        ordered = True
+    elif roll < 0.74:                             # a window in the ORDER BY after a fact column (rank selection)
+        w2 = r.choice([wins[0], wins[0], "lag(f.v) OVER (ORDER BY f.id)", "count(*) OVER (PARTITION BY f.d)",
+                       "min(f.id) OVER (PARTITION BY f.k ORDER BY f.id ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING)"])
+        tail = f" ORDER BY f.q{r.choice(['', ' DESC'])}, {w2}{r.choice(['', ' DESC'])}, f.id LIMIT {r.choice([5, 50])}"
         ordered = True
     elif roll < 0.8:                              # QUALIFY on a window
         tail = f" QUALIFY {wins[0]} <= 3"

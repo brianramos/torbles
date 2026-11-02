@@ -276,8 +276,8 @@ def occurrence(codes):
 def _combine(cols):
     c = cols[0]
     for d in cols[1:]:
-        k = int(d.max()) + 1
-        if (int(c.max()) + 1) * k >= 1 << 62:
+        k = int(d.max(initial=-1)) + 1                     # (no rows: no partition)
+        if (int(c.max(initial=-1)) + 1) * k >= 1 << 62:
             c = np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64)
         c = c * k + d
     return c

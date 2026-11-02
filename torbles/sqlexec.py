@@ -2077,12 +2077,14 @@ def _series_values(w, a, b, gi, G, ps, cnt, PC, before, N, cols, col, perm):
     if name in ("row_number", "rank"): return (before + 1).tolist()
     if name == "dense_rank": return (gi + 1).tolist()
     if name == "percent_rank": return np.where(N <= 1, 0.0, before / np.maximum(N - 1, 1)).tolist()
-    if name == "cume_dist": return ((before + cnt) / N).tolist()
+    if name == "cume_dist": return ((before + cnt) / np.maximum(N, 1)).tolist()     # (N = 0: no row reads it)
+    gmax = int(np.max(G, initial=0))
     def edge(bd, side):
         kind, off = bd
         if kind == "unbounded_preceding": return np.zeros_like(gi)
         if kind == "unbounded_following": return G
         if kind == "current": return gi if side == "a" else gi + 1
+        off = min(off, gmax + 1)                           # past every group (an offset up to 2^63 - 1 must not wrap)
         t = gi - off if kind == "preceding" else gi + off
         return np.where(t < 0, 0, np.where(t >= G, G, t if side == "a" else t + 1))
     lo = np.minimum(np.maximum(edge(a, "a"), 0), G)
@@ -3667,8 +3669,10 @@ class _Planner:
         if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return []
         if self.tab[self.fact].n < ALG_MIN_ROWS: return []
         if s.distinct or s.distinct_on is not None or s.qualify is not None: return []
-        wl = collect([x for x, _ in s.items] + [o[0] for o in s.order if not isinstance(o[0], tuple)], I.Win)
-        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return []   # windows over every row need them all
+        # windows over every row need them all: those in the SELECT list and those in the ORDER BY (ORDER BY x, LAG(id)
+        # OVER (ORDER BY id) LIMIT k read LAG from the k rows); windows read from their series are computed on every row
+        wl = collect([x for x, _ in s.items] + [o[0][1] for o in s.order if o[0][0] == "expr"], I.Win)
+        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return []
         lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
         off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
         if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return []

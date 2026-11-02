@@ -2243,7 +2243,15 @@ class Query:
         if getattr(self, "_word_ranges", None) is not None and row_ranges is None:
             wr = self._word_ranges; keep.append(wr); plan.nranges = len(wr) // 2; plan.ranges = wr.ctypes.data; self.scanned = None
         elif row_ranges is not None:
-            wr = np.array([(a // 64, (b_ + 63) // 64) for a, b_ in row_ranges if b_ > a] or [(0, 0)], dtype=np.uint64).ravel()
+            # the 64-row words of the row ranges, ascending and disjoint: two ranges rounded out to words can share
+            # one, which must be scanned once (the GPU executors scanned it once per range and counted its rows twice)
+            ws = []
+            for a, b_ in sorted(row_ranges):
+                if b_ <= a: continue
+                lo, hi = a // 64, (b_ + 63) // 64
+                if ws and lo <= ws[-1][1]: ws[-1][1] = max(ws[-1][1], hi)
+                else: ws.append([lo, hi])
+            wr = np.array(ws or [(0, 0)], dtype=np.uint64).ravel()
             keep.append(wr); plan.nranges = len(wr) // 2; plan.ranges = wr.ctypes.data
             self.scanned = float(sum(int(wr[2 * i + 1] - wr[2 * i]) for i in range(len(wr) // 2))) / max(1, (fact.n + 63) // 64)
         else: self.scanned = 1.0

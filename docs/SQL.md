@@ -83,7 +83,9 @@ grouped by the block's keys and the code's leading bits, restricted to the code 
 a column with millions of distinct values costs three or four small engine queries and only the codes at the wanted
 ranks are decoded (with very many groups, one query on the whole code). ORDER BY ... LIMIT k of a block without
 aggregates uses the same selection: the code at rank k on the first sort column bounds the rows that can be output,
-the block reads only those, and while the ties are many the next sort column narrows them. `COUNT(DISTINCT x)` has the
+the block reads only those, and while the ties are many the next sort column narrows them (not when the block has a
+window function, in its SELECT list or its ORDER BY, that is not read from its series: such a window needs every
+row). `COUNT(DISTINCT x)` has the
 engine set one bit per (group, value) cell where it would count it, and counts each group's bits. An aggregate block
 over an inner equi-join of two FROM items that is not a star (two derived tables or CTEs, a table joined with itself on
 a column that is not its key) groups each side first, by the columns the block reads outside its aggregates (the join
