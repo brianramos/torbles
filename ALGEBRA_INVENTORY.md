@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 0 |
 | planned | 0 |
-| in_progress | 21 |
-| validated | 60 |
+| in_progress | 0 |
+| validated | 81 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -536,7 +536,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 
 ### FND-006: Fused multi-output basis reduction
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Accumulate multiple basis states in one traversal while sharing predicates, decoded planes, group masks and overlapping products; preserve a competing repeated-reduction plan.
 
@@ -554,14 +554,14 @@ Bounds:
 - Representation limits (UnsupportedError): 1024 outputs, 16 groupings, 64 conditions, 65536 nodes, 65536 bank terms, 4096 distinct products; FND-004 / DIST-001 limits per output.
 - Refusals are atomic (no output of a refused run exists): AlgebraBudgetError (resource, need, limit), OverflowError (an unprovable 127-bit term or weight bound, before anything runs), ValueError, DomainError, StaleStateError.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_reduce.h`
-- `torbles/math_reduce.c`
-- `torbles/math_reduce_gpu.cu`
-- `torbles/math_reduce.py`
-- `tests/test_math_fused_reduce.py`
-- `bench/benchmark_math_reduce.py`
+- [torbles/math_reduce.h](torbles/math_reduce.h)
+- [torbles/math_reduce.c](torbles/math_reduce.c)
+- [torbles/math_reduce_gpu.cu](torbles/math_reduce_gpu.cu)
+- [torbles/math_reduce.py](torbles/math_reduce.py)
+- [tests/test_math_fused_reduce.py](tests/test_math_fused_reduce.py)
+- [bench/benchmark_math_reduce.py](bench/benchmark_math_reduce.py)
 
 Acceptance tests:
 
@@ -584,7 +584,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/FND-006/tests_test_math_fused_reduce.json](results/math/FND-006/tests_test_math_fused_reduce.json)
 - tests: [results/math/FND-006/sanitized_test_math_fused_reduce.json](results/math/FND-006/sanitized_test_math_fused_reduce.json)
@@ -1742,7 +1742,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### GEN-002: Convolution and bounded formal series
 
-Status: **in_progress**. Delivery wave: **W3**.
+Status: **validated**. Delivery wave: **W3**.
 
 Products encode independent/full-product combinations; truncated series support declared bounded coefficients and path lengths.
 
@@ -1759,15 +1759,15 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_conv.h`
-- `torbles/math_conv.c`
-- `torbles/math_conv_gpu.cu`
-- `torbles/math_conv.py`
-- `tests/test_math_conv.py`
-- `bench/benchmark_math_conv.py`
-- `torbles/math_gen.c`
+- [torbles/math_conv.h](torbles/math_conv.h)
+- [torbles/math_conv.c](torbles/math_conv.c)
+- [torbles/math_conv_gpu.cu](torbles/math_conv_gpu.cu)
+- [torbles/math_conv.py](torbles/math_conv.py)
+- [tests/test_math_conv.py](tests/test_math_conv.py)
+- [bench/benchmark_math_conv.py](bench/benchmark_math_conv.py)
+- [torbles/math_gen.c](torbles/math_gen.c)
 
 Acceptance tests:
 
@@ -1786,7 +1786,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/GEN-002/tests_test_math_conv.json](results/math/GEN-002/tests_test_math_conv.json)
 - tests: [results/math/GEN-002/sanitized_test_math_conv.json](results/math/GEN-002/sanitized_test_math_conv.json)
@@ -1801,7 +1801,7 @@ Histograms, tails, quantiles, entropy and information measures.
 
 ### DIST-001: Reusable scalar and joint histograms
 
-Status: **in_progress**. Delivery wave: **W2**.
+Status: **validated**. Delivery wave: **W2**.
 
 Native sparse/dense support states with counts/weights, explicit NULL/presence states and support budgets.
 
@@ -1823,14 +1823,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/algq.py](torbles/algq.py): Existing GROUP BY and histogram bridge can produce distributions, but no general immutable native distribution-state API.
 - [torbles/sqlfuncs.py](torbles/sqlfuncs.py): Existing SQL histogram finalizers do not establish the proposed native state abstraction.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_dist.h`
-- `torbles/math_dist.c`
-- `torbles/math_dist_gpu.cu`
-- `torbles/math_dist.py`
-- `tests/test_math_dist.py`
-- `bench/benchmark_math_dist.py`
+- [torbles/math_dist.h](torbles/math_dist.h)
+- [torbles/math_dist.c](torbles/math_dist.c)
+- [torbles/math_dist_gpu.cu](torbles/math_dist_gpu.cu)
+- [torbles/math_dist.py](torbles/math_dist.py)
+- [tests/test_math_dist.py](tests/test_math_dist.py)
+- [bench/benchmark_math_dist.py](bench/benchmark_math_dist.py)
 
 Acceptance tests:
 
@@ -1849,17 +1849,18 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/DIST-001/tests_test_math_dist.json](results/math/DIST-001/tests_test_math_dist.json)
 - tests: [results/math/DIST-001/sanitized_test_math_dist.json](results/math/DIST-001/sanitized_test_math_dist.json)
 - benchmarks: [results/math/DIST-001/benchmark_cpu_math_dist_vm.json](results/math/DIST-001/benchmark_cpu_math_dist_vm.json)
+- benchmarks: [results/math/DIST-001/benchmark_device_math_dist_WIN_OHVNN0FUC09.json](results/math/DIST-001/benchmark_device_math_dist_WIN_OHVNN0FUC09.json)
 
 <a id="dist-002"></a>
 
 ### DIST-002: Prefix distribution calculus and exact quantiles
 
-Status: **in_progress**. Delivery wave: **W2**.
+Status: **validated**. Delivery wave: **W2**.
 
 Sorted histogram prefix counts/moments answer CDF, tails, quantiles, trimmed sums and range integrals.
 
@@ -1881,14 +1882,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/algq.py](torbles/algq.py): Existing dominance and range lowerings are reusable building blocks.
 - [torbles/sqlfuncs.py](torbles/sqlfuncs.py): Existing SQL percentile/quantile finalizers; shared native prefix-state API remains planned.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_dist.h`
-- `torbles/math_dist.c`
-- `torbles/math_dist_gpu.cu`
-- `torbles/math_dist.py`
-- `tests/test_math_dist.py`
-- `bench/benchmark_math_dist.py`
+- [torbles/math_dist.h](torbles/math_dist.h)
+- [torbles/math_dist.c](torbles/math_dist.c)
+- [torbles/math_dist_gpu.cu](torbles/math_dist_gpu.cu)
+- [torbles/math_dist.py](torbles/math_dist.py)
+- [tests/test_math_dist.py](tests/test_math_dist.py)
+- [bench/benchmark_math_dist.py](bench/benchmark_math_dist.py)
 
 Acceptance tests:
 
@@ -1907,7 +1908,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/DIST-002/tests_test_math_dist.json](results/math/DIST-002/tests_test_math_dist.json)
 - tests: [results/math/DIST-002/sanitized_test_math_dist.json](results/math/DIST-002/sanitized_test_math_dist.json)
@@ -2267,7 +2268,7 @@ Sparse/factored moment tensors and contraction planning.
 
 ### TENSOR-001: Sparse and factored moment tensors
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Retain declared multi-index states without forcing dense Cartesian expansion.
 
@@ -2284,14 +2285,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_tensor.h`
-- `torbles/math_tensor.c`
-- `torbles/math_tensor_gpu.cu`
-- `torbles/math_tensor.py`
-- `tests/test_math_tensor.py`
-- `bench/benchmark_math_tensor.py`
+- [torbles/math_tensor.h](torbles/math_tensor.h)
+- [torbles/math_tensor.c](torbles/math_tensor.c)
+- [torbles/math_tensor_gpu.cu](torbles/math_tensor_gpu.cu)
+- [torbles/math_tensor.py](torbles/math_tensor.py)
+- [tests/test_math_tensor.py](tests/test_math_tensor.py)
+- [bench/benchmark_math_tensor.py](bench/benchmark_math_tensor.py)
 
 Acceptance tests:
 
@@ -2311,7 +2312,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/TENSOR-001/tests_test_math_tensor.json](results/math/TENSOR-001/tests_test_math_tensor.json)
 - tests: [results/math/TENSOR-001/sanitized_test_math_tensor.json](results/math/TENSOR-001/sanitized_test_math_tensor.json)
@@ -2322,7 +2323,7 @@ Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
 
 ### TENSOR-002: Costed contraction planning
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Choose variable/contraction order, kernel, intermediate shape and materialization lifetime for bounded tensor networks.
 
@@ -2339,14 +2340,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_tensor.h`
-- `torbles/math_tensor.c`
-- `torbles/math_tensor_gpu.cu`
-- `torbles/math_tensor.py`
-- `tests/test_math_tensor.py`
-- `bench/benchmark_math_tensor.py`
+- [torbles/math_tensor.h](torbles/math_tensor.h)
+- [torbles/math_tensor.c](torbles/math_tensor.c)
+- [torbles/math_tensor_gpu.cu](torbles/math_tensor_gpu.cu)
+- [torbles/math_tensor.py](torbles/math_tensor.py)
+- [tests/test_math_tensor.py](tests/test_math_tensor.py)
+- [bench/benchmark_math_tensor.py](bench/benchmark_math_tensor.py)
 
 Acceptance tests:
 
@@ -2365,7 +2366,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/TENSOR-002/tests_test_math_tensor.json](results/math/TENSOR-002/tests_test_math_tensor.json)
 - tests: [results/math/TENSOR-002/sanitized_test_math_tensor.json](results/math/TENSOR-002/sanitized_test_math_tensor.json)
@@ -2435,7 +2436,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### KERNEL-002: Approximate spectral feature kernels
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Offer RBF/other selected kernels through explicit finite-feature approximation, seeds, precision and error accounting.
 
@@ -2453,14 +2454,14 @@ Bounds:
 - Requests: output = requests, tensor = points x items (point features), bytes = the point features; every big rational of an answer is FND-009-budgeted; save / load: bytes = the record (twice for a load).
 - Refused before allocation: AlgebraBudgetError; NotConvergedError when the per-pair bound exceeds the error budget; UnsupportedError for d > 16, N > 12, D > 2^20, Taylor features of Laplace or Cauchy kernels, frequencies past 2^60, a Gaussian factor below 2^-(2^24); DomainError for columns of different scales and data or points outside the declared domain.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_kapprox.h`
-- `torbles/math_kapprox.c`
-- `torbles/math_kapprox_gpu.cu`
-- `torbles/math_kapprox.py`
-- `tests/test_math_kapprox.py`
-- `bench/benchmark_math_kapprox.py`
+- [torbles/math_kapprox.h](torbles/math_kapprox.h)
+- [torbles/math_kapprox.c](torbles/math_kapprox.c)
+- [torbles/math_kapprox_gpu.cu](torbles/math_kapprox_gpu.cu)
+- [torbles/math_kapprox.py](torbles/math_kapprox.py)
+- [tests/test_math_kapprox.py](tests/test_math_kapprox.py)
+- [bench/benchmark_math_kapprox.py](bench/benchmark_math_kapprox.py)
 
 Acceptance tests:
 
@@ -2483,7 +2484,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/KERNEL-002/tests_test_math_kapprox.json](results/math/KERNEL-002/tests_test_math_kapprox.json)
 - tests: [results/math/KERNEL-002/sanitized_test_math_kapprox.json](results/math/KERNEL-002/sanitized_test_math_kapprox.json)
@@ -2850,7 +2851,7 @@ Finite closed observables and repeated operator application.
 
 ### DYN-001: Finite closed-observable dynamics
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Represent declared dynamics as a matrix action on a basis proven closed under composition.
 
@@ -2867,14 +2868,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_dyn.h`
-- `torbles/math_dyn.c`
-- `torbles/math_dyn_gpu.cu`
-- `torbles/math_dyn.py`
-- `tests/test_math_dyn.py`
-- `bench/benchmark_math_dyn.py`
+- [torbles/math_dyn.h](torbles/math_dyn.h)
+- [torbles/math_dyn.c](torbles/math_dyn.c)
+- [torbles/math_dyn_gpu.cu](torbles/math_dyn_gpu.cu)
+- [torbles/math_dyn.py](torbles/math_dyn.py)
+- [tests/test_math_dyn.py](tests/test_math_dyn.py)
+- [bench/benchmark_math_dyn.py](bench/benchmark_math_dyn.py)
 
 Acceptance tests:
 
@@ -2894,7 +2895,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/DYN-001/tests_test_math_dyn.json](results/math/DYN-001/tests_test_math_dyn.json)
 - tests: [results/math/DYN-001/sanitized_test_math_dyn.json](results/math/DYN-001/sanitized_test_math_dyn.json)
@@ -2905,7 +2906,7 @@ Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
 
 ### DYN-002: Repeated operator powers and semigroups
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Evaluate many steps, selected recurrences or parameterized evolution from retained finite operators.
 
@@ -2922,14 +2923,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_dyn.h`
-- `torbles/math_dyn.c`
-- `torbles/math_dyn_gpu.cu`
-- `torbles/math_dyn.py`
-- `tests/test_math_dyn.py`
-- `bench/benchmark_math_dyn.py`
+- [torbles/math_dyn.h](torbles/math_dyn.h)
+- [torbles/math_dyn.c](torbles/math_dyn.c)
+- [torbles/math_dyn_gpu.cu](torbles/math_dyn_gpu.cu)
+- [torbles/math_dyn.py](torbles/math_dyn.py)
+- [tests/test_math_dyn.py](tests/test_math_dyn.py)
+- [bench/benchmark_math_dyn.py](bench/benchmark_math_dyn.py)
 
 Acceptance tests:
 
@@ -2949,7 +2950,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/DYN-002/tests_test_math_dyn.json](results/math/DYN-002/tests_test_math_dyn.json)
 - tests: [results/math/DYN-002/sanitized_test_math_dyn.json](results/math/DYN-002/sanitized_test_math_dyn.json)
@@ -3368,7 +3369,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### COUNT-002: Symbolic full-domain algebraic model counting
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Add a bounded circuit/decision-diagram/variable-elimination backend for counts and witnesses over declared assignment domains.
 
@@ -3387,14 +3388,14 @@ Bounds:
 - Brute force: variables = k, support = 2^k, circuit = program nodes, bytes (CUDA: per work item node words and sums); bounded search: iterations = max_evaluations (exact or certified bounds, never refused for a larger space), bytes = the branch queue.
 - Factors: variables = n, support = entries, tensor = the largest table; elimination: tensor = the width (exact need), iterations = the products, bytes = every message at L limbs per entry, output = 2 + witnesses; factor brute force: support = prod d_i.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_symcount.h`
-- `torbles/math_symcount.c`
-- `torbles/math_symcount_gpu.cu`
-- `torbles/math_symcount.py`
-- `tests/test_math_symcount.py`
-- `bench/benchmark_math_symcount.py`
+- [torbles/math_symcount.h](torbles/math_symcount.h)
+- [torbles/math_symcount.c](torbles/math_symcount.c)
+- [torbles/math_symcount_gpu.cu](torbles/math_symcount_gpu.cu)
+- [torbles/math_symcount.py](torbles/math_symcount.py)
+- [tests/test_math_symcount.py](tests/test_math_symcount.py)
+- [bench/benchmark_math_symcount.py](bench/benchmark_math_symcount.py)
 
 Acceptance tests:
 
@@ -3415,7 +3416,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/COUNT-002/tests_test_math_symcount.json](results/math/COUNT-002/tests_test_math_symcount.json)
 - tests: [results/math/COUNT-002/sanitized_test_math_symcount.json](results/math/COUNT-002/sanitized_test_math_symcount.json)
@@ -3793,7 +3794,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### DISC-003: Conservation and stability across revisions
 
-Status: **in_progress**. Delivery wave: **W3**.
+Status: **validated**. Delivery wave: **W3**.
 
 Track scoped invariants across declared transformations/updates, recording persistence separately from snapshot truth or predictive evidence.
 
@@ -3810,14 +3811,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_conserve.h`
-- `torbles/math_conserve.c`
-- `torbles/math_conserve_gpu.cu`
-- `torbles/math_conserve.py`
-- `tests/test_math_conserve.py`
-- `bench/benchmark_math_conserve.py`
+- [torbles/math_conserve.h](torbles/math_conserve.h)
+- [torbles/math_conserve.c](torbles/math_conserve.c)
+- [torbles/math_conserve_gpu.cu](torbles/math_conserve_gpu.cu)
+- [torbles/math_conserve.py](torbles/math_conserve.py)
+- [tests/test_math_conserve.py](tests/test_math_conserve.py)
+- [bench/benchmark_math_conserve.py](bench/benchmark_math_conserve.py)
 
 Acceptance tests:
 
@@ -3840,7 +3841,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `05105bc67eebc80f5ed6a7d44eae1fffe7214898`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/DISC-003/tests_test_math_conserve.json](results/math/DISC-003/tests_test_math_conserve.json)
 - tests: [results/math/DISC-003/sanitized_test_math_conserve.json](results/math/DISC-003/sanitized_test_math_conserve.json)
@@ -4094,7 +4095,7 @@ Incidence operators, frontiers, paths and bounded recursive computations.
 
 ### GRAPH-001: Declared graph layouts and reductions
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Build explicit incidence/adjacency ownership and native degree, frontier, neighborhood and matrix-vector operations.
 
@@ -4111,14 +4112,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_graph.h`
-- `torbles/math_graph.c`
-- `torbles/math_graph_gpu.cu`
-- `torbles/math_graph.py`
-- `tests/test_math_graph.py`
-- `bench/benchmark_math_graph.py`
+- [torbles/math_graph.h](torbles/math_graph.h)
+- [torbles/math_graph.c](torbles/math_graph.c)
+- [torbles/math_graph_gpu.cu](torbles/math_graph_gpu.cu)
+- [torbles/math_graph.py](torbles/math_graph.py)
+- [tests/test_math_graph.py](tests/test_math_graph.py)
+- [bench/benchmark_math_graph.py](bench/benchmark_math_graph.py)
 
 Acceptance tests:
 
@@ -4139,7 +4140,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/GRAPH-001/tests_test_math_graph.json](results/math/GRAPH-001/tests_test_math_graph.json)
 - tests: [results/math/GRAPH-001/sanitized_test_math_graph.json](results/math/GRAPH-001/sanitized_test_math_graph.json)
@@ -4150,7 +4151,7 @@ Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
 
 ### GRAPH-002: Bounded fixed points, paths and graph energies
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Add reachability, bounded path counts, selected shortest-path semirings and iterative energies with explicit termination/iteration rules.
 
@@ -4167,14 +4168,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_graph.h`
-- `torbles/math_graph.c`
-- `torbles/math_graph_gpu.cu`
-- `torbles/math_graph.py`
-- `tests/test_math_graph.py`
-- `bench/benchmark_math_graph.py`
+- [torbles/math_graph.h](torbles/math_graph.h)
+- [torbles/math_graph.c](torbles/math_graph.c)
+- [torbles/math_graph_gpu.cu](torbles/math_graph_gpu.cu)
+- [torbles/math_graph.py](torbles/math_graph.py)
+- [tests/test_math_graph.py](tests/test_math_graph.py)
+- [bench/benchmark_math_graph.py](bench/benchmark_math_graph.py)
 
 Acceptance tests:
 
@@ -4195,7 +4196,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `fa1518ca22639378384e54405dd1daef14583e7f`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/GRAPH-002/tests_test_math_graph.json](results/math/GRAPH-002/tests_test_math_graph.json)
 - tests: [results/math/GRAPH-002/sanitized_test_math_graph.json](results/math/GRAPH-002/sanitized_test_math_graph.json)
@@ -4210,7 +4211,7 @@ Factorized explanation and multiplicity expressions.
 
 ### PROV-001: Factorized provenance payloads
 
-Status: **in_progress**. Delivery wave: **W3**.
+Status: **validated**. Delivery wave: **W3**.
 
 Native shared-DAG annotations distinguish Boolean existence, bag multiplicity and polynomial provenance.
 
@@ -4227,14 +4228,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_prov.h`
-- `torbles/math_prov.c`
-- `torbles/math_prov_gpu.cu`
-- `torbles/math_prov.py`
-- `tests/test_math_prov.py`
-- `bench/benchmark_math_prov.py`
+- [torbles/math_prov.h](torbles/math_prov.h)
+- [torbles/math_prov.c](torbles/math_prov.c)
+- [torbles/math_prov_gpu.cu](torbles/math_prov_gpu.cu)
+- [torbles/math_prov.py](torbles/math_prov.py)
+- [tests/test_math_prov.py](tests/test_math_prov.py)
+- [bench/benchmark_math_prov.py](bench/benchmark_math_prov.py)
 
 Acceptance tests:
 
@@ -4253,7 +4254,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/PROV-001/tests_test_math_prov.json](results/math/PROV-001/tests_test_math_prov.json)
 - tests: [results/math/PROV-001/sanitized_test_math_prov.json](results/math/PROV-001/sanitized_test_math_prov.json)
@@ -4264,7 +4265,7 @@ Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
 
 ### PROV-002: Explanation specialization and deletion propagation
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Specialize retained provenance into source explanations and supported deletion effects without recomputing derivations.
 
@@ -4282,14 +4283,14 @@ Bounds:
 - Propagation: output = change sets x answers, bytes = the scratch (65 per cone node; CUDA: every device copy, the outputs and the scratch chunk).
 - Lineage diagrams: COUNT-002's builder (circuit = nodes held, iterations = apply steps, bytes); necessary sources: iterations = levels x diagram nodes; minimal sets: support = the set entries held, output = max_sets (refused, never truncated); probability bounds: bytes = the support bitsets and intervals.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_explain.h`
-- `torbles/math_explain.c`
-- `torbles/math_explain_gpu.cu`
-- `torbles/math_explain.py`
-- `tests/test_math_explain.py`
-- `bench/benchmark_math_explain.py`
+- [torbles/math_explain.h](torbles/math_explain.h)
+- [torbles/math_explain.c](torbles/math_explain.c)
+- [torbles/math_explain_gpu.cu](torbles/math_explain_gpu.cu)
+- [torbles/math_explain.py](torbles/math_explain.py)
+- [tests/test_math_explain.py](tests/test_math_explain.py)
+- [bench/benchmark_math_explain.py](bench/benchmark_math_explain.py)
 
 Acceptance tests:
 
@@ -4309,7 +4310,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/PROV-002/tests_test_math_explain.json](results/math/PROV-002/tests_test_math_explain.json)
 - tests: [results/math/PROV-002/sanitized_test_math_explain.json](results/math/PROV-002/sanitized_test_math_explain.json)
@@ -4324,7 +4325,7 @@ Contributions, interaction indices and bounded minimal changes.
 
 ### ATTR-001: Sparse interaction and contribution attribution
 
-Status: **in_progress**. Delivery wave: **W3**.
+Status: **validated**. Delivery wave: **W3**.
 
 Compute declared marginal/coalition contributions and sparse-decomposition attribution indices.
 
@@ -4343,14 +4344,14 @@ Bounds:
 - Indices: support = terms, output = players; interactions: tensor = output = the (set, term) candidates.
 - Enumeration: values output = coalitions; exhaustive iterations = 2^n (n <= 32); explore / search iterations = max_coalitions (a smaller space returns exact results, a larger one certified bounds, never a refusal), tensor = the Moebius inversion, output; CUDA bytes = every device copy, the accumulators and the scratch chunk.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_attr.h`
-- `torbles/math_attr.c`
-- `torbles/math_attr_gpu.cu`
-- `torbles/math_attr.py`
-- `tests/test_math_attr.py`
-- `bench/benchmark_math_attr.py`
+- [torbles/math_attr.h](torbles/math_attr.h)
+- [torbles/math_attr.c](torbles/math_attr.c)
+- [torbles/math_attr_gpu.cu](torbles/math_attr_gpu.cu)
+- [torbles/math_attr.py](torbles/math_attr.py)
+- [tests/test_math_attr.py](tests/test_math_attr.py)
+- [bench/benchmark_math_attr.py](bench/benchmark_math_attr.py)
 
 Acceptance tests:
 
@@ -4373,7 +4374,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/ATTR-001/tests_test_math_attr.json](results/math/ATTR-001/tests_test_math_attr.json)
 - tests: [results/math/ATTR-001/sanitized_test_math_attr.json](results/math/ATTR-001/sanitized_test_math_attr.json)
@@ -4445,7 +4446,7 @@ Small-support distributions, partition functions and factorized inference.
 
 ### PROB-001: Small-support partition and likelihood functions
 
-Status: **in_progress**. Delivery wave: **W4**.
+Status: **validated**. Delivery wave: **W4**.
 
 Evaluate declared finite-support probability models, normalizers, likelihood gradients and Hessians from retained statistics.
 
@@ -4463,14 +4464,14 @@ Bounds:
 - Evaluation: output = n x (3 + gradient entries + Hessian entries), tensor = n d, states = n x sums, bytes = the plan (680 bytes of reduction constants per exponential request, 8 d per categorical request), the sums and the finish scratch; CUDA: bytes = every device copy, states = n x sums; exact bounds: bytes of every big integer.
 - Refusals before allocation (AlgebraBudgetError with resource, need, limit); sizes past 64 bits are refused whatever the budget; at most 3 coordinates, 16 features, 2^32 points (UnsupportedError).
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_prob.h`
-- `torbles/math_prob.c`
-- `torbles/math_prob_gpu.cu`
-- `torbles/math_prob.py`
-- `tests/test_math_prob.py`
-- `bench/benchmark_math_prob.py`
+- [torbles/math_prob.h](torbles/math_prob.h)
+- [torbles/math_prob.c](torbles/math_prob.c)
+- [torbles/math_prob_gpu.cu](torbles/math_prob_gpu.cu)
+- [torbles/math_prob.py](torbles/math_prob.py)
+- [tests/test_math_prob.py](tests/test_math_prob.py)
+- [bench/benchmark_math_prob.py](bench/benchmark_math_prob.py)
 
 Acceptance tests:
 
@@ -4494,7 +4495,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/PROB-001/tests_test_math_prob.json](results/math/PROB-001/tests_test_math_prob.json)
 - tests: [results/math/PROB-001/sanitized_test_math_prob.json](results/math/PROB-001/sanitized_test_math_prob.json)
@@ -4505,7 +4506,7 @@ Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
 
 ### PROB-002: Factorized probabilistic inference
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Use bounded factor graphs/circuits and costed elimination to compute marginals or selected best assignments.
 
@@ -4522,14 +4523,14 @@ Bounds:
 - Bound input dimensionality, support/state size and output size.
 - Reject unsupported or over-budget requests explicitly; preserve any existing valid execution path.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_factor.h`
-- `torbles/math_factor.c`
-- `torbles/math_factor_gpu.cu`
-- `torbles/math_factor.py`
-- `tests/test_math_factor.py`
-- `bench/benchmark_math_factor.py`
+- [torbles/math_factor.h](torbles/math_factor.h)
+- [torbles/math_factor.c](torbles/math_factor.c)
+- [torbles/math_factor_gpu.cu](torbles/math_factor_gpu.cu)
+- [torbles/math_factor.py](torbles/math_factor.py)
+- [tests/test_math_factor.py](tests/test_math_factor.py)
+- [bench/benchmark_math_factor.py](bench/benchmark_math_factor.py)
 
 Acceptance tests:
 
@@ -4554,11 +4555,12 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/PROB-002/tests_test_math_factor.json](results/math/PROB-002/tests_test_math_factor.json)
 - tests: [results/math/PROB-002/sanitized_test_math_factor.json](results/math/PROB-002/sanitized_test_math_factor.json)
 - benchmarks: [results/math/PROB-002/benchmark_cpu_math_factor_vm.json](results/math/PROB-002/benchmark_cpu_math_factor_vm.json)
+- benchmarks: [results/math/PROB-002/benchmark_device_math_factor_WIN_OHVNN0FUC09.json](results/math/PROB-002/benchmark_device_math_factor_WIN_OHVNN0FUC09.json)
 
 ## DELTA: Update calculus
 
@@ -4809,7 +4811,7 @@ Equivalence, implication, containment and shared query-family computation.
 
 ### META-001: Scoped query equivalence and counterexamples
 
-Status: **in_progress**. Delivery wave: **W3**.
+Status: **validated**. Delivery wave: **W3**.
 
 Prove supported equivalence/implication/containment on a declared snapshot or universal domain, or return concrete counterexamples.
 
@@ -4831,14 +4833,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c): Existing bounded equivalent-polynomial search under verified rules.
 - [torbles/relationships_stage.c](torbles/relationships_stage.c): Existing exact bounded stage decompositions; no general query theorem prover.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_equiv.h`
-- `torbles/math_equiv.c`
-- `torbles/math_equiv_gpu.cu`
-- `torbles/math_equiv.py`
-- `tests/test_math_equiv.py`
-- `bench/benchmark_math_equiv.py`
+- [torbles/math_equiv.h](torbles/math_equiv.h)
+- [torbles/math_equiv.c](torbles/math_equiv.c)
+- [torbles/math_equiv_gpu.cu](torbles/math_equiv_gpu.cu)
+- [torbles/math_equiv.py](torbles/math_equiv.py)
+- [tests/test_math_equiv.py](tests/test_math_equiv.py)
+- [bench/benchmark_math_equiv.py](bench/benchmark_math_equiv.py)
 
 Acceptance tests:
 
@@ -4861,7 +4863,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `ff5c4906bb932caea0750d4ca82dc8aa77369cb0`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/META-001/tests_test_math_equiv.json](results/math/META-001/tests_test_math_equiv.json)
 - tests: [results/math/META-001/sanitized_test_math_equiv.json](results/math/META-001/sanitized_test_math_equiv.json)
@@ -4935,7 +4937,7 @@ Declared occupancy complexes, boundaries, cycles and homology.
 
 ### TOPO-001: Declared occupancy complexes and local topology
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Construct explicit grid/cubical incidence from user-declared geometry; compute supported boundaries, adjacency and Euler-characteristic summaries.
 
@@ -4953,14 +4955,14 @@ Bounds:
 - Build: output = cells, tensor = signed incidences, bytes = the complex (8 per cell, 5 per incidence, 16 per top cell with a value column) and its FND-007 record, checked after the occupancy scan and before the arrays exist; CUDA: the device copies, then the adopted complex.
 - Local invariants, dual graph and boundary exports budget their outputs (cells, labels and pairs, entries); at most 2^28 top-cell positions (UnsupportedError past it).
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_topo.h`
-- `torbles/math_topo.c`
-- `torbles/math_topo_gpu.cu`
-- `torbles/math_topo.py`
-- `tests/test_math_topo.py`
-- `bench/benchmark_math_topo.py`
+- [torbles/math_topo.h](torbles/math_topo.h)
+- [torbles/math_topo.c](torbles/math_topo.c)
+- [torbles/math_topo_gpu.cu](torbles/math_topo_gpu.cu)
+- [torbles/math_topo.py](torbles/math_topo.py)
+- [tests/test_math_topo.py](tests/test_math_topo.py)
+- [bench/benchmark_math_topo.py](bench/benchmark_math_topo.py)
 
 Acceptance tests:
 
@@ -4982,7 +4984,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `9cbd66c23f0be917df846a52c361a9fd5e3848c8`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/TOPO-001/tests_test_math_topo.json](results/math/TOPO-001/tests_test_math_topo.json)
 - tests: [results/math/TOPO-001/sanitized_test_math_topo.json](results/math/TOPO-001/sanitized_test_math_topo.json)
@@ -4993,7 +4995,7 @@ Measured runtime: `9cbd66c23f0be917df846a52c361a9fd5e3848c8`.
 
 ### TOPO-002: Bounded cycles, homology and persistence
 
-Status: **in_progress**. Delivery wave: **W5**.
+Status: **validated**. Delivery wave: **W5**.
 
 Add boundary matrices, cycle/rank calculations and explicitly bounded filtrations with a declared coefficient field.
 
@@ -5011,14 +5013,14 @@ Bounds:
 - During the reduction: iterations = column additions and bytes = every reduced column, V column and scratch buffer held, refused deterministically at the first step or allocation past the limit (nothing is returned); output = pairs, essential classes, cycle classes and entries, checked before the result is written.
 - Explicit chain complexes: states = cells, tensor = entries, bytes = the copies and the d o d scratch; at most 7 dimensions and 2^32 cells or entries per dimension; GF(p) needs a verified prime p < 2^62.
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `torbles/math_topo.h`
-- `torbles/math_topo.c`
-- `torbles/math_topo_gpu.cu`
-- `torbles/math_topo.py`
-- `tests/test_math_topo.py`
-- `bench/benchmark_math_topo.py`
+- [torbles/math_topo.h](torbles/math_topo.h)
+- [torbles/math_topo.c](torbles/math_topo.c)
+- [torbles/math_topo_gpu.cu](torbles/math_topo_gpu.cu)
+- [torbles/math_topo.py](torbles/math_topo.py)
+- [tests/test_math_topo.py](tests/test_math_topo.py)
+- [bench/benchmark_math_topo.py](bench/benchmark_math_topo.py)
 
 Acceptance tests:
 
@@ -5040,7 +5042,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `9cbd66c23f0be917df846a52c361a9fd5e3848c8`.
+Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 - tests: [results/math/TOPO-002/tests_test_math_topo.json](results/math/TOPO-002/tests_test_math_topo.json)
 - tests: [results/math/TOPO-002/sanitized_test_math_topo.json](results/math/TOPO-002/sanitized_test_math_topo.json)
