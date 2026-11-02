@@ -181,9 +181,11 @@ The SSB numbers below are for the Python query API: each query is built once wit
 SQL. Through `db.sql(...)`, which parses, binds and plans the statement and builds its ordered result on every call,
 the release review's protocol, run on this release (2026-11-02, SF10, 60M rows, 24 threads, RTX 5090 Laptop GPU),
 measured the 13 queries in 97 ms on the CPU and 26 ms on the GPU, against 218 ms for DuckDB; through the Python API,
-in the same protocol, in 74 and 10 ms against 211 (`results/release_rerun_2026-11-02/`). Window functions and the rest
-of a query that runs after the engine's aggregation run on the CPU, in Python, whichever engine is selected, and on
-large inputs they are several times slower than DuckDB ([docs/SQL.md](docs/SQL.md#performance)).
+in the same protocol, in 74 and 10 ms against 211 (`results/release_rerun_2026-11-02/`). Window functions whose value
+depends on their row only through its partition and order key are read from their aggregated series on the engine: at
+1M rows, the review's two window queries took 18 ms on the CPU and 12 ms on the GPU, against 63 ms for DuckDB
+(`results/release_rerun_2026-11-02_series/`). Other windows, and the rest of a query that runs after the engine's
+aggregation, run on the CPU, in Python, whichever engine is selected ([docs/SQL.md](docs/SQL.md#performance)).
 
 ### SSB with nothing designed by hand (0.2.0), and CPU performance
 

@@ -1,0 +1,22 @@
+minmax (-3, 8) sql SELECT MIN(t.x), MAX(t.x) FROM t source (-3, 8)
+verify (True, (-3, 8), (-3, 8))
+null alg sum 11
+null alg minmax (3, 8)
+null alg grouped sum {(0,): 11, (1,): None}
+null alg grouped minmax {(0,): (3, 8), (1,): None}
+null alg all-null sum None
+null alg all-null minmax None
+null plain sum 11
+null plain minmax (3, 8)
+null plain grouped sum {(0,): 11, (1,): None}
+null plain grouped minmax {(0,): (3, 8), (1,): None}
+null plain all-null sum None
+null plain all-null minmax None
+null gpu sum 11
+null gpu minmax (3, 8)
+null gpu grouped sum {(0,): 11, (1,): None}
+null gpu grouped minmax {(0,): (3, 8), (1,): None}
+null gpu all-null sum None
+null gpu all-null minmax None
+SQL expected [(11, 3, 8)]
+SQL grouped expected [(0, 11, 3, 8), (1, None, None, None)]

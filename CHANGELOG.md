@@ -58,6 +58,22 @@ clause now matches NULL with NULL. `tests/check_arrays.py` checks every answer a
 (value for value) and against DuckDB. DOUBLE columns with NaN or infinities now load (they were left out with a note),
 compared and grouped as DuckDB does.
 
+Many windows now need no row at all. A window whose value depends on its row only through the row's group of
+(PARTITION BY values, ORDER BY key) is a function of its aggregated series S(t), the counts and sums of those groups,
+which the engine's window analytics described and nothing used. RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST and
+ROW_NUMBER (on a key unique in its partition), and COUNT(*), COUNT, SUM and AVG of an integer or DECIMAL column under
+a RANGE frame bounded by UNBOUNDED or CURRENT ROW, a GROUPS frame with constant offsets or a ROWS frame on a unique
+key, are read from one engine GROUP BY of their partition and order key, on the planes or the GPU: the frame is
+applied to the series as prefix sums (a running aggregate is S(t) / (1 - t)), and each row reads its group's value.
+When the block is ordered by the window's own key with a LIMIT and the frame ends at the current row, the rows output
+need the series only up to the last one's key, so the GROUP BY runs under that bound and the block reads only the rows
+it outputs. On the release review's mixed workload at 1M rows (RTX 5090 laptop, 24 threads), a partitioned running SUM
+and a global RANK over every row went from 375 ms together on the CPU engine and 398 ms with the GPU engine to 17.7
+and 12.4 ms, against 62.6 ms for DuckDB, and the whole workload of eight queries from 398 and 414 ms to 36.8 and 24.5
+ms, against 74.8 ms. Windows with more groups than one per 16 rows stay on the rows. `tests/check_algebra.py` runs
+random window queries with the path on and off and against DuckDB on the three engines (1,500 matched while it was
+written).
+
 The executor keeps the engine's results as codes. The GROUP BY columns an engine query returns are integer code arrays
 with their validity masks and codecs (codes order and compare like the values), and they stay codes through
 expressions, grouping, joins, DISTINCT, the set operations, ORDER BY and LIMIT; values are decoded once, for the rows
@@ -246,9 +262,12 @@ all give the expected answers now, the installed wheel's SQL tests on the three 
 rounds of tables uploaded, queried and released, and the review's nine benchmark workers, every answer equal to
 DuckDB's. Through `db.sql` at SF10 the 13 SSB queries took 97 ms on the CPU and 26 ms on the GPU, against 218 ms for
 DuckDB, where the review had measured 121 and 41 ms on its older snapshot; through the Python API, 74 and 10 ms. The
-mixed workload's two window queries at 1M rows took 375 ms, against DuckDB's 72: the review's 7.7 s predates the
-windows as array algebra. The run's one failure was a gate test of the mathematics inventory that needed a capability
-not yet validated and found none, since the same run had validated the last ones; it is fixed.
+mixed workload's two window queries at 1M rows took 375 ms, against DuckDB's 72 (the review's 7.7 s predates the
+windows as array algebra), and in a second run, once windows were read from their series (above), 17.7 ms on the CPU
+and 12.4 ms on the GPU, against 62.6 ms (`results/release_rerun_2026-11-02_series/`). The first run's one failure was
+a gate test of the mathematics inventory that needed a capability not yet validated and found none, since the same run
+had validated the last ones. It is fixed, and the second run validated that capability again on the GPU, so all 81 are
+validated.
 
 Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`

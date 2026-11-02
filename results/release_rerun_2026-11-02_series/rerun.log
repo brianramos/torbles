@@ -1,0 +1,144 @@
+== 2026-11-02T14:13:25+01:00 release-review rerun on WIN-OHVNN0FUC09
+HEAD 245ff75 Docs: windows read from their aggregated series
+Python 3.14.4 | NumPy 2.5.4 | pandas 3.1.0 | DuckDB 2.0.0
+NVIDIA GeForce RTX 5090 Laptop GPU, 610.74, 24463 MiB, 20 MiB
+busiest processes now (left as they are):
+    PID  NI %CPU     ELAPSED COMMAND
+1911758   5 70.9  4-05:43:01 python
+3675969   0  6.6  4-04:20:02 python
+      7   0  0.5  4-09:42:01 init
+    706  10  0.0  4-09:41:00 python
+    280   0  0.0  4-09:41:02 containerd
+== building (the CUDA libraries take several minutes)
+torbles 0.2.0 | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+== 1. mathematics capabilities still waiting for the GPU
+validating: FND-012
+FND-012: receipts written; status validated
+-- device validation: passed: FND-012 (14:16:53)
+inventory: {'validated': 81}
+receipts: /mnt/c/Users/brian/Documents/torbles-release-rerun-245ff75/torbles-rerun-receipts.git-bundle
+== 2. the full test suite, the GPU tests on the GPU
+ALL TESTS PASSED
+-- full test suite: passed, 118 ok, 7 min (14:24:18)
+== 3. the review's reproducers against this tree
+-- review SQL reproducers (R02 R03 R06): rc=0, 0 mismatching cases of 12 | controls match: True (14:24:19)
+-- review engine-API probe (R04 R07): rc=0, see probe_native.log (14:24:19)
+-- review empty-table probe (R08): nplanes rc=0 (the review's: SIGFPE, -8), 4 planes (14:24:20)
+-- review lifetime probe (R05): rc=0, 2336 bytes still allocated after 20 discarded tables; alive 0 (the review's: 11,057,408 bytes) (14:24:20)
+-- GPU memory probe: rc=0, {"rounds": 120, "device_mib_used_every_20_rounds": [20, 273, 273, 273, 273, 273, 273], "growth_mib": 0, "gpu_equal_cpu": true, "devices": ["gpu"], "gpu": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0"} (14:24:23)
+== 4. the wheel, installed in a new venv outside the tree
+/home/brian/torbles_release_rerun_245ff75/wheel-venv/lib/python3.14/site-packages/torbles/__init__.py 0.2.0 | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0 | Python 3.14.4 | NumPy 2.5.4 | DuckDB 2.0.0
+-- installed wheel: check_min_deps ok, check_sql alg ok, check_sql plain ok, check_sql gpu ok (14:29:02)
+== 5. the review's benchmarks (one worker at a time, each a fresh process)
+-- benchmark ssb_sf1: {"kind": "ssb", "scale": 1, "rows": 6001171, "all_correct": true, "warm_ms": {"cpu": 41.573584, "gpu_requested": 23.77331, "duckdb": 83.011203}}, 3 s (14:29:05)
+-- benchmark ssb_sf3: {"kind": "ssb", "scale": 3, "rows": 17996656, "all_correct": true, "warm_ms": {"cpu": 66.738117, "gpu_requested": 26.596522, "duckdb": 149.627373}}, 6 s (14:29:11)
+-- benchmark ssb_sf10: {"kind": "ssb", "scale": 10, "rows": 59986214, "all_correct": true, "warm_ms": {"cpu": 161.486317, "gpu_requested": 39.933217, "duckdb": 370.155828}}, 13 s (14:29:24)
+-- benchmark mixed_10000: {"kind": "mixed", "scale": 10000, "rows": 10000, "all_correct": true, "warm_ms": {"cpu": 8.95925, "gpu_requested": 11.985533, "duckdb": 8.001929}}, 1 s (14:29:25)
+-- benchmark mixed_100000: {"kind": "mixed", "scale": 100000, "rows": 100000, "all_correct": true, "warm_ms": {"cpu": 11.912105, "gpu_requested": 16.591375, "duckdb": 23.151859}}, 1 s (14:29:26)
+-- benchmark mixed_1000000: {"kind": "mixed", "scale": 1000000, "rows": 1000000, "all_correct": true, "warm_ms": {"cpu": 36.752482, "gpu_requested": 24.533843, "duckdb": 74.81885}}, 2 s (14:29:28)
+-- benchmark native_ssb_sf1: {"sf": 1, "all_correct": true, "warm_ms": {"cpu": 24.586306, "gpu": 9.113406, "duckdb": 82.295758}}, 3 s (14:29:31)
+-- benchmark native_ssb_sf3: {"sf": 3, "all_correct": true, "warm_ms": {"cpu": 45.248159, "gpu": 11.850412, "duckdb": 141.304252}}, 5 s (14:29:36)
+-- benchmark native_ssb_sf10: {"sf": 10, "all_correct": true, "warm_ms": {"cpu": 127.311948, "gpu": 22.558468, "duckdb": 340.122697}}, 12 s (14:29:48)
+== the review's numbers and this run's (medians, ms)
+| report | part | engine | review | rerun | rerun / review |
+|---|---|---|---:|---:|---:|
+| ssb_sf1 | whole batch | cpu | 60.05 | 41.57 | 0.69 |
+| ssb_sf1 | whole batch | gpu_requested | 38.91 | 23.77 | 0.61 |
+| ssb_sf1 | whole batch | duckdb | 86.13 | 83.01 | 0.96 |
+| ssb_sf1 | dense_M1_M3 | cpu | 12.75 | 9.92 | 0.78 |
+| ssb_sf1 | dense_M1_M3 | gpu_requested | 6.40 | 4.45 | 0.69 |
+| ssb_sf1 | dense_M1_M3 | duckdb | 19.80 | 19.52 | 0.99 |
+| ssb_sf1 | official_ssb_13 | cpu | 46.94 | 31.60 | 0.67 |
+| ssb_sf1 | official_ssb_13 | gpu_requested | 31.96 | 18.98 | 0.59 |
+| ssb_sf1 | official_ssb_13 | duckdb | 66.14 | 63.40 | 0.96 |
+| ssb_sf3 | whole batch | cpu | 89.27 | 66.74 | 0.75 |
+| ssb_sf3 | whole batch | gpu_requested | 43.01 | 26.60 | 0.62 |
+| ssb_sf3 | whole batch | duckdb | 158.76 | 149.63 | 0.94 |
+| ssb_sf3 | dense_M1_M3 | cpu | 24.97 | 20.81 | 0.83 |
+| ssb_sf3 | dense_M1_M3 | gpu_requested | 8.55 | 6.31 | 0.74 |
+| ssb_sf3 | dense_M1_M3 | duckdb | 45.97 | 44.43 | 0.97 |
+| ssb_sf3 | official_ssb_13 | cpu | 63.73 | 45.77 | 0.72 |
+| ssb_sf3 | official_ssb_13 | gpu_requested | 33.86 | 20.26 | 0.60 |
+| ssb_sf3 | official_ssb_13 | duckdb | 112.37 | 105.49 | 0.94 |
+| ssb_sf10 | whole batch | cpu | 180.89 | 161.49 | 0.89 |
+| ssb_sf10 | whole batch | gpu_requested | 57.43 | 39.93 | 0.70 |
+| ssb_sf10 | whole batch | duckdb | 355.85 | 370.16 | 1.04 |
+| ssb_sf10 | dense_M1_M3 | cpu | 59.62 | 58.97 | 0.99 |
+| ssb_sf10 | dense_M1_M3 | gpu_requested | 16.36 | 13.86 | 0.85 |
+| ssb_sf10 | dense_M1_M3 | duckdb | 133.56 | 138.90 | 1.04 |
+| ssb_sf10 | official_ssb_13 | cpu | 121.22 | 102.63 | 0.85 |
+| ssb_sf10 | official_ssb_13 | gpu_requested | 40.95 | 25.80 | 0.63 |
+| ssb_sf10 | official_ssb_13 | duckdb | 219.32 | 231.05 | 1.05 |
+| native_ssb_sf1 | whole batch | cpu | 25.29 | 24.59 | 0.97 |
+| native_ssb_sf1 | whole batch | gpu | 8.30 | 9.11 | 1.10 |
+| native_ssb_sf1 | whole batch | duckdb | 81.76 | 82.30 | 1.01 |
+| native_ssb_sf1 | dense_M1_M3 | cpu | 8.51 | 8.36 | 0.98 |
+| native_ssb_sf1 | dense_M1_M3 | gpu | 2.57 | 3.22 | 1.25 |
+| native_ssb_sf1 | dense_M1_M3 | duckdb | 19.69 | 19.74 | 1.00 |
+| native_ssb_sf1 | official_ssb_13 | cpu | 16.70 | 16.20 | 0.97 |
+| native_ssb_sf1 | official_ssb_13 | gpu | 5.72 | 5.86 | 1.02 |
+| native_ssb_sf1 | official_ssb_13 | duckdb | 61.95 | 61.98 | 1.00 |
+| native_ssb_sf3 | whole batch | cpu | 47.05 | 45.25 | 0.96 |
+| native_ssb_sf3 | whole batch | gpu | 11.75 | 11.85 | 1.01 |
+| native_ssb_sf3 | whole batch | duckdb | 141.78 | 141.30 | 1.00 |
+| native_ssb_sf3 | dense_M1_M3 | cpu | 17.69 | 17.65 | 1.00 |
+| native_ssb_sf3 | dense_M1_M3 | gpu | 4.87 | 4.83 | 0.99 |
+| native_ssb_sf3 | dense_M1_M3 | duckdb | 41.22 | 41.50 | 1.01 |
+| native_ssb_sf3 | official_ssb_13 | cpu | 29.30 | 27.55 | 0.94 |
+| native_ssb_sf3 | official_ssb_13 | gpu | 6.86 | 7.00 | 1.02 |
+| native_ssb_sf3 | official_ssb_13 | duckdb | 101.20 | 100.99 | 1.00 |
+| native_ssb_sf10 | whole batch | cpu | 137.48 | 127.31 | 0.93 |
+| native_ssb_sf10 | whole batch | gpu | 22.82 | 22.56 | 0.99 |
+| native_ssb_sf10 | whole batch | duckdb | 359.55 | 340.12 | 0.95 |
+| native_ssb_sf10 | dense_M1_M3 | cpu | 57.27 | 52.29 | 0.91 |
+| native_ssb_sf10 | dense_M1_M3 | gpu | 12.41 | 12.07 | 0.97 |
+| native_ssb_sf10 | dense_M1_M3 | duckdb | 137.34 | 126.69 | 0.92 |
+| native_ssb_sf10 | official_ssb_13 | cpu | 80.67 | 74.94 | 0.93 |
+| native_ssb_sf10 | official_ssb_13 | gpu | 10.08 | 10.47 | 1.04 |
+| native_ssb_sf10 | official_ssb_13 | duckdb | 221.64 | 215.24 | 0.97 |
+| mixed_10000 | whole batch | cpu | 75.21 | 8.96 | 0.12 |
+| mixed_10000 | whole batch | gpu_requested | 79.37 | 11.99 | 0.15 |
+| mixed_10000 | whole batch | duckdb | 8.80 | 8.00 | 0.91 |
+| mixed_10000 | aggregate_and_distinct | cpu | 12.36 | 6.23 | 0.50 |
+| mixed_10000 | aggregate_and_distinct | gpu_requested | 16.13 | 9.84 | 0.61 |
+| mixed_10000 | aggregate_and_distinct | duckdb | 4.67 | 4.68 | 1.00 |
+| mixed_10000 | row_window_finalization | cpu | 63.15 | 2.29 | 0.04 |
+| mixed_10000 | row_window_finalization | gpu_requested | 62.77 | 2.17 | 0.03 |
+| mixed_10000 | row_window_finalization | duckdb | 4.16 | 3.29 | 0.79 |
+| mixed_100000 | whole batch | cpu | 666.02 | 11.91 | 0.02 |
+| mixed_100000 | whole batch | gpu_requested | 645.34 | 16.59 | 0.03 |
+| mixed_100000 | whole batch | duckdb | 24.05 | 23.15 | 0.96 |
+| mixed_100000 | aggregate_and_distinct | cpu | 13.68 | 8.05 | 0.59 |
+| mixed_100000 | aggregate_and_distinct | gpu_requested | 16.16 | 9.02 | 0.56 |
+| mixed_100000 | aggregate_and_distinct | duckdb | 8.81 | 9.11 | 1.03 |
+| mixed_100000 | row_window_finalization | cpu | 652.80 | 3.83 | 0.01 |
+| mixed_100000 | row_window_finalization | gpu_requested | 627.56 | 7.56 | 0.01 |
+| mixed_100000 | row_window_finalization | duckdb | 14.83 | 13.81 | 0.93 |
+| mixed_1000000 | whole batch | cpu | 7731.54 | 36.75 | 0.00 |
+| mixed_1000000 | whole batch | gpu_requested | 7297.82 | 24.53 | 0.00 |
+| mixed_1000000 | whole batch | duckdb | 82.56 | 74.82 | 0.91 |
+| mixed_1000000 | aggregate_and_distinct | cpu | 39.94 | 19.07 | 0.48 |
+| mixed_1000000 | aggregate_and_distinct | gpu_requested | 32.60 | 12.10 | 0.37 |
+| mixed_1000000 | aggregate_and_distinct | duckdb | 15.42 | 12.15 | 0.79 |
+| mixed_1000000 | row_window_finalization | cpu | 7686.75 | 17.67 | 0.00 |
+| mixed_1000000 | row_window_finalization | gpu_requested | 7268.45 | 12.43 | 0.00 |
+| mixed_1000000 | row_window_finalization | duckdb | 66.10 | 62.62 | 0.95 |
+== summary
+  device validation: passed: FND-012
+  full test suite: passed, 118 ok, 7 min
+  review SQL reproducers (R02 R03 R06): rc=0, 0 mismatching cases of 12 | controls match: True
+  review engine-API probe (R04 R07): rc=0, see probe_native.log
+  review empty-table probe (R08): nplanes rc=0 (the review's: SIGFPE, -8), 4 planes
+  review lifetime probe (R05): rc=0, 2336 bytes still allocated after 20 discarded tables; alive 0 (the review's: 11,057,408 bytes)
+  GPU memory probe: rc=0, {"rounds": 120, "device_mib_used_every_20_rounds": [20, 273, 273, 273, 273, 273, 273], "growth_mib": 0, "gpu_equal_cpu": true, "devices": ["gpu"], "gpu": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0"}
+  installed wheel: check_min_deps ok, check_sql alg ok, check_sql plain ok, check_sql gpu ok
+  benchmark ssb_sf1: {"kind": "ssb", "scale": 1, "rows": 6001171, "all_correct": true, "warm_ms": {"cpu": 41.573584, "gpu_requested": 23.77331, "duckdb": 83.011203}}, 3 s
+  benchmark ssb_sf3: {"kind": "ssb", "scale": 3, "rows": 17996656, "all_correct": true, "warm_ms": {"cpu": 66.738117, "gpu_requested": 26.596522, "duckdb": 149.627373}}, 6 s
+  benchmark ssb_sf10: {"kind": "ssb", "scale": 10, "rows": 59986214, "all_correct": true, "warm_ms": {"cpu": 161.486317, "gpu_requested": 39.933217, "duckdb": 370.155828}}, 13 s
+  benchmark mixed_10000: {"kind": "mixed", "scale": 10000, "rows": 10000, "all_correct": true, "warm_ms": {"cpu": 8.95925, "gpu_requested": 11.985533, "duckdb": 8.001929}}, 1 s
+  benchmark mixed_100000: {"kind": "mixed", "scale": 100000, "rows": 100000, "all_correct": true, "warm_ms": {"cpu": 11.912105, "gpu_requested": 16.591375, "duckdb": 23.151859}}, 1 s
+  benchmark mixed_1000000: {"kind": "mixed", "scale": 1000000, "rows": 1000000, "all_correct": true, "warm_ms": {"cpu": 36.752482, "gpu_requested": 24.533843, "duckdb": 74.81885}}, 2 s
+  benchmark native_ssb_sf1: {"sf": 1, "all_correct": true, "warm_ms": {"cpu": 24.586306, "gpu": 9.113406, "duckdb": 82.295758}}, 3 s
+  benchmark native_ssb_sf3: {"sf": 3, "all_correct": true, "warm_ms": {"cpu": 45.248159, "gpu": 11.850412, "duckdb": 141.304252}}, 5 s
+  benchmark native_ssb_sf10: {"sf": 10, "all_correct": true, "warm_ms": {"cpu": 127.311948, "gpu": 22.558468, "duckdb": 340.122697}}, 12 s
+== done: /mnt/c/Users/brian/Documents/torbles-release-rerun-245ff75

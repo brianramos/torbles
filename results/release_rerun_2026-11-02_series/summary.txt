@@ -1,0 +1,17 @@
+  device validation: passed: FND-012
+  full test suite: passed, 118 ok, 7 min
+  review SQL reproducers (R02 R03 R06): rc=0, 0 mismatching cases of 12 | controls match: True
+  review engine-API probe (R04 R07): rc=0, see probe_native.log
+  review empty-table probe (R08): nplanes rc=0 (the review's: SIGFPE, -8), 4 planes
+  review lifetime probe (R05): rc=0, 2336 bytes still allocated after 20 discarded tables; alive 0 (the review's: 11,057,408 bytes)
+  GPU memory probe: rc=0, {"rounds": 120, "device_mib_used_every_20_rounds": [20, 273, 273, 273, 273, 273, 273], "growth_mib": 0, "gpu_equal_cpu": true, "devices": ["gpu"], "gpu": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0"}
+  installed wheel: check_min_deps ok, check_sql alg ok, check_sql plain ok, check_sql gpu ok
+  benchmark ssb_sf1: {"kind": "ssb", "scale": 1, "rows": 6001171, "all_correct": true, "warm_ms": {"cpu": 41.573584, "gpu_requested": 23.77331, "duckdb": 83.011203}}, 3 s
+  benchmark ssb_sf3: {"kind": "ssb", "scale": 3, "rows": 17996656, "all_correct": true, "warm_ms": {"cpu": 66.738117, "gpu_requested": 26.596522, "duckdb": 149.627373}}, 6 s
+  benchmark ssb_sf10: {"kind": "ssb", "scale": 10, "rows": 59986214, "all_correct": true, "warm_ms": {"cpu": 161.486317, "gpu_requested": 39.933217, "duckdb": 370.155828}}, 13 s
+  benchmark mixed_10000: {"kind": "mixed", "scale": 10000, "rows": 10000, "all_correct": true, "warm_ms": {"cpu": 8.95925, "gpu_requested": 11.985533, "duckdb": 8.001929}}, 1 s
+  benchmark mixed_100000: {"kind": "mixed", "scale": 100000, "rows": 100000, "all_correct": true, "warm_ms": {"cpu": 11.912105, "gpu_requested": 16.591375, "duckdb": 23.151859}}, 1 s
+  benchmark mixed_1000000: {"kind": "mixed", "scale": 1000000, "rows": 1000000, "all_correct": true, "warm_ms": {"cpu": 36.752482, "gpu_requested": 24.533843, "duckdb": 74.81885}}, 2 s
+  benchmark native_ssb_sf1: {"sf": 1, "all_correct": true, "warm_ms": {"cpu": 24.586306, "gpu": 9.113406, "duckdb": 82.295758}}, 3 s
+  benchmark native_ssb_sf3: {"sf": 3, "all_correct": true, "warm_ms": {"cpu": 45.248159, "gpu": 11.850412, "duckdb": 141.304252}}, 5 s
+  benchmark native_ssb_sf10: {"sf": 10, "all_correct": true, "warm_ms": {"cpu": 127.311948, "gpu": 22.558468, "duckdb": 340.122697}}, 12 s
