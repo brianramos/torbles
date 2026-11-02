@@ -1,0 +1,1151 @@
+{
+ "threads": 24,
+ "version": "0.3.0",
+ "gpu": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+ "scales": {
+  "sf30": {
+   "load_s": 24.787202589039225,
+   "describe": "customer: 900,000 rows, primary key c_custkey, clustered by c_custkey\n    c_custkey                    INTEGER          int       20 bits\n    c_name                       VARCHAR          dict      20 bits\n    c_address                    VARCHAR          dict      20 bits\n    c_city                       VARCHAR          dict       8 bits\n    c_nation                     VARCHAR          dict       5 bits\n    c_region                     VARCHAR          dict       3 bits\n    c_phone                      VARCHAR          dict      20 bits\n    c_mktsegment                 VARCHAR          dict       3 bits\n    key design: derived surrogate, 30 bits = c_region 3 | c_nation 3 | c_city 4 | row 20\n      attributes on the key's bits: c_region, c_nation, c_city\ndate: 2,556 rows, primary key d_datekey, clustered by d_datekey\n    d_datekey                    INTEGER          int       16 bits\n    d_date                       VARCHAR          dict      12 bits\n    d_dayofweek                  VARCHAR          dict       3 bits\n    d_month                      VARCHAR          dict       4 bits\n    d_year                       INTEGER          int        3 bits\n    d_yearmonthnum               INTEGER          int       10 bits\n    d_yearmonth                  VARCHAR          dict       7 bits\n    d_daynuminweek               INTEGER          int        3 bits\n    d_daynuminmonth              INTEGER          int        5 bits\n    d_daynuminyear               INTEGER          int        9 bits\n    d_monthnuminyear             INTEGER          int        4 bits\n    d_weeknuminyear              INTEGER          int        6 bits\n    d_sellingseason              VARCHAR          dict       3 bits\n    d_lastdayinweekfl            INTEGER          int        1 bits\n    d_lastdayinmonthfl           INTEGER          int        1 bits\n    d_holidayfl                  INTEGER          int        1 bits\n    d_weekdayfl                  INTEGER          int        1 bits\n    key design: derived surrogate, 20 bits = d_sellingseason 3 | d_month 2 | d_yearmonth 3 | row 12\n      attributes on the key's bits: d_sellingseason, d_year, d_month, d_monthnuminyear, d_yearmonth, d_yearmonthnum\npart: 1,000,000 rows, primary key p_partkey, clustered by p_partkey\n    p_partkey                    INTEGER          int       20 bits\n    p_name                       VARCHAR          dict      14 bits\n    p_mfgr                       VARCHAR          dict       3 bits\n    p_category                   VARCHAR          dict       5 bits\n    p_brand1                     VARCHAR          dict      10 bits\n    p_color                      VARCHAR          dict       7 bits\n    p_type                       VARCHAR          dict       8 bits\n    p_size                       INTEGER          int        6 bits\n    p_container                  VARCHAR          dict       6 bits\n    key design: derived surrogate, 32 bits = p_mfgr 3 | p_category 3 | p_brand1 6 | row 20\n      attributes on the key's bits: p_mfgr, p_category, p_brand1\nsupplier: 60,000 rows, primary key s_suppkey, clustered by s_suppkey\n    s_suppkey                    INTEGER          int       16 bits\n    s_name                       VARCHAR          dict      16 bits\n    s_address                    VARCHAR          dict      16 bits\n    s_city                       VARCHAR          dict       8 bits\n    s_nation                     VARCHAR          dict       5 bits\n    s_region                     VARCHAR          dict       3 bits\n    s_phone                      VARCHAR          dict      16 bits\n    key design: derived surrogate, 26 bits = s_region 3 | s_nation 3 | s_city 4 | row 16\n      attributes on the key's bits: s_region, s_nation, s_city\nlineorder: 179,998,484 rows\n    lo_quantity                  INTEGER          int        6 bits\n    lo_extendedprice             INTEGER          int       24 bits\n    lo_discount                  INTEGER          int        4 bits\n    lo_revenue                   INTEGER          int       24 bits\n    lo_supplycost                INTEGER          int       17 bits\n    lo_custkey                   INTEGER          ref       30 bits -> customer.c_custkey\n    lo_orderdate                 INTEGER          ref       20 bits -> date.d_datekey\n    lo_partkey                   INTEGER          ref       32 bits -> part.p_partkey\n    lo_suppkey                   INTEGER          ref       26 bits -> supplier.s_suppkey",
+   "queries": {
+    "Q1.1/alg": {
+     "ms": 18.758437014184892,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 17.521214031148702,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.1/gpu": {
+     "ms": 1.70516298385337,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.1770810233429074,
+       "kernel_ms": 1.0518720149993896,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.2/alg": {
+     "ms": 12.001256982330233,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 10.943997011054307,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.2/gpu": {
+     "ms": 1.6130069852806628,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.0637329542078078,
+       "kernel_ms": 0.9206399917602539,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.3/alg": {
+     "ms": 18.50511896191165,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 17.34696904895827,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.3/gpu": {
+     "ms": 1.8808850436471403,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.1502919951453805,
+       "kernel_ms": 0.9759680032730103,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.1/alg": {
+     "ms": 23.25966296484694,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 20.657707995269448,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.1/gpu": {
+     "ms": 3.4741919953376055,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.5927450149320066,
+       "kernel_ms": 1.2122880220413208,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.2/alg": {
+     "ms": 19.68062302330509,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 17.500617017503828,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.2/gpu": {
+     "ms": 2.769159968011081,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.1881240061484277,
+       "kernel_ms": 0.8305280208587646,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.3/alg": {
+     "ms": 11.684101016726345,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 9.63334902189672,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.3/gpu": {
+     "ms": 2.112364978529513,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 0.9768750169314444,
+       "kernel_ms": 0.577567994594574,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.1/alg": {
+     "ms": 30.004267988260835,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 27.564865013118833,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "c_nation",
+        "s_nation",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.1/gpu": {
+     "ms": 4.028361989185214,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.1945040207356215,
+       "kernel_ms": 1.7887040376663208,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "c_nation",
+        "s_nation",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.2/alg": {
+     "ms": 19.790462974924594,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 17.003292043227702,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.2/gpu": {
+     "ms": 2.6672289823181927,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.0703139705583453,
+       "kernel_ms": 0.7717120051383972,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.3/alg": {
+     "ms": 16.452145006041974,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 13.786295021418482,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.3/gpu": {
+     "ms": 2.9153110226616263,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.1416540364734828,
+       "kernel_ms": 0.7593920230865479,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.4/alg": {
+     "ms": 14.472912007477134,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 12.575740984175354,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.4/gpu": {
+     "ms": 2.4279399658553302,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.2651779688894749,
+       "kernel_ms": 0.893887996673584,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.1/alg": {
+     "ms": 28.60115998191759,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 25.573415972758085,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 512,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "c_nation"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.1/gpu": {
+     "ms": 3.474708995781839,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.9826359930448234,
+       "kernel_ms": 1.6344959735870361,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 512,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "c_nation"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.2/alg": {
+     "ms": 25.57471301406622,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 22.743575973436236,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_nation",
+        "p_category"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.2/gpu": {
+     "ms": 3.660233982373029,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.5396500239148736,
+       "kernel_ms": 1.259071946144104,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_nation",
+        "p_category"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.3/alg": {
+     "ms": 15.660987992305309,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 12.085291964467615,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 33554432,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_city",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.3/gpu": {
+     "ms": 3.3089659991674125,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.1340139899402857,
+       "kernel_ms": 0.6182399988174438,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 33554432,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_city",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    }
+   }
+  },
+  "sf50": {
+   "load_s": 56.44114511599764,
+   "describe": "customer: 1,500,000 rows, primary key c_custkey, clustered by c_custkey\n    c_custkey                    INTEGER          int       21 bits\n    c_name                       VARCHAR          dict      21 bits\n    c_address                    VARCHAR          dict      21 bits\n    c_city                       VARCHAR          dict       8 bits\n    c_nation                     VARCHAR          dict       5 bits\n    c_region                     VARCHAR          dict       3 bits\n    c_phone                      VARCHAR          dict      21 bits\n    c_mktsegment                 VARCHAR          dict       3 bits\n    key design: derived surrogate, 31 bits = c_region 3 | c_nation 3 | c_city 4 | row 21\n      attributes on the key's bits: c_region, c_nation, c_city\ndate: 2,556 rows, primary key d_datekey, clustered by d_datekey\n    d_datekey                    INTEGER          int       16 bits\n    d_date                       VARCHAR          dict      12 bits\n    d_dayofweek                  VARCHAR          dict       3 bits\n    d_month                      VARCHAR          dict       4 bits\n    d_year                       INTEGER          int        3 bits\n    d_yearmonthnum               INTEGER          int       10 bits\n    d_yearmonth                  VARCHAR          dict       7 bits\n    d_daynuminweek               INTEGER          int        3 bits\n    d_daynuminmonth              INTEGER          int        5 bits\n    d_daynuminyear               INTEGER          int        9 bits\n    d_monthnuminyear             INTEGER          int        4 bits\n    d_weeknuminyear              INTEGER          int        6 bits\n    d_sellingseason              VARCHAR          dict       3 bits\n    d_lastdayinweekfl            INTEGER          int        1 bits\n    d_lastdayinmonthfl           INTEGER          int        1 bits\n    d_holidayfl                  INTEGER          int        1 bits\n    d_weekdayfl                  INTEGER          int        1 bits\n    key design: derived surrogate, 20 bits = d_sellingseason 3 | d_month 2 | d_yearmonth 3 | row 12\n      attributes on the key's bits: d_sellingseason, d_year, d_month, d_monthnuminyear, d_yearmonth, d_yearmonthnum\npart: 1,200,000 rows, primary key p_partkey, clustered by p_partkey\n    p_partkey                    INTEGER          int       21 bits\n    p_name                       VARCHAR          dict      14 bits\n    p_mfgr                       VARCHAR          dict       3 bits\n    p_category                   VARCHAR          dict       5 bits\n    p_brand1                     VARCHAR          dict      10 bits\n    p_color                      VARCHAR          dict       7 bits\n    p_type                       VARCHAR          dict       8 bits\n    p_size                       INTEGER          int        6 bits\n    p_container                  VARCHAR          dict       6 bits\n    key design: derived surrogate, 31 bits = cell rank (p_mfgr > p_category > p_brand1) 10 | row 21\n      attributes on the key's bits: p_mfgr, p_category, p_brand1\nsupplier: 100,000 rows, primary key s_suppkey, clustered by s_suppkey\n    s_suppkey                    INTEGER          int       17 bits\n    s_name                       VARCHAR          dict      17 bits\n    s_address                    VARCHAR          dict      17 bits\n    s_city                       VARCHAR          dict       8 bits\n    s_nation                     VARCHAR          dict       5 bits\n    s_region                     VARCHAR          dict       3 bits\n    s_phone                      VARCHAR          dict      17 bits\n    key design: derived surrogate, 27 bits = s_region 3 | s_nation 3 | s_city 4 | row 17\n      attributes on the key's bits: s_region, s_nation, s_city\nlineorder: 300,005,884 rows\n    lo_quantity                  INTEGER          int        6 bits\n    lo_extendedprice             INTEGER          int       24 bits\n    lo_discount                  INTEGER          int        4 bits\n    lo_revenue                   INTEGER          int       24 bits\n    lo_supplycost                INTEGER          int       17 bits\n    lo_custkey                   INTEGER          ref       31 bits -> customer.c_custkey\n    lo_orderdate                 INTEGER          ref       20 bits -> date.d_datekey\n    lo_partkey                   INTEGER          ref       31 bits -> part.p_partkey\n    lo_suppkey                   INTEGER          ref       27 bits -> supplier.s_suppkey",
+   "queries": {
+    "Q1.1/alg": {
+     "ms": 30.512943980284035,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 29.291962971910834,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.1/gpu": {
+     "ms": 3.4306729794479907,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.834106038790196,
+       "kernel_ms": 2.540031909942627,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.2/alg": {
+     "ms": 20.118050975725055,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 18.839307012967765,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.2/gpu": {
+     "ms": 2.740870986599475,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.1022019791416824,
+       "kernel_ms": 1.7877119779586792,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.3/alg": {
+     "ms": 31.534127017948776,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 30.306324013508856,
+       "kernel_ms": null,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q1.3/gpu": {
+     "ms": 3.0315230251289904,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.441568998619914,
+       "kernel_ms": 2.1939520835876465,
+       "agg": 2,
+       "nkey": 0,
+       "ngroups": 0,
+       "nattr": 0,
+       "keys": [],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.1/alg": {
+     "ms": 37.15967899188399,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 34.15334300370887,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.1/gpu": {
+     "ms": 5.608104984275997,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 3.4325189772062004,
+       "kernel_ms": 2.6933441162109375,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.2/alg": {
+     "ms": 30.08612699341029,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 26.76217898260802,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.2/gpu": {
+     "ms": 4.604335990734398,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.5208379956893623,
+       "kernel_ms": 1.7342720031738281,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.3/alg": {
+     "ms": 17.376960022374988,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 14.627883967477828,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q2.3/gpu": {
+     "ms": 3.324389981571585,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.006591996178031,
+       "kernel_ms": 1.192352056503296,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 8192,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.1/alg": {
+     "ms": 46.614905004389584,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 43.79495797911659,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "c_nation",
+        "s_nation",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.1/gpu": {
+     "ms": 5.2921760361641645,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 3.5983450361527503,
+       "kernel_ms": 3.077183961868286,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 32768,
+       "nattr": 0,
+       "keys": [
+        "c_nation",
+        "s_nation",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.2/alg": {
+     "ms": 31.408627051860094,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 28.06424902519211,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.2/gpu": {
+     "ms": 5.0751129747368395,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.4367530131712556,
+       "kernel_ms": 1.6753599643707275,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.3/alg": {
+     "ms": 27.662314008921385,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 24.829041969496757,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.3/gpu": {
+     "ms": 4.377900972031057,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.4067789781838655,
+       "kernel_ms": 1.7223680019378662,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.4/alg": {
+     "ms": 23.283711983822286,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 21.14394900854677,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q3.4/gpu": {
+     "ms": 4.99634601874277,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 2.789316000416875,
+       "kernel_ms": 2.0949440002441406,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "c_city",
+        "s_city",
+        "d_year"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.1/alg": {
+     "ms": 47.190851997584105,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 44.19240902643651,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 512,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "c_nation"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.1/gpu": {
+     "ms": 7.056630973238498,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 5.131337034981698,
+       "kernel_ms": 4.313663959503174,
+       "agg": 6,
+       "nkey": 2,
+       "ngroups": 512,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "c_nation"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.2/alg": {
+     "ms": 45.10308103635907,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 40.74647498782724,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 65536,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_nation",
+        "p_category"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.2/gpu": {
+     "ms": 6.129804998636246,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 3.877335984725505,
+       "kernel_ms": 3.1031041145324707,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 65536,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_nation",
+        "p_category"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.3/alg": {
+     "ms": 23.242050025146455,
+     "engine_queries": [
+      {
+       "asked": "alg",
+       "ran": true,
+       "device": "cpu",
+       "gpu_fail": null,
+       "ms": 20.332251966465265,
+       "kernel_ms": null,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_city",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    },
+    "Q4.3/gpu": {
+     "ms": 4.508202022407204,
+     "engine_queries": [
+      {
+       "asked": "gpu",
+       "ran": true,
+       "device": "gpu",
+       "gpu_fail": null,
+       "ms": 1.9961500074714422,
+       "kernel_ms": 1.503424048423767,
+       "agg": 6,
+       "nkey": 3,
+       "ngroups": 8388608,
+       "nattr": 0,
+       "keys": [
+        "d_year",
+        "s_city",
+        "p_brand1"
+       ],
+       "join_mode": "auto"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

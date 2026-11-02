@@ -75,8 +75,10 @@ one place where torbles trailed: its two window queries that return all of 1M ro
 engine, against 527 ms for DuckDB, 320 ms for chDB and 260 ms for Polars. On the same laptop, timed by
 `bench/window_output.py` outside that benchmark's containers, they now take 252 and 158 ms on the CPU engine (410 ms
 together) and 247 and 171 ms with the GPU, against 583 and 149 ms for DuckDB in the same run
-(`results/release_run_2026-11-02/`); on a 2-vCPU cloud machine they went from 1,349 and 482 ms to 483 and 347 ms. Most of what remains is building the million result tuples, which any engine pays to return rows to Python. `tests/check_window_output.py` compares these forms
-with DuckDB on the three engines, and `bench/window_output.py` times the two queries.
+(`results/release_run_2026-11-02/`); on a 2-vCPU cloud machine they went from 1,349 and 482 ms to 483 and 347 ms.
+Most of what remains is building the million result tuples, which any engine pays to return rows to Python.
+`tests/check_window_output.py` compares these forms with DuckDB on the three engines, and `bench/window_output.py`
+times the two queries.
 
 The executor keeps the engine's results as codes. The GROUP BY columns an engine query returns are integer code arrays
 with their validity masks and codecs (codes order and compare like the values), and they stay codes through
@@ -257,8 +259,7 @@ columns over no rows raised a ValueError instead of returning no rows.
 The release candidate was then fuzzed for an hour on the laptop's 24 threads (2026-11-02,
 `results/release_run_2026-11-02/`): 1,355,495 SQL statements on the three engines, with the default settings and with
 the algebraic paths on for every table, and 1,455,975 engine queries, each against DuckDB. 50 were reported. Nine were
-torbles' faults, from five causes, all fixed and each a regression test in `tests/check_campaign_sql.py` (16 of its 25
-checks fail on the candidate). An aggregate's FILTER was computed before the WHERE, so an error in it on a row the
+torbles' faults, from five causes, all fixed and each a regression test in `tests/check_campaign_sql.py`. An aggregate's FILTER was computed before the WHERE, so an error in it on a row the
 WHERE drops (abs of the least INTEGER, a DECIMAL(18) product past its type) failed the query; it now runs on the rows
 the WHERE keeps. A LEFT JOIN whose ON term was not TRUE padded its rows with NULLs, also for values cached while the ON
 terms ran, so a WHERE after the join that read the same cast read NULL there and dropped the rows (a count of 0 instead
@@ -277,7 +278,14 @@ chose that wrapped, a join filter it derived that kept a row the WHERE drops, th
 errors DuckDB's optimizer let it skip computing and raises with the optimizer off, 11 orders of rows cut by a LIMIT
 that differ only through documented differences (CORR and REGR_* NULL here and NaN there, exact here and rounded
 there), and one comparison of the fuzzer's own, which sorted -0.0 apart from 0.0. The fuzzers now ask DuckDB those
-questions themselves before they report a difference (`docs/SQL.md`).
+questions themselves before they report a difference (`docs/SQL.md`). The fixes were then fuzzed for another hour on
+new seeds (`results/release_fuzz_rerun_2026-11-02/`): 1,548,007 SQL statements and 1,482,976 engine queries, with the
+suite's 120 checks passing on the GPU. Two statements were reported, both now fixed and in the same test file. The
+general path pushes a WHERE term on one FROM item down to that item, and one failed there on a row that a LEFT JOIN
+pads and a term on the dimension then drops; such a term is now checked again after the joins, beside the other
+terms, as the star planner already did. And the fuzzer's check for the documented ORDER BY ... LIMIT differences
+skipped statements with a window function. The same run recorded where SQL's engine calls ran: at SF50, every call of
+the 13 SSB queries ran on the GPU, and Q3.1 took 5.3 ms, where the release run's sweep had measured 43.8 ms.
 
 Packaging
 

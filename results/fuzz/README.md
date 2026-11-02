@@ -1,4 +1,11 @@
-Differential fuzzing of 0.2.0 against DuckDB 2.0.0, 2 vCPUs.
+**0.3.0** was fuzzed on the RTX 5090 laptop, an hour on 24 threads each time, by the SQL fuzzer (`torbles.sqlfuzz`,
+seven workers on the alg, GPU and plain engines) and the engine fuzzer (`torbles.fuzz`, three workers):
+`results/release_run_2026-11-02/` (1,355,495 statements and 1,455,975 queries; 50 reports, nine from five faults,
+classified one by one in its `fuzz_triage.json`) and, on the fixes and new seeds, `results/release_fuzz_rerun_2026-11-02/`
+(1,548,007 statements and 1,482,976 queries; two reports, one a sixth fault). Every fault is fixed and is a regression
+test in `tests/check_campaign_sql.py`.
+
+The records below are 0.2.0's: differential fuzzing against DuckDB 2.0.0, 2 vCPUs.
 
 **Final record** (`fuzz_0.2.0_final_seeds11-16.txt`): `python -m torbles.fuzz --seed S --cases 800 --keep-going` for
 S = 11 to 16, on the release with 128-bit sums, 128-bit group codes and the histogram bridge. 4,806 random typed

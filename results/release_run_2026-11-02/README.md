@@ -21,7 +21,9 @@ queries, total ms, best of 3, end to end:
 | SF50 | 300M | 887.2 | 344.5 | 30.0 | 423.9 | 108.2 |
 
 Through SQL on the GPU at SF50, Q3.1 took 43.8 ms against 3.5 ms at SF30 (through the Python API, 4.0 and 2.3 ms);
-the other twelve queries grew with the data. Its cause was not found in this run.
+the other twelve queries grew with the data. The fuzzing rerun recorded where each engine call ran
+(`results/release_fuzz_rerun_2026-11-02/`): every call on the GPU, and Q3.1 at 5.3 ms at SF50; the 43.8 ms did not
+come back.
 
 **Full-output windows** (`window_output.json`, 1M rows, median of 5): the running SUM took 252 ms on the CPU engine
 and 247 ms with the GPU, against 583 ms for DuckDB; the global RANK 158 and 171 ms, against 149 ms; every answer

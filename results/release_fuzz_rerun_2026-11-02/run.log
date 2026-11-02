@@ -1,0 +1,168 @@
+== 2026-11-02T20:48:39+01:00 torbles 0.3.0 fuzzing rerun on WIN-OHVNN0FUC09
+HEAD 605bb4f7 The release run of 2026-11-02: its records and fuzzing triage, the poster and the README's 0.3.0 sweep
+Python 3.14.4 | NumPy 2.5.4 | pandas 3.1.0 | DuckDB 2.0.0
+WSL: 24 cores, 54 GiB memory; load average: 0.20 0.12 0.16
+== 20:48:40 1. building (the CUDA libraries take several minutes)
+torbles 0.3.0 | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+-- build: ok (20:52:04)
+== 20:52:04 2. where the SQL queries' engine calls run, SF30 and SF50, 24 threads
+    PID  NI %CPU     ELAPSED COMMAND
+      7   0  0.5  4-16:20:38 init
+    280   0  0.0  4-16:19:39 containerd
+    103   0  0.0  4-16:19:39 systemd-udevd
+SF30: loaded in 24.8 s
+SF30 Q3.1 alg:    30.0 ms, 1 engine calls ['alg->cpu']
+SF30 Q3.1 gpu:     4.0 ms, 1 engine calls ['gpu->gpu']
+SF50: loaded in 56.4 s
+SF50 Q3.1 alg:    46.6 ms, 1 engine calls ['alg->cpu']
+SF50 Q3.1 gpu:     5.3 ms, 1 engine calls ['gpu->gpu']
+-- SQL engine calls by device: rc=0 (0 lines with a GPU fallback) (20:53:44)
+== 20:53:44 3. the full test suite, the GPU tests on the GPU
+-- full test suite: 120 ok, 0 failed (rc=0) (21:00:30)
+== 21:00:30 4. fuzzing for 60 minutes, on new seeds
+starting 10 workers (results at about 22:03)
+  sql_alg_601: TORBLES_SQL_ENGINE=alg python3 -m torbles.sqlfuzz --seed 601
+  sql_alg_602: TORBLES_SQL_ENGINE=alg python3 -m torbles.sqlfuzz --seed 602
+  sql_gpu_603: TORBLES_SQL_ENGINE=gpu python3 -m torbles.sqlfuzz --seed 603
+  sql_gpu_604: TORBLES_SQL_ENGINE=gpu python3 -m torbles.sqlfuzz --seed 604
+  sql_plain_605: TORBLES_SQL_ENGINE=plain python3 -m torbles.sqlfuzz --seed 605
+  sql_forced_alg_606: TORBLES_SQL_ENGINE=alg TORBLES_ALG_MIN_ROWS=0 TORBLES_SERIES_ROWS_PER_GROUP=1 TORBLES_SERIES_STRICT=1 python3 -m torbles.sqlfuzz --seed 606
+  sql_forced_gpu_607: TORBLES_SQL_ENGINE=gpu TORBLES_ALG_MIN_ROWS=0 TORBLES_SERIES_ROWS_PER_GROUP=1 TORBLES_SERIES_STRICT=1 python3 -m torbles.sqlfuzz --seed 607
+  engine_41:  python3 -m torbles.fuzz --seed 41
+  engine_42:  python3 -m torbles.fuzz --seed 42
+  engine_43:  python3 -m torbles.fuzz --seed 43
+-- fuzzing: 2 failure(s) reported (22:00:32)
+== 22:00:32 done; summary
+HEAD 605bb4f7 The release run of 2026-11-02: its records and fuzzing triage, the poster and the README's 0.3.0 sweep | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+  build: ok
+  SQL engine calls by device: rc=0 (0 lines with a GPU fallback)
+  full test suite: 120 ok, 0 failed (rc=0)
+  fuzzing: 2 failure(s) reported
+
+SF30: loaded in 24.8 s
+SF30 Q3.1 alg:    30.0 ms, 1 engine calls ['alg->cpu']
+SF30 Q3.1 gpu:     4.0 ms, 1 engine calls ['gpu->gpu']
+SF50: loaded in 56.4 s
+SF50 Q3.1 alg:    46.6 ms, 1 engine calls ['alg->cpu']
+SF50 Q3.1 gpu:     5.3 ms, 1 engine calls ['gpu->gpu']
+
+sql_alg_601: 233640 statements in 3600 s: {'ok': 231071, 'refused': 0, 'duckdb-error': 2569, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+sql_alg_602: 246210 statements in 3600 s: {'ok': 243663, 'refused': 0, 'duckdb-error': 2547, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+sql_gpu_603: 217021 statements in 3600 s: {'ok': 214710, 'refused': 1, 'duckdb-error': 2309, 'MISMATCH': 1, 'ERROR': 0} | 1 FAILURE(S)
+sql_gpu_604: 202592 statements in 3600 s: {'ok': 200482, 'refused': 2, 'duckdb-error': 2108, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+sql_plain_605: 221521 statements in 3600 s: {'ok': 219156, 'refused': 1, 'duckdb-error': 2364, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+sql_forced_alg_606: 226951 statements in 3600 s: {'ok': 224611, 'refused': 1, 'duckdb-error': 2339, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+sql_forced_gpu_607: 200072 statements in 3600 s: {'ok': 197933, 'refused': 3, 'duckdb-error': 2135, 'MISMATCH': 0, 'ERROR': 1} | 1 FAILURE(S)
+engine_41: 14658 case(s), 494700 queries in 3601 s: {'ok': 454174, 'refused': 421, 'duckdb-error': 40105, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+engine_42: 14718 case(s), 497250 queries in 3601 s: {'ok': 456862, 'refused': 373, 'duckdb-error': 40015, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+engine_43: 14565 case(s), 491026 queries in 3601 s: {'ok': 450521, 'refused': 332, 'duckdb-error': 40173, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+
+what the fuzzers counted as refusals and as DuckDB's (the most frequent, by worker):
+  sql_alg_601:
+    280  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    191  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+    185  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+     82  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     78  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     68  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+     57  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     54  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (46
+  sql_alg_602:
+    280  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    207  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    202  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     73  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     63  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     61  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     59  (duckdb) OutOfRangeException: Out of Range Error: Overflow in subtraction of INT32 (-2147
+     57  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+  sql_gpu_603:
+    233  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    194  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    162  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     67  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     60  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     56  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     50  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-2
+     49  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+  sql_gpu_604:
+    247  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    143  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    136  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     67  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     49  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     45  (duckdb) OutOfRangeException: Out of Range Error: Overflow in subtraction of INT32 (-2147
+     41  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-2
+     41  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+  sql_plain_605:
+    220  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    200  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+    199  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+     77  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     69  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     55  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     49  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-2
+     44  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-3
+  sql_forced_alg_606:
+    255  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    170  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    163  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     79  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     74  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     55  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-2
+     53  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     53  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+  sql_forced_gpu_607:
+    239  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    156  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    145  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     63  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+     62  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     60  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     50  (duckdb) OutOfRangeException: Out of Range Error: Overflow in subtraction of INT32 (-2147
+     45  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+  engine_41:
+    487  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (18446744073709551615 * 184467440
+    427  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (9223372036854775808 * 9223372036
+    421  ValueError:  group domain too large: the GROUP BY keys need more than 12
+    274  (duckdb) Out of Range Error: Overflow in addition of UINT64 (9223372036854775808 + 9223372036854775
+    258  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (2147483647 * 2147483647)!
+    254  (duckdb) Out of Range Error: Overflow in addition of UINT64 (18446744073709551615 + 184467440737095
+    174  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (-2147483648 * -2147483648)!
+    168  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (2147482648 * 2147482648)!
+  engine_42:
+    495  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (18446744073709551615 * 184467440
+    451  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (9223372036854775808 * 9223372036
+    372  ValueError:  group domain too large: the GROUP BY keys need more than 12
+    333  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (2147483647 * 2147483647)!
+    283  (duckdb) Out of Range Error: Overflow in addition of UINT64 (9223372036854775808 + 9223372036854775
+    254  (duckdb) Out of Range Error: Overflow in addition of UINT64 (18446744073709551615 + 184467440737095
+    194  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (2147482648 * 2147482648)!
+    167  (duckdb) Out of Range Error: Overflow in addition of INT32 (2147483647 + 2147483647)!
+  engine_43:
+    453  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (18446744073709551615 * 184467440
+    417  (duckdb) Out of Range Error: Overflow in multiplication of UINT64 (9223372036854775808 * 9223372036
+    377  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (2147483647 * 2147483647)!
+    331  ValueError:  group domain too large: the GROUP BY keys need more than 12
+    286  (duckdb) Out of Range Error: Overflow in addition of UINT64 (9223372036854775808 + 9223372036854775
+    273  (duckdb) Out of Range Error: Overflow in addition of UINT64 (18446744073709551615 + 184467440737095
+    193  (duckdb) Out of Range Error: Overflow in multiplication of INT32 (-2147483648 * -2147483648)!
+    163  (duckdb) Out of Range Error: Overflow in addition of INT32 (2147483647 + 2147483647)!
+
+fuzzing failures (each one prints the command that replays it):
+=== ERROR: seed 607 case 3144 query 4
+SELECT DISTINCT greatest(j0."d1_h1", 0), CASE WHEN j0."d1_h1" > 2147483647 THEN j0."d1_h1" ELSE 1099511627776 END, f."f_d0", f."f_d0" FROM fact f LEFT JOIN dim1 j0 ON f."f_d1" = j0."d1_key" AND greatest(f."f_d0", -2147483648) = 11 WHERE ((j0."d1_a0" - 1) <> 2 OR j0."d1_a1" IS NOT NULL) AND abs(f."f_m0") < 4 AND f."f_d0" IS NULL ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 20
+SqlError: Out of Range Error: Overflow on abs(-9223372036854775808)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 499, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 603 case 1410 query 4
+SELECT (j1."d1_a1" - j1."d1_key"), corr(j1."d1_key", j0."d0_key") FILTER (WHERE (j1."d1_key" < j0."d0_a0" AND j1."d1_a2" >= -1561)), median(j0."d0_key"), corr(j1."d1_a0", j0."d0_key"), sum(count(*)) OVER (PARTITION BY (j1."d1_a1" - j1."d1_key")) FROM fact f JOIN dim0 j0 ON f."f_d0" = j0."d0_key" JOIN dim1 j1 ON f."f_d1" = j1."d1_key" GROUP BY ROLLUP (1) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 1
+torbles (1 rows) [(None, None, 32.0, None, 96)]
+duckdb  (1 rows) [(None, -0.06576041822810647, 32.0, -0.06576041822810737, 96)]
+replay: python -m torbles.sqlfuzz --seed 603 --case 1410 --query 4 -v
+
+case 1410: totals {'ok': 41857, 'refused': 0, 'duckdb-error': 472, 'MISMATCH': 1, 'ERROR': 0}
+== done: /mnt/c/Users/brian/Documents/torbles-fuzz-rerun-605bb4f

@@ -174,6 +174,15 @@ compared 149,176 answers with DuckDB's and found no mismatch and no unexpected e
 BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly). Every engine mode passes the same way
 (results/fuzz).
 
+`python -m torbles.sqlfuzz --minutes 10` does the same for SQL text: random typed star schemas and random statements
+(every kind of aggregate, grouping sets, windows and frames, subqueries, CTEs, set operations, ORDER BY and LIMIT),
+each run by torbles and by DuckDB ([docs/SQL.md](docs/SQL.md#tests)). Before reporting a difference, both fuzzers ask
+DuckDB again without its optimizer: an answer that changes to torbles' is DuckDB's optimizer at work. The release
+campaign of 0.3.0 ran each fuzzer for an hour on the laptop's 24 threads, twice (`results/release_run_2026-11-02/`,
+`results/release_fuzz_rerun_2026-11-02/`): 2.9 million SQL statements and 2.9 million engine queries. The first hour
+reported 50 statements, nine of them from five faults of torbles; the second, on the fixes and new seeds, two, one of
+them a sixth fault. All six are fixed, each with a regression test in `tests/check_campaign_sql.py`.
+
 ## Results
 
 The SSB numbers below are for the Python query API unless they say SQL: each query is built once with
@@ -268,10 +277,11 @@ end:
   GPU at SF1), within 2% at SF50 (30.0 against 29.5 ms).
 - **SQL** parses, binds and plans each statement and builds its ordered result on every call, on keys nobody
   designed: 13 to 16 ms more than the API on the GPU up to SF30, 14 to 30 ms more on the CPU, and still 2.0 to 2.5x
-  faster than DuckDB on the CPU and 3.4 to 17.5x on the GPU. At SF50, Q3.1 through SQL on the GPU took 43.8 ms,
-  against 3.5 ms at SF30 and 4.0 ms through the API, while the other twelve queries grew with the data; why it is
-  ten times slower there is not yet known. Loading the tables for SQL (`torbles.from_duckdb`, keys designed on the
-  way) took 1.0 s at SF1 and 79 s at SF50.
+  faster than DuckDB on the CPU and 3.4 to 17.5x on the GPU. At SF50, Q3.1 through SQL on the GPU took 43.8 ms in
+  this sweep, against 3.5 ms at SF30 and 4.0 ms through the API, which makes most of that point's 108 ms. A later run
+  that recorded where each engine call ran (`results/release_fuzz_rerun_2026-11-02/`) found every call on the GPU and
+  Q3.1 at 5.3 ms, the 13 queries at 60.1 ms: the sweep's 43.8 ms did not come back. Loading the tables for SQL
+  (`torbles.from_duckdb`, keys designed on the way) took 1.0 s at SF1 and 79 s at SF50.
 
 ### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
 
