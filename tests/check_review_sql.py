@@ -10,7 +10,12 @@
        (pre-aggregated ones too) and constant folding; widening casts, casts whose values fit, BIGINT arithmetic and
        an error in a row that no output needs are the passing controls, and so are the values DuckDB decides without
        computing the arithmetic (comparisons with constants, a filter term that drops the row, x * 0);
-  R06  DISTINCT ON a collated key keeps one row per collation key, picked by the ORDER BY (under its collations).
+  R06  DISTINCT ON a collated key keeps one row per collation key, picked by the ORDER BY (under its collations);
+and of the two independent reviews of the work after it (2026-11-02), on a table just past the default threshold of
+the algebraic paths (2^16 rows), with no setting changed:
+  F01  a window in the ORDER BY after its first key, not read from its series, keeps rank selection (which reads only
+       the rows up to the k-th) off, with or without windows in the SELECT list that are read from their series;
+  F02  frame offsets up to 2^63 - 1 on the series path; a window with two PARTITION BY columns over no rows.
 Every case has a fixed expectation (rows, or ERROR where DuckDB raises), checked against DuckDB and against db.sql on
 the engines alg, plain and gpu (TORBLES_SQL_ENGINE=<engine>: that engine only).
     python3 tests/check_review_sql.py"""
@@ -387,6 +392,35 @@ cases(db, "R06 DISTINCT ON under a collation", [
     ("control: DISTINCT ON an expression", "SELECT DISTINCT ON (lower(x)) x FROM (VALUES('a'),('A')) t(x) ORDER BY lower(x), x", [("A",)]),
     ("a stored column", "SELECT DISTINCT ON (name COLLATE NOCASE) name FROM (SELECT upper(name) AS name FROM dm UNION ALL SELECT name FROM dm) "
      "ORDER BY name COLLATE NOCASE, name", [("A",), ("B",), ("C",), ("D",)]),
+])
+db.close()
+
+# ---------------------------------------------------------------- F01, F02: the reviews of 2026-11-02
+nk = 65538                                     # just past sqlexec.ALG_MIN_ROWS: rank selection and series apply
+ids = np.arange(nk)
+db = torbles.from_ddl("CREATE TABLE tk (id INTEGER, k INTEGER, x INTEGER)",
+                      {"tk": pd.DataFrame({"id": ids, "k": ids % 2, "x": np.where(ids % 2 == 1, 100000 - ids, ids)}).astype("int32")},
+                      keep_plain=True)
+cases(db, "F01 windows in the ORDER BY under ORDER BY ... LIMIT", [
+    ("the follow-up review's case: LAG only in the ORDER BY", "SELECT id FROM tk ORDER BY k, lag(x) OVER (ORDER BY id) NULLS LAST, id LIMIT 3",
+     [(65536,), (65534,), (65532,)]),
+    ("... beside a SELECT window read from its series", "SELECT id, count(*) OVER (PARTITION BY k) AS c FROM tk "
+     "ORDER BY k, lag(x) OVER (ORDER BY id) NULLS LAST, id LIMIT 3", [(65536, 32769), (65534, 32769), (65532, 32769)]),
+    ("LEAD, descending, beside a SELECT window", "SELECT id, rank() OVER (ORDER BY x) AS r FROM tk "
+     "ORDER BY k DESC, lead(id, 3) OVER (ORDER BY x DESC) DESC NULLS FIRST, id LIMIT 4",
+     [(34459, 48309), (34463, 48307), (34465, 48305), (34467, 48303)]),
+    ("control: a running count in the ORDER BY", "SELECT id FROM tk ORDER BY k, count(*) OVER (PARTITION BY k ORDER BY x) DESC, id LIMIT 3",
+     [(65536,), (65534,), (65532,)]),
+])
+cases(db, "F02 frame offsets near 2^63, windows over no rows", [
+    ("GROUPS ... 9223372036854775807 FOLLOWING", "SELECT id, count(*) OVER (ORDER BY k GROUPS BETWEEN CURRENT ROW AND 9223372036854775807 FOLLOWING) "
+     "AS c FROM tk ORDER BY id LIMIT 3", [(0, 65538), (1, 32769), (2, 65538)]),
+    ("a SUM to the partition's end", "SELECT id, sum(x) OVER (PARTITION BY k ORDER BY x GROUPS BETWEEN 1 PRECEDING AND 9223372036854775807 "
+     "FOLLOWING) AS s FROM tk ORDER BY id LIMIT 3", [(0, 1073774592), (1, 199996), (2, 1073774592)]),
+    ("a frame starting past every group", "SELECT id, count(*) OVER (ORDER BY k GROUPS BETWEEN 9223372036854775807 FOLLOWING AND "
+     "UNBOUNDED FOLLOWING) AS c FROM tk ORDER BY id LIMIT 3", [(0, 0), (1, 0), (2, 0)]),
+    ("two PARTITION BY columns over no rows", "SELECT id, count(*) OVER (PARTITION BY k, x) AS c FROM tk WHERE id < 0", []),
+    ("CUME_DIST over no rows", "SELECT id, cume_dist() OVER () AS c FROM tk WHERE id < 0", []),
 ])
 db.close()
 print("\nALL MATCH" if fails == 0 else f"\n{fails} FAILURES")

@@ -224,11 +224,12 @@ a gate test of the mathematics inventory that needed a capability not yet valida
 had validated the last ones. It is fixed, and the second run validated that capability again on the GPU, so all 81 are
 validated.
 
-A second independent review, of the work since the first (windows read from their series, the foreign key fix and the
-GPU's device copies), found four more faults, each now a regression test in `tests/test_fixes.py` or
-`tests/check_algebra.py`. Rank selection under ORDER BY ... LIMIT reads only the rows up to the k-th on the first sort
-key, and its check for windows never looked at the ORDER BY, so in `ORDER BY x, LAG(id) OVER (ORDER BY id) LIMIT 5`
-LAG was computed over those rows and other rows came out than DuckDB's. Before windows were read from their series,
+Two more independent reviews of the work since the first (windows read from their series, the foreign key fix and the
+GPU's device copies), one of them by the first review's author, found four more faults, the first by both; each is now
+a regression test in `tests/test_fixes.py`, `tests/check_algebra.py` or `tests/check_review_sql.py`. Rank selection
+under ORDER BY ... LIMIT reads only the rows up to the k-th on the first sort key, and its check for windows never
+looked at the ORDER BY, so in `ORDER BY k, LAG(x) OVER (ORDER BY id), id LIMIT 3` LAG was computed over those rows and
+other rows came out than DuckDB's, on a table of 65,538 rows with the default settings. Before windows were read from their series,
 only a block with no window in its SELECT list could meet this; reading them from their series let rank selection run
 beside the SELECT list's windows, and so beside windows in the ORDER BY too. Rank selection now stays off unless every
 window of the block, in either place, is read from its series, and `tests/check_algebra.py` puts windows at any position
