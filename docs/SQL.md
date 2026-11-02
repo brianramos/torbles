@@ -402,10 +402,18 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 - `PERCENTILE_CONT` (and `MEDIAN`) of a DECIMAL interpolates exactly, then truncates to the column's scale (2.50 and
   1000.00 at 0.3 of the way: 301.75); DuckDB interpolates the scaled integers in double precision (301.74).
 - An argument of `COUNT(DISTINCT ...)` that overflows its type raises the overflow, as everywhere else; when the
-  argument is an expression of the GROUP BY keys, DuckDB's optimizer answers 1 per group without computing it. With
-  a SMALLINT x holding -17604, `SELECT x, count(DISTINCT x * 3) FROM t GROUP BY x` gives 1 in DuckDB and the overflow
-  in torbles; both raise it without that GROUP BY, or for `sum(x * 3)`. The SQL fuzzer checks such an overflow against
-  DuckDB's own arithmetic in that type and counts the statement among DuckDB's errors.
+  argument is an expression of the GROUP BY keys, DuckDB answers 1 per group without computing it (with its optimizer
+  off too). With a SMALLINT x holding -17604, `SELECT x, count(DISTINCT x * 3) FROM t GROUP BY x` gives 1 in DuckDB
+  and the overflow in torbles; both raise it without that GROUP BY, or for `sum(x * 3)`. The SQL fuzzer checks such an
+  overflow against DuckDB's own arithmetic in that type and counts the statement among DuckDB's errors.
+- A runtime error (an overflow, a failed cast) is raised where the statement computes the value. DuckDB's optimizer
+  can leave such a value uncomputed and answer: its statistics prove a term constant (`abs(x) >= 2^40` for an INTEGER
+  x) or a whole side of the plan empty (the right side of an EXCEPT whose left side is), or it runs filter terms in
+  another order across joins and clauses. Which terms an implementation computes first is its own (ISO 9075-2,
+  6.3.3.3); DuckDB without its optimizer raises the same errors. An aggregate's FILTER runs on the rows the WHERE
+  keeps, and a LEFT JOIN's ON terms on the pairs its equality matches, so an error on a row the WHERE drops, or on a
+  dimension row no row matches, is not the query's; DuckDB pushes an ON term on the dimension alone into the
+  dimension's scan and raises it for every row.
 
 ## Tests
 
@@ -421,7 +429,9 @@ test for every bug an independent review found, each against DuckDB where DuckDB
 ROWS / RANGE / GROUPS frames with offsets, EXCLUDE, FILTER, IGNORE NULLS, FROM LAST) and random GROUP BY queries
 (grouping sets, collations, DISTINCT, FILTER) on a table with ties, NULLs, NaN and infinities twice, as arrays and row by
 row: the answers must be identical value for value, and equal to DuckDB's where the answer does not depend on how ties
-are ordered. All three run on the three engines (`TORBLES_SQL_ENGINE=alg | plain | gpu`), from `tests/run_all.sh`.
+are ordered. `tests/check_campaign_sql.py` keeps a regression test for each fault the release fuzzing campaign of
+2026-11-02 found, and for the fuzzer's own checks. All of them run on the three engines (`TORBLES_SQL_ENGINE=alg |
+plain | gpu`), from `tests/run_all.sh`.
 
 `python -m torbles.sqlfuzz --minutes 10` (or `torbles-sqlfuzz --seed 7 --cases 200`) generates random typed star
 schemas (unmatched and NULL references included) and random SQL: filters, expressions of every type, every kind of aggregate,
@@ -429,7 +439,13 @@ GROUP BY with grouping sets, HAVING, window functions (over groups, and over row
 frames and exclusions), subqueries, CTEs, set operations, DISTINCT, ORDER BY / LIMIT; it
 runs each statement on torbles and on DuckDB and compares the results as multisets (in order when ORDER BY fixes it,
 DOUBLE values with a relative tolerance). Any difference, and any error other than a documented refusal, is a failure
-with a replay command. `TORBLES_SQL_ENGINE=alg | plain | gpu` picks the engine it runs on (alg by default),
+with a replay command, once DuckDB has been asked again. When DuckDB without its statistics propagation, or without its
+optimizer, gives torbles' answer, the difference is DuckDB's optimizer (the release campaign of 2026-11-02 found 64-bit
+sums its statistics chose that wrapped, and a join filter it derived that kept a row the WHERE drops); `torbles.fuzz`
+asks the same of its engine queries. An error torbles raises where DuckDB answered is DuckDB's when DuckDB without its
+optimizer raises it too (above). Rows ordered by values that differ as documented above (a statistic NULL in torbles
+and NaN in DuckDB, exact here and rounded there) and then cut by a LIMIT count as equal when the statement without
+its LIMIT gives the same rows on both and torbles' rows are the first of its own. `TORBLES_SQL_ENGINE=alg | plain | gpu` picks the engine it runs on (alg by default),
 `TORBLES_ALG_MIN_ROWS=0` and `TORBLES_SERIES_ROWS_PER_GROUP=1` apply the algebraic paths to its small tables, and
 `TORBLES_FUZZ_DUCKDB_MEMORY=4GB` caps the comparison DuckDB's memory (its memory limit, and a statement that grows the
 process by more than that is interrupted), so that a statement DuckDB cannot hold is one of its errors, not compared,

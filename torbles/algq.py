@@ -2694,7 +2694,7 @@ class Query:
         np.add.at(H, (ginv, np.searchsorted(coords, hiv + 1) if hiv is not None else np.full(len(ids), INF)), 1)
         if lov is not None: np.add.at(H, (ginv, np.searchsorted(coords, lov)), -1)
         Mc = np.zeros((len(ku), size), np.int64); np.add.at(Mc, (kinv, xr), mc)
-        big = ms.dtype == object or (len(ms) and int(np.abs(ms).max()) * max(1, len(ms)) * max(1, int(np.abs(H).sum())) >= 1 << 62)
+        big = ms.dtype == object or (len(ms) and max(-int(ms.min()), int(ms.max())) * max(1, len(ms)) * max(1, int(np.abs(H).sum())) >= 1 << 62)
         Ms = np.zeros((len(ku), size), object if big else np.int64); np.add.at(Ms, (kinv, xr), ms.astype(object) if big else ms)
         Rs, Rc = dominance(Ms, H if not big else H.astype(object), nb), dominance(Mc, H, nb)
         out = {}

@@ -40,6 +40,12 @@ _NONE = type(None)
 _NUM = {int, bool, float, Decimal}
 
 
+def absmax(a):
+    """the greatest |value| of an integer array as a Python int, 0 when it is empty (np.abs of the least int64 is
+    itself, negative: a bound read through it lets int64 arithmetic wrap)"""
+    return max(-int(a.min()), int(a.max())) if len(a) else 0
+
+
 def obj(col):
     """a list as a 1-D object array (tuples and lists stay single elements)"""
     return np.fromiter(col, object, len(col))
@@ -88,7 +94,7 @@ def _comparable(a):
     k = getattr(cd, "kind", None)
     off = int(getattr(cd, "offset", 0))
     if k in ("int", "bool", "decimal", "date", "timestamp"):
-        if len(c) and abs(off) + int(np.abs(c).max()) >= 1 << 62: return None
+        if len(c) and abs(off) + absmax(c) >= 1 << 62: return None
         v = c + off
         if k == "decimal": return ("dec", v, cd.scale)
         if k == "date": return ("day", v)
@@ -121,7 +127,7 @@ def joint_codes(a, b):
                 if "float" in (kx, ky):
                     def fl(z):
                         if z[0] == "float": return z[1]
-                        if len(z[1]) and int(np.abs(z[1]).max()) >= 1 << 53: return None
+                        if len(z[1]) and absmax(z[1]) >= 1 << 53: return None
                         return z[1].astype(np.float64) / (10.0 ** z[2] if z[0] == "dec" else 1.0)
                     fa, fb = fl(x), fl(y)
                     if fa is not None and fb is not None:
@@ -403,7 +409,7 @@ def _targets(xs, offs, sgn):
         a = _num_array(xs)
         if a is not None and type(o) in (int, float) and (type(o) is float or abs(o) < 1 << 62):
             if a.dtype == np.int64 and type(o) is float:
-                if not len(a) or np.abs(a).max() < 1 << 53: a = a.astype(np.float64)
+                if absmax(a) < 1 << 53: a = a.astype(np.float64)
                 else: a = None
             if a is not None: return a, (a + o if sgn > 0 else a - o)
         offs = [o] * len(xs)
@@ -434,7 +440,7 @@ def _code_offset(key, v):
         elif isinstance(v, F.Interval) and v.months == 0 and v.micros == 0: o = v.days
     elif k == "timestamp" and isinstance(v, F.Interval) and v.months == 0:
         o = v.days * 86_400_000_000 + v.micros
-    if o is None or (len(c) and abs(o) + int(np.abs(c).max()) >= 1 << 62): return None
+    if o is None or (len(c) and abs(o) + absmax(c) >= 1 << 62): return None
     return o
 
 
@@ -615,7 +621,7 @@ def _scaled(vals, valid):
         kind = getattr(cd, "kind", None)
         if kind in ("int", "decimal", "bool") and c.dtype != object:      # affine: value = (code + offset) / 10^scale
             off = int(getattr(cd, "offset", 0))
-            if c.size and abs(off) + int(np.abs(c).max()) >= 1 << 62: return _scaled(values_of(vals), valid)
+            if c.size and abs(off) + absmax(c) >= 1 << 62: return _scaled(values_of(vals), valid)
             X = np.zeros(len(c), np.int64); X[valid] = c[valid] + off
             sc = 10 ** int(getattr(cd, "scale", 0)) if kind == "decimal" else 1
             return ("dec" if kind == "decimal" else "int"), X.astype(object), sc, None
@@ -1059,7 +1065,7 @@ def aggregate(name, cols, valid, segs, n, w=None):
         if kind == "int":
             try: Xi = X.astype(np.int64)
             except OverflowError: Xi = None
-            mx = (int(np.abs(Xi).max()) if Xi is not None and len(Xi) else 0) if Xi is not None else 1 << 62
+            mx = absmax(Xi) if Xi is not None else 1 << 62
             mx *= (1 if w is None else max(int(w.max()), 1) if len(w) else 1)
             if mx * (n + 1) < 1 << 62:
                 tot = _over(_prefix(Xi * (1 if w is None else w)), segs)

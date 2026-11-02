@@ -24,6 +24,7 @@ from fractions import Fraction
 import numpy as np
 import algq
 import sqltypes as T
+import sqlwin
 from sqltypes import SqlError
 import sqlir as I
 import sqlfuncs as F
@@ -489,7 +490,7 @@ def _num(a):
     k = getattr(cd, "kind", None)
     if k in ("int", "bool", "decimal"):
         off = int(getattr(cd, "offset", 0))
-        if len(c) and abs(off) + int(np.abs(c).max()) >= 1 << 62: return None
+        if len(c) and abs(off) + sqlwin.absmax(c) >= 1 << 62: return None
         return ("dec", c + off, cd.scale) if k == "decimal" else ("int", c + off, 0)
     if k == "dict" and getattr(cd, "floating", False):
         fv = np.array(cd.values, np.float64)
@@ -515,7 +516,7 @@ def _to_scale(v, s_from, s_to):
     """exact rescaling of scaled integers up (None when it could overflow int64)"""
     if s_to == s_from: return v
     f = 10 ** (s_to - s_from)
-    if len(v) and int(np.abs(v).max()) * f >= 1 << 62: return None
+    if sqlwin.absmax(v) * f >= 1 << 62: return None
     return v * f
 
 
@@ -559,10 +560,10 @@ def _as_float(o):
     k, v, sc, valid = o
     if k == "float": return v
     if k in ("int", "bool"):
-        if len(v) and int(np.abs(v).max()) >= 1 << 53: return None
+        if sqlwin.absmax(v) >= 1 << 53: return None
         return v.astype(np.float64)
     if k == "dec":
-        if len(v) and int(np.abs(v).max()) >= 1 << 53: return None
+        if sqlwin.absmax(v) >= 1 << 53: return None
         return v.astype(np.float64) / float(10 ** sc)
     return None
 
@@ -572,7 +573,7 @@ def _codes_fit(r, valid, t, a=None, b=None):
     on the valid rows? With a, b: the operands of a % or //, whose least value % -1 overflows too"""
     if t.id == "DECIMAL":
         v = r if valid is None else r[valid]
-        return not len(v) or int(np.abs(v).max()) < 10 ** t.p
+        return sqlwin.absmax(v) < 10 ** t.p
     return _int_fits(r, None if valid is None else ~valid, t, a, b)
 
 
@@ -590,7 +591,7 @@ def _ev_codes(e, rel, cx):
             return None if f is None else _mk("float", f, 0, valid)
         if t.id == "DECIMAL" and k in ("int", "dec") and t.s >= sc:
             w = _to_scale(v, sc, t.s)
-            if w is None or (len(w) and int(np.abs(w).max()) >= 10 ** t.p): return None
+            if w is None or sqlwin.absmax(w) >= 10 ** t.p: return None
             return _mk("dec", w, t.s, valid)
         if t.integer and k == "int":
             lo, hi = T.INT_RANGE.get(t.id, (None, None))
@@ -656,7 +657,7 @@ def _ev_codes(e, rel, cx):
             if e.t.id == "DECIMAL" and e.t.s != S or not _codes_fit(r, valid, e.t): return None
             return _mk("dec" if S else "int", r, S, valid)
         if fn == "*":
-            if len(va) and int(np.abs(va).max()) * int(np.abs(vb).max() if len(vb) else 0) >= 1 << 62: return None
+            if sqlwin.absmax(va) * sqlwin.absmax(vb) >= 1 << 62: return None
             if e.t.id == "DECIMAL" and e.t.s != sa + sb or not _codes_fit(va * vb, valid, e.t): return None
             return _mk("dec" if sa + sb else "int", va * vb, sa + sb, valid)
         lt, eq = xa < xb, xa == xb
@@ -3353,7 +3354,10 @@ class _Planner:
                 T_ = tfs[0][0]
                 for x in tfs[1:]: T_ = algq.BoolOp("AND", T_, x[0])
                 tf = T_
-            md = self.rowmask(b, _and(cd)) if cd else None
+            # dimension-side ON terms: an error on a dimension row counts only for the pairs the join's equality
+            # matches, so a row mask that errs leaves the block to run_general (ON terms on the matched pairs)
+            md = self.rowmask(b, _and(cd), lazy=True) if cd else None
+            if cd and md is None: raise _NotStarNow()
             nd = None
             if md is not None:
                 t = self.tab[b]; mask = np.unpackbits(md.bm.view(np.uint8), bitorder="little")[:t.n].astype(bool)
@@ -3519,16 +3523,11 @@ class _Planner:
             cd = getattr(t, "codecs", {}).get(col.name) if t is not None else None
             if COLUMNAR and cd is not None: rel.cols.put(k, ColArr(np.zeros(rel.n, np.int64), np.zeros(rel.n, bool), cd))
             else: rel.cols[k] = [None] * rel.n
-        for k, plan in aggplan.items():
-            if plan.get("rowfilter_expr") is not None:
-                plan["rowfilter"] = set(rows_where(plan["rowfilter_expr"], rel, cx))
         if residual:
-            keep = rows_where(_and(residual), rel, cx)
-            rel = rel.take(keep)
-            for plan in aggplan.values():
-                if plan.get("rowfilter") is not None:
-                    pos = {old: new for new, old in enumerate(keep)}
-                    plan["rowfilter"] = {pos[i] for i in plan["rowfilter"] if i in pos}
+            rel = rel.take(rows_where(_and(residual), rel, cx))
+        for k, plan in aggplan.items():                      # an aggregate's FILTER, on the rows the WHERE keeps (an
+            if plan.get("rowfilter_expr") is not None:       # error on a row it drops is not the query's)
+                plan["rowfilter"] = set(rows_where(plan["rowfilter_expr"], rel, cx))
         _states(rel, aggs, aggplan)
         return rel, {k: (aggplan[k] if aggplan[k].get("kind") == "rank" else dict(kind="state")) for k in aggs if k in aggplan}
 
@@ -4554,11 +4553,47 @@ def run_general(s, bindings, need, aggs, cx):
         elif not bs and isinstance(c, I.Lit):
             if c.v is not True: rest.append(c)
         else: rest.append(c)
-    rel = _materialize(s.from_, per, pushed, cx)
+    from_ = s.from_
+    if s.sample is None: from_, rest = _equijoins(from_, rest)
+    rel = _materialize(from_, per, pushed, cx)
     if s.sample is not None: rel = sample_rel(rel, s.sample, cx)
     if rest:
         rel = rel.take(rows_where(_and(rest), rel, cx))
     return rel, {}
+
+
+def _join_key_term(x):
+    """a column, or a column widened to an integer type holding all of its values: a join key that cannot fail"""
+    if isinstance(x, I.Col): return True
+    if isinstance(x, I.Cast) and isinstance(x.arg, I.Col) and not x.try_:
+        a, b = T.INT_RANGE.get(x.arg.t.id), T.INT_RANGE.get(x.t.id)
+        return a is not None and b is not None and b[0] <= a[0] and a[1] <= b[1]
+    return False
+
+
+def _equijoins(f, rest):
+    """WHERE equalities between columns of the two sides of a cross or inner join (one no outer join holds on its NULL
+    side) become that join's keys, so that it matches rows instead of forming every pair (FROM a, b WHERE a.k = b.k,
+    left to the general path): -> (the FROM tree, the WHERE terms left). Columns only, so a term computed earlier
+    fails nothing the WHERE would not."""
+    taken = set()
+    def go(x):
+        if not isinstance(x, I.Join) or x.kind not in ("inner", "cross"): return x
+        left, right = go(x.left), go(x.right)
+        lb, rb = set(block_bindings(left)), set(block_bindings(right))
+        add = []
+        for i, c in enumerate(rest):
+            if i in taken or not (isinstance(c, I.Func) and c.fn == "=" and len(c.args) == 2): continue
+            a, b = c.args
+            if not (_join_key_term(a) and _join_key_term(b)): continue
+            ba, bb = {y.b for y in I.cols_of(a)}, {y.b for y in I.cols_of(b)}
+            if ba <= lb and bb <= rb or ba <= rb and bb <= lb: add.append(c); taken.add(i)
+        if not add and left is x.left and right is x.right: return x
+        j = copy.copy(x); j.left, j.right = left, right
+        if add: j.kind, j.cond = "inner", _and(([x.cond] if x.cond is not None else []) + add)
+        return j
+    out = go(f)
+    return out, [c for i, c in enumerate(rest) if i not in taken]
 
 
 def _materialize(f, per, pushed, cx):
@@ -4603,7 +4638,8 @@ def _lateral(j, L, refs, per, pushed, cx):
         extra = [i for i in range(L.n) if i not in hit]
         if extra:
             P = L.take(extra)
-            for k in cols: P.cols[k] = [None] * P.n
+            for k in cols:
+                if k[0] not in _CACHED: P.cols[k] = [None] * P.n
             C = _concat([C, P])
     return C
 
@@ -4738,9 +4774,15 @@ def _combine(L, R, li, ri):
     return C
 
 
+# keys of values cached for an expression (codes_of, a join's ON terms on its pairs): they hold for the rows they were
+# computed on only, and are computed again from the expression's columns where they are missing
+_CACHED = frozenset(("lit", "fn", "case", "cast", "outer", "subq", "grouping"))
+
+
 def _pad(A, other):
+    """A's rows with the other side's columns NULL (an expression of NULLs need not be NULL: those are left out)"""
     for k in other.cols:
-        if k not in A.cols: A.cols[k] = [None] * A.n
+        if k not in A.cols and k[0] not in _CACHED: A.cols[k] = [None] * A.n
     return A
 
 
@@ -4751,6 +4793,7 @@ def _concat(parts):
     for p in parts:
         for k in p.cols:
             if k not in keys: keys.append(k)
+    keys = [k for k in keys if k[0] not in _CACHED or all(k in p.cols for p in parts)]   # a cache some parts lack
     for k in keys:
         arrs = [p.cols.arr.get(k) for p in parts]
         if all(a is not None for a in arrs) and len({id(a.codec) for a in arrs}) == 1:   # codes of one codec: stay codes
