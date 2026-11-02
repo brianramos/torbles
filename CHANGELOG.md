@@ -65,6 +65,18 @@ ms, against 74.8 ms. Windows with more groups than one per 16 rows stay on the r
 random window queries with the path on and off and against DuckDB on the three engines (1,500 matched while it was
 written).
 
+Windows whose values every row outputs no longer pass through a Python object per value on the way out. A window's
+values stay an integer or double array from the window step to the output (a series window's come from an array
+table indexed by the rows' codes), an ORDER BY reorders the rows by array positions and is not applied when the rows
+already follow it, the window ordering sorts the integer codes as they are instead of ranking them first, an ORDER BY
+the rows already follow sorts only the partitions (a radix sort when their codes fit 16 bits), and a running integer
+SUM over frames that all hold a value stays an int64 array. The cross-engine benchmark of 2026-11-02 found these the
+one place where torbles trailed: its two window queries that return all of 1M rows took 622 ms together on the CPU
+engine, against 527 ms for DuckDB, 320 ms for chDB and 260 ms for Polars. On a 2-vCPU cloud machine they went from
+1,349 and 482 ms to 483 and 347 ms (DuckDB there: 1,546 and 440 ms); most of what remains is building the million
+result tuples, which any engine pays to return rows to Python. `tests/check_window_output.py` compares these forms
+with DuckDB on the three engines, and `bench/window_output.py` times the two queries.
+
 The executor keeps the engine's results as codes. The GROUP BY columns an engine query returns are integer code arrays
 with their validity masks and codecs (codes order and compare like the values), and they stay codes through
 expressions, grouping, joins, DISTINCT, the set operations, ORDER BY and LIMIT; values are decoded once, for the rows
@@ -164,7 +176,7 @@ and a request past a declared budget is refused, not approximated. Each capabili
 emulated with the thread order scrambled, with the CPU result bit for bit, and run again under AddressSanitizer and
 UndefinedBehaviorSanitizer; its kernels compile with nvcc for sm_80 (780 tests in all). All 75 have been measured on
 the RTX 5090 laptop (`python bench/validate_math.py --device`) and are validated, like the first slice. Code that does
-not import these modules is unaffected, and `tests/run_all.sh` (118 checks, the modules' tests among them) passes.
+not import these modules is unaffected, and `tests/run_all.sh` (119 checks, the modules' tests among them) passes.
 
 Release review
 

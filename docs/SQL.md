@@ -150,7 +150,9 @@ workload's six aggregate and distinct-value queries took 19 ms on the CPU and 12
 the GPU engine, MIN and MAX, row bitmaps, COUNT(DISTINCT) cells and semi-join lookups run on the CPU engine, so a SQL
 workload is not all on the GPU. The 13 SSB queries through `db.sql` at SF10 took 97 ms on the CPU and 26 ms on the
 GPU, against 218 ms for DuckDB, where the same queries built once with the Python API take 74 and 10 ms (README,
-Results).
+Results). A window whose values every row outputs keeps them as an integer or double array until the rows are built,
+and an ORDER BY the rows already follow is not applied; returning a million rows still builds a million Python
+tuples, as any engine does (`bench/window_output.py`).
 
 ## Data types
 

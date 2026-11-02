@@ -18,7 +18,7 @@ A query block over a star join runs as engine queries (algq), never row by row:
 
 Blocks that are not star joins (outer, cross and non-key joins, derived tables, VALUES) materialize each FROM item as
 a multiset (an engine GROUP BY over the columns needed, with counts) and join those multisets."""
-import copy, functools, math
+import copy, functools, math, operator
 from decimal import Decimal
 from fractions import Fraction
 import numpy as np
@@ -108,9 +108,13 @@ class Cols(dict):
         dict.pop(self, k, None); self.arr[k] = a
     def take(self, idx):
         out = Cols()
-        for k, a in self.arr.items(): out.arr[k] = a.take(idx)
+        ia = np.asarray(idx, np.int64) if self.arr else None   # the positions as an array once, for every code column
+        il = None
+        for k, a in self.arr.items(): out.arr[k] = a.take(ia)
         for k, v in dict.items(self):
-            if k not in self.arr: dict.__setitem__(out, k, [v[i] for i in idx])
+            if k not in self.arr:
+                if il is None: il = _positions(idx)
+                dict.__setitem__(out, k, _take_list(v, il))
         return out
 
 
@@ -124,10 +128,22 @@ class Rel:
     def take(self, idx):
         r = Rel(len(idx))
         r.cols = self.cols.take(idx)
-        r.cnt = [self.cnt[i] for i in idx]
-        r.mom = {k: [v[i] for i in idx] for k, v in self.mom.items()}
-        r.vcnt = {k: [v[i] for i in idx] for k, v in self.vcnt.items()}
+        il = _positions(idx) if (self.mom or self.vcnt or self.cnt.count(1) != len(self.cnt)) else None
+        if il is not None and self.cnt.count(1) != len(self.cnt): r.cnt = _take_list(self.cnt, il)   # else Rel's own 1s
+        r.mom = {k: _take_list(v, il) for k, v in self.mom.items()}
+        r.vcnt = {k: _take_list(v, il) for k, v in self.vcnt.items()}
         return r
+
+
+def _positions(idx):
+    """row positions as a list of Python ints (indexing a list with numpy integers is several times slower)"""
+    return idx.tolist() if isinstance(idx, np.ndarray) else idx
+
+
+def _take_list(v, il):
+    """[v[i] for i in il], at C speed"""
+    if len(il) > 1: return list(operator.itemgetter(*il)(v))
+    return [v[i] for i in il]
 
 
 class Cx:
@@ -1080,13 +1096,12 @@ def _order_codes_idx(out, s, cx):
         if T.coll_key(e.t) is not None: return None
         a = codes_of(e, out, cx)
         if a is None: return None
-        keys.append(sqlwin.code_order(a, desc, nf))
-    perm = np.lexsort(keys[::-1]) if keys else np.arange(out.n)
+        keys.append(sqlwin.sort_keys(a, desc, nf))
+    perm = sqlwin.lexsort(keys[::-1], out.n)
     off = _int_param(_count_value(s.offset, cx), "OFFSET") or 0
     lim = _count_value(s.limit, cx)
     if lim is not None: lim = _int_param(lim, "LIMIT")
-    perm = perm[off:] if lim is None else perm[off:off + lim]
-    return perm.tolist()
+    return perm[off:] if lim is None else perm[off:off + lim]          # (an array of positions)
 
 
 def _count_value(v, cx):
@@ -1298,7 +1313,8 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     if COLUMNAR and s.order and not s.distinct and not s.with_ties and not s.percent and out.n > 32:
         idx = _order_codes_idx(out, s, cx)              # ORDER BY / OFFSET / LIMIT on codes: only the rows output are decoded
         if idx is not None:
-            out = out.take(idx)
+            if not (len(idx) == out.n and (out.n == 0 or (idx[0] == 0 and bool((np.diff(idx) == 1).all())))):
+                out = out.take(idx)                     # (rows already in that order are kept as they are)
             cols = [ev(x, out, cx) for x, _ in s.items]
             return Relation.of_columns(names, types, cols, out.n)
     cols = [ev(x, out, cx) for x, _ in s.items]
@@ -1858,6 +1874,7 @@ class _Series:
     def values_for(self, rel, cx):
         miss = object()
         out = self._by_codes(rel, cx, miss) if rel.n > 4096 else None
+        if isinstance(out, ColArr): return out
         if out is None:
             cols = [ev(e, rel, cx) for e in self.keys]
             for col in cols:
@@ -1904,6 +1921,12 @@ class _Series:
             idx = idx * m + r
             radix *= m
             if radix > SERIES_LUT: return None
+        tys = set(map(type, self.vals))
+        if tys and (tys <= {int} or tys <= {float}) and (tys != {int} or all(-(1 << 63) <= v < 1 << 63 for v in self.vals)):
+            dt = np.int64 if tys <= {int} else np.float64      # the values as an array (no object per row)
+            tab, hit = np.zeros(radix, dt), np.zeros(radix, bool)
+            tab[gidx[gok]] = np.array(self.vals, dt)[gok]; hit[gidx[gok]] = True
+            if bool(hit[idx].all()): return ColArr(tab[idx])
         table = np.full(radix, miss, object)
         vals = np.empty(ng, object); vals[:] = self.vals
         table[gidx[gok]] = vals[gok]
@@ -2130,7 +2153,9 @@ def compute_windows(wins, rel, cx, series=None):
     for w in wins:
         if w.key() in rel.cols: continue
         if series and w.key() in series:                   # from the window's aggregated series: each row's group's value
-            rel.cols[w.key()] = series[w.key()].values_for(rel, cx)
+            v = series[w.key()].values_for(rel, cx)
+            if isinstance(v, ColArr): rel.cols.put(w.key(), v)
+            else: rel.cols[w.key()] = v
             continue
         def codes_or(e, keyed=True):
             """an engine column as its codes (ordered like its values, no collation), else its values (collation keys)"""
@@ -2182,6 +2207,10 @@ def compute_windows(wins, rel, cx, series=None):
             try:
                 rk = (okeys[0] if isinstance(okeys[0], ColArr) else okv()[0]) if len(okeys) == 1 and ranged else None
                 out = sqlwin.evaluate(w, L, args, fm, vb, rk, bool(specs and specs[0][0]))
+                if isinstance(out, np.ndarray) and out.dtype in (np.int64, np.float64):
+                    full = np.empty(n, out.dtype); full[L.perm] = out
+                    rel.cols.put(w.key(), ColArr(full))        # kept as an array: decoded only if read as values
+                    continue
                 full = np.empty(n, object); full[L.perm] = out
                 res = full.tolist()
             except sqlwin.NoVec:

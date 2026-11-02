@@ -277,6 +277,8 @@ def _combine(cols):
     c = cols[0]
     for d in cols[1:]:
         k = int(d.max(initial=-1)) + 1                     # (no rows: no partition)
+        if k > len(d) + 1:                                 # wide codes (eq_keys): dense ones, so c * k + d stays exact
+            d = np.unique(d, return_inverse=True)[1].reshape(-1).astype(np.int64); k = int(d.max(initial=-1)) + 1
         if (int(c.max(initial=-1)) + 1) * k >= 1 << 62:
             c = np.unique(c, return_inverse=True)[1].reshape(-1).astype(np.int64)
         c = c * k + d
@@ -296,14 +298,52 @@ class Layout:
             yield perm[s:e], ([g - s for g in gs[s:e]], [g - s for g in ge[s:e]])
 
 
+def eq_keys(a):
+    """a code column's group key for sorting and comparing neighbours: its integer codes themselves, shifted to start
+    at 0 (equal codes are equal values), NULL a value of its own; no np.unique (code_groups: dense codes)"""
+    c = a.codes
+    if c.dtype != np.int64 or not len(c): return code_groups(a)
+    lo, hi = int(c.min()), int(c.max())
+    if hi - lo >= 1 << 62: return code_groups(a)          # codes this wide: dense ones (the sums below stay in int64)
+    g = c - lo if lo else c
+    if a.valid is not None: g = np.where(a.valid, g, int(g.max()) + 1)
+    return g
+
+
+def sort_keys(a, desc=False, nulls_first=False):
+    """a code column's sort key: its integer codes (they order like the values), turned for DESC, NULLs placed;
+    np.lexsort orders by it as by code_order, without np.unique"""
+    c = a.codes
+    if c.dtype != np.int64 or not len(c): return code_order(a, desc, nulls_first)
+    lo, hi = int(c.min()), int(c.max())
+    if hi - lo >= 1 << 62: return code_order(a, desc, nulls_first)
+    g = (hi - c) if desc else (c - lo if lo else c)
+    if a.valid is not None: g = np.where(a.valid, g, -1 if nulls_first else hi - lo + 1)
+    return g
+
+
+def lexsort(keys, n):
+    """np.lexsort(keys) (the last key the primary one): when the other key is already in order row by row (an ORDER BY
+    on the rows' own order, often), a stable sort on the primary key alone, a radix sort when its codes fit 16 bits"""
+    if not keys: return np.arange(n)
+    if len(keys) <= 2 and n > 1:
+        if len(keys) == 2 and not bool((keys[0][1:] >= keys[0][:-1]).all()): return np.lexsort(keys)
+        k = keys[-1]
+        if len(keys) == 1 and bool((k[1:] >= k[:-1]).all()): return np.arange(n)       # already in order
+        lo, hi = int(k.min()), int(k.max())
+        if hi - lo < 1 << 16: k = (k - lo).astype(np.uint16)
+        return np.argsort(k, kind="stable")
+    return np.lexsort(keys)
+
+
 def layout(parts, okeys, specs, n):
     """order the rows of a window: parts / okeys are the PARTITION BY / ORDER BY value columns (collation keys applied),
     specs [(desc, nulls_first)]"""
     L = Layout(); L.n = n
-    pc = _combine([code_groups(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
-    oc = [code_order(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
+    pc = _combine([eq_keys(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
+    oc = [sort_keys(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
     keys = list(reversed(oc)) + ([pc] if pc is not None else [])
-    L.perm = np.lexsort(keys) if keys else np.arange(n)
+    L.perm = lexsort(keys, n)
     L.ar = np.arange(n)
     newp = np.zeros(n, bool)
     if n: newp[0] = True
@@ -1023,7 +1063,8 @@ def aggregate(name, cols, valid, segs, n, w=None):
             mx *= (1 if w is None else max(int(w.max()), 1) if len(w) else 1)
             if mx * (n + 1) < 1 << 62:
                 tot = _over(_prefix(Xi * (1 if w is None else w)), segs)
-                if not avg: return np.where(cnt > 0, tot.astype(object), None)
+                if not avg:                                # every frame has a value: the int64 sums as they are
+                    return tot if bool((cnt > 0).all()) else np.where(cnt > 0, tot.astype(object), None)
                 if mx * (n + 1) < 1 << 53:
                     return np.where(cnt > 0, tot / np.maximum(cnt, 1), None).astype(object)
                 tot = tot.astype(object)
