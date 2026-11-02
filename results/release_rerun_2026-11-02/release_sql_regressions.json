@@ -1,0 +1,448 @@
+{
+  "review": "0.2.0 SQL-enabled local candidate",
+  "duckdb_version": "2.0.0",
+  "candidate": "/home/brian/torbles_release_rerun_7486dba/candidate",
+  "cases": [
+    {
+      "name": "null_safe_inner_join",
+      "sql": "SELECT a.x,b.x FROM (VALUES (NULL),(1)) a(x) JOIN (VALUES (NULL),(1)) b(x) ON a.x IS NOT DISTINCT FROM b.x ORDER BY 1 NULLS FIRST",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "null_safe_full_join",
+      "sql": "SELECT a.x,b.x FROM (VALUES (NULL),(1)) a(x) FULL JOIN (VALUES (NULL),(1)) b(x) ON a.x IS NOT DISTINCT FROM b.x ORDER BY 1 NULLS FIRST",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              null,
+              null
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "ordinary_equality_control",
+      "sql": "SELECT a.x,b.x FROM (VALUES (NULL),(1)) a(x) JOIN (VALUES (NULL),(1)) b(x) ON a.x=b.x ORDER BY 1 NULLS FIRST",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              1,
+              1
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "narrow_cast_sum",
+      "sql": "SELECT sum(CAST(i AS TINYINT)) FROM t",
+      "outputs": {
+        "duckdb": {
+          "rows": null,
+          "error": "ConversionException: Conversion Error: Type INT32 with value 200 can't be cast because the value is out of range for the destination type INT8 when casting from source column i\n\nLINE 1: SELECT sum(CAST(i AS TINYINT)) FROM t\n                   ^^^^^^^^^^^^^^^^^^"
+        },
+        "alg": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "plain": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "gpu": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "narrow_decimal_sum",
+      "sql": "SELECT sum(CAST(i AS DECIMAL(2,0))) FROM t",
+      "outputs": {
+        "duckdb": {
+          "rows": null,
+          "error": "ConversionException: Conversion Error: Could not cast value 100 to DECIMAL(2,0) when casting from source column i\n\nLINE 1: SELECT sum(CAST(i AS DECIMAL(2,0))) FROM t\n                   ^^^^^^^^^^^^^^^^^^^^^^^"
+        },
+        "alg": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 100 does not fit in DECIMAL(2,0)"
+        },
+        "plain": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 100 does not fit in DECIMAL(2,0)"
+        },
+        "gpu": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 100 does not fit in DECIMAL(2,0)"
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "narrow_cast_predicate",
+      "sql": "SELECT count(*) FROM t WHERE CAST(i AS TINYINT)>0",
+      "outputs": {
+        "duckdb": {
+          "rows": null,
+          "error": "ConversionException: Conversion Error: Type INT32 with value 200 can't be cast because the value is out of range for the destination type INT8 when casting from source column i\n\nLINE 1: SELECT count(*) FROM t WHERE CAST(i AS TINYINT)>0\n                                     ^^^^^^^^^^^^^^^^^^"
+        },
+        "alg": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "plain": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "gpu": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "narrow_scalar_control",
+      "sql": "SELECT CAST(i AS TINYINT) FROM t",
+      "outputs": {
+        "duckdb": {
+          "rows": null,
+          "error": "ConversionException: Conversion Error: Type INT32 with value 200 can't be cast because the value is out of range for the destination type INT8 when casting from source column i\n\nLINE 1: SELECT CAST(i AS TINYINT) FROM t\n               ^^^^^^^^^^^^^^^^^^"
+        },
+        "alg": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "plain": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        },
+        "gpu": {
+          "rows": null,
+          "error": "SqlError: Conversion Error: 200 is out of range for TINYINT"
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "wide_cast_sum_control",
+      "sql": "SELECT sum(CAST(i AS BIGINT)) FROM t",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              500
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              500
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              500
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              500
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "integer_expression_overflow",
+      "sql": "SELECT CAST(2147483647 AS INTEGER)+1",
+      "outputs": {
+        "duckdb": {
+          "rows": null,
+          "error": "OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (2147483647 + 1)!"
+        },
+        "alg": {
+          "rows": null,
+          "error": "SqlError: Out of Range Error: Overflow in addition of INT32 (2147483647 + 1)!"
+        },
+        "plain": {
+          "rows": null,
+          "error": "SqlError: Out of Range Error: Overflow in addition of INT32 (2147483647 + 1)!"
+        },
+        "gpu": {
+          "rows": null,
+          "error": "SqlError: Out of Range Error: Overflow in addition of INT32 (2147483647 + 1)!"
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "wide_expression_control",
+      "sql": "SELECT CAST(2147483647 AS BIGINT)+1",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              2147483648
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              2147483648
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              2147483648
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              2147483648
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "distinct_on_collation",
+      "sql": "SELECT DISTINCT ON (x COLLATE NOCASE) x FROM (VALUES('a'),('A')) t(x) ORDER BY x COLLATE NOCASE,x",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              "A"
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              "A"
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              "A"
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              "A"
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    },
+    {
+      "name": "distinct_collation_control",
+      "sql": "SELECT DISTINCT x COLLATE NOCASE FROM (VALUES('a'),('A')) t(x)",
+      "outputs": {
+        "duckdb": {
+          "rows": [
+            [
+              "a"
+            ]
+          ],
+          "error": null
+        },
+        "alg": {
+          "rows": [
+            [
+              "a"
+            ]
+          ],
+          "error": null
+        },
+        "plain": {
+          "rows": [
+            [
+              "a"
+            ]
+          ],
+          "error": null
+        },
+        "gpu": {
+          "rows": [
+            [
+              "a"
+            ]
+          ],
+          "error": null
+        }
+      },
+      "mismatched_backends": []
+    }
+  ],
+  "source_sha256": {
+    "sqlexec.py": "d5ac7a3169fd42ddbbc986cdac6bb9681d54594d65f25a2ddc10c9acda39052d",
+    "sqlfront.py": "845f9091699760e48dbe6c4b4f2e0fd9b4706f87b463d82aae0a794584588021",
+    "sqlfuncs.py": "062b786dbdfd8d21c29876a9cea535da9f1c6f976d665389d20fd2db7eb5ea97",
+    "sqltypes.py": "9045a88c86b14282222f8c8a8c858cdf9c407470ca639d1cd5a7d8ea5fe8b13e"
+  },
+  "mismatching_cases": 0,
+  "controls_match": true,
+  "execution_note": "Backend selection is recorded; VALUES/constant operations and general joins execute in the SQL evaluator, not claimed CUDA row work."
+}

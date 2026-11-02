@@ -136,16 +136,17 @@ is x, and `x IS NULL` computes x where DuckDB's statistics cannot decide it (a c
 ### Performance
 
 What the engine computes (filters, joins to dimensions, the aggregates of a star block, MIN and MAX, rank selections)
-runs on the bit planes, and on the GPU where the GPU executor supports it. The rest of a query runs here, in Python and
-NumPy on the CPU, whichever engine is selected: window functions, the grouping of the tuples the engine returns, joins
-that are not stars, set operations, ORDER BY, and functions evaluated on distinct values. Its cost grows with the rows
-it handles. In the release review's synthetic workload (2026-11-01, 1M rows, 24 threads, RTX 5090 Laptop GPU), a
-partitioned running SUM and a global RANK, each over every row and returning 100 rows, took 7.7 s together on the CPU
-engine and 7.3 s with the GPU engine, against 66 ms for DuckDB. The workload's six aggregate and distinct-value queries
-took 40 ms on the CPU and 33 ms with the GPU, against 15 ms. With the GPU engine, MIN and MAX, row bitmaps,
+runs on the bit planes, and on the GPU where the GPU executor supports it. The rest of a query runs here, in Python
+and NumPy on the CPU, whichever engine is selected: window functions, the grouping of the tuples the engine returns,
+joins that are not stars, set operations, ORDER BY, and functions evaluated on distinct values. Its cost grows with
+the rows it handles. In the release review's synthetic workload, run on this release (2026-11-02, 1M rows, 24 threads,
+RTX 5090 Laptop GPU), a partitioned running SUM and a global RANK, each over every row and returning 100 rows, took
+375 ms together on the CPU engine and 398 ms with the GPU engine, against 72 ms for DuckDB (the review measured 7.7 s
+on an older snapshot, from before the windows ran as array algebra). The workload's six aggregate and distinct-value
+queries took 23 ms on the CPU and 16 ms with the GPU, against 15 ms. With the GPU engine, MIN and MAX, row bitmaps,
 COUNT(DISTINCT) cells and semi-join lookups run on the CPU engine, so a SQL workload is not all on the GPU. The 13 SSB
-queries through `db.sql` at SF10 took 121 ms on the CPU and 41 ms on the GPU, against 219 ms for DuckDB, where the
-same queries built once with the Python API take 81 and 10 ms (README, Results).
+queries through `db.sql` at SF10 took 97 ms on the CPU and 26 ms on the GPU, against 218 ms for DuckDB, where the same
+queries built once with the Python API take 74 and 10 ms (README, Results).
 
 ## Data types
 

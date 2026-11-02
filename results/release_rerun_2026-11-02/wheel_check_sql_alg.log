@@ -1,0 +1,92 @@
+== scalar functions and operators (vs DuckDB)
+  ok   102 expressions on every row
+== aggregates, grouping sets, windows, joins, subqueries (vs DuckDB)
+  ok   SELECT k, count(*), count(i), count(DISTINCT i), sum(i), avg(i), min(i), max(i), sum(DISTINCT i), avg(DISTINCT
+  ok   SELECT k, sum(d), avg(d), min(d), max(d), sum(f), min(s), max(s), min(dt), max(ts), bool_and(flag), bool_or(fl
+  ok   SELECT k, stddev_pop(i), stddev_samp(i), var_pop(d), var_samp(d), covar_pop(i, d), covar_samp(i, d), regr_coun
+  ok   SELECT k, median(i), median(d), quantile_cont(i, 0.25), quantile_disc(i, 0.75), percentile_cont(0.4) WITHIN GR
+  ok   SELECT k, string_agg(s, ',' ORDER BY s, id), string_agg(DISTINCT s, '|' ORDER BY s), array_agg(i ORDER BY id),
+  ok   SELECT k, sum(CASE WHEN flag THEN i ELSE 0 END), sum(CASE WHEN s = 'a' THEN d END), count(CASE WHEN i > 1 THEN
+  ok   SELECT gname, count(*), sum(i * gw), avg(i + 1), max(gday) FROM t JOIN g ON t.k = g.gid GROUP BY gname ORDER B
+  ok   SELECT gname, count(*), sum(i), max(gw) FROM t LEFT JOIN g ON t.k = g.gid GROUP BY gname ORDER BY gname NULLS 
+  ok   SELECT gname, count(*), count(gw) FROM t LEFT JOIN g ON t.k = g.gid AND g.gw > 0 AND t.i > 1 GROUP BY gname OR
+  ok   SELECT gname, count(i), sum(i) FROM t RIGHT JOIN g ON t.k = g.gid GROUP BY gname ORDER BY gname NULLS FIRST
+  ok   SELECT gname, count(i), sum(i) FROM t FULL JOIN g ON t.k = g.gid GROUP BY gname ORDER BY gname NULLS FIRST
+  ok   SELECT k, count(*), sum(i) FROM t GROUP BY k ORDER BY k NULLS FIRST
+  ok   SELECT k, s, count(*), grouping(k, s), sum(i) FROM t GROUP BY ROLLUP (k, s) ORDER BY k NULLS FIRST, s NULLS FI
+  ok   SELECT k, flag, count(*) FROM t GROUP BY CUBE (k, flag) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3
+  ok   SELECT k, flag, count(*) FROM t GROUP BY GROUPING SETS ((k), (flag), ()) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST
+  ok   SELECT id, i, row_number() OVER (ORDER BY id), rank() OVER (ORDER BY i NULLS FIRST), dense_rank() OVER (ORDER 
+  ok   SELECT id, k, i, sum(i) OVER (PARTITION BY k ORDER BY id), avg(i) OVER (PARTITION BY k), count(*) OVER (PARTIT
+  ok   SELECT id, i, lag(i) OVER (ORDER BY id), lead(i, 2) OVER (ORDER BY id), lag(i, 1, -1) OVER (ORDER BY id), firs
+  ok   SELECT id, i, sum(i) OVER (ORDER BY i RANGE BETWEEN 2 PRECEDING AND 2 FOLLOWING), count(*) OVER (ORDER BY i GR
+  ok   SELECT id, i, sum(i) OVER (ORDER BY id ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE CURRENT ROW), count(*)
+  ok   SELECT id, dt, count(*) OVER (ORDER BY dt RANGE BETWEEN INTERVAL 400 DAY PRECEDING AND CURRENT ROW) FROM t ORD
+  ok   SELECT id, i, lag(i IGNORE NULLS) OVER (ORDER BY id), first_value(i IGNORE NULLS) OVER (ORDER BY id), last_val
+  ok   SELECT k, sum(i), rank() OVER (ORDER BY sum(i) DESC NULLS LAST, k), sum(sum(i)) OVER () FROM t GROUP BY k ORDE
+  ok   SELECT id, i FROM t QUALIFY row_number() OVER (PARTITION BY k ORDER BY id) <= 2 ORDER BY id
+  ok   SELECT id, i FROM t t1 WHERE i > (SELECT avg(i) FROM t t2 WHERE t2.k = t1.k) ORDER BY id
+  ok   SELECT id FROM t t1 WHERE EXISTS (SELECT 1 FROM t t2 WHERE t2.k = t1.k AND t2.i > t1.i + 50) ORDER BY id
+  ok   SELECT id FROM t WHERE k IN (SELECT gid FROM g WHERE gw > 0) ORDER BY id
+  ok   SELECT id FROM t WHERE k NOT IN (SELECT gid FROM g WHERE gw IS NOT NULL) ORDER BY id
+  ok   SELECT id FROM t WHERE i > ALL (SELECT i FROM t WHERE s = 'b' AND i IS NOT NULL) ORDER BY id
+  ok   SELECT gname, (SELECT count(*) FROM t WHERE t.k = g.gid), (SELECT max(i) FROM t WHERE t.k = g.gid) FROM g ORDE
+  ok   WITH a AS (SELECT k, sum(i) s FROM t GROUP BY k), b AS (SELECT gid, gname FROM g) SELECT gname, s FROM a JOIN 
+  ok   WITH RECURSIVE r(n, f) AS (SELECT 1, 1 UNION ALL SELECT n + 1, f * (n + 1) FROM r WHERE n < 10) SELECT n, f FR
+  ok   SELECT s FROM t UNION SELECT gname FROM g ORDER BY 1 NULLS FIRST
+  ok   SELECT s FROM t EXCEPT ALL SELECT s FROM t WHERE i > 1 ORDER BY 1 NULLS FIRST
+  ok   SELECT s FROM t INTERSECT SELECT u FROM t ORDER BY 1
+  ok   SELECT DISTINCT ON (k) k, id, i FROM t ORDER BY k NULLS FIRST, id DESC
+  ok   SELECT * FROM t ORDER BY id LIMIT 5 OFFSET 10
+  ok   SELECT t.*, g.gname FROM t NATURAL JOIN (SELECT gid AS k, gname FROM g) g ORDER BY id
+  ok   SELECT a.id, b.id FROM t a JOIN t b ON a.i = b.i AND a.id < b.id WHERE a.k = 1 ORDER BY 1, 2
+  ok   SELECT gid, count(t.id) FROM g LEFT JOIN t ON g.gid = t.k AND t.flag GROUP BY gid ORDER BY gid
+  ok   SELECT k, i, count(*) FROM t GROUP BY k, i ORDER BY 1 NULLS FIRST, 2 NULLS FIRST
+  ok   SELECT k, count(*), count(k) FROM t GROUP BY k ORDER BY 1 NULLS FIRST
+  ok   SELECT count(*), sum(i) FROM t WHERE false
+  ok   SELECT x, count(*) FROM (VALUES (1), (2), (NULL), (1)) v(x) GROUP BY x ORDER BY x NULLS FIRST
+== ISO forms (values worked out by hand)
+  ok   SELECT 5 BETWEEN SYMMETRIC 10 AND 1, 5 NOT BETWEEN SYMMETRIC 10 AND 6
+  ok   SELECT 'abc' LIKE_REGEX 'b', 'abc' LIKE_REGEX '^b', 'ABC' LIKE_REGEX 'b' FLAG 'i'
+  ok   SELECT OCCURRENCES_REGEX('a' IN 'banana'), POSITION_REGEX('n' IN 'banana'), POSITION_REGEX('n' IN 'b
+  ok   SELECT SUBSTRING_REGEX('a+n' IN 'banana'), TRANSLATE_REGEX('a' IN 'banana' WITH 'o')
+  ok   SELECT SUBSTRING('abcdef' SIMILAR 'a#"bcd#"ef' ESCAPE '#')
+  ok   SELECT 'abc' SIMILAR TO 'a%', 'abc' SIMILAR TO '(a|b)c', 'bc' SIMILAR TO '(a|b)c', 'a.c' SIMILAR TO 
+  ok   SELECT OVERLAY('abcdef' PLACING 'XY' FROM 2 FOR 3), OVERLAY('abcdef' PLACING 'XY' FROM 2)
+  ok   SELECT WIDTH_BUCKET(5.5, 0, 10, 4), WIDTH_BUCKET(-1, 0, 10, 4), WIDTH_BUCKET(10, 0, 10, 4), WIDTH_BU
+  ok   SELECT RANK(2) WITHIN GROUP (ORDER BY x), DENSE_RANK(3) WITHIN GROUP (ORDER BY x), PERCENT_RANK(2) W
+  ok   SELECT RANK(2, 'b') WITHIN GROUP (ORDER BY x, y) FROM (VALUES (1, 'z'), (2, 'a'), (2, 'c'), (4, 'a')
+  ok   SELECT LISTAGG(x, '-') WITHIN GROUP (ORDER BY x DESC) FROM (VALUES ('a'), ('c'), ('b')) v(x)
+  ok   SELECT UNIQUE (SELECT x FROM (VALUES (1), (2), (NULL), (NULL)) v(x)), UNIQUE (SELECT x FROM (VALUES 
+  ok   SELECT (DATE '2020-01-01', DATE '2020-02-01') OVERLAPS (DATE '2020-01-15', DATE '2020-03-01'), (DATE
+  ok   SELECT x FROM (VALUES (1), (2), (2), (3)) v(x) ORDER BY x FETCH FIRST 2 ROWS WITH TIES
+  ok   SELECT x FROM (VALUES (1), (2), (3)) v(x) ORDER BY x FETCH FIRST 50 PERCENT ROWS ONLY
+  ok   SELECT x, NTH_VALUE(x, 2) FROM LAST OVER (ORDER BY x ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED 
+  ok   SELECT i, LAG(x) IGNORE NULLS OVER (ORDER BY i) FROM (VALUES (1, 10), (2, NULL), (3, 30)) v(i, x) OR
+  ok   SELECT INTERVAL '1-2' YEAR TO MONTH, INTERVAL '3 04:05:06' DAY TO SECOND, INTERVAL '1:30' HOUR TO MI
+  ok   SELECT x IS UNKNOWN, x IS NOT UNKNOWN FROM (VALUES (CAST(NULL AS BOOLEAN)), (TRUE)) v(x)
+  ok   SELECT EVERY(x > 0), ANY(x > 3), SOME(x > 9) FROM (VALUES (1), (2), (4)) v(x)
+  ok   SELECT CORR(x, y), REGR_SLOPE(x, y), REGR_R2(x, y) FROM (VALUES (1, 2), (3, 2)) v(x, y)
+  ok   SELECT 1 AS a, 2 AS b UNION ALL CORRESPONDING SELECT 3 AS b, 4 AS a, 5 AS c
+  ok   SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY x DESC) FROM (VALUES (1), (2), (3), (4)) v(x)
+  ok   SELECT GREATEST(1, 5, 3), LEAST('b', 'a'), BTRIM('xxaxx', 'x'), LPAD('7', 3, '0'), RPAD('ab', 5, 'xy
+  ok   SELECT CHAR_LENGTH('héllo'), CHARACTER_LENGTH('ab'), OCTET_LENGTH('héllo'), POSITION('l' IN 'hello')
+  ok   SELECT MOD(-7, 3), ABS(-2.5), CEILING(1.2), LN(1), EXP(0), POWER(2, 10), SQRT(16), FLOOR(-1.5), LOG1
+  ok   SELECT NORMALIZE('é', NFD) = 'é', NULLIF(1, 1), COALESCE(NULL, 2), 1 IS DISTINCT FROM NULL, NULL IS 
+  ok   SELECT (1, NULL) = (1, 2), (1, 2) < (1, 3), (2, 0) > (1, 9)
+  ok   SELECT EXTRACT(YEAR FROM DATE '2020-05-06'), EXTRACT(TIMEZONE_HOUR FROM TIMESTAMP '2020-01-01 10:00:
+== the Python API (each query also run by DuckDB as SQL text)
+  ok   aggregates by a dimension (implicit foreign-key join)
+  ok   LEFT JOIN with ON terms
+  ok   CASE, FILTER, percentile
+  ok   window over aggregates
+  ok   frames
+  ok   ROLLUP and GROUPING
+  ok   subquery IN
+  ok   string and date functions
+== SQL fuzzing against DuckDB (seed 3, 12 cases)
+  ok   sqlfuzz
+  ok   sqlfuzz replay 101/273/15
+  ok   sqlfuzz replay 202/219/18
+  ok   sqlfuzz replay 303/112/29
+ALL MATCH

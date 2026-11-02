@@ -178,10 +178,9 @@ points, cubical homology and persistence, interval and approximation error certi
 whole query families compiled into one program. Every answer is exact or carries a stated enclosure or error bound,
 and a request past a declared budget is refused, not approximated. Each capability's tests compare its CUDA path,
 emulated with the thread order scrambled, with the CPU result bit for bit, and run again under AddressSanitizer and
-UndefinedBehaviorSanitizer; its kernels compile with nvcc for sm_80 (780 tests in all). Fifty-four of the 75 have been
-measured on the RTX 5090 laptop and are validated, like the first slice; the other 21 carry these CPU receipts and
-become validated once `python bench/validate_math.py --device --all-ready` has run on the GPU. Code that does not
-import these modules is unaffected, and `tests/run_all.sh` (118 checks, the modules' tests among them) passes.
+UndefinedBehaviorSanitizer; its kernels compile with nvcc for sm_80 (780 tests in all). All 75 have been measured on
+the RTX 5090 laptop (`python bench/validate_math.py --device`) and are validated, like the first slice. Code that does
+not import these modules is unaffected, and `tests/run_all.sh` (118 checks, the modules' tests among them) passes.
 
 Correctness
 - `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
@@ -240,6 +239,16 @@ the foreign key's planes as if the key were stored most significant bit first, s
 table stores the other way (`refs=` without `msb=`) its bits came back reversed, giving wrong sums and counts without
 an error, or an IndexError. The loaders store every foreign key most significant bit first, so SQL was not affected.
 Such keys are now looked up, as the other join modes did.
+
+The review's protocol was then run again on this release, on the same laptop (2026-11-02,
+`results/release_rerun_2026-11-02/`): the full suite with the GPU tests on the GPU, the review's reproducers, which
+all give the expected answers now, the installed wheel's SQL tests on the three engines, device memory flat over 120
+rounds of tables uploaded, queried and released, and the review's nine benchmark workers, every answer equal to
+DuckDB's. Through `db.sql` at SF10 the 13 SSB queries took 97 ms on the CPU and 26 ms on the GPU, against 218 ms for
+DuckDB, where the review had measured 121 and 41 ms on its older snapshot; through the Python API, 74 and 10 ms. The
+mixed workload's two window queries at 1M rows took 375 ms, against DuckDB's 72: the review's 7.7 s predates the
+windows as array algebra. The run's one failure was a gate test of the mathematics inventory that needed a capability
+not yet validated and found none, since the same run had validated the last ones; it is fixed.
 
 Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`

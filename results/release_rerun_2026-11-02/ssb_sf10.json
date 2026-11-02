@@ -1,0 +1,1553 @@
+{
+  "workload": "ssb",
+  "scale": 10,
+  "setup": {
+    "rows": 59986214,
+    "source": "/home/brian/torble_gpu_run/ssbdata/sf10/ssb.duckdb",
+    "source_bytes": 1563701248,
+    "native_load_ms": 8280.638511,
+    "duckdb_in_memory_copy_ms": 340.662174,
+    "explicit_gpu_upload_ms": 260.977736
+  },
+  "threads": 24,
+  "repeats": 5,
+  "gpu": "NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0",
+  "duckdb_version": "2.0.0",
+  "python": "3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]",
+  "queries": {
+    "Q1.1": "select sum(lo_extendedprice*lo_discount) as revenue\nfrom lineorder, date\nwhere lo_orderdate = d_datekey and d_year = 1993 and lo_discount between 1 and 3 and lo_quantity < 25",
+    "Q1.2": "select sum(lo_extendedprice*lo_discount) as revenue\nfrom lineorder, date\nwhere lo_orderdate = d_datekey and d_yearmonthnum = 199401 and lo_discount between 4 and 6 and lo_quantity between 26 and 35",
+    "Q1.3": "select sum(lo_extendedprice*lo_discount) as revenue\nfrom lineorder, date\nwhere lo_orderdate = d_datekey and d_weeknuminyear = 6 and d_year = 1994 and lo_discount between 5 and 7 and lo_quantity between 26 and 35",
+    "Q2.1": "select sum(lo_revenue), d_year, p_brand1\nfrom lineorder, date, part, supplier\nwhere lo_orderdate = d_datekey and lo_partkey = p_partkey and lo_suppkey = s_suppkey and p_category = 'MFGR#12' and s_region = 'AMERICA'\ngroup by d_year, p_brand1 order by d_year, p_brand1",
+    "Q2.2": "select sum(lo_revenue), d_year, p_brand1\nfrom lineorder, date, part, supplier\nwhere lo_orderdate = d_datekey and lo_partkey = p_partkey and lo_suppkey = s_suppkey and p_brand1 between 'MFGR#2221' and 'MFGR#2228' and s_region = 'ASIA'\ngroup by d_year, p_brand1 order by d_year, p_brand1",
+    "Q2.3": "select sum(lo_revenue), d_year, p_brand1\nfrom lineorder, date, part, supplier\nwhere lo_orderdate = d_datekey and lo_partkey = p_partkey and lo_suppkey = s_suppkey and p_brand1 = 'MFGR#2221' and s_region = 'EUROPE'\ngroup by d_year, p_brand1 order by d_year, p_brand1",
+    "Q3.1": "select c_nation, s_nation, d_year, sum(lo_revenue) as revenue\nfrom customer, lineorder, supplier, date\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_orderdate = d_datekey and c_region = 'ASIA' and s_region = 'ASIA' and d_year >= 1992 and d_year <= 1997\ngroup by c_nation, s_nation, d_year order by d_year asc, revenue desc",
+    "Q3.2": "select c_city, s_city, d_year, sum(lo_revenue) as revenue\nfrom customer, lineorder, supplier, date\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_orderdate = d_datekey and c_nation = 'UNITED STATES' and s_nation = 'UNITED STATES' and d_year >= 1992 and d_year <= 1997\ngroup by c_city, s_city, d_year order by d_year asc, revenue desc",
+    "Q3.3": "select c_city, s_city, d_year, sum(lo_revenue) as revenue\nfrom customer, lineorder, supplier, date\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_orderdate = d_datekey and (c_city='UNITED KI1' or c_city='UNITED KI5') and (s_city='UNITED KI1' or s_city='UNITED KI5') and d_year >= 1992 and d_year <= 1997\ngroup by c_city, s_city, d_year order by d_year asc, revenue desc",
+    "Q3.4": "select c_city, s_city, d_year, sum(lo_revenue) as revenue\nfrom customer, lineorder, supplier, date\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_orderdate = d_datekey and (c_city='UNITED KI1' or c_city='UNITED KI5') and (s_city='UNITED KI1' or s_city='UNITED KI5') and d_yearmonth = 'Dec1997'\ngroup by c_city, s_city, d_year order by d_year asc, revenue desc",
+    "Q4.1": "select d_year, c_nation, sum(lo_revenue - lo_supplycost) as profit\nfrom date, customer, supplier, part, lineorder\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_partkey = p_partkey and lo_orderdate = d_datekey and c_region = 'AMERICA' and s_region = 'AMERICA' and (p_mfgr = 'MFGR#1' or p_mfgr = 'MFGR#2')\ngroup by d_year, c_nation order by d_year, c_nation",
+    "Q4.2": "select d_year, s_nation, p_category, sum(lo_revenue - lo_supplycost) as profit\nfrom date, customer, supplier, part, lineorder\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_partkey = p_partkey and lo_orderdate = d_datekey and c_region = 'AMERICA' and s_region = 'AMERICA' and (d_year = 1997 or d_year = 1998) and (p_mfgr = 'MFGR#1' or p_mfgr = 'MFGR#2')\ngroup by d_year, s_nation, p_category order by d_year, s_nation, p_category",
+    "Q4.3": "select d_year, s_city, p_brand1, sum(lo_revenue - lo_supplycost) as profit\nfrom date, customer, supplier, part, lineorder\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey and lo_partkey = p_partkey and lo_orderdate = d_datekey and c_region = 'AMERICA' and s_nation = 'UNITED STATES' and (d_year = 1997 or d_year = 1998) and p_category = 'MFGR#14'\ngroup by d_year, s_city, p_brand1 order by d_year, s_city, p_brand1",
+    "M1": "select d_year, c_region, sum(lo_revenue) as revenue\nfrom lineorder, date, customer\nwhere lo_orderdate = d_datekey and lo_custkey = c_custkey\ngroup by d_year, c_region order by d_year, c_region",
+    "M2": "select c_nation, s_region, sum(lo_revenue - lo_supplycost) as profit\nfrom lineorder, customer, supplier\nwhere lo_custkey = c_custkey and lo_suppkey = s_suppkey\ngroup by c_nation, s_region order by c_nation, s_region",
+    "M3": "select d_year, lo_discount, sum(lo_extendedprice * lo_discount) as revenue\nfrom lineorder, date\nwhere lo_orderdate = d_datekey\ngroup by d_year, lo_discount order by d_year, lo_discount"
+  },
+  "categories": {
+    "Q1.1": "official_ssb_13",
+    "Q1.2": "official_ssb_13",
+    "Q1.3": "official_ssb_13",
+    "Q2.1": "official_ssb_13",
+    "Q2.2": "official_ssb_13",
+    "Q2.3": "official_ssb_13",
+    "Q3.1": "official_ssb_13",
+    "Q3.2": "official_ssb_13",
+    "Q3.3": "official_ssb_13",
+    "Q3.4": "official_ssb_13",
+    "Q4.1": "official_ssb_13",
+    "Q4.2": "official_ssb_13",
+    "Q4.3": "official_ssb_13",
+    "M1": "dense_M1_M3",
+    "M2": "dense_M1_M3",
+    "M3": "dense_M1_M3"
+  },
+  "first_ms": {
+    "cpu": {
+      "Q1.1": 43.292566,
+      "Q1.2": 5.486699,
+      "Q1.3": 8.677487,
+      "Q2.1": 196.813991,
+      "Q2.2": 39.123866,
+      "Q2.3": 5.793467,
+      "Q3.1": 56.716669,
+      "Q3.2": 35.642551,
+      "Q3.3": 13.603253,
+      "Q3.4": 7.012438,
+      "Q4.1": 55.9442,
+      "Q4.2": 22.632896,
+      "Q4.3": 11.168322,
+      "M1": 23.183812,
+      "M2": 22.38491,
+      "M3": 18.654476
+    },
+    "gpu_requested": {
+      "Q1.1": 1.670156,
+      "Q1.2": 1.003389,
+      "Q1.3": 1.096259,
+      "Q2.1": 4.403493,
+      "Q2.2": 2.303779,
+      "Q2.3": 2.214443,
+      "Q3.1": 2.350365,
+      "Q3.2": 2.184243,
+      "Q3.3": 2.276475,
+      "Q3.4": 1.933607,
+      "Q4.1": 2.518637,
+      "Q4.2": 3.352496,
+      "Q4.3": 3.051045,
+      "M1": 2.681521,
+      "M2": 6.588891,
+      "M3": 4.834376
+    },
+    "duckdb": {
+      "Q1.1": 15.108194,
+      "Q1.2": 9.810473,
+      "Q1.3": 8.000781,
+      "Q2.1": 21.147622,
+      "Q2.2": 17.71611,
+      "Q2.3": 11.147265,
+      "Q3.1": 25.240586,
+      "Q3.2": 17.925961,
+      "Q3.3": 12.687022,
+      "Q3.4": 10.99483,
+      "Q4.1": 30.149307,
+      "Q4.2": 34.280609,
+      "Q4.3": 20.510373,
+      "M1": 52.906943,
+      "M2": 65.33707,
+      "M3": 18.772908
+    }
+  },
+  "batches": [
+    {
+      "repetition": 0,
+      "engine": "cpu",
+      "order": [
+        "M1",
+        "Q4.1",
+        "Q3.3",
+        "Q2.1",
+        "Q3.4",
+        "Q1.1",
+        "Q3.1",
+        "Q4.2",
+        "Q1.2",
+        "Q4.3",
+        "Q3.2",
+        "Q1.3",
+        "Q2.3",
+        "Q2.2",
+        "M3",
+        "M2"
+      ],
+      "total_ms": 154.15882,
+      "per_query_ms": {
+        "M1": 19.287208,
+        "Q4.1": 10.018444,
+        "Q3.3": 6.511893,
+        "Q2.1": 9.278547,
+        "Q3.4": 6.040384,
+        "Q1.1": 6.610639,
+        "Q3.1": 10.819026,
+        "Q4.2": 9.198294,
+        "Q1.2": 5.00488,
+        "Q4.3": 6.498996,
+        "Q3.2": 7.518019,
+        "Q1.3": 6.589943,
+        "Q2.3": 4.576333,
+        "Q2.2": 7.109285,
+        "M3": 17.608593,
+        "M2": 21.441257
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 95.774683,
+        "dense_M1_M3": 58.337058
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    },
+    {
+      "repetition": 0,
+      "engine": "gpu_requested",
+      "order": [
+        "M1",
+        "Q4.1",
+        "Q3.3",
+        "Q2.1",
+        "Q3.4",
+        "Q1.1",
+        "Q3.1",
+        "Q4.2",
+        "Q1.2",
+        "Q4.3",
+        "Q3.2",
+        "Q1.3",
+        "Q2.3",
+        "Q2.2",
+        "M3",
+        "M2"
+      ],
+      "total_ms": 40.045664,
+      "per_query_ms": {
+        "M1": 3.792698,
+        "Q4.1": 2.272138,
+        "Q3.3": 1.871574,
+        "Q2.1": 3.010182,
+        "Q3.4": 1.703422,
+        "Q1.1": 0.952205,
+        "Q3.1": 2.259569,
+        "Q4.2": 2.507884,
+        "Q1.2": 0.924065,
+        "Q4.3": 2.555177,
+        "Q3.2": 2.855139,
+        "Q1.3": 0.990029,
+        "Q2.3": 1.476284,
+        "Q2.2": 1.781552,
+        "M3": 4.745522,
+        "M2": 6.325284
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 25.15922,
+        "dense_M1_M3": 14.863504
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    },
+    {
+      "repetition": 0,
+      "engine": "duckdb",
+      "order": [
+        "M1",
+        "Q4.1",
+        "Q3.3",
+        "Q2.1",
+        "Q3.4",
+        "Q1.1",
+        "Q3.1",
+        "Q4.2",
+        "Q1.2",
+        "Q4.3",
+        "Q3.2",
+        "Q1.3",
+        "Q2.3",
+        "Q2.2",
+        "M3",
+        "M2"
+      ],
+      "total_ms": 350.514328,
+      "per_query_ms": {
+        "M1": 51.396966,
+        "Q4.1": 27.897723,
+        "Q3.3": 12.363907,
+        "Q2.1": 18.827072,
+        "Q3.4": 10.984186,
+        "Q1.1": 14.258693,
+        "Q3.1": 25.192984,
+        "Q4.2": 30.093421,
+        "Q1.2": 9.743256,
+        "Q4.3": 20.287259,
+        "Q3.2": 16.065224,
+        "Q1.3": 7.608867,
+        "Q2.3": 10.778187,
+        "Q2.2": 14.670145,
+        "M3": 17.423949,
+        "M2": 62.757324
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 218.770924,
+        "dense_M1_M3": 131.578239
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    },
+    {
+      "repetition": 1,
+      "engine": "gpu_requested",
+      "order": [
+        "Q1.3",
+        "Q3.3",
+        "Q3.2",
+        "Q3.1",
+        "Q4.2",
+        "Q4.3",
+        "Q1.1",
+        "Q2.1",
+        "M2",
+        "Q3.4",
+        "Q4.1",
+        "Q1.2",
+        "Q2.3",
+        "M3",
+        "M1",
+        "Q2.2"
+      ],
+      "total_ms": 40.12014,
+      "per_query_ms": {
+        "Q1.3": 1.575399,
+        "Q3.3": 1.997993,
+        "Q3.2": 2.280192,
+        "Q3.1": 2.20827,
+        "Q4.2": 2.452849,
+        "Q4.3": 2.62451,
+        "Q1.1": 1.023185,
+        "Q2.1": 2.06351,
+        "M2": 6.579815,
+        "Q3.4": 2.976119,
+        "Q4.1": 2.151833,
+        "Q1.2": 1.000294,
+        "Q2.3": 1.716815,
+        "M3": 4.762171,
+        "M1": 2.963522,
+        "Q2.2": 1.720631
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 25.7916,
+        "dense_M1_M3": 14.305508
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd"
+      }
+    },
+    {
+      "repetition": 1,
+      "engine": "duckdb",
+      "order": [
+        "Q1.3",
+        "Q3.3",
+        "Q3.2",
+        "Q3.1",
+        "Q4.2",
+        "Q4.3",
+        "Q1.1",
+        "Q2.1",
+        "M2",
+        "Q3.4",
+        "Q4.1",
+        "Q1.2",
+        "Q2.3",
+        "M3",
+        "M1",
+        "Q2.2"
+      ],
+      "total_ms": 343.870995,
+      "per_query_ms": {
+        "Q1.3": 8.283436,
+        "Q3.3": 12.502448,
+        "Q3.2": 16.407479,
+        "Q3.1": 24.194968,
+        "Q4.2": 33.878199,
+        "Q4.3": 19.832995,
+        "Q1.1": 14.476621,
+        "Q2.1": 16.513462,
+        "M2": 62.143727,
+        "Q3.4": 9.470399,
+        "Q4.1": 27.157609,
+        "Q1.2": 9.444754,
+        "Q2.3": 10.930931,
+        "M3": 17.201426,
+        "M1": 46.276328,
+        "Q2.2": 14.99671
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 218.090011,
+        "dense_M1_M3": 125.621481
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd"
+      }
+    },
+    {
+      "repetition": 1,
+      "engine": "cpu",
+      "order": [
+        "Q1.3",
+        "Q3.3",
+        "Q3.2",
+        "Q3.1",
+        "Q4.2",
+        "Q4.3",
+        "Q1.1",
+        "Q2.1",
+        "M2",
+        "Q3.4",
+        "Q4.1",
+        "Q1.2",
+        "Q2.3",
+        "M3",
+        "M1",
+        "Q2.2"
+      ],
+      "total_ms": 150.288757,
+      "per_query_ms": {
+        "Q1.3": 6.332107,
+        "Q3.3": 6.053159,
+        "Q3.2": 7.421172,
+        "Q3.1": 10.684862,
+        "Q4.2": 8.856546,
+        "Q4.3": 6.704915,
+        "Q1.1": 6.265293,
+        "Q2.1": 8.423644,
+        "M2": 21.923289,
+        "Q3.4": 6.387459,
+        "Q4.1": 9.779612,
+        "Q1.2": 4.419657,
+        "Q2.3": 4.756316,
+        "M3": 17.55476,
+        "M1": 17.407407,
+        "Q2.2": 7.273922
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 93.358664,
+        "dense_M1_M3": 56.885456000000005
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd"
+      }
+    },
+    {
+      "repetition": 2,
+      "engine": "duckdb",
+      "order": [
+        "Q4.3",
+        "Q1.1",
+        "Q1.3",
+        "Q3.2",
+        "Q4.2",
+        "Q3.4",
+        "M3",
+        "Q3.3",
+        "Q2.2",
+        "Q2.1",
+        "Q3.1",
+        "Q2.3",
+        "M2",
+        "M1",
+        "Q1.2",
+        "Q4.1"
+      ],
+      "total_ms": 343.599652,
+      "per_query_ms": {
+        "Q4.3": 18.332632,
+        "Q1.1": 13.943585,
+        "Q1.3": 7.411784,
+        "Q3.2": 14.736997,
+        "Q4.2": 30.106875,
+        "Q3.4": 9.741689,
+        "M3": 17.300022,
+        "Q3.3": 10.90515,
+        "Q2.2": 16.806357,
+        "Q2.1": 18.193715,
+        "Q3.1": 25.663041,
+        "Q2.3": 11.041755,
+        "M2": 63.502837,
+        "M1": 49.273235,
+        "Q1.2": 9.263203,
+        "Q4.1": 27.214467
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 213.36125,
+        "dense_M1_M3": 130.076094
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44"
+      }
+    },
+    {
+      "repetition": 2,
+      "engine": "cpu",
+      "order": [
+        "Q4.3",
+        "Q1.1",
+        "Q1.3",
+        "Q3.2",
+        "Q4.2",
+        "Q3.4",
+        "M3",
+        "Q3.3",
+        "Q2.2",
+        "Q2.1",
+        "Q3.1",
+        "Q2.3",
+        "M2",
+        "M1",
+        "Q1.2",
+        "Q4.1"
+      ],
+      "total_ms": 154.422161,
+      "per_query_ms": {
+        "Q4.3": 6.858042,
+        "Q1.1": 6.687575,
+        "Q1.3": 6.247059,
+        "Q3.2": 7.82518,
+        "Q4.2": 9.538849,
+        "Q3.4": 6.048955,
+        "M3": 17.512315,
+        "Q3.3": 6.407872,
+        "Q2.2": 7.612417,
+        "Q2.1": 8.790868,
+        "Q3.1": 11.403227,
+        "Q2.3": 4.807211,
+        "M2": 20.90128,
+        "M1": 17.929339,
+        "Q1.2": 5.739377,
+        "Q4.1": 10.066596
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 98.033228,
+        "dense_M1_M3": 56.342934
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44"
+      }
+    },
+    {
+      "repetition": 2,
+      "engine": "gpu_requested",
+      "order": [
+        "Q4.3",
+        "Q1.1",
+        "Q1.3",
+        "Q3.2",
+        "Q4.2",
+        "Q3.4",
+        "M3",
+        "Q3.3",
+        "Q2.2",
+        "Q2.1",
+        "Q3.1",
+        "Q2.3",
+        "M2",
+        "M1",
+        "Q1.2",
+        "Q4.1"
+      ],
+      "total_ms": 41.790474,
+      "per_query_ms": {
+        "Q4.3": 4.423381,
+        "Q1.1": 1.017607,
+        "Q1.3": 0.976423,
+        "Q3.2": 2.27127,
+        "Q4.2": 3.091728,
+        "Q3.4": 1.769687,
+        "M3": 4.763635,
+        "Q3.3": 1.814094,
+        "Q2.2": 2.028088,
+        "Q2.1": 2.548667,
+        "Q3.1": 2.571666,
+        "Q2.3": 1.686442,
+        "M2": 6.467504,
+        "M1": 2.514403,
+        "Q1.2": 0.945113,
+        "Q4.1": 2.876826
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 28.020992,
+        "dense_M1_M3": 13.745542
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44"
+      }
+    },
+    {
+      "repetition": 3,
+      "engine": "cpu",
+      "order": [
+        "Q2.2",
+        "Q1.2",
+        "Q4.3",
+        "Q1.1",
+        "Q4.1",
+        "Q3.3",
+        "Q4.2",
+        "Q2.1",
+        "Q3.4",
+        "Q3.2",
+        "M1",
+        "Q2.3",
+        "M3",
+        "M2",
+        "Q1.3",
+        "Q3.1"
+      ],
+      "total_ms": 168.616207,
+      "per_query_ms": {
+        "Q2.2": 8.113668,
+        "Q1.2": 4.436812,
+        "Q4.3": 7.053944,
+        "Q1.1": 6.478,
+        "Q4.1": 12.103201,
+        "Q3.3": 17.747625,
+        "Q4.2": 10.277672,
+        "Q2.1": 9.163223,
+        "Q3.4": 5.861226,
+        "Q3.2": 7.458955,
+        "M1": 18.175555,
+        "Q2.3": 4.66264,
+        "M3": 17.611838,
+        "M2": 21.745031,
+        "Q1.3": 7.097715,
+        "Q3.1": 10.57958
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 111.034261,
+        "dense_M1_M3": 57.532424
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c"
+      }
+    },
+    {
+      "repetition": 3,
+      "engine": "gpu_requested",
+      "order": [
+        "Q2.2",
+        "Q1.2",
+        "Q4.3",
+        "Q1.1",
+        "Q4.1",
+        "Q3.3",
+        "Q4.2",
+        "Q2.1",
+        "Q3.4",
+        "Q3.2",
+        "M1",
+        "Q2.3",
+        "M3",
+        "M2",
+        "Q1.3",
+        "Q3.1"
+      ],
+      "total_ms": 39.731801,
+      "per_query_ms": {
+        "Q2.2": 2.1365,
+        "Q1.2": 0.962861,
+        "Q4.3": 2.467383,
+        "Q1.1": 1.001942,
+        "Q4.1": 2.386483,
+        "Q3.3": 1.637173,
+        "Q4.2": 2.97707,
+        "Q2.1": 3.062629,
+        "Q3.4": 1.787468,
+        "Q3.2": 3.023586,
+        "M1": 2.484222,
+        "Q2.3": 1.514704,
+        "M3": 4.692463,
+        "M2": 6.350079,
+        "Q1.3": 0.997967,
+        "Q3.1": 2.227452
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 26.183218,
+        "dense_M1_M3": 13.526764
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c"
+      }
+    },
+    {
+      "repetition": 3,
+      "engine": "duckdb",
+      "order": [
+        "Q2.2",
+        "Q1.2",
+        "Q4.3",
+        "Q1.1",
+        "Q4.1",
+        "Q3.3",
+        "Q4.2",
+        "Q2.1",
+        "Q3.4",
+        "Q3.2",
+        "M1",
+        "Q2.3",
+        "M3",
+        "M2",
+        "Q1.3",
+        "Q3.1"
+      ],
+      "total_ms": 353.176317,
+      "per_query_ms": {
+        "Q2.2": 19.116933,
+        "Q1.2": 10.282591,
+        "Q4.3": 20.941266,
+        "Q1.1": 14.305376,
+        "Q4.1": 29.475166,
+        "Q3.3": 13.634445,
+        "Q4.2": 29.545449,
+        "Q2.1": 18.617014,
+        "Q3.4": 10.601971,
+        "Q3.2": 15.467184,
+        "M1": 49.384868,
+        "Q2.3": 11.595745,
+        "M3": 17.499165,
+        "M2": 61.81544,
+        "Q1.3": 7.424569,
+        "Q3.1": 23.274622
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 224.282331,
+        "dense_M1_M3": 128.699473
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c"
+      }
+    },
+    {
+      "repetition": 4,
+      "engine": "gpu_requested",
+      "order": [
+        "Q3.3",
+        "Q4.1",
+        "Q2.1",
+        "Q3.2",
+        "Q4.2",
+        "Q2.3",
+        "M1",
+        "Q4.3",
+        "Q3.4",
+        "M3",
+        "Q1.1",
+        "Q2.2",
+        "Q1.2",
+        "Q1.3",
+        "Q3.1",
+        "M2"
+      ],
+      "total_ms": 40.561632,
+      "per_query_ms": {
+        "Q3.3": 2.460025,
+        "Q4.1": 2.482753,
+        "Q2.1": 2.009969,
+        "Q3.2": 2.162338,
+        "Q4.2": 2.603993,
+        "Q2.3": 1.622867,
+        "M1": 2.521712,
+        "Q4.3": 2.695926,
+        "Q3.4": 3.607083,
+        "M3": 4.951982,
+        "Q1.1": 0.983873,
+        "Q2.2": 1.744023,
+        "Q1.2": 0.948107,
+        "Q1.3": 0.952707,
+        "Q3.1": 2.304431,
+        "M2": 6.486337
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 26.578095,
+        "dense_M1_M3": 13.960031
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    },
+    {
+      "repetition": 4,
+      "engine": "duckdb",
+      "order": [
+        "Q3.3",
+        "Q4.1",
+        "Q2.1",
+        "Q3.2",
+        "Q4.2",
+        "Q2.3",
+        "M1",
+        "Q4.3",
+        "Q3.4",
+        "M3",
+        "Q1.1",
+        "Q2.2",
+        "Q1.2",
+        "Q1.3",
+        "Q3.1",
+        "M2"
+      ],
+      "total_ms": 346.70994,
+      "per_query_ms": {
+        "Q3.3": 10.905425,
+        "Q4.1": 27.636219,
+        "Q2.1": 18.69898,
+        "Q3.2": 15.368166,
+        "Q4.2": 27.2097,
+        "Q2.3": 10.988624,
+        "M1": 49.478022,
+        "Q4.3": 18.402184,
+        "Q3.4": 9.712031,
+        "M3": 17.834978,
+        "Q1.1": 13.860638,
+        "Q2.2": 17.634621,
+        "Q1.2": 12.112683,
+        "Q1.3": 7.759546,
+        "Q3.1": 25.91796,
+        "M2": 63.030624
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 216.206777,
+        "dense_M1_M3": 130.343624
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    },
+    {
+      "repetition": 4,
+      "engine": "cpu",
+      "order": [
+        "Q3.3",
+        "Q4.1",
+        "Q2.1",
+        "Q3.2",
+        "Q4.2",
+        "Q2.3",
+        "M1",
+        "Q4.3",
+        "Q3.4",
+        "M3",
+        "Q1.1",
+        "Q2.2",
+        "Q1.2",
+        "Q1.3",
+        "Q3.1",
+        "M2"
+      ],
+      "total_ms": 152.093116,
+      "per_query_ms": {
+        "Q3.3": 6.415589,
+        "Q4.1": 10.927559,
+        "Q2.1": 7.908408,
+        "Q3.2": 7.970247,
+        "Q4.2": 8.644297,
+        "Q2.3": 4.798213,
+        "M1": 17.495996,
+        "Q4.3": 7.565882,
+        "Q3.4": 5.576096,
+        "M3": 17.160309,
+        "Q1.1": 6.379879,
+        "Q2.2": 7.079046,
+        "Q1.2": 4.564758,
+        "Q1.3": 6.071809,
+        "Q3.1": 12.605548,
+        "M2": 20.882879
+      },
+      "category_sum_ms": {
+        "official_ssb_13": 96.507331,
+        "dense_M1_M3": 55.539184000000006
+      },
+      "result_rows": 2292,
+      "answer_digests": {
+        "Q3.3": "f38bf8cd403f6c0abaafdd9eb0f0a4b8d3d9b749aa05a540a543f6d9873c5677",
+        "Q4.1": "48a1f1885eb373b0a252220ec344b5ac950643324607f6d8fbf31fea21cdff44",
+        "Q2.1": "bd1bfe1a1a6393389068da4d0d096ebbf3b545b844a06c4bbef46e199816339f",
+        "Q3.2": "1078b947d1579428a808695daa6188f0057578b6ed348eb933afa30e542b8c19",
+        "Q4.2": "e21a8271e41dd7d870ade8ff23540c5d49fb7d3c8033542fe0fb1480acd86bda",
+        "Q2.3": "262d2d5ef846ce712438756d705d9d5340a110613fff84a1a9a19c36550ae98f",
+        "M1": "4d8e5388c9d5d25866b4d3a54615be85c2e916cd35c0ee184232b069373ad8f9",
+        "Q4.3": "0b55c0107c5464cd876e872e5681c89a1d973f3d114a6ab15158a5cfed2ee990",
+        "Q3.4": "e1b8b0f0d5bbbbb173a382e44d7f6e09fd83f344595d59b45ef30e70b3d60d0e",
+        "M3": "c2e8b7cf911296188f5e7a4a84e1f377152c14e680c2b1e05c393bd9f10787c9",
+        "Q1.1": "3e5dc4850f55b2cfefe3485bca57317abd1c845cd81c780b7be226ad20522e80",
+        "Q2.2": "b0562b8e5ac8043564e25bc774773bc42f24b915b283f67453a7fa4aa37756dd",
+        "Q1.2": "769052789963d7e20ea03b08b4affe60978c500d1d8fb27470d35671aa329724",
+        "Q1.3": "5249fb3ec2b8e286257daec93f67c757dca3853debf47cecf9e059df87bf3304",
+        "Q3.1": "b786547410dc5c7f969ba62b0d46c3c701580b315e108fe912d360bdf51b8c4c",
+        "M2": "0bbbefa4ad385d42c29683313e3a3fc44df0ad0a4759d615f0793de8ac9bf9f0"
+      }
+    }
+  ],
+  "routes": {
+    "cpu": {
+      "Q1.1": {
+        "native_calls": [
+          {
+            "device": "cpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q1.2": {
+        "native_calls": [
+          {
+            "device": "cpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q1.3": {
+        "native_calls": [
+          {
+            "device": "cpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q2.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 280
+      },
+      "Q2.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 56
+      },
+      "Q2.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 7
+      },
+      "Q3.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 150
+      },
+      "Q3.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 600
+      },
+      "Q3.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 24
+      },
+      "Q3.4": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 4
+      },
+      "Q4.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 35
+      },
+      "Q4.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 100
+      },
+      "Q4.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 796
+      },
+      "M1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 35
+      },
+      "M2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 125
+      },
+      "M3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 77
+      }
+    },
+    "gpu_requested": {
+      "Q1.1": {
+        "native_calls": [
+          {
+            "device": "gpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q1.2": {
+        "native_calls": [
+          {
+            "device": "gpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q1.3": {
+        "native_calls": [
+          {
+            "device": "gpu",
+            "extrema": false
+          }
+        ],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 1
+      },
+      "Q2.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 280
+      },
+      "Q2.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 56
+      },
+      "Q2.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 7
+      },
+      "Q3.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 150
+      },
+      "Q3.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 600
+      },
+      "Q3.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 24
+      },
+      "Q3.4": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 4
+      },
+      "Q4.1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 35
+      },
+      "Q4.2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 100
+      },
+      "Q4.3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 796
+      },
+      "M1": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 35
+      },
+      "M2": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 125
+      },
+      "M3": {
+        "native_calls": [],
+        "stats": {
+          "engine_queries": 1,
+          "star_blocks": 1,
+          "general_blocks": 0
+        },
+        "result_rows": 77
+      }
+    }
+  },
+  "source_manifest": "3726200585997ea2ffb069fe0330a88405b86acae9c47a08feca50c5be2d854b",
+  "library_sha256": {
+    "libalg.so": "0e68929623557e2bf73acbfa32dc8da817b988b98eeb39ecb91e85f854541a0b",
+    "libgpu.so": "0baad80fd4f471567f47ce721d5da57a5916643b802c957accf792ccc9ece64f"
+  },
+  "memory_before": {
+    "rss_kib": 124356,
+    "peak_rss_kib": 125012,
+    "swap_kib": 0,
+    "system_swap_in_pages": 3270703,
+    "system_swap_out_pages": 4445736
+  },
+  "memory_after_setup": {
+    "rss_kib": 8723420,
+    "peak_rss_kib": 8747544,
+    "swap_kib": 0,
+    "system_swap_in_pages": 3270703,
+    "system_swap_out_pages": 4445736
+  },
+  "method": "Serial end-to-end SQL calls including parse/bind/result; paired seeded query orders and rotating engine order; exact multiset oracle comparisons outside timers; first calls and setup separate; device profiling outside timers",
+  "limitations": [
+    "One fresh process per workload/scale, within-process repetitions; no process-round confidence interval",
+    "First engine calls may share source/planner structures established by earlier engines",
+    "CUDA requested is not all-GPU: actual native devices and Python finalization are reported",
+    "GPU upload occurs in setup; all timed row data are resident",
+    "Unrelated user research processes remain running; no affinity or priority changes"
+  ],
+  "warm_ms": {
+    "cpu": {
+      "raw_ms": [
+        154.15882,
+        150.288757,
+        154.422161,
+        168.616207,
+        152.093116
+      ],
+      "median_ms": 154.15882,
+      "min_ms": 150.288757,
+      "max_ms": 168.616207
+    },
+    "gpu_requested": {
+      "raw_ms": [
+        40.045664,
+        40.12014,
+        41.790474,
+        39.731801,
+        40.561632
+      ],
+      "median_ms": 40.12014,
+      "min_ms": 39.731801,
+      "max_ms": 41.790474
+    },
+    "duckdb": {
+      "raw_ms": [
+        350.514328,
+        343.870995,
+        343.599652,
+        353.176317,
+        346.70994
+      ],
+      "median_ms": 346.70994,
+      "min_ms": 343.599652,
+      "max_ms": 353.176317
+    }
+  },
+  "warm_categories_ms": {
+    "official_ssb_13": {
+      "cpu": {
+        "raw_ms": [
+          95.774683,
+          93.358664,
+          98.033228,
+          111.034261,
+          96.507331
+        ],
+        "median_ms": 96.507331,
+        "min_ms": 93.358664,
+        "max_ms": 111.034261
+      },
+      "gpu_requested": {
+        "raw_ms": [
+          25.15922,
+          25.7916,
+          28.020992,
+          26.183218,
+          26.578095
+        ],
+        "median_ms": 26.183218,
+        "min_ms": 25.15922,
+        "max_ms": 28.020992
+      },
+      "duckdb": {
+        "raw_ms": [
+          218.770924,
+          218.090011,
+          213.36125,
+          224.282331,
+          216.206777
+        ],
+        "median_ms": 218.090011,
+        "min_ms": 213.36125,
+        "max_ms": 224.282331
+      }
+    },
+    "dense_M1_M3": {
+      "cpu": {
+        "raw_ms": [
+          58.337058,
+          56.885456000000005,
+          56.342934,
+          57.532424,
+          55.539184000000006
+        ],
+        "median_ms": 56.885456000000005,
+        "min_ms": 55.539184000000006,
+        "max_ms": 58.337058
+      },
+      "gpu_requested": {
+        "raw_ms": [
+          14.863504,
+          14.305508,
+          13.745542,
+          13.526764,
+          13.960031
+        ],
+        "median_ms": 13.960031,
+        "min_ms": 13.526764,
+        "max_ms": 14.863504
+      },
+      "duckdb": {
+        "raw_ms": [
+          131.578239,
+          125.621481,
+          130.076094,
+          128.699473,
+          130.343624
+        ],
+        "median_ms": 130.076094,
+        "min_ms": 125.621481,
+        "max_ms": 131.578239
+      }
+    }
+  },
+  "harness_sha256": "f81eca8bfe51de680f542364a966d3cadd6a48d8cf5f49f1c1fdd01bcfd3ccc0",
+  "memory_after": {
+    "rss_kib": 7929740,
+    "peak_rss_kib": 8747544,
+    "swap_kib": 0,
+    "system_swap_in_pages": 3270703,
+    "system_swap_out_pages": 4445736
+  },
+  "duckdb_memory": [
+    [
+      2697654728,
+      0
+    ]
+  ],
+  "all_correct": true
+}
