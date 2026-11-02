@@ -1,24 +1,15 @@
 # Changelog
 
-## 0.2.0 (2026-10-29), alpha
+## 0.3.0 (2026-11-02), alpha
 
-Bring your own data: install with pip, load typed tables with their keys, get answers checked against DuckDB.
+SQL on the bit planes, an inventory of exact mathematical query families, and the fixes of an independent release
+review. 0.2.0 had the engine, the loaders and persistence; 0.3.0 adds the SQL front end and everything built on it
+since, and raises the requirements to Python 3.11, NumPy 1.23.2 and DuckDB 2.0.
 
 Loading
-- Loaders: `from_duckdb` (a database file or connection), `from_ddl` (a standard SQL schema plus CSV / Parquet /
-  JSON files or data frames), `from_frictionless` (a Frictionless Data Package), `from_frames`. DuckDB reads the
-  sources and does the conversions (dictionary ranks, decimal scaling, key lookups) in parallel.
-- Keys from standard declarations: PRIMARY KEY / FOREIGN KEY constraints read through INFORMATION_SCHEMA, a DDL
-  script (`schema=`), or Frictionless Table Schema keys; key inference is opt-in and reported.
-- Typed columns (`coltypes.py`): signed and 64-bit integers, DECIMAL (exact sums, returned as `Decimal`), DATE,
-  TIMESTAMP, TIMESTAMP WITH TIME ZONE, BOOLEAN, VARCHAR, BLOB and JSON (dictionaries; `startswith`), DOUBLE (dictionary). Comparisons with constants become exact
-  code intervals, as SQL compares them. `types=` loads a column as another type (a DOUBLE amount as DECIMAL).
-- NULLs stored as a validity plane per column (`fill_nulls=` replaces them at load instead); unsupported types
-  skipped with a note; `columns=` subsets.
-- Automatic key design (`keydesign.py`): functional-dependency chains found on the full data become derived
-  surrogates `cell << w | row`, dense-ranked or shortened when they do not fit 32 bits; the planner is told which
-  bits each attribute occupies (coordinate hints), so filters are cubes or comparators from the first query.
-- `db.describe()`, `db.verify(q)` (the query's SQL on the source, compared), `q.sql()` in the source's schema.
+
+TIMESTAMP WITH TIME ZONE, BLOB and JSON columns now load, and NULLs are stored as a validity plane per column instead
+of being refused outside foreign keys (`fill_nulls=` still replaces them at load).
 
 SQL
 
@@ -81,73 +72,50 @@ that are output. Arithmetic and comparisons of code columns run on the codes, an
 distinct combination of the codes it reads, and a filter on a fact column with millions of possible codes is evaluated
 on the codes present. The engine's own result handling (128-bit sums and group codes, self-extending keys, measures
 factored through the GROUP BY key, lookup keys) is array arithmetic instead of a loop over groups; MODE and the
-percentiles of expressions work on the (group, value, count) histograms; AVG, the variances, covariances, CORR and REGR_*
-are computed for every group at once as exact integer arithmetic on the moment sums, rounded once; COUNT, SUM and AVG
-(DISTINCT) over window frames are merge-sort-tree dominance counts, and MEDIAN and the percentiles over frames are
-parallel binary searches on those counts. The SQL front end tokenizes a statement once and reads a statement it has
-parsed before from a cache. A DECIMAL zero is unsigned, as in DuckDB (Python's `Decimal('-1.5') * 0` is `-0.0`, which
-turned `-13 / ((1 - 2.5) * 0)` into `+inf` on the row-by-row path). The final SQL fuzzing record, 39,300 statements (38,888 answers compared, DuckDB rejecting 412,
-torbles none), has no mismatch; on the 27,961 statements it shares with the record before this work, torbles' total time
-fell from 666 s to 230 s, its mean from 23.8 to 8.2 ms and its slowest statement from 87 s to 2.4 s, the median ratio
-to DuckDB from 1.38 to 1.27, and torbles answers first on 25% of statements instead of 19%. The median statement
-(4.6 ms against DuckDB's 3.8) is now mostly fixed cost: parsing, binding and planning in Python.
+percentiles of expressions work on the (group, value, count) histograms; AVG, the variances, covariances, CORR and
+REGR_* are computed for every group at once as exact integer arithmetic on the moment sums, rounded once; COUNT, SUM
+and AVG (DISTINCT) over window frames are merge-sort-tree dominance counts, and MEDIAN and the percentiles over frames
+are parallel binary searches on those counts. The SQL front end tokenizes a statement once and reads a statement it
+has parsed before from a cache. A DECIMAL zero is unsigned, as in DuckDB (Python's `Decimal('-1.5') * 0` is `-0.0`,
+which turned `-13 / ((1 - 2.5) * 0)` into `+inf` on the row-by-row path). The SQL fuzzing record at the end of that
+work, 39,300 statements (38,888 answers compared, DuckDB rejecting 412, torbles none), has no mismatch; on the 27,961
+statements it shares with the record before this work, torbles' total time fell from 666 s to 230 s, its mean from
+23.8 to 8.2 ms and its slowest statement from 87 s to 2.4 s, the median ratio to DuckDB from 1.38 to 1.27, and torbles
+answers first on 25% of statements instead of 19%. The median statement (4.6 ms against DuckDB's 3.8) is now mostly
+fixed cost: parsing, binding and planning in Python.
 
-Some aggregates and limits no longer form (group, value) tuples or row pairs at all. MEDIAN and PERCENTILE_CONT / _DISC
-of a fact column find the code at each wanted rank by rank selection on the column's planes, eight bits at a time, each
-step one small engine query grouped by the block's keys and the code's leading bits on the code ranges the bits found so
-far leave; only the codes at those ranks are decoded. ORDER BY ... LIMIT k of a block without aggregates uses the same
-selection: the code at rank k on the first sort column bounds the rows the block reads (and the next sort column while
-the ties are many). COUNT(DISTINCT) has the engine set one bit per (group, value) cell instead of counting it, a new
-aggregation mode of the row kernel, and counts each group's bits. An aggregate block over an inner equi-join of two FROM
-items that is not a star (two derived tables or CTEs, a table joined with itself on a column that is not its key) groups
-each side first by the columns the block reads outside its aggregates, with exact partial sums, joins the groups and
-combines each aggregate from the sides' sums: a SUM over one side counts once per row of the other, a SUM of a product
-of the two sides' factors is the product of their sums, MIN and MAX are the sides' own. And a GROUP BY with many
-possible groups (2^14, by the keys' distinct counts) runs on the row kernel, which now transposes a plane key once per
-64-row word, instead of the matrix product, whose cost grows with the groups of each tile; with a filter only while the
-dense group arrays stay small, so the 13 SSB queries keep their plans. The rank selections and the cell bits apply from
-2^16 fact rows on; on smaller tables reading the values is cheaper. The general GROUP BY path now takes its sparse
-output when dense group arrays would hold more than four entries per fact row (a domain of millions of code combinations
-on a table of thousands of rows took 0.8 s to allocate and scan). On SSB SF1 at two threads, against the code before:
-the median of revenue per year went from 8.4 s to 59 ms (DuckDB 141), two percentiles per customer nation from 11.8 s to
-0.48 s (DuckDB 0.23), the ten rows with the highest revenue from 4.4 s to 54 ms, with a filter or a join from 0.6 to 1.0
-s to 55 to 61 ms, COUNT(DISTINCT customer) per year from 252 to 80 ms (DuckDB 63), COUNT(DISTINCT part) per supplier
-nation and year from 11.2 s to 188 ms (DuckDB 548), the customers ranked by revenue from 235 to 96 ms and joined with a
-second aggregate from 217 to 122 ms, and an aggregate over a join of two CTEs with 33 million row pairs, which ran out
-of memory (6 GB) forming them, takes 41 ms (DuckDB 142); the 13 SSB queries are unchanged (113.9 ms against 113.0). The
-SQL fuzzing record, the same 36,810 statements as before, has no mismatch, no error and no refusal, with the default
-settings and with these paths on for every table. `tests/check_algebra.py` runs each path with its switch on and off
-(identical answers) and against DuckDB, on the three engines, and is part of `make test`.
+Some aggregates and limits no longer form (group, value) tuples or row pairs at all. MEDIAN and PERCENTILE_CONT /
+_DISC of a fact column find the code at each wanted rank by rank selection on the column's planes, eight bits at a
+time, each step one small engine query grouped by the block's keys and the code's leading bits on the code ranges the
+bits found so far leave; only the codes at those ranks are decoded. ORDER BY ... LIMIT k of a block without aggregates
+uses the same selection: the code at rank k on the first sort column bounds the rows the block reads (and the next
+sort column while the ties are many). COUNT(DISTINCT) has the engine set one bit per (group, value) cell instead of
+counting it, a new aggregation mode of the row kernel, and counts each group's bits. An aggregate block over an inner
+equi-join of two FROM items that is not a star (two derived tables or CTEs, a table joined with itself on a column
+that is not its key) groups each side first by the columns the block reads outside its aggregates, with exact partial
+sums, joins the groups and combines each aggregate from the sides' sums: a SUM over one side counts once per row of
+the other, a SUM of a product of the two sides' factors is the product of their sums, MIN and MAX are the sides' own.
+And a GROUP BY with many possible groups (2^14, by the keys' distinct counts) runs on the row kernel, which now
+transposes a plane key once per 64-row word, instead of the matrix product, whose cost grows with the groups of each
+tile; with a filter only while the dense group arrays stay small, so the 13 SSB queries keep their plans. The rank
+selections and the cell bits apply from 2^16 fact rows on; on smaller tables reading the values is cheaper. The
+general GROUP BY path now takes its sparse output when dense group arrays would hold more than four entries per fact
+row (a domain of millions of code combinations on a table of thousands of rows took 0.8 s to allocate and scan). On
+SSB SF1 at two threads, against the code before: the median of revenue per year went from 8.4 s to 59 ms (DuckDB 141),
+two percentiles per customer nation from 11.8 s to 0.48 s (DuckDB 0.23), the ten rows with the highest revenue from
+4.4 s to 54 ms, with a filter or a join from 0.6 to 1.0 s to 55 to 61 ms, COUNT(DISTINCT customer) per year from 252
+to 80 ms (DuckDB 63), COUNT(DISTINCT part) per supplier nation and year from 11.2 s to 188 ms (DuckDB 548), the
+customers ranked by revenue from 235 to 96 ms and joined with a second aggregate from 217 to 122 ms, and an aggregate
+over a join of two CTEs with 33 million row pairs, which ran out of memory (6 GB) forming them, takes 41 ms (DuckDB
+142); the 13 SSB queries are unchanged (113.9 ms against 113.0). The SQL fuzzing record of that work, the same 36,810
+statements as before, has no mismatch, no error and no refusal, with the default settings and with these paths on for
+every table. `tests/check_algebra.py` runs each path with its switch on and off (identical answers) and against
+DuckDB, on the three engines, and is part of `make test`.
 
 NULLs are now stored as a validity plane per column instead of being refused, so three-valued logic runs on the
 engine; TIMESTAMP WITH TIME ZONE, BLOB and JSON columns load. `torbles.sqlfuzz` (`torbles-sqlfuzz`) generates random
 schemas and SQL and compares every answer with DuckDB's; `tests/check_sql.py`, `tests/check_iso.py` and
 `tests/check_arrays.py` run on the three engines. The 13 SSB queries written in SQL give DuckDB's answers in one engine query each.
-
-Persistence
-- `db.save(path)` / `torbles.load(path)`: one file per torble (header hashed, planes 64-byte aligned), memory-mapped
-  privately on load; every torus face is checked, single-bit faults are repaired in memory, more is refused.
-  Saving writes new files and renames them. Native `at_save`, `at_load`, `at_free`.
-
-Engine
-- A torble holds up to 31 columns (the torus has one row per column plus the wrap row). This also fixes an overflow
-  of the face list for 15 full-width columns in 0.1.0.
-- Exact sums at any width. All engine arithmetic is modular (unsigned 64-bit), so a 64-bit plan is exact whenever its
-  true sums fit, judged by interval arithmetic on the measure as written. Past 2^63, 128-bit sums from the same
-  popcounts: a 64-bit value is two 32-bit columns, a product of two is the 64 x 64 matrix of plane pairs (weights up
-  to 2^126), folded with 128-bit coefficients in the matrix product and in mask splitting, row by row in the row
-  kernel, the general path and the plain baseline (`bench/ssb/wide_sums.py`: SSB SF1, 128-bit sums by year in 76 ms
-  against DuckDB's 120 in HUGEINT). Past 2^127, and for columns without an affine code (a dimension column wider than 32 bits),
-  the histogram bridge: those columns are summed per value as hidden GROUP BY keys and the parts are put together in
-  exact arithmetic. Decimal results keep every digit.
-- GROUP BY codes are 128-bit past 2^64 (up to 2^128 - 2 groups), up to 12 key columns (a column repeated in the GROUP
-  BY is grouped once); the general GROUP BY path has sparse output; the dense-array path falls back to the sparse
-  product instead of refusing.
-- Dense GROUP BY bridges, each behind a switch and measured in an ablation (SSB SF1): factoring the measure through
-  the GROUP BY key (on), a row kernel built on a staged 64 x 64 bit transpose (chosen per tile by the cost model with
-  a margin), a Shannon splitting tree, direct tile slots and Moebius inversion over the key bits (off: no gain). SSB
-  M1-M3 from 505 to 179 ms on one thread (DuckDB 414), the 13 queries unchanged.
-- Queries use every core by default (`set_threads(n)` changes it).
 
 Relationship catalogs, a prototype that is off unless a catalog is attached to a table (`discover()`): native modules
 propose affine, sum and product relations between columns, prove each over every row (a proof is bound to the table's
@@ -197,19 +165,6 @@ emulated with the thread order scrambled, with the CPU result bit for bit, and r
 UndefinedBehaviorSanitizer; its kernels compile with nvcc for sm_80 (780 tests in all). All 75 have been measured on
 the RTX 5090 laptop (`python bench/validate_math.py --device`) and are validated, like the first slice. Code that does
 not import these modules is unaffected, and `tests/run_all.sh` (118 checks, the modules' tests among them) passes.
-
-Correctness
-- `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
-  planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
-  the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
-  overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
-  group count overflowing 63 bits; later, 64-bit unsigned group keys decoded through int64 and a GROUP BY with
-  exactly 2^64 groups on the GPU path. Final record: 162,325 queries over 4,806 random schemas, 149,176 answers
-  compared, no mismatch; torbles refused 119 (GROUP BY keys past 128 bits) where DuckDB rejected 13,030 (before the
-  128-bit work: 31,595 refusals, 2.3x DuckDB's rejections). The fuzzer counts only documented refusals, and its cases
-  no longer depend on Python's hash seed.
-- New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
-  a 40-case fuzz run; `make test` runs them all.
 
 Release review
 
@@ -270,10 +225,83 @@ had validated the last ones. It is fixed, and the second run validated that capa
 validated.
 
 Packaging
+
+GitHub Actions now tests on Python 3.11, 3.12 and 3.13 and adds a job that installs the wheel with exactly the lowest
+Python, NumPy and DuckDB the package allows and runs its SQL tests outside the source tree; wheels and PyPI publishing
+on a tag as before. The release number is in `torbles/version.h` (the native libraries report it, and `algq.py`
+refuses a library built from another release: rebuild with `make`).
+
+Upgrading from 0.2.0
+
+Python 3.9 and 3.10 are no longer supported, nor NumPy below 1.23.2 or DuckDB below 2.0 (the SQL front end reads
+DuckDB 2.0's syntax tree; an older DuckDB is refused at the first use of SQL, and the engine API keeps working without
+it). On the engine API, SUM and MIN / MAX over a nullable column skip its NULLs and give NULL for a group with no
+value, as SQL does (with GROUP BY this takes a second scan unless the filter already excludes the NULLs), and
+`Query.count(col)` is new. A table frees its native storage when its last reference goes or at `Table.close()` /
+`Database.close()`; using it afterwards raises `TableClosedError`. `minmax()` over a range or inequality join, which
+counted, now raises ValueError. Saved databases keep their format and load as before.
+
+## 0.2.0 (2026-10-29), alpha
+
+Bring your own data: install with pip, load typed tables with their keys, get answers checked against DuckDB.
+
+Loading
+- Loaders: `from_duckdb` (a database file or connection), `from_ddl` (a standard SQL schema plus CSV / Parquet /
+  JSON files or data frames), `from_frictionless` (a Frictionless Data Package), `from_frames`. DuckDB reads the
+  sources and does the conversions (dictionary ranks, decimal scaling, key lookups) in parallel.
+- Keys from standard declarations: PRIMARY KEY / FOREIGN KEY constraints read through INFORMATION_SCHEMA, a DDL
+  script (`schema=`), or Frictionless Table Schema keys; key inference is opt-in and reported.
+- Typed columns (`coltypes.py`): signed and 64-bit integers, DECIMAL (exact sums, returned as `Decimal`), DATE,
+  TIMESTAMP, BOOLEAN, VARCHAR (dictionary; `startswith`), DOUBLE (dictionary). Comparisons with constants become exact
+  code intervals, as SQL compares them. `types=` loads a column as another type (a DOUBLE amount as DECIMAL).
+- NULLs refused outside foreign keys (`fill_nulls=`); unsupported types skipped with a note; `columns=` subsets.
+- Automatic key design (`keydesign.py`): functional-dependency chains found on the full data become derived
+  surrogates `cell << w | row`, dense-ranked or shortened when they do not fit 32 bits; the planner is told which
+  bits each attribute occupies (coordinate hints), so filters are cubes or comparators from the first query.
+- `db.describe()`, `db.verify(q)` (the query's SQL on the source, compared), `q.sql()` in the source's schema.
+
+Persistence
+- `db.save(path)` / `torbles.load(path)`: one file per torble (header hashed, planes 64-byte aligned), memory-mapped
+  privately on load; every torus face is checked, single-bit faults are repaired in memory, more is refused.
+  Saving writes new files and renames them. Native `at_save`, `at_load`, `at_free`.
+
+Engine
+- A torble holds up to 31 columns (the torus has one row per column plus the wrap row). This also fixes an overflow
+  of the face list for 15 full-width columns in 0.1.0.
+- Exact sums at any width. All engine arithmetic is modular (unsigned 64-bit), so a 64-bit plan is exact whenever its
+  true sums fit, judged by interval arithmetic on the measure as written. Past 2^63, 128-bit sums from the same
+  popcounts: a 64-bit value is two 32-bit columns, a product of two is the 64 x 64 matrix of plane pairs (weights up
+  to 2^126), folded with 128-bit coefficients in the matrix product and in mask splitting, row by row in the row
+  kernel, the general path and the plain baseline (`bench/ssb/wide_sums.py`: SSB SF1, 128-bit sums by year in 76 ms
+  against DuckDB's 120 in HUGEINT). Past 2^127, and for columns without an affine code (a dimension column wider than 32 bits),
+  the histogram bridge: those columns are summed per value as hidden GROUP BY keys and the parts are put together in
+  exact arithmetic. Decimal results keep every digit.
+- GROUP BY codes are 128-bit past 2^64 (up to 2^128 - 2 groups), up to 12 key columns (a column repeated in the GROUP
+  BY is grouped once); the general GROUP BY path has sparse output; the dense-array path falls back to the sparse
+  product instead of refusing.
+- Dense GROUP BY bridges, each behind a switch and measured in an ablation (SSB SF1): factoring the measure through
+  the GROUP BY key (on), a row kernel built on a staged 64 x 64 bit transpose (chosen per tile by the cost model with
+  a margin), a Shannon splitting tree, direct tile slots and Moebius inversion over the key bits (off: no gain). SSB
+  M1-M3 from 505 to 179 ms on one thread (DuckDB 414), the 13 queries unchanged.
+- Queries use every core by default (`set_threads(n)` changes it).
+
+Correctness
+- `torbles.fuzz`: differential fuzzing against DuckDB (random typed star schemas, random queries, every engine and
+  planner setting, save / reload, a flipped bit repaired on load). Bugs it found before this release, all fixed:
+  the join planner crashing on an empty fact table, 64-bit keys compared through floating point, decimal scaling
+  overflowing at DECIMAL(18), 64-bit timestamps in dimensions, GROUP BY on a 64-bit column after reloading, and the
+  group count overflowing 63 bits; later, 64-bit unsigned group keys decoded through int64 and a GROUP BY with
+  exactly 2^64 groups on the GPU path. Final record: 162,325 queries over 4,806 random schemas, 149,176 answers
+  compared, no mismatch; torbles refused 119 (GROUP BY keys past 128 bits) where DuckDB rejected 13,030 (before the
+  128-bit work: 31,595 refusals, 2.3x DuckDB's rejections). The fuzzer counts only documented refusals, and its cases
+  no longer depend on Python's hash seed.
+- New tests: typed columns on every engine and join form, the loaders, the key design, persistence and integrity, and
+  a 40-case fuzz run; `make test` runs them all.
+
+Packaging
 - `pip install .` builds the engine (and the CUDA executor when nvcc is found); `TORBLES_PORTABLE=1 python -m build`
   makes a wheel for other x86-64 machines; `torbles-fuzz` console script.
-- GitHub Actions: tests and fuzzing on every push (Python 3.11 / 3.12 / 3.13), the wheel installed and its SQL tests
-  run with the lowest Python, NumPy and DuckDB the package allows, wheels and PyPI publishing on a tag.
+- GitHub Actions: tests and fuzzing on every push (Python 3.9 / 3.11 / 3.13), wheels and PyPI publishing on a tag.
 
 Changed (engine API)
 - Queries run on every core by default (0.1.0: one thread unless `set_threads` was called).
