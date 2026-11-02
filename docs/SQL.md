@@ -422,7 +422,11 @@ GROUP BY with grouping sets, HAVING, window functions (over groups, and over row
 frames and exclusions), subqueries, CTEs, set operations, DISTINCT, ORDER BY / LIMIT; it
 runs each statement on torbles and on DuckDB and compares the results as multisets (in order when ORDER BY fixes it,
 DOUBLE values with a relative tolerance). Any difference, and any error other than a documented refusal, is a failure
-with a replay command.
+with a replay command. `TORBLES_SQL_ENGINE=alg | plain | gpu` picks the engine it runs on (alg by default),
+`TORBLES_ALG_MIN_ROWS=0` and `TORBLES_SERIES_ROWS_PER_GROUP=1` apply the algebraic paths to its small tables, and
+`TORBLES_FUZZ_DUCKDB_MEMORY=4GB` caps the comparison DuckDB's memory (its memory limit, and a statement that grows the
+process by more than that is interrupted), so that a statement DuckDB cannot hold is one of its errors, not compared,
+instead of taking the machine's memory.
 
 ---
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).

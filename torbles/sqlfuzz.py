@@ -382,7 +382,7 @@ def same(got, want, ordered, tol=1e-6):
 def run_one(db, con, sql, times=None):
     """compare one statement; times (a dict) receives the seconds each side took, end to end with its result rows"""
     t0 = time.perf_counter()
-    try: want = con.execute(sql).fetchall()
+    try: want = fuzz.duck_rows(con, sql)
     except Exception as e: return "duckdb-error", f"{type(e).__name__}: {str(e).splitlines()[0][:150]}"
     if times is not None: times["duckdb"] = time.perf_counter() - t0; times["rows"] = len(want)
     t0 = time.perf_counter()

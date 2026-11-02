@@ -57,7 +57,11 @@ def compare(sql, flag, ordered, duck=True, tol=0.0):
     global fails, duck_ok
     a, ea = run(sql, flag, True); b, eb = run(sql, flag, False)
     if ea or eb:
-        if ea and eb and ea.split(":")[0] == eb.split(":")[0]: return
+        if ea and eb and ea.split(":")[0] == eb.split(":")[0]:
+            try: con.execute(sql).fetchall()
+            except duckdb.Error: return                       # an error on every side (an overflow, say)
+            fails += 1; print(f"FAIL (torbles fails, DuckDB answers) {sql}\n   {ea}")
+            return
         fails += 1; print(f"FAIL {sql}\n   on:  {ea or 'ok'}\n   off: {eb or 'ok'}"); return
     if (not sqlfuzz.same(a, b, ordered, tol)) if tol else ((a != b) if ordered else (sorted(map(repr, a)) != sorted(map(repr, b)))):
         fails += 1; print(f"FAIL (on != off) {sql}\n   on  {a[:4]}\n   off {b[:4]}"); return

@@ -345,11 +345,67 @@ def _diff(sql, got, want, opts):
 
 def fuzz_connect(duckdb):
     """DuckDB for the comparison; TORBLES_FUZZ_DUCKDB_MEMORY (e.g. 4GB) caps its memory, so that a statement whose join
-    DuckDB cannot hold fails there (and is not compared) instead of taking the machine's memory"""
+    DuckDB cannot hold fails there (and is not compared) instead of taking the machine's memory (see duck_rows)"""
     con = duckdb.connect()
     lim = os.environ.get("TORBLES_FUZZ_DUCKDB_MEMORY")
-    if lim: con.execute(f"SET memory_limit = '{lim}'")
+    if lim: duck_limit(); con.execute(f"SET memory_limit = '{lim}'")
     return con
+
+
+_UNITS = {"": 1, "b": 1, "kb": 10 ** 3, "kib": 1 << 10, "mb": 10 ** 6, "mib": 1 << 20, "gb": 10 ** 9, "gib": 1 << 30,
+          "tb": 10 ** 12, "tib": 1 << 40}
+
+
+def duck_limit():
+    """TORBLES_FUZZ_DUCKDB_MEMORY in bytes, None when it is not set"""
+    text = os.environ.get("TORBLES_FUZZ_DUCKDB_MEMORY")
+    if not text: return None
+    import re
+    m = re.fullmatch(r"\s*([0-9]+(?:\.[0-9]+)?)\s*([a-z]*)\s*", text.lower())
+    if not m or m.group(2) not in _UNITS: raise ValueError(f"TORBLES_FUZZ_DUCKDB_MEMORY={text!r}: expected a size such as 4GB")
+    return int(float(m.group(1)) * _UNITS[m.group(2)])
+
+
+def _rss():
+    """this process's resident memory in bytes (0 where /proc is not there)"""
+    try:
+        with open("/proc/self/statm") as f: return int(f.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+    except (OSError, ValueError, IndexError): return 0
+
+
+class DuckMemoryError(Exception):
+    """a DuckDB statement grew the process past TORBLES_FUZZ_DUCKDB_MEMORY (it is not compared)"""
+
+
+def duck_rows(con, sql):
+    """DuckDB's rows for sql. Its memory_limit does not bound every operator (a window STRING_AGG over 30,000 rows grew
+    the process by 5.7 GB under a 2 GB limit), so with TORBLES_FUZZ_DUCKDB_MEMORY set, a statement that grows this
+    process by more than that is interrupted, and its rows are fetched in parts that stop there too: it then raises
+    DuckMemoryError, a DuckDB error like any other"""
+    lim = duck_limit()
+    if lim is None or not _rss(): return con.execute(sql).fetchall()
+    import threading
+    base, over, done = _rss(), threading.Event(), threading.Event()
+    def watch():
+        while not done.wait(0.02):
+            if _rss() - base > lim:
+                over.set(); con.interrupt(); return
+    t = threading.Thread(target=watch, daemon=True); t.start()
+    msg = f"DuckDB grew the process past TORBLES_FUZZ_DUCKDB_MEMORY ({lim >> 20} MiB): interrupted"
+    try:
+        con.execute(sql); rows = []
+        while not over.is_set():
+            part = con.fetchmany(4096)
+            if not part: break
+            rows.extend(part)
+        if over.is_set(): raise DuckMemoryError(msg)
+        return rows
+    except DuckMemoryError: raise
+    except Exception:
+        if over.is_set(): raise DuckMemoryError(msg) from None
+        raise
+    finally:
+        done.set(); t.join()
 
 
 def build_db(tables, seed, con):
