@@ -2448,6 +2448,9 @@ class Query:
             for i, (c, k) in enumerate(lin): plan.lin_col[i], plan.lin_coef[i] = fact.idx(c), k
         else:
             plan.agg = A_BIL; plan.bil_a, plan.bil_b = fact.idx(self.measure.l.name), fact.idx(self.measure.r.name)
+        if len(attrs) > len(plan.attr_fkcol):          # the plan's slots (torble.h): one per looked-up dimension column
+            raise ValueError(f"the query reads {len(attrs)} dimension columns through lookups, more than the "
+                             f"{len(plan.attr_fkcol)} one engine query holds")
         plan.nattr = len(attrs)
         for _ak, (i, fk, vals, km) in attrs.items():
             plan.attr_fkcol[i] = fk; plan.attr_vals[i] = vals.ctypes.data; plan.attr_n[i] = len(vals); plan.attr_kmask[i] = km; keep.append(vals)

@@ -176,4 +176,22 @@ for nd, n, seed in ((64, 3000, 1), (300, 20000, 2), (5000, 200_000, 3)):
                     runs += 1
                     check(got == want, f"{name} [nd {nd}, msb {bool(msb)}, {mode}, {eng}]: {str(got)[:120]} != {str(want)[:120]}")
 print(f"   6 queries x 3 dimension sizes x stored lowest / highest bit first x 4 join forms x 3 engines = {runs} runs vs exact counts: {'all match' if fails == f0 else 'FAILURES'}")
+
+# ---------------------------------------------------------------- 5. more looked-up dimension columns than a plan holds
+# An engine query holds eight looked-up dimension columns (torble.h); a ninth raised an IndexError from the plan's
+# arrays (the SQL fuzzer found it). It is now a ValueError that says so, and SQL runs such a block on its general path
+# (tests/check_sql.py replays the fuzzer's statement).
+print("5. more looked-up dimension columns than one engine query holds")
+f0 = fails
+rng = np.random.default_rng(11)
+D9 = Table("d9", {f"a{i}": rng.integers(0, 3, 40).astype(np.uint32) for i in range(10)})
+F9 = Table("f9", dict(x=rng.integers(0, 9, 900).astype(np.uint32), fk=rng.integers(0, 40, 900).astype(np.uint32)), refs={"fk": D9})
+for k in (8, 9):
+    q = Query(F9, join_mode="lookup").join(D9, F9.fk).group_by(*[getattr(D9, f"a{i}") for i in range(k)]).count()
+    for eng in ("alg", "plain", "gpu"):
+        try: got = q.run(eng); err = None
+        except Exception as ex: got, err = None, ex
+        if k == 8: check(err is None and sum(got.values()) == 900, f"8 looked-up columns on {eng}: {err!r}")
+        else: check(isinstance(err, ValueError) and "dimension columns through lookups" in str(err), f"9 looked-up columns on {eng}: {err!r}")
+print(f"   eight looked-up columns run, nine are refused by name, on 3 engines: {'all match' if fails == f0 else 'FAILURES'}")
 print("\nALL FIX TESTS PASSED" if fails == 0 else f"\n{fails} FAILURES")

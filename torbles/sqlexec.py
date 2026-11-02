@@ -3999,6 +3999,7 @@ class _Planner:
                 m = str(ex)
                 if "group domain too large" in m or "hidden GROUP BY columns" in m or "exceed 128 bits" in m:
                     raise _TooManyGroups()
+                if "dimension columns through lookups" in m: raise _NotStarNow()     # the general path joins them
                 raise SqlError(f"the engine cannot run this block: {ex}")
         def first_poly(vid):
             return next((m for m in mlist[vid] if not (isinstance(m, tuple) and m[0] == "ext")), None)
