@@ -1,0 +1,795 @@
+torbles 0.3.0 SQL differential fuzzing against DuckDB, seed 506, engine alg
+case 0: totals {'ok': 30, 'refused': 0, 'duckdb-error': 0, 'MISMATCH': 0, 'ERROR': 0}
+case 10: totals {'ok': 327, 'refused': 0, 'duckdb-error': 3, 'MISMATCH': 0, 'ERROR': 0}
+case 20: totals {'ok': 624, 'refused': 0, 'duckdb-error': 6, 'MISMATCH': 0, 'ERROR': 0}
+case 30: totals {'ok': 916, 'refused': 0, 'duckdb-error': 14, 'MISMATCH': 0, 'ERROR': 0}
+case 40: totals {'ok': 1215, 'refused': 0, 'duckdb-error': 15, 'MISMATCH': 0, 'ERROR': 0}
+case 50: totals {'ok': 1513, 'refused': 0, 'duckdb-error': 17, 'MISMATCH': 0, 'ERROR': 0}
+case 60: totals {'ok': 1810, 'refused': 0, 'duckdb-error': 20, 'MISMATCH': 0, 'ERROR': 0}
+case 70: totals {'ok': 2107, 'refused': 0, 'duckdb-error': 23, 'MISMATCH': 0, 'ERROR': 0}
+case 80: totals {'ok': 2401, 'refused': 0, 'duckdb-error': 29, 'MISMATCH': 0, 'ERROR': 0}
+case 90: totals {'ok': 2698, 'refused': 0, 'duckdb-error': 32, 'MISMATCH': 0, 'ERROR': 0}
+
+=== ERROR: seed 506 case 94 query 29
+(SELECT CAST(j0."d0_h1" AS VARCHAR) FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" AND f."f_m5" BETWEEN DATE '2098-01-20' AND DATE '2098-01-19') EXCEPT (SELECT f."f_m0" FROM fact f, dim0 j0 WHERE f."f_d0_r1" = j0."d0_key" AND abs(f."f_sorted") >= 1099511627776)
+SqlError: Out of Range Error: Overflow on abs(-2147483648)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+  File "/home/brian/torbles_math/torbles/database.py", line 430, in sql
+    out = sqlexec.run(self, q, engine)
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 786, in run
+    r = run_query(q, cx)
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 810, in run_query
+    if isinstance(q, I.SetOp): return run_setop(q, cx)
+                                      ~~~~~~~~~^^^^^^^
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 942, in run_setop
+    cb, nb = _setop_side(q.right, cx, types)
+             ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 911, in _setop_side
+    out = run_select(q, cx, as_rel=True)
+sqltypes.SqlError: Out of Range Error: Overflow on abs(-2147483648)
+
+replay: python -m torbles.sqlfuzz --seed 506 --case 94 --query 29 -v
+
+case 100: totals {'ok': 2992, 'refused': 0, 'duckdb-error': 37, 'MISMATCH': 0, 'ERROR': 1}
+case 110: totals {'ok': 3291, 'refused': 0, 'duckdb-error': 38, 'MISMATCH': 0, 'ERROR': 1}
+case 120: totals {'ok': 3589, 'refused': 0, 'duckdb-error': 40, 'MISMATCH': 0, 'ERROR': 1}
+case 130: totals {'ok': 3886, 'refused': 0, 'duckdb-error': 43, 'MISMATCH': 0, 'ERROR': 1}
+case 140: totals {'ok': 4182, 'refused': 0, 'duckdb-error': 47, 'MISMATCH': 0, 'ERROR': 1}
+case 150: totals {'ok': 4481, 'refused': 0, 'duckdb-error': 48, 'MISMATCH': 0, 'ERROR': 1}
+case 160: totals {'ok': 4778, 'refused': 0, 'duckdb-error': 51, 'MISMATCH': 0, 'ERROR': 1}
+case 170: totals {'ok': 5074, 'refused': 0, 'duckdb-error': 55, 'MISMATCH': 0, 'ERROR': 1}
+case 180: totals {'ok': 5370, 'refused': 0, 'duckdb-error': 59, 'MISMATCH': 0, 'ERROR': 1}
+case 190: totals {'ok': 5664, 'refused': 0, 'duckdb-error': 65, 'MISMATCH': 0, 'ERROR': 1}
+case 200: totals {'ok': 5962, 'refused': 0, 'duckdb-error': 67, 'MISMATCH': 0, 'ERROR': 1}
+case 210: totals {'ok': 6259, 'refused': 0, 'duckdb-error': 70, 'MISMATCH': 0, 'ERROR': 1}
+case 220: totals {'ok': 6556, 'refused': 0, 'duckdb-error': 73, 'MISMATCH': 0, 'ERROR': 1}
+case 230: totals {'ok': 6853, 'refused': 0, 'duckdb-error': 76, 'MISMATCH': 0, 'ERROR': 1}
+case 240: totals {'ok': 7152, 'refused': 0, 'duckdb-error': 77, 'MISMATCH': 0, 'ERROR': 1}
+case 250: totals {'ok': 7449, 'refused': 0, 'duckdb-error': 80, 'MISMATCH': 0, 'ERROR': 1}
+case 260: totals {'ok': 7748, 'refused': 0, 'duckdb-error': 81, 'MISMATCH': 0, 'ERROR': 1}
+case 270: totals {'ok': 8048, 'refused': 0, 'duckdb-error': 81, 'MISMATCH': 0, 'ERROR': 1}
+case 280: totals {'ok': 8344, 'refused': 0, 'duckdb-error': 85, 'MISMATCH': 0, 'ERROR': 1}
+case 290: totals {'ok': 8639, 'refused': 0, 'duckdb-error': 90, 'MISMATCH': 0, 'ERROR': 1}
+case 300: totals {'ok': 8938, 'refused': 0, 'duckdb-error': 91, 'MISMATCH': 0, 'ERROR': 1}
+case 310: totals {'ok': 9235, 'refused': 0, 'duckdb-error': 94, 'MISMATCH': 0, 'ERROR': 1}
+case 320: totals {'ok': 9533, 'refused': 0, 'duckdb-error': 96, 'MISMATCH': 0, 'ERROR': 1}
+case 330: totals {'ok': 9828, 'refused': 0, 'duckdb-error': 101, 'MISMATCH': 0, 'ERROR': 1}
+case 340: totals {'ok': 10127, 'refused': 0, 'duckdb-error': 102, 'MISMATCH': 0, 'ERROR': 1}
+case 350: totals {'ok': 10423, 'refused': 0, 'duckdb-error': 106, 'MISMATCH': 0, 'ERROR': 1}
+case 360: totals {'ok': 10715, 'refused': 0, 'duckdb-error': 114, 'MISMATCH': 0, 'ERROR': 1}
+case 370: totals {'ok': 11011, 'refused': 0, 'duckdb-error': 118, 'MISMATCH': 0, 'ERROR': 1}
+case 380: totals {'ok': 11308, 'refused': 0, 'duckdb-error': 121, 'MISMATCH': 0, 'ERROR': 1}
+case 390: totals {'ok': 11603, 'refused': 0, 'duckdb-error': 126, 'MISMATCH': 0, 'ERROR': 1}
+case 400: totals {'ok': 11899, 'refused': 0, 'duckdb-error': 130, 'MISMATCH': 0, 'ERROR': 1}
+case 410: totals {'ok': 12197, 'refused': 0, 'duckdb-error': 132, 'MISMATCH': 0, 'ERROR': 1}
+case 420: totals {'ok': 12491, 'refused': 0, 'duckdb-error': 138, 'MISMATCH': 0, 'ERROR': 1}
+case 430: totals {'ok': 12786, 'refused': 0, 'duckdb-error': 143, 'MISMATCH': 0, 'ERROR': 1}
+case 440: totals {'ok': 13083, 'refused': 0, 'duckdb-error': 146, 'MISMATCH': 0, 'ERROR': 1}
+case 450: totals {'ok': 13382, 'refused': 0, 'duckdb-error': 147, 'MISMATCH': 0, 'ERROR': 1}
+case 460: totals {'ok': 13680, 'refused': 0, 'duckdb-error': 149, 'MISMATCH': 0, 'ERROR': 1}
+case 470: totals {'ok': 13979, 'refused': 0, 'duckdb-error': 150, 'MISMATCH': 0, 'ERROR': 1}
+case 480: totals {'ok': 14276, 'refused': 0, 'duckdb-error': 153, 'MISMATCH': 0, 'ERROR': 1}
+case 490: totals {'ok': 14575, 'refused': 0, 'duckdb-error': 154, 'MISMATCH': 0, 'ERROR': 1}
+case 500: totals {'ok': 14874, 'refused': 0, 'duckdb-error': 155, 'MISMATCH': 0, 'ERROR': 1}
+case 510: totals {'ok': 15170, 'refused': 0, 'duckdb-error': 159, 'MISMATCH': 0, 'ERROR': 1}
+case 520: totals {'ok': 15467, 'refused': 0, 'duckdb-error': 162, 'MISMATCH': 0, 'ERROR': 1}
+case 530: totals {'ok': 15764, 'refused': 0, 'duckdb-error': 165, 'MISMATCH': 0, 'ERROR': 1}
+case 540: totals {'ok': 16059, 'refused': 0, 'duckdb-error': 170, 'MISMATCH': 0, 'ERROR': 1}
+case 550: totals {'ok': 16359, 'refused': 0, 'duckdb-error': 170, 'MISMATCH': 0, 'ERROR': 1}
+case 560: totals {'ok': 16653, 'refused': 0, 'duckdb-error': 176, 'MISMATCH': 0, 'ERROR': 1}
+case 570: totals {'ok': 16950, 'refused': 0, 'duckdb-error': 179, 'MISMATCH': 0, 'ERROR': 1}
+case 580: totals {'ok': 17248, 'refused': 0, 'duckdb-error': 181, 'MISMATCH': 0, 'ERROR': 1}
+case 590: totals {'ok': 17546, 'refused': 0, 'duckdb-error': 183, 'MISMATCH': 0, 'ERROR': 1}
+case 600: totals {'ok': 17843, 'refused': 0, 'duckdb-error': 186, 'MISMATCH': 0, 'ERROR': 1}
+case 610: totals {'ok': 18140, 'refused': 0, 'duckdb-error': 189, 'MISMATCH': 0, 'ERROR': 1}
+case 620: totals {'ok': 18439, 'refused': 0, 'duckdb-error': 190, 'MISMATCH': 0, 'ERROR': 1}
+case 630: totals {'ok': 18737, 'refused': 0, 'duckdb-error': 192, 'MISMATCH': 0, 'ERROR': 1}
+case 640: totals {'ok': 19035, 'refused': 0, 'duckdb-error': 194, 'MISMATCH': 0, 'ERROR': 1}
+case 650: totals {'ok': 19333, 'refused': 0, 'duckdb-error': 196, 'MISMATCH': 0, 'ERROR': 1}
+case 660: totals {'ok': 19630, 'refused': 0, 'duckdb-error': 199, 'MISMATCH': 0, 'ERROR': 1}
+case 670: totals {'ok': 19925, 'refused': 0, 'duckdb-error': 204, 'MISMATCH': 0, 'ERROR': 1}
+case 680: totals {'ok': 20219, 'refused': 0, 'duckdb-error': 210, 'MISMATCH': 0, 'ERROR': 1}
+case 690: totals {'ok': 20517, 'refused': 0, 'duckdb-error': 212, 'MISMATCH': 0, 'ERROR': 1}
+case 700: totals {'ok': 20816, 'refused': 0, 'duckdb-error': 213, 'MISMATCH': 0, 'ERROR': 1}
+case 710: totals {'ok': 21111, 'refused': 0, 'duckdb-error': 218, 'MISMATCH': 0, 'ERROR': 1}
+case 720: totals {'ok': 21410, 'refused': 0, 'duckdb-error': 219, 'MISMATCH': 0, 'ERROR': 1}
+case 730: totals {'ok': 21706, 'refused': 0, 'duckdb-error': 223, 'MISMATCH': 0, 'ERROR': 1}
+case 740: totals {'ok': 22005, 'refused': 0, 'duckdb-error': 224, 'MISMATCH': 0, 'ERROR': 1}
+case 750: totals {'ok': 22301, 'refused': 0, 'duckdb-error': 228, 'MISMATCH': 0, 'ERROR': 1}
+case 760: totals {'ok': 22599, 'refused': 0, 'duckdb-error': 230, 'MISMATCH': 0, 'ERROR': 1}
+case 770: totals {'ok': 22896, 'refused': 0, 'duckdb-error': 233, 'MISMATCH': 0, 'ERROR': 1}
+case 780: totals {'ok': 23191, 'refused': 0, 'duckdb-error': 238, 'MISMATCH': 0, 'ERROR': 1}
+case 790: totals {'ok': 23490, 'refused': 0, 'duckdb-error': 239, 'MISMATCH': 0, 'ERROR': 1}
+case 800: totals {'ok': 23790, 'refused': 0, 'duckdb-error': 239, 'MISMATCH': 0, 'ERROR': 1}
+case 810: totals {'ok': 24084, 'refused': 0, 'duckdb-error': 245, 'MISMATCH': 0, 'ERROR': 1}
+case 820: totals {'ok': 24375, 'refused': 0, 'duckdb-error': 254, 'MISMATCH': 0, 'ERROR': 1}
+case 830: totals {'ok': 24672, 'refused': 0, 'duckdb-error': 257, 'MISMATCH': 0, 'ERROR': 1}
+case 840: totals {'ok': 24969, 'refused': 0, 'duckdb-error': 260, 'MISMATCH': 0, 'ERROR': 1}
+case 850: totals {'ok': 25263, 'refused': 0, 'duckdb-error': 266, 'MISMATCH': 0, 'ERROR': 1}
+case 860: totals {'ok': 25562, 'refused': 0, 'duckdb-error': 267, 'MISMATCH': 0, 'ERROR': 1}
+case 870: totals {'ok': 25860, 'refused': 0, 'duckdb-error': 269, 'MISMATCH': 0, 'ERROR': 1}
+case 880: totals {'ok': 26160, 'refused': 0, 'duckdb-error': 269, 'MISMATCH': 0, 'ERROR': 1}
+case 890: totals {'ok': 26455, 'refused': 0, 'duckdb-error': 274, 'MISMATCH': 0, 'ERROR': 1}
+case 900: totals {'ok': 26754, 'refused': 0, 'duckdb-error': 275, 'MISMATCH': 0, 'ERROR': 1}
+case 910: totals {'ok': 27046, 'refused': 0, 'duckdb-error': 283, 'MISMATCH': 0, 'ERROR': 1}
+case 920: totals {'ok': 27345, 'refused': 0, 'duckdb-error': 284, 'MISMATCH': 0, 'ERROR': 1}
+case 930: totals {'ok': 27640, 'refused': 0, 'duckdb-error': 289, 'MISMATCH': 0, 'ERROR': 1}
+case 940: totals {'ok': 27939, 'refused': 0, 'duckdb-error': 290, 'MISMATCH': 0, 'ERROR': 1}
+case 950: totals {'ok': 28234, 'refused': 0, 'duckdb-error': 295, 'MISMATCH': 0, 'ERROR': 1}
+case 960: totals {'ok': 28531, 'refused': 0, 'duckdb-error': 298, 'MISMATCH': 0, 'ERROR': 1}
+case 970: totals {'ok': 28830, 'refused': 0, 'duckdb-error': 299, 'MISMATCH': 0, 'ERROR': 1}
+case 980: totals {'ok': 29128, 'refused': 0, 'duckdb-error': 301, 'MISMATCH': 0, 'ERROR': 1}
+case 990: totals {'ok': 29427, 'refused': 0, 'duckdb-error': 302, 'MISMATCH': 0, 'ERROR': 1}
+case 1000: totals {'ok': 29727, 'refused': 0, 'duckdb-error': 302, 'MISMATCH': 0, 'ERROR': 1}
+case 1010: totals {'ok': 30026, 'refused': 0, 'duckdb-error': 303, 'MISMATCH': 0, 'ERROR': 1}
+case 1020: totals {'ok': 30318, 'refused': 0, 'duckdb-error': 311, 'MISMATCH': 0, 'ERROR': 1}
+case 1030: totals {'ok': 30616, 'refused': 0, 'duckdb-error': 313, 'MISMATCH': 0, 'ERROR': 1}
+case 1040: totals {'ok': 30914, 'refused': 0, 'duckdb-error': 315, 'MISMATCH': 0, 'ERROR': 1}
+case 1050: totals {'ok': 31210, 'refused': 0, 'duckdb-error': 319, 'MISMATCH': 0, 'ERROR': 1}
+case 1060: totals {'ok': 31510, 'refused': 0, 'duckdb-error': 319, 'MISMATCH': 0, 'ERROR': 1}
+case 1070: totals {'ok': 31801, 'refused': 0, 'duckdb-error': 328, 'MISMATCH': 0, 'ERROR': 1}
+case 1080: totals {'ok': 32098, 'refused': 0, 'duckdb-error': 331, 'MISMATCH': 0, 'ERROR': 1}
+case 1090: totals {'ok': 32398, 'refused': 0, 'duckdb-error': 331, 'MISMATCH': 0, 'ERROR': 1}
+case 1100: totals {'ok': 32696, 'refused': 0, 'duckdb-error': 333, 'MISMATCH': 0, 'ERROR': 1}
+case 1110: totals {'ok': 32995, 'refused': 0, 'duckdb-error': 334, 'MISMATCH': 0, 'ERROR': 1}
+case 1120: totals {'ok': 33290, 'refused': 0, 'duckdb-error': 339, 'MISMATCH': 0, 'ERROR': 1}
+case 1130: totals {'ok': 33584, 'refused': 0, 'duckdb-error': 345, 'MISMATCH': 0, 'ERROR': 1}
+case 1140: totals {'ok': 33882, 'refused': 0, 'duckdb-error': 347, 'MISMATCH': 0, 'ERROR': 1}
+case 1150: totals {'ok': 34178, 'refused': 0, 'duckdb-error': 351, 'MISMATCH': 0, 'ERROR': 1}
+case 1160: totals {'ok': 34478, 'refused': 0, 'duckdb-error': 351, 'MISMATCH': 0, 'ERROR': 1}
+case 1170: totals {'ok': 34777, 'refused': 0, 'duckdb-error': 352, 'MISMATCH': 0, 'ERROR': 1}
+case 1180: totals {'ok': 35070, 'refused': 0, 'duckdb-error': 359, 'MISMATCH': 0, 'ERROR': 1}
+case 1190: totals {'ok': 35367, 'refused': 0, 'duckdb-error': 362, 'MISMATCH': 0, 'ERROR': 1}
+case 1200: totals {'ok': 35665, 'refused': 0, 'duckdb-error': 364, 'MISMATCH': 0, 'ERROR': 1}
+case 1210: totals {'ok': 35965, 'refused': 0, 'duckdb-error': 364, 'MISMATCH': 0, 'ERROR': 1}
+case 1220: totals {'ok': 36261, 'refused': 0, 'duckdb-error': 368, 'MISMATCH': 0, 'ERROR': 1}
+case 1230: totals {'ok': 36557, 'refused': 0, 'duckdb-error': 372, 'MISMATCH': 0, 'ERROR': 1}
+case 1240: totals {'ok': 36853, 'refused': 0, 'duckdb-error': 376, 'MISMATCH': 0, 'ERROR': 1}
+case 1250: totals {'ok': 37152, 'refused': 0, 'duckdb-error': 377, 'MISMATCH': 0, 'ERROR': 1}
+case 1260: totals {'ok': 37445, 'refused': 0, 'duckdb-error': 384, 'MISMATCH': 0, 'ERROR': 1}
+case 1270: totals {'ok': 37742, 'refused': 0, 'duckdb-error': 387, 'MISMATCH': 0, 'ERROR': 1}
+case 1280: totals {'ok': 38039, 'refused': 0, 'duckdb-error': 390, 'MISMATCH': 0, 'ERROR': 1}
+case 1290: totals {'ok': 38333, 'refused': 0, 'duckdb-error': 396, 'MISMATCH': 0, 'ERROR': 1}
+case 1300: totals {'ok': 38633, 'refused': 0, 'duckdb-error': 396, 'MISMATCH': 0, 'ERROR': 1}
+case 1310: totals {'ok': 38932, 'refused': 0, 'duckdb-error': 397, 'MISMATCH': 0, 'ERROR': 1}
+case 1320: totals {'ok': 39230, 'refused': 0, 'duckdb-error': 399, 'MISMATCH': 0, 'ERROR': 1}
+case 1330: totals {'ok': 39522, 'refused': 0, 'duckdb-error': 407, 'MISMATCH': 0, 'ERROR': 1}
+case 1340: totals {'ok': 39820, 'refused': 0, 'duckdb-error': 409, 'MISMATCH': 0, 'ERROR': 1}
+case 1350: totals {'ok': 40114, 'refused': 0, 'duckdb-error': 415, 'MISMATCH': 0, 'ERROR': 1}
+case 1360: totals {'ok': 40411, 'refused': 0, 'duckdb-error': 418, 'MISMATCH': 0, 'ERROR': 1}
+case 1370: totals {'ok': 40708, 'refused': 0, 'duckdb-error': 421, 'MISMATCH': 0, 'ERROR': 1}
+case 1380: totals {'ok': 41005, 'refused': 0, 'duckdb-error': 424, 'MISMATCH': 0, 'ERROR': 1}
+case 1390: totals {'ok': 41303, 'refused': 0, 'duckdb-error': 426, 'MISMATCH': 0, 'ERROR': 1}
+case 1400: totals {'ok': 41600, 'refused': 0, 'duckdb-error': 429, 'MISMATCH': 0, 'ERROR': 1}
+case 1410: totals {'ok': 41899, 'refused': 0, 'duckdb-error': 430, 'MISMATCH': 0, 'ERROR': 1}
+case 1420: totals {'ok': 42197, 'refused': 0, 'duckdb-error': 432, 'MISMATCH': 0, 'ERROR': 1}
+case 1430: totals {'ok': 42491, 'refused': 0, 'duckdb-error': 438, 'MISMATCH': 0, 'ERROR': 1}
+case 1440: totals {'ok': 42789, 'refused': 0, 'duckdb-error': 440, 'MISMATCH': 0, 'ERROR': 1}
+case 1450: totals {'ok': 43085, 'refused': 0, 'duckdb-error': 444, 'MISMATCH': 0, 'ERROR': 1}
+case 1460: totals {'ok': 43382, 'refused': 0, 'duckdb-error': 447, 'MISMATCH': 0, 'ERROR': 1}
+case 1470: totals {'ok': 43681, 'refused': 0, 'duckdb-error': 448, 'MISMATCH': 0, 'ERROR': 1}
+case 1480: totals {'ok': 43980, 'refused': 0, 'duckdb-error': 449, 'MISMATCH': 0, 'ERROR': 1}
+case 1490: totals {'ok': 44275, 'refused': 0, 'duckdb-error': 454, 'MISMATCH': 0, 'ERROR': 1}
+case 1500: totals {'ok': 44574, 'refused': 0, 'duckdb-error': 455, 'MISMATCH': 0, 'ERROR': 1}
+case 1510: totals {'ok': 44873, 'refused': 0, 'duckdb-error': 456, 'MISMATCH': 0, 'ERROR': 1}
+case 1520: totals {'ok': 45171, 'refused': 0, 'duckdb-error': 458, 'MISMATCH': 0, 'ERROR': 1}
+case 1530: totals {'ok': 45467, 'refused': 0, 'duckdb-error': 462, 'MISMATCH': 0, 'ERROR': 1}
+case 1540: totals {'ok': 45763, 'refused': 0, 'duckdb-error': 466, 'MISMATCH': 0, 'ERROR': 1}
+case 1550: totals {'ok': 46060, 'refused': 0, 'duckdb-error': 469, 'MISMATCH': 0, 'ERROR': 1}
+case 1560: totals {'ok': 46356, 'refused': 0, 'duckdb-error': 473, 'MISMATCH': 0, 'ERROR': 1}
+case 1570: totals {'ok': 46653, 'refused': 0, 'duckdb-error': 476, 'MISMATCH': 0, 'ERROR': 1}
+case 1580: totals {'ok': 46944, 'refused': 0, 'duckdb-error': 485, 'MISMATCH': 0, 'ERROR': 1}
+case 1590: totals {'ok': 47240, 'refused': 0, 'duckdb-error': 489, 'MISMATCH': 0, 'ERROR': 1}
+case 1600: totals {'ok': 47533, 'refused': 0, 'duckdb-error': 496, 'MISMATCH': 0, 'ERROR': 1}
+case 1610: totals {'ok': 47831, 'refused': 0, 'duckdb-error': 498, 'MISMATCH': 0, 'ERROR': 1}
+case 1620: totals {'ok': 48128, 'refused': 0, 'duckdb-error': 501, 'MISMATCH': 0, 'ERROR': 1}
+case 1630: totals {'ok': 48426, 'refused': 0, 'duckdb-error': 503, 'MISMATCH': 0, 'ERROR': 1}
+case 1640: totals {'ok': 48723, 'refused': 0, 'duckdb-error': 506, 'MISMATCH': 0, 'ERROR': 1}
+case 1650: totals {'ok': 49023, 'refused': 0, 'duckdb-error': 506, 'MISMATCH': 0, 'ERROR': 1}
+case 1660: totals {'ok': 49322, 'refused': 0, 'duckdb-error': 507, 'MISMATCH': 0, 'ERROR': 1}
+case 1670: totals {'ok': 49621, 'refused': 0, 'duckdb-error': 508, 'MISMATCH': 0, 'ERROR': 1}
+case 1680: totals {'ok': 49916, 'refused': 0, 'duckdb-error': 513, 'MISMATCH': 0, 'ERROR': 1}
+case 1690: totals {'ok': 50214, 'refused': 0, 'duckdb-error': 515, 'MISMATCH': 0, 'ERROR': 1}
+case 1700: totals {'ok': 50513, 'refused': 0, 'duckdb-error': 516, 'MISMATCH': 0, 'ERROR': 1}
+case 1710: totals {'ok': 50813, 'refused': 0, 'duckdb-error': 516, 'MISMATCH': 0, 'ERROR': 1}
+case 1720: totals {'ok': 51112, 'refused': 0, 'duckdb-error': 517, 'MISMATCH': 0, 'ERROR': 1}
+case 1730: totals {'ok': 51409, 'refused': 0, 'duckdb-error': 520, 'MISMATCH': 0, 'ERROR': 1}
+case 1740: totals {'ok': 51708, 'refused': 0, 'duckdb-error': 521, 'MISMATCH': 0, 'ERROR': 1}
+case 1750: totals {'ok': 52003, 'refused': 0, 'duckdb-error': 526, 'MISMATCH': 0, 'ERROR': 1}
+case 1760: totals {'ok': 52300, 'refused': 0, 'duckdb-error': 529, 'MISMATCH': 0, 'ERROR': 1}
+case 1770: totals {'ok': 52600, 'refused': 0, 'duckdb-error': 529, 'MISMATCH': 0, 'ERROR': 1}
+case 1780: totals {'ok': 52894, 'refused': 0, 'duckdb-error': 535, 'MISMATCH': 0, 'ERROR': 1}
+case 1790: totals {'ok': 53191, 'refused': 0, 'duckdb-error': 538, 'MISMATCH': 0, 'ERROR': 1}
+case 1800: totals {'ok': 53487, 'refused': 0, 'duckdb-error': 542, 'MISMATCH': 0, 'ERROR': 1}
+case 1810: totals {'ok': 53784, 'refused': 0, 'duckdb-error': 545, 'MISMATCH': 0, 'ERROR': 1}
+case 1820: totals {'ok': 54077, 'refused': 0, 'duckdb-error': 552, 'MISMATCH': 0, 'ERROR': 1}
+case 1830: totals {'ok': 54372, 'refused': 0, 'duckdb-error': 557, 'MISMATCH': 0, 'ERROR': 1}
+case 1840: totals {'ok': 54667, 'refused': 0, 'duckdb-error': 562, 'MISMATCH': 0, 'ERROR': 1}
+case 1850: totals {'ok': 54965, 'refused': 0, 'duckdb-error': 564, 'MISMATCH': 0, 'ERROR': 1}
+case 1860: totals {'ok': 55265, 'refused': 0, 'duckdb-error': 564, 'MISMATCH': 0, 'ERROR': 1}
+case 1870: totals {'ok': 55565, 'refused': 0, 'duckdb-error': 564, 'MISMATCH': 0, 'ERROR': 1}
+case 1880: totals {'ok': 55856, 'refused': 0, 'duckdb-error': 573, 'MISMATCH': 0, 'ERROR': 1}
+case 1890: totals {'ok': 56154, 'refused': 0, 'duckdb-error': 575, 'MISMATCH': 0, 'ERROR': 1}
+case 1900: totals {'ok': 56453, 'refused': 0, 'duckdb-error': 576, 'MISMATCH': 0, 'ERROR': 1}
+case 1910: totals {'ok': 56752, 'refused': 0, 'duckdb-error': 577, 'MISMATCH': 0, 'ERROR': 1}
+
+=== MISMATCH: seed 506 case 1920 query 23
+SELECT trim(j0."d1_h0"), f."f_m2", count(*) FILTER (WHERE f."f_d1_r1" IS NULL), min(j0."d1_key") FILTER (WHERE (NOT j0."d1_h0" <= 'Ac''')), regr_slope(f."f_m0", f."f_m0") FROM fact f LEFT JOIN dim1 j0 ON f."f_d1_r1" = j0."d1_key" WHERE (j0."d1_h0" LIKE '%a%' OR (f."f_m1" IN (-67.68, 7, 42.36) OR f."f_m2" IS NOT NULL)) GROUP BY ROLLUP (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, 0, None, None), (None, None, 0, None, 1.0)]
+duckdb  (2 rows) [(None, None, 0, None, 1.0), (None, None, 0, None, nan)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 1920 --query 23 -v
+
+case 1920: totals {'ok': 57050, 'refused': 0, 'duckdb-error': 578, 'MISMATCH': 1, 'ERROR': 1}
+case 1930: totals {'ok': 57347, 'refused': 0, 'duckdb-error': 581, 'MISMATCH': 1, 'ERROR': 1}
+case 1940: totals {'ok': 57644, 'refused': 0, 'duckdb-error': 584, 'MISMATCH': 1, 'ERROR': 1}
+case 1950: totals {'ok': 57943, 'refused': 0, 'duckdb-error': 585, 'MISMATCH': 1, 'ERROR': 1}
+case 1960: totals {'ok': 58240, 'refused': 0, 'duckdb-error': 588, 'MISMATCH': 1, 'ERROR': 1}
+case 1970: totals {'ok': 58537, 'refused': 0, 'duckdb-error': 591, 'MISMATCH': 1, 'ERROR': 1}
+case 1980: totals {'ok': 58835, 'refused': 0, 'duckdb-error': 593, 'MISMATCH': 1, 'ERROR': 1}
+case 1990: totals {'ok': 59131, 'refused': 0, 'duckdb-error': 597, 'MISMATCH': 1, 'ERROR': 1}
+case 2000: totals {'ok': 59431, 'refused': 0, 'duckdb-error': 597, 'MISMATCH': 1, 'ERROR': 1}
+case 2010: totals {'ok': 59728, 'refused': 0, 'duckdb-error': 600, 'MISMATCH': 1, 'ERROR': 1}
+case 2020: totals {'ok': 60026, 'refused': 0, 'duckdb-error': 602, 'MISMATCH': 1, 'ERROR': 1}
+case 2030: totals {'ok': 60323, 'refused': 0, 'duckdb-error': 605, 'MISMATCH': 1, 'ERROR': 1}
+case 2040: totals {'ok': 60617, 'refused': 0, 'duckdb-error': 611, 'MISMATCH': 1, 'ERROR': 1}
+case 2050: totals {'ok': 60912, 'refused': 0, 'duckdb-error': 616, 'MISMATCH': 1, 'ERROR': 1}
+case 2060: totals {'ok': 61209, 'refused': 0, 'duckdb-error': 619, 'MISMATCH': 1, 'ERROR': 1}
+case 2070: totals {'ok': 61500, 'refused': 0, 'duckdb-error': 628, 'MISMATCH': 1, 'ERROR': 1}
+case 2080: totals {'ok': 61795, 'refused': 0, 'duckdb-error': 633, 'MISMATCH': 1, 'ERROR': 1}
+case 2090: totals {'ok': 62090, 'refused': 0, 'duckdb-error': 638, 'MISMATCH': 1, 'ERROR': 1}
+case 2100: totals {'ok': 62389, 'refused': 0, 'duckdb-error': 639, 'MISMATCH': 1, 'ERROR': 1}
+case 2110: totals {'ok': 62685, 'refused': 0, 'duckdb-error': 643, 'MISMATCH': 1, 'ERROR': 1}
+case 2120: totals {'ok': 62975, 'refused': 0, 'duckdb-error': 653, 'MISMATCH': 1, 'ERROR': 1}
+case 2130: totals {'ok': 63274, 'refused': 0, 'duckdb-error': 654, 'MISMATCH': 1, 'ERROR': 1}
+case 2140: totals {'ok': 63573, 'refused': 0, 'duckdb-error': 655, 'MISMATCH': 1, 'ERROR': 1}
+case 2150: totals {'ok': 63869, 'refused': 0, 'duckdb-error': 659, 'MISMATCH': 1, 'ERROR': 1}
+case 2160: totals {'ok': 64168, 'refused': 0, 'duckdb-error': 660, 'MISMATCH': 1, 'ERROR': 1}
+case 2170: totals {'ok': 64467, 'refused': 0, 'duckdb-error': 661, 'MISMATCH': 1, 'ERROR': 1}
+case 2180: totals {'ok': 64763, 'refused': 0, 'duckdb-error': 665, 'MISMATCH': 1, 'ERROR': 1}
+case 2190: totals {'ok': 65061, 'refused': 0, 'duckdb-error': 667, 'MISMATCH': 1, 'ERROR': 1}
+case 2200: totals {'ok': 65357, 'refused': 0, 'duckdb-error': 671, 'MISMATCH': 1, 'ERROR': 1}
+case 2210: totals {'ok': 65655, 'refused': 0, 'duckdb-error': 673, 'MISMATCH': 1, 'ERROR': 1}
+case 2220: totals {'ok': 65953, 'refused': 0, 'duckdb-error': 675, 'MISMATCH': 1, 'ERROR': 1}
+case 2230: totals {'ok': 66248, 'refused': 0, 'duckdb-error': 680, 'MISMATCH': 1, 'ERROR': 1}
+case 2240: totals {'ok': 66544, 'refused': 0, 'duckdb-error': 684, 'MISMATCH': 1, 'ERROR': 1}
+case 2250: totals {'ok': 66839, 'refused': 0, 'duckdb-error': 689, 'MISMATCH': 1, 'ERROR': 1}
+case 2260: totals {'ok': 67136, 'refused': 0, 'duckdb-error': 692, 'MISMATCH': 1, 'ERROR': 1}
+case 2270: totals {'ok': 67431, 'refused': 0, 'duckdb-error': 697, 'MISMATCH': 1, 'ERROR': 1}
+case 2280: totals {'ok': 67725, 'refused': 0, 'duckdb-error': 703, 'MISMATCH': 1, 'ERROR': 1}
+case 2290: totals {'ok': 68024, 'refused': 0, 'duckdb-error': 704, 'MISMATCH': 1, 'ERROR': 1}
+case 2300: totals {'ok': 68320, 'refused': 0, 'duckdb-error': 708, 'MISMATCH': 1, 'ERROR': 1}
+case 2310: totals {'ok': 68615, 'refused': 0, 'duckdb-error': 713, 'MISMATCH': 1, 'ERROR': 1}
+case 2320: totals {'ok': 68911, 'refused': 0, 'duckdb-error': 717, 'MISMATCH': 1, 'ERROR': 1}
+case 2330: totals {'ok': 69207, 'refused': 0, 'duckdb-error': 721, 'MISMATCH': 1, 'ERROR': 1}
+case 2340: totals {'ok': 69507, 'refused': 0, 'duckdb-error': 721, 'MISMATCH': 1, 'ERROR': 1}
+case 2350: totals {'ok': 69802, 'refused': 0, 'duckdb-error': 726, 'MISMATCH': 1, 'ERROR': 1}
+case 2360: totals {'ok': 70101, 'refused': 0, 'duckdb-error': 727, 'MISMATCH': 1, 'ERROR': 1}
+case 2370: totals {'ok': 70396, 'refused': 0, 'duckdb-error': 732, 'MISMATCH': 1, 'ERROR': 1}
+case 2380: totals {'ok': 70691, 'refused': 0, 'duckdb-error': 737, 'MISMATCH': 1, 'ERROR': 1}
+case 2390: totals {'ok': 70991, 'refused': 0, 'duckdb-error': 737, 'MISMATCH': 1, 'ERROR': 1}
+case 2400: totals {'ok': 71288, 'refused': 0, 'duckdb-error': 740, 'MISMATCH': 1, 'ERROR': 1}
+case 2410: totals {'ok': 71585, 'refused': 0, 'duckdb-error': 743, 'MISMATCH': 1, 'ERROR': 1}
+case 2420: totals {'ok': 71883, 'refused': 0, 'duckdb-error': 745, 'MISMATCH': 1, 'ERROR': 1}
+case 2430: totals {'ok': 72183, 'refused': 0, 'duckdb-error': 745, 'MISMATCH': 1, 'ERROR': 1}
+case 2440: totals {'ok': 72478, 'refused': 0, 'duckdb-error': 750, 'MISMATCH': 1, 'ERROR': 1}
+case 2450: totals {'ok': 72777, 'refused': 0, 'duckdb-error': 751, 'MISMATCH': 1, 'ERROR': 1}
+case 2460: totals {'ok': 73076, 'refused': 0, 'duckdb-error': 752, 'MISMATCH': 1, 'ERROR': 1}
+case 2470: totals {'ok': 73374, 'refused': 0, 'duckdb-error': 754, 'MISMATCH': 1, 'ERROR': 1}
+case 2480: totals {'ok': 73669, 'refused': 0, 'duckdb-error': 759, 'MISMATCH': 1, 'ERROR': 1}
+case 2490: totals {'ok': 73964, 'refused': 0, 'duckdb-error': 764, 'MISMATCH': 1, 'ERROR': 1}
+case 2500: totals {'ok': 74260, 'refused': 0, 'duckdb-error': 768, 'MISMATCH': 1, 'ERROR': 1}
+case 2510: totals {'ok': 74556, 'refused': 0, 'duckdb-error': 772, 'MISMATCH': 1, 'ERROR': 1}
+case 2520: totals {'ok': 74854, 'refused': 0, 'duckdb-error': 774, 'MISMATCH': 1, 'ERROR': 1}
+case 2530: totals {'ok': 75149, 'refused': 0, 'duckdb-error': 779, 'MISMATCH': 1, 'ERROR': 1}
+case 2540: totals {'ok': 75444, 'refused': 0, 'duckdb-error': 784, 'MISMATCH': 1, 'ERROR': 1}
+case 2550: totals {'ok': 75735, 'refused': 0, 'duckdb-error': 793, 'MISMATCH': 1, 'ERROR': 1}
+case 2560: totals {'ok': 76031, 'refused': 0, 'duckdb-error': 797, 'MISMATCH': 1, 'ERROR': 1}
+case 2570: totals {'ok': 76330, 'refused': 0, 'duckdb-error': 798, 'MISMATCH': 1, 'ERROR': 1}
+case 2580: totals {'ok': 76627, 'refused': 0, 'duckdb-error': 801, 'MISMATCH': 1, 'ERROR': 1}
+case 2590: totals {'ok': 76925, 'refused': 0, 'duckdb-error': 803, 'MISMATCH': 1, 'ERROR': 1}
+case 2600: totals {'ok': 77222, 'refused': 0, 'duckdb-error': 806, 'MISMATCH': 1, 'ERROR': 1}
+case 2610: totals {'ok': 77518, 'refused': 0, 'duckdb-error': 810, 'MISMATCH': 1, 'ERROR': 1}
+case 2620: totals {'ok': 77814, 'refused': 0, 'duckdb-error': 814, 'MISMATCH': 1, 'ERROR': 1}
+case 2630: totals {'ok': 78113, 'refused': 0, 'duckdb-error': 815, 'MISMATCH': 1, 'ERROR': 1}
+case 2640: totals {'ok': 78410, 'refused': 0, 'duckdb-error': 818, 'MISMATCH': 1, 'ERROR': 1}
+case 2650: totals {'ok': 78707, 'refused': 0, 'duckdb-error': 821, 'MISMATCH': 1, 'ERROR': 1}
+case 2660: totals {'ok': 79003, 'refused': 0, 'duckdb-error': 825, 'MISMATCH': 1, 'ERROR': 1}
+case 2670: totals {'ok': 79299, 'refused': 0, 'duckdb-error': 829, 'MISMATCH': 1, 'ERROR': 1}
+case 2680: totals {'ok': 79599, 'refused': 0, 'duckdb-error': 829, 'MISMATCH': 1, 'ERROR': 1}
+case 2690: totals {'ok': 79899, 'refused': 0, 'duckdb-error': 829, 'MISMATCH': 1, 'ERROR': 1}
+case 2700: totals {'ok': 80197, 'refused': 0, 'duckdb-error': 831, 'MISMATCH': 1, 'ERROR': 1}
+case 2710: totals {'ok': 80492, 'refused': 0, 'duckdb-error': 836, 'MISMATCH': 1, 'ERROR': 1}
+case 2720: totals {'ok': 80786, 'refused': 0, 'duckdb-error': 842, 'MISMATCH': 1, 'ERROR': 1}
+case 2730: totals {'ok': 81081, 'refused': 0, 'duckdb-error': 847, 'MISMATCH': 1, 'ERROR': 1}
+case 2740: totals {'ok': 81377, 'refused': 0, 'duckdb-error': 851, 'MISMATCH': 1, 'ERROR': 1}
+case 2750: totals {'ok': 81676, 'refused': 0, 'duckdb-error': 852, 'MISMATCH': 1, 'ERROR': 1}
+case 2760: totals {'ok': 81975, 'refused': 0, 'duckdb-error': 853, 'MISMATCH': 1, 'ERROR': 1}
+case 2770: totals {'ok': 82269, 'refused': 0, 'duckdb-error': 859, 'MISMATCH': 1, 'ERROR': 1}
+case 2780: totals {'ok': 82566, 'refused': 0, 'duckdb-error': 862, 'MISMATCH': 1, 'ERROR': 1}
+case 2790: totals {'ok': 82860, 'refused': 0, 'duckdb-error': 868, 'MISMATCH': 1, 'ERROR': 1}
+case 2800: totals {'ok': 83159, 'refused': 0, 'duckdb-error': 869, 'MISMATCH': 1, 'ERROR': 1}
+case 2810: totals {'ok': 83458, 'refused': 0, 'duckdb-error': 870, 'MISMATCH': 1, 'ERROR': 1}
+case 2820: totals {'ok': 83755, 'refused': 0, 'duckdb-error': 873, 'MISMATCH': 1, 'ERROR': 1}
+case 2830: totals {'ok': 84050, 'refused': 0, 'duckdb-error': 878, 'MISMATCH': 1, 'ERROR': 1}
+case 2840: totals {'ok': 84346, 'refused': 0, 'duckdb-error': 882, 'MISMATCH': 1, 'ERROR': 1}
+case 2850: totals {'ok': 84643, 'refused': 0, 'duckdb-error': 885, 'MISMATCH': 1, 'ERROR': 1}
+case 2860: totals {'ok': 84940, 'refused': 0, 'duckdb-error': 888, 'MISMATCH': 1, 'ERROR': 1}
+case 2870: totals {'ok': 85235, 'refused': 0, 'duckdb-error': 893, 'MISMATCH': 1, 'ERROR': 1}
+case 2880: totals {'ok': 85533, 'refused': 0, 'duckdb-error': 895, 'MISMATCH': 1, 'ERROR': 1}
+case 2890: totals {'ok': 85833, 'refused': 0, 'duckdb-error': 895, 'MISMATCH': 1, 'ERROR': 1}
+case 2900: totals {'ok': 86126, 'refused': 0, 'duckdb-error': 902, 'MISMATCH': 1, 'ERROR': 1}
+case 2910: totals {'ok': 86426, 'refused': 0, 'duckdb-error': 902, 'MISMATCH': 1, 'ERROR': 1}
+case 2920: totals {'ok': 86720, 'refused': 0, 'duckdb-error': 908, 'MISMATCH': 1, 'ERROR': 1}
+case 2930: totals {'ok': 87014, 'refused': 0, 'duckdb-error': 914, 'MISMATCH': 1, 'ERROR': 1}
+case 2940: totals {'ok': 87309, 'refused': 0, 'duckdb-error': 919, 'MISMATCH': 1, 'ERROR': 1}
+case 2950: totals {'ok': 87608, 'refused': 0, 'duckdb-error': 920, 'MISMATCH': 1, 'ERROR': 1}
+case 2960: totals {'ok': 87905, 'refused': 0, 'duckdb-error': 923, 'MISMATCH': 1, 'ERROR': 1}
+case 2970: totals {'ok': 88196, 'refused': 0, 'duckdb-error': 932, 'MISMATCH': 1, 'ERROR': 1}
+case 2980: totals {'ok': 88492, 'refused': 0, 'duckdb-error': 936, 'MISMATCH': 1, 'ERROR': 1}
+case 2990: totals {'ok': 88791, 'refused': 0, 'duckdb-error': 937, 'MISMATCH': 1, 'ERROR': 1}
+case 3000: totals {'ok': 89086, 'refused': 0, 'duckdb-error': 942, 'MISMATCH': 1, 'ERROR': 1}
+case 3010: totals {'ok': 89383, 'refused': 0, 'duckdb-error': 945, 'MISMATCH': 1, 'ERROR': 1}
+case 3020: totals {'ok': 89680, 'refused': 0, 'duckdb-error': 948, 'MISMATCH': 1, 'ERROR': 1}
+case 3030: totals {'ok': 89979, 'refused': 0, 'duckdb-error': 949, 'MISMATCH': 1, 'ERROR': 1}
+case 3040: totals {'ok': 90277, 'refused': 0, 'duckdb-error': 951, 'MISMATCH': 1, 'ERROR': 1}
+case 3050: totals {'ok': 90569, 'refused': 0, 'duckdb-error': 959, 'MISMATCH': 1, 'ERROR': 1}
+case 3060: totals {'ok': 90866, 'refused': 0, 'duckdb-error': 962, 'MISMATCH': 1, 'ERROR': 1}
+case 3070: totals {'ok': 91156, 'refused': 0, 'duckdb-error': 972, 'MISMATCH': 1, 'ERROR': 1}
+case 3080: totals {'ok': 91456, 'refused': 0, 'duckdb-error': 972, 'MISMATCH': 1, 'ERROR': 1}
+case 3090: totals {'ok': 91751, 'refused': 0, 'duckdb-error': 977, 'MISMATCH': 1, 'ERROR': 1}
+case 3100: totals {'ok': 92050, 'refused': 0, 'duckdb-error': 978, 'MISMATCH': 1, 'ERROR': 1}
+
+=== MISMATCH: seed 506 case 3110 query 4
+SELECT (f."f_m0" + 7), covar_pop(j0."d0_h0", f."f_m0") FILTER (WHERE (f."f_m1" - j0."d0_a0") < 819752056977971261), avg(f."f_m1"), count(*) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_h0" > j0."d0_key" GROUP BY 1 HAVING count(*) > 1 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST
+torbles (1 rows) [(2, None, 2.2936707231412125e+17, 30000)]
+duckdb  (1 rows) [(2, None, 12554330999147.404, 30000)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 3110 --query 4 -v
+
+case 3110: totals {'ok': 92349, 'refused': 0, 'duckdb-error': 978, 'MISMATCH': 2, 'ERROR': 1}
+case 3120: totals {'ok': 92647, 'refused': 0, 'duckdb-error': 980, 'MISMATCH': 2, 'ERROR': 1}
+case 3130: totals {'ok': 92944, 'refused': 0, 'duckdb-error': 983, 'MISMATCH': 2, 'ERROR': 1}
+case 3140: totals {'ok': 93242, 'refused': 0, 'duckdb-error': 985, 'MISMATCH': 2, 'ERROR': 1}
+case 3150: totals {'ok': 93537, 'refused': 0, 'duckdb-error': 990, 'MISMATCH': 2, 'ERROR': 1}
+case 3160: totals {'ok': 93835, 'refused': 0, 'duckdb-error': 992, 'MISMATCH': 2, 'ERROR': 1}
+case 3170: totals {'ok': 94133, 'refused': 0, 'duckdb-error': 994, 'MISMATCH': 2, 'ERROR': 1}
+case 3180: totals {'ok': 94428, 'refused': 0, 'duckdb-error': 999, 'MISMATCH': 2, 'ERROR': 1}
+case 3190: totals {'ok': 94726, 'refused': 0, 'duckdb-error': 1001, 'MISMATCH': 2, 'ERROR': 1}
+case 3200: totals {'ok': 95023, 'refused': 0, 'duckdb-error': 1004, 'MISMATCH': 2, 'ERROR': 1}
+case 3210: totals {'ok': 95322, 'refused': 0, 'duckdb-error': 1005, 'MISMATCH': 2, 'ERROR': 1}
+case 3220: totals {'ok': 95621, 'refused': 0, 'duckdb-error': 1006, 'MISMATCH': 2, 'ERROR': 1}
+case 3230: totals {'ok': 95920, 'refused': 0, 'duckdb-error': 1007, 'MISMATCH': 2, 'ERROR': 1}
+case 3240: totals {'ok': 96217, 'refused': 0, 'duckdb-error': 1010, 'MISMATCH': 2, 'ERROR': 1}
+case 3250: totals {'ok': 96515, 'refused': 0, 'duckdb-error': 1012, 'MISMATCH': 2, 'ERROR': 1}
+case 3260: totals {'ok': 96810, 'refused': 0, 'duckdb-error': 1017, 'MISMATCH': 2, 'ERROR': 1}
+case 3270: totals {'ok': 97108, 'refused': 0, 'duckdb-error': 1019, 'MISMATCH': 2, 'ERROR': 1}
+case 3280: totals {'ok': 97407, 'refused': 0, 'duckdb-error': 1020, 'MISMATCH': 2, 'ERROR': 1}
+case 3290: totals {'ok': 97701, 'refused': 0, 'duckdb-error': 1026, 'MISMATCH': 2, 'ERROR': 1}
+case 3300: totals {'ok': 98000, 'refused': 0, 'duckdb-error': 1027, 'MISMATCH': 2, 'ERROR': 1}
+case 3310: totals {'ok': 98297, 'refused': 0, 'duckdb-error': 1030, 'MISMATCH': 2, 'ERROR': 1}
+case 3320: totals {'ok': 98592, 'refused': 0, 'duckdb-error': 1035, 'MISMATCH': 2, 'ERROR': 1}
+case 3330: totals {'ok': 98891, 'refused': 0, 'duckdb-error': 1036, 'MISMATCH': 2, 'ERROR': 1}
+case 3340: totals {'ok': 99189, 'refused': 0, 'duckdb-error': 1038, 'MISMATCH': 2, 'ERROR': 1}
+case 3350: totals {'ok': 99487, 'refused': 0, 'duckdb-error': 1040, 'MISMATCH': 2, 'ERROR': 1}
+case 3360: totals {'ok': 99782, 'refused': 0, 'duckdb-error': 1045, 'MISMATCH': 2, 'ERROR': 1}
+case 3370: totals {'ok': 100078, 'refused': 0, 'duckdb-error': 1049, 'MISMATCH': 2, 'ERROR': 1}
+case 3380: totals {'ok': 100377, 'refused': 0, 'duckdb-error': 1050, 'MISMATCH': 2, 'ERROR': 1}
+case 3390: totals {'ok': 100672, 'refused': 0, 'duckdb-error': 1055, 'MISMATCH': 2, 'ERROR': 1}
+case 3400: totals {'ok': 100965, 'refused': 0, 'duckdb-error': 1062, 'MISMATCH': 2, 'ERROR': 1}
+case 3410: totals {'ok': 101264, 'refused': 0, 'duckdb-error': 1063, 'MISMATCH': 2, 'ERROR': 1}
+case 3420: totals {'ok': 101558, 'refused': 0, 'duckdb-error': 1069, 'MISMATCH': 2, 'ERROR': 1}
+case 3430: totals {'ok': 101857, 'refused': 0, 'duckdb-error': 1070, 'MISMATCH': 2, 'ERROR': 1}
+case 3440: totals {'ok': 102155, 'refused': 0, 'duckdb-error': 1072, 'MISMATCH': 2, 'ERROR': 1}
+case 3450: totals {'ok': 102455, 'refused': 0, 'duckdb-error': 1072, 'MISMATCH': 2, 'ERROR': 1}
+case 3460: totals {'ok': 102753, 'refused': 0, 'duckdb-error': 1074, 'MISMATCH': 2, 'ERROR': 1}
+case 3470: totals {'ok': 103052, 'refused': 0, 'duckdb-error': 1075, 'MISMATCH': 2, 'ERROR': 1}
+case 3480: totals {'ok': 103350, 'refused': 0, 'duckdb-error': 1077, 'MISMATCH': 2, 'ERROR': 1}
+case 3490: totals {'ok': 103645, 'refused': 0, 'duckdb-error': 1082, 'MISMATCH': 2, 'ERROR': 1}
+case 3500: totals {'ok': 103943, 'refused': 0, 'duckdb-error': 1084, 'MISMATCH': 2, 'ERROR': 1}
+case 3510: totals {'ok': 104236, 'refused': 0, 'duckdb-error': 1091, 'MISMATCH': 2, 'ERROR': 1}
+case 3520: totals {'ok': 104536, 'refused': 0, 'duckdb-error': 1091, 'MISMATCH': 2, 'ERROR': 1}
+case 3530: totals {'ok': 104835, 'refused': 0, 'duckdb-error': 1092, 'MISMATCH': 2, 'ERROR': 1}
+case 3540: totals {'ok': 105131, 'refused': 0, 'duckdb-error': 1096, 'MISMATCH': 2, 'ERROR': 1}
+case 3550: totals {'ok': 105431, 'refused': 0, 'duckdb-error': 1096, 'MISMATCH': 2, 'ERROR': 1}
+case 3560: totals {'ok': 105727, 'refused': 0, 'duckdb-error': 1100, 'MISMATCH': 2, 'ERROR': 1}
+case 3570: totals {'ok': 106025, 'refused': 0, 'duckdb-error': 1102, 'MISMATCH': 2, 'ERROR': 1}
+case 3580: totals {'ok': 106323, 'refused': 0, 'duckdb-error': 1104, 'MISMATCH': 2, 'ERROR': 1}
+case 3590: totals {'ok': 106620, 'refused': 0, 'duckdb-error': 1107, 'MISMATCH': 2, 'ERROR': 1}
+case 3600: totals {'ok': 106918, 'refused': 0, 'duckdb-error': 1109, 'MISMATCH': 2, 'ERROR': 1}
+case 3610: totals {'ok': 107214, 'refused': 0, 'duckdb-error': 1113, 'MISMATCH': 2, 'ERROR': 1}
+case 3620: totals {'ok': 107509, 'refused': 0, 'duckdb-error': 1118, 'MISMATCH': 2, 'ERROR': 1}
+case 3630: totals {'ok': 107807, 'refused': 0, 'duckdb-error': 1120, 'MISMATCH': 2, 'ERROR': 1}
+case 3640: totals {'ok': 108106, 'refused': 0, 'duckdb-error': 1121, 'MISMATCH': 2, 'ERROR': 1}
+case 3650: totals {'ok': 108403, 'refused': 0, 'duckdb-error': 1124, 'MISMATCH': 2, 'ERROR': 1}
+case 3660: totals {'ok': 108698, 'refused': 0, 'duckdb-error': 1129, 'MISMATCH': 2, 'ERROR': 1}
+case 3670: totals {'ok': 108996, 'refused': 0, 'duckdb-error': 1131, 'MISMATCH': 2, 'ERROR': 1}
+case 3680: totals {'ok': 109292, 'refused': 0, 'duckdb-error': 1135, 'MISMATCH': 2, 'ERROR': 1}
+case 3690: totals {'ok': 109588, 'refused': 0, 'duckdb-error': 1139, 'MISMATCH': 2, 'ERROR': 1}
+case 3700: totals {'ok': 109888, 'refused': 0, 'duckdb-error': 1139, 'MISMATCH': 2, 'ERROR': 1}
+case 3710: totals {'ok': 110184, 'refused': 0, 'duckdb-error': 1143, 'MISMATCH': 2, 'ERROR': 1}
+case 3720: totals {'ok': 110481, 'refused': 0, 'duckdb-error': 1146, 'MISMATCH': 2, 'ERROR': 1}
+case 3730: totals {'ok': 110777, 'refused': 0, 'duckdb-error': 1150, 'MISMATCH': 2, 'ERROR': 1}
+case 3740: totals {'ok': 111072, 'refused': 0, 'duckdb-error': 1155, 'MISMATCH': 2, 'ERROR': 1}
+case 3750: totals {'ok': 111372, 'refused': 0, 'duckdb-error': 1155, 'MISMATCH': 2, 'ERROR': 1}
+case 3760: totals {'ok': 111670, 'refused': 0, 'duckdb-error': 1157, 'MISMATCH': 2, 'ERROR': 1}
+case 3770: totals {'ok': 111969, 'refused': 0, 'duckdb-error': 1158, 'MISMATCH': 2, 'ERROR': 1}
+case 3780: totals {'ok': 112265, 'refused': 0, 'duckdb-error': 1162, 'MISMATCH': 2, 'ERROR': 1}
+case 3790: totals {'ok': 112564, 'refused': 0, 'duckdb-error': 1163, 'MISMATCH': 2, 'ERROR': 1}
+case 3800: totals {'ok': 112862, 'refused': 0, 'duckdb-error': 1165, 'MISMATCH': 2, 'ERROR': 1}
+case 3810: totals {'ok': 113161, 'refused': 0, 'duckdb-error': 1166, 'MISMATCH': 2, 'ERROR': 1}
+case 3820: totals {'ok': 113452, 'refused': 0, 'duckdb-error': 1175, 'MISMATCH': 2, 'ERROR': 1}
+case 3830: totals {'ok': 113745, 'refused': 0, 'duckdb-error': 1182, 'MISMATCH': 2, 'ERROR': 1}
+case 3840: totals {'ok': 114039, 'refused': 0, 'duckdb-error': 1188, 'MISMATCH': 2, 'ERROR': 1}
+case 3850: totals {'ok': 114335, 'refused': 0, 'duckdb-error': 1192, 'MISMATCH': 2, 'ERROR': 1}
+case 3860: totals {'ok': 114632, 'refused': 0, 'duckdb-error': 1195, 'MISMATCH': 2, 'ERROR': 1}
+case 3870: totals {'ok': 114928, 'refused': 0, 'duckdb-error': 1199, 'MISMATCH': 2, 'ERROR': 1}
+case 3880: totals {'ok': 115227, 'refused': 0, 'duckdb-error': 1200, 'MISMATCH': 2, 'ERROR': 1}
+case 3890: totals {'ok': 115524, 'refused': 0, 'duckdb-error': 1203, 'MISMATCH': 2, 'ERROR': 1}
+case 3900: totals {'ok': 115822, 'refused': 0, 'duckdb-error': 1205, 'MISMATCH': 2, 'ERROR': 1}
+case 3910: totals {'ok': 116119, 'refused': 0, 'duckdb-error': 1208, 'MISMATCH': 2, 'ERROR': 1}
+case 3920: totals {'ok': 116413, 'refused': 0, 'duckdb-error': 1214, 'MISMATCH': 2, 'ERROR': 1}
+case 3930: totals {'ok': 116712, 'refused': 0, 'duckdb-error': 1215, 'MISMATCH': 2, 'ERROR': 1}
+case 3940: totals {'ok': 117005, 'refused': 0, 'duckdb-error': 1222, 'MISMATCH': 2, 'ERROR': 1}
+case 3950: totals {'ok': 117303, 'refused': 0, 'duckdb-error': 1224, 'MISMATCH': 2, 'ERROR': 1}
+case 3960: totals {'ok': 117602, 'refused': 0, 'duckdb-error': 1225, 'MISMATCH': 2, 'ERROR': 1}
+case 3970: totals {'ok': 117901, 'refused': 0, 'duckdb-error': 1226, 'MISMATCH': 2, 'ERROR': 1}
+case 3980: totals {'ok': 118198, 'refused': 0, 'duckdb-error': 1229, 'MISMATCH': 2, 'ERROR': 1}
+case 3990: totals {'ok': 118494, 'refused': 0, 'duckdb-error': 1233, 'MISMATCH': 2, 'ERROR': 1}
+case 4000: totals {'ok': 118793, 'refused': 0, 'duckdb-error': 1234, 'MISMATCH': 2, 'ERROR': 1}
+case 4010: totals {'ok': 119090, 'refused': 0, 'duckdb-error': 1237, 'MISMATCH': 2, 'ERROR': 1}
+case 4020: totals {'ok': 119387, 'refused': 0, 'duckdb-error': 1240, 'MISMATCH': 2, 'ERROR': 1}
+case 4030: totals {'ok': 119683, 'refused': 0, 'duckdb-error': 1244, 'MISMATCH': 2, 'ERROR': 1}
+case 4040: totals {'ok': 119982, 'refused': 0, 'duckdb-error': 1245, 'MISMATCH': 2, 'ERROR': 1}
+case 4050: totals {'ok': 120278, 'refused': 0, 'duckdb-error': 1249, 'MISMATCH': 2, 'ERROR': 1}
+case 4060: totals {'ok': 120574, 'refused': 0, 'duckdb-error': 1253, 'MISMATCH': 2, 'ERROR': 1}
+case 4070: totals {'ok': 120872, 'refused': 0, 'duckdb-error': 1255, 'MISMATCH': 2, 'ERROR': 1}
+case 4080: totals {'ok': 121170, 'refused': 0, 'duckdb-error': 1257, 'MISMATCH': 2, 'ERROR': 1}
+case 4090: totals {'ok': 121467, 'refused': 0, 'duckdb-error': 1260, 'MISMATCH': 2, 'ERROR': 1}
+case 4100: totals {'ok': 121762, 'refused': 0, 'duckdb-error': 1265, 'MISMATCH': 2, 'ERROR': 1}
+case 4110: totals {'ok': 122058, 'refused': 0, 'duckdb-error': 1269, 'MISMATCH': 2, 'ERROR': 1}
+case 4120: totals {'ok': 122358, 'refused': 0, 'duckdb-error': 1269, 'MISMATCH': 2, 'ERROR': 1}
+
+=== MISMATCH: seed 506 case 4130 query 9
+SELECT abs(j0."d0_a0"), min(j0."d0_a0") FILTER (WHERE f."f_m3" > FALSE), sum(f."f_m2"), max(f."f_m2") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0_r1" = j0."d0_key" AND j0."d0_a0" < -4768 GROUP BY 1
+torbles (1 rows) [(None, None, Decimal('-38010081443512344971.56'), Decimal('9709336310048843.63'))]
+duckdb  (1 rows) [(None, None, Decimal('-9788651670668642.60'), Decimal('9709336310048843.63'))]
+replay: python -m torbles.sqlfuzz --seed 506 --case 4130 --query 9 -v
+
+case 4130: totals {'ok': 122655, 'refused': 0, 'duckdb-error': 1271, 'MISMATCH': 3, 'ERROR': 1}
+case 4140: totals {'ok': 122953, 'refused': 0, 'duckdb-error': 1273, 'MISMATCH': 3, 'ERROR': 1}
+case 4150: totals {'ok': 123250, 'refused': 0, 'duckdb-error': 1276, 'MISMATCH': 3, 'ERROR': 1}
+case 4160: totals {'ok': 123546, 'refused': 0, 'duckdb-error': 1280, 'MISMATCH': 3, 'ERROR': 1}
+case 4170: totals {'ok': 123842, 'refused': 0, 'duckdb-error': 1284, 'MISMATCH': 3, 'ERROR': 1}
+case 4180: totals {'ok': 124134, 'refused': 0, 'duckdb-error': 1292, 'MISMATCH': 3, 'ERROR': 1}
+case 4190: totals {'ok': 124434, 'refused': 0, 'duckdb-error': 1292, 'MISMATCH': 3, 'ERROR': 1}
+case 4200: totals {'ok': 124730, 'refused': 0, 'duckdb-error': 1296, 'MISMATCH': 3, 'ERROR': 1}
+case 4210: totals {'ok': 125026, 'refused': 0, 'duckdb-error': 1300, 'MISMATCH': 3, 'ERROR': 1}
+case 4220: totals {'ok': 125326, 'refused': 0, 'duckdb-error': 1300, 'MISMATCH': 3, 'ERROR': 1}
+case 4230: totals {'ok': 125622, 'refused': 0, 'duckdb-error': 1304, 'MISMATCH': 3, 'ERROR': 1}
+case 4240: totals {'ok': 125918, 'refused': 0, 'duckdb-error': 1308, 'MISMATCH': 3, 'ERROR': 1}
+case 4250: totals {'ok': 126215, 'refused': 0, 'duckdb-error': 1311, 'MISMATCH': 3, 'ERROR': 1}
+case 4260: totals {'ok': 126507, 'refused': 0, 'duckdb-error': 1319, 'MISMATCH': 3, 'ERROR': 1}
+case 4270: totals {'ok': 126804, 'refused': 0, 'duckdb-error': 1322, 'MISMATCH': 3, 'ERROR': 1}
+case 4280: totals {'ok': 127098, 'refused': 0, 'duckdb-error': 1328, 'MISMATCH': 3, 'ERROR': 1}
+case 4290: totals {'ok': 127397, 'refused': 0, 'duckdb-error': 1329, 'MISMATCH': 3, 'ERROR': 1}
+case 4300: totals {'ok': 127693, 'refused': 0, 'duckdb-error': 1333, 'MISMATCH': 3, 'ERROR': 1}
+case 4310: totals {'ok': 127989, 'refused': 0, 'duckdb-error': 1337, 'MISMATCH': 3, 'ERROR': 1}
+case 4320: totals {'ok': 128285, 'refused': 0, 'duckdb-error': 1341, 'MISMATCH': 3, 'ERROR': 1}
+case 4330: totals {'ok': 128584, 'refused': 0, 'duckdb-error': 1342, 'MISMATCH': 3, 'ERROR': 1}
+case 4340: totals {'ok': 128881, 'refused': 0, 'duckdb-error': 1345, 'MISMATCH': 3, 'ERROR': 1}
+case 4350: totals {'ok': 129176, 'refused': 0, 'duckdb-error': 1350, 'MISMATCH': 3, 'ERROR': 1}
+case 4360: totals {'ok': 129470, 'refused': 0, 'duckdb-error': 1356, 'MISMATCH': 3, 'ERROR': 1}
+case 4370: totals {'ok': 129763, 'refused': 0, 'duckdb-error': 1363, 'MISMATCH': 3, 'ERROR': 1}
+case 4380: totals {'ok': 130059, 'refused': 0, 'duckdb-error': 1367, 'MISMATCH': 3, 'ERROR': 1}
+case 4390: totals {'ok': 130354, 'refused': 0, 'duckdb-error': 1372, 'MISMATCH': 3, 'ERROR': 1}
+case 4400: totals {'ok': 130649, 'refused': 0, 'duckdb-error': 1377, 'MISMATCH': 3, 'ERROR': 1}
+case 4410: totals {'ok': 130946, 'refused': 0, 'duckdb-error': 1380, 'MISMATCH': 3, 'ERROR': 1}
+case 4420: totals {'ok': 131243, 'refused': 0, 'duckdb-error': 1383, 'MISMATCH': 3, 'ERROR': 1}
+case 4430: totals {'ok': 131539, 'refused': 0, 'duckdb-error': 1387, 'MISMATCH': 3, 'ERROR': 1}
+case 4440: totals {'ok': 131837, 'refused': 0, 'duckdb-error': 1389, 'MISMATCH': 3, 'ERROR': 1}
+case 4450: totals {'ok': 132135, 'refused': 0, 'duckdb-error': 1391, 'MISMATCH': 3, 'ERROR': 1}
+case 4460: totals {'ok': 132433, 'refused': 0, 'duckdb-error': 1393, 'MISMATCH': 3, 'ERROR': 1}
+case 4470: totals {'ok': 132730, 'refused': 0, 'duckdb-error': 1396, 'MISMATCH': 3, 'ERROR': 1}
+case 4480: totals {'ok': 133028, 'refused': 0, 'duckdb-error': 1398, 'MISMATCH': 3, 'ERROR': 1}
+case 4490: totals {'ok': 133326, 'refused': 0, 'duckdb-error': 1400, 'MISMATCH': 3, 'ERROR': 1}
+case 4500: totals {'ok': 133625, 'refused': 0, 'duckdb-error': 1401, 'MISMATCH': 3, 'ERROR': 1}
+case 4510: totals {'ok': 133921, 'refused': 0, 'duckdb-error': 1405, 'MISMATCH': 3, 'ERROR': 1}
+case 4520: totals {'ok': 134220, 'refused': 0, 'duckdb-error': 1406, 'MISMATCH': 3, 'ERROR': 1}
+case 4530: totals {'ok': 134516, 'refused': 0, 'duckdb-error': 1410, 'MISMATCH': 3, 'ERROR': 1}
+case 4540: totals {'ok': 134816, 'refused': 0, 'duckdb-error': 1410, 'MISMATCH': 3, 'ERROR': 1}
+case 4550: totals {'ok': 135115, 'refused': 0, 'duckdb-error': 1411, 'MISMATCH': 3, 'ERROR': 1}
+case 4560: totals {'ok': 135411, 'refused': 0, 'duckdb-error': 1415, 'MISMATCH': 3, 'ERROR': 1}
+case 4570: totals {'ok': 135709, 'refused': 0, 'duckdb-error': 1417, 'MISMATCH': 3, 'ERROR': 1}
+case 4580: totals {'ok': 136008, 'refused': 0, 'duckdb-error': 1418, 'MISMATCH': 3, 'ERROR': 1}
+case 4590: totals {'ok': 136302, 'refused': 0, 'duckdb-error': 1424, 'MISMATCH': 3, 'ERROR': 1}
+case 4600: totals {'ok': 136602, 'refused': 0, 'duckdb-error': 1424, 'MISMATCH': 3, 'ERROR': 1}
+case 4610: totals {'ok': 136897, 'refused': 0, 'duckdb-error': 1429, 'MISMATCH': 3, 'ERROR': 1}
+case 4620: totals {'ok': 137188, 'refused': 0, 'duckdb-error': 1438, 'MISMATCH': 3, 'ERROR': 1}
+case 4630: totals {'ok': 137486, 'refused': 0, 'duckdb-error': 1440, 'MISMATCH': 3, 'ERROR': 1}
+case 4640: totals {'ok': 137783, 'refused': 0, 'duckdb-error': 1443, 'MISMATCH': 3, 'ERROR': 1}
+case 4650: totals {'ok': 138083, 'refused': 0, 'duckdb-error': 1443, 'MISMATCH': 3, 'ERROR': 1}
+case 4660: totals {'ok': 138382, 'refused': 0, 'duckdb-error': 1444, 'MISMATCH': 3, 'ERROR': 1}
+case 4670: totals {'ok': 138678, 'refused': 0, 'duckdb-error': 1448, 'MISMATCH': 3, 'ERROR': 1}
+case 4680: totals {'ok': 138977, 'refused': 0, 'duckdb-error': 1449, 'MISMATCH': 3, 'ERROR': 1}
+case 4690: totals {'ok': 139274, 'refused': 0, 'duckdb-error': 1452, 'MISMATCH': 3, 'ERROR': 1}
+case 4700: totals {'ok': 139569, 'refused': 0, 'duckdb-error': 1457, 'MISMATCH': 3, 'ERROR': 1}
+case 4710: totals {'ok': 139867, 'refused': 0, 'duckdb-error': 1459, 'MISMATCH': 3, 'ERROR': 1}
+case 4720: totals {'ok': 140159, 'refused': 0, 'duckdb-error': 1467, 'MISMATCH': 3, 'ERROR': 1}
+case 4730: totals {'ok': 140457, 'refused': 0, 'duckdb-error': 1469, 'MISMATCH': 3, 'ERROR': 1}
+case 4740: totals {'ok': 140757, 'refused': 0, 'duckdb-error': 1469, 'MISMATCH': 3, 'ERROR': 1}
+case 4750: totals {'ok': 141056, 'refused': 0, 'duckdb-error': 1470, 'MISMATCH': 3, 'ERROR': 1}
+case 4760: totals {'ok': 141355, 'refused': 0, 'duckdb-error': 1471, 'MISMATCH': 3, 'ERROR': 1}
+case 4770: totals {'ok': 141651, 'refused': 0, 'duckdb-error': 1475, 'MISMATCH': 3, 'ERROR': 1}
+case 4780: totals {'ok': 141949, 'refused': 0, 'duckdb-error': 1477, 'MISMATCH': 3, 'ERROR': 1}
+case 4790: totals {'ok': 142243, 'refused': 0, 'duckdb-error': 1483, 'MISMATCH': 3, 'ERROR': 1}
+case 4800: totals {'ok': 142538, 'refused': 0, 'duckdb-error': 1488, 'MISMATCH': 3, 'ERROR': 1}
+case 4810: totals {'ok': 142835, 'refused': 0, 'duckdb-error': 1491, 'MISMATCH': 3, 'ERROR': 1}
+case 4820: totals {'ok': 143130, 'refused': 0, 'duckdb-error': 1496, 'MISMATCH': 3, 'ERROR': 1}
+case 4830: totals {'ok': 143428, 'refused': 0, 'duckdb-error': 1498, 'MISMATCH': 3, 'ERROR': 1}
+case 4840: totals {'ok': 143725, 'refused': 0, 'duckdb-error': 1501, 'MISMATCH': 3, 'ERROR': 1}
+case 4850: totals {'ok': 144025, 'refused': 0, 'duckdb-error': 1501, 'MISMATCH': 3, 'ERROR': 1}
+case 4860: totals {'ok': 144325, 'refused': 0, 'duckdb-error': 1501, 'MISMATCH': 3, 'ERROR': 1}
+case 4870: totals {'ok': 144620, 'refused': 0, 'duckdb-error': 1506, 'MISMATCH': 3, 'ERROR': 1}
+case 4880: totals {'ok': 144917, 'refused': 0, 'duckdb-error': 1509, 'MISMATCH': 3, 'ERROR': 1}
+case 4890: totals {'ok': 145216, 'refused': 0, 'duckdb-error': 1510, 'MISMATCH': 3, 'ERROR': 1}
+case 4900: totals {'ok': 145513, 'refused': 0, 'duckdb-error': 1513, 'MISMATCH': 3, 'ERROR': 1}
+case 4910: totals {'ok': 145807, 'refused': 0, 'duckdb-error': 1519, 'MISMATCH': 3, 'ERROR': 1}
+case 4920: totals {'ok': 146107, 'refused': 0, 'duckdb-error': 1519, 'MISMATCH': 3, 'ERROR': 1}
+case 4930: totals {'ok': 146405, 'refused': 0, 'duckdb-error': 1521, 'MISMATCH': 3, 'ERROR': 1}
+case 4940: totals {'ok': 146702, 'refused': 0, 'duckdb-error': 1524, 'MISMATCH': 3, 'ERROR': 1}
+case 4950: totals {'ok': 146998, 'refused': 0, 'duckdb-error': 1528, 'MISMATCH': 3, 'ERROR': 1}
+case 4960: totals {'ok': 147294, 'refused': 0, 'duckdb-error': 1532, 'MISMATCH': 3, 'ERROR': 1}
+case 4970: totals {'ok': 147588, 'refused': 0, 'duckdb-error': 1538, 'MISMATCH': 3, 'ERROR': 1}
+case 4980: totals {'ok': 147885, 'refused': 0, 'duckdb-error': 1541, 'MISMATCH': 3, 'ERROR': 1}
+case 4990: totals {'ok': 148178, 'refused': 0, 'duckdb-error': 1548, 'MISMATCH': 3, 'ERROR': 1}
+case 5000: totals {'ok': 148476, 'refused': 0, 'duckdb-error': 1550, 'MISMATCH': 3, 'ERROR': 1}
+case 5010: totals {'ok': 148771, 'refused': 0, 'duckdb-error': 1555, 'MISMATCH': 3, 'ERROR': 1}
+case 5020: totals {'ok': 149069, 'refused': 0, 'duckdb-error': 1557, 'MISMATCH': 3, 'ERROR': 1}
+case 5030: totals {'ok': 149365, 'refused': 0, 'duckdb-error': 1561, 'MISMATCH': 3, 'ERROR': 1}
+case 5040: totals {'ok': 149660, 'refused': 0, 'duckdb-error': 1566, 'MISMATCH': 3, 'ERROR': 1}
+case 5050: totals {'ok': 149957, 'refused': 0, 'duckdb-error': 1569, 'MISMATCH': 3, 'ERROR': 1}
+case 5060: totals {'ok': 150255, 'refused': 0, 'duckdb-error': 1571, 'MISMATCH': 3, 'ERROR': 1}
+case 5070: totals {'ok': 150552, 'refused': 0, 'duckdb-error': 1574, 'MISMATCH': 3, 'ERROR': 1}
+case 5080: totals {'ok': 150850, 'refused': 0, 'duckdb-error': 1576, 'MISMATCH': 3, 'ERROR': 1}
+case 5090: totals {'ok': 151148, 'refused': 0, 'duckdb-error': 1578, 'MISMATCH': 3, 'ERROR': 1}
+case 5100: totals {'ok': 151444, 'refused': 0, 'duckdb-error': 1582, 'MISMATCH': 3, 'ERROR': 1}
+case 5110: totals {'ok': 151742, 'refused': 0, 'duckdb-error': 1584, 'MISMATCH': 3, 'ERROR': 1}
+case 5120: totals {'ok': 152040, 'refused': 0, 'duckdb-error': 1586, 'MISMATCH': 3, 'ERROR': 1}
+case 5130: totals {'ok': 152335, 'refused': 0, 'duckdb-error': 1591, 'MISMATCH': 3, 'ERROR': 1}
+case 5140: totals {'ok': 152631, 'refused': 0, 'duckdb-error': 1595, 'MISMATCH': 3, 'ERROR': 1}
+case 5150: totals {'ok': 152927, 'refused': 0, 'duckdb-error': 1599, 'MISMATCH': 3, 'ERROR': 1}
+case 5160: totals {'ok': 153224, 'refused': 0, 'duckdb-error': 1602, 'MISMATCH': 3, 'ERROR': 1}
+case 5170: totals {'ok': 153523, 'refused': 0, 'duckdb-error': 1603, 'MISMATCH': 3, 'ERROR': 1}
+case 5180: totals {'ok': 153820, 'refused': 0, 'duckdb-error': 1606, 'MISMATCH': 3, 'ERROR': 1}
+case 5190: totals {'ok': 154118, 'refused': 0, 'duckdb-error': 1608, 'MISMATCH': 3, 'ERROR': 1}
+case 5200: totals {'ok': 154415, 'refused': 0, 'duckdb-error': 1611, 'MISMATCH': 3, 'ERROR': 1}
+case 5210: totals {'ok': 154711, 'refused': 0, 'duckdb-error': 1615, 'MISMATCH': 3, 'ERROR': 1}
+case 5220: totals {'ok': 155009, 'refused': 0, 'duckdb-error': 1617, 'MISMATCH': 3, 'ERROR': 1}
+case 5230: totals {'ok': 155307, 'refused': 0, 'duckdb-error': 1619, 'MISMATCH': 3, 'ERROR': 1}
+case 5240: totals {'ok': 155604, 'refused': 0, 'duckdb-error': 1622, 'MISMATCH': 3, 'ERROR': 1}
+case 5250: totals {'ok': 155900, 'refused': 0, 'duckdb-error': 1626, 'MISMATCH': 3, 'ERROR': 1}
+case 5260: totals {'ok': 156197, 'refused': 0, 'duckdb-error': 1629, 'MISMATCH': 3, 'ERROR': 1}
+case 5270: totals {'ok': 156495, 'refused': 0, 'duckdb-error': 1631, 'MISMATCH': 3, 'ERROR': 1}
+case 5280: totals {'ok': 156793, 'refused': 0, 'duckdb-error': 1633, 'MISMATCH': 3, 'ERROR': 1}
+case 5290: totals {'ok': 157093, 'refused': 0, 'duckdb-error': 1633, 'MISMATCH': 3, 'ERROR': 1}
+case 5300: totals {'ok': 157390, 'refused': 0, 'duckdb-error': 1636, 'MISMATCH': 3, 'ERROR': 1}
+case 5310: totals {'ok': 157689, 'refused': 0, 'duckdb-error': 1637, 'MISMATCH': 3, 'ERROR': 1}
+case 5320: totals {'ok': 157986, 'refused': 0, 'duckdb-error': 1640, 'MISMATCH': 3, 'ERROR': 1}
+case 5330: totals {'ok': 158285, 'refused': 0, 'duckdb-error': 1641, 'MISMATCH': 3, 'ERROR': 1}
+case 5340: totals {'ok': 158584, 'refused': 0, 'duckdb-error': 1642, 'MISMATCH': 3, 'ERROR': 1}
+case 5350: totals {'ok': 158880, 'refused': 0, 'duckdb-error': 1646, 'MISMATCH': 3, 'ERROR': 1}
+case 5360: totals {'ok': 159174, 'refused': 0, 'duckdb-error': 1652, 'MISMATCH': 3, 'ERROR': 1}
+case 5370: totals {'ok': 159473, 'refused': 0, 'duckdb-error': 1653, 'MISMATCH': 3, 'ERROR': 1}
+case 5380: totals {'ok': 159770, 'refused': 0, 'duckdb-error': 1656, 'MISMATCH': 3, 'ERROR': 1}
+case 5390: totals {'ok': 160067, 'refused': 0, 'duckdb-error': 1659, 'MISMATCH': 3, 'ERROR': 1}
+case 5400: totals {'ok': 160365, 'refused': 0, 'duckdb-error': 1661, 'MISMATCH': 3, 'ERROR': 1}
+case 5410: totals {'ok': 160660, 'refused': 0, 'duckdb-error': 1666, 'MISMATCH': 3, 'ERROR': 1}
+case 5420: totals {'ok': 160958, 'refused': 0, 'duckdb-error': 1668, 'MISMATCH': 3, 'ERROR': 1}
+case 5430: totals {'ok': 161258, 'refused': 0, 'duckdb-error': 1668, 'MISMATCH': 3, 'ERROR': 1}
+case 5440: totals {'ok': 161551, 'refused': 0, 'duckdb-error': 1675, 'MISMATCH': 3, 'ERROR': 1}
+case 5450: totals {'ok': 161850, 'refused': 0, 'duckdb-error': 1676, 'MISMATCH': 3, 'ERROR': 1}
+case 5460: totals {'ok': 162146, 'refused': 0, 'duckdb-error': 1680, 'MISMATCH': 3, 'ERROR': 1}
+case 5470: totals {'ok': 162441, 'refused': 0, 'duckdb-error': 1685, 'MISMATCH': 3, 'ERROR': 1}
+case 5480: totals {'ok': 162739, 'refused': 0, 'duckdb-error': 1687, 'MISMATCH': 3, 'ERROR': 1}
+case 5490: totals {'ok': 163031, 'refused': 0, 'duckdb-error': 1695, 'MISMATCH': 3, 'ERROR': 1}
+case 5500: totals {'ok': 163326, 'refused': 0, 'duckdb-error': 1700, 'MISMATCH': 3, 'ERROR': 1}
+case 5510: totals {'ok': 163623, 'refused': 0, 'duckdb-error': 1703, 'MISMATCH': 3, 'ERROR': 1}
+case 5520: totals {'ok': 163919, 'refused': 0, 'duckdb-error': 1707, 'MISMATCH': 3, 'ERROR': 1}
+case 5530: totals {'ok': 164214, 'refused': 0, 'duckdb-error': 1712, 'MISMATCH': 3, 'ERROR': 1}
+case 5540: totals {'ok': 164512, 'refused': 0, 'duckdb-error': 1714, 'MISMATCH': 3, 'ERROR': 1}
+case 5550: totals {'ok': 164810, 'refused': 0, 'duckdb-error': 1716, 'MISMATCH': 3, 'ERROR': 1}
+case 5560: totals {'ok': 165104, 'refused': 0, 'duckdb-error': 1722, 'MISMATCH': 3, 'ERROR': 1}
+case 5570: totals {'ok': 165403, 'refused': 0, 'duckdb-error': 1723, 'MISMATCH': 3, 'ERROR': 1}
+case 5580: totals {'ok': 165697, 'refused': 0, 'duckdb-error': 1729, 'MISMATCH': 3, 'ERROR': 1}
+case 5590: totals {'ok': 165994, 'refused': 0, 'duckdb-error': 1732, 'MISMATCH': 3, 'ERROR': 1}
+case 5600: totals {'ok': 166291, 'refused': 0, 'duckdb-error': 1735, 'MISMATCH': 3, 'ERROR': 1}
+case 5610: totals {'ok': 166583, 'refused': 0, 'duckdb-error': 1743, 'MISMATCH': 3, 'ERROR': 1}
+case 5620: totals {'ok': 166880, 'refused': 0, 'duckdb-error': 1746, 'MISMATCH': 3, 'ERROR': 1}
+case 5630: totals {'ok': 167179, 'refused': 0, 'duckdb-error': 1747, 'MISMATCH': 3, 'ERROR': 1}
+case 5640: totals {'ok': 167474, 'refused': 0, 'duckdb-error': 1752, 'MISMATCH': 3, 'ERROR': 1}
+case 5650: totals {'ok': 167773, 'refused': 0, 'duckdb-error': 1753, 'MISMATCH': 3, 'ERROR': 1}
+case 5660: totals {'ok': 168072, 'refused': 0, 'duckdb-error': 1754, 'MISMATCH': 3, 'ERROR': 1}
+case 5670: totals {'ok': 168365, 'refused': 0, 'duckdb-error': 1761, 'MISMATCH': 3, 'ERROR': 1}
+case 5680: totals {'ok': 168659, 'refused': 0, 'duckdb-error': 1767, 'MISMATCH': 3, 'ERROR': 1}
+case 5690: totals {'ok': 168955, 'refused': 0, 'duckdb-error': 1771, 'MISMATCH': 3, 'ERROR': 1}
+case 5700: totals {'ok': 169255, 'refused': 0, 'duckdb-error': 1771, 'MISMATCH': 3, 'ERROR': 1}
+case 5710: totals {'ok': 169554, 'refused': 0, 'duckdb-error': 1772, 'MISMATCH': 3, 'ERROR': 1}
+case 5720: totals {'ok': 169848, 'refused': 0, 'duckdb-error': 1778, 'MISMATCH': 3, 'ERROR': 1}
+case 5730: totals {'ok': 170141, 'refused': 0, 'duckdb-error': 1785, 'MISMATCH': 3, 'ERROR': 1}
+case 5740: totals {'ok': 170440, 'refused': 0, 'duckdb-error': 1786, 'MISMATCH': 3, 'ERROR': 1}
+case 5750: totals {'ok': 170738, 'refused': 0, 'duckdb-error': 1788, 'MISMATCH': 3, 'ERROR': 1}
+case 5760: totals {'ok': 171036, 'refused': 0, 'duckdb-error': 1790, 'MISMATCH': 3, 'ERROR': 1}
+case 5770: totals {'ok': 171331, 'refused': 0, 'duckdb-error': 1795, 'MISMATCH': 3, 'ERROR': 1}
+case 5780: totals {'ok': 171628, 'refused': 0, 'duckdb-error': 1798, 'MISMATCH': 3, 'ERROR': 1}
+case 5790: totals {'ok': 171923, 'refused': 0, 'duckdb-error': 1803, 'MISMATCH': 3, 'ERROR': 1}
+
+=== MISMATCH: seed 506 case 5798 query 1
+SELECT f."f_m2", (-f."f_m3"), sum(f."f_m3"), min(f."f_m0"), count(DISTINCT f."f_m1") FROM fact f JOIN dim1 j0 ON f."f_d1" = j0."d1_key" LEFT JOIN dim2 j1 ON f."f_d2" = j1."d2_key" AND j1."d2_a0" < 0 GROUP BY GROUPING SETS ((1, 2), ())
+torbles (351 rows) [(Decimal('0.69'), Decimal('-164729114578297060'), Decimal('7412810156023367700'), 1, 7), (Decimal('97.53'), Decimal('107532099955145276'), Decimal('-2473238298968341348'), 1, 7), (Decimal('0.13'), Decimal('-99'), Decimal('2970'), 1, 7), (Decimal('0.69'), Decimal('-65'), Decimal('1950'), 1, 7), (Decimal('0.69'), Decimal('156666783435557666'), Decimal('-4073336369324499316'), 1, 7), (Decimal('0.13'), Decimal('-902395686434672847'), Decimal('27974266279474858257'), 1, 7)]
+duckdb  (351 rows) [(Decimal('-81.31'), Decimal('690252088005500775'), Decimal('-3641322742466473184'), 1, 7), (Decimal('0.13'), Decimal('656129104163446766'), Decimal('-3861645467847638428'), 1, 7), (Decimal('-12.19'), Decimal('373230181182036442'), Decimal('8369529181794567682'), 1, 7), (Decimal('97.53'), Decimal('176728981724530540'), Decimal('-5301869451735916200'), 1, 7), (Decimal('0.13'), Decimal('240277419497484120'), Decimal('-5286103228944650640'), 1, 7), (Decimal('76.36'), Decimal('-655941901479108222'), Decimal('-736312733773629622'), 1, 7)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 5798 --query 1 -v
+
+case 5800: totals {'ok': 172221, 'refused': 0, 'duckdb-error': 1804, 'MISMATCH': 4, 'ERROR': 1}
+case 5810: totals {'ok': 172519, 'refused': 0, 'duckdb-error': 1806, 'MISMATCH': 4, 'ERROR': 1}
+case 5820: totals {'ok': 172817, 'refused': 0, 'duckdb-error': 1808, 'MISMATCH': 4, 'ERROR': 1}
+case 5830: totals {'ok': 173117, 'refused': 0, 'duckdb-error': 1808, 'MISMATCH': 4, 'ERROR': 1}
+case 5840: totals {'ok': 173415, 'refused': 0, 'duckdb-error': 1810, 'MISMATCH': 4, 'ERROR': 1}
+case 5850: totals {'ok': 173708, 'refused': 0, 'duckdb-error': 1817, 'MISMATCH': 4, 'ERROR': 1}
+case 5860: totals {'ok': 174005, 'refused': 0, 'duckdb-error': 1820, 'MISMATCH': 4, 'ERROR': 1}
+case 5870: totals {'ok': 174303, 'refused': 0, 'duckdb-error': 1822, 'MISMATCH': 4, 'ERROR': 1}
+case 5880: totals {'ok': 174601, 'refused': 0, 'duckdb-error': 1824, 'MISMATCH': 4, 'ERROR': 1}
+case 5890: totals {'ok': 174900, 'refused': 0, 'duckdb-error': 1825, 'MISMATCH': 4, 'ERROR': 1}
+case 5900: totals {'ok': 175195, 'refused': 0, 'duckdb-error': 1830, 'MISMATCH': 4, 'ERROR': 1}
+case 5910: totals {'ok': 175489, 'refused': 0, 'duckdb-error': 1836, 'MISMATCH': 4, 'ERROR': 1}
+case 5920: totals {'ok': 175787, 'refused': 0, 'duckdb-error': 1838, 'MISMATCH': 4, 'ERROR': 1}
+case 5930: totals {'ok': 176084, 'refused': 0, 'duckdb-error': 1841, 'MISMATCH': 4, 'ERROR': 1}
+case 5940: totals {'ok': 176384, 'refused': 0, 'duckdb-error': 1841, 'MISMATCH': 4, 'ERROR': 1}
+case 5950: totals {'ok': 176682, 'refused': 0, 'duckdb-error': 1843, 'MISMATCH': 4, 'ERROR': 1}
+case 5960: totals {'ok': 176980, 'refused': 0, 'duckdb-error': 1845, 'MISMATCH': 4, 'ERROR': 1}
+case 5970: totals {'ok': 177278, 'refused': 0, 'duckdb-error': 1847, 'MISMATCH': 4, 'ERROR': 1}
+case 5980: totals {'ok': 177570, 'refused': 0, 'duckdb-error': 1855, 'MISMATCH': 4, 'ERROR': 1}
+case 5990: totals {'ok': 177869, 'refused': 0, 'duckdb-error': 1856, 'MISMATCH': 4, 'ERROR': 1}
+case 6000: totals {'ok': 178168, 'refused': 0, 'duckdb-error': 1857, 'MISMATCH': 4, 'ERROR': 1}
+case 6010: totals {'ok': 178463, 'refused': 0, 'duckdb-error': 1862, 'MISMATCH': 4, 'ERROR': 1}
+case 6020: totals {'ok': 178759, 'refused': 0, 'duckdb-error': 1866, 'MISMATCH': 4, 'ERROR': 1}
+case 6030: totals {'ok': 179055, 'refused': 0, 'duckdb-error': 1870, 'MISMATCH': 4, 'ERROR': 1}
+case 6040: totals {'ok': 179346, 'refused': 0, 'duckdb-error': 1879, 'MISMATCH': 4, 'ERROR': 1}
+case 6050: totals {'ok': 179643, 'refused': 0, 'duckdb-error': 1882, 'MISMATCH': 4, 'ERROR': 1}
+case 6060: totals {'ok': 179935, 'refused': 0, 'duckdb-error': 1890, 'MISMATCH': 4, 'ERROR': 1}
+case 6070: totals {'ok': 180233, 'refused': 0, 'duckdb-error': 1892, 'MISMATCH': 4, 'ERROR': 1}
+case 6080: totals {'ok': 180530, 'refused': 0, 'duckdb-error': 1895, 'MISMATCH': 4, 'ERROR': 1}
+case 6090: totals {'ok': 180828, 'refused': 0, 'duckdb-error': 1897, 'MISMATCH': 4, 'ERROR': 1}
+case 6100: totals {'ok': 181127, 'refused': 0, 'duckdb-error': 1898, 'MISMATCH': 4, 'ERROR': 1}
+case 6110: totals {'ok': 181424, 'refused': 0, 'duckdb-error': 1901, 'MISMATCH': 4, 'ERROR': 1}
+case 6120: totals {'ok': 181723, 'refused': 0, 'duckdb-error': 1902, 'MISMATCH': 4, 'ERROR': 1}
+case 6130: totals {'ok': 182022, 'refused': 0, 'duckdb-error': 1903, 'MISMATCH': 4, 'ERROR': 1}
+case 6140: totals {'ok': 182318, 'refused': 0, 'duckdb-error': 1907, 'MISMATCH': 4, 'ERROR': 1}
+case 6150: totals {'ok': 182615, 'refused': 0, 'duckdb-error': 1910, 'MISMATCH': 4, 'ERROR': 1}
+case 6160: totals {'ok': 182911, 'refused': 0, 'duckdb-error': 1914, 'MISMATCH': 4, 'ERROR': 1}
+case 6170: totals {'ok': 183205, 'refused': 0, 'duckdb-error': 1920, 'MISMATCH': 4, 'ERROR': 1}
+case 6180: totals {'ok': 183501, 'refused': 0, 'duckdb-error': 1924, 'MISMATCH': 4, 'ERROR': 1}
+case 6190: totals {'ok': 183798, 'refused': 0, 'duckdb-error': 1927, 'MISMATCH': 4, 'ERROR': 1}
+case 6200: totals {'ok': 184093, 'refused': 0, 'duckdb-error': 1932, 'MISMATCH': 4, 'ERROR': 1}
+case 6210: totals {'ok': 184390, 'refused': 0, 'duckdb-error': 1935, 'MISMATCH': 4, 'ERROR': 1}
+case 6220: totals {'ok': 184687, 'refused': 0, 'duckdb-error': 1938, 'MISMATCH': 4, 'ERROR': 1}
+case 6230: totals {'ok': 184978, 'refused': 0, 'duckdb-error': 1947, 'MISMATCH': 4, 'ERROR': 1}
+case 6240: totals {'ok': 185275, 'refused': 0, 'duckdb-error': 1950, 'MISMATCH': 4, 'ERROR': 1}
+case 6250: totals {'ok': 185573, 'refused': 0, 'duckdb-error': 1952, 'MISMATCH': 4, 'ERROR': 1}
+case 6260: totals {'ok': 185869, 'refused': 0, 'duckdb-error': 1956, 'MISMATCH': 4, 'ERROR': 1}
+case 6270: totals {'ok': 186164, 'refused': 0, 'duckdb-error': 1961, 'MISMATCH': 4, 'ERROR': 1}
+case 6280: totals {'ok': 186464, 'refused': 0, 'duckdb-error': 1961, 'MISMATCH': 4, 'ERROR': 1}
+case 6290: totals {'ok': 186763, 'refused': 0, 'duckdb-error': 1962, 'MISMATCH': 4, 'ERROR': 1}
+case 6300: totals {'ok': 187056, 'refused': 0, 'duckdb-error': 1969, 'MISMATCH': 4, 'ERROR': 1}
+case 6310: totals {'ok': 187349, 'refused': 0, 'duckdb-error': 1976, 'MISMATCH': 4, 'ERROR': 1}
+case 6320: totals {'ok': 187646, 'refused': 0, 'duckdb-error': 1979, 'MISMATCH': 4, 'ERROR': 1}
+case 6330: totals {'ok': 187945, 'refused': 0, 'duckdb-error': 1980, 'MISMATCH': 4, 'ERROR': 1}
+case 6340: totals {'ok': 188243, 'refused': 0, 'duckdb-error': 1982, 'MISMATCH': 4, 'ERROR': 1}
+case 6350: totals {'ok': 188538, 'refused': 0, 'duckdb-error': 1987, 'MISMATCH': 4, 'ERROR': 1}
+case 6360: totals {'ok': 188834, 'refused': 0, 'duckdb-error': 1991, 'MISMATCH': 4, 'ERROR': 1}
+case 6370: totals {'ok': 189131, 'refused': 0, 'duckdb-error': 1994, 'MISMATCH': 4, 'ERROR': 1}
+case 6380: totals {'ok': 189431, 'refused': 0, 'duckdb-error': 1994, 'MISMATCH': 4, 'ERROR': 1}
+case 6390: totals {'ok': 189728, 'refused': 0, 'duckdb-error': 1997, 'MISMATCH': 4, 'ERROR': 1}
+case 6400: totals {'ok': 190026, 'refused': 0, 'duckdb-error': 1999, 'MISMATCH': 4, 'ERROR': 1}
+case 6410: totals {'ok': 190322, 'refused': 0, 'duckdb-error': 2003, 'MISMATCH': 4, 'ERROR': 1}
+case 6420: totals {'ok': 190621, 'refused': 0, 'duckdb-error': 2004, 'MISMATCH': 4, 'ERROR': 1}
+case 6430: totals {'ok': 190914, 'refused': 0, 'duckdb-error': 2011, 'MISMATCH': 4, 'ERROR': 1}
+case 6440: totals {'ok': 191209, 'refused': 0, 'duckdb-error': 2016, 'MISMATCH': 4, 'ERROR': 1}
+case 6450: totals {'ok': 191505, 'refused': 0, 'duckdb-error': 2020, 'MISMATCH': 4, 'ERROR': 1}
+case 6460: totals {'ok': 191801, 'refused': 0, 'duckdb-error': 2024, 'MISMATCH': 4, 'ERROR': 1}
+case 6470: totals {'ok': 192101, 'refused': 0, 'duckdb-error': 2024, 'MISMATCH': 4, 'ERROR': 1}
+
+=== ERROR: seed 506 case 6475 query 4
+SELECT count(*), min(greatest(f."f_m3", 0)) FROM fact f LEFT JOIN dim1 j0 ON f."f_d1_r1" = j0."d1_key" AND (f."f_m3" * f."f_m3") = 704322020060962784 JOIN dim2 j1 ON f."f_d2" = j1."d2_key" WHERE (j0."d1_h1" BETWEEN '0%' AND 'A_' OR greatest(f."f_d1_r1", -1682041340783725350) = 0) AND (NOT j1."d2_h2" BETWEEN -3 AND -241769) AND j0."d1_key" NOT IN (SELECT s."d1_key" FROM dim1 s WHERE s."d1_key" IS NULL)
+SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (704322020060962784 * 704322020060962784)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+  File "/home/brian/torbles_math/torbles/database.py", line 430, in sql
+    out = sqlexec.run(self, q, engine)
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 786, in run
+    r = run_query(q, cx)
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 808, in run_query
+    if isinstance(q, I.Select): return run_select(q, cx)
+                                       ~~~~~~~~~~^^^^^^^
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 1285, in run_select
+    rel, aggplan = run_general(s, bindings, need, aggs, cx)
+                   ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/brian/torbles_math/torbles/sqlexec.py", line 4557, in run_general
+    rel = _materialize(s.from_, per, pushed, cx)
+sqltypes.SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (704322020060962784 * 704322020060962784)
+
+replay: python -m torbles.sqlfuzz --seed 506 --case 6475 --query 4 -v
+
+case 6480: totals {'ok': 192400, 'refused': 0, 'duckdb-error': 2024, 'MISMATCH': 4, 'ERROR': 2}
+case 6490: totals {'ok': 192700, 'refused': 0, 'duckdb-error': 2024, 'MISMATCH': 4, 'ERROR': 2}
+case 6500: totals {'ok': 192998, 'refused': 0, 'duckdb-error': 2026, 'MISMATCH': 4, 'ERROR': 2}
+case 6510: totals {'ok': 193296, 'refused': 0, 'duckdb-error': 2028, 'MISMATCH': 4, 'ERROR': 2}
+case 6520: totals {'ok': 193595, 'refused': 0, 'duckdb-error': 2029, 'MISMATCH': 4, 'ERROR': 2}
+case 6530: totals {'ok': 193889, 'refused': 0, 'duckdb-error': 2035, 'MISMATCH': 4, 'ERROR': 2}
+case 6540: totals {'ok': 194187, 'refused': 0, 'duckdb-error': 2037, 'MISMATCH': 4, 'ERROR': 2}
+case 6550: totals {'ok': 194485, 'refused': 0, 'duckdb-error': 2039, 'MISMATCH': 4, 'ERROR': 2}
+case 6560: totals {'ok': 194782, 'refused': 0, 'duckdb-error': 2042, 'MISMATCH': 4, 'ERROR': 2}
+case 6570: totals {'ok': 195077, 'refused': 0, 'duckdb-error': 2047, 'MISMATCH': 4, 'ERROR': 2}
+case 6580: totals {'ok': 195375, 'refused': 0, 'duckdb-error': 2049, 'MISMATCH': 4, 'ERROR': 2}
+case 6590: totals {'ok': 195670, 'refused': 0, 'duckdb-error': 2054, 'MISMATCH': 4, 'ERROR': 2}
+case 6600: totals {'ok': 195966, 'refused': 0, 'duckdb-error': 2058, 'MISMATCH': 4, 'ERROR': 2}
+case 6610: totals {'ok': 196262, 'refused': 0, 'duckdb-error': 2062, 'MISMATCH': 4, 'ERROR': 2}
+case 6620: totals {'ok': 196560, 'refused': 0, 'duckdb-error': 2064, 'MISMATCH': 4, 'ERROR': 2}
+case 6630: totals {'ok': 196859, 'refused': 0, 'duckdb-error': 2065, 'MISMATCH': 4, 'ERROR': 2}
+case 6640: totals {'ok': 197158, 'refused': 0, 'duckdb-error': 2066, 'MISMATCH': 4, 'ERROR': 2}
+case 6650: totals {'ok': 197457, 'refused': 0, 'duckdb-error': 2067, 'MISMATCH': 4, 'ERROR': 2}
+case 6660: totals {'ok': 197751, 'refused': 0, 'duckdb-error': 2073, 'MISMATCH': 4, 'ERROR': 2}
+case 6670: totals {'ok': 198039, 'refused': 0, 'duckdb-error': 2085, 'MISMATCH': 4, 'ERROR': 2}
+case 6680: totals {'ok': 198338, 'refused': 0, 'duckdb-error': 2086, 'MISMATCH': 4, 'ERROR': 2}
+case 6690: totals {'ok': 198632, 'refused': 0, 'duckdb-error': 2092, 'MISMATCH': 4, 'ERROR': 2}
+case 6700: totals {'ok': 198929, 'refused': 0, 'duckdb-error': 2095, 'MISMATCH': 4, 'ERROR': 2}
+case 6710: totals {'ok': 199229, 'refused': 0, 'duckdb-error': 2095, 'MISMATCH': 4, 'ERROR': 2}
+case 6720: totals {'ok': 199525, 'refused': 0, 'duckdb-error': 2099, 'MISMATCH': 4, 'ERROR': 2}
+case 6730: totals {'ok': 199824, 'refused': 0, 'duckdb-error': 2100, 'MISMATCH': 4, 'ERROR': 2}
+case 6740: totals {'ok': 200122, 'refused': 0, 'duckdb-error': 2102, 'MISMATCH': 4, 'ERROR': 2}
+case 6750: totals {'ok': 200418, 'refused': 0, 'duckdb-error': 2106, 'MISMATCH': 4, 'ERROR': 2}
+case 6760: totals {'ok': 200716, 'refused': 0, 'duckdb-error': 2108, 'MISMATCH': 4, 'ERROR': 2}
+case 6770: totals {'ok': 201014, 'refused': 0, 'duckdb-error': 2110, 'MISMATCH': 4, 'ERROR': 2}
+
+203370 statements in 3631 s: {'ok': 201249, 'refused': 0, 'duckdb-error': 2115, 'MISMATCH': 4, 'ERROR': 2}
+statements by kind                          count  share     torbles ms mean / median / p95     DuckDB ms mean / median / p95
+  aggregate, GROUP BY                       80945  39.8%              4.8      2.9     11.6             2.9      2.4      5.5
+  rows, ORDER BY + LIMIT                    28770  14.1%              3.7      2.0     10.2             2.2      1.9      3.8
+  aggregate, ROLLUP / CUBE / GROUPING SETS  22731  11.2%              5.3      3.0     13.0             3.9      3.1      7.9
+  aggregate, no GROUP BY                    21036  10.3%              3.2      2.3      7.6             2.2      1.9      3.8
+  window functions over rows                19138   9.4%              7.2      2.7     16.9            11.7      2.3     11.7
+  set operation                             12176   6.0%              4.3      2.6     11.5             3.2      2.6      6.1
+  IN (subquery)                              7409   3.6%              4.3      2.6     11.4             2.4      2.2      4.0
+  scalar subquery                            5591   2.7%              2.7      2.2      5.0             2.1      2.0      3.5
+  CTE + window                               5574   2.7%              3.9      2.8      8.2             2.7      2.4      4.4
+  all                                      203370 100.0%              4.6      2.6     11.2             3.6      2.3      5.8
+refusals (and statements DuckDB rejected):
+    218  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of DECIMAL(1
+    153  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (21
+    137  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-2
+     66  (duckdb) OutOfRangeException: Out of Range Error: Overflow in negation of numeric value!
+     62  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-2147483648)
+     57  (duckdb) OutOfRangeException: Out of Range Error: Overflow in subtraction of INT32 (-2147
+     53  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474836
+     48  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-9
+     39  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-1
+     39  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-3
+     37  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-2
+     35  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-1
+     34  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (46
+     32  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (-2147483
+     31  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-2
+     28  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (-1
+     24  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (-4
+     18  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT32 (21474826
+     16  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT16 (-3
+     16  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT64 (-9223372
+     15  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT32 (10
+     15  (duckdb) OutOfRangeException: Out of Range Error: Overflow in multiplication of INT64 (21
+     15  (duckdb) OutOfRangeException: Out of Range Error: Overflow on abs(-9223372036854775808)
+     14  (duckdb) OutOfRangeException: Out of Range Error: Overflow in addition of INT64 (46116860
+     14  (duckdb) OutOfRangeException: Out of Range Error: Overflow in subtraction of INT32 (21474
+6 FAILURE(S)

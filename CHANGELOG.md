@@ -72,9 +72,10 @@ already follow it, the window ordering sorts the integer codes as they are inste
 the rows already follow sorts only the partitions (a radix sort when their codes fit 16 bits), and a running integer
 SUM over frames that all hold a value stays an int64 array. The cross-engine benchmark of 2026-11-02 found these the
 one place where torbles trailed: its two window queries that return all of 1M rows took 622 ms together on the CPU
-engine, against 527 ms for DuckDB, 320 ms for chDB and 260 ms for Polars. On a 2-vCPU cloud machine they went from
-1,349 and 482 ms to 483 and 347 ms (DuckDB there: 1,546 and 440 ms); most of what remains is building the million
-result tuples, which any engine pays to return rows to Python. `tests/check_window_output.py` compares these forms
+engine, against 527 ms for DuckDB, 320 ms for chDB and 260 ms for Polars. On the same laptop, timed by
+`bench/window_output.py` outside that benchmark's containers, they now take 252 and 158 ms on the CPU engine (410 ms
+together) and 247 and 171 ms with the GPU, against 583 and 149 ms for DuckDB in the same run
+(`results/release_run_2026-11-02/`); on a 2-vCPU cloud machine they went from 1,349 and 482 ms to 483 and 347 ms. Most of what remains is building the million result tuples, which any engine pays to return rows to Python. `tests/check_window_output.py` compares these forms
 with DuckDB on the three engines, and `bench/window_output.py` times the two queries.
 
 The executor keeps the engine's results as codes. The GROUP BY columns an engine query returns are integer code arrays
@@ -176,7 +177,7 @@ and a request past a declared budget is refused, not approximated. Each capabili
 emulated with the thread order scrambled, with the CPU result bit for bit, and run again under AddressSanitizer and
 UndefinedBehaviorSanitizer; its kernels compile with nvcc for sm_80 (780 tests in all). All 75 have been measured on
 the RTX 5090 laptop (`python bench/validate_math.py --device`) and are validated, like the first slice. Code that does
-not import these modules is unaffected, and `tests/run_all.sh` (119 checks, the modules' tests among them) passes.
+not import these modules is unaffected, and `tests/run_all.sh` (120 checks, the modules' tests among them) passes.
 
 Release review
 
@@ -252,6 +253,31 @@ filter on a dimension gives on a fact sorted by its foreign key: a count over se
 the GPU and 35 on the CPU, through the Python API and through SQL. This dated from 0.1.0. The ranges are now merged
 before they are planned, and the GPU executors clamp them as the CPU's do. Last, a window with two or more PARTITION BY
 columns over no rows raised a ValueError instead of returning no rows.
+
+The release candidate was then fuzzed for an hour on the laptop's 24 threads (2026-11-02,
+`results/release_run_2026-11-02/`): 1,355,495 SQL statements on the three engines, with the default settings and with
+the algebraic paths on for every table, and 1,455,975 engine queries, each against DuckDB. 50 were reported. Nine were
+torbles' faults, from five causes, all fixed and each a regression test in `tests/check_campaign_sql.py` (16 of its 25
+checks fail on the candidate). An aggregate's FILTER was computed before the WHERE, so an error in it on a row the
+WHERE drops (abs of the least INTEGER, a DECIMAL(18) product past its type) failed the query; it now runs on the rows
+the WHERE keeps. A LEFT JOIN whose ON term was not TRUE padded its rows with NULLs, also for values cached while the ON
+terms ran, so a WHERE after the join that read the same cast read NULL there and dropped the rows (a count of 0 instead
+of 36); the cache now stays with the rows it was computed for. SUM and AVG of values holding the least BIGINT wrapped
+around modulo 2^64, because the bound that decides whether a sum fits 64 bits read the values' magnitude through
+NumPy's abs, which leaves -2^63 negative; every such bound now reads it exactly. A block left to the general path
+joined FROM items listed with commas by forming every pair before applying the WHERE's equalities, so a statement on a
+65-row fact asked for 120 GiB; equalities between the items' columns are now the joins' keys. And a LEFT JOIN's ON
+term on the dimension alone failed the query for an error on any dimension row; it now counts only where the join's
+equality pairs the row, as the planner's other terms already did. Five more reports were tables the fuzzer generated
+with more columns than a torble holds once the hidden ones are counted, which the loader refused with an internal
+message; it now refuses them with the count and the `columns=` hint (the README's limits say which columns are
+hidden), and the fuzzers count it as a refusal. The other 36 were DuckDB's or the comparison's: 16 answers that change
+to torbles' when DuckDB runs without its statistics propagation or without its optimizer (64-bit sums its statistics
+chose that wrapped, a join filter it derived that kept a row the WHERE drops, the rounding of an optimized window), 8
+errors DuckDB's optimizer let it skip computing and raises with the optimizer off, 11 orders of rows cut by a LIMIT
+that differ only through documented differences (CORR and REGR_* NULL here and NaN there, exact here and rounded
+there), and one comparison of the fuzzer's own, which sorted -0.0 apart from 0.0. The fuzzers now ask DuckDB those
+questions themselves before they report a difference (`docs/SQL.md`).
 
 Packaging
 

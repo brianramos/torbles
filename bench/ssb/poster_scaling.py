@@ -3,8 +3,8 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
 """The scaling poster: a hand-built SVG (ROYGBIV on a white-gradient ground) from results/scaling/scaling.json, rendered to PNG.
     python poster_scaling.py results/scaling/scaling.json docs/img/ssb_scaling        (writes .svg and .png)
-When every scale has the SQL timings (ssb_scaling.py: torbles through db.sql()), the poster shows SQL, and the Python
-API's numbers at the largest scale go in the chart's subtitle; otherwise the Python API, as 0.1.0's poster did.
+The headline and the solid lines are the Python API's, as on 0.1.0's poster; when every scale also has the SQL timings
+(ssb_scaling.py: the same queries as SQL text through db.sql()), they are drawn as dashed lines beside them.
 Rendering the PNG needs Playwright with Chromium (pip install playwright; playwright install chromium) and the Inter
 font for the intended look; the SVG alone needs neither."""
 import json, sys, math, base64, os
@@ -13,8 +13,8 @@ S = json.load(open(sys.argv[1])); out = sys.argv[2]
 sc = sorted(S["scale"], key=lambda r: r["rows"]); T = S.get("threads")
 big = sc[-1]
 VERSION = S.get("version", "0.1.0"); STATUS = "RESEARCH PROTOTYPE" if VERSION.startswith("0.1.") else "ALPHA"
-SQL = all(r.get("sql_gpu_ms") and r.get("sql_cpu_ms") for r in sc)     # the poster's interface: SQL, else the Python API
-K_DUCK, K_CPU, K_GPU = ("duckdb_sql_ms", "sql_cpu_ms", "sql_gpu_ms") if SQL else ("duckdb_ms", "torbles_cpu_ms", "torbles_gpu_ms")
+SQL = all(r.get("sql_gpu_ms") and r.get("sql_cpu_ms") for r in sc)     # the same queries through db.sql(): dashed lines
+K_DUCK, K_CPU, K_GPU = "duckdb_ms", "torbles_cpu_ms", "torbles_gpu_ms"   # the headline: the Python API
 NTH = big.get("threads") or 24
 W, H = 1600, 900
 R, O, Y, G, B, I, V = "#ff3b5c", "#ff8a1f", "#ffc21a", "#22cc6a", "#1fa2ff", "#5b6cff", "#c04dff"
@@ -104,11 +104,11 @@ sp = big[K_DUCK] / big[K_GPU]
 el.append(bubble_word(72, 102, 74))
 el.append(text(548, 74, f"v{VERSION}  ·  {STATUS}", 15, INK2, 700, extra='letter-spacing="2.5"'))
 el.append(text(548, 98, "OFFICIAL STAR SCHEMA BENCHMARK", 15, INK3, 600, extra='letter-spacing="2.5"'))
-el.append(text(64, 168, f"13 {'SQL ' if SQL else ''}queries. {big['rows'] / 1e6:,.0f} million rows.", 50, INK, 800, family="'Inter Display', " + FONT, extra='letter-spacing="-1"'))
+el.append(text(64, 168, f"13 queries. {big['rows'] / 1e6:,.0f} million rows.", 50, INK, 800, family="'Inter Display', " + FONT, extra='letter-spacing="-1"'))
 el.append(f'<text x="64" y="228" font-family="\'Inter Display\', {FONT}" font-size="50" font-weight="800" letter-spacing="-1">'
           f'<tspan fill="url(#rainbow)">{fmt_ms(big[K_GPU])}</tspan><tspan fill="{INK}"> on a laptop GPU.</tspan></text>')
-el.append(text(64, 264, "Every result, at every scale, verified against DuckDB  ·  " + ("SQL text, " if SQL else "")
-               + "end to end, best of 3  ·  both engines in memory", 17, INK2, 400))
+el.append(text(64, 264, "Every result, at every scale, verified against DuckDB  ·  end to end, best of 3  ·  both engines in memory",
+               17, INK2, 400))
 # the hero multiplier
 _hb = f'x="1528" y="172" font-family="Bubble, \'Luckiest Guy\', Impact, sans-serif" font-size="138" text-anchor="end" letter-spacing="4" stroke-linejoin="round"'
 el.append(f'<text {_hb} transform="translate(5,8)" fill="#3a2a7a" stroke="#3a2a7a" stroke-width="20" opacity=".22">{sp:.0f}×</text>')
@@ -145,9 +145,8 @@ def end_labels(items, x, y_top, y_bottom, gap=40):
 SIDE = "--side" in sys.argv          # the two side panels (lead per scale, thread sweep): off by default
 cx, cy, cw, ch = 64, 296, (936 if SIDE else 1472), 544
 _sub = f"linear axes  ·  {sc[0]['rows'] / 1e6:,.0f}M to {big['rows'] / 1e6:,.0f}M fact rows (scale factors {sc[0]['sf']} to {big['sf']})"
-if SQL: _sub += (f"  ·  the Python API at {big['rows'] / 1e6:,.0f}M rows: {fmt_ms(big['torbles_cpu_ms'])} on {NTH} CPU threads, "
-                 f"{fmt_ms(big['torbles_gpu_ms'])} on the GPU")
-card(cx, cy, cw, ch, "Time for all 13 queries as the data grows" + (", written in SQL" if SQL else ""), _sub)
+if SQL: _sub += "  ·  solid: the Python API, hand-designed keys  ·  dashed: the same queries as SQL text, db.sql(), keys designed automatically"
+card(cx, cy, cw, ch, "Time for all 13 queries as the data grows", _sub)
 px0, px1, py0, py1 = cx + 92, cx + cw - 236, cy + ch - 62, cy + 98
 xstep, xmax = ticks(big["rows"] / 1e6 - 0.5, 6); ystep, ymax = ticks(max(r[K_DUCK] for r in sc) * 1.04, 5)
 X = lambda v: px0 + (px1 - px0) * v / xmax
@@ -168,9 +167,19 @@ for key, grad, area, glow in ((K_DUCK, "gDuck", "aDuck", False), (K_CPU, "gCpu",
     for i, (qx, qy) in enumerate(pts):
         col = {"gDuck": [O, O, R, R, R], "gCpu": [Y, Y, G, G, G], "gGpu": [B, B, I, V, V]}[grad][min(i, 4) if len(pts) == 5 else 0]
         el.append(f'<circle cx="{qx:.1f}" cy="{qy:.1f}" r="7" fill="{col}" stroke="{CARD}" stroke-width="3"/>')
-end_labels([(Yp(big[K_DUCK]), f"DuckDB, {NTH} threads", fmt_ms(big[K_DUCK]), R),
-            (Yp(big[K_CPU]), f"torbles, {NTH} CPU threads", fmt_ms(big[K_CPU]), G),
-            (Yp(big[K_GPU]), "torbles, GPU", fmt_ms(big[K_GPU]), V)], px1 + 26, py1 + 10, py0 - 8, gap=52)
+labels = [(Yp(big[K_DUCK]), f"DuckDB, {NTH} threads", fmt_ms(big[K_DUCK]), R),
+          (Yp(big[K_CPU]), f"torbles, {NTH} CPU threads", fmt_ms(big[K_CPU]), G),
+          (Yp(big[K_GPU]), "torbles, GPU", fmt_ms(big[K_GPU]), V)]
+if SQL:                                               # the same queries as SQL text: dashed, no area
+    for key, grad, col in (("sql_cpu_ms", "gCpu", G), ("sql_gpu_ms", "gGpu", V)):
+        pts = [(X(x), Yp(r[key])) for x, r in zip(rows, sc)]
+        el.append(f'<path d="{series_path(pts)}" stroke="url(#{grad})" stroke-width="3.5" fill="none" stroke-dasharray="10 9" '
+                  f'stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>')
+        for qx, qy in pts:
+            el.append(f'<circle cx="{qx:.1f}" cy="{qy:.1f}" r="5" fill="{CARD}" stroke="{col}" stroke-width="3"/>')
+    labels += [(Yp(big["sql_cpu_ms"]), "torbles SQL, CPU", fmt_ms(big["sql_cpu_ms"]), G),
+               (Yp(big["sql_gpu_ms"]), "torbles SQL, GPU", fmt_ms(big["sql_gpu_ms"]), V)]
+end_labels(labels, px1 + 26, py1 + 10, py0 - 8, gap=48 if SQL else 52)
 
 # ---------------------------------------------------------------- the lead, per scale factor
 bx, by, bw, bh = 1032, 276, 504, 268
@@ -213,7 +222,7 @@ if SIDE:
         end_labels(items, qx1 + 22, qy1, qy0 + 6, gap=46)
 
 # ---------------------------------------------------------------- footer
-el.append(text(64, 872, f"Core Ultra 9 290HX (24 cores) · RTX 5090 Laptop GPU · WSL2 · DuckDB {S.get('duckdb_version', '')} on an in-memory copy of its tables · "
+el.append(text(64, 872, f"Core Ultra 9 290HX Plus (24 cores) · RTX 5090 Laptop GPU · WSL2 · DuckDB {S.get('duckdb_version', '')} on an in-memory copy of its tables · "
                "official ssb-dbgen data and queries", 13, INK3, 400))
 el.append(text(1536, 872, "torbles · Apache-2.0", 13, INK2, 700, "end"))
 

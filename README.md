@@ -176,9 +176,10 @@ BIGINT and DECIMAL(18) arithmetic, which torbles evaluates exactly). Every engin
 
 ## Results
 
-The SSB numbers below are for the Python query API: each query is built once with `db.query(...)`, as
-`bench/ssb/ssb_auto.py` writes them, and then run, so they measure the engine's planning, execution and result, not
-SQL. Through `db.sql(...)`, which parses, binds and plans the statement and builds its ordered result on every call,
+The SSB numbers below are for the Python query API unless they say SQL: each query is built once with
+`db.query(...)`, as `bench/ssb/ssb_auto.py` writes them, and then run, so they measure the engine's planning, execution
+and result, not SQL. Through `db.sql(...)`, which parses, binds and plans the statement and builds its ordered result
+on every call (the 0.3.0 sweep below draws it beside the Python API at every scale),
 the release review's protocol, run on this release (2026-11-02, SF10, 60M rows, 24 threads, RTX 5090 Laptop GPU),
 measured the 13 queries in 97 ms on the CPU and 26 ms on the GPU, against 218 ms for DuckDB; through the Python API,
 in the same protocol, in 74 and 10 ms against 211 (`results/release_rerun_2026-11-02/`). Window functions whose value
@@ -243,9 +244,36 @@ The GROUP BY bridges take M1-M3 on 24 CPU threads from 182 to 60 ms (DuckDB 139)
 the automatic keys (`torbles.from_duckdb`, loaded in 7.5 s): the 13 queries in 80.1 ms on the CPU and 9.1 ms on the
 GPU, all equal to DuckDB's. Reports: `results/validation_sf10_rtx5090_0.2.0/`.
 
-### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
+### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.3.0)
 
-![torbles on the official Star Schema Benchmark, SF1 to SF50](docs/img/ssb_scaling.png)
+![torbles on the official Star Schema Benchmark, SF1 to SF50](https://raw.githubusercontent.com/brianramos/torbles/v0.3.0/docs/img/ssb_scaling.png)
+
+The sweep of this release (`bash wsl/run_scaling.sh`, 2026-11-02, `results/release_run_2026-11-02/`): the 13
+official queries on official `ssb-dbgen` data, on the laptop (Core Ultra 9 290HX Plus, 24 cores, RTX 5090 Laptop GPU,
+WSL2). DuckDB 2.0.0 runs on an in-memory copy of its tables on all 24 threads; torbles runs the queries through the
+Python API on hand-designed derived keys (`bench/ssb/ssb_torbles.py`, as in 0.1.0) and as SQL text through
+`db.sql()` on the keys `torbles.from_duckdb` designs from the standard DDL (`bench/ssb/ssb_sql.py`), each on 24 CPU
+threads and on the GPU. Every answer of every engine at every scale equals DuckDB's. Totals in ms, best of 3, end to
+end:
+
+| scale | fact rows | DuckDB, 24 threads | API, 24 CPU threads | API, GPU | SQL, 24 CPU threads | SQL, GPU | API GPU vs DuckDB |
+|---|---|---|---|---|---|---|---|
+| SF1 | 6M | 56.5 | 13.1 | **3.5** | 27.2 | 16.4 | 16.2x |
+| SF3 | 18M | 92.3 | 27.6 | **4.6** | 45.1 | 17.6 | 20.0x |
+| SF10 | 60M | 217.2 | 70.8 | **9.7** | 94.1 | 23.2 | 22.4x |
+| SF30 | 180M | 582.1 | 206.9 | **17.4** | 237.2 | 33.3 | 33.4x |
+| SF50 | 300M | 887.2 | 344.5 | **30.0** | 423.9 | 108.2 | 29.6x |
+
+- **The Python API** runs about as fast as in 0.1.0 (below): faster at the small scales (3.5 against 4.8 ms on the
+  GPU at SF1), within 2% at SF50 (30.0 against 29.5 ms).
+- **SQL** parses, binds and plans each statement and builds its ordered result on every call, on keys nobody
+  designed: 13 to 16 ms more than the API on the GPU up to SF30, 14 to 30 ms more on the CPU, and still 2.0 to 2.5x
+  faster than DuckDB on the CPU and 3.4 to 17.5x on the GPU. At SF50, Q3.1 through SQL on the GPU took 43.8 ms,
+  against 3.5 ms at SF30 and 4.0 ms through the API, while the other twelve queries grew with the data; why it is
+  ten times slower there is not yet known. Loading the tables for SQL (`torbles.from_duckdb`, keys designed on the
+  way) took 1.0 s at SF1 and 79 s at SF50.
+
+### Official Star Schema Benchmark, scaling from 6M to 300M rows (0.1.0)
 
 - **What runs, and what it takes.** At 300M rows the torble fact table (the 9 columns the queries read, as bit planes
   plus their torus integrity planes) takes 15.3 GiB, about 55 bytes per row, and fits on the 24 GB laptop GPU. The
@@ -253,8 +281,6 @@ GPU, all equal to DuckDB's. Reports: `results/validation_sf10_rtx5090_0.2.0/`.
   the bit planes, and a sparse group table. A 1-bit tensor-core version of the GROUP BY product
   (`mma.sync.m16n8k256 .b1 .and.popc`) is included and self-tested. It wins only on dense, unfiltered GROUP BYs
   (1.4-1.7x on M1-M3) and is slower on the selective SSB queries, so these numbers do not use it.
-
-### Official Star Schema Benchmark, scaling from 6M to 300M rows
 
 Setup:
 - torbles 0.1.0, hand-designed derived-surrogate keys; the 13 official queries on official `ssb-dbgen` data.

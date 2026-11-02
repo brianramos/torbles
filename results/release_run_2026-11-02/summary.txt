@@ -1,0 +1,336 @@
+HEAD 99cf300c SQL fuzzer: DECIMAL percentiles compared within DuckDB's double-precision interpolation | GPU: NVIDIA GeForce RTX 5090 Laptop GPU, 82 SMs, 23.9 GiB, compute 12.0
+  quiet machine: load 0.13
+  build: ok
+  scaling sweep: rc=0, 9 min, 5 scales
+  full-output windows: rc=0, both queries: duckdb    732.5 ms  torbles_cpu    410.2 ms  torbles_gpu    417.9 ms
+  full test suite: 119 ok, 0 failed (rc=0)
+  fuzzing: 45 failure(s) reported
+
+13 official SSB queries, total ms, best of 3, end to end (queries answered correctly only)
+  SF         rows     DuckDB torbles CPU torbles GPU  GPU kernels  GPU vs DuckDB  all match   first runs: DuckDB / torbles GPU   DuckDB in memory
+   1    6,001,171       56.5        13.1         3.5         0.58          16.2x  True            60.8 /    3.9      True (43.9 GiB)
+   3   17,996,656       92.3        27.6         4.6         1.53          20.0x  True            98.9 /    5.2      True (43.9 GiB)
+  10   59,986,214      217.2        70.8         9.7         4.58          22.4x  True           227.1 /   10.3      True (43.9 GiB)
+  30  179,998,484      582.1       206.9        17.4        13.78          33.4x  True           621.5 /   18.5      True (43.9 GiB)
+  50  300,005,884      887.2       344.5        30.0        24.06          29.6x  True           916.1 /   30.8      True (43.9 GiB)
+
+through SQL (db.sql on tables loaded by torbles.from_duckdb), the same totals:
+  SF     DuckDB    SQL CPU    SQL GPU  GPU vs DuckDB  all match   first runs: SQL CPU / SQL GPU   load
+   1       56.5       27.2       16.4           3.4x  True           130.2 /  123.3      1.0 s
+   3       92.3       45.1       17.6           5.2x  True           214.7 /  171.9      2.7 s
+  10      217.2       94.1       23.2           9.4x  True           490.4 /  275.9      6.7 s
+  30      582.1      237.2       33.3          17.5x  True           905.2 / 1534.3      21.8 s
+  50      887.2      423.9      108.2           8.2x  True          2365.3 / 13027.9      79.1 s
+
+sql_alg_501: 200971 statements in 3601 s: {'ok': 198871, 'refused': 0, 'duckdb-error': 2088, 'MISMATCH': 8, 'ERROR': 4} | 12 FAILURE(S)
+sql_alg_502: 207480 statements in 3600 s: {'ok': 205289, 'refused': 0, 'duckdb-error': 2183, 'MISMATCH': 7, 'ERROR': 1} | 8 FAILURE(S)
+sql_gpu_503: 185790 statements in 3600 s: {'ok': 183841, 'refused': 0, 'duckdb-error': 1940, 'MISMATCH': 5, 'ERROR': 4} | 9 FAILURE(S)
+sql_gpu_504: 182371 statements in 3601 s: {'ok': 180371, 'refused': 0, 'duckdb-error': 1997, 'MISMATCH': 1, 'ERROR': 2} | 3 FAILURE(S)
+sql_plain_505: 184292 statements in 3601 s: {'ok': 182251, 'refused': 0, 'duckdb-error': 2037, 'MISMATCH': 1, 'ERROR': 3} | 4 FAILURE(S)
+sql_forced_alg_506: 203370 statements in 3631 s: {'ok': 201249, 'refused': 0, 'duckdb-error': 2115, 'MISMATCH': 4, 'ERROR': 2} | 6 FAILURE(S)
+sql_forced_gpu_507: 191221 statements in 3601 s: {'ok': 189172, 'refused': 0, 'duckdb-error': 2042, 'MISMATCH': 5, 'ERROR': 2} | 7 FAILURE(S)
+engine_31: 14537 case(s), 490725 queries in 3601 s: {'ok': 450952, 'refused': 377, 'duckdb-error': 39396, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+engine_32: 14329 case(s), 483575 queries in 3601 s: {'ok': 443937, 'refused': 312, 'duckdb-error': 39326, 'MISMATCH': 0, 'ERROR': 0} | NO MISMATCHES
+engine_33: 14261 case(s), 481675 queries in 3603 s: {'ok': 442167, 'refused': 365, 'duckdb-error': 39142, 'MISMATCH': 1, 'ERROR': 0} | 1 FAILURE(S)
+
+fuzzing failures (each one prints the command that replays it):
+=== MISMATCH: seed 33 case 4659 query 21 [built]
+opts {'engine': 'alg', 'join_mode': 'lookup', 'groupby': 'mm', 'threads': 2, 'repeat': False}
+SELECT dim1.d1_key, SUM(fact.f_m0) FROM fact JOIN dim1 ON fact.f_d1 = dim1.d1_key WHERE (dim1.d1_key IN (46, 6, 7, -2147483648) OR dim1.d1_key = -1) GROUP BY dim1.d1_key
+1 of 1 groups differ; first ones:
+   (12,): torbles '<missing>'  duckdb -455573702
+replay: python -m torbles.fuzz --seed 33 --case 4659 --query 21 -v
+
+--
+=== MISMATCH: seed 501 case 1779 query 26
+SELECT f."f_m1", CASE WHEN f."f_m0" < '-' THEN 'lo' ELSE 'hi' END, regr_slope(f."f_m5", f."f_m5"), var_samp(f."f_sorted"), max(f."f_m4") FROM fact f GROUP BY CUBE (1, 2) HAVING count(*) > 3 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 5
+torbles (5 rows) [(None, None, 1.0, 6798.138776200135, None), (None, None, 1.0, 6987.572201011769, None), (None, 'hi', 1.0, 6709.629402408544, None), (None, 'hi', 1.0, 7030.385187254982, None), (None, 'lo', 1.0, 6755.526074208877, None)]
+duckdb  (5 rows) [(None, None, 1.0, 6798.138776200133, None), (None, None, 1.0, 6987.572201011767, None), (None, 'hi', 1.0, 7030.385187254979, None), (None, 'hi', 1.0000000000000002, 6709.629402408542, None), (None, 'lo', 0.9999999999999998, 7291.75243902439, None)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 1779 --query 26 -v
+
+case 1780: totals {'ok': 52799, 'refused': 0, 'duckdb-error': 600, 'MISMATCH': 1, 'ERROR': 1}
+--
+=== MISMATCH: seed 501 case 2585 query 21
+SELECT f."f_m1", (f."f_m4" * -1), bool_and(f."f_m0" >= 21) FILTER (WHERE f."f_m0" <> -9072198039310552459), regr_slope(f."f_m3", f."f_m4"), min(f."f_m3") FROM fact f GROUP BY ROLLUP (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, False, None, -32753), (None, None, False, None, -32747)]
+duckdb  (2 rows) [(None, None, False, None, -32124), (None, None, False, nan, -32753)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 2585 --query 21 -v
+
+case 2590: totals {'ok': 76847, 'refused': 0, 'duckdb-error': 851, 'MISMATCH': 2, 'ERROR': 1}
+--
+=== MISMATCH: seed 501 case 3064 query 28
+SELECT j1."d1_h0", f."f_m3", dense_rank() OVER (PARTITION BY j1."d1_h0" ORDER BY f."f_m3" NULLS FIRST), count(*) FILTER (WHERE j0."d0_a0" BETWEEN CAST(-0.5 AS DOUBLE) AND CAST(0.25 AS DOUBLE)) OVER (PARTITION BY j1."d1_h0" ORDER BY f."f_m3" NULLS FIRST RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE GROUP), sum(f."f_m4") OVER (PARTITION BY j1."d1_h0" ORDER BY f."f_m3" NULLS FIRST) FROM fact f JOIN dim0 j0 ON f."f_d0_r1" = j0."d0_key" LEFT JOIN dim1 j1 ON f."f_d1" = j1."d1_key" AND j1."d1_h0" <= ''
+torbles (4051 rows) [(None, 18446744073709551615, 7, 0, Decimal('-3606943372991509480267')), (None, None, 1, 2106, Decimal('-369509133495797688055')), (None, 18446744073709551615, 7, 0, Decimal('-3606943372991509480267')), (None, None, 1, 2106, Decimal('-369509133495797688055')), (None, 6592455923627776428, 4, 1227, Decimal('-1742480419882592953069')), (None, 11998760779945706422, 6, 619, Decimal('-2668479212257604026749'))]
+duckdb  (4051 rows) [(None, 8672807894256704582, 5, 920, Decimal('1896788595600514092')), (None, 8672807894256704582, 5, 920, Decimal('1896788595600514092')), (None, 8672807894256704582, 5, 920, Decimal('1896788595600514092')), (None, 8672807894256704582, 5, 920, Decimal('1896788595600514092')), (None, 8672807894256704582, 5, 920, Decimal('1896788595600514092')), (None, 8672807894256704582, 5, 920, Decimal('1896788595600514092'))]
+replay: python -m torbles.sqlfuzz --seed 501 --case 3064 --query 28 -v
+
+case 3070: totals {'ok': 91105, 'refused': 0, 'duckdb-error': 992, 'MISMATCH': 3, 'ERROR': 1}
+--
+=== MISMATCH: seed 501 case 3085 query 15
+SELECT (j0."d0_key" || '-'), length(j0."d0_key"), sum(f."f_m0") FILTER (WHERE f."f_m0" IS NOT NULL) OVER (), count(DISTINCT j0."d0_key") OVER (ORDER BY length(j0."d0_key") NULLS FIRST RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE GROUP), dense_rank() OVER (ORDER BY length(j0."d0_key") NULLS FIRST) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_key" <> 'A🙂Z-0'
+torbles (65 rows) [(None, None, Decimal('-33235752489967567250'), 0, 1), (None, None, Decimal('-33235752489967567250'), 0, 1), (None, None, Decimal('-33235752489967567250'), 0, 1), (None, None, Decimal('-33235752489967567250'), 0, 1), (None, None, Decimal('-33235752489967567250'), 0, 1), (None, None, Decimal('-33235752489967567250'), 0, 1)]
+duckdb  (65 rows) [(None, None, Decimal('3657735657451535982'), 0, 1), (None, None, Decimal('3657735657451535982'), 0, 1), (None, None, Decimal('3657735657451535982'), 0, 1), (None, None, Decimal('3657735657451535982'), 0, 1), (None, None, Decimal('3657735657451535982'), 0, 1), (None, None, Decimal('3657735657451535982'), 0, 1)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 3085 --query 15 -v
+
+case 3090: totals {'ok': 91700, 'refused': 0, 'duckdb-error': 996, 'MISMATCH': 4, 'ERROR': 1}
+--
+=== MISMATCH: seed 501 case 3239 query 19
+SELECT extract(dow from f."f_m0"), f."f_d0_r1", corr(j0."d0_h0", j0."d0_h0"), count(j0."d0_h0") FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" GROUP BY ROLLUP (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 5
+torbles (5 rows) [(None, None, 1.0, 31), (None, None, 1.0, 579), (None, None, 1.0, 28205), (None, datetime.date(1992, 2, 13), None, 1), (None, datetime.date(1992, 7, 13), None, 1)]
+duckdb  (5 rows) [(None, None, 0.9999999999999998, 579), (None, None, 0.9999999999999999, 31), (None, None, 1.0000000000000002, 28205), (None, datetime.date(1992, 2, 13), nan, 1), (None, datetime.date(1992, 7, 13), nan, 1)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 3239 --query 19 -v
+
+case 3240: totals {'ok': 96135, 'refused': 0, 'duckdb-error': 1060, 'MISMATCH': 5, 'ERROR': 1}
+--
+=== MISMATCH: seed 501 case 4579 query 16
+SELECT count(*), regr_slope(f."f_m1", j0."d0_a1") FILTER (WHERE f."f_m3" > 0) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND f."f_m0" <= f."f_m1" LEFT JOIN dim1 j1 ON f."f_d1" = j1."d1_key" AND f."f_d0_r1" IN ('ééA67', '''cccßcB1264', 'ßacbé1920', 'A1297') WHERE (j0."d0_h0" IN ('') OR f."f_m1" IN (12.345, -327047.867839, 859636.709157, 7)) AND j1."d1_key" NOT IN (SELECT s."d1_key" FROM dim1 s WHERE s."d1_key" BETWEEN 3454934746810539984 AND -6370819525390973)
+torbles (1 rows) [(0, None)]
+duckdb  (1 rows) [(36, None)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 4579 --query 16 -v
+
+case 4580: totals {'ok': 135899, 'refused': 0, 'duckdb-error': 1495, 'MISMATCH': 6, 'ERROR': 1}
+--
+=== ERROR: seed 501 case 4783 query 14
+SELECT count(*), max(j0."d0_a1") FROM fact f, dim0 j0, dim1 j1, dim2 j2 WHERE f."f_d0" = j0."d0_key" AND f."f_d1" = j1."d1_key" AND f."f_d2" = j2."d2_key" AND f."f_m0" IN ('0Zé-') AND f."f_m1" < -1966797563677726404 AND f."f_m0" >= j0."d0_h0" AND j0."d0_a0" IN (SELECT s."d0_a0" FROM dim0 s WHERE abs(s."d0_a0") <> -2147483647)
+SqlError: Out of Range Error: Overflow on abs(-2147483648)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 501 case 4869 query 0
+SELECT f."f_m0", CASE WHEN f."f_m1" > CAST(3.0 AS DOUBLE) THEN f."f_m1" ELSE CAST(0.0 AS DOUBLE) END, avg(greatest(f."f_m2", -9223372036854775808)) FROM fact f WHERE f."f_m3" = TRUE GROUP BY 1, 2 HAVING count(*) > 0
+torbles (170 rows) [(None, 0.0, -1.7369815511967562e+16), (None, 6432.47, -9.223372036854776e+18), (None, 32013.2, -9.223372036854776e+18), (None, 54912.0, -9.223372036854776e+18), (None, 81584.15, -9.223372036854776e+18), (None, 84908.0, -9.223372036854776e+18)]
+duckdb  (170 rows) [(27458, 1e+300, -9.223372036854776e+18), (32478, 214206.1152, -9.223372036854776e+18), (-7990, 243318.0, -9.223372036854776e+18), (-24502, 297559.15, -9.223372036854776e+18), (-24502, 1e+300, -9.223372036854776e+18), (None, 669054.076286, -9.223372036854776e+18)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 4869 --query 0 -v
+
+case 4870: totals {'ok': 144513, 'refused': 0, 'duckdb-error': 1579, 'MISMATCH': 7, 'ERROR': 2}
+--
+=== ERROR: seed 501 case 5514 query 26
+SELECT j0."d0_a0", bool_or(j1."d1_a1" IN (-9223372036854775808, 6502393401, 1493124558)) FILTER (WHERE j1."d1_h0" = -3), min(j2."d2_a0"), corr(j0."d0_h2", j1."d1_key") FROM fact f, dim0 j0, dim1 j1, dim2 j2 WHERE f."f_d0" = j0."d0_key" AND f."f_d1" = j1."d1_key" AND f."f_d2" = j2."d2_key" AND j0."d0_h1" >= 'L1_4_2' GROUP BY 1 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 3
+MemoryError: Unable to allocate 120. GiB for an array with shape (16139500000,) and data type int64
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== ERROR: seed 501 case 5834 query 15
+SELECT f."f_m0", (-f."f_m3"), count(*) FILTER (WHERE abs(f."f_m3") <> -2147483648) FROM fact f WHERE (NOT f."f_m3" < f."f_m1") GROUP BY 1, 2
+SqlError: Out of Range Error: Overflow on abs(-2147483648)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 501 case 5982 query 13
+SELECT f."f_d0_r1", min(f."f_d0"), avg(f."f_d0"), min((j0."d0_key" + j0."d0_key")), sum(count(*)) OVER (PARTITION BY f."f_d0_r1") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_h0" NOT BETWEEN 'ZA_日 ' AND '' WHERE ((f."f_d0_r1" < -9223372036854775808 OR f."f_d0_r1" NOT IN (2688271065285875394, 1153723604431328765, 4326635928677261171, -2391303419415097343)) OR j0."d0_key" IS NULL) GROUP BY 1
+torbles (874 rows) [(4331284095986205831, -8023021268437464133, -8.023021268437464e+18, None, 1), (2990733978533249064, -5133108811644339825, -5.13310881164434e+18, None, 1), (-2770688657862912911, 6807931408610688362, 6.807931408610688e+18, None, 1), (-385436843938944226, -4746735320747159856, -4.74673532074716e+18, None, 1), (1639084335041015902, 8176289293484487390, 8.176289293484488e+18, None, 1), (-408343997809142616, 1335670994843044804, 1.3356709948430449e+18, None, 1)]
+duckdb  (874 rows) [(None, -4311388722619383931, -9.471540378077222e+16, None, 51), (-4235704980862015785, 1379598786851320947, 1.3795987868513208e+18, None, 1), (-3976110685034295724, 300260938296640193, 3.002609382966402e+17, None, 1), (-3677374611778594432, 51878549901477741, 5.187854990147774e+16, None, 1), (-3635273911800420922, -1216916911524553004, -1.216916911524553e+18, None, 1), (-3629139699238421831, 3437348741236302843, 3.437348741236303e+18, None, 1)]
+replay: python -m torbles.sqlfuzz --seed 501 --case 5982 --query 13 -v
+
+case 5990: totals {'ok': 177795, 'refused': 0, 'duckdb-error': 1894, 'MISMATCH': 8, 'ERROR': 4}
+--
+=== MISMATCH: seed 502 case 481 query 26
+SELECT f."f_m2", f."f_sorted", min(f."f_m1"), corr(f."f_m0", f."f_m0") FROM fact f WHERE f."f_m1" = '日''' GROUP BY ROLLUP (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 1
+torbles (1 rows) [(None, None, "日'", None)]
+duckdb  (1 rows) [(None, None, "日'", 0.9999999999999999)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 481 --query 26 -v
+
+case 490: totals {'ok': 14572, 'refused': 0, 'duckdb-error': 157, 'MISMATCH': 1, 'ERROR': 0}
+--
+=== MISMATCH: seed 502 case 884 query 4
+SELECT length(j0."d1_h0"), j0."d1_h2", regr_slope(j0."d1_key", j0."d1_a0"), count(DISTINCT j0."d1_h2") FROM fact f, dim1 j0 WHERE f."f_d1_r1" = j0."d1_key" AND (j0."d1_key" > 8 OR abs(f."f_sorted") >= 2147482649) AND f."f_m1" <= TRUE AND ((j0."d1_key" - j0."d1_a0") < 400746 AND j0."d1_h0" LIKE '_0%') GROUP BY CUBE (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 5
+torbles (5 rows) [(None, None, None, 0), (None, None, 2.048632218844985, 3), (None, 'L2_1_0_1', 34.0, 1), (None, 'L2_2_0_0', None, 1), (None, 'L2_4_1_0', None, 1)]
+duckdb  (5 rows) [(None, None, 2.048632218852448, 3), (None, None, nan, 0), (None, 'L2_1_0_1', 33.99999999999963, 1), (None, 'L2_2_0_0', nan, 1), (None, 'L2_4_1_0', nan, 1)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 884 --query 4 -v
+
+case 890: totals {'ok': 26430, 'refused': 0, 'duckdb-error': 298, 'MISMATCH': 2, 'ERROR': 0}
+--
+=== MISMATCH: seed 502 case 2113 query 21
+SELECT j1."d1_a2", median(f."f_m1") FILTER (WHERE j1."d1_h0" BETWEEN '' AND 'L0_1'), bool_or(j2."d2_key" > -1), count(j0."d0_h1"), sum(count(*)) OVER (PARTITION BY j1."d1_a2") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND f."f_m1" > f."f_m0" JOIN dim1 j1 ON f."f_d1" = j1."d1_key" LEFT JOIN dim2 j2 ON f."f_d2" = j2."d2_key" AND f."f_m1" <= f."f_d0" GROUP BY 1
+torbles (536 rows) [(datetime.datetime(2040, 7, 24, 20, 50, 12, 93190), 28.0, True, 2, 3), (datetime.datetime(2023, 11, 23, 11, 6, 21, 464953), -9236.0, True, 1, 2), (datetime.datetime(2026, 4, 20, 11, 52, 22, 898208), 289.0, True, 2, 3), (datetime.datetime(2032, 3, 20, 22, 7, 18, 9140), 34.0, True, 2, 3), (datetime.datetime(2040, 11, 2, 3, 17, 32, 456710), 1236.0, None, 1, 1), (datetime.datetime(2036, 3, 19, 21, 13, 41, 674737), 3534.0, None, 1, 1)]
+duckdb  (536 rows) [(datetime.datetime(2021, 4, 26, 18, 58, 56, 243456), 26920.0, None, 1, 1), (datetime.datetime(2021, 7, 23, 10, 0, 17, 117277), -7227.0, True, 1, 3), (datetime.datetime(2021, 8, 27, 9, 43, 25, 597002), 8073.0, True, 1, 2), (datetime.datetime(2022, 3, 31, 5, 31, 57, 135073), 17933.5, True, 3, 4), (datetime.datetime(2022, 10, 28, 0, 51, 40, 790051), -15021.5, True, 1, 2), (datetime.datetime(2022, 10, 28, 15, 31, 20, 266966), 1236.0, None, 1, 1)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 2113 --query 21 -v
+
+case 2120: totals {'ok': 62968, 'refused': 0, 'duckdb-error': 659, 'MISMATCH': 3, 'ERROR': 0}
+--
+=== MISMATCH: seed 502 case 4015 query 27
+SELECT count(*), min(j1."d1_h0"), avg(f."f_d0") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_h0" IS NOT NULL LEFT JOIN dim1 j1 ON f."f_d1" = j1."d1_key" WHERE f."f_m1" <= '' ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST LIMIT 1
+torbles (1 rows) [(2049, None, -6.869508450950906e+16)]
+duckdb  (1 rows) [(2049, None, 3327342327814719.5)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 4015 --query 27 -v
+
+case 4020: totals {'ok': 119367, 'refused': 0, 'duckdb-error': 1259, 'MISMATCH': 4, 'ERROR': 0}
+--
+=== MISMATCH: seed 502 case 4760 query 7
+SELECT f."f_m4", j1."d1_key", j2."d2_a0", covar_pop(j1."d1_key", j1."d1_a1"), regr_slope(j1."d1_a1", j1."d1_key"), sum(f."f_m0") FROM fact f, dim0 j0, dim1 j1, dim2 j2 WHERE f."f_d0_r1" = j0."d0_key" AND f."f_d1" = j1."d1_key" AND f."f_d2" = j2."d2_key" GROUP BY ROLLUP (1, 2, 3) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST, 6 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, None, 0.0, None, 1.5), (None, None, None, 0.0, 0.0, 2.1000000000000002e+301)]
+duckdb  (2 rows) [(None, None, None, 0.0, 0.0, 2.1e+301), (None, None, None, 0.0, nan, 1.5)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 4760 --query 7 -v
+
+case 4760: totals {'ok': 141345, 'refused': 0, 'duckdb-error': 1480, 'MISMATCH': 5, 'ERROR': 0}
+--
+=== ERROR: seed 502 case 6254 query 7
+SELECT j0."d0_key", (j0."d0_a1" + 1), max(f."f_d1") FILTER (WHERE abs(j0."d0_a1") >= 1), count(DISTINCT f."f_m2"), sum(count(*)) OVER (PARTITION BY j0."d0_key") FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" AND f."f_m5" <> j0."d0_h1" AND (j0."d0_a1" > 1099511627776 OR f."f_m2" >= 5) GROUP BY 1, 2
+SqlError: Out of Range Error: Overflow on abs(-2147483648)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 502 case 6481 query 4
+SELECT (j0."d0_a1" + f."f_m3"), CASE WHEN f."f_m5" > 0 THEN f."f_m5" ELSE 1 END, avg(f."f_m2"), sum(count(*)) OVER (PARTITION BY (j0."d0_a1" + f."f_m3")) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_key" >= j0."d0_a1" GROUP BY 1, 2 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 4
+torbles (1 rows) [(None, 2147483647, -9.223372036854776e+18, 64)]
+duckdb  (1 rows) [(None, 2147483647, 2.09375, 64)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 6481 --query 4 -v
+
+case 6490: totals {'ok': 192689, 'refused': 0, 'duckdb-error': 2034, 'MISMATCH': 6, 'ERROR': 1}
+--
+=== MISMATCH: seed 502 case 6876 query 12
+SELECT (f."f_m3" + INTERVAL 37 DAY), regr_slope(j0."d0_a0", f."f_m0") FILTER (WHERE (j0."d0_h0" <= 'L0_0' AND f."f_m0" <> f."f_m1")), var_samp(f."f_m0") FROM fact f JOIN dim0 j0 ON f."f_d0" = j0."d0_key" GROUP BY ROLLUP (1) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST LIMIT 5
+torbles (3 rows) [(None, None, 2474131486.441162), (None, 0.0, 2141010164.6645682), (datetime.datetime(1900, 2, 7, 0, 0), 0.0, 2123581634.3096848)]
+duckdb  (3 rows) [(None, 0.0, 2141010164.6645672), (None, nan, 2474131486.4411626), (datetime.datetime(1900, 2, 7, 0, 0), 0.0, 2123581634.3096838)]
+replay: python -m torbles.sqlfuzz --seed 502 --case 6876 --query 12 -v
+
+case 6880: totals {'ok': 204255, 'refused': 0, 'duckdb-error': 2167, 'MISMATCH': 7, 'ERROR': 1}
+--
+=== ERROR: seed 506 case 94 query 29
+(SELECT CAST(j0."d0_h1" AS VARCHAR) FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" AND f."f_m5" BETWEEN DATE '2098-01-20' AND DATE '2098-01-19') EXCEPT (SELECT f."f_m0" FROM fact f, dim0 j0 WHERE f."f_d0_r1" = j0."d0_key" AND abs(f."f_sorted") >= 1099511627776)
+SqlError: Out of Range Error: Overflow on abs(-2147483648)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 506 case 1920 query 23
+SELECT trim(j0."d1_h0"), f."f_m2", count(*) FILTER (WHERE f."f_d1_r1" IS NULL), min(j0."d1_key") FILTER (WHERE (NOT j0."d1_h0" <= 'Ac''')), regr_slope(f."f_m0", f."f_m0") FROM fact f LEFT JOIN dim1 j0 ON f."f_d1_r1" = j0."d1_key" WHERE (j0."d1_h0" LIKE '%a%' OR (f."f_m1" IN (-67.68, 7, 42.36) OR f."f_m2" IS NOT NULL)) GROUP BY ROLLUP (1, 2) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, 0, None, None), (None, None, 0, None, 1.0)]
+duckdb  (2 rows) [(None, None, 0, None, 1.0), (None, None, 0, None, nan)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 1920 --query 23 -v
+
+case 1920: totals {'ok': 57050, 'refused': 0, 'duckdb-error': 578, 'MISMATCH': 1, 'ERROR': 1}
+--
+=== MISMATCH: seed 506 case 3110 query 4
+SELECT (f."f_m0" + 7), covar_pop(j0."d0_h0", f."f_m0") FILTER (WHERE (f."f_m1" - j0."d0_a0") < 819752056977971261), avg(f."f_m1"), count(*) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_h0" > j0."d0_key" GROUP BY 1 HAVING count(*) > 1 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST
+torbles (1 rows) [(2, None, 2.2936707231412125e+17, 30000)]
+duckdb  (1 rows) [(2, None, 12554330999147.404, 30000)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 3110 --query 4 -v
+
+case 3110: totals {'ok': 92349, 'refused': 0, 'duckdb-error': 978, 'MISMATCH': 2, 'ERROR': 1}
+--
+=== MISMATCH: seed 506 case 4130 query 9
+SELECT abs(j0."d0_a0"), min(j0."d0_a0") FILTER (WHERE f."f_m3" > FALSE), sum(f."f_m2"), max(f."f_m2") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0_r1" = j0."d0_key" AND j0."d0_a0" < -4768 GROUP BY 1
+torbles (1 rows) [(None, None, Decimal('-38010081443512344971.56'), Decimal('9709336310048843.63'))]
+duckdb  (1 rows) [(None, None, Decimal('-9788651670668642.60'), Decimal('9709336310048843.63'))]
+replay: python -m torbles.sqlfuzz --seed 506 --case 4130 --query 9 -v
+
+case 4130: totals {'ok': 122655, 'refused': 0, 'duckdb-error': 1271, 'MISMATCH': 3, 'ERROR': 1}
+--
+=== MISMATCH: seed 506 case 5798 query 1
+SELECT f."f_m2", (-f."f_m3"), sum(f."f_m3"), min(f."f_m0"), count(DISTINCT f."f_m1") FROM fact f JOIN dim1 j0 ON f."f_d1" = j0."d1_key" LEFT JOIN dim2 j1 ON f."f_d2" = j1."d2_key" AND j1."d2_a0" < 0 GROUP BY GROUPING SETS ((1, 2), ())
+torbles (351 rows) [(Decimal('0.69'), Decimal('-164729114578297060'), Decimal('7412810156023367700'), 1, 7), (Decimal('97.53'), Decimal('107532099955145276'), Decimal('-2473238298968341348'), 1, 7), (Decimal('0.13'), Decimal('-99'), Decimal('2970'), 1, 7), (Decimal('0.69'), Decimal('-65'), Decimal('1950'), 1, 7), (Decimal('0.69'), Decimal('156666783435557666'), Decimal('-4073336369324499316'), 1, 7), (Decimal('0.13'), Decimal('-902395686434672847'), Decimal('27974266279474858257'), 1, 7)]
+duckdb  (351 rows) [(Decimal('-81.31'), Decimal('690252088005500775'), Decimal('-3641322742466473184'), 1, 7), (Decimal('0.13'), Decimal('656129104163446766'), Decimal('-3861645467847638428'), 1, 7), (Decimal('-12.19'), Decimal('373230181182036442'), Decimal('8369529181794567682'), 1, 7), (Decimal('97.53'), Decimal('176728981724530540'), Decimal('-5301869451735916200'), 1, 7), (Decimal('0.13'), Decimal('240277419497484120'), Decimal('-5286103228944650640'), 1, 7), (Decimal('76.36'), Decimal('-655941901479108222'), Decimal('-736312733773629622'), 1, 7)]
+replay: python -m torbles.sqlfuzz --seed 506 --case 5798 --query 1 -v
+
+case 5800: totals {'ok': 172221, 'refused': 0, 'duckdb-error': 1804, 'MISMATCH': 4, 'ERROR': 1}
+--
+=== ERROR: seed 506 case 6475 query 4
+SELECT count(*), min(greatest(f."f_m3", 0)) FROM fact f LEFT JOIN dim1 j0 ON f."f_d1_r1" = j0."d1_key" AND (f."f_m3" * f."f_m3") = 704322020060962784 JOIN dim2 j1 ON f."f_d2" = j1."d2_key" WHERE (j0."d1_h1" BETWEEN '0%' AND 'A_' OR greatest(f."f_d1_r1", -1682041340783725350) = 0) AND (NOT j1."d2_h2" BETWEEN -3 AND -241769) AND j0."d1_key" NOT IN (SELECT s."d1_key" FROM dim1 s WHERE s."d1_key" IS NULL)
+SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (704322020060962784 * 704322020060962784)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 507 case 1033 query 5
+SELECT f."f_m0", f."f_m4", CASE WHEN f."f_m0" > -548011.810148 THEN f."f_m0" ELSE -819431.100091 END, corr(f."f_m1", f."f_m5"), max(f."f_m5") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND (j0."d0_h1" || '-') >= 'L0_0a' WHERE f."f_m3" > '' GROUP BY ROLLUP (1, 2, 3) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, None, None, Decimal('75311.3218')), (None, None, None, 0.029704601366945287, Decimal('75311.3218'))]
+duckdb  (2 rows) [(None, None, None, 0.029704601366945017, Decimal('75311.3218')), (None, None, None, nan, Decimal('75311.3218'))]
+replay: python -m torbles.sqlfuzz --seed 507 --case 1033 --query 5 -v
+
+case 1040: totals {'ok': 30920, 'refused': 0, 'duckdb-error': 309, 'MISMATCH': 1, 'ERROR': 0}
+--
+=== ERROR: seed 507 case 1750 query 11
+SELECT j0."d1_h1", sign(f."f_sorted"), bool_and(f."f_m3" <> CAST(1e+300 AS DOUBLE)) FILTER (WHERE f."f_m1" < FALSE) FROM fact f LEFT JOIN dim1 j0 ON f."f_d1" = j0."d1_key" AND (j0."d1_a0" * j0."d1_h2") <> 7196926817328636.20 WHERE j0."d1_h0" > j0."d1_h1" AND ((f."f_m3" BETWEEN CAST(619969.0 AS DOUBLE) AND CAST(1e-300 AS DOUBLE) OR j0."d1_h0" BETWEEN '-' AND 'zZ🙂-ß') OR j0."d1_h2" IS NULL) GROUP BY 1, 2
+SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (422869309921627.66 * 109)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 507 case 3989 query 28
+SELECT f."f_m3", CASE WHEN f."f_m4" > 5768043643461958.62 THEN f."f_m4" ELSE 7 END, count(*), sum(f."f_m4") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_h0" > 1 WHERE f."f_d0" >= 1 GROUP BY 1, 2
+torbles (9 rows) [(None, Decimal('7.00'), 21409, Decimal('-29348589286191191342.08')), (None, Decimal('5768043643461958.63'), 530, Decimal('3057063131034838073.90')), (None, Decimal('6412517148351541.14'), 479, Decimal('3071595714060388206.06')), (None, Decimal('5845361578728607.95'), 536, Decimal('3133113806198533861.20')), (None, Decimal('7401735536307122.57'), 509, Decimal('3767483387980325388.13')), (None, Decimal('9092211603176503.40'), 529, Decimal('4809779938080370298.60'))]
+duckdb  (9 rows) [(None, Decimal('5945999118786868.36'), 504, Decimal('45304504075053394.88')), (None, Decimal('8022975596551281.87'), 476, Decimal('-54879871520595669.24')), (None, Decimal('6412517148351541.14'), 479, Decimal('-64350778470235568.66')), (None, Decimal('7401735536307122.57'), 509, Decimal('78134573238415064.93')), (None, Decimal('7.00'), 21409, Decimal('-18266208993004272.64')), (None, Decimal('7878437790837633.65'), 493, Decimal('10253575403947550.09'))]
+replay: python -m torbles.sqlfuzz --seed 507 --case 3989 --query 28 -v
+
+case 3990: totals {'ok': 118485, 'refused': 0, 'duckdb-error': 1242, 'MISMATCH': 2, 'ERROR': 1}
+--
+=== MISMATCH: seed 507 case 5058 query 15
+SELECT (f."f_m4" - f."f_m2"), f."f_m0", CASE WHEN f."f_m1" > 0 THEN f."f_m1" ELSE 0 END, stddev_pop(f."f_m1"), bool_or(f."f_m0" = 18446744073709551615), covar_pop(f."f_m1", f."f_m1") FROM fact f WHERE (f."f_m2" <> -505534.360353 OR f."f_m1" <> 2147483647) GROUP BY GROUPING SETS ((1, 2, 3), ()) HAVING stddev_pop(f."f_m1") IS NOT NULL ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST, 6 NULLS FIRST
+torbles (15674 rows) [(None, None, None, 0.0, True, 0.0), (-997149.834893, 0, 0, 0.0, False, 0.0), (-997149.834893, 1, 0, 0.0, False, 0.0), (-997149.834893, 112, 0, 0.0, False, 0.0), (-997149.834893, 612, 0, 0.0, False, 0.0), (-997149.834893, 718, 0, 0.0, False, 0.0)]
+duckdb  (15674 rows) [(None, None, None, 0.0, True, 0.0), (-997149.834893, 0, 0, 0.0, False, 0.0), (-997149.834893, 1, 0, 0.0, False, 0.0), (-997149.834893, 112, 0, 0.0, False, 0.0), (-997149.834893, 612, 0, 0.0, False, 0.0), (-997149.834893, 718, 0, 0.0, False, 0.0)]
+replay: python -m torbles.sqlfuzz --seed 507 --case 5058 --query 15 -v
+
+case 5060: totals {'ok': 150192, 'refused': 0, 'duckdb-error': 1604, 'MISMATCH': 3, 'ERROR': 2}
+--
+=== MISMATCH: seed 507 case 5349 query 15
+SELECT substring(j0."d0_h0", 1, 2), sum(j0."d0_a0"), bool_and((j1."d1_a0" >= 18446744073709551615 OR f."f_m3" BETWEEN 9223372036854775807 AND -9223372036854775808)), count(DISTINCT j0."d0_a1") FROM fact f JOIN dim0 j0 ON f."f_d0" = j0."d0_key" LEFT JOIN dim1 j1 ON f."f_d1" = j1."d1_key" AND j1."d1_a0" <> 18446744073709551615 WHERE f."f_m1" <= DATE '1900-01-02' GROUP BY 1 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST LIMIT 3
+torbles (1 rows) [('L0', -21345540169269677400, None, 1)]
+duckdb  (1 rows) [('L0', Decimal('-2898796095560125784'), None, 1)]
+replay: python -m torbles.sqlfuzz --seed 507 --case 5349 --query 15 -v
+
+case 5350: totals {'ok': 158803, 'refused': 0, 'duckdb-error': 1692, 'MISMATCH': 4, 'ERROR': 2}
+--
+=== MISMATCH: seed 507 case 5495 query 18
+SELECT f."f_m2", f."f_m3", f."f_m4", corr(f."f_m4", f."f_m4"), sum(f."f_m2"), bool_and(f."f_m4" <= -50) FROM fact f GROUP BY ROLLUP (1, 2, 3) ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST, 4 NULLS FIRST, 5 NULLS FIRST, 6 NULLS FIRST LIMIT 2
+torbles (2 rows) [(None, None, None, 1.0, 139586372147, False), (2147482648, None, None, 1.0, 40802170312, False)]
+duckdb  (2 rows) [(None, None, None, 0.9999999999999991, 139586372147, False), (2147482648, None, None, 1.0, 81604340624, False)]
+replay: python -m torbles.sqlfuzz --seed 507 --case 5495 --query 18 -v
+
+case 5500: totals {'ok': 163244, 'refused': 0, 'duckdb-error': 1750, 'MISMATCH': 5, 'ERROR': 2}
+--
+=== ERROR: seed 503 case 378 query 15
+(SELECT j2."d2_h0" FROM fact f, dim0 j0, dim1 j1, dim2 j2 WHERE f."f_d0" = j0."d0_key" AND f."f_d1" = j1."d1_key" AND f."f_d2" = j2."d2_key" AND (j0."d0_h2" BETWEEN 'L2_0_4_1é' AND 'L2_0_4_1' AND (NOT j0."d0_a0" = j1."d1_key"))) EXCEPT ALL (SELECT CAST(j1."d1_h1" AS VARCHAR) FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" JOIN dim1 j1 ON f."f_d1" = j1."d1_key" WHERE ((f."f_m3" * f."f_m2") < 17983 AND f."f_m4" >= CAST(3.0 AS DOUBLE)))
+SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (17983 * 684271581909033.57)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== ERROR: seed 503 case 968 query 12
+SELECT (j0."d0_h1" - 1), f."f_m1", j0."d0_a1", sum(DISTINCT f."f_m0"), count(CASE WHEN j0."d0_key" > 4500419489982312649 THEN j0."d0_key" ELSE 3488274062071729822 END), regr_slope(j0."d0_h1", j0."d0_a0") FILTER (WHERE (f."f_m1" * f."f_m0") >= 2147483647) FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" AND f."f_d0" < 6 AND j0."d0_h1" = f."f_m1" AND (NOT j0."d0_a0" >= 41559.0100) GROUP BY 1, 2, 3
+SqlError: Out of Range Error: Overflow in multiplication of DECIMAL(18) (-2147483612 * 6190155.56)
+Traceback (most recent call last):
+  File "/home/brian/torbles_math/torbles/sqlfuzz.py", line 411, in run_one
+    got = db.sql(sql, ENGINE).rows
+          ~~~~~~^^^^^^^^^^^^^
+--
+=== MISMATCH: seed 503 case 2399 query 11
+SELECT j1."d2_h2", corr(j0."d1_h2", j0."d1_h2"), count(j0."d1_key") FROM fact f JOIN dim1 j0 ON f."f_d1" = j0."d1_key" LEFT JOIN dim2 j1 ON f."f_d2" = j1."d2_key" WHERE f."f_m0" IS NOT NULL GROUP BY ROLLUP (1) HAVING count(*) > 1 ORDER BY 1 NULLS FIRST, 2 NULLS FIRST, 3 NULLS FIRST LIMIT 5
+torbles (3 rows) [(None, 1.0, 7), (None, 1.0, 624), (-2, 1.0, 617)]
+duckdb  (3 rows) [(None, 0.9999999999999998, 624), (None, 1.0, 7), (-2, 0.9999999999999997, 617)]
+replay: python -m torbles.sqlfuzz --seed 503 --case 2399 --query 11 -v
+
+case 2400: totals {'ok': 71270, 'refused': 0, 'duckdb-error': 757, 'MISMATCH': 1, 'ERROR': 2}
+--
+=== MISMATCH: seed 503 case 2778 query 24
+SELECT CASE WHEN j0."d1_h2" < 'L2_0_0_0' THEN 'lo' ELSE 'hi' END, f."f_m4", greatest(f."f_m5", CAST(2.5 AS DOUBLE)), corr(f."f_m4", j0."d1_h1"), avg(CASE WHEN f."f_m4" > -9223372036854775808 THEN f."f_m4" ELSE -9223372036854775808 END) FROM fact f LEFT JOIN dim1 j0 ON f."f_d1_r1" = j0."d1_key" GROUP BY 1, 2, 3
+torbles (1 rows) [('hi', None, 2.5, None, 0.0)]
+duckdb  (1 rows) [('hi', None, 2.5, None, -9.223372036854776e+18)]
+replay: python -m torbles.sqlfuzz --seed 503 --case 2778 --query 24 -v
+
+case 2780: totals {'ok': 82533, 'refused': 0, 'duckdb-error': 893, 'MISMATCH': 2, 'ERROR': 2}
+--
+=== MISMATCH: seed 503 case 4351 query 28
+SELECT f."f_m2", j0."d0_h2", covar_pop(f."f_m4", f."f_m3") OVER (PARTITION BY f."f_m2" ORDER BY j0."d0_h2" NULLS FIRST), cume_dist() OVER (PARTITION BY f."f_m2" ORDER BY j0."d0_h2" NULLS FIRST), percent_rank() OVER (PARTITION BY f."f_m2" ORDER BY j0."d0_h2" NULLS FIRST) FROM fact f, dim0 j0 WHERE f."f_d0" = j0."d0_key" AND (j0."d0_h2" || '-') >= ''
+torbles (2848 rows) [('éßé%0', 'L2_0_1_1', 0.0, 1.0, 0.25839793281653745), ('ßé-', 'L2_0_1_1', 0.0, 1.0, 0.29009433962264153), ('ßé-', 'L2_0_1_1', 0.0, 1.0, 0.29009433962264153), ('0zc9日🙂', 'L2_0_1_1', 0.0, 1.0, 0.2846153846153846), ('A', 'L2_0_1_1', 0.0, 1.0, 0.271461716937355), ('ßé-', 'L2_0_0_1', 0.0, 0.28941176470588237, 0.0)]
+duckdb  (2848 rows) [('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0), ('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0), ('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0), ('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0), ('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0), ('Bß', 'L2_0_0_1', 1.5340361309206054e-06, 0.27040816326530615, 0.0)]
+replay: python -m torbles.sqlfuzz --seed 503 --case 4351 --query 28 -v
+
+case 4360: totals {'ok': 129437, 'refused': 0, 'duckdb-error': 1388, 'MISMATCH': 3, 'ERROR': 2}
+--
+=== MISMATCH: seed 503 case 4747 query 20
+SELECT f."f_m3", sum(j1."d1_a1"), count(DISTINCT trim(j1."d1_h0")), sum(count(*)) OVER (PARTITION BY f."f_m3") FROM fact f LEFT JOIN dim0 j0 ON f."f_d0" = j0."d0_key" AND j0."d0_a0" IS NULL JOIN dim1 j1 ON f."f_d1" = j1."d1_key" GROUP BY 1
+torbles (1 rows) [(None, 16966787686741099575, 2, 1000)]
+duckdb  (1 rows) [(None, Decimal('-1479956386968452041'), 2, 1000)]
