@@ -379,6 +379,23 @@ def same(got, want, ordered, tol=1e-6):
     return False
 
 
+_OVERFLOW = re.compile(r"Overflow in (addition|subtraction|multiplication) of (U?INT(?:8|16|32|64|128)) \((-?\d+) ([-+*]) (-?\d+)\)")
+_DUCK_INT = {"INT8": "TINYINT", "INT16": "SMALLINT", "INT32": "INTEGER", "INT64": "BIGINT", "INT128": "HUGEINT",
+             "UINT8": "UTINYINT", "UINT16": "USMALLINT", "UINT32": "UINTEGER", "UINT64": "UBIGINT", "UINT128": "UHUGEINT"}
+
+
+def _duck_overflows(con, msg):
+    """torbles raised DuckDB's own integer overflow error: does DuckDB raise it too when it computes that operation in
+    that type? Then the statement's answer from DuckDB comes from not computing the value (its optimizer answers
+    COUNT(x * 3) GROUP BY x without x * 3), and the overflow is not a fault of torbles' typing."""
+    m = _OVERFLOW.search(msg)
+    if not m: return False
+    t = _DUCK_INT[m.group(2)]
+    try: con.execute(f"SELECT CAST({m.group(3)} AS {t}) {m.group(4)} CAST({m.group(5)} AS {t})").fetchall()
+    except Exception as e: return "Overflow" in str(e)
+    return False
+
+
 def run_one(db, con, sql, times=None):
     """compare one statement; times (a dict) receives the seconds each side took, end to end with its result rows"""
     t0 = time.perf_counter()
@@ -392,6 +409,9 @@ def run_one(db, con, sql, times=None):
     except SqlError as e:
         msg = str(e)
         if any(t in msg for t in REFUSAL_TEXT): return "refused", msg[:200]
+        if _duck_overflows(con, msg):
+            return "duckdb-error", ("DuckDB answered without computing a value that overflows its own type (a COUNT of an "
+                                    f"expression of the GROUP BY keys, say); torbles raised it: {msg[:120]}")
         return "ERROR", f"SqlError: {msg}\n{traceback.format_exc(limit=6)}"
     except Exception as e:
         return "ERROR", f"{type(e).__name__}: {e}\n{traceback.format_exc(limit=8)}"

@@ -401,6 +401,11 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
 - `ARG_MIN` / `ARG_MAX` with ties pick any of the tied rows in both, not always the same one.
 - `PERCENTILE_CONT` (and `MEDIAN`) of a DECIMAL interpolates exactly, then truncates to the column's scale (2.50 and
   1000.00 at 0.3 of the way: 301.75); DuckDB interpolates the scaled integers in double precision (301.74).
+- An argument of `COUNT(DISTINCT ...)` that overflows its type raises the overflow, as everywhere else; when the
+  argument is an expression of the GROUP BY keys, DuckDB's optimizer answers 1 per group without computing it. With
+  a SMALLINT x holding -17604, `SELECT x, count(DISTINCT x * 3) FROM t GROUP BY x` gives 1 in DuckDB and the overflow
+  in torbles; both raise it without that GROUP BY, or for `sum(x * 3)`. The SQL fuzzer checks such an overflow against
+  DuckDB's own arithmetic in that type and counts the statement among DuckDB's errors.
 
 ## Tests
 
