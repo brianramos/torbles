@@ -341,7 +341,9 @@ def make_case(cs):
 
 
 # ---------------------------------------------------------------------- comparison
-def _close(a, b, tol):
+def _close(a, b, tol, dec_tol=None):
+    if dec_tol is not None and isinstance(a, Decimal) and isinstance(b, Decimal):
+        return a == b or abs(a - b) <= Decimal(dec_tol) * max(Decimal(1), abs(a), abs(b))
     if a is None or b is None:
         # ISO: CORR / REGR_* of a constant column are NULL; DuckDB returns NaN
         x = b if a is None else a
@@ -353,7 +355,7 @@ def _close(a, b, tol):
         if x == y: return True
         return abs(x - y) <= tol * max(1.0, abs(x), abs(y))
     if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
-        return len(a) == len(b) and all(_close(x, y, tol) for x, y in zip(a, b))
+        return len(a) == len(b) and all(_close(x, y, tol, dec_tol) for x, y in zip(a, b))
     return a == b
 
 
@@ -364,16 +366,18 @@ def _sk(v):
     return (2, repr(v))
 
 
-def same(got, want, ordered, tol=1e-6):
+def same(got, want, ordered, tol=1e-6, dec_tol=None):
+    """dec_tol: DECIMAL values equal within this relative difference (DuckDB interpolates the percentiles of a DECIMAL
+    on its scaled integers in double precision; torbles exactly: docs/SQL.md, Where torbles and DuckDB differ)"""
     if len(got) != len(want): return False
     if not ordered:
         got = sorted(got, key=lambda r: [_sk(x) for x in r]); want = sorted(want, key=lambda r: [_sk(x) for x in r])
-    if all(all(_close(a, b, tol) for a, b in zip(x, y)) for x, y in zip(got, want)): return True
+    if all(all(_close(a, b, tol, dec_tol) for a, b in zip(x, y)) for x, y in zip(got, want)): return True
     if not ordered:                                   # float keys may sort differently: match greedily
         rest = list(want)
         for x in got:
             for i, y in enumerate(rest):
-                if all(_close(a, b, tol) for a, b in zip(x, y)): del rest[i]; break
+                if all(_close(a, b, tol, dec_tol) for a, b in zip(x, y)): del rest[i]; break
             else: return False
         return True
     return False
@@ -418,6 +422,8 @@ def run_one(db, con, sql, times=None):
     low = sql.lower()
     ordered = " order by " in low and " limit " in low and "over" not in low
     if same(got, want, ordered): return "ok", ""
+    if any(f in low for f in ("median(", "percentile_cont", "quantile_cont")) and same(got, want, ordered, dec_tol=1e-15):
+        return "ok", ""                               # DuckDB's double-precision interpolation of a DECIMAL percentile
     m = re.search(r"\blimit (\d+)$", low.strip())
     if m and len(want) > int(m.group(1)) and len(got) <= int(m.group(1)):
         return "duckdb-error", f"DuckDB returned {len(want)} rows past its LIMIT {m.group(1)} (a DuckDB bug)"
