@@ -4555,8 +4555,10 @@ def run_general(s, bindings, need, aggs, cx):
         else: rest.append(c)
     from_ = s.from_
     if s.sample is None: from_, rest = _equijoins(from_, rest)
-    rel = _materialize(from_, per, pushed, cx)
+    deferred = []                                      # terms that failed on a row of their item: checked after the joins
+    rel = _materialize(from_, per, pushed, cx, deferred)
     if s.sample is not None: rel = sample_rel(rel, s.sample, cx)
+    rest = deferred + rest
     if rest:
         rel = rel.take(rows_where(_and(rest), rel, cx))
     return rel, {}
@@ -4596,16 +4598,16 @@ def _equijoins(f, rest):
     return out, [c for i, c in enumerate(rest) if i not in taken]
 
 
-def _materialize(f, per, pushed, cx):
-    if isinstance(f, I.Binding): return _mat_binding(f, per.get(f, {}), pushed.get(f, []), cx)
-    L = _materialize(f.left, per, pushed, cx)
+def _materialize(f, per, pushed, cx, deferred=None):
+    if isinstance(f, I.Binding): return _mat_binding(f, per.get(f, {}), pushed.get(f, []), cx, deferred)
+    L = _materialize(f.left, per, pushed, cx, deferred)
     lb = set(block_bindings(f.left))
     refs = {}
     for rb in block_bindings(f.right):
         if rb.q is not None and not hasattr(rb, "shared"):
             for c in outer_refs_into(rb.q, lb): refs[c.key()] = c
     if refs: return _lateral(f, L, list(refs.values()), per, pushed, cx)
-    R = _materialize(f.right, per, pushed, cx)
+    R = _materialize(f.right, per, pushed, cx, deferred)
     return _join(f, L, R, cx)
 
 
@@ -4644,20 +4646,36 @@ def _lateral(j, L, refs, per, pushed, cx):
     return C
 
 
-def _mat_binding(b, cols, conds, cx):
+def _pushed_rows(rel, conds, cx, deferred):
+    """rel's rows that pass the WHERE terms pushed down to its FROM item. A row a term fails on (an overflow, a failed
+    cast) is kept, and the terms join the ones checked after the joins (deferred): there an error counts only for a
+    row the block's other terms leave undecided, as everywhere (a term on another item may drop the row)"""
+    if not conds: return rel
+    if deferred is None: return rel.take(rows_where(_and(conds), rel, cx))
+    rows, errs = filter_rows(_and(conds), rel, cx)
+    if errs: deferred.extend(conds); rows = sorted(set(rows) | set(errs))
+    return rel.take(rows)
+
+
+def _mat_binding(b, cols, conds, cx, deferred=None):
     cols = list(cols.values())
     if b.sample is not None and b.table is None:                # a sampled derived table: a sample of its rows
         sp, b.sample = b.sample, None
         try: rel = _mat_binding(b, {c.key(): c for c in cols}, [], cx)
         finally: b.sample = sp
-        rel = sample_rel(rel, sp, cx)
-        return rel.take(rows_where(_and(conds), rel, cx)) if conds else rel
+        return _pushed_rows(sample_rel(rel, sp, cx), conds, cx, deferred)
     if b.table is not None:
         s = I.Select(); s.from_ = b
         s.items = []; s.where = _and(conds) if conds else None
         need = {c.key(): c for c in cols}
+        try:
+            rel, _ = plan_star(s, [b], need, {}, cx)
+            return rel
+        except SqlError:
+            if not conds or deferred is None: raise
+        s.where = None                                  # a term failed on a row: the rows, then the terms (_pushed_rows)
         rel, _ = plan_star(s, [b], need, {}, cx)
-        return rel
+        return _pushed_rows(rel, conds, cx, deferred)
     # a derived table, CTE or VALUES: its rows (a CTE once per query)
     shared = getattr(b, "shared", None)
     if shared is not None and id(shared) in cx.ctes: res = cx.ctes[id(shared)]
@@ -4670,9 +4688,7 @@ def _mat_binding(b, cols, conds, cx):
     for c in cols:
         j = names.index(c.name)
         rel.cols[c.key()] = [r[j] for r in res.rows]
-    if conds:
-        rel = rel.take(rows_where(_and(conds), rel, cx))
-    return rel
+    return _pushed_rows(rel, conds, cx, deferred)
 
 
 def _join(j, L, R, cx):

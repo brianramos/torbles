@@ -413,7 +413,9 @@ torbles follows ISO where the two differ, and the comparisons in the tests skip 
   6.3.3.3); DuckDB without its optimizer raises the same errors. An aggregate's FILTER runs on the rows the WHERE
   keeps, and a LEFT JOIN's ON terms on the pairs its equality matches, so an error on a row the WHERE drops, or on a
   dimension row no row matches, is not the query's; DuckDB pushes an ON term on the dimension alone into the
-  dimension's scan and raises it for every row.
+  dimension's scan and raises it for every row. A WHERE term on one FROM item that fails on a row of it is checked
+  again after the joins, beside the other terms, so an error on a row that a term on another item drops (a row a
+  LEFT JOIN pads, say) is not the query's either.
 
 ## Tests
 

@@ -523,7 +523,7 @@ def run_one(db, con, sql, times=None):
     if what:
         return "duckdb-error", (f"DuckDB without its {'statistics propagation' if what == 'statistics' else 'optimizer'} "
                                 "gives torbles' answer: the difference is DuckDB's optimizer (a 64-bit sum its statistics chose, say)")
-    if ordered and _ties_explain(db, con, sql, got):
+    if _ties_explain(db, con, sql, got):                 # (also beside windows: its pattern is the statement's last clauses)
         return "ok", ("(documented) rows ordered by values that differ as documented (a statistic NULL for DuckDB's NaN, "
                       "exact for rounded): the same rows without the LIMIT")
     return "MISMATCH", f"torbles ({len(got)} rows) {got[:6]}\nduckdb  ({len(want)} rows) {want[:6]}"

@@ -14,11 +14,14 @@
   C05  FROM a, b, c WHERE a.k = b.k AND ... on the general path matches rows on those equalities instead of forming
        every pair (a 65-row fact asked for 120 GiB);
   C06  the SQL fuzzer's own checks: a statistic NULL in torbles and NaN in DuckDB that reorders ORDER BY ... LIMIT is
-       the documented difference; an overflow DuckDB's statistics let it skip is DuckDB's (it raises it without its
-       optimizer); -0.0 and 0.0 group and sort as one value.
-Every case has a fixed expectation (rows, or ERROR where DuckDB raises), checked against DuckDB (C02: against the same
-statement with the term's operand widened, which cannot fail) and against db.sql on the engines alg, plain and gpu
-(TORBLES_SQL_ENGINE=<engine>: that engine only).
+       the documented difference, beside windows too; an overflow DuckDB's statistics let it skip is DuckDB's (it
+       raises it without its optimizer); -0.0 and 0.0 group and sort as one value;
+and of the fuzzing rerun on the fixes (an hour on new seeds, 2026-11-02):
+  C07  a WHERE term the general path pushes down to its FROM item that fails on a row there (abs of the least BIGINT)
+       is checked again after the joins, where a term on another item may drop the row (a LEFT JOIN's padded row).
+Every case has a fixed expectation (rows, or ERROR where DuckDB raises), checked against DuckDB (C02 and C07: against
+the same statement with the term's operand widened, which cannot fail) and against db.sql on the engines alg, plain
+and gpu (TORBLES_SQL_ENGINE=<engine>: that engine only).
     python3 tests/check_campaign_sql.py"""
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -184,6 +187,28 @@ cases(db, "C05 comma joins on the general path match on their WHERE equalities",
 ])
 db.close()
 
+# ---------------------------------------------------------------- C07
+# no keys declared: the general path pushes each WHERE term on one FROM item down to that item
+nf7 = 400
+m7 = rng.integers(-1000, 1000, nf7).astype(object); x7 = rng.choice([3, 11, 17], nf7).astype(object)
+m7[5], x7[5] = -(1 << 63), None        # abs(m) leaves BIGINT; x NULL: the LEFT JOIN pads the row, a term on g2 drops it
+db = torbles.from_ddl("CREATE TABLE g1 (k INTEGER, x INTEGER, m BIGINT); CREATE TABLE g2 (k INTEGER, a INTEGER, b INTEGER)",
+                      {"g1": pd.DataFrame({"k": rng.integers(0, 30, nf7), "x": pd.array(x7, dtype="Int32"), "m": pd.array(m7, dtype="Int64")}),
+                       "g2": pd.DataFrame({"k": np.arange(30), "a": rng.integers(0, 5, 30), "b": rng.integers(0, 5, 30)}).astype("int32")},
+                      keep_plain=True)
+q = db.con.execute
+LJ = "FROM g1 LEFT JOIN g2 ON g1.k = g2.k AND g1.x = 11"
+safe = lambda t: q(t.replace("abs(g1.m)", "abs(CAST(g1.m AS HUGEINT))")).fetchall()
+S1 = f"SELECT count(*), sum(g1.m) {LJ} WHERE ((g2.a - 1) <> 2 OR g2.b IS NOT NULL) AND abs(g1.m) < 400 AND g1.x IS NULL"
+S2 = f"SELECT count(*), sum(g1.m) {LJ} WHERE g2.a IS NOT NULL AND abs(g1.m) < 400"
+cases(db, "C07 a pushed-down WHERE term that fails on a row a term on another FROM item drops", [
+    ("the fuzzer's statement: the row padded by the LEFT JOIN, dropped by the term on g2", S1, safe(S1)),
+    ("... and the rows the LEFT JOIN matched", S2, safe(S2)),
+    ("control: no other term drops the row", f"SELECT count(*) {LJ} WHERE abs(g1.m) < 400", ERROR),
+    ("control: the row joins, so the term fails", "SELECT count(*) FROM g1, g2 WHERE g1.k = g2.k AND abs(g1.m) < 400", ERROR),
+], duck_too=False)
+db.close()
+
 # ---------------------------------------------------------------- C06
 from torbles import sqlfuzz, fuzz
 import duckdb
@@ -197,6 +222,9 @@ sql = "SELECT g, corr(x, x) FROM s WHERE g < 5 GROUP BY 1 ORDER BY 2 NULLS FIRST
 st, detail = sqlfuzz.run_one(dbs, con, sql)
 check(st == "ok" and "documented" in detail, "CORR NULL in torbles, NaN in DuckDB, under ORDER BY ... LIMIT: the documented difference",
       f"{st}: {detail[:200]}")
+sql = "SELECT g, corr(x, x), sum(count(*)) OVER () FROM s WHERE g < 5 GROUP BY 1 ORDER BY 2 NULLS FIRST, 1 LIMIT 2"
+st, detail = sqlfuzz.run_one(dbs, con, sql)
+check(st == "ok" and "documented" in detail, "... beside a window function", f"{st}: {detail[:200]}")
 sql = "(SELECT x FROM s WHERE g BETWEEN 3 AND 2) EXCEPT (SELECT x FROM s WHERE abs(x) >= 5)"
 st, detail = sqlfuzz.run_one(dbs, con, sql)
 check(st == "duckdb-error" and "without it DuckDB raises it too" in detail,
