@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "torble.h"
+#include "version.h"
 
 #ifdef EMULATE
   #define DEV static inline
@@ -489,7 +490,7 @@ static int mm_wide(const qplan_t *q) {
     return q->ngroups > 32;
 }
 static uint64_t pow2_at_least(uint64_t x) { uint64_t c = 1024; while (c < x) c <<= 1; return c; }
-extern "C" const char *gpu_version(void) { return TORBLES_VERSION; }
+extern "C" const char *gpu_version(void) { return TORBLES_RELEASE; }
 extern "C" int gpu_mm_mode(int set) { if (set >= 0) MM_MODE = set; return MM_MODE; }
 extern "C" const char *gpu_mm_name(void) {
     static char b[400];

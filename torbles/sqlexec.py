@@ -1837,10 +1837,12 @@ for _k in ("covar_pop", "covar_samp", "corr", "regr_slope", "regr_intercept", "r
 # S(t) mod t^(B+1): the GROUP BY runs under x <= B, and the block reads only the rows that can be output (rank selection
 # on the planes, as ORDER BY ... LIMIT does without windows).
 SERIES_WINDOWS = True
-SERIES_STRICT = False       # tests: an unexpected error in the series path is raised (else the window reads its rows)
+SERIES_STRICT = __import__("os").environ.get("TORBLES_SERIES_STRICT") == "1"   # tests and fuzzing: an unexpected error
+                            # in the series path is raised (else the window is computed from its rows)
 SERIES_LUT = 1 << 22        # rows look their group up by code tables while the codes' spans fit this, else by values
-SERIES_ROWS_PER_GROUP = 16  # without a LIMIT bound, a series is read when its key columns' groups are this much fewer than
-                            # the rows (each group costs some Python; at 1M rows, 62K groups take ~0.1 s, the rows ~0.4 s)
+# without a LIMIT bound, a series is read when its key columns' groups are this much fewer than the rows (each group
+# costs some Python: at 1M rows, 62K groups take about 0.1 s, the rows about 0.4 s)
+SERIES_ROWS_PER_GROUP = int(__import__("os").environ.get("TORBLES_SERIES_ROWS_PER_GROUP", 16))
 _SERIES_RANKS = {"row_number", "rank", "dense_rank", "percent_rank", "cume_dist"}
 _SERIES_AGGS = {"count", "sum", "avg", "mean"}
 _SERIES_KEY_TYPES = {"VARCHAR", "DATE", "TIMESTAMP", "BOOLEAN"}

@@ -21,10 +21,11 @@
 #include <stdatomic.h>
 
 #include "torble.h"
+#include "version.h"
 #include "relationships.h"
 #include <unistd.h>
 
-const char *at_version(void) { return TORBLES_VERSION; }
+const char *at_version(void) { return TORBLES_RELEASE; }
 
 /* ---------------------------------------------------------------- persistent worker pool
  * Every parallel call (queries, filters, validation, the build) runs on one pool of threads created once. Woken

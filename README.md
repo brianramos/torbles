@@ -1,6 +1,6 @@
 # torbles
 
-**An algebraic relational datastore on torus-encoded bit planes.** Version 0.2.0, alpha: you can install it, load
+**An algebraic relational datastore on torus-encoded bit planes.** Version 0.3.0, alpha: you can install it, load
 your own tables with their types and keys, and get answers checked against DuckDB. Features are still missing and
 the API may change (see [Known limitations](#known-limitations-020)).
 
@@ -321,7 +321,7 @@ dimensions, deltas, and self-extension.
     wsl/         run_validation.sh (build, test, benchmark) and run_scaling.sh (SF1-SF50 and threads), WSL2 + NVIDIA GPU
     .github/     CI (tests and fuzzing on every push) and release (wheels to PyPI on a version tag)
 
-## Known limitations (0.2.0)
+## Known limitations (0.3.0)
 
 - **Joins on the planes:** star joins, one hop from the fact table to each dimension, on single-column keys
   (composite keys are noted and skipped). In SQL a dimension may be joined through several foreign keys (role-playing
