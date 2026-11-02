@@ -15,8 +15,8 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 | existing | 0 |
 | partial | 0 |
 | planned | 0 |
-| in_progress | 1 |
-| validated | 80 |
+| in_progress | 0 |
+| validated | 81 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -890,7 +890,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### FND-012: Differential validation and benchmark gates
 
-Status: **in_progress**. Delivery wave: **W0**.
+Status: **validated**. Delivery wave: **W0**.
 
 Per-capability oracles, algebraic property checks, scope/NULL/bag/refusal tests and measured build/cold/reuse benchmarks. Existing suite remains a regression gate.
 
@@ -913,21 +913,21 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [tests/test_relationship_stages.py](tests/test_relationship_stages.py): Existing stage correctness/property tests.
 - [tests/check_algebra.py](tests/check_algebra.py): Existing switch-on/off and DuckDB differential checks of algebraic paths (the prior mixed-scaling validation: Recorded in the prototype it comes from (prototype/mixed-scaling, results/mixed_scaling); not copied into this repository.)
 
-Implementation targets (proposed until the capability is validated):
+Implemented files:
 
-- `tests/test_math_gates.py`
-- `tests/test_mathematics.py`
-- `tests/mathematics_native_edges.c`
-- `tests/validate_mathematics_native.py`
-- `tests/sanitize_math.sh`
-- `torbles/math_core_gpu.cu`
-- `torbles/math_gpu.py`
-- `torbles/math_errors.py`
-- `bench/validate_math.py`
-- `bench/render_algebra_inventory.py`
-- `bench/math_bench.py`
-- `bench/benchmark_math_gates.py`
-- `bench/benchmark_mathematics.py`
+- [tests/test_math_gates.py](tests/test_math_gates.py)
+- [tests/test_mathematics.py](tests/test_mathematics.py)
+- [tests/mathematics_native_edges.c](tests/mathematics_native_edges.c)
+- [tests/validate_mathematics_native.py](tests/validate_mathematics_native.py)
+- [tests/sanitize_math.sh](tests/sanitize_math.sh)
+- [torbles/math_core_gpu.cu](torbles/math_core_gpu.cu)
+- [torbles/math_gpu.py](torbles/math_gpu.py)
+- [torbles/math_errors.py](torbles/math_errors.py)
+- [bench/validate_math.py](bench/validate_math.py)
+- [bench/render_algebra_inventory.py](bench/render_algebra_inventory.py)
+- [bench/math_bench.py](bench/math_bench.py)
+- [bench/benchmark_math_gates.py](bench/benchmark_math_gates.py)
+- [bench/benchmark_mathematics.py](bench/benchmark_mathematics.py)
 
 Acceptance tests:
 
@@ -945,7 +945,7 @@ Additional limits:
 
 Validation receipts:
 
-Measured runtime: `0d90c4d87694ca48fdacd50f8d1b2be1036a1c62`.
+Measured runtime: `245ff758825b0be750f3f1938c56bb0ce7d0f72a`.
 
 - tests: [results/math/FND-012/tests_test_math_gates.json](results/math/FND-012/tests_test_math_gates.json)
 - tests: [results/math/FND-012/sanitized_test_math_gates.json](results/math/FND-012/sanitized_test_math_gates.json)
