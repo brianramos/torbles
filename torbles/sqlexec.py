@@ -134,7 +134,9 @@ class Cx:
     """execution context: the database, the engine, CTE results, the values of enclosing queries (correlation)"""
     def __init__(self, db, engine="alg"):
         self.db, self.engine = db, engine
-        self.ctes, self.outers, self.memo, self.stats = {}, [], {}, dict(engine_queries=0, star_blocks=0, general_blocks=0)
+        self.ctes, self.outers, self.memo, self.stats = {}, [], {}, dict(engine_queries=0, star_blocks=0, general_blocks=0,
+                                                                        series_windows=0)
+        self.series = {}            # id(block) -> {window key: _Series} while the block runs (windows from their series)
 
     def outer_value(self, e):
         k = e.col.key()
@@ -1235,6 +1237,8 @@ def run_select(s, cx, as_rel=False):
     top = items + [s.having, s.qualify] + order_exprs + don
     aggs = collect(top, I.Agg)
     wins = collect(top, I.Win)
+    if wins:                                       # windows read from their aggregated series (before the block's rows:
+        cx.series[id(s)] = series_windows(s, wins, cx)          # ORDER BY ... LIMIT may then read only the rows output)
     # columns the block reads after the WHERE clause (per group or per row)
     need = {}
     def addcols(x):
@@ -1278,7 +1282,7 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
             idx = [i for i in range(rel.n) for _ in range(rel.cnt[i])]
             rel = rel.take(idx)
         out = rel
-    if wins: compute_windows(list(wins.values()), out, cx)
+    if wins: compute_windows(list(wins.values()), out, cx, cx.series.get(id(s)))
     if s.qualify is not None:
         out = out.take(rows_where(s.qualify, out, cx))
     if as_rel and not s.distinct and not s.order and s.limit is None and s.offset is None:
@@ -1821,16 +1825,309 @@ for _k in ("covar_pop", "covar_samp", "corr", "regr_slope", "regr_intercept", "r
     MOMENTS[_k] = lambda y, x: [y, x, ("*", y, y), ("*", x, x), ("*", x, y)]
 
 
+# ------------------------------------------------------------------ windows from their aggregated series S(t)
+# A window function whose value depends on its row only through the row's group of (PARTITION BY values, ORDER BY key)
+# is a function of the window's aggregated series S(t) = sum over the groups of (rows, non-NULL counts, sums) t^key
+# (docs/ENGINE.md, window analytics). One engine GROUP BY gives the series, on the planes or the GPU, without a row
+# being read, sorted or decoded for it. The frame is then a polynomial applied to the series: a running aggregate is
+# S(t) / (1 - t), prefix sums over the ordered groups; a frame of GROUPS offsets, or of ROWS offsets when every group is
+# one row, is a difference of two such sums; the rank functions are prefix sums of the counts. Each row reads its
+# group's value. With ORDER BY x ... LIMIT n on the window's own ORDER BY key x and a frame that ends at the current
+# row's peers (causal: no later row counts), the rows output need the series only up to the key B of the n-th row,
+# S(t) mod t^(B+1): the GROUP BY runs under x <= B, and the block reads only the rows that can be output (rank selection
+# on the planes, as ORDER BY ... LIMIT does without windows).
+SERIES_WINDOWS = True
+SERIES_STRICT = False       # tests: an unexpected error in the series path is raised (else the window reads its rows)
+SERIES_LUT = 1 << 22        # rows look their group up by code tables while the codes' spans fit this, else by values
+SERIES_ROWS_PER_GROUP = 16  # without a LIMIT bound, a series is read when its key columns' groups are this much fewer than
+                            # the rows (each group costs some Python; at 1M rows, 62K groups take ~0.1 s, the rows ~0.4 s)
+_SERIES_RANKS = {"row_number", "rank", "dense_rank", "percent_rank", "cume_dist"}
+_SERIES_AGGS = {"count", "sum", "avg", "mean"}
+_SERIES_KEY_TYPES = {"VARCHAR", "DATE", "TIMESTAMP", "BOOLEAN"}
+
+
+class _Series:
+    """a window's value per group of its (partition, order key) values: keys (the expressions), gvals (each key's value
+    per group), vals (the window's value per group); truncated: only the groups up to an ORDER BY ... LIMIT bound (rows
+    past it are never output)"""
+    __slots__ = ("keys", "gvals", "vals", "truncated")
+    def __init__(self, keys, gvals, vals, truncated): self.keys, self.gvals, self.vals, self.truncated = keys, gvals, vals, truncated
+
+    def values_for(self, rel, cx):
+        miss = object()
+        out = self._by_codes(rel, cx, miss) if rel.n > 4096 else None
+        if out is None:
+            cols = [ev(e, rel, cx) for e in self.keys]
+            for col in cols:
+                for v in col:
+                    if isinstance(v, Err): raise SqlError(v.msg)
+            tab = dict(zip(zip(*self.gvals), self.vals)) if self.keys else {(): v for v in self.vals}
+            out = [tab.get(t, miss) for t in zip(*cols)] if cols else [tab.get((), miss)] * rel.n
+        bad = [i for i, v in enumerate(out) if v is miss]
+        if bad and not self.truncated: raise SqlError("internal: a row's group is missing from its window's series")
+        for i in bad: out[i] = None                       # past the ORDER BY ... LIMIT bound: not output
+        return out
+
+    def _by_codes(self, rel, cx, miss):
+        """the lookup on the rows' codes, without decoding them: each key's group values encoded in the rows' codec, a
+        code table per key, the groups' mixed-radix index; None when a key is not a code column of a small span"""
+        arrs = [codes_of(e, rel, cx) for e in self.keys]
+        if not arrs or any(a is None or a.codes.dtype != np.int64 for a in arrs): return None
+        ng = len(self.vals)
+        gok, gidx = np.ones(ng, bool), np.zeros(ng, np.int64)
+        idx, radix = np.zeros(rel.n, np.int64), 1
+        for a, gv in zip(arrs, self.gvals):
+            c = a.codes
+            lo, hi = (int(c.min()), int(c.max())) if len(c) else (0, 0)
+            if hi - lo >= SERIES_LUT: return None
+            slot, codes = {}, []
+            for v in dict.fromkeys(gv):
+                if v is None: continue
+                if a.codec is None:
+                    if type(v) is not int: return None
+                    code = v
+                else:
+                    iv = a.codec.interval("EQ", v)
+                    if iv is None or iv[0] is None or iv[0] != iv[1]: continue      # no row can hold this value
+                    code = int(iv[0])
+                if lo <= code <= hi: slot[v] = len(codes); codes.append(code)
+            m = len(codes) + 2                                # the values, NULL, a value no group has
+            lut = np.full(hi - lo + 1, m - 1, np.int64)
+            if codes: lut[np.array(codes, np.int64) - lo] = np.arange(len(codes))
+            r = lut[c - lo]
+            if a.valid is not None: r = np.where(a.valid, r, m - 2)
+            gs = np.fromiter((m - 2 if v is None else slot.get(v, -1) for v in gv), np.int64, ng)
+            gok &= gs >= 0                                    # a value the rows' codec cannot hold: no row is in the group
+            gidx = gidx * m + np.maximum(gs, 0)
+            idx = idx * m + r
+            radix *= m
+            if radix > SERIES_LUT: return None
+        table = np.full(radix, miss, object)
+        vals = np.empty(ng, object); vals[:] = self.vals
+        table[gidx[gok]] = vals[gok]
+        return table[idx].tolist()
+
+
+def _series_key_ok(e):
+    return isinstance(e, I.Col) and T.coll_key(e.t) is None and (e.t.exact or e.t.id in _SERIES_KEY_TYPES)
+
+
+def _series_spec(w):
+    """how window w is computed from its series, or None: (frame mode, start, end, single, causal): the frame's edges
+    as (kind, offset) counted in groups; single: every group must be one row (ROWS frames, ROW_NUMBER); causal: the
+    frame ends at the current row's peers, so no later row counts"""
+    if w.distinct or w.filter is not None or w.rpr is not None or w.agg_order or w.params: return None
+    if w.exclude and w.exclude.upper().replace(" ", "_") != "NO_OTHERS": return None
+    if w.name in _SERIES_RANKS or w.name == "count_star":
+        if w.args: return None
+    elif w.name not in _SERIES_AGGS or len(w.args) != 1 or not isinstance(w.args[0], I.Col) or not w.args[0].t.exact:
+        return None
+    if len(w.order) > 1 or not all(_series_key_ok(p) for p in w.partition) or not all(_series_key_ok(o[0]) for o in w.order):
+        return None
+    if w.name in _SERIES_RANKS:                            # no frame: the peers that precede, and the partition's size
+        return ("range", ("unbounded_preceding", 0), ("current", 0), w.name == "row_number",
+                bool(w.order) and w.name not in ("percent_rank", "cume_dist"))
+    mode, a, b = w.frame if w.frame is not None else ("range", ("unbounded_preceding", None), ("current", None))
+    if not w.order:
+        if mode == "rows": return None                     # positions in an unordered partition
+        if mode == "range":                                # every row a peer of every other: the whole partition
+            a = ("unbounded_preceding", None) if a[0] == "current" else a
+            b = ("unbounded_following", None) if b[0] == "current" else b
+    edges = []
+    for kind, off in (a, b):
+        if kind in ("preceding", "following"):             # constant offsets in groups (or single-row groups)
+            if mode == "range" or not isinstance(off, I.Lit) or type(off.v) is not int or off.v < 0: return None
+            edges.append((kind, off.v))
+        else: edges.append((kind, 0))
+    return mode, edges[0], edges[1], mode == "rows", bool(w.order) and edges[1][0] in ("current", "preceding")
+
+
+def _series_top(s):
+    """(first ORDER BY expression, desc, nulls first, rows read with the OFFSET) when the block outputs a prefix of
+    its first ORDER BY key's order (ORDER BY ... LIMIT), else None"""
+    if not s.order or s.limit is None or s.percent or s.distinct or s.distinct_on is not None or s.qualify is not None: return None
+    lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+    off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
+    if type(lim) is not int or type(off) is not int or lim <= 0 or off < 0 or lim + off > TOPK_MAX: return None
+    e, desc, nf = s.order[0]
+    if isinstance(e, tuple): e = s.items[e[1]][0] if e[0] == "pos" else e[1]
+    return (e, desc, nf, lim + off) if isinstance(e, I.Col) else None
+
+
+def _series_domain(keys):
+    """an upper bound on the key columns' groups (their stored codes' spans), inf when unknown"""
+    dom = 1
+    for e in keys:
+        t = getattr(e.b, "table", None)
+        try: m = int(t.maxcode(e.name)) + 1
+        except Exception: return float("inf")
+        dom *= m + (1 if e.name in getattr(t, "nullable", {}) else 0)
+    return dom
+
+
+def series_windows(s, wins, cx):
+    """{window key: _Series} for the windows of block s computed from their aggregated series (above); the other
+    windows are computed from the block's rows"""
+    if not SERIES_WINDOWS or not COLUMNAR or s.aggregate or s.from_ is None or s.sample is not None: return {}
+    bindings = block_bindings(s.from_)
+    if not bindings or any(b.table is None or b.sample is not None for b in bindings): return {}
+    conds = [s.where] + [j.cond for j in join_conds(s.from_)]
+    if any(c is not None and (not _deterministic(c) or I.has(c, I.Outer)) for c in conds): return {}
+    if any(getattr(j, "partition", None) is not None for j in join_conds(s.from_)): return {}
+    nrows = max(int(b.table.n) for b in bindings)
+    if nrows < ALG_MIN_ROWS: return {}
+    sigs = {}
+    for k, w in wins.items():
+        sp = _series_spec(w)
+        if sp is None or any(I.has(x, I.Outer) for x in w.children()): continue
+        sig = (tuple(p.key() for p in w.partition), tuple((o[0].key(), bool(o[1]), bool(o[2])) for o in w.order))
+        sigs.setdefault(sig, []).append((k, w, sp))
+    top = _series_top(s)
+    out = {}
+    for ws in sigs.values():
+        w0 = ws[0][1]
+        keys = list(w0.partition) + [o[0] for o in w0.order]
+        trunc = None
+        if top is not None and w0.order and all(sp[4] for _, _, sp in ws):
+            o, desc, nf = w0.order[0]
+            if top[0].key() == o.key() and bool(top[1]) == bool(desc) and bool(top[2]) == bool(nf): trunc = (o, desc, nf, top[3])
+        if trunc is None and _series_domain(keys) * SERIES_ROWS_PER_GROUP > nrows: continue     # too many groups: no gain
+        try: got = _run_series(s, keys, ws, trunc, cx)
+        except SqlError:
+            if SERIES_STRICT: raise
+            continue                                       # the block raises its own errors as it reads its rows
+        except Exception:
+            if SERIES_STRICT: raise
+            continue
+        out.update(got)
+    cx.stats["series_windows"] = cx.stats.get("series_windows", 0) + len(out)
+    return out
+
+
+def _dec_int(v, sc):
+    """an exact DECIMAL (or integer) value times 10^sc, as an integer"""
+    if type(v) is int: return v * 10 ** sc
+    sg, dg, ex = v.as_tuple()
+    if ex + sc < 0: raise SqlError("internal: a DECIMAL sum with more digits than its scale")
+    c = int("".join(map(str, dg))) * 10 ** (ex + sc) if dg else 0
+    return -c if sg else c
+
+
+def _run_series(s, keys, ws, trunc, cx):
+    """the windows ws (one PARTITION BY and ORDER BY) from one engine GROUP BY of their series -> {key: _Series}"""
+    import sqlfront, sqlwin
+    where = s.where
+    if trunc is not None:                                  # the key of the n-th row output bounds the series
+        o, desc, nf, k = trunc
+        qb = I.Select(); qb.from_ = s.from_; qb.where = s.where; qb.items = [(o, "b")]
+        qb.order = [(("expr", o), desc, nf)]; qb.limit, qb.offset = 1, k - 1
+        got = run_select(qb, cx).rows
+        p = None
+        if got:
+            B = got[0][0]
+            if B is None: p = sqlfront.make_func("is_null", [o]) if nf else None
+            else:
+                p = sqlfront.make_func(">=" if desc else "<=", [o, I.Lit(B, o.t)])
+                if nf: p = sqlfront.make_func("or", [p, sqlfront.make_func("is_null", [o])])
+        if p is None: trunc = None                         # fewer rows than that, or NULLs last: the whole series
+        else: where = p if where is None else sqlfront.make_and([where, p])
+    q = I.Select(); q.from_ = s.from_; q.where = where; q.aggregate = True; q.group = list(keys)
+    q.items = [(e, f"k{i}") for i, e in enumerate(keys)] + [(I.Agg("count_star", [], T.BIGINT), "n")]
+    col = {}
+    for _, w, _ in ws:
+        if w.name in _SERIES_AGGS and w.args[0].key() not in col:
+            x = w.args[0]; col[x.key()] = len(q.items)
+            q.items += [(I.Agg("count", [x], T.BIGINT), f"c{len(q.items)}"),
+                        (I.Agg("sum", [x], F.agg_typer("sum", [x.t])), f"s{len(q.items) + 1}")]
+    res = run_select(q, cx)
+    cols = res._cols if res._cols is not None else [list(c) for c in zip(*res.rows)] or [[] for _ in q.items]
+    ng = len(cols[0])
+    if not ng: return {k: _Series(keys, [[] for _ in keys], [], trunc is not None) for k, _, _ in ws}
+    nk = len(keys); npart = nk - (1 if ws[0][1].order else 0)
+    spec = ws[0][1].order[0] if ws[0][1].order else None
+    # the groups partition after partition, each in the window's order (dense codes, one lexsort)
+    sk = [sqlwin.order_codes(list(cols[j]), False, False) for j in range(npart)]
+    sk_all = ([sqlwin.order_codes(list(cols[npart]), bool(spec[1]), bool(spec[2]))] if spec is not None else []) + sk[::-1]
+    perm = np.lexsort(sk_all) if sk_all else np.arange(ng)
+    new = np.zeros(ng, bool); new[0] = True
+    for c in sk:
+        cs_ = c[perm]; new[1:] |= cs_[1:] != cs_[:-1]
+    g = np.arange(ng)
+    starts = np.flatnonzero(new); ends = np.append(starts[1:], ng)
+    pid = np.cumsum(new) - 1
+    ps, pe = starts[pid], ends[pid]                        # each group's partition, as [ps, pe) of the sorted groups
+    gi, G = g - ps, pe - ps                                # its index in the partition, the partition's groups
+    cnt = np.asarray(cols[nk], np.int64)[perm]
+    PC = np.concatenate(([0], np.cumsum(cnt)))
+    before, N = PC[g] - PC[ps], PC[pe] - PC[ps]           # rows of the partition before the group; the partition's rows
+    gvals = [[cols[j][i] for i in perm.tolist()] for j in range(nk)]
+    out = {}
+    for k, w, (mode, a, b, single, _) in ws:
+        if single and not (cnt == 1).all(): continue       # ROWS over peers: positions within the groups
+        out[k] = _Series(keys, gvals, _series_values(w, a, b, gi, G, ps, cnt, PC, before, N, cols, col, perm), trunc is not None)
+    return out
+
+
+def _series_values(w, a, b, gi, G, ps, cnt, PC, before, N, cols, col, perm):
+    """window w's value at every group (in the sorted order), from the groups' counts and sums: the frame's edges in
+    groups (sqlwin._edge on positions), prefix sums over the sorted groups"""
+    name = w.name
+    if name in ("row_number", "rank"): return (before + 1).tolist()
+    if name == "dense_rank": return (gi + 1).tolist()
+    if name == "percent_rank": return np.where(N <= 1, 0.0, before / np.maximum(N - 1, 1)).tolist()
+    if name == "cume_dist": return ((before + cnt) / N).tolist()
+    def edge(bd, side):
+        kind, off = bd
+        if kind == "unbounded_preceding": return np.zeros_like(gi)
+        if kind == "unbounded_following": return G
+        if kind == "current": return gi if side == "a" else gi + 1
+        t = gi - off if kind == "preceding" else gi + off
+        return np.where(t < 0, 0, np.where(t >= G, G, t if side == "a" else t + 1))
+    lo = np.minimum(np.maximum(edge(a, "a"), 0), G)
+    hi = np.maximum(lo, np.minimum(edge(b, "b"), G))
+    L, H = ps + lo, ps + hi
+    if name == "count_star": return (PC[H] - PC[L]).tolist()
+    x = w.args[0]; j = col[x.key()]
+    dec = x.t.id == "DECIMAL"; sc = x.t.s if dec else 0
+    nn = np.asarray(cols[j], np.int64)[perm]
+    PN = np.concatenate(([0], np.cumsum(nn)))
+    c = PN[H] - PN[L]
+    if name == "count": return c.tolist()
+    sv = cols[j + 1]
+    sums = [0 if v is None else _dec_int(v, sc) for v in (sv[i] for i in perm.tolist())] if dec else \
+        [0 if v is None else v for v in (sv[i] for i in perm.tolist())]
+    big = max(map(abs, sums)) * (len(sums) + 1) >= 1 << 62
+    X = np.array(sums, object if big else np.int64)
+    PS = np.concatenate((np.zeros(1, X.dtype), np.cumsum(X)))
+    tot = PS[H] - PS[L]
+    has = c > 0
+    res = np.full(len(c), None, object)
+    if name == "sum":
+        if dec:
+            D = Decimal(10 ** sc)
+            res[has] = [T.CTX.divide(Decimal(int(t)), D) for t in tot[has].tolist()]
+        else: res[has] = tot[has].astype(object) if not big else tot[has]
+    else:                                                  # AVG: the exact quotient, rounded once
+        f = 10 ** sc
+        if not big and int(np.abs(tot).max(initial=0)) < 1 << 53 and int(c.max(initial=0)) * f < 1 << 53:
+            res[has] = (tot[has] / (c[has] * f)).astype(object)
+        else: res[has] = [int(t) / (int(d) * f) for t, d in zip(tot[has].tolist(), c[has].tolist())]
+    return res.tolist()
+
+
 # ------------------------------------------------------------------ windows
 VEC_WINDOWS = True          # window functions as array algebra (sqlwin); False: row by row on each partition (tests)
 
 
-def compute_windows(wins, rel, cx):
+def compute_windows(wins, rel, cx, series=None):
     import sqlwin
     n = rel.n
     layouts = {}                                           # windows with the same PARTITION BY / ORDER BY share one ordering
     for w in wins:
         if w.key() in rel.cols: continue
+        if series and w.key() in series:                   # from the window's aggregated series: each row's group's value
+            rel.cols[w.key()] = series[w.key()].values_for(rel, cx)
+            continue
         def codes_or(e, keyed=True):
             """an engine column as its codes (ordered like its values, no collation), else its values (collation keys)"""
             a = codes_of(e, rel, cx) if VEC_WINDOWS else None
@@ -3368,7 +3665,8 @@ class _Planner:
         if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return []
         if self.tab[self.fact].n < ALG_MIN_ROWS: return []
         if s.distinct or s.distinct_on is not None or s.qualify is not None: return []
-        if collect([x for x, _ in s.items] + [o[0] for o in s.order if not isinstance(o[0], tuple)], I.Win): return []
+        wl = collect([x for x, _ in s.items] + [o[0] for o in s.order if not isinstance(o[0], tuple)], I.Win)
+        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return []   # windows over every row need them all
         lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
         off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
         if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return []

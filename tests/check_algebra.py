@@ -9,9 +9,12 @@ off (the answers must be identical) and against DuckDB:
   - COUNT(DISTINCT column) from one bit per (group, value) cell in the engine (sqlexec.DIST_BITS)
   - aggregates over an inner join of two FROM items from the sides' partial sums, without the row pairs
     (sqlexec.JOIN_PREAGG; doubles on and off within 1e-9: their sums are added in another order)
+  - window functions from their aggregated series: one engine GROUP BY of (partition, order key), the frame as prefix
+    sums, truncated under ORDER BY ... LIMIT on the window's key (sqlexec.SERIES_WINDOWS)
 on a table large enough for the paths to matter (ties, NULLs, a dimension, filters).
     python tests/check_algebra.py [queries per part, default 150] [seed, default 7]"""
 import os, random, sys
+from decimal import Decimal
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import duckdb, numpy as np, pandas as pd
 import torbles
@@ -27,10 +30,12 @@ fact = pd.DataFrame(dict(
     v=rng.integers(-2_000_000, 2_000_000, N), w=rng.integers(0, 300, N),
     y=pd.array(np.where(rng.random(N) < 0.15, None, rng.integers(0, 5000, N)), dtype="Int64"),
     p=rng.choice([0.5, 1.25, 2.0, -3.5, 7.75], N), s=rng.choice(["a", "b", "c", "dd", "e"], N)))
+rng_e = np.random.default_rng(SEED + 1000)
+fact["e"] = [None if x < 0.1 else Decimal(int(c)).scaleb(-2) for x, c in zip(rng_e.random(N), rng_e.integers(-99999, 99999, N))]
 dim = pd.DataFrame(dict(k=np.arange(40), region=[f"r{i % 5}" for i in range(40)], cat=[i % 3 for i in range(40)]))
 con = duckdb.connect()
 con.execute("CREATE TABLE dim (k INTEGER PRIMARY KEY, region VARCHAR, cat INTEGER); CREATE TABLE fact (id INTEGER PRIMARY KEY, "
-            "k INTEGER REFERENCES dim(k), q INTEGER, d INTEGER, v INTEGER, w INTEGER, y INTEGER, p DOUBLE, s VARCHAR)")
+            "k INTEGER REFERENCES dim(k), q INTEGER, d INTEGER, v INTEGER, w INTEGER, y INTEGER, p DOUBLE, s VARCHAR, e DECIMAL(9,2))")
 con.register("fa", fact); con.register("di", dim); con.execute("INSERT INTO dim SELECT * FROM di"); con.execute("INSERT INTO fact SELECT * FROM fa")
 con.unregister("fa"); con.unregister("di")
 db = torbles.from_duckdb(con, keep_plain=ENGINE == "plain")
@@ -189,6 +194,66 @@ for qi in range(NQ):
     sql = (f"WITH {', '.join(ctes)} " if ctes else "") + f"SELECT {', '.join(g + aggs)} FROM {frm}{where}{gb}{having}"
     compare(sql, "JOIN_PREAGG", ordered=False, tol=1e-9)
 print(f"   partial sums used on {used.get('join', 0)} of {NQ} queries")
+
+# ------------------------------------------------------------------ windows from their aggregated series S(t)
+print("== window functions from their aggregated series")
+sqlexec.SERIES_STRICT = True                  # an unexpected error in the series path fails the test, not the path
+sqlexec.SERIES_ROWS_PER_GROUP = 1             # the series also when its groups are about as many as the rows
+orig_series = sqlexec.series_windows
+def counting_series(s, wins, cx):
+    got = orig_series(s, wins, cx)
+    used["series"] = used.get("series", 0) + len(got)
+    used["series_trunc"] = used.get("series_trunc", 0) + sum(1 for x in got.values() if x.truncated)
+    return got
+sqlexec.series_windows = counting_series
+WRANK = ["row_number()", "rank()", "dense_rank()", "percent_rank()", "cume_dist()"]
+WAGG = ["count(*)", "count(f.y)", "count(f.e)", "sum(f.v)", "sum(f.y)", "sum(f.e)", "avg(f.q)", "avg(f.y)", "avg(f.e)",
+        "sum(f.w)", "mean(f.v)"]
+WPART = [[], [], ["f.k"], ["f.d"], ["dim.region"], ["f.k", "f.d"], ["f.s"], ["f.y"], ["dim.cat", "f.s"]]
+WORDER = [[], ["f.q"], ["f.d"], ["f.w"], ["f.y"], ["f.id"], ["f.id"], ["dim.cat"], ["f.s"], ["f.e"]]
+WFRAME = ["", "", "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW", "RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING",
+          "RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING", "GROUPS BETWEEN 2 PRECEDING AND CURRENT ROW",
+          "GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING", "ROWS BETWEEN 3 PRECEDING AND 1 FOLLOWING",
+          "RANGE BETWEEN CURRENT ROW AND CURRENT ROW", "GROUPS BETWEEN 1 FOLLOWING AND 3 FOLLOWING",
+          "ROWS BETWEEN 2 FOLLOWING AND 1 PRECEDING", "GROUPS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING"]
+WWHERE = ["", "", " WHERE f.q > 10", " WHERE dim.region <> 'r1'", " WHERE f.y IS NOT NULL", " WHERE f.w < 100 AND f.d <> 3"]
+WOTHER = ["lag(f.v)", "first_value(f.q)", "min(f.w)", "max(f.y)", "ntile(4)"]
+FROMS = ["fact f JOIN dim ON f.k = dim.k", "fact f JOIN dim ON f.k = dim.k",
+         "fact f LEFT JOIN dim ON f.k = dim.k AND dim.cat = 1"]
+for qi in range(NQ):
+    wins, determined = [], True
+    part = r.choice(WPART); order = r.choice(WORDER)
+    spec = r.choice(["", " DESC"]) + r.choice(["", "", " NULLS FIRST", " NULLS LAST"])
+    for wi in range(r.choice([1, 1, 2, 3])):
+        p_, o_, sp_ = (part, order, spec) if wi == 0 or r.random() < 0.6 else (r.choice(WPART), r.choice(WORDER), r.choice(["", " DESC"]))
+        fn = r.choice(WRANK + WAGG + WAGG + (WOTHER if r.random() < 0.15 else []))
+        frame = r.choice(WFRAME) if fn in WAGG and o_ else ""
+        over = " ".join(x for x in (f"PARTITION BY {', '.join(p_)}" if p_ else "",
+                                     f"ORDER BY {o_[0]}{sp_}" if o_ else "", frame) if x)
+        wins.append(f"{fn} OVER ({over})")
+        if (fn in ("row_number()", "lag(f.v)", "first_value(f.q)", "ntile(4)") or frame.startswith("ROWS")) and o_ != ["f.id"]:
+            determined = False                                # positions among peers: DuckDB may order them otherwise
+    frm = r.choice(FROMS); where = r.choice(WWHERE)
+    if "LEFT" in frm and "dim." in where: where = ""
+    head, tail, ordered = "SELECT f.id, ", "", False
+    roll = r.random()
+    if order and roll < 0.4:                      # ORDER BY the window's own key, LIMIT: the truncated series
+        tail = f" ORDER BY {order[0]}{spec}, f.id LIMIT {r.choice([1, 7, 100, 1000])}" + r.choice(["", "", " OFFSET 5"])
+        ordered = True
+    elif roll < 0.65:
+        tail = " ORDER BY f.id" + r.choice(["", f" LIMIT {r.choice([10, 500])}"]) + r.choice(["", " DESC"])
+        ordered = True
+    elif roll < 0.72:                             # a window in the ORDER BY
+        tail = f" ORDER BY {wins[0]}, f.id LIMIT 50"
+        ordered = True
+    elif roll < 0.8:                              # QUALIFY on a window
+        tail = f" QUALIFY {wins[0]} <= 3"
+    elif roll < 0.86:                             # DISTINCT over the windows' values
+        head = "SELECT DISTINCT f.k, "
+    sql = f"{head}{', '.join(wins)} FROM {frm}{where}{tail}"
+    compare(sql, "SERIES_WINDOWS", ordered, duck=determined, tol=1e-9 if not ordered else 0.0)
+sqlexec.series_windows = orig_series
+print(f"   series used for {used.get('series', 0)} windows, {used.get('series_trunc', 0)} of them truncated by the LIMIT")
 
 print(f"{duck_ok} answers equal to DuckDB")
 print("ALL MATCH" if not fails else f"{fails} FAILURE(S)")
