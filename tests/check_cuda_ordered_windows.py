@@ -162,7 +162,8 @@ class CUDAOrderedWindowChecks(unittest.TestCase):
         expected = self.db.con.execute(query).fetchall()
         self.assertEqual(actual.fetchall(), expected)
         self.assertGreater(actual.stats.get("cuda_window_torus_planes", 0), 0, actual.stats)
-        self.assertEqual(actual.stats.get("cuda_window_download_bytes"), 12 * len(expected), actual.stats)
+        transferred = actual.stats.get("cuda_window_download_bytes", 0) + actual.stats.get("cuda_window_payload_bytes", 0)
+        self.assertEqual(transferred, 12 * len(expected), actual.stats)
 
     def test_derived_scalar_reductions_keep_window_on_device(self):
         if not hasattr(algq.gpu_lib(), "gpu_plane_window_aggregate"):
@@ -181,6 +182,46 @@ class CUDAOrderedWindowChecks(unittest.TestCase):
                 result = self.db.sql(query, engine="gpu")
                 self.assertEqual(result.fetchall(), self.db.con.execute(query).fetchall())
                 self.assertEqual(result.stats.get("cuda_window_aggregate"), 1, result.stats)
+
+
+    def test_payload_gather_stays_on_device_until_slice(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_payload"):
+            self.skipTest("CUDA window payload unavailable")
+        query = ("SELECT id, score, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn FROM t "
+                 "QUALIFY rn <= 50 ORDER BY rn LIMIT 9 OFFSET 2")
+        expected = self.db.con.execute(query).fetchall()
+        with patch.object(self.db["t"], "_decode_column", side_effect=AssertionError("host payload decode")):
+            actual = self.db.sql(query, engine="gpu")
+        self.assertEqual(actual.fetchall(), expected)
+        self.assertEqual(actual.stats.get("cuda_window_payload_columns"), 2, actual.stats)
+        self.assertEqual(actual.stats.get("cuda_window_payload_bytes"), 72, actual.stats)
+        self.assertEqual(actual.stats.get("cuda_window_download_bytes"), 72, actual.stats)
+
+    def test_resident_group_and_shared_relations(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_relation"):
+            self.skipTest("CUDA resident relation unavailable")
+        shared = "WITH ranked AS (SELECT ROW_NUMBER() OVER (ORDER BY id) AS rn FROM t) "
+        queries = (
+            ("SELECT part, COUNT(*), SUM(rn) FROM (SELECT part, ROW_NUMBER() OVER "
+             "(PARTITION BY part ORDER BY id) AS rn FROM t) w GROUP BY part ORDER BY part", "group"),
+            (shared + "SELECT COUNT(*) FROM ranked a JOIN ranked b ON a.rn=b.rn "
+             "WHERE a.rn<=64 AND b.rn<=128", "join_count"),
+            (shared + "SELECT rn FROM ranked WHERE rn<=128 INTERSECT SELECT rn FROM ranked WHERE rn<=64",
+             "intersection"),
+            (shared + "SELECT rn FROM ranked WHERE rn<=128 EXCEPT SELECT rn FROM ranked WHERE rn<=64",
+             "difference"),
+            (shared + "SELECT rn FROM ranked WHERE rn<=64 UNION SELECT rn FROM ranked WHERE rn>=65590",
+             "union"),
+            (shared + "SELECT COUNT(*) FROM ranked WHERE rn<=64 UNION ALL "
+             "SELECT COUNT(*) FROM ranked WHERE rn<=128", "counts"),
+        )
+        for query, kind in queries:
+            with self.subTest(kind=kind):
+                expected = self.db.con.execute(query).fetchall()
+                actual = self.db.sql(query, engine="gpu")
+                self.assertEqual(sorted(actual.fetchall()), sorted(expected))
+                self.assertEqual(actual.stats.get("cuda_window_resident_builds"), 1, actual.stats)
+                self.assertIn("cuda_window_resident_" + kind, actual.stats)
 
 
 if __name__ == "__main__":

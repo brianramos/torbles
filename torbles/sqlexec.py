@@ -958,6 +958,13 @@ def _col_values(c, idx):
 
 
 def run_setop(q, cx):
+    if cx.engine == "gpu":
+        from torbles.sqlwindowplanes import execute_resident
+        from torbles.sqlwindowconsumers import run_setop as window_setop
+
+        result = window_setop(q, cx, execute_resident)
+        if result is not None:
+            return result
     types = [t for _, t in q.items]
     if COLUMNAR and VEC_SCALARS and q.op in ("union", "intersect", "except") and not any(T.coll_key(t) for t in types):
         import sqlwin                                  # the operands as histograms of their row codes
@@ -1267,6 +1274,15 @@ def run_select(s, cx, as_rel=False):
         # FETCH FIRST 0 ROWS / LIMIT 0: no row is output, so nothing is evaluated (as DuckDB: an error in a value
         # that no output row uses does not fail the query)
         return Relation([n for _, n in s.items], [x.t for x, _ in s.items], [])
+    if cx.engine == "gpu" and not as_rel:
+        from torbles.sqlwindowplanes import execute_resident, group_derived
+        from torbles.sqlwindowconsumers import run_select as window_select
+
+        result = window_select(s, cx, execute_resident)
+        if result is None and s.group:
+            result = group_derived(s, cx)
+        if result is not None:
+            return result
     if cx.engine == "gpu" and s.aggregate and not as_rel:
         from torbles.sqlwindowplanes import reduce_derived
 

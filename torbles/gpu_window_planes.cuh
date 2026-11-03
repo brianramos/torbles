@@ -8,7 +8,20 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/block/block_reduce.cuh>
 
-enum { GPU_WINDOW_KEYS = 12, GPU_WINDOW_THREADS = 256 };
+enum { GPU_WINDOW_KEYS = 12, GPU_WINDOW_PAYLOAD = 12, GPU_WINDOW_THREADS = 256 };
+
+struct gpu_window_resident_t {
+    int64_t *values;
+    uint32_t *ids;
+    uint64_t n, source_n;
+    const gtable_t *source;
+    const gtable_t *source_host;
+    int64_t code_base, code_high;
+};
+
+struct gpu_window_payload_t {
+    int32_t count, cols[GPU_WINDOW_PAYLOAD];
+};
 
 struct gpu_window_plan_t {
     int32_t cols[GPU_WINDOW_KEYS], desc[GPU_WINDOW_KEYS];
@@ -28,6 +41,7 @@ struct gpu_window_scan_t {
 template <class T> struct gpu_window_buffer_t {
     T *data = nullptr;
     ~gpu_window_buffer_t() { if (data) cudaFree(data); }
+    T *release() { T *result = data; data = nullptr; return result; }
     bool alloc(size_t count) {
         return !count || cudaMalloc((void **)&data, count * sizeof(T)) == cudaSuccess;
     }
@@ -244,9 +258,33 @@ static uint64_t gpu_window_slice(uint64_t count, uint64_t offset, uint64_t limit
     return count > offset ? std::min(count - offset, limit) : 0;
 }
 
-static int gpu_window_terminal_copy(int64_t *values, uint32_t *physical, uint32_t count, int descending,
+__global__ void gpu_window_payload_gather(const gtable_t *table, const uint32_t *physical,
+                    uint32_t offset, uint32_t take, gpu_window_payload_t payload, uint32_t *codes) {
+    uint32_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= take) return;
+    uint32_t row = gpu_window_row(physical, offset + i);
+    for (int col = 0; col < payload.count; ++col)
+        codes[(size_t)col * take + i] = gpu_window_code(table, payload.cols[col], row);
+}
+
+static gpu_window_resident_t *gpu_window_resident_new(const handle_t *h, uint64_t n,
+                                                        int64_t code_base, int64_t code_high) {
+    gpu_window_resident_t *result = (gpu_window_resident_t *)calloc(1, sizeof *result);
+    if (result) {
+        result->n = n;
+        result->source_n = h->host.n;
+        result->source = h->dev;
+    result->source_host = &h->host;
+        result->code_base = code_base;
+        result->code_high = code_high;
+    }
+    return result;
+}
+
+static int gpu_window_terminal_copy(const gtable_t *table, int64_t *values, uint32_t *physical, uint32_t count, int descending,
                     uint64_t offset, uint64_t take, uint32_t *out_ids, int64_t *out_values,
-                    gpu_window_events_t &events, double *kernel_ms) {
+                    gpu_window_events_t &events, double *kernel_ms,
+                    gpu_window_payload_t payload = {}, uint32_t *out_codes = nullptr) {
     if (!take) return 0;
     gpu_window_buffer_t<uint32_t> ids, other_ids;
     gpu_window_buffer_t<int64_t> other_values;
@@ -279,13 +317,33 @@ static int gpu_window_terminal_copy(int64_t *values, uint32_t *physical, uint32_
             *kernel_ms += elapsed;
         }
     }
+    gpu_window_buffer_t<uint32_t> device_codes;
+    size_t codes = (size_t)payload.count * (size_t)take;
+    if (codes) {
+        if (!device_codes.alloc(codes)) return -2;
+        if (kernel_ms && cudaEventRecord(events.start) != cudaSuccess) return -2;
+        gpu_window_payload_gather<<<gpu_window_blocks(take), GPU_WINDOW_THREADS>>>(
+            table, physical, (uint32_t)offset, (uint32_t)take, payload, device_codes.data);
+        if (cudaGetLastError() != cudaSuccess) return -2;
+        if (kernel_ms) {
+            float elapsed;
+            if (cudaEventRecord(events.end) != cudaSuccess || cudaEventSynchronize(events.end) != cudaSuccess ||
+                cudaEventElapsedTime(&elapsed, events.start, events.end) != cudaSuccess) return -2;
+            *kernel_ms += elapsed;
+        }
+    }
     if (cudaMemcpy(out_values, values + offset, take * sizeof *out_values, cudaMemcpyDeviceToHost) != cudaSuccess)
         return -2;
-    if (physical) {
-        if (cudaMemcpy(out_ids, physical + offset, take * sizeof *out_ids, cudaMemcpyDeviceToHost) != cudaSuccess)
-            return -2;
-    } else {
-        for (uint64_t i = 0; i < take; ++i) out_ids[i] = (uint32_t)(offset + i);
+    if (codes && cudaMemcpy(out_codes, device_codes.data, codes * sizeof *out_codes,
+                            cudaMemcpyDeviceToHost) != cudaSuccess)
+        return -2;
+    if (out_ids) {
+        if (physical) {
+            if (cudaMemcpy(out_ids, physical + offset, take * sizeof *out_ids, cudaMemcpyDeviceToHost) != cudaSuccess)
+                return -2;
+        } else {
+            for (uint64_t i = 0; i < take; ++i) out_ids[i] = (uint32_t)(offset + i);
+        }
     }
     return 0;
 }
@@ -393,22 +451,28 @@ static int gpu_plane_window_run(void *hv, const uint64_t *bitmap, int32_t nkeys,
                   int32_t measure_col, int64_t measure_offset, uint32_t *out_ids, int64_t *out_values,
                   uint64_t cap, uint64_t *nout, double *kernel_ms, int32_t op, int64_t threshold,
                   int32_t descending, uint64_t offset, uint64_t limit, uint32_t *plane_width = nullptr,
-                  int32_t op2 = P_TRUE, int64_t threshold2 = 0, int32_t aggregate = 0) {
+                  int32_t op2 = P_TRUE, int64_t threshold2 = 0, int32_t aggregate = 0,
+                  gpu_window_payload_t payload = {}, uint32_t *out_codes = nullptr,
+                  void **resident = nullptr) {
+    if (resident) *resident = nullptr;
     if (plane_width) *plane_width = 0;
     if (!nout) return -1;
     *nout = 0;
     if (kernel_ms) *kernel_ms = 0;
     bool qualify = op != P_TRUE || op2 != P_TRUE, terminal = descending >= -1;
-    bool select = qualify || terminal || aggregate;
+    bool select = qualify || terminal || aggregate || resident;
     if ((op != P_TRUE && (op < P_EQ || op > P_GE)) ||
         (op2 != P_TRUE && (op2 < P_EQ || op2 > P_GE)) ||
         (aggregate && (aggregate < GPU_WINDOW_COUNT || aggregate > GPU_WINDOW_SUM || !out_values)) ||
-        (!aggregate && select && cap && (!out_ids || !out_values))) return -1;
+        (!aggregate && !resident && select && cap && (!out_values || (!out_ids && !payload.count))) ||
+        (payload.count && (!terminal || (cap && !out_codes)))) return -1;
     if (!hv || nkeys < 0 || nkeys > GPU_WINDOW_KEYS || (nkeys && (!cols || !desc)) ||
         npart < 0 || npart > nkeys || (mode != 0 && mode != 1)) return -1;
     handle_t *h = (handle_t *)hv;
     const gtable_t &table = h->host;
-    if (table.n > INT32_MAX) return -1;
+    if (table.n > INT32_MAX || payload.count < 0 || payload.count > GPU_WINDOW_PAYLOAD) return -1;
+    for (int i = 0; i < payload.count; ++i)
+        if (!gpu_window_col_ok(table, payload.cols[i])) return -1;
     gpu_window_plan_t plan{};
     plan.npart = npart;
     plan.mode = mode;
@@ -436,6 +500,10 @@ static int gpu_plane_window_run(void *hv, const uint64_t *bitmap, int32_t nkeys,
     if (!select && cap < output_n) return -3;
     if (!select && output_n && !out_values) return -1;
     if (!active) {
+        if (resident) {
+            *resident = gpu_window_resident_new(h, 0, 0, 0);
+            return *resident ? 0 : -2;
+        }
         if (aggregate == GPU_WINDOW_COUNT) { *out_values = 0; *nout = 1; }
         else if (output_n) memset(out_values, 0, output_n * sizeof *out_values);
         return 0;
@@ -583,6 +651,15 @@ static int gpu_plane_window_run(void *hv, const uint64_t *bitmap, int32_t nkeys,
             cudaEventElapsedTime(&elapsed, events.start, events.end) != cudaSuccess) return -2;
         *kernel_ms = elapsed;
     }
+    if (resident) {
+        if (!kernel_ms && cudaDeviceSynchronize() != cudaSuccess) return -2;
+        gpu_window_resident_t *result = gpu_window_resident_new(h, active, code_base, code_high);
+        if (!result) return -2;
+        result->values = values.release();
+        result->ids = physical.release();
+        *resident = result;
+        return 0;
+    }
     if (aggregate) {
         uint32_t survivors = (uint32_t)active;
         if (qualify && cudaMemcpy(&survivors, qual_offsets.data + qual_words, sizeof survivors,
@@ -627,9 +704,10 @@ static int gpu_plane_window_run(void *hv, const uint64_t *bitmap, int32_t nkeys,
                 cudaEventElapsedTime(&elapsed, events.start, events.end) != cudaSuccess) return -2;
             *kernel_ms += elapsed;
         }
-        if (sort)
-            return gpu_window_terminal_copy(survivor_values.data, survivor_ids.data, survivors, descending,
-                                            offset, take, out_ids, out_values, events, kernel_ms);
+        if (sort || payload.count)
+            return gpu_window_terminal_copy(h->dev, survivor_values.data, survivor_ids.data, emit,
+                                            sort ? descending : -1, sort ? offset : 0,
+                                            take, out_ids, out_values, events, kernel_ms, payload, out_codes);
         if (cudaMemcpy(out_ids, survivor_ids.data, take * sizeof *out_ids, cudaMemcpyDeviceToHost) != cudaSuccess ||
             cudaMemcpy(out_values, survivor_values.data, take * sizeof *out_values,
                        cudaMemcpyDeviceToHost) != cudaSuccess)
@@ -637,8 +715,8 @@ static int gpu_plane_window_run(void *hv, const uint64_t *bitmap, int32_t nkeys,
         return 0;
     }
     if (terminal)
-        return gpu_window_terminal_copy(values.data, physical.data, (uint32_t)active, descending,
-                                        offset, *nout, out_ids, out_values, events, kernel_ms);
+        return gpu_window_terminal_copy(h->dev, values.data, physical.data, (uint32_t)active, descending,
+                                        offset, *nout, out_ids, out_values, events, kernel_ms, payload, out_codes);
     if (cudaMemcpy(out_values, values.data, output_n * sizeof *out_values, cudaMemcpyDeviceToHost) != cudaSuccess)
         return -2;
     if (out_ids) {
@@ -719,6 +797,46 @@ extern "C" int gpu_plane_window_aggregate(void *hv, const uint64_t *bitmap, int3
     return gpu_plane_window_run(hv, bitmap, nkeys, cols, desc, npart, mode, measure_col,
                                 measure_offset, nullptr, out_value, 1, nout, kernel_ms,
                                 op, threshold, -2, 0, 0, plane_width, op2, threshold2, aggregate);
+}
+
+/* Payload is raw, column-major, with actual nout as its column stride. */
+extern "C" int gpu_plane_window_payload(void *hv, const uint64_t *bitmap, int32_t nkeys,
+                  const int32_t *cols, const int32_t *desc, int32_t npart, int32_t mode,
+                  int32_t measure_col, int64_t measure_offset, uint32_t *out_ids, int64_t *out_values,
+                  uint64_t cap, uint64_t *nout, double *kernel_ms, int32_t op, int64_t threshold,
+                  int32_t descending, uint64_t offset, uint64_t limit, uint32_t *plane_width,
+                  int32_t op2, int64_t threshold2, int32_t npayload, const int32_t *payload_cols,
+                  uint32_t *out_codes) {
+    if (descending < -1 || descending > 1 || npayload < 1 || npayload > GPU_WINDOW_PAYLOAD || !payload_cols) {
+        if (nout) *nout = 0;
+        if (plane_width) *plane_width = 0;
+        return -1;
+    }
+    gpu_window_payload_t payload{};
+    payload.count = npayload;
+    for (int i = 0; i < npayload; ++i) payload.cols[i] = payload_cols[i];
+    return gpu_plane_window_run(hv, bitmap, nkeys, cols, desc, npart, mode, measure_col,
+                                measure_offset, out_ids, out_values, cap, nout, kernel_ms, op,
+                                threshold, descending, offset, limit, plane_width, op2, threshold2,
+                                0, payload, out_codes);
+}
+
+extern "C" int gpu_plane_window_resident(void *hv, const uint64_t *bitmap, int32_t nkeys,
+                  const int32_t *cols, const int32_t *desc, int32_t npart, int32_t mode,
+                  int32_t measure_col, int64_t measure_offset, void **out,
+                  uint64_t *nout, double *kernel_ms) {
+    if (!out) return -1;
+    return gpu_plane_window_run(hv, bitmap, nkeys, cols, desc, npart, mode, measure_col,
+                                measure_offset, nullptr, nullptr, 0, nout, kernel_ms, P_TRUE, 0,
+                                -2, 0, 0, nullptr, P_TRUE, 0, 0, {}, nullptr, out);
+}
+
+extern "C" void gpu_plane_window_resident_close(void *opaque) {
+    gpu_window_resident_t *result = (gpu_window_resident_t *)opaque;
+    if (!result) return;
+    if (result->values) cudaFree(result->values);
+    if (result->ids) cudaFree(result->ids);
+    free(result);
 }
 #endif
 

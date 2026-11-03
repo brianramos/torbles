@@ -57,12 +57,13 @@ def _terminal(select, window, items, qualify, E):
     return descending, offset or 0, (1 << 64) - 1 if limit is None else limit
 
 
-def _source(fact, keys, directions, measure):
+def _source(fact, keys, directions, measure, payload=()):
     source = algq._plan_table(fact)
     cols = (C.c_int32 * len(keys))(*(source.idx(key) for key in keys))
     desc = (C.c_int32 * len(keys))(*directions)
     measure_col = -1 if measure is None else source.idx(measure)
-    return algq._run_on(source), cols, desc, measure_col
+    extra = (C.c_int32 * len(payload))(*(source.idx(name) for name in payload))
+    return algq._run_on(source), cols, desc, measure_col, extra
 
 
 def _reduce_values(fact, keys, directions, npart, mode, measure, offset, bitmap, stats,
@@ -76,7 +77,7 @@ def _reduce_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
         C.POINTER(C.c_int64), C.POINTER(C.c_uint64), C.POINTER(C.c_double),
         C.c_int32, C.c_int64, C.c_int32, C.c_int64, C.c_int32, C.POINTER(C.c_uint32),
     ]
-    table, cols, desc, measure_col = _source(fact, keys, directions, measure)
+    table, cols, desc, measure_col, _ = _source(fact, keys, directions, measure)
     value, nout, elapsed, planes = C.c_int64(), C.c_uint64(), C.c_double(), C.c_uint32()
     with algq._GPU_LOCK:
         try:
@@ -96,9 +97,10 @@ def _reduce_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
     return (value.value if nout.value else None,)
 
 
-def _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, stats, qualify=None, terminal=None, second=None):
+def _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, stats, qualify=None, terminal=None, second=None, payload=()):
     torus = second is not None or (qualify is not None and os.environ.get("TORBLES_WINDOW_PLANES") == "1")
-    symbol = ("gpu_plane_window_torus_terminal" if torus else
+    symbol = ("gpu_plane_window_payload" if payload else
+              "gpu_plane_window_torus_terminal" if torus else
               "gpu_plane_window_terminal" if terminal is not None else
               "gpu_plane_window_qualify" if qualify else "gpu_plane_window")
     native = getattr(algq.gpu_lib(), symbol, None)
@@ -110,22 +112,27 @@ def _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
         C.c_int32, C.c_int64, algq.vp, algq.vp, C.c_uint64,
         C.POINTER(C.c_uint64), C.POINTER(C.c_double),
     ]
-    if qualify or terminal is not None:
+    if qualify or terminal is not None or payload:
         native.argtypes += [C.c_int32, C.c_int64]
-    if terminal is not None or torus:
+    if terminal is not None or torus or payload:
         native.argtypes += [C.c_int32, C.c_uint64, C.c_uint64]
     plane_width = C.c_uint32()
-    if torus:
+    if torus or payload:
         native.argtypes += [C.POINTER(C.c_uint32), C.c_int32, C.c_int64]
-    table, cols, desc, measure_col = _source(fact, keys, directions, measure)
+    if payload:
+        native.argtypes += [C.c_int32, algq.vp, algq.vp]
+    table, cols, desc, measure_col, payload_cols = _source(fact, keys, directions, measure, payload)
     cap = fact.n if terminal is None else min(fact.n, terminal[2])
-    ids = None if bitmap is None and qualify is None and terminal is None else np.empty(cap, np.uint32)
+    ids = None if payload or (bitmap is None and qualify is None and terminal is None) else np.empty(cap, np.uint32)
+    payload_out = np.empty(cap * len(payload), np.uint32) if payload else None
     values = np.empty(cap, np.int64)
-    extra = qualify or ((0, 0) if terminal is not None else ())
-    if terminal is not None or torus:
+    extra = qualify or ((0, 0) if terminal is not None or payload else ())
+    if terminal is not None or torus or payload:
         extra += terminal if terminal is not None else (-1, 0, (1 << 64) - 1)
-    if torus:
-        extra += (C.byref(plane_width), *(second or (0, 0)))
+    if torus or payload:
+        extra += (C.byref(plane_width) if torus else None, *(second or (0, 0)))
+    if payload:
+        extra += (len(payload), payload_cols, payload_out.ctypes.data)
     nout, elapsed = C.c_uint64(), C.c_double()
     with algq._GPU_LOCK:
         try:
@@ -146,7 +153,11 @@ def _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
         stats["cuda_window_qualify_rows"] = nout.value
     if terminal is not None:
         stats["cuda_window_terminal_rows"] = nout.value
-    return (range(fact.n) if ids is None else ids[:nout.value]), values[:nout.value]
+    if payload:
+        stats["cuda_window_payload_columns"] = len(payload)
+        stats["cuda_window_payload_bytes"] = nout.value * len(payload) * 4
+        return None, values[:nout.value], payload_out[:nout.value * len(payload)].reshape(len(payload), nout.value)
+    return (range(fact.n) if ids is None else ids[:nout.value]), values[:nout.value], None
 
 
 def run(planner, atoms, preds):
@@ -220,6 +231,20 @@ def run(planner, atoms, preds):
         left, right = (_qualification(condition, w, E) for condition in conditions)
         if left is not None and right is not None:
             qualify, second = left, right
+    consumer = getattr(s, "_cuda_window_consumer", None)
+    if consumer is not None:
+        if s.qualify is not None:
+            return None
+        kind, params = consumer["kind"], consumer["params"]
+        if kind != "group" and (mode != 0 or npart):
+            return None
+        consumer["output"] = _resident_values(fact, keys, directions, npart, mode, measure, offset,
+                                               bitmap, cx.stats, kind, params)
+        if consumer["output"] is not None:
+            rel = E.Rel(0)
+            rel.cols[w.key()] = []
+            rel.plane_ordered = True
+            return rel
     aggregate = getattr(s, "_cuda_window_reduction", None)
     if aggregate is not None and (s.qualify is None or qualify is not None):
         scalar = _reduce_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
@@ -231,7 +256,25 @@ def run(planner, atoms, preds):
             cx.stats["engine_queries"] += 1
             return rel
     terminal = _terminal(s, w, items, qualify, E)
-    result = _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, cx.stats, qualify, terminal, second)
+    payload = {col.key() for expr in outputs if expr is not None
+               for col in E.I.find(expr, E.I.Col, stop=(E.I.Win,))}
+    payload_atoms = {key: col for key, col in atoms.items() if key in payload}
+    gather = []
+    for col in payload_atoms.values():
+        binding, name = planner.canon(col)
+        codec = fact.codecs.get(name)
+        if (binding is not planner.fact or codec is None or codec.kind not in ("int", "bool")
+                or name in fact.nullable or name in fact.wide or name in fact.sidecars):
+            gather = []
+            break
+        gather.append(name)
+    cap = fact.n if terminal is None else min(fact.n, terminal[2])
+    result = None
+    if gather and len(gather) <= 12 and cap * len(gather) <= 1 << 26:
+        result = _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap,
+                                cx.stats, qualify, terminal, second, gather)
+    if result is None:
+        result = _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, cx.stats, qualify, terminal, second)
     if result is None and terminal is not None:
         terminal = None
         result = _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, cx.stats, qualify, second=second)
@@ -240,11 +283,14 @@ def run(planner, atoms, preds):
         result = _window_values(fact, keys, directions, npart, mode, measure, offset, bitmap, cx.stats)
     if result is None:
         return None
-    ids, values = result
-    payload = {col.key() for expr in outputs if expr is not None
-               for col in E.I.find(expr, E.I.Col, stop=(E.I.Win,))}
-    rel = planner.rows_rel({key: col for key, col in atoms.items() if key in payload}, preds, False, ids=ids,
-                           fact_order=terminal is None or terminal[0] < 0)
+    ids, values, gathered = result
+    if gathered is None:
+        rel = planner.rows_rel(payload_atoms, preds, False, ids=ids,
+                               fact_order=terminal is None or terminal[0] < 0)
+    else:
+        rel = E.Rel(len(values))
+        for key, name, codes in zip(payload_atoms, gather, gathered):
+            rel.cols.put(key, E.ColArr(codes, codec=fact.codecs[name]))
     rel.cols.put(w.key(), E.ColArr(values))
     rel.native_window = True
     rel.native_qualified = qualify is not None
@@ -347,3 +393,150 @@ def reduce_derived(select, cx):
     if value is not None and not low <= value <= high:
         return None
     return E.Relation([label], [agg.t], [(value,)])
+
+
+
+_RELATIONS = {"union": 0, "intersection": 1, "difference": 2, "counts": 3, "join_count": 4}
+
+
+def _resident_values(fact, keys, directions, npart, mode, measure, offset, bitmap, stats, kind, params):
+    lib = algq.gpu_lib()
+    produce = getattr(lib, "gpu_plane_window_resident", None)
+    close = getattr(lib, "gpu_plane_window_resident_close", None)
+    consume = getattr(lib, "gpu_plane_window_group" if kind == "group" else "gpu_plane_window_relation", None)
+    if produce is None or close is None or consume is None:
+        return None
+    produce.restype = C.c_int
+    produce.argtypes = [algq.vp, algq.vp, C.c_int32, algq.vp, algq.vp,
+                        C.c_int32, C.c_int32, C.c_int32, C.c_int64, C.POINTER(algq.vp),
+                        C.POINTER(C.c_uint64), C.POINTER(C.c_double)]
+    close.restype, close.argtypes = None, [algq.vp]
+    consume.restype = C.c_int
+    group = kind == "group"
+    if group:
+        name, domain = params
+        consume.argtypes = [algq.vp, C.c_int32, C.c_uint32, algq.vp, algq.vp]
+        a, b = np.empty(domain, np.uint64), np.empty(domain, np.int64)
+        table, cols, desc, measure_col, group_col = _source(fact, keys, directions, measure, (name,))
+    else:
+        consume.argtypes = [algq.vp, C.c_int32, C.c_int32, C.c_int64, C.c_int32, C.c_int64,
+                            algq.vp, C.c_uint64, C.POINTER(C.c_uint64)]
+        size = 2 if kind == "counts" else 1 if kind == "join_count" else fact.n
+        a, b = np.empty(size, np.int64), None
+        table, cols, desc, measure_col, _ = _source(fact, keys, directions, measure)
+    resident, nout, elapsed = algq.vp(), C.c_uint64(), C.c_double()
+    with algq._GPU_LOCK:
+        try:
+            handle = table.gpu_handle()
+        except RuntimeError:
+            return None
+        try:
+            rc = produce(handle, None if bitmap is None else bitmap.ctypes.data, len(keys), cols, desc,
+                         npart, mode, measure_col, offset, resident, nout, elapsed)
+            if rc or not resident:
+                return None
+            if group:
+                rc = consume(resident, group_col[0], domain, a.ctypes.data, b.ctypes.data)
+            else:
+                rc = consume(resident, _RELATIONS[kind], *params[0], *params[1],
+                             a.ctypes.data, len(a), nout)
+                a = a[:nout.value]
+            if rc:
+                return None
+        finally:
+            if resident:
+                close(resident)
+    stats["cuda_window_resident_builds"] = stats.get("cuda_window_resident_builds", 0) + 1
+    stats["cuda_window_resident_" + kind] = len(a)
+    stats["cuda_window_resident_download_bytes"] = a.nbytes + (b.nbytes if b is not None else 0)
+    stats["cuda_ordered_window_ms"] = elapsed.value
+    return a, b
+
+
+def execute_resident(producer, cx, kind, comparisons):
+    from torbles import sqlexec as E
+
+    if os.environ.get("TORBLES_CUDA_WINDOWS") == "0":
+        return None
+    windows = [(expr, label) for expr, label in producer.items if isinstance(expr, E.I.Win)]
+    if len(windows) != 1:
+        return None
+    planned = copy(producer)
+    planned.items = windows
+    consumer = {"kind": kind, "params": comparisons}
+    planned._cuda_window_consumer = consumer
+    E.run_query(planned, cx)
+    return consumer.get("output")
+
+
+def group_derived(select, cx):
+    from torbles import sqlexec as E
+
+    binding = select.from_
+    if (not isinstance(binding, E.I.Binding) or select.where is not None or select.having is not None
+            or select.qualify is not None or select.sets is not None or len(select.group) != 1
+            or select.distinct or select.distinct_on is not None or select.limit is not None
+            or select.offset is not None or select.sample is not None or binding.sample is not None
+            or getattr(binding, "shared", None) is not None or len(select.order) > 1):
+        return None
+    producer = binding.q
+    if (not isinstance(producer, E.I.Select) or not isinstance(producer.from_, E.I.Binding)
+            or producer.from_.table is None or producer.from_.sample is not None
+            or producer.aggregate or producer.qualify is not None or producer.distinct
+            or producer.order or producer.limit is not None or producer.offset is not None
+            or producer.sample is not None
+            or any(not isinstance(expr, (E.I.Col, E.I.Win)) for expr, _ in producer.items)):
+        return None
+    key = select.group[0]
+    if not isinstance(key, E.I.Col) or key.b is not binding:
+        return None
+    columns = {name: expr for (name, _, _), (expr, _) in zip(binding.cols, producer.items)}
+    raw_key = columns.get(key.name)
+    fact = producer.from_.table
+    if not isinstance(raw_key, E.I.Col) or raw_key.b is not producer.from_:
+        return None
+    name = raw_key.name
+    codec = fact.codecs.get(name)
+    if (name not in fact.cols or codec is None or codec.kind != "int" or name in fact.wide
+            or name in fact.nullable or name in fact.sidecars or fact.width(name) > 17):
+        return None
+    windows = {label for label, expr in columns.items() if isinstance(expr, E.I.Win)}
+    if len(windows) != 1:
+        return None
+    window = next(iter(windows))
+    projections = []
+    for expr, _ in select.items:
+        if expr.key() == key.key():
+            projections.append(0)
+        elif (isinstance(expr, E.I.Agg) and not expr.distinct and expr.filter is None
+                and not expr.order and expr.t.id in E.T.INT_RANGE):
+            if expr.name == "count_star":
+                projections.append(1)
+            elif (expr.name == "sum" and len(expr.args) == 1 and isinstance(expr.args[0], E.I.Col)
+                  and expr.args[0].b is binding and expr.args[0].name == window):
+                projections.append(2)
+            else:
+                return None
+        else:
+            return None
+    descending = False
+    if select.order:
+        spec, descending, _ = select.order[0]
+        order_expr = select.items[spec[1]][0] if spec[0] == "pos" else spec[1]
+        if order_expr.key() != key.key():
+            return None
+    result = execute_resident(producer, cx, "group", (name, 1 << fact.width(name)))
+    if result is None:
+        return None
+    counts, sums = result
+    live = np.flatnonzero(counts)
+    if descending:
+        live = live[::-1]
+    cols = (codec.decode(live), counts[live].tolist(), sums[live].tolist())
+    for position, (expr, _) in zip(projections, select.items):
+        if position and expr.t.id in E.T.INT_RANGE:
+            low, high = E.T.INT_RANGE[expr.t.id]
+            if any(not low <= value <= high for value in cols[position]):
+                return None
+    return E.Relation([label for _, label in select.items], [expr.t for expr, _ in select.items],
+                      list(zip(*(cols[position] for position in projections))))

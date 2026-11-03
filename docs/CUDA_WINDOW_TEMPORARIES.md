@@ -13,10 +13,13 @@ the values into physical row order. The temporary is private to the statement.
 | Simple filter above an unshared derived window | Move the comparison to the window block as QUALIFY | Materialize only survivors |
 | Scalar COUNT, MIN, MAX and SUM of an eligible derived window | Device reduction over the active window values and any proven qualifier | Download one scalar |
 | Full primitive integer projection | Download typed columns with lazy row conversion | Use `fetch_columns()` for NumPy arrays or `fetchall()` for Python tuples |
-| Base payload | Existing gather by the final row IDs | Host decode of selected payload |
+| Base payload | Gather supported narrow, non-null integer and Boolean codes from the source GPU bitplanes after the final slice | Download the selected codes and decode SQL values |
 | Computed projections and general QUALIFY | Existing SQL expression evaluator | Host |
-| Grouped reductions, joins, set operations, shared CTEs | Existing relational executor | Host |
-| Result reuse across SQL blocks | Simple derived predicates and scalar aggregates can fuse into the producer | General reuse needs an owned device relation with snapshot and lifetime rules |
+| Derived grouped reductions | COUNT and SUM over one narrow non-null stored grouping key | Download group states |
+| Shared-CTE self-join | Count an inner equality join over a common unique global rank by intersecting two comparison masks | Download one count |
+| Shared-CTE set operations | UNION DISTINCT, INTERSECT and EXCEPT over a common unique global rank via packed masks | Download only selected ranks |
+| Shared CTE reuse | Two filtered COUNT branches reuse one resident window build | Download two counts |
+| General result reuse across SQL blocks | Supported consumers retain a statement-owned CUDA temporary while reading its source | Other grouped, join, set and CTE shapes use the existing executor |
 
 A single comparison can avoid allocating the value planes. Set
 `TORBLES_WINDOW_PLANES=1` to exercise the packed comparator with one predicate.
