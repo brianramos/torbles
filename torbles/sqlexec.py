@@ -3911,7 +3911,7 @@ class _Planner:
                     out = self.rows_rel({k: c for k, c in atoms.items() if k in payload},
                                         preds, False, ids=ids, fact_order=False)
                     out.plane_ordered = True
-                    if s.order:
+                    if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned
                     return out, {}
                 plane_rel = self.raw_plane_rows(atoms, preds)

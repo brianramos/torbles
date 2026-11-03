@@ -42,6 +42,14 @@ def _ordered_columns(planner, fact, col):
     return (wide[1], name) if wide else (name,)
 
 
+def _order_ids(fact, ids, keys, desc):
+    order = [ids]
+    for name, descending in reversed(list(zip(keys, desc))):
+        codes = fact.get_rows(name, ids)
+        order.append(~codes if descending else codes)
+    return ids[np.lexsort(tuple(order))]
+
+
 def bounded_ids(planner, preds):
     """Return ordered, post-OFFSET row IDs and qualifying row count, or None."""
     s, cx = planner.s, planner.cx
@@ -74,6 +82,10 @@ def bounded_ids(planner, preds):
     native = getattr(algq.gpu_lib(), "gpu_topk_bitmap", None) if cx.engine == "gpu" else _topk
     if native is None:
         return None
+    if cx.engine == "gpu":
+        legacy = planner.topk_ids(preds)
+        if legacy is not None:
+            return _order_ids(fact, legacy, keys, desc)[off:], None
     flags = [flag for key in keys if (flag := fact._part_of(key)._vflag_of(key)) is not None]
     source = fact if fact.parts is None else fact.view(tuple(dict.fromkeys(keys + flags)))
     from . import sqlgroupplans
@@ -97,12 +109,7 @@ def bounded_ids(planner, preds):
             rc = native(handle, bitmap.ctypes.data, len(keys), cols, directions,
                         len(out), out.ctypes.data, count, inputs, ms)
         if not rc:
-            ids = out[:count.value]
-            order = [ids]
-            for name, descending in reversed(list(zip(keys, desc))):
-                codes = fact.get_rows(name, ids)
-                order.append(~codes if descending else codes)
-            out = ids[np.lexsort(tuple(order))]
+            out = _order_ids(fact, out[:count.value], keys, desc)
             cx.stats["cuda_raw_topk_rows"] = count.value
     else:
         rc = native(source.at, bitmap.ctypes.data, len(keys), cols, directions,
