@@ -11,13 +11,14 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import torbles
+from torbles import algq
 import sqlwin
 
 
 class EncodedOrderChecks(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        n = 65_537
+        n = 145_537
         i = np.arange(n, dtype=np.int64)
         a = pd.array(np.where(i % 13 < 10, 7, 2), dtype="Int32")
         b = pd.array((i * 37) % 10_000 - 5_000, dtype="Int32")
@@ -66,7 +67,30 @@ class EncodedOrderChecks(unittest.TestCase):
             for engine in ("alg", "gpu"):
                 with self.subTest(engine=engine, tie_breaker=tie_breaker), \
                         patch.object(sqlwin, "layout", side_effect=AssertionError("peer layout")):
-                    self.assertEqual(self.db.sql(sql, engine).rows, want)
+                    result = self.db.sql(sql, engine)
+                    self.assertEqual(result.rows, want)
+                    if algq._order_codes is not None:
+                        self.assertEqual(result.stats.get("native_row_number_rows"), len(want))
+
+    @unittest.skipIf(algq._order_codes is None, "native order library not built")
+    def test_stable_native_order_and_partition_starts_across_chunks(self):
+        n = 131_117
+        i = np.arange(n, dtype=np.uint32)
+        codes = ((i & 1) << 11) | ((i * 37) % 1024)
+        perm = np.argsort(codes, kind="stable")
+        split = (n + 1) // 2
+        expected = np.empty(n, dtype=np.int64)
+        expected[perm[:split]] = np.arange(1, split + 1)
+        expected[perm[split:]] = np.arange(1, n - split + 1)
+        original = algq.lib.at_get_threads()
+        try:
+            for threads in (1, 4):
+                torbles.set_threads(threads)
+                with self.subTest(threads=threads):
+                    np.testing.assert_array_equal(sqlwin._native_packed_order(codes, 12), perm)
+                    np.testing.assert_array_equal(sqlwin._native_packed_order(codes, 12, 11), expected)
+        finally:
+            torbles.set_threads(original)
 
 
 if __name__ == "__main__":

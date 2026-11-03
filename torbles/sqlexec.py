@@ -2187,7 +2187,7 @@ def compute_windows(wins, rel, cx, series=None):
                 and (w.frame is None or all(bound[1] is None for bound in w.frame[1:]))
                 and w.rpr is None and w.filter is None and not w.agg_order
                 and all(isinstance(col, ColArr) for col in parts + okeys)):
-            rel.cols.put(w.key(), ColArr(sqlwin.row_numbers(parts, okeys, specs, n)))
+            rel.cols.put(w.key(), ColArr(sqlwin.row_numbers(parts, okeys, specs, n, stats=cx.stats)))
             continue
         lk = (tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order))
         L = layouts.get(lk)
@@ -3729,8 +3729,11 @@ class _Planner:
                     for col in I.cols_of(x):
                         (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
             aggplan = {}
-            if rows_block and not residual and not empty: preds = preds + self.topk_preds(preds)
-            rel = self.rows_rel(atoms, preds, empty)
+            ids = None
+            if rows_block and not residual and not empty:
+                ids = self.topk_ids(preds)
+                if ids is None: preds = preds + self.topk_preds(preds)
+            rel = self.rows_rel(atoms, preds, empty, ids=ids)
         else:
             try: rel = self.engine(keys, atom_list, preds, empty, variants, vpreds, mlist, direct_groups)
             except _TooManyGroups:
@@ -3930,25 +3933,21 @@ class _Planner:
             if dom * 4 >= n: return True
         return False
 
-    def topk_preds(self, preds):
-        """ORDER BY ... LIMIT k (+ OFFSET) of a block without aggregates, ordered by fact columns: rank selection on the
-        planes (algq.Query.rank_codes) gives the code of the k-th row on the first ORDER BY column; the block then
-        reads only the rows before it or tied with it, and while the ties are many, the next ORDER BY column splits
-        them the same way. The final ORDER BY / LIMIT sorts what is read as before (the same rows, in the same order).
-        -> [one engine predicate], or [] when the block reads every passing row"""
+    def topk_spec(self):
+        """The bounded rank and leading fact keys usable by either top-k path."""
         s, cx = self.s, self.cx
-        if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return []
-        if self.tab[self.fact].n < ALG_MIN_ROWS: return []
-        if s.distinct or s.distinct_on is not None or s.qualify is not None: return []
+        if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return 0, []
+        if self.tab[self.fact].n < ALG_MIN_ROWS: return 0, []
+        if s.distinct or s.distinct_on is not None or s.qualify is not None: return 0, []
         # windows over every row need them all: those in the SELECT list and those in the ORDER BY (ORDER BY x, LAG(id)
         # OVER (ORDER BY id) LIMIT k read LAG from the k rows); windows read from their series are computed on every row
         wl = collect([x for x, _ in s.items] + [o[0][1] for o in s.order if o[0][0] == "expr"], I.Win)
-        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return []
+        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return 0, []
         lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
         off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
-        if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return []
+        if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return 0, []
         k = lim + off
-        if not 0 < k <= TOPK_MAX: return []
+        if not 0 < k <= TOPK_MAX: return 0, []
         fact = self.tab[self.fact]
         okeys = []
         for e, desc, nf in s.order:
@@ -3959,7 +3958,34 @@ class _Planner:
             vc = getattr(fact, "nullable", {}).get(name)
             if vc is not None and nf: break                     # NULLs first: they are among the first rows
             okeys.append((name, bool(desc), vc))
+        return k, okeys
+
+    def topk_ids(self, preds):
+        """Exact GPU shortlist for a bounded fact sort, or None for rank predicates."""
+        if self.cx.engine != "gpu" or self.joins or self.s.with_ties:
+            return None
+        k, keys = self.topk_spec()
+        if not keys or len(keys) != len(self.s.order) or len(keys) > 2 or k > 1024:
+            return None
+        if any(validity is not None for _, _, validity in keys):
+            return None
+        q = algq.Query(self.tab[self.fact], join_mode="auto")
+        for pred in preds: q.where(pred)
+        ids = q._topk_rows([(name, desc) for name, desc, _ in keys], k)
+        if ids is not None:
+            self.cx.stats["engine_queries"] += 1
+            self.cx.stats["gpu_mask_topk"] = self.cx.stats.get("gpu_mask_topk", 0) + 1
+        return ids
+
+    def topk_preds(self, preds):
+        """ORDER BY ... LIMIT k (+ OFFSET) of a block without aggregates, ordered by fact columns: rank selection on the
+        planes (algq.Query.rank_codes) gives the code of the k-th row on the first ORDER BY column; the block then
+        reads only the rows before it or tied with it, and while the ties are many, the next ORDER BY column splits
+        them the same way. The final ORDER BY / LIMIT sorts what is read as before (the same rows, in the same order).
+        -> [one engine predicate], or [] when the block reads every passing row"""
+        k, okeys = self.topk_spec()
         if not okeys: return []
+        cx, fact = self.cx, self.tab[self.fact]
         q0 = algq.Query(fact); q0.join_mode = "auto"
         for b, fk in self.joins.items(): q0.join(self.tab[b], fk)
         for p in preds: q0.where(p)
@@ -4149,13 +4175,14 @@ class _Planner:
                 out = np.bincount(u[:, 0], minlength=G).astype(np.int64)
         return out.tolist()
 
-    def rows_rel(self, atoms, preds, empty):
-        """the passing fact rows (engine row bitmap) with the atoms' values read from the planes"""
-        q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
-        for b, fk in self.joins.items(): q.join(self.tab[b], fk)
-        for p in preds: q.where(p)
-        self.cx.stats["engine_queries"] += 1
-        ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
+    def rows_rel(self, atoms, preds, empty, ids=None):
+        """Read the selected fact rows' atoms from the planes."""
+        if ids is None:
+            q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
+            for b, fk in self.joins.items(): q.join(self.tab[b], fk)
+            for p in preds: q.where(p)
+            self.cx.stats["engine_queries"] += 1
+            ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
         if self.fact_sample is not None: ids = ids[self.fact_sample[np.asarray(ids, np.int64)]]
         rel = Rel(len(ids))
         fact = self.tab[self.fact]

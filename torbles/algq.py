@@ -127,6 +127,10 @@ _libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
 vp, u64 = ctypes.c_void_p, ctypes.c_uint64
+_order_codes = getattr(lib, "at_order_codes", None)
+if _order_codes is not None:
+    _order_codes.restype = ctypes.c_int
+    _order_codes.argtypes = [vp, ctypes.c_uint, u64, ctypes.c_uint, ctypes.c_uint, vp, ctypes.c_int]
 for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_create", vp, [u64, ctypes.c_int, vp]),
                         ("at_save", ctypes.c_int, [vp, ctypes.c_char_p]), ("at_load", vp, [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]),
                         ("at_bytes", u64, [vp]), ("at_width", ctypes.c_int, [vp, ctypes.c_int]), ("at_nplanes", ctypes.c_int, [vp]),
@@ -164,6 +168,11 @@ def gpu_lib():
         g.gpu_query.restype = ctypes.c_int; g.gpu_query.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.POINTER(ctypes.c_double)]
         u64p = ctypes.POINTER(ctypes.c_uint64)       # the device copies of host arrays (see _gpu_tag)
         g.gpu_query_tagged.restype = ctypes.c_int; g.gpu_query_tagged.argtypes = [vp, ctypes.POINTER(QPlan), u64p, ctypes.POINTER(ctypes.c_double)]
+        if hasattr(g, "gpu_topk"):
+            i32p = ctypes.POINTER(ctypes.c_int32)
+            g.gpu_topk.restype = ctypes.c_int
+            g.gpu_topk.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.c_int, i32p, i32p, ctypes.c_uint32,
+                                   u64p, ctypes.POINTER(ctypes.c_uint32), ctypes.POINTER(ctypes.c_double)]
         g.gpu_cache_evict.restype = ctypes.c_int; g.gpu_cache_evict.argtypes = [vp, u64p, ctypes.c_int]
         g.gpu_cache_entries.restype = ctypes.c_int; g.gpu_cache_entries.argtypes = [vp, u64p, u64p, ctypes.c_int]
         g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.restype = None; g.gpu_close.argtypes = [vp]
@@ -1836,6 +1845,18 @@ class Query:
         q = copy_query(self); q.keys = []; q.measure = None; q._ext = None; q._rows = True
         return q._run_codes("plain" if engine == "plain" else "alg")
 
+    def _topk_rows(self, keys, k):
+        """Attempt GPU selection on a fact-only, narrow filter plan. None asks SQL to use its ordinary path."""
+        fact = self.fact
+        if not 1 <= len(keys) <= 2 or not 1 <= k <= 1024:
+            return None
+        if self.joins or fact.parts is not None or getattr(fact, "wide", None) or not hasattr(gpu_lib(), "gpu_topk"):
+            return None
+        q = copy_query(self)
+        q.keys, q.measure, q._ext = [], None, None
+        q._rows, q._topk = True, (keys, k)
+        return q._run_codes("gpu")
+
     def _sql_aggs(self):
         """the aggregate in SQL, one expression per column of its value: SUM(e) (and COUNT(e) for a (sum, count)
         result), MIN(c) and MAX(c), COUNT(e) or COUNT(*)"""
@@ -1983,6 +2004,14 @@ class Query:
         return tags
 
     def _exec_loop(self, dev, table, plan):
+        if dev == "gpu" and hasattr(plan, "_topk_args"):
+            with _GPU_LOCK:
+                rc = gpu_lib().gpu_topk(table.gpu_handle(), ctypes.byref(plan), *plan._topk_args)
+            if rc != 0:
+                self._gpu_fail = "unsupported top-k plan" if rc == -1 else "CUDA top-k error"
+                return False
+            self.device, self.kernel_ms = "gpu", plan._topk_args[-1].value
+            return True
         tags = self._gpu_tags(plan) if dev == "gpu" else None
         while True:
             if dev == "gpu":
@@ -2686,6 +2715,25 @@ class Query:
             return out_sum.copy(), out_cnt.astype(np.int64), int(plan.total_sum), int(plan.total_cnt)
         if getattr(self, "_rows", False):         # the passing rows as a bitmap
             plan.agg = A_ROWS; plan.nkey = 0
+            if hasattr(self, "_topk"):
+                if plan.nsemi or plan.xmode or plan.nranges:
+                    return None
+                keys, k = self._topk
+                cols = (ctypes.c_int32 * len(keys))(*(fv.idx(name) for name, _ in keys))
+                desc = (ctypes.c_int32 * len(keys))(*(descending for _, descending in keys))
+                ids = np.empty(k, np.uint64)
+                count, ms = ctypes.c_uint32(), ctypes.c_double()
+                plan._topk_args = (len(keys), cols, desc, k, ids.ctypes.data_as(ctypes.POINTER(ctypes.c_uint64)),
+                                   count, ms)
+                try:
+                    ran = self._exec("gpu", _run_on(fv), plan)
+                finally:
+                    del plan._topk_args
+                if not ran:
+                    return None
+                self.last_plan = plan
+                # Preserve fact order for the SQL final sort's stable ties.
+                return np.sort(ids[:count.value])
             out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
             plan.nattr = 0
             self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan

@@ -106,6 +106,145 @@ static void par_for(uint64_t n, uint64_t grain, range_fn fn, void *ctx) {
     for (int i = 0; i < T; i++) j[i] = (pjob_t){fn, ctx, n, grain, &next};
     pool_jobs(T, pworker, j, sizeof j[0]);
 }
+
+/* Stable radix partition of compact SQL order keys. A token carries the
+ * packed key above its original row id. Each worker counts the masked digit
+ * on a contiguous range. Prefix sums assign disjoint, stable bucket ranges
+ * in worker/input order. The same order yields ROW_NUMBER via partition
+ * starts, without returning a permutation to Python first. */
+enum { ORDER_RADIX = 256, ORDER_WORKERS = 32 };
+typedef struct {
+    uint64_t begin, end, key_mask, row_mask;
+    const void *codes;
+    uint64_t *src, *dst, *out;
+    unsigned key_bytes, row_bits, shift, mask, partition_shift;
+    uint32_t offsets[ORDER_RADIX];
+    int bad;
+} order_job_t;
+
+static void *order_histogram(void *arg) {
+    order_job_t *j = arg;
+    memset(j->offsets, 0, (j->mask + 1) * sizeof *j->offsets);
+    if (j->codes) {
+        uint64_t seen = 0;
+#define ORDER_INIT(T) do {                                                       \
+        const T *codes = j->codes;                                               \
+        for (uint64_t i = j->begin; i < j->end; ++i) {                            \
+            uint64_t key = codes[i];                                             \
+            seen |= key;                                                         \
+            j->src[i] = (key << j->row_bits) | i;                                \
+            ++j->offsets[key & j->mask];                                         \
+        }                                                                        \
+    } while (0)
+        if (j->key_bytes == 2) ORDER_INIT(uint16_t);
+        else if (j->key_bytes == 4) ORDER_INIT(uint32_t);
+        else ORDER_INIT(uint64_t);
+#undef ORDER_INIT
+        j->bad = (seen & ~j->key_mask) != 0;
+        j->codes = NULL;
+    } else {
+        for (uint64_t i = j->begin; i < j->end; ++i)
+            ++j->offsets[(j->src[i] >> j->shift) & j->mask];
+    }
+    return NULL;
+}
+
+static void *order_scatter(void *arg) {
+    order_job_t *j = arg;
+    for (uint64_t i = j->begin; i < j->end; ++i) {
+        uint64_t token = j->src[i];
+        j->dst[j->offsets[(token >> j->shift) & j->mask]++] = token;
+    }
+    return NULL;
+}
+
+static uint64_t order_partition(uint64_t token, unsigned shift) {
+    return shift == 64 ? 0 : token >> shift;
+}
+
+static void *order_finish(void *arg) {
+    order_job_t *j = arg;
+    if (j->partition_shift > 64) {
+        for (uint64_t i = j->begin; i < j->end; ++i) j->out[i] = j->src[i] & j->row_mask;
+        return NULL;
+    }
+    unsigned shift = j->partition_shift;
+    uint64_t partition = order_partition(j->src[j->begin], shift);
+    uint64_t start = j->begin;
+    if (start && order_partition(j->src[start - 1], shift) == partition) {
+        /* The partition crosses a worker boundary. Its start is the lower
+         * bound of this partition in the already sorted key prefix. */
+        uint64_t lo = 0;
+        while (lo < start) {
+            uint64_t mid = lo + (start - lo) / 2;
+            if (order_partition(j->src[mid], shift) < partition) lo = mid + 1;
+            else start = mid;
+        }
+    }
+    for (uint64_t i = j->begin; i < j->end; ++i) {
+        uint64_t token = j->src[i], p = order_partition(token, shift);
+        if (p != partition) { partition = p; start = i; }
+        j->out[token & j->row_mask] = i - start + 1;
+    }
+    return NULL;
+}
+
+int at_order_codes(const void *codes, unsigned key_bytes, uint64_t n, unsigned key_bits,
+                   unsigned order_bits, uint64_t *out, int row_numbers) {
+    if (!n) return 0;
+    if (!codes || !out || n > UINT32_MAX || n > SIZE_MAX / sizeof(uint64_t) ||
+        (key_bytes != 2 && key_bytes != 4 && key_bytes != 8) ||
+        !key_bits || key_bits > 63 || key_bits > key_bytes * 8 || order_bits > key_bits) return -1;
+    unsigned row_bits = n == 1 ? 0 : 64 - (unsigned)__builtin_clzll(n - 1);
+    if (key_bits + row_bits > 64) return -1;
+    uint64_t *src = malloc(n * sizeof *src), *dst = malloc(n * sizeof *dst);
+    if (!src || !dst) { free(src); free(dst); return -1; }
+    extern int at_get_threads(void);
+    int workers = at_get_threads();
+    int useful = (int)((n + 65535) / 65536);
+    if (workers > useful) workers = useful;
+    if (workers > ORDER_WORKERS) workers = ORDER_WORKERS;
+    if (workers < 1) workers = 1;
+    order_job_t jobs[ORDER_WORKERS];
+    for (int t = 0; t < workers; ++t) {
+        jobs[t] = (order_job_t){.begin = n * t / workers, .end = n * (t + 1) / workers,
+            .key_mask = (UINT64_C(1) << key_bits) - 1, .row_mask = (UINT64_C(1) << row_bits) - 1,
+            .codes = codes, .out = out, .key_bytes = key_bytes, .row_bits = row_bits,
+            .partition_shift = row_numbers ? row_bits + order_bits : 65};
+    }
+    int rc = 0;
+    for (unsigned bit = 0; bit < key_bits; bit += 8) {
+        unsigned digit_bits = key_bits - bit < 8 ? key_bits - bit : 8;
+        unsigned buckets = 1u << digit_bits;
+        for (int t = 0; t < workers; ++t) {
+            jobs[t].src = src; jobs[t].dst = dst;
+            jobs[t].shift = row_bits + bit; jobs[t].mask = buckets - 1;
+        }
+        pool_jobs(workers, order_histogram, jobs, sizeof *jobs);
+        if (!bit) for (int t = 0; t < workers; ++t) if (jobs[t].bad) { rc = -1; goto done; }
+        uint32_t prefix = 0;
+        unsigned nonempty = 0;
+        for (unsigned b = 0; b < buckets; ++b) {
+            uint32_t before = prefix;
+            for (int t = 0; t < workers; ++t) {
+                uint32_t count = jobs[t].offsets[b];
+                jobs[t].offsets[b] = prefix;
+                prefix += count;
+            }
+            nonempty += prefix != before;
+        }
+        if (nonempty > 1) {
+            pool_jobs(workers, order_scatter, jobs, sizeof *jobs);
+            uint64_t *old = src; src = dst; dst = old;
+        }
+    }
+    for (int t = 0; t < workers; ++t) jobs[t].src = src;
+    pool_jobs(workers, order_finish, jobs, sizeof *jobs);
+done:
+    free(src); free(dst);
+    return rc;
+}
+
 /* column maxima, in parallel (per-chunk maxima merged with an atomic max) */
 typedef struct { const uint32_t **cols; int ncols; _Atomic uint32_t mx[64]; } maxctx_t;
 static void max_range(void *v, uint64_t a, uint64_t b) {

@@ -71,6 +71,7 @@ run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_algebra.py 50 9
 run "windows whose values every row outputs"    python3 tests/check_window_output.py
 run "encoded top-k and row numbers"             python3 tests/check_encoded_order.py
+run "GPU bitplane top-k and SQL fallback"        python3 tests/check_mask_topk.py
 run "the release fuzzing campaign's faults"     python3 tests/check_campaign_sql.py
 echo "== GROUP BY modes"
 run "native relationship discovery and composition" python3 -m unittest discover -s tests -p test_relationships.py
