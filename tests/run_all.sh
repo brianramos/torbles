@@ -26,7 +26,7 @@ run() {   # name, command...
   local t0=$(date +%s%N) out; out=$("$@" 2>&1); local rc=$?
   local ms=$(( ($(date +%s%N) - t0) / 1000000 )); local dt="$((ms / 1000)).$(( (ms % 1000) / 100 ))"
   local last=$(printf '%s\n' "$out" | tail -1)
-  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES|^OK$"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
+  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES|^OK( \(skipped=[0-9]+\))?$"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
   else printf '  %-44s FAIL (%ss)\n' "$name" "$dt"; printf '%s\n' "$out" | tail -15 | sed 's/^/      /'; fails=$((fails + 1)); fi
 }
 echo "== CPU engine vs plain columns vs DuckDB"
