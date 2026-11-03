@@ -59,9 +59,39 @@ class TextPlaneChecks(unittest.TestCase):
                          "AVG(STRLEN(url)) AS l, COUNT(*) AS n, MIN(url) FROM t WHERE url <> '' "
                          "GROUP BY k HAVING COUNT(*) > 5000 ORDER BY l DESC, k", projection=True)
         self.check_query(db, "SELECT g, AVG(STRLEN(title)) AS l, COUNT(*) AS n FROM t "
-                         "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g")
+                         "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
         self.assertEqual(db.sql("SELECT g, AVG(STRLEN(url)) FROM t GROUP BY g "
                                 "HAVING COUNT(*) > 100000 ORDER BY g").rows, [])
+
+    def test_generated_dictionary_key_and_moved_nullable_value(self):
+        row = np.arange(70_013)
+        det = row % 17
+        attrs = {f"attr{i}": det * (i + 1) for i in range(32)}
+        data = pd.DataFrame(dict(url=np.array([f"https://google.com/é/{i}" for i in range(17)])[det],
+                                 g=(row // 17) % 3, **attrs))
+        db = torbles.from_frames({"t": data})
+        self.addCleanup(db.close)
+        self.assertEqual(db["t"].codecs["url"].kind, "ref")
+        res = self.check_query(db, "SELECT g, COUNT(*), AVG(STRLEN(url)), MIN(url) FROM t "
+                               "WHERE url LIKE '%google.com%' GROUP BY g ORDER BY g",
+                               predicates=1, projection=True)
+        self.assertEqual(res.stats.get("dictionary_dimension_predicates"), 1)
+        self.assertEqual(res.stats.get("dictionary_dimension_projection_rows"), len(row))
+
+        labels = np.array([None, "https://café.com/é", "other"], dtype=object)
+        data = pd.DataFrame(dict(det=det, g=(row // 17) % 3, url=labels[det % 3], **attrs))
+        db = torbles.from_frames({"t": data})
+        self.addCleanup(db.close)
+        self.assertEqual(db["t"].moved["url"], "det")
+        res = self.check_query(db, "SELECT g, COUNT(*), AVG(STRLEN(url)), MIN(url) FROM t "
+                               "GROUP BY g ORDER BY g", projection=True)
+        self.assertEqual(res.stats.get("dictionary_dimension_projection_rows"), len(row))
+        res = self.check_query(db, "SELECT g, COUNT(*), AVG(STRLEN(url)), MIN(url) FROM t "
+                               "WHERE det = 0 GROUP BY g ORDER BY g", projection=True)
+        self.assertTrue(all(r[2:] == (None, None) for r in res.rows))
+        res = self.check_query(db, "SELECT count(*) FROM t WHERE url NOT LIKE '%café.com%'",
+                               predicates=1)
+        self.assertEqual(res.stats.get("dictionary_dimension_predicates"), 1)
 
     def test_text_caches_belong_to_open_table(self):
         first = self.database()

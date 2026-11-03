@@ -14,15 +14,16 @@ _BYTE_LENGTH = {"strlen", "octet_length"}
 _CHAR_LENGTH = {"length", "len", "char_length", "character_length"}
 
 
-def _dict_column(expr, binding, table):
-    if not isinstance(expr, I.Col) or expr.b is not binding or expr.t.id != "VARCHAR" or T.coll_key(expr.t) is not None:
+def _dict_column(expr, planner):
+    if not isinstance(expr, I.Col) or expr.t.id != "VARCHAR" or T.coll_key(expr.t) is not None:
         return None
-    name = expr.name
+    binding, name = planner.canon(expr)
+    table = planner.tab[binding]
     codec = table.codecs.get(name)
     if (codec is None or codec.kind != "dict" or codec.sql_type != "VARCHAR" or name not in table.cols
             or name in table.wide or name in getattr(table, "moved", {})):
         return None
-    return name, codec
+    return binding, table, name, codec
 
 
 def _cache(table, attr, key, build, limit):
@@ -55,11 +56,13 @@ def dictionary_predicate(planner, expr):
     col, *args = term.args
     if not all(isinstance(arg, I.Lit) and isinstance(arg.v, str) for arg in args):
         return None
-    fact = planner.tab[planner.fact]
-    source = _dict_column(col, planner.fact, fact)
+    source = _dict_column(col, planner)
     if source is None:
         return None
-    name, codec = source
+    binding, table, name, codec = source
+    is_fact = binding is planner.fact
+    if not is_fact and (binding not in planner.hidden.values() or not getattr(table, "generated", None)):
+        return None
     pattern = args[0].v
     insensitive = term.fn == "ilike"
     try:
@@ -68,15 +71,30 @@ def dictionary_predicate(planner, expr):
     except T.SqlError:
         return None
 
+    validity = table.nullable.get(name)
+
     def make():
         matches = np.fromiter((matcher(text) != negated for text in codec.values), np.bool_, count=len(codec.values))
-        return algq.CodeSet(algq.Col(fact, name), matches, sql=I.render(expr))
+        if is_fact:
+            return algq.CodeSet(algq.Col(table, name), matches, sql=I.render(expr))
+        codes = table.decoded(name)
+        present = table.used & (codes < len(matches))
+        if validity is not None:
+            present &= table.decoded(validity) != 0
+        rows = np.zeros(table.n, bool)
+        rows[present] = matches[codes[present]]
+        columns = (name,) if validity is None else (name, validity)
+        return algq.RowMask(table, rows, cols=columns, sql=I.render(expr))
 
-    predicate = _cache(fact, "_text_predicates", (name, codec, pattern, escape, insensitive, negated), make, 8)
-    valid = planner.valid(col)
+    cache_key = (id(table), is_fact, name, codec, pattern, escape, insensitive, negated)
+    predicate = _cache(table, "_text_predicates", cache_key, make, 8)
     stats = planner.cx.stats
     stats["dictionary_text_predicates"] = stats.get("dictionary_text_predicates", 0) + 1
-    return [predicate] if valid is None else [predicate, valid]
+    if not is_fact:
+        stats["dictionary_dimension_predicates"] = stats.get("dictionary_dimension_predicates", 0) + 1
+    if is_fact and validity is not None:
+        return [predicate, algq.Cmp(algq.Col(table, validity), "EQ", 1)]
+    return [predicate]
 
 
 def _count_having(expr, aggs, engine):
@@ -94,10 +112,12 @@ def _count_having(expr, aggs, engine):
     return {">": np.greater, ">=": np.greater_equal, "<": np.less, "<=": np.less_equal, "=": np.equal}[op], right.v
 
 
-def _rows(fact, preds):
+def _rows(fact, preds, joins):
     bitmap = fact.used_bm
-    if preds:
+    if preds or joins:
         query = algq.Query(fact, join_mode="auto")
+        for table, fk in joins:
+            query.join(table, fk)
         for pred in preds:
             query.where(pred)
         query._rows = query._rowbits = True
@@ -111,6 +131,21 @@ def _read(fact, name, selected, ids):
         return fact.get_rows(name, ids)
     values = fact._decode_column(name)
     return values if selected is None else values[selected]
+
+
+def _text_codes(fact, table, name, fk, selected, ids):
+    validity = table.nullable.get(name)
+    if fk is None:
+        codes = _read(fact, name, selected, ids)
+        valid = None if validity is None else _read(fact, validity, selected, ids) != 0
+    else:
+        rows = _read(fact, fk, selected, ids)
+        mask = fact.kmask(fk)
+        if mask:
+            rows = rows & mask
+        codes = table.decoded(name)[rows]
+        valid = None if validity is None else table.decoded(validity)[rows] != 0
+    return codes, valid
 
 
 def _regex_group(expr, col, table, source):
@@ -162,7 +197,7 @@ def project_group(planner, preds, aggs):
 
     s, cx, fact = planner.s, planner.cx, planner.tab[planner.fact]
     if (not E.COLUMNAR or not E.VEC_GROUPS or cx.engine != "alg" or s.from_ is not planner.fact
-            or planner.joins or planner.left or planner.fact_sample is not None or s.sample is not None
+            or planner.left or planner.fact_sample is not None or s.sample is not None
             or not E.ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or len(s.group) != 1
             or s.qualify is not None or s.distinct or s.distinct_on is not None
             or any(a.distinct or a.filter is not None or a.order for a in aggs.values())):
@@ -174,9 +209,20 @@ def project_group(planner, preds, aggs):
     if not isinstance(length, I.Func) or length.fn not in _BYTE_LENGTH | _CHAR_LENGTH or len(length.args) != 1:
         return None
     col = length.args[0]
-    source = _dict_column(col, planner.fact, fact)
-    if source is None or col.nullable or source[0] in fact.nullable:
+    source = _dict_column(col, planner)
+    if source is None:
         return None
+    binding, table, name, codec = source
+    source = name, codec
+    fk = None if binding is planner.fact else planner.joins.get(binding)
+    if binding is not planner.fact and (
+        fk is None or not getattr(table, "generated", None) or fact.orphans.get(fk, 0)
+        or getattr(fact.surr.get(fk), "version", 0)
+    ):
+        return None
+    if any(b not in planner.hidden.values() for b in planner.joins):
+        return None
+    joins = [(planner.tab[b], fk_name) for b, fk_name in planner.joins.items()]
     if any(a.name not in ("avg", "count_star") and
            (a.name != "min" or len(a.args) != 1 or a.args[0].key() != col.key())
            for a in aggs.values()):
@@ -190,12 +236,14 @@ def project_group(planner, preds, aggs):
     if s.having is not None and having is None:
         return None
     key = plane_group_key(group, planner.fact, fact)
-    if key is None and not (isinstance(group, I.Func) and group.fn == "regexp_replace"):
+    if key is None and (
+        not isinstance(group, I.Func) or group.fn != "regexp_replace" or col.nullable or name in table.nullable
+    ):
         return None
     if key is not None and key[3] != 0:
         return None
     try:
-        selected = _rows(fact, preds)
+        selected = _rows(fact, preds, joins)
     except (TypeError, ValueError, OverflowError):
         return None
     if selected is not None:
@@ -204,14 +252,13 @@ def project_group(planner, preds, aggs):
         selected = selected.astype(bool, copy=False)
     else:
         n, ids = fact.n, None
-    name, codec = source
-    text_codes = None
+    text_codes, valid = None, None
     if key is None:
-        regex = _regex_group(group, col, fact, source)
+        regex = _regex_group(group, col, table, source)
         if regex is None:
             return None
         mapping, values = regex
-        text_codes = _read(fact, name, selected, ids)
+        text_codes, valid = _text_codes(fact, table, name, fk, selected, ids)
         raw = mapping[text_codes]
         group_size = len(values)
 
@@ -245,22 +292,28 @@ def project_group(planner, preds, aggs):
     logical = groups if distinct is None else distinct[groups]
     result.cols[group.key()] = decode(logical)
 
-    avg_values, minima = [], []
+    avg_values, avg_valid, minima = [], None, []
     wants_min = any(a.name == "min" for a in aggs.values())
     if len(groups):
         if text_codes is None:
-            text_codes = _read(fact, name, selected, ids)
+            text_codes, valid = _text_codes(fact, table, name, fk, selected, ids)
         chosen = eligible[inverse]
+        if valid is not None:
+            chosen &= valid
         projected = text_codes[chosen]
         targets = inverse[chosen]
         try:
-            lens = _length_map(fact, source, length.fn in _BYTE_LENGTH)
+            lens = _length_map(table, source, length.fn in _BYTE_LENGTH)
         except UnicodeError:
             return None
         if n * int(lens.max(initial=0)) >= 1 << 53:
             return None                      # float bincount weights must sum to exact integers
         totals = np.bincount(targets, weights=lens[projected].astype(np.float64), minlength=group_size)
-        avg_values = [v / c for v, c in zip(totals[groups].astype(np.int64).tolist(), keep_counts.tolist())]
+        observations = keep_counts if valid is None else np.bincount(targets, minlength=group_size)[groups]
+        avg_valid = None if valid is None else observations != 0
+        avg_values = [v / c if c else 0.0 for v, c in zip(
+            totals[groups].astype(np.int64).tolist(), observations.tolist()
+        )]
         if wants_min:
             min_codes = np.full(group_size, np.iinfo(np.uint32).max, dtype=np.uint32)
             np.minimum.at(min_codes, targets, projected)
@@ -269,10 +322,12 @@ def project_group(planner, preds, aggs):
         if agg.name == "count_star":
             result.cols.put(agg_key, E.ColArr(keep_counts))
         elif agg.name == "avg":
-            result.cols.put(agg_key, E.ColArr(np.asarray(avg_values, np.float64)))
+            result.cols.put(agg_key, E.ColArr(np.asarray(avg_values, np.float64), avg_valid))
         else:
             result.cols[agg_key] = minima
-    cx.stats["engine_queries"] += bool(preds)
+    cx.stats["engine_queries"] += bool(preds or joins)
     cx.stats["dictionary_projection_rows"] = cx.stats.get("dictionary_projection_rows", 0) + n
+    if fk is not None:
+        cx.stats["dictionary_dimension_projection_rows"] = cx.stats.get("dictionary_dimension_projection_rows", 0) + n
     return result
 

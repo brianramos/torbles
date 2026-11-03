@@ -4036,11 +4036,11 @@ class _Planner:
         if p is not None:
             if p.sql is None: p.sql = I.render(c)
             return [p]
+        from torbles.sqltextplanes import dictionary_predicate
+        fast = dictionary_predicate(self, c)
+        if fast is not None:
+            return fast
         if b is self.fact:
-            from torbles.sqltextplanes import dictionary_predicate
-            fast = dictionary_predicate(self, c)
-            if fast is not None:
-                return fast
             cols = {self.canon(x) for x in I.cols_of(c)}
             if len(cols) == 1:
                 return self.codeset(I.cols_of(c)[0], c)
@@ -4578,6 +4578,11 @@ class _Planner:
                 if w is not None: v = v.astype(np.uint64) + (read_codes(w[1]).astype(np.uint64) << np.uint64(w[0]))
                 cache[name] = v
             return cache[name]
+        def dim_codes(table, name, rows):
+            if len(rows) * 64 < table.n:
+                return table.get_rows(name, rows)
+            return table.decoded(name)[rows]
+
         for k, col in atoms.items():
             b, name = self.canon(col)
             if b is self.fact:
@@ -4587,11 +4592,11 @@ class _Planner:
                 f = fact_codes(fk).astype(np.int64)
                 sg = getattr(fact, "surr", {}).get(fk)
                 rows = (f & sg.mask) if sg is not None else f
-                codes = t.decoded(name)[rows]
+                codes = dim_codes(t, name, rows)
             cd = getattr(t, "codecs", {}).get(name)
             vc = getattr(t, "nullable", {}).get(name)
             ok = None
-            if vc is not None: ok = np.asarray(fact_codes(vc) if b is self.fact else t.decoded(vc)[rows]) != 0
+            if vc is not None: ok = np.asarray(fact_codes(vc) if b is self.fact else dim_codes(t, vc, rows)) != 0
             if COLUMNAR: rel.cols.put(k, ColArr(codes, ok, cd)); continue      # decoded when read as values
             codes = codes.tolist()                       # Python integers: 64-bit codes past 2^63 stay exact
             vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
