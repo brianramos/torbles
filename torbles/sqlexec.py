@@ -2991,20 +2991,30 @@ class _Planner:
                 if col.name + "#raw" in self.fact.table.cols: return self.fact, col.name + "#raw"
                 b = self.fkb.get(col.name)
                 if b is not None and b in self.nulled: b = None
-                if b is None:
-                    b = self.hidden.get(col.name)
-                    if b is not None and b not in self.joins: self.joins[b] = col.name
-                    if b is None:
-                        orph = getattr(self.fact.table, "orphans", {}).get(col.name, 0)
-                        if orph: raise SqlError(f"{self.fact.table.name}.{col.name} has {orph} reference(s) without a match; "
-                                                "their values are not stored (join the referenced table instead)")
-                        dimt = self.fact.table._refdim[col.name]
-                        b = I.Binding(f"__{col.name}", [(fi[1], col.t, False)], table=dimt)
-                        t = dimt
-                        if any(x is dimt for x in self.tab.values()): t = copy.copy(dimt)
-                        self.tab[b] = t; self.joins[b] = col.name; self.hidden[col.name] = b
+                if b is None: b = self.hidden_join(col.name, (fi[1], col.t, False))
                 return b, fi[1]
+            mv = (getattr(self.fact.table, "moved", None) or {}).get(col.name)
+            if mv is not None:                          # stored once per value of mv: a column of mv's dimension
+                return self.hidden_join(mv, (col.name, col.t, True)), col.name
         return col.b, col.name
+
+    def hidden_join(self, fk, col):
+        """the binding of the dimension that fact foreign key fk references, joined implicitly (a hidden binding: the
+        query reads a column there that it names as the fact's, col = (name, type, nullable))"""
+        b = self.hidden.get(fk)
+        if b is not None:
+            if b not in self.joins: self.joins[b] = fk
+            if all(c != col[0] for c, _, _ in b.cols): b.cols.append(col)
+            return b
+        orph = getattr(self.fact.table, "orphans", {}).get(fk, 0)
+        if orph: raise SqlError(f"{self.fact.table.name}.{fk} has {orph} reference(s) without a match; "
+                                "their values are not stored (join the referenced table instead)")
+        dimt = self.fact.table._refdim[fk]
+        b = I.Binding(f"__{fk}", [col], table=dimt)
+        t = dimt
+        if any(x is dimt for x in self.tab.values()): t = copy.copy(dimt)
+        self.tab[b] = t; self.joins[b] = fk; self.hidden[fk] = b
+        return b
 
     def algcol(self, col):
         b, name = self.canon(col)

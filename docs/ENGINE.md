@@ -288,3 +288,53 @@ The 13 queries are where they were (within the VM's noise); M1-M3 go from 505 to
 M3 alone takes 59.9 ms against DuckDB's 68.4. Every configuration of the ablation, and every forced mode, passes the tests
 and the fuzzer with no mismatch. The full table is in docs/SSB.md.
 
+
+## Tables wider than a torble (0.4.0)
+
+A torble holds 31 columns: the torus has one row per column plus the wrap row, and a plan names its columns in 32-bit
+masks. A table needs more when it is wide to begin with or once its hidden columns are counted (a validity plane per
+nullable column, the flags and high parts of a column past 32 bits, the references' bits). Until 0.3.0 the loader
+refused such a table. It is now kept in several torbles, joined by the same algebraic substitution as a star join, in
+two ways.
+
+**Determined columns go to a dimension of their own** (`Database.build(groups=True)`, the default). When every row with
+the same value of a column D has the same values of columns C1..Ck (NULL included), the table carries a dimension keyed
+by D in denormalized form: customer attributes repeated on every sale, say. `fd_groups` finds such groups on the loaded
+codes (a strided sample of 64K rows rules out most pairs, every row is then checked); D must never be NULL and have at
+most half as many values as rows, and only columns within 32 bits qualify. For a table that no foreign key references,
+the loader moves groups while the table is still wider than a torble, those with the fewest values of D first (their
+dimensions are the cheapest to join: a flattened star schema gives back the levels of its hierarchies, city -> nation ->
+region or brand -> category -> manufacturer, as small dimensions with derived surrogates, before any order-level key
+that determines several of them), at most 32 references in all: the dimension `T#D` holds one row per value of D, in D's
+order, its key designed like any dimension's (a derived surrogate when its columns form a hierarchy), and D becomes the
+foreign key to it, storing the surrogate. k columns leave the table for one row per value of D. A query reads C through
+the substitution D := surrogate: a filter on C is a dimension filter, cubes and comparators on D's planes (or a lookup),
+GROUP BY on a coordinate of the surrogate reads D's high planes, and SUM reads C as a looked-up attribute. SQL does it
+with the hidden join that already reads a foreign key's value (`_Planner.hidden_join`); in the Python API `t.c_city` is
+the dimension's column and the query joins it by itself. An OR of such a column with the table's own columns is compiled
+the same way: each dimension's part of the term becomes its polynomial on the foreign key's planes, one word on the
+filter program's stack (`_OnKey`), so the engine API now accepts an OR across a fact and its joined dimensions whose
+keys are stored most-significant-bit first. A referenced table keeps its groups: moving them would make a snowflake,
+which the star planner does not join.
+
+**What is left goes to row-aligned parts** (`algq.Table`, `_build_parts`). The columns are split into torbles of at
+most 31 columns over the same rows in the same order, a column with its hidden ones in one part, the references' bits,
+the foreign keys and the clustering column in the first. The parts join on the row id. A reference column would hold
+each row's own id, and its planes are fixed patterns (bits 0 to 5 the same in every 64-row word, the higher bits
+constant over a word), so it is not stored, and the substitution is the identity: a side part's planes are read at the
+same word as the first part's. A plan is compiled against a view of the columns it reads (`_ViewPlan` numbers them as
+the compiler asks for them; `at_view` makes a torble header whose columns point at the parts' planes, nothing copied;
+on the GPU, `gpu_view` does the same with the parts' uploaded planes; the plain baseline gets a table over its columns),
+so filters, sums and GROUP BY across parts run in one kernel pass, as on one torble. A view has no torus of its own:
+integrity is per part (each part's faces checked on load; `validate`, `repair` and `flip` cover them all), and a table
+in parts is saved as one file per part. A plan that would read more than 31 columns (a filter on 40 of them) evaluates
+its terms on the table in groups that one view holds, each as a row bitmap (one engine pass on its view), ANDs the
+bitmaps word for word and runs the rest with the result as its delta plane: the semi-join lookup through the row id,
+whose lookup is the identity. Views are cached per table (16, by the columns in the order a plan asks for them), and
+on the GPU each part is uploaded once.
+
+The column limit is now per plan: at most 31 columns of a table in one kernel pass, which a query reaches only through
+its GROUP BY keys, measure and joins (a filter is split as above). `tests/check_many_columns.py` compares tables of 40
+to 80 columns, groups and parts, with numpy and DuckDB on the three engines, before and after save / load; both
+fuzzers generate such tables (12% of facts, 5% of dimensions, a third of their columns in groups that a key
+determines, some broken by one row).

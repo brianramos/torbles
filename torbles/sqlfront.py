@@ -1713,6 +1713,8 @@ class Binder:
                 except SqlError: typ = None
             if typ is None: typ = T.from_codec(t.codecs.get(c))
             nl = c in getattr(t, "nullable", ()) or (c + "#raw") in getattr(t, "nullable", ()) or getattr(t, "fk_nulls", {}).get(c, 0) > 0
+            mv = (getattr(t, "moved", None) or {}).get(c)       # stored once per value of mv, in its dimension
+            if mv is not None: nl = c in getattr(t._refdim[mv], "nullable", ())
             cols.append((c, typ, nl))
         return I.Binding(alias or t.name, cols, table=t)
 
@@ -3025,7 +3027,7 @@ def _rename(b, names):
 
 def _visible_cols(t):
     order = getattr(t, "col_order", None)
-    cs = [c for c in t.cols if not c.startswith("_") and "#" not in c]
+    cs = [c for c in t.cols if not c.startswith("_") and "#" not in c] + list(getattr(t, "moved", None) or ())
     if order: cs = [c for c in order if c in cs] + [c for c in cs if c not in order]
     return cs
 

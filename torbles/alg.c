@@ -310,6 +310,33 @@ void at_set_virtual(atable_t *t, int c, int flagcol, const atable_t *side, const
     t->vflag[c] = flagcol + 1; t->vside[c] = side; t->vrank[c] = rank;
     t->width[c] = side->width[0]; t->msb[c] = side->msb[0];
 }
+/* A view: a torble header whose column i is column col[i] of torble src[i], the sources row-aligned (the same rows in
+ * the same order: the parts of a table wider than one torble). Its value planes are the sources' own (nothing is
+ * copied), so a query reads a side part's planes at the same 64-row word as the main part's: the join of the parts on
+ * the row id is the identity substitution. It has no torus of its own (no H planes, no faces): the integrity checks
+ * belong to the sources. A self-extending column needs its flag column in the view. NULL: no column or more than
+ * MAXCOL, sources of different lengths, a column out of range, a flag column missing, or no memory. Freed with
+ * at_view_free (the header only), before its sources. */
+atable_t *at_view(int k, const atable_t *const *src, const int32_t *col) {
+    if (k < 1 || k > MAXCOL || !src || !col || !src[0]) return NULL;
+    atable_t *t = (atable_t *)calloc(1, sizeof *t);
+    if (!t) return NULL;
+    t->n = src[0]->n; t->nw = src[0]->nw; t->k = k;
+    for (int i = 0; i < k; i++) {
+        const atable_t *s = src[i]; int c = col[i];
+        if (!s || s->n != t->n || c < 0 || c >= s->k) { free(t); return NULL; }
+        t->width[i] = s->width[c]; t->msb[i] = s->msb[c];
+        for (int j = 0; j < NB; j++) t->V[i][j] = s->V[c][j];
+        if (s->vflag[c]) {
+            int f = s->vflag[c] - 1, fi = -1;
+            for (int m = 0; m < k && fi < 0; m++) if (src[m] == s && col[m] == f) fi = m;
+            if (fi < 0) { free(t); return NULL; }
+            t->vflag[i] = fi + 1; t->vside[i] = s->vside[c]; t->vrank[i] = s->vrank[c];
+        }
+    }
+    return t;
+}
+void at_view_free(atable_t *t) { free(t); }
 /* delta plane: the rows whose foreign key column c (masked by kmask) points at a dimension row set in bm */
 uint64_t at_rows_semi(const atable_t *t, int c, uint32_t kmask, const uint64_t *bm, uint64_t bmn, uint64_t *out) {
     uint64_t cnt = 0, A[64]; int b = t->width[c];

@@ -1,8 +1,8 @@
 # torbles
 
-**An algebraic relational datastore on torus-encoded bit planes.** Version 0.3.0, alpha: you can install it, load
+**An algebraic relational datastore on torus-encoded bit planes.** Version 0.4.0, alpha: you can install it, load
 your own tables with their types and keys, and get answers checked against DuckDB. Features are still missing and
-the API may change (see [Known limitations](#known-limitations-030)).
+the API may change (see [Known limitations](#known-limitations-040)).
 
 A *torble* is a toroidal table: it stores every column as bit planes (plane j holds bit j of 64 rows per machine
 word) laid out on a torus whose faces are XOR checks, so every row is protected and single-bit faults are found and
@@ -16,6 +16,9 @@ repaired. Queries are not executed row by row. They are compiled into algebra ov
 - **The key layout is found from the data.** At load, torbles finds each dimension's hierarchy (functional
   dependencies such as city -> nation -> region) and stores it in the foreign keys' bits, so the joins above apply to
   your schema without hand design.
+- **Tables of any width.** A torble holds 31 columns. In a wider table, the columns that one column determines go to
+  a dimension of their own, stored once per value and read through the same substitution, and the rest to
+  row-aligned torbles whose planes a query reads at the same word, so the join on the row id is the identity.
 - **Range, band and inequality joins** use the same comparator polynomial, with dominance sums for aggregation.
 - **GROUP BY is one matrix product**, `C = M^T X` (group masks AND-popcount measure planes), with sparse output.
 - **Optional GPU executor (CUDA).** One thread per 64-row word, a sparse group table on the GPU, and optional
@@ -111,6 +114,11 @@ Other ways in: `torbles.from_duckdb("my.duckdb")` (keys from its declared constr
       customer:  derived surrogate, 25 bits = c_region 3 | c_nation 3 | c_city 4 | row 15
       part:      derived surrogate, 30 bits = p_mfgr 3 | p_category 3 | p_brand1 6 | row 18
 
+- **Wide tables.** A table needs more than one torble past 31 columns, hidden ones included. The columns that one
+  column determines (every row with the same value of it has the same values of them, as a dimension's attributes
+  repeated in a flattened table) go to a dimension of their own, `table#column`, stored once per value with a designed
+  key, and the column becomes its foreign key; the rest go to row-aligned torbles. Queries read both as the table's
+  columns. `db.notes` and `db.describe()` say what was moved; `build(groups=False)` keeps every column in the table.
 - **Integrity on load.** A saved torble carries its torus faces: on load, every face is recomputed from the stored
   planes, single-bit faults are repaired in memory, and a row with more than one lost bit is refused. Headers are
   hashed; truncated files are refused. Saving writes new files and renames them, so open databases are unaffected.
@@ -357,7 +365,7 @@ dimensions, deltas, and self-extension.
     wsl/         run_validation.sh (build, test, benchmark) and run_scaling.sh (SF1-SF50 and threads), WSL2 + NVIDIA GPU
     .github/     CI (tests and fuzzing on every push) and release (wheels to PyPI on a version tag)
 
-## Known limitations (0.3.0)
+## Known limitations (0.4.0)
 
 - **Joins on the planes:** star joins, one hop from the fact table to each dimension, on single-column keys
   (composite keys are noted and skipped). In SQL a dimension may be joined through several foreign keys (role-playing
@@ -372,9 +380,13 @@ dimensions, deltas, and self-extension.
   arithmetic on DOUBLE columns (load them as DECIMAL), strings, dates and booleans, and GROUP BY keys that need more
   than 128 bits together or more than 12 key columns (a 64-bit fact column takes two); SQL evaluates those on the
   engine's distinct values or on the passing rows. In the fuzzers, torbles refuses fewer queries than DuckDB rejects.
-- **Columns:** at most 31 per table, hidden ones included: one for the references, a validity plane per nullable
-  column, two more per column whose values need more than 32 bits, and one (two if nullable) per foreign key with
-  references without a match. A wider table is refused at load with the count; `columns=` loads a subset.
+- **Columns:** any number per table (0.4.0). A torble holds 31, hidden ones included (one for the references, a
+  validity plane per nullable column, two more per column whose values need more than 32 bits, one or two per foreign
+  key with references without a match). A wider table keeps the columns that one column determines in a dimension of
+  their own and the rest in row-aligned parts ([docs/ENGINE.md](docs/ENGINE.md#tables-wider-than-a-torble-040)). One
+  kernel pass reads at most 31 columns of a table, which a query reaches only through its GROUP BY keys, measure and
+  joins together (a filter on more columns is evaluated in groups). The mathematics module and the relationship
+  catalog work on tables of one torble.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
 - **GPU executor:** validated on one GPU only, the RTX 5090 Laptop GPU (compute 12.0, CUDA 12.4): every test on the

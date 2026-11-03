@@ -107,6 +107,39 @@ def _hierarchy(r, prefix, n):
     return cols
 
 
+def _widen(w, n, prefix):
+    """25 to 60 more columns: a table wider than one torble. About a third come in groups of 2 to 8 columns that are
+    functions of a key column of their own (a denormalized dimension, which the loader may store once per key value in
+    a dimension of its own); a group's columns are NULL for some keys, its key sometimes NULL on some rows, and one of
+    its columns sometimes differs on one row (not a function of the key then: it must stay in the table)"""
+    out, g, target = [], 0, w.randint(25, 60)
+    while len(out) < target:
+        if n > 1 and w.random() < 0.3:
+            key = _rand_column(w, f"{prefix}_g{g}k", n, kind=w.choice(["int", "str", "date", "smallint"]),
+                               card=w.choice([1, 2, 5, 30, max(2, n // 4)]))
+            if w.random() < 0.1: key.values = [None if w.random() < 0.05 else v for v in key.values]
+            keys = list(dict.fromkeys(key.values))
+            members = []
+            for j in range(w.randint(2, 8)):
+                proto = _rand_column(w, f"{prefix}_g{g}c{j}", len(keys))
+                vals = [None if w.random() < 0.15 else v for v in proto.values] if w.random() < 0.3 else proto.values
+                lut = dict(zip(keys, vals))
+                members.append(Col(proto.name, proto.typ, [lut[k] for k in key.values]))
+            if w.random() < 0.2:                                   # one row breaks the dependency
+                c = w.choice(members); i = w.randrange(n); other = [v for v in c.values if v != c.values[i]]
+                if other: c.values[i] = w.choice(other)
+            out += [key] + members; g += 1
+        else:
+            c = _rand_column(w, f"{prefix}_w{len(out)}", n)
+            if w.random() < 0.2: c.values = [None if w.random() < 0.1 else v for v in c.values]
+            out.append(c)
+    return out
+
+
+# how often a case's fact / a dimension is wider than one torble (TORBLES_FUZZ_WIDE sets the fact's: 1 = every case)
+WIDE_FACT, WIDE_DIM = float(os.environ.get("TORBLES_FUZZ_WIDE", 0.12)), 0.05
+
+
 def make_case(seed):
     """random tables: {name: (columns, primary key or None, {fk column: dimension})}"""
     r = random.Random(seed)
@@ -147,6 +180,11 @@ def make_case(seed):
         cols.append(_rand_column(r, f"f_m{a}", m))
     if r.random() < 0.3 and m > 1:                                  # a sorted column (physical order hint)
         c = _rand_column(r, "f_sorted", m, kind="int"); c.values = sorted(c.values); cols.append(c)
+    w = random.Random(seed * 7 + 5)          # wider than a torble, on a stream of its own (other cases stay the same)
+    if w.random() < WIDE_FACT: cols += _widen(w, m, "f")
+    for d in range(ndims):
+        if w.random() < WIDE_DIM:
+            dcols, pk, _ = tables[f"dim{d}"]; dcols += _widen(w, len(dcols[0].values), f"d{d}")
     tables["fact"] = (cols, None, fks)
     return tables
 
@@ -414,10 +452,6 @@ def duck_rows(con, sql):
         done.set(); t.join()
 
 
-TOO_WIDE = "a torble holds"                  # the load refusal of a table with more columns than a torble (hidden ones too)
-TOO_WIDE_REASON = "LoadError: a table with more columns than a torble holds (hidden ones included)"
-
-
 def duck_without(con, what, fn, seconds=120):
     """fn() with DuckDB's optimizer off (what="optimizer") or only its statistics propagation (what="statistics"), the
     connection's settings restored after; a statement still running after seconds is interrupted (fn raises). Two
@@ -465,11 +499,6 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
             try:
                 db, declared = build_db(tables, cs, con)
             except Exception as e:
-                if TOO_WIDE in str(e):                        # more columns than a torble holds: refused at load
-                    tot["refused"] += 1; reasons[TOO_WIDE_REASON] = reasons.get(TOO_WIDE_REASON, 0) + 1
-                    con.close(); case += 1
-                    if only_case is not None: break
-                    continue
                 failures.append((case, None, "ERROR", "building the database: " + traceback.format_exc(limit=8)))
                 tot["ERROR"] += 1; log(f"case {case}: ERROR building\n{failures[-1][3]}")
                 if stop_on_fail or only_case is not None: break

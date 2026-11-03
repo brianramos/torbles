@@ -44,6 +44,7 @@ run "typed columns, every engine and join form"  python3 tests/check_typed.py
 run "loaders: DDL, files, Frictionless, frames"   python3 tests/check_loaders.py
 run "automatic key design"                        python3 tests/check_keydesign.py
 run "save / load, integrity on load"              python3 tests/check_persist.py
+run "tables wider than a torble: parts, groups"   python3 tests/check_many_columns.py
 run "sums and group codes past 64 bits"           python3 tests/check_wide.py
 run "  ... with the row kernel on every tile"     env TORBLES_MM_ROWS=2 python3 tests/check_wide.py 20000
 run "  ... with plane popcounts only"             env TORBLES_MM_ROWS=0 TORBLES_FACTOR=0 python3 tests/check_wide.py 20000

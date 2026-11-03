@@ -58,6 +58,12 @@ engine queries. Each AND-term of WHERE and ON becomes one of three engine predic
 
 So every scalar function and predicate below runs on distinct values, never on rows, when it filters one table.
 
+A table wider than a torble (0.4.0) is read as one table. The columns the loader stored once per value of a
+determinant are a dimension's columns that the query never names: the planner joins that dimension through the
+determinant, a foreign key, as it does to read a foreign key's own value (a hidden join), so a predicate on them is a
+dimension filter and their GROUP BY and sums go through the join. The columns in row-aligned parts are the table's own:
+each engine query reads them through a view of the parts' planes (docs/ENGINE.md).
+
 The block then needs, per group, the columns its GROUP BY, residual predicates and non-polynomial aggregate arguments
 read: the *atoms*. The engine groups the passing fact rows by the atoms (the AND-popcount matrix product) and returns,
 per group, the row count and the exact sums of the *moment polynomials*. An aggregate whose argument is a polynomial in

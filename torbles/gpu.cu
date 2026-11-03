@@ -528,6 +528,7 @@ extern "C" void *gpu_open(const atable_t *t) {
     }
     h->dev = g; MMA_OK = 1; snprintf(MM_NOTE, sizeof MM_NOTE, ", emulated on the CPU"); return h;
 }
+static void *view_tail(handle_t *h) { h->dev = &h->host; return h; }
 /* the emulation's device memory is host memory, but its copies are copies: the kernels read them, not the caller's
  * arrays, so a stale copy gives the wrong answer here as it would on a GPU */
 static void *dev_copy(const void *host, size_t bytes) {
@@ -659,6 +660,14 @@ extern "C" void *gpu_open(const atable_t *t) {
     }
     CK(cudaDeviceSynchronize());
     CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, g, sizeof(gtable_t), cudaMemcpyHostToDevice));
+    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
+    CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
+    if (MMA_OK < 0) mma_selftest();
+    return h;
+}
+static void *view_tail(handle_t *h) {          /* a view's own device state (its planes are its sources') */
+    if (!NSM) { cudaDeviceProp prop; int dev = 0; cudaGetDevice(&dev); cudaGetDeviceProperties(&prop, dev); NSM = prop.multiProcessorCount; }
+    CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, &h->host, sizeof(gtable_t), cudaMemcpyHostToDevice));
     CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
     CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
     if (MMA_OK < 0) mma_selftest();
@@ -807,6 +816,24 @@ extern "C" int gpu_query_tagged(void *hv, qplan_t *q, const uint64_t *tags, doub
     return rc;
 }
 extern "C" int gpu_query(void *hv, qplan_t *q, double *ms) { return gpu_query_tagged(hv, q, NULL, ms); }
+/* A view (at_view on the device): a handle whose column i is column col[i] of handle hs[i], the handles' torbles
+ * row-aligned (the parts of a table wider than one torble). It reads their device planes (nothing is uploaded) and is
+ * closed before them (gpu_close frees only its own state). NULL: no column or more than MAXCOL, handles of different
+ * lengths, a column out of range, or no device memory. */
+extern "C" void *gpu_view(int k, void *const *hs, const int32_t *col) {
+    if (k < 1 || k > MAXCOL || !hs || !col || !hs[0]) return NULL;
+    handle_t *h = (handle_t *)calloc(1, sizeof *h);
+    if (!h) return NULL;
+    gtable_t *g = &h->host; const handle_t *h0 = (const handle_t *)hs[0];
+    g->n = h0->host.n; g->nw = h0->host.nw; g->k = k;
+    for (int i = 0; i < k; i++) {
+        const handle_t *s = (const handle_t *)hs[i]; int c = col[i];
+        if (!s || s->host.n != g->n || c < 0 || c >= s->host.k) { free(h); return NULL; }
+        g->width[i] = s->host.width[c]; g->msb[i] = s->host.msb[c];
+        for (int j = 0; j < 32; j++) g->P[i][j] = s->host.P[c][j];
+    }
+    return view_tail(h);
+}
 /* drop the copies of these tags (their arrays were freed, or their table released); returns how many were dropped */
 extern "C" int gpu_cache_evict(void *hv, const uint64_t *tags, int ntags) {
     handle_t *h = (handle_t *)hv; int k = 0, out = 0;

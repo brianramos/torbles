@@ -84,8 +84,10 @@ try:
     db8 = torbles.from_frames({"store": odd, "sales": sales}, primary_keys={"store": "store_id"}, foreign_keys={"sales.store_id": "store"})
     check(any("tags" in x for x in db8.notes) and "tags" not in db8["store"].cols, "an unsupported column type is skipped with a note")
     wide = pd.DataFrame({f"c{i}": rng.integers(0, 9, 10) for i in range(40)})
-    try: torbles.from_frames({"w": wide}); check(False, "too many columns refused")
-    except torbles.LoadError as e: check("columns=" in str(e), "more columns than a torble holds: refused, with the columns= hint")
+    dbx = torbles.from_frames({"w": wide}, groups=False)
+    check(dbx["w"].parts is not None and len(dbx["w"].parts) == 2 and
+          dbx.sql("SELECT sum(c0 + c39) FROM w").rows == [(int(wide.c0.sum() + wide.c39.sum()),)],
+          "more columns than a torble holds: loaded in row-aligned parts, read as one table")
     dbw = torbles.Database(); dbw.add_table("w", wide, columns=["c1", "c7"]); dbw.build()
     check(dbw["w"].cols == ["c1", "c7"], "columns= loads a subset")
 finally:

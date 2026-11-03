@@ -40,6 +40,47 @@ class LoadError(ValueError):
     pass
 
 
+def _physical(data, extend, refs):
+    """the torble columns of a table's columns, the hidden ones included: validity planes (in data), the flags and
+    high parts of the columns past 32 bits (two each), the references' bits (one column)"""
+    return len(data) + 2 * len(extend) + bool(refs)
+
+
+def fd_groups(data, nullable, candidates, n, sample=1 << 16):
+    """The columns each column determines: {determinant: (columns, its number of values)}. A column C is determined by
+    D when the rows with the same value of D have the same value of C, or are all NULL in C (codes and validity planes
+    compared: data holds the codes, nullable maps a column to its validity plane's name in data). Only the candidates
+    are considered, as determinants (never NULL, and with at most half as many values as rows: there is storage to
+    save) and as determined columns; a determinant is kept with two columns or more. A strided sample of the rows rules
+    out most pairs before the check on every row."""
+    if n < 4: return {}
+    step = max(1, n // sample)
+    def same(C, first, inv, rows):
+        v = data[C][rows]
+        if not np.array_equal(v[first][inv], v): return False
+        vc = nullable.get(C)
+        if vc is None: return True
+        f = data[vc][rows]
+        return np.array_equal(f[first][inv], f)
+    out = {}
+    for D in candidates:
+        if D in nullable: continue
+        rows = slice(0, n, step)
+        u, first, inv = np.unique(data[D][rows], return_index=True, return_inverse=True)
+        inv = np.asarray(inv).ravel()
+        if 2 * len(u) > len(inv): continue
+        deps = [C for C in candidates if C != D and same(C, first, inv, rows)]
+        if len(deps) < 2: continue
+        if step > 1:                                       # on every row
+            rows = slice(None)
+            u, first, inv = np.unique(data[D], return_index=True, return_inverse=True)
+            inv = np.asarray(inv).ravel()
+            if 2 * len(u) > n: continue
+            deps = [C for C in deps if same(C, first, inv, rows)]
+        if len(deps) >= 2: out[D] = (deps, len(u))
+    return out
+
+
 class RefCodec(ct.Codec):
     """a foreign key column: it stores surrogates, so it is joined, not compared or grouped on directly"""
     kind = "ref"; affine = None
@@ -89,10 +130,16 @@ class Database:
         return self
 
     # ------------------------------------------------------------------ build
-    def build(self, infer_keys=False, fill_nulls=None, keep_plain=False, threads=None, verbose=False, types=None):
+    def build(self, infer_keys=False, fill_nulls=None, keep_plain=False, threads=None, verbose=False, types=None, groups=True):
         """Read every added table, design the keys, build the torbles. Returns self.
         types: {"table.column": "SQL type"} loads a column as another type (e.g. a DOUBLE amount as DECIMAL(18, 2), to
-        sum it exactly); fill_nulls: {"table.column": value}; infer_keys: guess undeclared keys (reported in notes)."""
+        sum it exactly); fill_nulls: {"table.column": value}; infer_keys: guess undeclared keys (reported in notes).
+        A table wider than one torble (31 columns, the hidden ones included) is split. With groups, first the columns
+        that one column determines (every row with the same value of it has the same values of them) go to a dimension
+        of their own, stored once per value, that column becoming its foreign key: the groups whose dimensions are
+        smallest first (cheap to join), while the table is wider than a torble, for tables that no foreign key
+        references. The columns left over go to row-aligned parts (see algq.Table). Queries read either kind as
+        columns of the table."""
         t0 = time.perf_counter()
         if threads: algq.set_build_threads(threads); algq.set_threads(threads)
         con, names = self.con, list(self._add)
@@ -160,17 +207,23 @@ class Database:
                             v = self.con.execute(f"SELECT CAST({_q(c)} IS NOT NULL AS UINTEGER) AS v FROM {self._t(name)} ORDER BY rowid").fetchnumpy()["v"]
                             data[rc + "#v"] = np.ascontiguousarray(np.asarray(v), np.uint32); nullable[rc] = rc + "#v"; codecs[rc + "#v"] = ct.BoolCodec()
             if not data: raise LoadError(f"{name}: no column could be loaded")
-            ncols = len(data) + 2 * len(extend) + bool(refs)    # a column past 32 bits adds two (its flags, its high parts)
-            if ncols > algq.MAXCOL:
-                raise LoadError(f"{name}: {ncols} columns with the hidden ones (a validity plane per nullable column, two more "
-                                f"per column past 32 bits, one for the references); a torble holds {algq.MAXCOL} - "
-                                f"choose the columns to load with add_table(..., columns=[...])")
+            moved, made = {}, {}                       # column -> its determinant; determinant -> its dimension
+            if groups and name not in dims and _physical(data, extend, refs) > algq.MAXCOL:
+                cand = [c for c in data if "#" not in c and c not in fk and c != pk and c not in extend and c in codecs]
+                fds = fd_groups(data, nullable, cand, n)
+                for D in sorted(fds, key=lambda D: (fds[D][1], -len(fds[D][0]), cand.index(D))):   # smallest first
+                    if _physical(data, extend, refs) <= algq.MAXCOL or len(refs) >= 32: break   # (32 references' bits)
+                    deps = [C for C in fds[D][0] if C in data and C not in made]
+                    if D not in data or D in moved or len(deps) < 2: continue
+                    made[D] = self._group(name, D, deps, data, codecs, info, nullable, refs, designs, cols[name])
+                    moved.update({C: D for C in deps})
             cluster = next((c for c in list(fk) + [c for c in data if c not in fk]
                             if c not in extend and "#" not in c and c not in nullable and n > 1 and bool(np.all(data[c][1:] >= data[c][:-1]))), None)
-            t = Table(name, data, msb=tuple(fk), refs=refs or None, extend=extend or None, cluster=cluster)
+            t = Table(name, data, msb=tuple(fk) + tuple(made), refs=refs or None, extend=extend or None, cluster=cluster)
             t.codecs, t.pk, t.sqlname = codecs, pk, name
             t.nullable = nullable                       # column -> its validity column
-            t.col_order = [c for c in cols[name] if c in data]          # the declared order (SELECT *)
+            t.moved, t.groups = moved, made              # columns stored once per value of a determinant (_group)
+            t.col_order = [c for c in cols[name] if c in data or c in moved]     # the declared order (SELECT *)
             t.fk_nulls = {c: int(st["rows"] - st["nonnull"][c]) for c in fk}     # NULL references (never join)
             self.tables[name] = t
             if name in dims:
@@ -180,10 +233,46 @@ class Database:
             self.meta[name] = dict(rows=n, primary_key=pk, foreign_keys={c: f"{d}.{p}" for c, (d, p) in fk.items()},
                                    columns=info, cluster=cluster, design=_design_json(designs.get(name)),
                                    build_s=round(time.perf_counter() - tb, 3))
+            if made: self.meta[name]["groups"] = {D: dict(table=g, columns=[c for c, d in moved.items() if d == D]) for D, g in made.items()}
+            if t.parts is not None: self.meta[name]["parts"] = [list(p.cols) for p in t.parts]
             if verbose: print(f"  {name}: {n:,} rows, {len(data)} columns, {time.perf_counter() - tb:.2f} s", flush=True)
         self.build_s = time.perf_counter() - t0
         self._designs = designs
         return self
+
+    def _group(self, name, D, deps, data, codecs, info, nullable, refs, designs, types):
+        """Columns deps of table `name`, each determined by column D (fd_groups), go to a dimension of their own,
+        stored once per value of D in D's order and keyed by it (its key designed like any dimension's), and D becomes
+        the foreign key to it: its codes in the table become the dimension's surrogates. Every value of D has its row,
+        so every reference joins. Built from the table's codes (the same codecs). Returns the dimension's name."""
+        t0 = time.perf_counter()
+        u, first, inv = np.unique(data[D], return_index=True, return_inverse=True)
+        inv = np.asarray(inv).ravel()
+        g = f"{name}#{D}"
+        gdata, gcodecs, gnull = {D: u.astype(np.uint32)}, {D: codecs[D]}, {}
+        for C in deps:
+            gdata[C] = np.ascontiguousarray(data[C][first]); gcodecs[C] = codecs[C]
+            vc = nullable.get(C)
+            if vc is not None: gdata[vc] = np.ascontiguousarray(data[vc][first]); gcodecs[vc] = codecs[vc]; gnull[C] = vc
+        gt = Table(g, gdata, cluster=D)
+        gt.codecs, gt.pk, gt.sqlname, gt.nullable = gcodecs, D, g, gnull
+        gt.col_order, gt.fk_nulls, gt.generated = [D] + list(deps), {}, (name, D)
+        self.tables[g] = gt
+        des = designs[g] = self._design(g, gt, D, {}, len(u))
+        lut = des["s_of_row"] if des["kind"] == "derived" else np.arange(len(u) + 1, dtype=np.int64)
+        data[D] = np.ascontiguousarray(np.asarray(lut, np.int64)[inv], np.uint32)
+        refs[D] = (gt, des["surrogate"]) if des["surrogate"] is not None else gt
+        ginfo = {D: dict(info[D])}
+        ginfo.update({C: dict(info[C]) for C in deps})
+        codecs[D] = RefCodec(g, D); info[D] = dict(info[D], codec="ref", references=f"{g}.{D}")
+        for C in deps:
+            del data[C]; codecs.pop(C, None); info[C] = dict(info[C], stored_in=g)
+            vc = nullable.pop(C, None)
+            if vc is not None: del data[vc]; codecs.pop(vc, None)
+        self.meta[g] = dict(rows=len(u), primary_key=D, foreign_keys={}, columns=ginfo, cluster=D, design=_design_json(des),
+                            generated_for=name, build_s=round(time.perf_counter() - t0, 3))
+        self.notes.append(f"{name}: {', '.join(deps)} stored once per value of {D} ({len(u):,} values), in {g}")
+        return g
 
     def _t(self, name):
         """the SQL name to read a source table from"""
@@ -456,10 +545,13 @@ class Database:
         for name, m in self.meta.items():
             t = self.tables[name]
             out.append(f"{name}: {m['rows']:,} rows" + (f", primary key {m['primary_key']}" if m["primary_key"] else "")
-                       + (f", clustered by {m['cluster']}" if m.get("cluster") else ""))
+                       + (f", clustered by {m['cluster']}" if m.get("cluster") else "")
+                       + (f", {len(t.parts)} row-aligned parts of {', '.join(str(len(p.cols)) for p in t.parts)} columns" if t.parts else "")
+                       + (f", made of {m['generated_for']}'s columns" if m.get("generated_for") else ""))
             for c, i in m["columns"].items():
                 w = t.width(c) if c in t.cols else 0
                 extra = f" -> {i['references']}" if i.get("references") else ""
+                if i.get("stored_in"): extra = f" stored once per {t.moved[c]}, in {i['stored_in']}"; w = self.tables[i["stored_in"]].width(c)
                 out.append(f"    {c:28s} {i['type']:16s} {i['codec']:9s} {w:2d} bits{extra}")
             d = m.get("design")
             if d:
@@ -770,7 +862,8 @@ def save(db, path):
     sgs = {}
     for name, t in db.tables.items():
         base = os.path.join(path, _fname(name))
-        if algq.lib.at_save(t.at, (base + ".tbl").encode()) != 0: raise OSError(f"cannot write {base}.tbl")
+        for suf, tb in ([("", t)] if t.parts is None else [(f".part{i}", p) for i, p in enumerate(t.parts)]):
+            if algq.lib.at_save(tb.at, (base + suf + ".tbl").encode()) != 0: raise OSError(f"cannot write {base}{suf}.tbl")
         arrays = {}
         side = {}
         for c, sc in getattr(t, "sidecars", {}).items():
@@ -809,12 +902,15 @@ def save(db, path):
             else: np.save(base + "." + _fname(k) + ".npy", v)
         m = db.meta.get(name, {})
         man["tables"][name] = dict(
-            file=_fname(name) + ".tbl", rows=int(t.n), cols=t.cols, msb=sorted(t.msb_cols), cluster=t.cluster,
+            file=_fname(name) + ".tbl" if t.parts is None else None, rows=int(t.n), cols=t.cols, msb=sorted(t.msb_cols), cluster=t.cluster,
+            parts=None if t.parts is None else [dict(file=_fname(name) + f".part{i}.tbl", cols=p.cols, msb=sorted(p.msb_cols))
+                                                for i, p in enumerate(t.parts)],
             cluster_breaks=getattr(t, "cluster_breaks", None), cluster_sorted=getattr(t, "cluster_sorted", None),
             colmax={c: int(t.colmax(c)) for c in t.cols if c in t._colmax or c in t.data},
             wmax=getattr(t, "_wmax", {}), wide={c: list(v) for c, v in getattr(t, "wide", {}).items()}, sidecars=side,
             codecs=codecs, refs=refs, pk=getattr(t, "pk", None), orphans=getattr(t, "orphans", {}),
             nullable=getattr(t, "nullable", {}), fk_nulls=getattr(t, "fk_nulls", {}), col_order=getattr(t, "col_order", None),
+            moved=getattr(t, "moved", {}), groups=getattr(t, "groups", {}), generated=getattr(t, "generated", None),
             used_all=bool(t.used.all()), meta=m, dense_dim=any(t is ot._refdim.get(f) for ot in db.tables.values() for f in getattr(ot, "_refdim", {})))
         man["tables"][name]["meta"] = json.loads(json.dumps(m, default=str))
     with open(os.path.join(path, "manifest.json.tmp"), "w") as f: json.dump(man, f, indent=1, default=str)
@@ -844,13 +940,28 @@ def _load_tables(db, path, man, validate):
     err = ctypes.c_int(0)
     for name in man["order"]:
         m = man["tables"][name]; base = os.path.join(path, _fname(name))
-        at = algq.lib.at_load(os.path.join(path, m["file"]).encode(), ctypes.byref(err))
-        if not at: raise LoadError(f"{name}: cannot load {m['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
-                                   3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
-        t = Table.__new__(Table)
-        t.name = name; t._own(at)                  # the mapping is the table's from here on (unmapped with it)
+        t = Table.__new__(Table); t.name = name
+        parts = []                                 # a table wider than one torble: its parts, one file each
+        try:
+            for i, pm in enumerate(m.get("parts") or [dict(file=m["file"], cols=m["cols"], msb=m["msb"])]):
+                at = algq.lib.at_load(os.path.join(path, pm["file"]).encode(), ctypes.byref(err))
+                if not at: raise LoadError(f"{name}: cannot load {pm['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
+                                           3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
+                h = t if not m.get("parts") else Table.__new__(Table)
+                if h is not t: h.name = f"{name}#{i}"
+                h._own(at)                         # the mapping is the table's from here on (unmapped with it)
+                h.n, h.cols, h.msb_cols, h._vflag = int(m["rows"]), list(pm["cols"]), set(pm["msb"]), {}
+                parts.append(h)
+        except BaseException:
+            for h in parts: h.close()
+            raise
+        if m.get("parts"):
+            for h in parts:
+                h.cluster, h.data, h._colmax, h._wmax, h.wide, h._decoded, h._used_ids = None, {}, {}, {}, {}, {}, None
+                h.sidecars, h.codecs, h.refbit, h.surr, h._refdim, h.nullable = {}, {}, {}, {}, {}, {}
+            t._set_parts(parts)
         db.tables[name] = t                        # (and a failed load closes it with the others)
-        t.n, t.cols = int(m["rows"]), list(m["cols"])
+        t.n, t.cols, t._vflag = int(m["rows"]), list(m["cols"]), {}
         t.msb_cols = set(m["msb"]); t.cluster = m["cluster"]; t.data = {}
         if m["cluster"] is not None: t.cluster_breaks, t.cluster_sorted = m["cluster_breaks"], m["cluster_sorted"]
         t._colmax = {c: int(v) for c, v in m["colmax"].items()}; t._wmax = {c: int(v) for c, v in m["wmax"].items()}
@@ -860,15 +971,18 @@ def _load_tables(db, path, man, validate):
         else: t.used = np.unpackbits(np.load(base + ".used.npy"), bitorder="little")[:t.n].astype(bool)
         bits = np.zeros(((t.n + 63) // 64 + 1) * 64, np.uint8); bits[:t.n] = t.used
         t.used_bm = np.packbits(bits, bitorder="little").view(np.uint64)
+        for h in (t.parts or ()): h.used, h.used_bm = t.used, t.used_bm
         t.sidecars = {}
         for c, sc in m["sidecars"].items():
             side = algq.lib.at_load((base + "." + _fname(c) + ".side.tbl").encode(), ctypes.byref(err))
             if not side: raise LoadError(f"{name}.{c}: cannot load its sidecar")
-            t._own_side(side)
+            h = t._part_of(c)                      # the torble that holds the column: the table or one of its parts
+            h._own_side(side)
             rank = np.load(base + "." + _fname(f"rank:{c}") + ".npy")
             flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
-            algq.lib.at_set_virtual(t.at, t.cols.index(c), t.cols.index(flagcol), side, rank.ctypes.data)
-            t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
+            algq.lib.at_set_virtual(h.at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
+            h.sidecars[c] = t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
+            h._vflag[c] = t._vflag[c] = flagcol
         # codecs
         t.codecs = {}
         for c, j in m["codecs"].items():
@@ -903,9 +1017,12 @@ def _load_tables(db, path, man, validate):
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}
         t.nullable = dict(m.get("nullable", {})); t.fk_nulls = {k: int(v) for k, v in m.get("fk_nulls", {}).items()}
         if m.get("col_order"): t.col_order = list(m["col_order"])
+        t.moved, t.groups = dict(m.get("moved") or {}), dict(m.get("groups") or {})
+        if m.get("generated"): t.generated = tuple(m["generated"])
         if validate:                              # faces first: nothing is decoded from unchecked planes
             rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
-            for part, at_ in [("", t.at)] + [(c, sc["side"]) for c, sc in t.sidecars.items()]:
+            for part, at_ in ([("", t.at)] if t.parts is None else [(f"part{i}", h.at) for i, h in enumerate(t.parts)]) \
+                             + [(c, sc["side"]) for c, sc in t.sidecars.items()]:
                 nbad = algq.lib.at_validate(at_, None, 0)
                 fixed = algq.lib.at_repair(at_) if nbad else 0
                 left = algq.lib.at_validate(at_, None, 0) if nbad else 0

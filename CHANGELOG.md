@@ -1,5 +1,66 @@
 # Changelog
 
+## 0.4.0 (unreleased), alpha
+
+Tables wider than a torble. A torble holds 31 columns, and 0.3.0 refused a table that needed more once its hidden
+columns were counted. 0.4.0 loads a table of any width and keeps it in several torbles, joined by the same algebraic
+substitution as a star join, in two ways.
+
+Loading
+
+The columns that one column determines go to a dimension of their own. When every row with the same value of a column
+has the same values of other columns (customer attributes repeated on every sale, say), the loader finds the group on
+the loaded codes and, for a table that no foreign key references, moves it into a dimension `table#column` while the
+table is still wider than a torble, the groups with the fewest values first: one row per value, its key designed like
+any dimension's, and the column itself becomes the foreign key, storing the surrogate. The group's columns are then
+stored once per value instead of once per row. The determinant must never be NULL and must have at most half as many
+values as rows; columns past 32 bits stay in the table. `build(groups=False)` turns this off.
+
+What is still wider goes to row-aligned parts: torbles of at most 31 columns over the same rows in the same order (a
+column with its hidden ones in one part; the references' bits, the foreign keys and the clustering column in the
+first). The parts join on the row id, whose planes are fixed patterns, so no row-id column is stored and the
+substitution is the identity: a plan reads a side part's planes at the same 64-row word as the first part's. A table in
+parts is saved as one file per part, and each part's faces are checked on load.
+
+Engine API
+
+`algq.Table` holds any number of columns. A plan is compiled against a view of the columns it reads: a torble header
+whose columns point at the parts' planes (`at_view` in the engine, `gpu_view` on the device over the parts' uploaded
+planes, a plain-baseline table over its columns), so filters, sums and GROUP BY across parts run in one kernel pass;
+the views are cached per table. A plan that would read more than 31 columns evaluates its terms on the table in groups
+that one view holds, as row bitmaps ANDed word for word, and runs the rest with the result as its delta plane: the
+semi-join lookup through the row id, whose lookup is the identity. A table in parts has no single torble (`Table.at`
+refuses and names views); validation, repair and fault injection cover every part. A column the loader stored once per
+value of its determinant is that dimension's column (`t.c_city`), and a query joins the dimension through the
+determinant by itself. An AND-term that mixes the fact's columns with a joined dimension's (an OR across them) is now
+compiled: the dimension's part becomes its polynomial on the foreign key's planes, one word on the filter program's
+stack. Before, the engine API refused every term on more than one table.
+
+SQL
+
+A table wider than a torble reads as one table. The planner joins a moved column's dimension through its determinant
+as it already did to read a foreign key's own value (a hidden join), so a predicate on the column is a dimension filter
+and its GROUP BY and sums go through the join; the columns in parts are read through views.
+
+Tests and fuzzing
+
+`tests/check_many_columns.py` compares tables of 40 to 80 columns, with groups and parts, against numpy and DuckDB on
+the CPU engine, the GPU executor and the plain baseline, before and after save / load, and the detection of determined
+columns on its own. Both fuzzers generate tables wider than a torble (12% of facts and 5% of dimensions), a third of the
+extra columns in groups that a key column determines, some broken on one row, some keys NULL; the fuzzers no longer
+count a too-wide table as a refusal.
+
+Native code
+
+`alg.c` gains `at_view` and `at_view_free`, `gpu.cu` gains `gpu_view`. `torble.h` is unchanged.
+
+Limits
+
+One kernel pass reads at most 31 columns of a table, which a query reaches only through its GROUP BY keys, measure and
+joins together (a filter on more columns is split). The mathematics module and the relationship catalog work on tables
+of one torble. A table that a foreign key references keeps its determined columns (moving them would make a snowflake,
+which the star planner does not join); it is split into parts only.
+
 ## 0.3.0 (2026-11-02), alpha
 
 SQL on the bit planes, an inventory of exact mathematical query families, and the fixes of an independent release

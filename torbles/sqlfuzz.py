@@ -334,6 +334,7 @@ def make_case(cs):
     r = random.Random(cs + 31)
     for name, (cols, pk, fks) in tables.items():
         for c in cols:
+            if "_g" in c.name: continue                          # a group of columns that a key determines: as made
             if c.name == pk or c.name in fks or r.random() > 0.4: continue
             frac = r.choice([0.02, 0.1, 0.5, 1.0])
             c.values = [None if r.random() < frac else v for v in c.values]
@@ -554,11 +555,6 @@ def run(seed, cases, minutes, queries, verbose, only_case=None, only_query=None,
             con = fuzz.fuzz_connect(duckdb)
             try: db, _ = fuzz.build_db(tables, cs, con)
             except Exception as e:
-                if fuzz.TOO_WIDE in str(e):                   # more columns than a torble holds: refused at load
-                    tot["refused"] += 1; reasons[fuzz.TOO_WIDE_REASON] = reasons.get(fuzz.TOO_WIDE_REASON, 0) + 1
-                    con.close(); case += 1
-                    if only_case is not None: break
-                    continue
                 tot["ERROR"] += 1; failures.append((case, None, "ERROR", traceback.format_exc(limit=6)))
                 log(f"case {case}: ERROR building\n{failures[-1][3]}")
                 if stop_on_fail or only_case is not None: break

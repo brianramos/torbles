@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""torbles 0.3.0: algebraic queries over torbles.
+"""torbles 0.4.0: algebraic queries over torbles.
 
 Queries are built as algebraic expressions (operator overloading), compiled into:
   - Boolean polynomials over bit planes (filters), one program per table,
@@ -122,7 +122,7 @@ def sum_width(measure, fact):
                             "torbles refuses rather than risk a wrong answer")
     return int(bound >= 1 << 63)
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 _libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__).with_name("libalg.so"))   # (an instrumented build: tests/sanitize_math.sh)
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
@@ -144,6 +144,9 @@ for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_cre
 lib.at_free.restype, lib.at_free.argtypes = None, [vp]
 lib.at_release.restype, lib.at_release.argtypes = None, [vp]
 lib.pt_free.restype, lib.pt_free.argtypes = None, [vp]
+# views of the parts of a table wider than one torble (Table.view): a header over the parts' planes, freed alone
+lib.at_view.restype, lib.at_view.argtypes = vp, [ctypes.c_int, vp, vp]
+lib.at_view_free.restype, lib.at_view_free.argtypes = None, [vp]
 
 # optional GPU executor (gpu.cu): libgpu.so (CUDA) or, for testing, libgpu_emu.so (the same kernels run on the CPU)
 _libg = None
@@ -157,6 +160,7 @@ def gpu_lib():
         if not hasattr(g, "gpu_query_tagged"):
             raise RuntimeError(f"{name} is older than this torbles (no gpu_query_tagged): rebuild it (make, make gpu)")
         g.gpu_open.restype = vp; g.gpu_open.argtypes = [vp]
+        if hasattr(g, "gpu_view"): g.gpu_view.restype = vp; g.gpu_view.argtypes = [ctypes.c_int, vp, vp]
         g.gpu_query.restype = ctypes.c_int; g.gpu_query.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.POINTER(ctypes.c_double)]
         u64p = ctypes.POINTER(ctypes.c_uint64)       # the device copies of host arrays (see _gpu_tag)
         g.gpu_query_tagged.restype = ctypes.c_int; g.gpu_query_tagged.argtypes = [vp, ctypes.POINTER(QPlan), u64p, ctypes.POINTER(ctypes.c_double)]
@@ -260,7 +264,8 @@ def _qc(col):
     """a column in the source's SQL; a validity plane is not a source column: it is the test that its column is not NULL"""
     base = _valid_base(col.table, col.name)
     if base is not None: return f"({_qc(Col(col.table, base))} IS NOT NULL)"
-    return f"{_ident(col.table.name)}.{_ident(col.name)}"
+    g = getattr(col.table, "generated", None)       # a dimension the loader made of a table's columns: the table's in the source
+    return f"{_ident(g[0] if g else col.table.name)}.{_ident(col.name)}"
 class Col(Expr):
     def __init__(self, table, name): self.table, self.name = table, name
     def codec(self): return getattr(self.table, "codecs", {}).get(self.name)
@@ -342,6 +347,25 @@ class RefOk(Pred):
     """the fact rows whose foreign key fk has (ok=True) or has not (ok=False) a matching dimension row: one plane, the
     fk's bit of the hidden _refok column"""
     def __init__(self, table, fk, ok=True, sql=None): self.table, self.fk, self.ok, self.sql = table, fk, ok, sql
+class _OnKey(Pred):
+    """A joined dimension's predicate p seen from the fact: [the row that foreign key fk references passes p]. It is the
+    dimension filter's polynomial on the fk's planes (JoinPoly: the join is the substitution pk := fk), one word on the
+    filter program's stack like any comparison, so it can sit inside any Boolean term of the fact's filter (Query.
+    _on_keys). Made while a plan is compiled; past the program's budget: refused."""
+    def __init__(self, fact, fk, dim, p, engine):
+        self.fact, self.fk, self.dim, self.p, self.engine, self._planned = fact, fk, dim, p, engine, None
+    def program(self, table):
+        if self._planned is None:
+            bm, _ = _dim_rows(self.dim, [self.p], "plain" if self.engine == "plain" else "alg")
+            poly = JoinPoly(self.fact.space(self.fk, self.dim), pred_cols(self.p), bm, self.fact.width(self.fk))
+            planned = poly.plan("auto") or poly.plan("factored") or poly.plan("expanded")
+            if planned is None: raise ValueError(f"filter program too long: a term on {self.dim.name} inside an OR with "
+                                                 f"{self.fact.name}'s columns has no short polynomial on {self.fk}'s planes")
+            self._planned = (poly, planned)
+        poly, planned = self._planned
+        return poly.program(table.idx(self.fk), planned)
+
+
 class CodeSet(Pred):
     """a filter on one fact column given as the set of its codes that pass (any predicate of that column, evaluated on
     the codes it can hold): a semi-join of the column against a bitmap over its code domain. Only as an AND-term."""
@@ -792,6 +816,7 @@ class JoinPoly:
         return kind, nf + nc
 
 def pred_cols(p):
+    if isinstance(p, _OnKey): return {p.fk}
     if isinstance(p, (Cmp, Between, CodeSet)): return {p.col.name}
     if isinstance(p, RowMask): return set(p.cols)
     if isinstance(p, BoolOp): return pred_cols(p.l) | pred_cols(p.r)
@@ -799,6 +824,7 @@ def pred_cols(p):
     return set()
 
 def tables_of(p):
+    if isinstance(p, _OnKey): return {p.fact}
     if isinstance(p, (Cmp, Between, CodeSet)): return {p.col.table}
     if isinstance(p, RefOk): return {p.table}
     if isinstance(p, RowMask): return {p.table}
@@ -918,7 +944,186 @@ class _ClosedColumns(dict):
     def __missing__(self, c): raise TableClosedError(f"table {self.name!r} is closed: column {c!r} is released")
 
 
+VIEW_CACHE = 16                         # views kept per table wider than one torble (Table.view)
+
+
+def _layout(cols, first=()):
+    """the parts of a table wider than one torble: lists of at most MAXCOL columns, in order, each column with its
+    hidden ones (a name c#... goes with c: validity plane, flags and high parts of a self-extending column, a foreign
+    key's raw values), the columns of `first` and theirs in the first part"""
+    fam = {}
+    for c in cols: fam.setdefault(c.split("#")[0], []).append(c)
+    roots = list(fam)
+    pri = [r for r in roots if any(x in first for x in fam[r])]
+    parts, cur = [], []
+    for r in pri + [r for r in roots if r not in pri]:
+        if len(cur) + len(fam[r]) > MAXCOL: parts.append(cur); cur = []
+        cur = cur + fam[r]
+    if cur: parts.append(cur)
+    return parts
+
+
+class _TooWide(Exception):
+    """a plan would read more than MAXCOL columns of a table wider than one torble"""
+
+
+def _release_view(s, at_view_free=lib.at_view_free, pt_free=lib.pt_free, live=_GPU_LIVE, lock=_GPU_LOCK):
+    """free a view's native state: its GPU handle (its device planes are its parts'), its plain baseline's table, its
+    header. The functions are bound here, for a release at interpreter exit."""
+    with lock:
+        live.discard(s)
+        gpu, s.gpu = s.gpu, None
+        if gpu: s.glib.gpu_close(gpu)
+    pt, s.pt = s.pt, None
+    if pt: pt_free(pt)
+    at, s.at = s.at, None
+    if at: at_view_free(at)
+
+
+class _View:
+    """Columns of a table wider than one torble, as one torble for a plan (Table.view): a header whose columns are the
+    parts' own planes (at_view), so that the kernels read a side part's planes at the same 64-row word as the first
+    part's; on the GPU a handle over the parts' device planes (gpu_view), and for the plain baseline a table over the
+    plain columns. Nothing is copied. Its native state is freed with the last reference to it, or when the table is
+    closed (release)."""
+    _relationships = None
+    def __init__(self, base, cols):
+        self.base, self.name, self.n, self.cols = base, base.name, base.n, tuple(cols)
+        self._ix = {c: i for i, c in enumerate(self.cols)}
+        if len(self._ix) != len(self.cols) or not 0 < len(self.cols) <= MAXCOL:
+            raise ValueError(f"{base.name}: a view takes 1 to {MAXCOL} distinct columns, not {list(cols)}")
+        self._parts = [base._part_of(c) for c in self.cols]
+        k = len(self.cols)
+        self._col = (ctypes.c_int32 * k)(*[p.idx(c) for p, c in zip(self._parts, self.cols)])
+        s = self._s = _Storage()
+        s.at = lib.at_view(k, (ctypes.c_void_p * k)(*[p.at for p in self._parts]), self._col)
+        if not s.at: raise ValueError(f"{base.name}: no view of {list(cols)} (a self-extending column needs its flags)")
+        self._fin = weakref.finalize(self, _release_view, s)
+        self._fin.atexit = False
+        self._keep = None
+    def release(self): self._fin()
+    def _open(self):
+        self.base._storage()                           # the table closed: TableClosedError
+        if self._s.at is None: raise TableClosedError(f"table {self.name!r} is closed: its native storage has been released")
+        return self._s
+    @property
+    def at(self): return self._open().at
+    @property
+    def closed(self): return self._s.at is None or self.base.closed
+    def idx(self, c): return self._ix[c]
+    def width(self, c): return self.base.width(c)
+    def plain_handle(self):
+        s = self._open()
+        if s.pt is None:
+            data = self.base.data
+            if any(c not in data for c in self.cols):
+                raise RuntimeError(f"engine 'plain' is not available for {self.name}: build the database with keep_plain=True")
+            self._keep = [data[c] for c in self.cols]          # the plain table points at them
+            k = len(self.cols)
+            s.pt = lib.pt_create(self.n, k, (ctypes.c_void_p * k)(*[a.ctypes.data for a in self._keep]))
+            if not s.pt: raise MemoryError(f"{self.name}: the plain baseline's view could not be allocated")
+        return s.pt
+    def gpu_handle(self):
+        s = self._open()
+        if s.gpu is None:
+            g = gpu_lib()
+            if not hasattr(g, "gpu_view"): raise RuntimeError("the GPU library is older than this torbles (no gpu_view): rebuild it (make, make gpu)")
+            k = len(self.cols)
+            hs = (ctypes.c_void_p * k)(*[p.gpu_handle() for p in self._parts])
+            with _GPU_LOCK:
+                h = g.gpu_view(k, hs, self._col)
+                if not h: raise RuntimeError("GPU view failed")
+                s.gpu, s.glib = h, g; _GPU_LIVE.add(s)
+        return s.gpu
+
+
+class _ViewPlan:
+    """The columns one plan reads from a table wider than one torble, numbered in the order the plan compiler asks for
+    them (idx), a self-extending column's flag column with it: the plan is compiled against these numbers, and view()
+    is the torble it runs on. Past MAXCOL columns: _TooWide. Everything else is the table's."""
+    def __init__(self, base): self.base, self.cols, self._ix, self._v = base, [], {}, None
+    def idx(self, c):
+        i = self._ix.get(c)
+        if i is not None: return i
+        if self._v is not None: raise RuntimeError(f"{self.base.name}.{c}: asked for after the plan's view was made")
+        need = [c]
+        fc = self.base._vflag_of(c)
+        if fc is not None and fc not in self._ix: need.append(fc)
+        for x in need: self.base._part_of(x)
+        if len(self.cols) + len(need) > MAXCOL:
+            raise _TooWide(f"{self.base.name}: one plan would read more than {MAXCOL} of its columns")
+        for x in need: self._ix[x] = len(self.cols); self.cols.append(x)
+        return self._ix[c]
+    def __getattr__(self, k):
+        if k.startswith("__"): raise AttributeError(k)
+        return getattr(self.base, k)
+    def view(self):
+        if self._v is None:
+            if not self.cols: self.idx(self.base.cols[0])       # a plan that reads no column: any one (its rows)
+            self._v = self.base.view(self.cols)
+        return self._v
+
+
+def _plan_table(t):
+    """what a plan on table t is compiled against: t, or a _ViewPlan when t is wider than one torble"""
+    return t if t.parts is None else _ViewPlan(t)
+
+
+def _run_on(tv):
+    """the torble a plan compiled against tv (_plan_table) runs on"""
+    return tv.view() if isinstance(tv, _ViewPlan) else tv
+
+
+def _and_all(terms):
+    out = None
+    for c in terms: out = c if out is None else BoolOp("AND", out, c)
+    return out
+
+
+def _term_groups(t, terms):
+    """AND-terms on table t (wider than one torble) in groups whose columns one view holds, in order"""
+    groups = []
+    for c in terms:
+        r = _ViewPlan(t)
+        try:
+            if isinstance(c, CodeSet): r.idx(c.col.name)
+            else: compile_pred(c, r, [])
+        except _TooWide: raise ValueError(f"{t.name}: one term reads more than {MAXCOL} of its columns") from None
+        cols = set(r.cols)
+        if groups and len(groups[-1][0] | cols) <= MAXCOL: groups[-1][0].update(cols); groups[-1][1].append(c)
+        else: groups.append([cols, [c]])
+    return [g for _, g in groups]
+
+
+def _dim_rows(t, preds, engine):
+    """the rows of table t (a joined dimension, a range join's table) in use that pass the AND of preds (engine
+    predicates on its columns): (bitmap, count). A table wider than one torble: each group of terms that one view holds
+    on its view, the bitmaps ANDed word for word (the parts have the same rows)"""
+    bm = np.zeros((t.n + 63) // 64 + 1, dtype=np.uint64)
+    if t.parts is None: groups = [(t, preds)]
+    else:
+        groups = [(_ViewPlan(t), g) for g in _term_groups(t, preds)]
+        if not groups:
+            bm[:] = t.used_bm[:len(bm)]
+            return bm, int(t.used.sum())
+    cnt = 0
+    for i, (tv, g) in enumerate(groups):
+        dp = []
+        for j, c in enumerate(g):
+            compile_pred(c, tv, dp)
+            if j: dp.append(PInstr(P["AND"], 0, 0, 0))
+        arr = (PInstr * len(dp))(*dp)
+        out = bm if i == 0 else np.zeros_like(bm)
+        tt = _run_on(tv)
+        if engine != "plain": cnt = lib.at_filter_bitmap_masked(tt.at, arr, len(dp), out.ctypes.data, t.used_bm.ctypes.data)
+        else: cnt = lib.pt_filter_bitmap(tt.plain_handle(), arr, len(dp), out.ctypes.data); out[:len(t.used_bm)] &= t.used_bm[:len(out)]
+        if i: bm &= out
+    if len(groups) > 1: cnt = int(np.unpackbits(bm.view(np.uint8)).sum())
+    return bm, cnt
+
+
 class Table:
+    parts = None                       # a table wider than one torble: its row-aligned torbles (see _build_parts)
     def __init__(self, name, columns, msb=(), used=None, refs=None, cluster=None, extend=None, virtual=None):
         """msb: columns stored most-significant-bit first (hierarchical foreign keys);
         used: for a dimension indexed by hierarchical id, which ids exist;
@@ -982,8 +1187,6 @@ class Table:
             self.data["_refok"] = ok
             self.orphans = {fk: int(((ok >> b) & 1 == 0).sum()) for fk, b in self.refbit.items()}
         self.cols = list(self.data)
-        if len(self.cols) > MAXCOL:
-            raise ValueError(f"{name}: {len(self.cols)} columns (hidden ones included); a torble holds at most {MAXCOL}")
         # physical-order hint (e.g. facts arrive in time order). Only speed depends on it: GROUP BY on this column
         # splits each 64-row word by key, which takes one step per distinct key present in the word.
         self.cluster = cluster
@@ -996,6 +1199,10 @@ class Table:
         self._used_ids = None                          # ids in use, computed when first needed (dimensions)
         bits = np.zeros(((self.n + 63) // 64 + 1) * 64, np.uint8); bits[:self.n] = self.used
         self.used_bm = np.packbits(bits, bitorder='little').view(np.uint64)   # ids in use, as a bitmap
+        self._vflag = {c: fc for c, (fc, _, _) in virtual.items()}    # a virtual column's flag column
+        self._decoded = {}; self._colmax = {}
+        if len(self.cols) > MAXCOL:                    # wider than one torble: row-aligned parts (_build_parts)
+            self._build_parts(virtual, msb); return
         zeros = np.zeros(self.n, np.uint32) if virtual else None    # virtual columns keep no planes of their own
         aptrs = (ctypes.c_void_p * len(self.cols))(*[(zeros if c in virtual else self.data[c]).ctypes.data for c in self.cols])
         ptrs = (ctypes.c_void_p * len(self.cols))(*[self.data[c].ctypes.data for c in self.cols])
@@ -1012,7 +1219,52 @@ class Table:
             lib.at_set_virtual(self.at, self.idx(c), self.idx(fc), side, rank.ctypes.data)
             self.sidecars[c] = dict(side=side, rank=rank, rows=len(compact), body=body)
         del zeros
-        self._decoded = {}; self._colmax = {}
+    # ---- a table wider than one torble
+    # Its columns are kept in parts: row-aligned torbles of at most MAXCOL columns each (the same rows in the same
+    # order), each an ordinary Table (no keys of its own). A plan reads at most MAXCOL of the columns: it is compiled
+    # against a view of them (_ViewPlan, view): a header whose columns are the parts' own planes, so that a kernel reads
+    # a side part's planes at the same 64-row word as the first part's. The parts join on the row id, and that join is
+    # the identity substitution: no row-id column is stored, nothing is copied. The table's keys (references, their
+    # _refok bits, clustering) stay its own; the columns that need each other share a part.
+    def _build_parts(self, virtual, msb):
+        first = ["_refok"] + list(getattr(self, "refbit", {})) + ([self.cluster] if self.cluster is not None else [])
+        parts = []
+        for i, cols in enumerate(_layout(self.cols, first)):
+            vc = {c: (virtual[c][0], virtual[c][2]) for c in cols if c in virtual}
+            parts.append(Table(f"{self.name}#{i}", {c: self.data[c] for c in cols}, msb=[c for c in msb if c in cols],
+                               used=self.used, virtual=vc or None))
+        self._set_parts(parts)
+    def _set_parts(self, parts):
+        import collections
+        self.parts = list(parts)
+        self._part = {c: p for p in self.parts for c in p.cols}
+        self.__dict__["_native"] = self.parts[0]._native       # open or closed: the parts close together
+        self.sidecars = {c: sc for p in self.parts for c, sc in p.sidecars.items()}
+        self._views, self._view_lock, self._live_views = collections.OrderedDict(), _threading.Lock(), weakref.WeakSet()
+    def _spans(self):
+        return (f"table {self.name!r} has {len(self.cols)} columns in {len(self.parts)} torbles: its columns are read "
+                f"through view(columns), a torble of at most {MAXCOL} of them")
+    def _part_of(self, c):
+        """the torble that holds column c: the table itself, or one of its parts"""
+        if self.parts is None: return self
+        p = self._part.get(c)
+        if p is None: raise KeyError(f"{self.name} has no column {c!r}")
+        return p
+    def _vflag_of(self, c): return getattr(self, "_vflag", {}).get(c)
+    def view(self, cols):
+        """columns of a table wider than one torble as one torble of at most MAXCOL columns (in this order), to run a
+        plan on (cached: the same columns give the same view)"""
+        if self.parts is None: raise TypeError(f"{self.name} is one torble: query it directly")
+        key = tuple(cols)
+        with self._view_lock:
+            v = self._views.get(key)
+            if v is not None: self._views.move_to_end(key); return v
+        self._storage()
+        v = _View(self, key)
+        with self._view_lock:
+            self._views[key] = v; self._live_views.add(v)
+            while len(self._views) > VIEW_CACHE: self._views.popitem(last=False)
+        return v
     # ---- ownership and release (see _Native)
     def _own(self, at, pt=None):
         """this new Table takes the torble at (and the plain baseline's table pt): from here on they are freed with it"""
@@ -1034,10 +1286,12 @@ class Table:
     @property
     def at(self):
         """the native torble (TableClosedError once the table is closed)"""
+        if self.parts is not None: raise TypeError(self._spans())
         return self._storage().at
     @property
     def pt(self):
         """the plain baseline's native column table, or None (dropped: drop_plain; loaded tables have none)"""
+        if self.parts is not None: raise TypeError(self._spans())
         return self._storage().pt
     @property
     def closed(self):
@@ -1053,6 +1307,13 @@ class Table:
         close(), everything is freed then. Not while another thread is running a query on the table."""
         nat = self.__dict__.get("_native")
         if nat is None: return
+        if self.parts is not None:                     # its views first (they point into the parts), then the parts
+            for v in list(self._live_views): v.release()
+            with self._view_lock: self._views.clear()
+            for p in self.parts: p.close()
+            self.sidecars, self._decoded, self.data = {}, {}, _ClosedColumns(self.__dict__.get("name", "?"))
+            for a in ("_ranked", "_deltas"): self.__dict__.pop(a, None)
+            return
         catalog = self.__dict__.get("_relationships")
         if catalog is not None: catalog.close()        # the table's own catalog (it detaches itself)
         if nat.s.at is not None: _release(nat.s, final=False)
@@ -1064,17 +1325,32 @@ class Table:
         return self
     def __getattr__(self, k):
         if k in ("cols", "data") or k.startswith("_"): raise AttributeError(k)
+        g = self._grouped(k)
+        if g is not None: return g
         if k in self.cols: return Col(self, k)
         raise AttributeError(k)
     def __getitem__(self, k):
         """a column by name (for names that are not Python identifiers: t["Région"])"""
+        g = self._grouped(k)
+        if g is not None: return g
         if k in self.cols: return Col(self, k)
         raise KeyError(f"{self.name} has no column {k!r}")
-    def idx(self, c): return self.cols.index(c)
-    def width(self, c): return lib.at_width(self.at, self.idx(c))
+    def _grouped(self, k):
+        """a column the loader stored once per value of a determinant (Database.build, groups), or that determinant:
+        the column of their dimension, which a query joins through the determinant by itself (Query._autojoin)"""
+        d = self.__dict__
+        D = (d.get("moved") or {}).get(k) or (k if k in (d.get("groups") or {}) else None)
+        return None if D is None else Col(d["_refdim"][D], k)
+    def idx(self, c):
+        if self.parts is not None: raise TypeError(self._spans())
+        return self.cols.index(c)
+    def width(self, c):
+        p = self._part_of(c)
+        return lib.at_width(p.at, p.idx(c))
     def nrows(self): return len(self.used_ids)
     def decoded(self, c):          # dimension attribute as integers, decoded from the torus planes
         if c not in self._decoded:
+            if self.parts is not None: self._decoded[c] = self._part_of(c).decoded(c); return self._decoded[c]
             out = np.empty(self.n, dtype=np.uint32); lib.at_decode_column(self.at, self.idx(c), out.ctypes.data)
             self._decoded[c] = out
         return self._decoded[c]
@@ -1096,7 +1372,8 @@ class Table:
             bm = np.zeros((dim.n + 63) // 64 + 1, np.uint64)
             for r in sg.stale: bm[r >> 6] |= np.uint64(1) << np.uint64(r & 63)
             out = np.zeros((self.n + 63) // 64, np.uint64)
-            cnt = lib.at_rows_semi(self.at, self.idx(fk), sg.mask, bm.ctypes.data, dim.n, out.ctypes.data)
+            p = self._part_of(fk)
+            cnt = lib.at_rows_semi(p.at, p.idx(fk), sg.mask, bm.ctypes.data, dim.n, out.ctypes.data)
             self._deltas[ck] = (out, int(cnt))
         return self._deltas[ck]
     def kmask(self, fk):
@@ -1108,6 +1385,7 @@ class Table:
     def gpu_handle(self):
         """upload the value planes to the GPU once (decoded there by a prefix-XOR kernel); the torus stays here. The
         copy is part of the table's storage: released with it (close, or the finalizer)."""
+        if self.parts is not None: raise TypeError(self._spans())
         s = self._storage()
         if s.gpu is None:
             import time as _t; t0 = _t.perf_counter()
@@ -1126,6 +1404,7 @@ class Table:
         return [fk for fk in getattr(self, "refbit", {}) if getattr(self, "_refdim", {}).get(fk) is dim]
     def plain_handle(self):
         """the plain columnar engine's table (a test baseline): only kept when the database was built with keep_plain"""
+        if self.parts is not None: raise TypeError(self._spans())
         if self.pt is None:
             raise RuntimeError(f"engine 'plain' is not available for {self.name}: build the database with keep_plain=True")
         return self.pt
@@ -1134,6 +1413,9 @@ class Table:
         engine, a test baseline, is unavailable afterwards). Keeps per-column maxima and the clustering column."""
         for c in self.cols: self.colmax(c)
         keep = {self.cluster} if self.cluster else set()
+        if self.parts is not None:
+            for p in self.parts: p.drop_plain()
+            self.data = {c: v for c, v in self.data.items() if c in keep}; return
         s = self._storage(); pt, s.pt = s.pt, None
         if pt: lib.pt_free(pt)                     # before its columns go: it points at them
         self.data = {c: v for c, v in self.data.items() if c in keep}
@@ -1145,28 +1427,45 @@ class Table:
             vals = self.decoded(c) if engine == "alg" else self.data[c]
             u = np.unique(vals[self.used_ids]); self._ranked[ck] = (u, np.searchsorted(u, vals).astype(np.uint32))
         return self._ranked[ck]
-    def torus_bytes(self): return lib.at_bytes(self.at)
+    def torus_bytes(self):
+        if self.parts is not None: return sum(p.torus_bytes() for p in self.parts)
+        return lib.at_bytes(self.at)
     def sidecar_bytes(self):
+        if self.parts is not None: return sum(p.sidecar_bytes() for p in self.parts)
         self._storage()                            # a copy of a closed table still lists its released sidecars
         return sum(lib.at_bytes(v["side"]) for v in getattr(self, "sidecars", {}).values())
     def get_rows(self, c, rows):
         """values of column c at the given rows, straight from the planes (virtual columns included)"""
+        if self.parts is not None: return self._part_of(c).get_rows(c, rows)
         rows = np.ascontiguousarray(rows, np.uint64); out = np.empty(len(rows), np.uint32)
         if len(rows) and int(rows.max()) >= self.n:          # the planes hold n rows (none, for an empty table)
             raise IndexError(f"{self.name}: row {int(rows.max())} of a table of {self.n} rows")
         lib.at_get_rows(self.at, self.idx(c), rows.ctypes.data, len(rows), out.ctypes.data); return out
     def plain_bytes(self): return 4 * self.n * len(self.cols)
-    def repair(self): return lib.at_repair(self.at)
-    def nplanes(self): return lib.at_nplanes(self.at)
+    def repair(self):
+        if self.parts is not None: return sum(p.repair() for p in self.parts)
+        return lib.at_repair(self.at)
+    def nplanes(self):
+        if self.parts is not None: return sum(p.nplanes() for p in self.parts)
+        return lib.at_nplanes(self.at)
     def flip(self, plane, row):
-        """fault injection: flip the bit of row in the plane-th stored plane"""
+        """fault injection: flip the bit of row in the plane-th stored plane (the parts' planes in order)"""
+        if self.parts is not None and 0 <= int(plane) < self.nplanes():
+            plane = int(plane)
+            for p in self.parts:
+                if plane < p.nplanes(): return p.flip(plane, row)
+                plane -= p.nplanes()
         if not 0 <= int(plane) < self.nplanes() or not 0 <= int(row) < self.n:   # the planes hold n rows (none if empty)
             raise IndexError(f"{self.name}: no stored bit at plane {int(plane)} (of {self.nplanes()}), row {int(row)} (of {self.n})")
         lib.at_flip(self.at, int(plane), int(row))
     def validate(self, maxbad=8):
+        if self.parts is not None:
+            out = [p.validate(maxbad) for p in self.parts]
+            return sum(n for n, _ in out), sorted({r for _, b in out for r in b})[:maxbad]
         bad = (ctypes.c_uint64 * maxbad)(); n = lib.at_validate(self.at, bad, maxbad); return n, list(bad[:min(n, maxbad)])
 
 def compile_pred(p, table, prog):
+    if isinstance(p, _OnKey): prog.extend(p.program(table)); return
     if isinstance(p, RefOk):
         prog.append(PInstr(P["BIT"], table.idx("_refok"), table.refbit[p.fk], 0))
         if not p.ok: prog.append(PInstr(P["NOT"], 0, 0, 0))
@@ -1418,14 +1717,24 @@ class Query:
         y = Expr._w(x, y)
         lo, hi = {"<": (None, y - 1), "<=": (None, y), ">": (y + 1, None), ">=": (y, None)}[op]
         self.rjoin = (dim, x, lo, hi); self.rjoin_sql = (op, y); return self
-    def where(self, p): self.pred = p if self.pred is None else (self.pred & p); return self
-    def group_by(self, *cols): self.keys = list(cols); return self
+    def _autojoin(self, *xs):
+        """a dimension that holds the fact's columns stored once per value of a determinant (Table._grouped) is joined
+        through the determinant when the query reads one of its columns"""
+        groups = self.fact.__dict__.get("groups")
+        if groups:
+            dims = {id(self.fact._refdim[D]): D for D in groups}
+            for x in xs:
+                for t in tables_of(x) if x is not None else ():
+                    if id(t) in dims and t not in self.joins: self.joins[t] = dims[id(t)]
+        return self
+    def where(self, p): self.pred = p if self.pred is None else (self.pred & p); return self._autojoin(p)
+    def group_by(self, *cols): self.keys = list(cols); return self._autojoin(*cols)
     # Aggregates skip NULLs as in SQL: SUM, MIN / MAX and COUNT(e) read the rows where every column of their argument is
     # not NULL; a group is there when it has rows, so one whose argument is NULL on all of them gives None (COUNT(e): 0).
-    def sum(self, e): self.measure = e; self._ext = None; self._count = None; return self
+    def sum(self, e): self.measure = e; self._ext = None; self._count = None; return self._autojoin(e)
     def count(self, e=None):
         """COUNT(*), or with a column (or an expression) COUNT(e): the rows where it is not NULL"""
-        self.measure = None; self._ext = None; self._count = e if e is None or isinstance(e, Expr) else Const(e); return self
+        self.measure = None; self._ext = None; self._count = e if e is None or isinstance(e, Expr) else Const(e); return self._autojoin(self._count)
     def minmax(self, col):
         """MIN and MAX of a fact column per group, by plane elimination: run() gives (min, max), or {key: (min, max)}"""
         if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
@@ -1511,7 +1820,9 @@ class Query:
         keys = [expr_sql(k) for k in self.keys]
         F = _ident(self.fact.name)
         s = f"SELECT {', '.join(keys + self._sql_aggs())} FROM {F}"
-        for dim, fk in self.joins.items(): s += f" JOIN {_ident(dim.name)} ON {F}.{_ident(fk)} = {_ident(dim.name)}.{_ident(getattr(dim, 'pk', None) or 'id')}"
+        for dim, fk in self.joins.items():
+            if getattr(dim, "generated", None): continue                  # its columns are the fact's in the source
+            s += f" JOIN {_ident(dim.name)} ON {F}.{_ident(fk)} = {_ident(dim.name)}.{_ident(getattr(dim, 'pk', None) or 'id')}"
         if getattr(self, "rjoin", None) is not None:
             dim, x, lo, hi = self.rjoin
             if getattr(self, "rjoin_sql", None) is not None: on = f"{expr_sql(x)} {self.rjoin_sql[0]} {expr_sql(self.rjoin_sql[1])}"
@@ -2069,6 +2380,62 @@ class Query:
         return Groups(keys, vl)
 
     def _run_codes(self, engine="alg"):
+        try: return self._run_codes0(engine)
+        except _TooWide:
+            if getattr(self, "_split", False): raise ValueError(f"{self.fact.name}: one plan would read more than {MAXCOL} "
+                                                                "of its columns (its GROUP BY keys, measure and joins)") from None
+            return self._run_split(engine)
+
+    def _run_split(self, engine):
+        """A plan that would read more than MAXCOL columns of a fact wider than one torble. Its AND-terms on the fact
+        alone go first, in groups that one view holds: each group's passing rows as a bitmap (an engine pass on its
+        view), the bitmaps ANDed word for word. That is the semi-join lookup through the row id, which joins the parts
+        and whose lookup is the identity: row i of every part is row i. The plan then runs on the other terms with
+        that bitmap as its delta plane (only these rows)."""
+        fact = self.fact
+        conj = conjuncts(self.pred)
+        mine = [c for c in conj if tables_of(c) == {fact} and not isinstance(c, RowMask)]
+        if not mine: raise ValueError(f"{fact.name}: one plan would read more than {MAXCOL} of its columns "
+                                      "(its GROUP BY keys, measure and joins)")
+        rest = [c for c in conj if not any(c is m for m in mine)]
+        nw = (fact.n + 63) // 64
+        M = None
+        for g in _term_groups(fact, mine):
+            q = Query(fact, self.join_mode); q.pred = _and_all(g); q._rows = q._rowbits = q._split = True
+            bm = q._run_codes("plain" if engine == "plain" else "alg")[:nw]
+            M = bm.copy() if M is None else (M & bm)
+        xr = getattr(self, "_xrows", None)
+        if xr is not None: M &= xr[0][:nw] if xr[1] == 1 else ~xr[0][:nw]
+        q = copy_query(self); q.pred = _and_all(rest); q._xrows = (M, 1); q._split = True
+        r = q._run_codes(engine)
+        for a in ("device", "kernel_ms", "exec_ms", "plan_ms", "plan_cached", "last_plan", "range_used", "scanned", "delta_rows",
+                  "relationship_plan", "system_plan", "relationship_ms", "system_plan_ms", "stage_plan", "stage_plan_ms"):
+            if hasattr(q, a): setattr(self, a, getattr(q, a))
+        return r
+
+    def _on_keys(self, c, ts, engine):
+        """An AND-term on the fact and its joined dimensions (an OR across them, say on a column the loader stored once
+        per value of a determinant). Each dimension's part becomes its filter seen from the fact: the polynomial on the
+        foreign key's planes, as a join's dimension filter is (the substitution pk := fk, JoinPoly), so the whole term is
+        a filter on the fact's planes. A dimension joined through a key not stored most-significant-bit first, or read
+        by lookup (moved rows): one table per term, as before."""
+        fact = self.fact
+        for t in ts:
+            if t is fact: continue
+            fk = self.joins.get(t)
+            if fk is None or fk not in fact.msb_cols or t in getattr(self, "_lookup_dims", ()):
+                raise ValueError("each AND-term must refer to one table")
+        def sub(p):
+            tb = tables_of(p)
+            if len(tb) == 1:
+                t = next(iter(tb))
+                return p if t is fact else _OnKey(fact, self.joins[t], t, p, engine)
+            if isinstance(p, BoolOp): return BoolOp(p.op, sub(p.l), sub(p.r))
+            if isinstance(p, Not): return Not(sub(p.x))
+            raise ValueError("each AND-term must refer to one table")
+        return sub(c)
+
+    def _run_codes0(self, engine="alg"):
         if not getattr(self, "_relationship_done", False):
             self.relationship_plan = {"status": "disabled"}
             self.relationship_ms = 0.0
@@ -2172,20 +2539,21 @@ class Query:
                 self.plan_ms, self.plan_cached = (_time.perf_counter() - t_plan) * 1e3, True
                 return self._finish(c)
         fact, plan = self.fact, QPlan()
+        fv = _plan_table(fact)                              # a table wider than one torble: a view of the columns read
         keep = []                                           # keep ctypes buffers alive
         groups = {}
         for c in conjuncts(self.pred):
             ts = tables_of(c)
-            if len(ts) != 1: raise ValueError("each AND-term must refer to one table")
+            if len(ts) != 1: c, ts = self._on_keys(c, ts, engine), {fact}
             groups.setdefault(next(iter(ts)), []).append(c)
         # fact filter: one Boolean polynomial over the fact's bit planes (code sets: semi-joins on the column)
         prog = []; codesets = [c for c in groups.get(fact, []) if isinstance(c, CodeSet)]
         for i, c in enumerate([c for c in groups.get(fact, []) if not isinstance(c, CodeSet)]):
-            compile_pred(c, fact, prog)
+            compile_pred(c, fv, prog)
             if i: prog.append(PInstr(P["AND"], 0, 0, 0))
         # inner-join semantics: every joined foreign key must point at an existing row (one plane: its _refok bit)
         for dim, fkname in self.joins.items():
-            prog.append(PInstr(P["BIT"], fact.idx("_refok"), fact.refbit[fkname], 0))
+            prog.append(PInstr(P["BIT"], fv.idx("_refok"), fact.refbit[fkname], 0))
             if len(prog) > 1: prog.append(PInstr(P["AND"], 0, 0, 0))
         had_fact, nrange, plan_false = bool(prog), 0, False
         row_ranges = None
@@ -2194,23 +2562,16 @@ class Query:
         semis = []
         for cs in codesets:
             keep.append(cs.bm)
-            semis.append((cs.frac, fact.idx(cs.col.name), cs.bm, cs.n, 0))
+            semis.append((cs.frac, fv.idx(cs.col.name), cs.bm, cs.n, 0))
         for dim, preds in groups.items():
             if dim is fact: continue
             if dim not in self.joins: raise ValueError(f"{dim.name} is not joined")
-            dp = []
-            for i, c in enumerate([c for c in preds if not isinstance(c, RowMask)]):
-                compile_pred(c, dim, dp)
-                if i: dp.append(PInstr(P["AND"], 0, 0, 0))
-            arr = (PInstr * len(dp))(*dp)
-            bm = np.zeros((dim.n + 63) // 64 + 1, dtype=np.uint64); keep.append(bm)
-            if engine == "alg": cnt = lib.at_filter_bitmap_masked(dim.at, arr, len(dp), bm.ctypes.data, dim.used_bm.ctypes.data)
-            else: cnt = lib.pt_filter_bitmap(dim.plain_handle(), arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
+            bm, cnt = _dim_rows(dim, [c for c in preds if not isinstance(c, RowMask)], engine); keep.append(bm)
             rms = [c for c in preds if isinstance(c, RowMask)]
             if rms:                                    # rows given by mask: AND them in
                 for rm in rms: bm &= rm.bm[:len(bm)]
                 cnt = int(np.unpackbits(bm.view(np.uint8)).sum())
-            fkn = self.joins[dim]; fkc = fact.idx(fkn); b = fact.width(fkn); space = fact.space(fkn, dim)
+            fkn = self.joins[dim]; fkc = fv.idx(fkn); b = fact.width(fkn); space = fact.space(fkn, dim)
             on_cluster = fact.cluster == fkn and getattr(fact, "cluster_sorted", False) and space.sg is None
             if on_cluster:
                 # the fact is sorted by this foreign key: the selected ids are row ranges, found by binary search
@@ -2268,20 +2629,20 @@ class Query:
             key = (col.table, col.name)
             if key not in attrs:
                 vals = col.table.decoded(col.name) if engine == "alg" else col.table.data[col.name]
-                attrs[key] = (len(attrs), fact.idx(self.joins[col.table]), vals, fact.kmask(self.joins[col.table]))
+                attrs[key] = (len(attrs), fv.idx(self.joins[col.table]), vals, fact.kmask(self.joins[col.table]))
             return attrs[key][0]
         if getattr(self, "_dom", None) is not None:
             # dominance slices for a range join: rows with t_(k-1) <= x < t_k, measure by popcount algebra
             xname, ts = self._dom
             poly = poly2(self.measure, fact) if self.measure is not None else {(): 0}
-            plan.agg = A_DOM; plan.dom_col = fact.idx(xname); plan.ndom = len(ts); plan.dom_t = ts.ctypes.data; keep.append(ts)
+            plan.agg = A_DOM; plan.dom_col = fv.idx(xname); plan.ndom = len(ts); plan.dom_t = ts.ctypes.data; keep.append(ts)
             if poly is None: raise ValueError("a range join's measure must be a polynomial of degree <= 2 in fact columns")
-            _set_poly(plan, poly, self._wide, fact)
+            _set_poly(plan, poly, self._wide, fv)
             out_sum = np.zeros(len(ts), np.int64); out_cnt = np.zeros(len(ts), np.uint64); out_hi = np.zeros(len(ts), np.int64)
             keep += [out_sum, out_cnt, out_hi]
             plan.ngroups, plan.nkey = len(ts), 1                # one group per slice (merged across threads like groups)
             plan.out_sum, plan.out_cnt, plan.out_sum_hi = out_sum.ctypes.data, out_cnt.ctypes.data, out_hi.ctypes.data
-            if not self._exec(self._dev, fact, plan):
+            if not self._exec(self._dev, _run_on(fv), plan):
                 r = self._run_codes("alg"); self.device = "cpu (gpu: " + self._gpu_fail + ")"; return r
             self.last_plan = plan
             if self._wide:
@@ -2292,10 +2653,11 @@ class Query:
             plan.agg = A_ROWS; plan.nkey = 0
             out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
             plan.nattr = 0
-            self._exec("plain" if engine == "plain" else "cpu", fact, plan); self.last_plan = plan
+            self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan
+            if getattr(self, "_rowbits", False): return out_rows
             return np.nonzero(np.unpackbits(out_rows.view(np.uint8), bitorder="little")[:fact.n])[0].astype(np.uint64)
         ext = getattr(self, "_ext", None)
-        if ext is not None: plan.ext_on, plan.ext_col = 1, fact.idx(ext.name)
+        if ext is not None: plan.ext_on, plan.ext_col = 1, fv.idx(ext.name)
         # aggregation
         lin = self._linear(self.measure) if self.measure is not None else None
         wide = self._wide; plan.wide = wide
@@ -2306,13 +2668,13 @@ class Query:
             poly = poly2(self.measure, fact)
             if poly is None or len([m for m in poly if len(m) == 1]) > 8 or len([m for m in poly if len(m) == 2]) > 8:
                 raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
-            plan.agg = A_POLYG; plan.nkey = 0; _set_poly(plan, poly, True, fact)
+            plan.agg = A_POLYG; plan.nkey = 0; _set_poly(plan, poly, True, fv)
         elif self.keys or (self.measure is not None and lin is None and not self._bilinear()):
             plan.agg = A_GENERAL
             meas = []
             def emit(e):
                 if isinstance(e, Col):
-                    meas.append(MInstr(M["FCOL"], fact.idx(e.name), 0) if e.table is fact else MInstr(M["ATTR"], attr_id(e), 0))
+                    meas.append(MInstr(M["FCOL"], fv.idx(e.name), 0) if e.table is fact else MInstr(M["ATTR"], attr_id(e), 0))
                 elif isinstance(e, Const): meas.append(MInstr(M["CONST"], 0, e.v))
                 else: emit(e.l); emit(e.r); meas.append(MInstr(M[{"+": "ADD", "-": "SUB", "*": "MUL"}[e.op]], 0, 0))
             if self.measure is not None: emit(self.measure)
@@ -2384,20 +2746,20 @@ class Query:
             for i, (k, nat, info, use_field) in enumerate(cand):
                 kmap = None
                 if isinstance(k, PlaneKey):
-                    plan.key_kind[i], plan.key_arg[i] = 3, fact.idx(k.name); plan.key_mask[i] = k.mask; r = nat
-                elif k.table is fact: plan.key_kind[i], plan.key_arg[i] = 0, fact.idx(k.name); r = nat
+                    plan.key_kind[i], plan.key_arg[i] = 3, fv.idx(k.name); plan.key_mask[i] = k.mask; r = nat
+                elif k.table is fact: plan.key_kind[i], plan.key_arg[i] = 0, fv.idx(k.name); r = nat
                 elif use_field and info[0] == "coord":
                     # coordinate projection: the attribute is read from its id bits on the fk planes
                     bw = fact.width(self.joins[k.table]); R, kmap = info[2]
-                    plan.key_kind[i], plan.key_arg[i] = 3, fact.idx(self.joins[k.table])
+                    plan.key_kind[i], plan.key_arg[i] = 3, fv.idx(self.joins[k.table])
                     plan.key_mask[i] = sum(1 << (bw - 1 - kk) for kk in R); r = 1 << len(R)
                 elif use_field:
-                    plan.key_kind[i], plan.key_arg[i], plan.key_nbits[i] = 2, fact.idx(self.joins[k.table]), info[1]
+                    plan.key_kind[i], plan.key_arg[i], plan.key_nbits[i] = 2, fv.idx(self.joins[k.table]), info[1]
                     r, kmap = 1 << info[1], info[2][1]
                 else:                                       # lookup of the value's rank among the dimension's values
                     u, ranks = k.table.ranked(k.name, engine)
                     ak = (k.table, k.name, "rank")
-                    if ak not in attrs: attrs[ak] = (len(attrs), fact.idx(self.joins[k.table]), ranks, fact.kmask(self.joins[k.table]))
+                    if ak not in attrs: attrs[ak] = (len(attrs), fv.idx(self.joins[k.table]), ranks, fact.kmask(self.joins[k.table]))
                     plan.key_kind[i], plan.key_arg[i] = 1, attrs[ak][0]; r = len(u)
                     kmap = dict(enumerate(u.tolist()))
                 plan.key_radix[i] = r; radix.append(r); kmaps.append(kmap)
@@ -2417,9 +2779,9 @@ class Query:
             polyg_ok = (not sparse_general or wide) and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8
             if mm or (polyg_ok and ((on_planes and steps <= (12 if not rowpath else 4)) or self._dev == "gpu" or (wide and on_planes))):
                 plan.agg = A_MM if mm else A_POLYG
-                _set_poly(plan, poly, wide, fact)
+                _set_poly(plan, poly, wide, fv)
             elif wide and poly is not None and len([m for m in poly if len(m) == 1]) <= 8 and len([m for m in poly if len(m) == 2]) <= 8:
-                _set_poly(plan, poly, wide, fact)               # the general path: row by row in 128 bits (lookup keys)
+                _set_poly(plan, poly, wide, fv)               # the general path: row by row in 128 bits (lookup keys)
             elif wide:
                 raise OverflowError("SUM needs 128 bits, which the engine evaluates for polynomials of degree <= 2 in fact columns")
             dist = getattr(self, "_distinct", False)
@@ -2453,9 +2815,9 @@ class Query:
         elif self.measure is None: plan.agg = A_COUNT
         elif lin is not None:
             plan.agg = A_LIN; plan.nlin = len(lin)
-            for i, (c, k) in enumerate(lin): plan.lin_col[i], plan.lin_coef[i] = fact.idx(c), k
+            for i, (c, k) in enumerate(lin): plan.lin_col[i], plan.lin_coef[i] = fv.idx(c), k
         else:
-            plan.agg = A_BIL; plan.bil_a, plan.bil_b = fact.idx(self.measure.l.name), fact.idx(self.measure.r.name)
+            plan.agg = A_BIL; plan.bil_a, plan.bil_b = fv.idx(self.measure.l.name), fv.idx(self.measure.r.name)
         if len(attrs) > len(plan.attr_fkcol):          # the plan's slots (torble.h): one per looked-up dimension column
             raise ValueError(f"the query reads {len(attrs)} dimension columns through lookups, more than the "
                              f"{len(plan.attr_fkcol)} one engine query holds")
@@ -2468,7 +2830,8 @@ class Query:
                    dense=((out_sum, out_cnt) + ((out_hi,) if wide or ext is not None else ())) if self.keys and not sparse else None, sparse=sparse, wide=wide, ext=ext is not None,
                    widekey=bool(self.keys) and bool(plan.widekey),
                    mm_out=getattr(self, "_mm_out", None) if sparse else None,
-                   range_used=self.range_used, scanned=getattr(self, "scanned", None), fresh=True)
+                   range_used=self.range_used, scanned=getattr(self, "scanned", None), fresh=True,
+                   view=_run_on(fv) if fv is not fact else None)
         if sig is not None:
             ctx["objs"] = sig[1]
             if not hasattr(self, "_plan_cache"): self._plan_cache = {}
@@ -2501,7 +2864,7 @@ class Query:
                 self._mm_out = ctx["mm_out"]; plan.out_n = 0
                 self._mm_bind(plan); plan.out_cap = len(self._mm_out[0])
             self.range_used, self.scanned = ctx["range_used"], ctx["scanned"]
-        if not self._exec(self._dev, self.fact, plan):
+        if not self._exec(self._dev, ctx.get("view") or self.fact, plan):
             r = self._run_codes("alg"); self.device = "cpu (gpu: " + self._gpu_fail + ")"; return r
         if ctx.get("sparse"): ctx["mm_out"] = self._mm_out          # grown if the groups did not fit
         self.last_plan = plan
@@ -2624,14 +2987,8 @@ class Query:
         for c in others: inner.where(c)
         inner.measure = self.measure
         # dimension side: passing rows, their bounds and group keys
-        dp = []
-        for i, c in enumerate(dpreds):
-            compile_pred(c, dim, dp)
-            if i: dp.append(PInstr(P["AND"], 0, 0, 0))
-        if dp:
-            arr = (PInstr * len(dp))(*dp); bm = np.zeros((dim.n + 63) // 64 + 1, dtype=np.uint64)
-            if engine in ("alg", "gpu"): lib.at_filter_bitmap_masked(dim.at, arr, len(dp), bm.ctypes.data, dim.used_bm.ctypes.data)
-            else: lib.pt_filter_bitmap(dim.plain_handle(), arr, len(dp), bm.ctypes.data); bm[:len(dim.used_bm)] &= dim.used_bm[:len(bm)]
+        if dpreds:
+            bm, _ = _dim_rows(dim, dpreds, "plain" if engine == "plain" else "alg")
             ids = np.nonzero(np.unpackbits(bm.view(np.uint8), bitorder="little")[:dim.n])[0]
         else: ids = dim.used_ids
         col = (lambda c: dim.decoded(c)) if engine in ("alg", "gpu") else (lambda c: dim.data[c])
