@@ -5,6 +5,7 @@
 import numpy as np
 
 from .refresh import RefreshTable, _columns, _vector, _U32_MAX
+from .transaction_redo import encode as _encode_redo
 
 
 class WritableTable:
@@ -48,6 +49,7 @@ class WritableTable:
         self._appended = {}
         self.store = RefreshTable(data, name=name, update_mode="planes")
         self._lock = self.store._lock
+        self._redo_callback = None
 
     def _lookup(self, keys):
         if self._base_start is not None:
@@ -115,7 +117,27 @@ class WritableTable:
         """Insert a batch and return the contiguous logical row IDs assigned."""
         with self._lock:
             self.store._check_open()
-            return self._append(*self._insert_data(columns))
+            data, keys = self._insert_data(columns)
+            redo = self._redo(inserts=data)
+            assigned = self._append(data, keys)
+            self._emit_redo(redo)
+            return assigned
+
+    def _redo(self, *, update=None, updates=None, inserts=None, delete=None):
+        if self._redo_callback is None:
+            return None
+
+        def keys(selection):
+            if selection is None:
+                return ()
+            ids, groups = selection
+            return self.store._gather((self.primary_key,), len(ids), groups)[self.primary_key]
+
+        return _encode_redo(self, keys(update) if updates else (), updates, inserts, keys(delete))
+
+    def _emit_redo(self, payload):
+        if payload is not None:
+            self._redo_callback(payload)
 
     def _update_data(self, ids, columns):
         data = _columns({} if columns is None else columns)
@@ -132,7 +154,9 @@ class WritableTable:
         with self._lock:
             self.store._check_open()
             ids, data, groups = self._update_data(ids, columns)
+            redo = self._redo(update=(ids, groups), updates=data)
             self.store._update_prepared(ids, data, groups)
+            self._emit_redo(redo)
             return len(ids) if data else 0
 
     def _delete_data(self, ids):
@@ -144,7 +168,7 @@ class WritableTable:
         if len(base) and bitmap is None:
             bitmap = np.zeros((self._base_n + 63) // 64, np.uint64)
         index = bitmap, (base >> 6).astype(np.intp), np.left_shift(np.uint64(1), base & 63), keys
-        return ids, self.store._prepare_delete(ids, groups), index
+        return ids, groups, self.store._prepare_delete(ids, groups), index
 
     def _delete(self, prepared, index):
         self.store._apply_delete(prepared)
@@ -159,8 +183,10 @@ class WritableTable:
         """Delete distinct live rows and return the number affected."""
         with self._lock:
             self.store._check_open()
-            ids, prepared, index = self._delete_data(ids)
+            ids, groups, prepared, index = self._delete_data(ids)
+            redo = self._redo(delete=(ids, groups))
             self._delete(prepared, index)
+            self._emit_redo(redo)
             return len(ids)
 
     def merge(self, ids, update_cols, insert_cols, *, delete_ids=None):
@@ -168,10 +194,11 @@ class WritableTable:
         with self._lock:
             self.store._check_open()
             ids, data, groups = self._update_data(ids, update_cols)
-            deleted, prepared, index = self._delete_data(() if delete_ids is None else delete_ids)
+            deleted, delete_groups, prepared, index = self._delete_data(() if delete_ids is None else delete_ids)
             if len(ids) and len(deleted) and len(np.intersect1d(ids, deleted, assume_unique=True)):
                 raise ValueError("cannot update and delete the same row in one merge")
             insert, keys = self._insert_data(insert_cols) if insert_cols is not None else (None, ())
+            redo = self._redo(update=(ids, groups), updates=data, inserts=insert, delete=(deleted, delete_groups))
             assigned = self._append(insert, keys) if insert is not None else None
             try:
                 self.store._update_prepared(ids, data, groups)
@@ -179,6 +206,7 @@ class WritableTable:
                 self._undo_append(assigned, keys)
                 raise
             self._delete(prepared, index)
+            self._emit_redo(redo)
             return (len(ids) if data else 0) + len(deleted) + len(keys)
 
     def scan(self, columns=None):

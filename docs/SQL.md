@@ -475,3 +475,47 @@ instead of taking the machine's memory.
 
 ---
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+### Durable SQL prototype
+
+Create a database directory with a fixed catalog of writable uint32 tables.
+Open the same directory without a catalog to recover it. Each client gets its
+own connection and can use the same INSERT, UPDATE, DELETE and MERGE forms as
+an in-memory writable table.
+
+~~~python
+import torbles
+
+with torbles.open_durable(
+    "inventory.torbles",
+    tables={"stock": ({"id": [1, 2], "quantity": [10, 20]}, "id")},
+) as db, db.connect() as client:
+    client.sql("BEGIN")
+    client.sql("UPDATE stock SET quantity = quantity - 1 WHERE id = 1")
+    client.sql("INSERT INTO stock VALUES (3, 5)")
+    client.sql("COMMIT")
+
+with torbles.open_durable("inventory.torbles") as db, db.connect() as client:
+    print(client.sql("SELECT SUM(quantity) FROM stock").rows)
+~~~
+
+Call SQL with one statement at a time. A write outside an explicit transaction
+commits automatically. An explicit transaction sees its own changes. An
+execution error aborts it, and closing its connection rolls it back. Use
+the same thread for all statements of an explicit transaction and finish it
+before closing the database. Other clients wait for that transaction to end.
+The prototype serializes SQL execution, including read-only transactions.
+One process can open a directory at a time on a local POSIX filesystem.
+
+A commit writes one checksummed redo frame and waits for file fsync. Redo stores
+evaluated values and primary keys, so recovery applies mutations through the
+bitplane adapters without reevaluating SQL. Opening rebuilds the bitplanes
+from the initial checkpoint and committed frames. Recovery drops an incomplete
+final frame and rejects checksum failures in complete frames. If a commit
+reports an I/O error, close and reopen the database to resolve its outcome.
+
+Rollback of a transaction with writes also rebuilds from the initial checkpoint
+and committed log. The log grows with committed changes until a future
+checkpointing mechanism is added. Database creation writes the initial catalog
+and data. The durable API currently exposes SQL over that catalog.

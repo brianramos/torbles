@@ -25,3 +25,5 @@ from sqlapi import F                                        # noqa: F401,E402  S
 from sqltypes import SqlError                               # noqa: F401,E402
 for _m in ("algq", "blobcol", "coltypes", "database", "keydesign", "sqltypes", "sqlir", "sqlfuncs", "sqlfront", "sqlexec", "sqlapi"):
     _sys.modules.setdefault("torbles." + _m, _sys.modules[_m])
+
+from .durable import open_durable  # noqa: F401,E402
