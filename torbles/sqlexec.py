@@ -152,7 +152,7 @@ class Cx:
     def __init__(self, db, engine="alg"):
         self.db, self.engine = db, engine
         self.ctes, self.outers, self.memo, self.stats = {}, [], {}, dict(engine_queries=0, star_blocks=0, general_blocks=0,
-                                                                        series_windows=0)
+                                                                        series_windows=0, snowflake_blocks=0, snowflake_edges=0)
         self.series = {}            # id(block) -> {window key: _Series} while the block runs (windows from their series)
 
     def outer_value(self, e):
@@ -2925,7 +2925,10 @@ def plan_star(s, bindings, need, aggs, cx):
             if e is None: ok = False; break
             dims[b] = e; fks[e[1].name] = b
         if ok: fact, used = f, (dims, fks); break
-    if fact is None or fact in left: return None, None
+    if fact is None:
+        if left: return None, None
+        return _plan_snowflake(s, bindings, joins, conj, edges, need, aggs, cx)
+    if fact in left: return None, None
     dims, fks = used
     if any(b.table is fact.table for b in dims): return None, None
     consumed = {id(e[0]) for e in dims.values()}
@@ -2957,6 +2960,110 @@ def plan_star(s, bindings, need, aggs, cx):
     except _NotStarNow:
         cx.stats["star_blocks"] -= 1
         return None, None
+
+
+def _plan_snowflake(s, bindings, joins, conj, edges, need, aggs, cx):
+    """Fold ancestor filters into masks on the fact's direct dimensions.
+
+    A subtree that only supplies filters can keep or remove a row. When
+    an ancestor supplies values, use the masks to prefilter the fact scan
+    and let the original joins provide those values.
+    """
+    refuse = (None, None)
+    if len(bindings) < 3 or s.sample is not None or any(b.sample is not None for b in bindings):
+        return refuse
+    if len({id(b.table) for b in bindings}) != len(bindings):
+        return refuse
+    incoming = {}
+    children = {b: [] for b in bindings}
+    for cond, source, target in edges:
+        if not all(_join_key_term(arg) and _strip_cast(arg).t.integer for arg in cond.args):
+            continue
+        table, fk = source.b.table, source.name
+        if fk not in table.fks_to(target.b.table):
+            continue
+        if target.b in incoming or getattr(getattr(table, "surr", {}).get(fk), "stale", None):
+            return refuse
+        incoming[target.b] = (cond, source, target)
+        children[source.b].append(target.b)
+    roots = [b for b in bindings if b not in incoming]
+    if len(roots) != 1:
+        return refuse
+    fact = roots[0]
+    reachable = [fact]
+    for b in reachable:
+        reachable.extend(children[b])
+    if len(reachable) != len(bindings):
+        return refuse
+    direct = {b: incoming[b] for b in children[fact]}
+    deep = set(incoming) - set(direct)
+    if not deep:
+        return refuse
+    consumed = {id(edge[0]) for edge in incoming.values()}
+    if any(id(c) not in consumed for j in joins for c in _conjuncts(j.cond)):
+        return refuse
+
+    outputs = [x for x, _ in s.items] + list(s.group) + [s.having, s.qualify]
+    outputs += [o[0][1] for o in s.order if o[0][0] == "expr"]
+    outputs += [d[1] for d in (s.distinct_on or []) if d[0] == "expr"]
+    needs_deep = any(c.b in deep for c in need.values()) or any(
+        c.b in deep for expr in outputs if expr is not None for c in I.cols_of(expr))
+
+    predicates, rest = {}, []
+    try:
+        for c in conj:
+            if id(c) in consumed:
+                continue
+            refs = {col.b for col in I.cols_of(c)}
+            if not refs & deep:
+                rest.append(c)
+                continue
+            if len(refs) != 1 or not _deterministic(c):
+                return refuse
+            b = next(iter(refs))
+            local = _Planner(s, b, {}, {}, cx)
+            predicate = local.native(c)
+            if predicate is None or local.hidden:
+                return refuse
+            predicates.setdefault(b, []).append(predicate)
+
+        if needs_deep and not predicates:
+            return refuse
+
+        masks = {}
+        for b in reversed(reachable[1:]):
+            if not children[b] and b not in predicates:
+                continue
+            q = algq.Query(b.table, join_mode="auto")
+            for child in children[b]:
+                q.join(child.table, incoming[child][1].name)
+                if child in masks:
+                    q.where(masks.pop(child))
+            for predicate in predicates.get(b, ()):
+                q.where(predicate)
+            q._rows = q._rowbits = True
+            bitmap = q._run_codes("plain" if cx.engine == "plain" else "alg")
+            cx.stats["engine_queries"] += 1
+            masks[b] = algq.RowMask._from_bitmap(b.table, bitmap)
+    except (ValueError, TypeError, OverflowError, SqlError, _NotStarNow):
+        return refuse
+
+    block = s
+    if needs_deep:
+        block = I.Select()
+        block.from_ = fact
+    planner = _Planner(block, fact, direct, {edge[1].name: b for b, edge in direct.items()}, cx)
+    planner.samples.extend(masks.values())
+    if needs_deep:
+        return run_general(s, bindings, need, aggs, cx, prejoin=(planner, len(deep)))
+    try:
+        result = planner.run(rest, need, aggs)
+    except (ValueError, SqlError, _NotStarNow):
+        return refuse
+    cx.stats["star_blocks"] += 1
+    cx.stats["snowflake_blocks"] += 1
+    cx.stats["snowflake_edges"] += len(deep)
+    return result
 
 
 def _conjuncts(e):
@@ -4535,7 +4642,7 @@ def join_preagg(s, aggs, cx):
     return P, {k: dict(kind="state") for k in aggplan}
 
 
-def run_general(s, bindings, need, aggs, cx):
+def run_general(s, bindings, need, aggs, cx, prejoin=None):
     """FROM items materialized as multisets (engine GROUP BY with counts, or query results), joined, filtered"""
     cx.stats["general_blocks"] += 1
     allx = [x for x, _ in s.items] + list(s.group) + [s.where, s.having, s.qualify] + \
@@ -4566,7 +4673,7 @@ def run_general(s, bindings, need, aggs, cx):
     from_ = s.from_
     if s.sample is None: from_, rest = _equijoins(from_, rest)
     deferred = []                                      # terms that failed on a row of their item: checked after the joins
-    rel = _materialize(from_, per, pushed, cx, deferred)
+    rel = _materialize(from_, per, pushed, cx, deferred, prejoin)
     if s.sample is not None: rel = sample_rel(rel, s.sample, cx)
     rest = deferred + rest
     if rest:
@@ -4608,16 +4715,28 @@ def _equijoins(f, rest):
     return out, [c for i, c in enumerate(rest) if i not in taken]
 
 
-def _materialize(f, per, pushed, cx, deferred=None):
-    if isinstance(f, I.Binding): return _mat_binding(f, per.get(f, {}), pushed.get(f, []), cx, deferred)
-    L = _materialize(f.left, per, pushed, cx, deferred)
+def _materialize(f, per, pushed, cx, deferred=None, prejoin=None):
+    if isinstance(f, I.Binding):
+        cols, conds = per.get(f, {}), pushed.get(f, [])
+        if prejoin is not None and f is prejoin[0].fact:
+            planner, edges = prejoin
+            try:
+                rel, _ = planner.run([], cols, {})
+            except (ValueError, SqlError, _NotStarNow):
+                pass
+            else:
+                cx.stats["snowflake_blocks"] += 1
+                cx.stats["snowflake_edges"] += edges
+                return _pushed_rows(rel, conds, cx, deferred)
+        return _mat_binding(f, cols, conds, cx, deferred)
+    L = _materialize(f.left, per, pushed, cx, deferred, prejoin)
     lb = set(block_bindings(f.left))
     refs = {}
     for rb in block_bindings(f.right):
         if rb.q is not None and not hasattr(rb, "shared"):
             for c in outer_refs_into(rb.q, lb): refs[c.key()] = c
     if refs: return _lateral(f, L, list(refs.values()), per, pushed, cx)
-    R = _materialize(f.right, per, pushed, cx, deferred)
+    R = _materialize(f.right, per, pushed, cx, deferred, prejoin)
     return _join(f, L, R, cx)
 
 

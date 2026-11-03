@@ -343,6 +343,14 @@ class RowMask(Pred):
         self.table, self.cols, self.sql = table, set(cols), sql
         m = np.zeros(((table.n + 63) // 64 + 1) * 64, np.uint8); m[:table.n] = np.asarray(mask, bool)[:table.n]
         self.bm = np.packbits(m, bitorder="little").view(np.uint64)
+
+    @classmethod
+    def _from_bitmap(cls, table, bitmap):
+        """Carry a native row bitmap into the next join without unpacking it."""
+        mask = cls.__new__(cls)
+        mask.table, mask.cols, mask.sql = table, set(), None
+        mask.bm = bitmap & table.used_bm[:len(bitmap)]
+        return mask
 class RefOk(Pred):
     """the fact rows whose foreign key fk has (ok=True) or has not (ok=False) a matching dimension row: one plane, the
     fk's bit of the hidden _refok column"""
@@ -2620,6 +2628,8 @@ class Query:
         plan.nprog = len(prog)
         for i, ins in enumerate(prog): plan.prog[i] = ins
         semis.sort(key=lambda s: s[0])
+        if len(semis) > len(plan.semi_col):
+            raise ValueError(f"{fact.name}: one engine query holds at most {len(plan.semi_col)} lookup filters")
         plan.nsemi = len(semis)
         for i, (_, col, bm, dn, km) in enumerate(semis):
             plan.semi_col[i] = col; plan.semi_bm[i] = bm.ctypes.data; plan.semi_n[i] = dn; plan.semi_kmask[i] = km

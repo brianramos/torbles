@@ -316,8 +316,8 @@ C as a looked-up attribute. SQL does it with the hidden join that already reads 
 (`_Planner.hidden_join`); in the Python API `t.c_city` is the dimension's column and the query joins it by itself. An OR
 of such a column with the table's own columns is compiled the same way: each dimension's part of the term becomes its
 polynomial on the foreign key's planes, one word on the filter program's stack (`_OnKey`), so the engine API now accepts
-an OR across a fact and its joined dimensions whose keys are stored most-significant-bit first. A referenced table keeps
-its groups: moving them would make a snowflake, which the star planner does not join.
+an OR across a fact and its joined dimensions whose keys are stored most-significant-bit first. A referenced table uses
+row-aligned parts for its excess columns. SQL snowflake filter propagation applies to explicit FK equality trees.
 
 **What is left goes to row-aligned parts** (`algq.Table`, `_build_parts`). The columns are split into torbles of at
 most 31 columns over the same rows in the same order, a column with its hidden ones in one part, the references' bits,

@@ -367,11 +367,11 @@ dimensions, deltas, and self-extension.
 
 ## Known limitations (0.4.0)
 
-- **Joins on the planes:** star joins, one hop from the fact table to each dimension, on single-column keys
-  (composite keys are noted and skipped). In SQL a dimension may be joined through several foreign keys (role-playing
-  joins), and every other join (snowflakes, outer joins between arbitrary tables, joins on non-key columns) runs as a
-  hash join of the multisets the engine returns for each table; the engine-level API takes one foreign key per
-  dimension in a query.
+- **Joins on the planes** use single-column foreign keys, including role-playing dimensions in SQL.
+  For eligible inner snowflake queries, SQL pushes ancestor filters through the declared keys before scanning
+  the fact. Queries that need ancestor values get them through the general joins after filtering the fact.
+  Arbitrary outer joins and joins on non-key columns use the general multiset executor. The engine-level API
+  takes one foreign key per dimension in a query.
 - **SQL:** queries only (the database is read-only once built); see [docs/SQL.md](docs/SQL.md) for the ISO features
   not supported. The engine-level API has COUNT, SUM, MIN and MAX; the other aggregates are in SQL.
 - **Sums are exact at any width:** 64-bit sums when they fit, 128-bit sums from the same popcounts past 2^63 (a

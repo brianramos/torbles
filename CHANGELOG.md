@@ -60,8 +60,11 @@ One kernel pass reads at most 31 columns of a table, which a query reaches only 
 joins together (a filter on more columns is split). The engine API reads at most 8 dimension columns through lookups
 in one query, and a moved column counts as one: past that it refuses, naming SQL (which joins them on its general
 path) and `build(groups=False)`; the engine fuzzer counts that as a refusal. The mathematics module and the
-relationship catalog work on tables of one torble. A table that a foreign key references keeps its determined columns (moving them would make a snowflake,
-which the star planner does not join); it is split into parts only.
+relationship catalog work on tables of one torble. Referenced tables use row-aligned parts for excess columns.
+
+SQL pushes ancestor predicates through eligible inner FK trees. If the ancestors only constrain the rows, their
+bitmap filters feed the native fact query directly. If the output needs ancestor values, the same filters narrow
+the fact scan before the general joins produce those values.
 
 ## 0.3.0 (2026-11-02), alpha
 

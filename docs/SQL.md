@@ -116,6 +116,14 @@ output. Any other function of such columns runs once per distinct combination of
 back: a function of a 65-value column costs 65 calls however many groups the engine returned. Only a function of
 columns that are not codes (an aggregate's result, a value computed row by row) runs on each tuple.
 
+**Snowflake filters** propagate from ancestors toward the fact through stored single-column integer foreign keys.
+Each hop produces a packed row mask using the existing native join and validity checks. A filter-only ancestor can
+fold into its direct dimension so the fact query uses the ordinary star kernels. When the query returns an ancestor
+value and has a supported ancestor predicate, the masks narrow the fact scan and the original joins produce the
+values. This path covers inner FK trees with supported plane predicates on the ancestors. Outer joins, sampled
+inputs and unsupported equality or predicate expressions use the general path. `result.stats` reports successful
+rewrites in `snowflake_blocks` and the number of propagated indirect FK edges in `snowflake_edges`.
+
 **Other blocks** (outer and cross joins between arbitrary items, derived tables, CTEs, VALUES, table functions) give each
 FROM item as a multiset: a stored table is an engine GROUP BY of the columns the block needs, with counts; a derived
 table is its query's rows. The items are joined on their distinct tuples, carrying the counts: the join keys of both
