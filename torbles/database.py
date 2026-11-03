@@ -581,6 +581,12 @@ class Database:
                         out = sqlexec.run(self, q, engine)
             return out
 
+    def sql_batch(self, text, engine="alg"):
+        """Run a read-only SQL workload and return one Relation per statement."""
+        from torbles import sqlworkload
+        with self._sql_lock:
+            return sqlworkload.run(self, text, engine)
+
     def sql_result(self, q):
         """run the query's SQL rendering on the source (DuckDB) and return it in torbles' result form"""
         if self.con is None:

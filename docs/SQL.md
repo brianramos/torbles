@@ -34,6 +34,12 @@ against the given tables.
 executor (or its CPU emulation) give the same answers. A script may hold several statements; the result is the last
 one's. `SET TIME ZONE ...` sets the session's time zone; every other statement is a query.
 
+### Read-only workloads
+
+`db.sql_batch(text)` returns one relation per SELECT statement in input order. Compatible scalar COUNT, SUM,
+and AVG statements over the same table and predicate can share a packed scope and an exact moment calculation.
+Each result retains its original column names and types. Sharing lasts for the batch.
+
 ## How a query runs
 
 DuckDB's parser reads the text (syntax only: `json_serialize_sql`, no data and no binding). The binder reads the tree
