@@ -115,24 +115,26 @@ def compile_interchange(raw, values, code_width, width, *, min_coverage=0.25):
     return best
 
 
-def prepare(fact, determinant, name, projection):
+def prepare(fact, determinant, name, projection, *, affine=False):
     """Cache a proof against the exact dimension and physical FK revisions."""
     lookup, _, width = projection
     dim = fact._refdim[determinant]
     surrogate = fact.surr.get(determinant)
     if surrogate is not None and surrogate.version:
         return None
+    hint = getattr(surrogate, "coords", {}).get(name)
+    if not affine and (not hint or len(hint) >= fact.width(determinant)):
+        return None
     part, dim_part = fact._part_of(determinant), dim._part_of(name)
-    signature = (_revision(part.at), _revision(dim_part.at), id(lookup), id(surrogate), width)
+    signature = (_revision(part.at), _revision(dim_part.at), id(lookup), id(surrogate), width, affine)
     cache = fact.__dict__.setdefault("_sector_interchanges", {})
     key = determinant, name
     if key not in cache or cache[key][0] != signature:
         rows = dim.used_ids
         raw = rows if surrogate is None else surrogate.s_of_row[rows]
         values = lookup[rows]
-        hint = getattr(surrogate, "coords", {}).get(name)
         plan = certify_coordinate(raw, values, hint)
-        if plan is None:
+        if plan is None and affine:
             plan = compile_interchange(raw, values, fact.width(determinant), width)
         cache[key] = signature, plan
     return cache[key][1]

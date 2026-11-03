@@ -81,6 +81,12 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
         rc = run(*args)
     if rc:
         return None
+    if rank_switch and distinct is not None:
+        widths = [offset if transform == 4 else fact.width(low)
+                  for low, _, _, transform, offset in keys]
+        if (sum(widths) <= 17 and any(key[3] == 4 for key in keys)
+                and all(high is None and transform in (0, 4) for _, high, _, transform, _ in keys)):
+            stats["cuda_interchange_dense_bits"] = sum(widths)
     if interchange is not None:
         stats["cuda_interchange_proven_sectors"] = int(np.count_nonzero(interchange.sectors[:, 0]))
         stats["cuda_interchange_dimension_rows"] = interchange.covered

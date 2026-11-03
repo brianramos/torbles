@@ -1090,7 +1090,7 @@ static inline uint64_t hslot(touch_t *h, u128 key) {
 /* Sparse top groups. Transpose only the requested planes of each word.
  * Partition compact records as they are decoded, then reduce each shard
  * independently. Only each worker's bounded top groups reach the merge. */
-enum { AT_GROUP_RAW, AT_GROUP_MINUTE, AT_GROUP_EPOCH_MINUTE, AT_GROUP_PROJECT };
+enum { AT_GROUP_RAW, AT_GROUP_MINUTE, AT_GROUP_EPOCH_MINUTE, AT_GROUP_PROJECT, AT_GROUP_COORDINATE };
 typedef struct {
     int32_t low, high, shift, transform;
     int64_t offset;
@@ -1208,6 +1208,8 @@ static inline u128 group_pack(group_plan_t *p, uint64_t rows[GROUP_BUNDLES][64],
                 return 0;
             }
             code = p->projection[index];
+        } else if (k->transform == AT_GROUP_COORDINATE) {
+            code = (code >> k->shift) & ((UINT64_C(1) << k->offset) - 1);
         }
         packed = (packed << p->key_width[i]) | code;
     }
@@ -1526,7 +1528,7 @@ static int group_encoded(const atable_t *t, const uint64_t *filter, int32_t nkey
     for (int i = 0; i < nkey + distinct; ++i) {
         const at_group_key_t *q = keys + i;
         if (q->high < -1 || (rank == 3 && q->transform != AT_GROUP_RAW) ||
-            (q->transform < AT_GROUP_RAW || q->transform > AT_GROUP_PROJECT) ||
+            (q->transform < AT_GROUP_RAW || q->transform > AT_GROUP_COORDINATE) ||
             !group_add_column(&p, q->low, used)) return -1;
         unsigned width = t->width[q->low];
         if (q->high >= 0) {
@@ -1547,6 +1549,10 @@ static int group_encoded(const atable_t *t, const uint64_t *filter, int32_t nkey
         } else if (q->transform == AT_GROUP_PROJECT) {
             if (!projection || projections++ || q->high >= 0) return -1;
             width = projection_width;
+        } else if (q->transform == AT_GROUP_COORDINATE) {
+            if (q->high >= 0 || q->shift < 0 || (unsigned)q->shift >= width ||
+                q->offset < 1 || q->offset > width - (unsigned)q->shift) return -1;
+            width = (unsigned)q->offset;
         }
         p.key_width[i] = width;
         if (i == nkey) p.distinct_width = width;

@@ -73,3 +73,59 @@ class InterchangeChecks(unittest.TestCase):
             values = users[codes == code]
             self.assertEqual((int(keys[i, 0]), int(counts[i]), int(sums[i, 0]), int(distinct[i])),
                              (code, len(values), int(values.sum()), len(np.unique(values))))
+
+
+    def test_dense_joint_coordinate_matches_hash(self):
+        from torbles.sqlencodednative import encoded_groups
+        i = np.arange(131072, dtype=np.uint32)
+        table = algq.Table("t", {"fk": i % 1024, "b": i // 1024 % 16, "uid": i % 257},
+                           msb=("fk",))
+        self.addCleanup(table.close)
+        keys = [("fk", None, 4, 4, 6), ("b", None, 0, 0, 0)]
+        unique = ("uid", None, 0, 0, 0)
+        cpu = encoded_groups(table, keys, ["uid"], 1024, table.used_bm, distinct=unique, rank=1)
+        self.assertIsNotNone(cpu)
+        self.assertEqual(len(cpu[1]), 1024)
+        if not hasattr(algq.gpu_lib(), "gpu_group_distinct_sector_planes"):
+            return
+        stats = {}
+        base = sqlgpugroups.group_distinct(table, keys, ["uid"], 1024, table.used_bm, {},
+                                          distinct=unique, rank=1)
+        dense = sqlgpugroups.group_distinct(table, keys, ["uid"], 1024, table.used_bm, stats,
+                                           distinct=unique, rank=1, rank_switch=True)
+        self.assertEqual(stats["cuda_interchange_dense_bits"], 10)
+
+        def rows(result):
+            codes, counts, sums, distinct = result
+            return sorted(zip(map(tuple, codes.tolist()), counts.tolist(),
+                              sums[:, 0].tolist(), distinct.tolist()))
+
+        self.assertEqual(rows(cpu), rows(base))
+        self.assertEqual(rows(base), rows(dense))
+
+    def test_distinct_rank_certificate_and_exact_retry(self):
+        if not hasattr(algq.gpu_lib(), "gpu_group_distinct_sector_planes"):
+            return
+        sizes = np.r_[np.arange(2500, 2600, 50), np.full(14, 1200), np.full(112, 320)]
+        keys = [("g", None, 0, 4, 7)]
+        unique = ("u", None, 0, 0, 0)
+        for certify in (True, False):
+            values = np.concatenate([
+                np.arange(size, dtype=np.uint32) if certify or code == 20
+                else np.zeros(size, dtype=np.uint32)
+                for code, size in enumerate(sizes)
+            ])
+            table = algq.Table("t", {"g": np.repeat(np.arange(128, dtype=np.uint32), sizes), "u": values})
+            self.addCleanup(table.close)
+            stats = {}
+            result = sqlgpugroups.group_distinct(table, keys, [], 2, table.used_bm, stats,
+                                                 distinct=unique, rank=1, rank_switch=True)
+            self.assertEqual(stats["cuda_interchange_dense_bits"], 7)
+            if certify:
+                self.assertGreater(stats["cuda_interchange_rank_rows"], 0)
+                self.assertEqual(result[0][:, 0].tolist(), [1, 0])
+                self.assertEqual(result[3].tolist(), [2550, 2500])
+            else:
+                self.assertNotIn("cuda_interchange_rank_rows", stats)
+                self.assertEqual(result[0][:, 0].tolist(), [20, 0])
+                self.assertEqual(result[3].tolist(), [320, 1])

@@ -34,6 +34,8 @@ struct gpu_group_plan_t {
     int projected;
     gpu_group_sectors_t sectors;
     const unsigned char *winners;
+    unsigned dense_bits;
+    unsigned dense_width[GPU_GROUP_KEYS];
 };
 
 struct gpu_group_tuple_t { uint64_t key[GPU_GROUP_KEYS]; };
@@ -150,16 +152,23 @@ template <bool Distinct> __global__ void gpu_group_accumulate(const gtable_t *ta
         if ((threadIdx.x & 31) != (unsigned)(__ffs(peers) - 1)) return;
     }
 #endif
-    uint64_t hash = gpu_group_hash(tuple, plan.nkey);
-    uint32_t pos = (uint32_t)hash & (slots - 1);
-    uint64_t tag = hash & UINT64_C(0xffffffff00000000);
-    uint64_t token = tag | (row + 1);
-    for (;;) {
-        uint64_t owner = atomicCAS(owners + pos, 0ULL, (unsigned long long)token);
-        if (!owner || ((owner & UINT64_C(0xffffffff00000000)) == tag &&
-                       gpu_group_equal(tuple, gpu_group_key(table, plan, (uint32_t)owner - 1), plan.nkey)))
-            break;
-        pos = (pos + 1) & (slots - 1);
+    uint32_t pos;
+    if (plan.dense_bits) {
+        pos = 0;
+        for (int i = 0; i < plan.nkey; ++i)
+            pos = (pos << plan.dense_width[i]) | (uint32_t)tuple.key[i];
+    } else {
+        uint64_t hash = gpu_group_hash(tuple, plan.nkey);
+        pos = (uint32_t)hash & (slots - 1);
+        uint64_t tag = hash & UINT64_C(0xffffffff00000000);
+        uint64_t token = tag | (row + 1);
+        for (;;) {
+            uint64_t owner = atomicCAS(owners + pos, 0ULL, (unsigned long long)token);
+            if (!owner || ((owner & UINT64_C(0xffffffff00000000)) == tag &&
+                           gpu_group_equal(tuple, gpu_group_key(table, plan, (uint32_t)owner - 1), plan.nkey)))
+                break;
+            pos = (pos + 1) & (slots - 1);
+        }
     }
     if (Distinct) {
         uint64_t value = gpu_group_value(table, plan.distinct, (uint32_t)row);
@@ -217,7 +226,16 @@ __global__ void gpu_group_gather(const gtable_t *table, gpu_group_plan_t plan,
     gpu_group_result_t entry{};
     if (score) {
         uint32_t slot = UINT32_MAX - (uint32_t)score;
-        entry.tuple = gpu_group_key(table, plan, (uint32_t)owners[slot] - 1);
+        if (plan.dense_bits) {
+            uint32_t code = slot;
+            for (int i = plan.nkey - 1; i >= 0; --i) {
+                unsigned width = plan.dense_width[i];
+                entry.tuple.key[i] = code & ((UINT32_C(1) << width) - 1);
+                code >>= width;
+            }
+        } else {
+            entry.tuple = gpu_group_key(table, plan, (uint32_t)owners[slot] - 1);
+        }
         entry.count = counts[slot];
         if (uniques) entry.distinct = uniques[slot];
         if (plan.nsum > 0) entry.sums[0] = sums0[slot];
@@ -296,11 +314,11 @@ __global__ void gpu_coordinate_counts(const gtable_t *table, const uint64_t *sco
     atomicAdd(histogram + coordinate, weight);
 }
 
-/* ORDER BY COUNT(*) fixes the winners before their other aggregates are
- * evaluated. The exact histogram also supplies the second pass's row bound. */
+/* COUNT fixes its winners directly. COUNT(DISTINCT) can use row counts
+ * as upper bounds, subject to an exact certificate after the second pass. */
 static uint64_t gpu_coordinate_winners(handle_t *h, const uint64_t *scope, gpu_group_key_t key,
-                         uint32_t k, uint64_t active, uint64_t full_capacity,
-                         gpu_group_buffer<unsigned char> &device_winners) {
+                         uint32_t k, bool distinct_rank, uint64_t active, uint64_t full_capacity,
+                         gpu_group_buffer<unsigned char> &device_winners, uint32_t &excluded_bound) {
     uint32_t domain = UINT32_C(1) << key.offset;
     gpu_group_buffer<uint32_t> histogram;
     std::unique_ptr<uint32_t, decltype(&free)> counts((uint32_t *)malloc(domain * sizeof(uint32_t)), free);
@@ -315,25 +333,34 @@ static uint64_t gpu_coordinate_winners(handle_t *h, const uint64_t *scope, gpu_g
     for (uint32_t code = 0; code < domain; ++code)
         if (counts.get()[code]) scores.get()[occupied++] = ((uint64_t)counts.get()[code] << 32) | (UINT32_MAX - code);
     if (occupied <= k) return 0;
-    std::partial_sort(scores.get(), scores.get() + k, scores.get() + occupied, std::greater<uint64_t>{});
+    uint32_t limit = distinct_rank ? std::min(occupied - 1, k * 8) : k;
+    std::partial_sort(scores.get(), scores.get() + limit + 1, scores.get() + occupied, std::greater<uint64_t>{});
     uint64_t mass = 0;
-    for (uint32_t i = 0; i < k; ++i) mass += scores.get()[i] >> 32;
-    if (!mass || mass * 4 > active * 3 || pow2_at_least((mass * 4 + 2) / 3) > full_capacity / 2) return 0;
+    uint32_t keep = 0;
+    for (; keep < limit; ++keep) {
+        uint64_t next = mass + (scores.get()[keep] >> 32);
+        if (next * 4 > active * 3 || pow2_at_least((next * 4 + 2) / 3) > full_capacity / 2) break;
+        mass = next;
+    }
+    if (keep < k) return 0;
 
     std::unique_ptr<unsigned char, decltype(&free)> winners((unsigned char *)calloc(domain, 1), free);
     if (!winners || !device_winners.alloc(domain)) return 0;
-    for (uint32_t i = 0; i < k; ++i) winners.get()[UINT32_MAX - (uint32_t)scores.get()[i]] = 1;
+    for (uint32_t i = 0; i < keep; ++i) winners.get()[UINT32_MAX - (uint32_t)scores.get()[i]] = 1;
+    excluded_bound = (uint32_t)(scores.get()[keep] >> 32);
     if (cudaMemcpy(device_winners.data, winners.get(), domain, cudaMemcpyHostToDevice) != cudaSuccess) return 0;
     return mass;
 }
 
-static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
+enum { GPU_GROUP_UNCERTIFIED = -3 };
+
+static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
                     const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
                     uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
                     uint64_t *out_sums, uint32_t *out_n, const gpu_group_key_t *distinct,
                     uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
                     uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width,
-                    gpu_group_sectors_t sectors, uint64_t *selected_rows) {
+                    gpu_group_sectors_t sectors, uint64_t *selected_rows, bool try_pruning) {
     if (selected_rows) *selected_rows = 0;
     if (!out_n) return -1;
     *out_n = 0;
@@ -390,9 +417,25 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
         return -2;
     gpu_group_buffer<unsigned char> device_winners;
     uint64_t winner_mass = 0;
-    if (selected_rows && distinct && !rank && nkey == 1 && plan.key[0].transform == 4 &&
-        plan.key[0].offset <= 17 && active > k) {
-        winner_mass = gpu_coordinate_winners(h, scope.data, plan.key[0], k, active, capacity, device_winners);
+    uint32_t excluded_bound = 0;
+    if (selected_rows && distinct) {
+        unsigned bits = 0;
+        bool coordinate = false;
+        for (int i = 0; i < nkey; ++i) {
+            const gpu_group_key_t &key = plan.key[i];
+            if (key.high >= 0 || (key.transform != 0 && key.transform != 4)) {
+                bits = 0;
+                break;
+            }
+            coordinate |= key.transform == 4;
+            plan.dense_width[i] = key.transform == 4 ? (unsigned)key.offset : (unsigned)t.width[key.low];
+            bits += plan.dense_width[i];
+        }
+        if (coordinate && bits <= 17) plan.dense_bits = bits;
+    }
+    if (plan.dense_bits && nkey == 1 && try_pruning && active > k) {
+        winner_mass = gpu_coordinate_winners(h, scope.data, plan.key[0], k, rank == 1, active, capacity,
+                                             device_winners, excluded_bound);
         if (winner_mass) {
             capacity = pow2_at_least((winner_mass * 4 + 2) / 3);
             plan.winners = device_winners.data;
@@ -400,28 +443,30 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
     }
     if (capacity > (UINT64_C(1) << 27)) return -1;
     uint32_t slots = (uint32_t)capacity;
+    uint32_t group_slots = plan.dense_bits ? std::max(k, UINT32_C(1) << plan.dense_bits) : slots;
+    uint32_t owner_slots = plan.dense_bits ? 0 : slots;
     bool small = k <= GPU_GROUP_SMALL;
-    uint32_t blocks = (slots + GPU_GROUP_TILE - 1) / GPU_GROUP_TILE;
+    uint32_t blocks = (group_slots + GPU_GROUP_TILE - 1) / GPU_GROUP_TILE;
     uint32_t next = (blocks * k + GPU_GROUP_TILE - 1) / GPU_GROUP_TILE;
-    size_t first_size = small ? blocks * k : slots;
-    size_t second_size = small ? (blocks > 1 ? next * k : 0) : slots;
+    size_t first_size = small ? blocks * k : group_slots;
+    size_t second_size = small ? (blocks > 1 ? next * k : 0) : group_slots;
     gpu_group_buffer<unsigned long long> owners, pairs;
     gpu_group_buffer<uint32_t> counts, uniques, lookup, sector_data;
     gpu_group_buffer<unsigned int> invalid;
     gpu_group_buffer<uint64_t> sums0, sums1, first, second;
     gpu_group_buffer<gpu_group_result_t> result;
     gpu_group_buffer<unsigned char> sort_scratch;
-    if (!owners.alloc(slots) || !counts.alloc(slots) ||
-        !pairs.alloc(distinct ? slots : 0) || !uniques.alloc(distinct ? slots : 0) ||
+    if (!owners.alloc(owner_slots) || !counts.alloc(group_slots) ||
+        !pairs.alloc(distinct ? slots : 0) || !uniques.alloc(distinct ? group_slots : 0) ||
         !lookup.alloc(projection ? projection_len : 0) || !invalid.alloc(projection ? 1 : 0) ||
         !sector_data.alloc(sector_words) ||
-        !sums0.alloc(nsum > 0 ? slots : 0) || !sums1.alloc(nsum > 1 ? slots : 0) ||
+        !sums0.alloc(nsum > 0 ? group_slots : 0) || !sums1.alloc(nsum > 1 ? group_slots : 0) ||
         !first.alloc(first_size) ||
         !second.alloc(second_size) || !result.alloc(k) ||
-        !owners.clear(slots) || !counts.clear(slots) ||
-        !pairs.clear(distinct ? slots : 0) || !uniques.clear(distinct ? slots : 0) ||
+        !owners.clear(owner_slots) || !counts.clear(group_slots) ||
+        !pairs.clear(distinct ? slots : 0) || !uniques.clear(distinct ? group_slots : 0) ||
         !invalid.clear(projection ? 1 : 0) ||
-        !sums0.clear(nsum > 0 ? slots : 0) || !sums1.clear(nsum > 1 ? slots : 0))
+        !sums0.clear(nsum > 0 ? group_slots : 0) || !sums1.clear(nsum > 1 ? group_slots : 0))
         return -2;
     if (projection) {
         if (cudaMemcpy(lookup.data, projection, projection_len * sizeof *projection, cudaMemcpyHostToDevice) != cudaSuccess)
@@ -452,7 +497,7 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
     const uint32_t *rank_counts = rank ? uniques.data : counts.data;
     uint64_t *in = first.data, *out = second.data;
     if (small) {
-        gpu_group_select<true><<<blocks, GPU_GROUP_THREADS>>>(rank_counts, nullptr, slots, k, in);
+        gpu_group_select<true><<<blocks, GPU_GROUP_THREADS>>>(rank_counts, nullptr, group_slots, k, in);
         if (cudaGetLastError() != cudaSuccess) return -2;
         while (blocks > 1) {
             uint32_t n = blocks * k;
@@ -462,13 +507,13 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
             std::swap(in, out);
         }
     } else {
-        gpu_group_scores<<<(slots + 255) / 256, 256>>>(rank_counts, slots, in);
+        gpu_group_scores<<<(group_slots + 255) / 256, 256>>>(rank_counts, group_slots, in);
         if (cudaGetLastError() != cudaSuccess) return -2;
         cub::DoubleBuffer<uint64_t> scores(in, out);
         size_t bytes = 0;
-        if (cub::DeviceRadixSort::SortKeysDescending(nullptr, bytes, scores, slots) != cudaSuccess ||
+        if (cub::DeviceRadixSort::SortKeysDescending(nullptr, bytes, scores, group_slots) != cudaSuccess ||
             !sort_scratch.alloc(bytes) ||
-            cub::DeviceRadixSort::SortKeysDescending(sort_scratch.data, bytes, scores, slots) != cudaSuccess)
+            cub::DeviceRadixSort::SortKeysDescending(sort_scratch.data, bytes, scores, group_slots) != cudaSuccess)
             return -2;
         in = scores.Current();
     }
@@ -482,6 +527,8 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
         if (cudaMemcpy(&bad, invalid.data, sizeof bad, cudaMemcpyDeviceToHost) != cudaSuccess) return -2;
         if (bad) return -1;
     }
+    if (winner_mass && rank == 1 && host[k - 1].distinct <= excluded_bound)
+        return GPU_GROUP_UNCERTIFIED;
     for (unsigned i = 0; i < k && host[i].count; ++i) {
         for (int j = 0; j < nkey; ++j) out_keys[i * nkey + j] = host[i].tuple.key[j];
         for (int j = 0; j < nsum; ++j) out_sums[i * nsum + j] = host[i].sums[j];
@@ -492,6 +539,22 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
     if (selected_rows) *selected_rows = winner_mass;
     return 0;
 }
+static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
+                    const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
+                    uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
+                    uint64_t *out_sums, uint32_t *out_n, const gpu_group_key_t *distinct,
+                    uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
+                    uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width,
+                    gpu_group_sectors_t sectors, uint64_t *selected_rows) {
+    int rc = gpu_group_run_once(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
+                               out_sums, out_n, distinct, rank, out_distinct, projection,
+                               projection_len, projection_mask, projection_width, sectors, selected_rows, true);
+    if (rc != GPU_GROUP_UNCERTIFIED) return rc;
+    return gpu_group_run_once(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
+                              out_sums, out_n, distinct, rank, out_distinct, projection,
+                              projection_len, projection_mask, projection_width, sectors, selected_rows, false);
+}
+
 extern "C" int gpu_group_planes(void *hv, const uint64_t *filter, int32_t nkey,
                     const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
                     uint32_t k, uint64_t *out_keys, uint64_t *out_counts,

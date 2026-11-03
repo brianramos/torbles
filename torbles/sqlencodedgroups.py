@@ -136,6 +136,8 @@ def run(executor, preds, aggs):
     scope = bitmap(executor, preds)
     if scope is None:
         return None
+    mode = os.environ.get("TORBLES_INTERCHANGES", "auto")
+    enabled = mode != "0"
     if gpu:
         from torbles import sqlgpugroups
 
@@ -150,14 +152,14 @@ def run(executor, preds, aggs):
             cx.stats["engine_queries"] += 1
             return rel
         interchange, result = None, None
-        enabled = os.environ.get("TORBLES_INTERCHANGES") == "1"
-        count_switch = enabled and len(keys) == 1 and distinct is not None and rank == BY_COUNT
+        rank_switch = (enabled and distinct is not None
+                       and rank in (BY_COUNT, BY_DISTINCT))
         if projection is not None and enabled:
             from . import sqlinterchanges
 
             pos = next(i for i, spec in enumerate(keys) if spec[3] == 3)
             low, _, _, _, _, decode = keys[pos]
-            interchange = sqlinterchanges.prepare(fact, low, s.group[pos].name, projection)
+            interchange = sqlinterchanges.prepare(fact, low, s.group[pos].name, projection, affine=mode == "1")
             if isinstance(interchange, sqlinterchanges.Coordinate):
                 labels = interchange.labels
                 projected = list(keys)
@@ -165,19 +167,23 @@ def run(executor, preds, aggs):
                                   lambda codes: decode(labels[codes]))
                 result = sqlgpugroups.group_distinct(
                     fact, [key[:-1] for key in projected], measures, cap, scope, cx.stats,
-                    distinct=distinct, rank=rank, rank_switch=count_switch,
+                    distinct=distinct, rank=rank, rank_switch=rank_switch,
                 )
                 if result is not None:
                     keys = projected
                     cx.stats["cuda_interchange_coordinate_bits"] = interchange.width
                 interchange = None
-        if count_switch and result is None and projection is None:
-            low, high, _, transform, _, _ = keys[0]
-            width = fact.width(low)
-            if high is None and transform == 0 and width <= 17:
-                # The identity field on a directly stored key needs no projection proof.
+            elif mode != "1":
+                interchange = None
+        if rank_switch and result is None and projection is None:
+            widths = [fact.width(low) for low, _, _, _, _, _ in keys]
+            if (sum(widths) <= 17
+                    and all(high is None and transform == 0 for _, high, _, transform, _, _ in keys)):
+                # Identity fields index dense slots without a group-owner hash.
+                low, *_ = keys[0]
+                direct = [(low, None, 0, 4, widths[0]), *(key[:-1] for key in keys[1:])]
                 result = sqlgpugroups.group_distinct(
-                    fact, [(low, None, 0, 4, width)], measures, cap, scope, cx.stats,
+                    fact, direct, measures, cap, scope, cx.stats,
                     distinct=distinct, rank=rank, rank_switch=True,
                 )
         if result is None:
@@ -196,8 +202,19 @@ def run(executor, preds, aggs):
                 result = None if grouped is None else (*grouped, None)
 
     else:
-        result = encoded_groups(fact, [key[:-1] for key in keys], measures, cap, scope,
-                                distinct=distinct, rank=rank, projection=projection)
+        optimized = None
+        if enabled and (distinct is not None or projection is not None):
+            from torbles import sqlcpuinterchanges
+
+            optimized = sqlcpuinterchanges.run(
+                fact, keys, measures, cap, scope, cx.stats, distinct=distinct,
+                rank=rank, projection=projection, group=s.group,
+            )
+        if optimized is None:
+            result = encoded_groups(fact, [key[:-1] for key in keys], measures, cap, scope,
+                                    distinct=distinct, rank=rank, projection=projection)
+        else:
+            result, keys = optimized
     if result is None:
         return None
     codes, counts, sums, uniques = result
