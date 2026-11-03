@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0, alpha
+
+- SQL INSERT, UPDATE, DELETE, and primary-key MERGE operate on writable
+  nonnullable uint32 tables. Refresh uses masks for visibility and patches
+  eligible updates directly on CPU and CUDA bitplanes.
+- Durable SQL adds explicit transactions and autocommit on a fixed catalog
+  through torbles.open_durable(). Commits fsync a checksummed redo log.
+  Recovery rebuilds bitplanes from a seed checkpoint and committed records.
+  SQL execution is serialized across clients. Rollback of writes rebuilds
+  state, and the log grows from the initial checkpoint.
+- Eligible ORDER BY, top-k, and ROW_NUMBER use encoded or raw-plane ordering.
+  SQL retains native masks and grouped aggregate states through more plans.
+
 ## 0.4.0 (2026-11-03), alpha
 
 Tables wider than a torble. A torble holds 31 columns, and 0.3.0 refused a table that needed more once its hidden

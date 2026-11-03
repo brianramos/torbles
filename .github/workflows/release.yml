@@ -10,7 +10,15 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Match the release tag to the package version
+        if: github.ref_type == 'tag'
+        run: test "$GITHUB_REF_NAME" = "v$(cat VERSION)"
   sdist:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +31,7 @@ jobs:
           name: sdist
           path: dist/*.tar.gz
   wheels:
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,12 +41,15 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_ENVIRONMENT: "TORBLES_PORTABLE=1"
           CIBW_TEST_REQUIRES: "pandas"
-          CIBW_TEST_COMMAND: "torbles-fuzz --seed 1 --cases 20"
+          CIBW_TEST_COMMAND: >-
+            torbles-fuzz --seed 1 --cases 20 &&
+            python {project}/tests/check_durable.py
       - uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: wheelhouse/*.whl
   publish:
+    if: github.event_name == 'push' && github.ref_type == 'tag'
     needs: [sdist, wheels]
     runs-on: ubuntu-latest
     environment: pypi
