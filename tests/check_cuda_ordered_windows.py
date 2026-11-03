@@ -93,5 +93,95 @@ class CUDAOrderedWindowChecks(unittest.TestCase):
                 )
 
 
+    def test_qualify_compacts_rank_and_signed_sum(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_qualify"):
+            self.skipTest("CUDA QUALIFY unavailable")
+        queries = (
+            "SELECT id, ROW_NUMBER() OVER (PARTITION BY part ORDER BY score DESC, id) AS rn "
+            "FROM t QUALIFY 3 >= rn ORDER BY id",
+            "SELECT id, SUM(amount) OVER (PARTITION BY part ORDER BY id "
+            "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total "
+            "FROM t WHERE keep QUALIFY total < -200 ORDER BY id",
+            "SELECT id FROM t QUALIFY ROW_NUMBER() OVER (ORDER BY id) < 0",
+        )
+        for query in queries:
+            with self.subTest(query=query):
+                expected = self.db.con.execute(query).fetchall()
+                actual = self.db.sql(query, engine="gpu")
+                self.assertEqual(actual.rows, expected)
+                self.assertEqual(actual.stats.get("cuda_window_qualify_rows"), len(expected), actual.stats)
+
+    def test_columnar_result_preserves_sql_values_and_row_api(self):
+        query = "SELECT id, ROW_NUMBER() OVER (PARTITION BY part ORDER BY id) AS rn FROM t"
+        actual = self.db.sql(query, engine="gpu")
+        columns = actual.fetch_columns()
+        self.assertEqual(len(columns), 2)
+        self.assertTrue(all(column.dtype == np.int64 for column in columns))
+        expected = sorted(self.db.con.execute(query).fetchall())
+        self.assertEqual(list(zip(*(column.tolist() for column in columns))), expected)
+        columns[0][0] = -1
+        self.assertEqual(actual.fetchone(), expected[0])
+        self.assertEqual(actual.fetchall(), expected)
+
+
+    def test_window_terminal_order_and_physical_slice(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_terminal"):
+            self.skipTest("CUDA terminal window unavailable")
+        ordered = (
+            "SELECT id, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn FROM t "
+            "QUALIFY rn > 10 ORDER BY rn DESC LIMIT 17 OFFSET 4"
+        )
+        actual = self.db.sql(ordered, engine="gpu")
+        self.assertEqual(actual.fetchall(), self.db.con.execute(ordered).fetchall())
+        self.assertEqual(actual.stats.get("cuda_window_terminal_rows"), 17, actual.stats)
+        physical = "SELECT id, ROW_NUMBER() OVER (ORDER BY id DESC) AS rn FROM t LIMIT 7 OFFSET 9"
+        actual = self.db.sql(physical, engine="gpu")
+        self.assertEqual(actual.fetchall(), [(i, len(self.frame) - i) for i in range(9, 16)])
+        self.assertEqual(actual.stats.get("cuda_window_terminal_rows"), 7, actual.stats)
+
+    def test_derived_window_filter_moves_before_materialization(self):
+        query = (
+            "SELECT id, rn FROM (SELECT id, ROW_NUMBER() OVER (PARTITION BY part ORDER BY id) AS rn "
+            "FROM t) AS ranked WHERE rn <= 2 ORDER BY id"
+        )
+        actual = self.db.sql(query, engine="gpu")
+        self.assertEqual(actual.fetchall(), self.db.con.execute(query).fetchall())
+        self.assertEqual(actual.stats.get("window_derived_qualify_pushdowns"), 1, actual.stats)
+        self.assertEqual(actual.stats.get("cuda_window_qualify_rows"), 46, actual.stats)
+
+
+    def test_packed_temporary_planes_reuse_signed_values(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_torus_terminal"):
+            self.skipTest("CUDA temporary value planes unavailable")
+        query = (
+            "SELECT id, SUM(amount) OVER (PARTITION BY part ORDER BY id "
+            "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total FROM t "
+            "WHERE keep QUALIFY -500 <= total AND total < -200 ORDER BY id"
+        )
+        actual = self.db.sql(query, engine="gpu")
+        expected = self.db.con.execute(query).fetchall()
+        self.assertEqual(actual.fetchall(), expected)
+        self.assertGreater(actual.stats.get("cuda_window_torus_planes", 0), 0, actual.stats)
+        self.assertEqual(actual.stats.get("cuda_window_download_bytes"), 12 * len(expected), actual.stats)
+
+    def test_derived_scalar_reductions_keep_window_on_device(self):
+        if not hasattr(algq.gpu_lib(), "gpu_plane_window_aggregate"):
+            self.skipTest("CUDA temporary window reduction unavailable")
+        inner = ("SELECT SUM(amount) OVER (PARTITION BY part ORDER BY id "
+                 "ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total FROM t WHERE keep")
+        for aggregate, predicate in (
+            ("COUNT(*)", "total < -200"),
+            ("SUM(total)", "total >= -1000 AND total < -200"),
+            ("MIN(total)", "total < 0"),
+            ("MAX(total)", "total < 0"),
+            ("SUM(total)", "total > 1000000000"),
+        ):
+            with self.subTest(aggregate=aggregate, predicate=predicate):
+                query = f"SELECT {aggregate} FROM ({inner}) AS w WHERE {predicate}"
+                result = self.db.sql(query, engine="gpu")
+                self.assertEqual(result.fetchall(), self.db.con.execute(query).fetchall())
+                self.assertEqual(result.stats.get("cuda_window_aggregate"), 1, result.stats)
+
+
 if __name__ == "__main__":
     unittest.main()

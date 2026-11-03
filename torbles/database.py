@@ -562,7 +562,7 @@ class Database:
 
     def sql(self, text, engine="alg"):
         """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
-        (.columns, .rows, .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
+        (.columns, .rows, .fetch_columns(), .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
         see docs/SQL.md for how each part of a query is evaluated and for the functions supported."""
         import sqlfront, sqlexec
         if not self._writable:
