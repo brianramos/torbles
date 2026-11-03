@@ -995,6 +995,7 @@ def load(path, validate=True, con=None):
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
+    db._writable, db._sql_lock = {}, RLock()
     db._own, db.con, db._add, db.tables, db.meta, db.notes, db.integrity = False, con, {}, {}, {}, man.get("notes", []), {}
     try: return _load_tables(db, path, man, validate)
     except BaseException:
