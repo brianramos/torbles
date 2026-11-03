@@ -40,6 +40,27 @@ one's. `SET TIME ZONE ...` sets the session's time zone; every other statement i
 and AVG statements over the same table and predicate can share a packed scope and an exact moment calculation.
 Each result retains its original column names and types. Sharing lasts for the batch.
 
+### Durable learned algebra
+
+```python
+from torbles.sqlalgebra import Catalog
+
+algebra = Catalog().learn(db, "SELECT COUNT(*), SUM(x), AVG(y) FROM t")
+db.save("snapshot")
+algebra.save("workload.tqa")
+
+reopened = torbles.load("snapshot")
+algebra = Catalog.load("workload.tqa")
+answer = algebra.query(reopened, "SELECT SUM(x+y), AVG(x) FROM t")
+```
+
+A catalog learns exact count and sum bases for supported scalar integer aggregates. New queries can combine
+those moments into affine sums and averages, or combine saved scopes using interval proofs on a single
+nonnullable integer filter column. Queries outside the basis run through the ordinary SQL executor.
+The catalog checks source identity before reuse. After a change, its first eligible query refreshes the learned
+bases, or the caller can run `algebra.refresh(db)` explicitly. Use `refresh=False` to execute against current data
+without refreshing a stale catalog. Checkpoint reuse after reopening requires a validated, matching saved snapshot.
+
 ## How a query runs
 
 DuckDB's parser reads the text (syntax only: `json_serialize_sql`, no data and no binding). The binder reads the tree
