@@ -385,8 +385,10 @@ dimensions, deltas, and self-extension.
   key with references without a match). A wider table keeps the columns that one column determines in a dimension of
   their own and the rest in row-aligned parts ([docs/ENGINE.md](docs/ENGINE.md#tables-wider-than-a-torble-040)). One
   kernel pass reads at most 31 columns of a table, which a query reaches only through its GROUP BY keys, measure and
-  joins together (a filter on more columns is evaluated in groups). The mathematics module and the relationship
-  catalog work on tables of one torble.
+  joins together (a filter on more columns is evaluated in groups). The engine-level API reads at most 8 dimension
+  columns through lookups in one query, and a column the loader stored once per value of a determinant counts as one;
+  it refuses past that, where SQL joins them on its general path and `build(groups=False)` keeps them in the table.
+  The mathematics module and the relationship catalog work on tables of one torble.
 - **Storage:** a saved database is read-only: tables are rebuilt from their sources to change them (dimension moves
   through the engine API's deltas excepted, which are not saved yet).
 - **GPU executor:** validated on one GPU only, the RTX 5090 Laptop GPU (compute 12.0, CUDA 12.4): every test on the

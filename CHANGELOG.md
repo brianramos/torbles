@@ -57,8 +57,10 @@ Native code
 Limits
 
 One kernel pass reads at most 31 columns of a table, which a query reaches only through its GROUP BY keys, measure and
-joins together (a filter on more columns is split). The mathematics module and the relationship catalog work on tables
-of one torble. A table that a foreign key references keeps its determined columns (moving them would make a snowflake,
+joins together (a filter on more columns is split). The engine API reads at most 8 dimension columns through lookups
+in one query, and a moved column counts as one: past that it refuses, naming SQL (which joins them on its general
+path) and `build(groups=False)`; the engine fuzzer counts that as a refusal. The mathematics module and the
+relationship catalog work on tables of one torble. A table that a foreign key references keeps its determined columns (moving them would make a snowflake,
 which the star planner does not join); it is split into parts only.
 
 ## 0.3.0 (2026-11-02), alpha

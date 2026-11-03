@@ -2819,8 +2819,12 @@ class Query:
         else:
             plan.agg = A_BIL; plan.bil_a, plan.bil_b = fv.idx(self.measure.l.name), fv.idx(self.measure.r.name)
         if len(attrs) > len(plan.attr_fkcol):          # the plan's slots (torble.h): one per looked-up dimension column
+            moved = any(getattr(a[0], "generated", None) for a in attrs)
             raise ValueError(f"the query reads {len(attrs)} dimension columns through lookups, more than the "
-                             f"{len(plan.attr_fkcol)} one engine query holds")
+                             f"{len(plan.attr_fkcol)} one engine query holds"
+                             + (" (a column the loader stored once per value of a determinant is read through its dimension: "
+                                "SQL joins such columns on its general path, and build(groups=False) keeps them in the table)"
+                                if moved else ""))
         plan.nattr = len(attrs)
         for _ak, (i, fk, vals, km) in attrs.items():
             plan.attr_fkcol[i] = fk; plan.attr_vals[i] = vals.ctypes.data; plan.attr_n[i] = len(vals); plan.attr_kmask[i] = km; keep.append(vals)

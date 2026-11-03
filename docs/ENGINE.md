@@ -300,23 +300,24 @@ two ways.
 **Determined columns go to a dimension of their own** (`Database.build(groups=True)`, the default). When every row with
 the same value of a column D has the same values of columns C1..Ck (NULL included), the table carries a dimension keyed
 by D in denormalized form: customer attributes repeated on every sale, say. The loader finds such groups on the loaded
-codes: a strided sample of 64K rows names the candidates (`fd_candidates`: a dependency on every row holds on the
-sample), and each is checked on every row when its turn comes (`fd_verify`). D must never be NULL and have at most half
-as many values as rows, and only columns within 32 bits qualify. For a table that no foreign key references, the loader
-moves groups while the table is still wider than a torble, those with the fewest values of D first (their dimensions are
-the cheapest to join: a flattened star schema gives back the levels of its hierarchies, city -> nation -> region or
-brand -> category -> manufacturer, as small dimensions with derived surrogates, before any order-level key that
-determines several of them), at most 32 references in all: the dimension `T#D` holds one row per value of D, in D's
-order, its key designed like any dimension's (a derived surrogate when its columns form a hierarchy), and D becomes the
-foreign key to it, storing the surrogate. k columns leave the table for one row per value of D. A query reads C through
-the substitution D := surrogate: a filter on C is a dimension filter, cubes and comparators on D's planes (or a lookup),
-GROUP BY on a coordinate of the surrogate reads D's high planes, and SUM reads C as a looked-up attribute. SQL does it
-with the hidden join that already reads a foreign key's value (`_Planner.hidden_join`); in the Python API `t.c_city` is
-the dimension's column and the query joins it by itself. An OR of such a column with the table's own columns is compiled
-the same way: each dimension's part of the term becomes its polynomial on the foreign key's planes, one word on the
-filter program's stack (`_OnKey`), so the engine API now accepts an OR across a fact and its joined dimensions whose
-keys are stored most-significant-bit first. A referenced table keeps its groups: moving them would make a snowflake,
-which the star planner does not join.
+codes: about 64K rows name the candidates (`fd_candidates`: a stride of the table, or, for a key whose values do not
+repeat in a stride, every row of the values a hash picks, so that each value is seen with all its rows; a dependency on
+every row holds on any rows), and each candidate is checked on every row when its turn comes (`fd_verify`). D must never
+be NULL and have at most half as many values as rows, and only columns within 32 bits qualify. For a table that no
+foreign key references, the loader moves groups while the table is still wider than a torble, those with the fewest
+values of D first (their dimensions are the cheapest to join: a flattened star schema gives back the levels of its
+hierarchies, city -> nation -> region or brand -> category -> manufacturer, as small dimensions with derived surrogates,
+before any order-level key that determines several of them), at most 32 references in all: the dimension `T#D` holds one
+row per value of D, in D's order, its key designed like any dimension's (a derived surrogate when its columns form a
+hierarchy), and D becomes the foreign key to it, storing the surrogate. k columns leave the table for one row per value
+of D. A query reads C through the substitution D := surrogate: a filter on C is a dimension filter, cubes and
+comparators on D's planes (or a lookup), GROUP BY on a coordinate of the surrogate reads D's high planes, and SUM reads
+C as a looked-up attribute. SQL does it with the hidden join that already reads a foreign key's value
+(`_Planner.hidden_join`); in the Python API `t.c_city` is the dimension's column and the query joins it by itself. An OR
+of such a column with the table's own columns is compiled the same way: each dimension's part of the term becomes its
+polynomial on the foreign key's planes, one word on the filter program's stack (`_OnKey`), so the engine API now accepts
+an OR across a fact and its joined dimensions whose keys are stored most-significant-bit first. A referenced table keeps
+its groups: moving them would make a snowflake, which the star planner does not join.
 
 **What is left goes to row-aligned parts** (`algq.Table`, `_build_parts`). The columns are split into torbles of at
 most 31 columns over the same rows in the same order, a column with its hidden ones in one part, the references' bits,

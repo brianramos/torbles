@@ -29,6 +29,7 @@ import database                                                   # noqa: E402
 
 REFUSALS = ()                     # by message only: an unexpected OverflowError (say, from numpy) is a bug, not a refusal
 REFUSAL_TEXT = ("cannot be summed", "group domain too large", "filter program too long", "more than 18 decimal places",
+                "one engine query holds",
                 "expected a", "SUM may exceed 128 bits", "SUM needs 128 bits", "hidden GROUP BY columns")
 ALPHABET = list("abcAB z'_%-") + ["é", "ß", "日", "🙂", "Z", "0", "9"]
 
