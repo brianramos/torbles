@@ -1,0 +1,86 @@
+# Copyright 2026 Brian Richard RAMOS
+# SPDX-License-Identifier: Apache-2.0
+"""Dictionary LIKE and grouped text projections over encoded bitplanes."""
+
+from pathlib import Path
+import sys
+import unittest
+from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import torbles
+from torbles import sqltextplanes
+
+
+class TextPlaneChecks(unittest.TestCase):
+    @staticmethod
+    def database(n=70_013):
+        ids = np.arange(n)
+        urls = np.array(["", "https://www.google.com/a", "https://www.café.com/é",
+                         "https://www.café.com/zz", "line\nGoogle", "escape_%Google"], dtype=object)
+        titles = np.array([None, "Google", "google", "not Google", "other"], dtype=object)
+        data = pd.DataFrame(dict(id=ids, g=ids % 7, url=urls[ids % len(urls)],
+                                 title=titles[ids % len(titles)]))
+        return torbles.from_ddl(
+            "CREATE TABLE t(id INTEGER, g INTEGER, url VARCHAR, title VARCHAR)", {"t": data}
+        )
+
+    def check_query(self, db, sql, *, predicates=0, projection=False, duck=True):
+        result = db.sql(sql)
+        with patch.object(sqltextplanes, "dictionary_predicate", return_value=None), \
+                patch.object(sqltextplanes, "project_group", return_value=None):
+            self.assertEqual(result.rows, db.sql(sql).rows)
+        if duck:
+            self.assertEqual(result.rows, db.con.execute(sql).fetchall())
+        self.assertEqual(result.stats.get("dictionary_text_predicates", 0), predicates)
+        self.assertEqual(bool(result.stats.get("dictionary_projection_rows")), projection)
+        return result
+
+    def test_like_and_not_like_keep_null_unknown(self):
+        db = self.database()
+        self.addCleanup(db.close)
+        self.check_query(db, "SELECT count(*) FROM t WHERE title LIKE '%Google%'", predicates=1)
+        self.check_query(db, "SELECT count(*) FROM t WHERE title NOT LIKE '%Google%'", predicates=1)
+        self.check_query(db, "SELECT count(*) FROM t WHERE title ILIKE '%GOOGLE%' "
+                         "AND url NOT LIKE '%.google.%'", predicates=2)
+        self.check_query(db, "SELECT count(*) FROM t WHERE url LIKE '%!_!%Google' ESCAPE '!'", predicates=1)
+
+    def test_utf8_lengths_count_gate_and_regex_minimum(self):
+        db = self.database()
+        self.addCleanup(db.close)
+        self.check_query(db, "SELECT g, AVG(STRLEN(url)) AS l, COUNT(*) AS n FROM t WHERE url <> '' "
+                         "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
+        self.check_query(db, "SELECT g, AVG(CHAR_LENGTH(url)) AS l, COUNT(*) AS n FROM t WHERE url <> '' "
+                         "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
+        self.check_query(db, r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
+                         "AVG(STRLEN(url)) AS l, COUNT(*) AS n, MIN(url) FROM t WHERE url <> '' "
+                         "GROUP BY k HAVING COUNT(*) > 5000 ORDER BY l DESC, k", projection=True)
+        self.check_query(db, "SELECT g, AVG(STRLEN(title)) AS l, COUNT(*) AS n FROM t "
+                         "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g")
+        self.assertEqual(db.sql("SELECT g, AVG(STRLEN(url)) FROM t GROUP BY g "
+                                "HAVING COUNT(*) > 100000 ORDER BY g").rows, [])
+
+    def test_text_caches_belong_to_open_table(self):
+        first = self.database()
+        self.addCleanup(first.close)
+        table = first["t"]
+        query = "SELECT g, AVG(STRLEN(url)), COUNT(*) FROM t WHERE url LIKE '%com%' GROUP BY g ORDER BY g"
+        expected = self.check_query(first, query, predicates=1, projection=True).rows
+        self.assertTrue(table._text_predicates)
+        self.assertTrue(table._text_lengths)
+        first.close()
+        self.assertNotIn("_text_predicates", table.__dict__)
+        self.assertNotIn("_text_lengths", table.__dict__)
+
+        second = self.database(70_017)
+        self.addCleanup(second.close)
+        answer = self.check_query(second, query, predicates=1, projection=True).rows
+        self.assertNotEqual(answer, expected)
+
+
+if __name__ == "__main__":
+    unittest.main()
+

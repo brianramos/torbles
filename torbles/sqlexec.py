@@ -1442,6 +1442,8 @@ def _writable_join_sum(s, bindings, aggs, args, terms, cx):
 def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     names = [n for _, n in s.items]; types = [x.t for x, _ in s.items]
     if rel.plane_ordered:
+        if as_rel and not s.order and s.limit is None and s.offset is None:
+            return rel
         return Relation.of_columns(names, types, [ev(x, rel, cx) for x, _ in s.items], rel.n)
     if s.aggregate:
         out = aggregate(s, rel, aggs, aggplan, cx)
@@ -3782,9 +3784,18 @@ class _Planner:
             if p is not None: preds += p
             else: residual.append(c)
         if not empty and not residual:
-            grouped = self.raw_plane_group(preds, aggs)
+            from torbles import sqlencodedgroups, sqlgroupplans, sqlscalarplanes, sqltextplanes
+            grouped = sqlscalarplanes.run(self, preds, aggs)
+            if grouped is None:
+                grouped = sqlencodedgroups.run(self, preds, aggs)
+            if grouped is None:
+                grouped = self.raw_plane_group(preds, aggs)
             if grouped is not None:
                 return grouped, {}
+            for lower in (sqlgroupplans.special_count, sqlgroupplans.late_count, sqltextplanes.project_group):
+                grouped = lower(self, preds, aggs)
+                if grouped is not None:
+                    return grouped, {}
         atoms = {k: c for k, c in need.items() if c.b not in self.nulled}
         nulled_atoms = {k: c for k, c in need.items() if c.b in self.nulled}
         for c in residual:
@@ -3889,6 +3900,20 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
+                from torbles.sqlrowplanes import bounded_ids
+                from torbles.sqlscalarplanes import point_ids
+                bounded = point_ids(self)
+                if bounded is None:
+                    bounded = bounded_ids(self, preds)
+                if bounded is not None:
+                    ids, scanned = bounded
+                    payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
+                    out = self.rows_rel({k: c for k, c in atoms.items() if k in payload},
+                                        preds, False, ids=ids, fact_order=False)
+                    out.plane_ordered = True
+                    if s.order:
+                        cx.stats["raw_plane_topk_rows"] = scanned
+                    return out, {}
                 plane_rel = self.raw_plane_rows(atoms, preds)
                 if plane_rel is not None:
                     return plane_rel, {}
@@ -4012,6 +4037,10 @@ class _Planner:
             if p.sql is None: p.sql = I.render(c)
             return [p]
         if b is self.fact:
+            from torbles.sqltextplanes import dictionary_predicate
+            fast = dictionary_predicate(self, c)
+            if fast is not None:
+                return fast
             cols = {self.canon(x) for x in I.cols_of(c)}
             if len(cols) == 1:
                 return self.codeset(I.cols_of(c)[0], c)
@@ -4338,11 +4367,12 @@ class _Planner:
 
     def raw_plane_group(self, preds, aggs):
         """Compute a bounded COUNT-ordered result directly from the fact's planes."""
+        from torbles import sqlgroupplans
+
         s, cx, fact = self.s, self.cx, self.tab[self.fact]
         if (algq._plane_group_topk is None or not COLUMNAR or not VEC_GROUPS
-                or cx.engine != "alg" or s.from_ is not self.fact or self.joins
-                or self.left or self.fact_sample is not None or s.sample is not None
-                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 3
+                or cx.engine != "alg" or not sqlgroupplans.single_fact(self)
+                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 5
                 or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
                 or s.percent or s.with_ties or len(s.order) != 1):
             return None
@@ -4359,10 +4389,11 @@ class _Planner:
         if any(x.key() not in group_keys and x.key() not in aggs for x, _ in s.items):
             return None
 
-        from torbles.sqlgroupkeys import plane_group_key
-        keys = [plane_group_key(expr, self.fact, fact) for expr in s.group]
-        if any(key is None for key in keys):
+        layout = sqlgroupplans.layout(self, s.group)
+        if layout is None:
             return None
+        physical, deferred = layout
+        keys = [key for _, key in physical]
         domain = 1
         for low, high, shift, transform, _, _ in keys:
             if transform == 1:                       # EXTRACT(MINUTE)
@@ -4410,25 +4441,19 @@ class _Planner:
                 measures.append(name)
             plans[key] = (agg.name, measures.index(name), offset)
 
-        bitmap = fact.used_bm
-        if preds:
-            query = algq.Query(fact, join_mode="auto")
-            for pred in preds:
-                query.where(pred)
-            query._rows = query._rowbits = True
-            try:
-                bitmap = query._run_codes("alg") & bitmap
-            except (TypeError, ValueError, OverflowError):
-                return None
-            cx.stats["engine_queries"] += 1
+        bitmap = sqlgroupplans.bitmap(self, preds)
+        if bitmap is None:
+            return None
         result = fact._plane_group([key[:-1] for key in keys], measures, lim + off, bitmap)
         if result is None:
             return None
         codes, counts, sums = result
         counts = counts[off:].tolist()
         rel = Rel(len(counts))
-        for i, (expr, key) in enumerate(zip(s.group, keys)):
+        for i, (expr, key) in enumerate(physical):
             rel.cols[expr.key()] = key[-1](codes[off:, i])
+        for expr in deferred:
+            rel.cols[expr.key()] = ev(expr, rel, cx)
         for key, (kind, index, offset) in plans.items():
             if kind == "count":
                 rel.cols[key] = counts

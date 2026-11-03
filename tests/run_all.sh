@@ -57,6 +57,9 @@ run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu p
 run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
 run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
+run "encoded exact distinct and ranked groups"  python3 -m unittest check_encoded_groups
+run "bounded bitplane row ordering"             python3 -m unittest check_rowplanes
+run "dictionary predicates and projections"     python3 -m unittest check_text_planes
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py

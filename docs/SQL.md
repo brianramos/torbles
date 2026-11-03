@@ -103,6 +103,13 @@ table or CTE that only filters and computes columns of one stored table is group
 Rank selection, the LIMIT bound and the cell bits apply from 2^16 fact rows on (`TORBLES_ALG_MIN_ROWS`); on a smaller
 table reading the values costs less than the extra engine queries.
 
+On the CPU, supported scalar moments, exact distinct counts, and bounded ordering can also run directly on stored
+planes, including split integer keys. Distinct counts use a code bitmap for a compact scalar domain or a native
+table of unique (group, value) codes. A grouped query ordered by count can rank groups before gathering arguments
+for aggregates such as MIN and COUNT(DISTINCT). Literal LIKE filters and supported text projections evaluate the
+pattern once per dictionary value. Ordered minute buckets and selected CASE keys can also use encoded group states.
+These paths check the query shape, types, and available storage metadata before selecting a specialized kernel.
+
 That group-level work is array algebra as well, never a loop of comparisons. Grouping keys, PARTITION BY and ORDER BY
 columns become dense order codes (equal codes for values SQL does not distinguish, codes ascending along the sort
 order), so grouping, sorting and partitioning are one stable sort of integers; GROUP BY aggregates and window
