@@ -123,11 +123,11 @@ class Rel:
     """rows of a block while it is evaluated: cols {expression key: [value per row]} (Cols: engine columns stay codes
     until read as values), cnt [rows each row stands for], mom {(variant, moment): [sum per row]}, vcnt {variant: [count
     per row]}"""
-    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered")
+    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered", "native_window")
     def __init__(self, n):
         self.n, self.cols, self.cnt, self.mom, self.vcnt = n, Cols(), [1] * n, {}, {}
         self.grouped = False
-        self.plane_ordered = False
+        self.plane_ordered = self.native_window = False
     def take(self, idx):
         r = Rel(len(idx))
         r.cols = self.cols.take(idx)
@@ -788,6 +788,10 @@ def run(db, q, engine="alg"):
     cx = Cx(db, engine)
     with decimal.localcontext(T.CTX):
         r = run_query(q, cx)
+        if getattr(r, "_primitive_window_output", False):
+            res = Relation(r.names, r.types, r.rows)
+            res.stats = cx.stats
+            return res
         dec = [t.s if t.id == "DECIMAL" else None for t in r.types]
         cols = r._cols if r._cols is not None else (list(zip(*r.rows)) if r.rows and r.types else [])
         out = []
@@ -1453,6 +1457,16 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
             idx = [i for i in range(rel.n) for _ in range(rel.cnt[i])]
             rel = rel.take(idx)
         out = rel
+    if (out.native_window and not as_rel and s.qualify is None and not s.distinct
+            and not s.order and s.limit is None and s.offset is None):
+        from torbles.coltypes import IntCodec
+
+        cols = [out.cols.array(expr.key()) for expr, _ in s.items]
+        if cols and all(col is not None and col.valid is None and col.codes.dtype == np.int64
+                        and (col.codec is None or type(col.codec) is IntCodec) for col in cols):
+            result = Relation.of_columns(names, types, [col.decode() for col in cols], out.n)
+            result._primitive_window_output = True
+            return result
     if wins: compute_windows(list(wins.values()), out, cx, cx.series.get(id(s)))
     if s.qualify is not None:
         out = out.take(rows_where(s.qualify, out, cx))
@@ -3914,7 +3928,11 @@ class _Planner:
                     if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned
                     return out, {}
-                plane_rel = self.raw_plane_rows(atoms, preds)
+                from torbles.sqlwindowplanes import run as cuda_window
+
+                plane_rel = cuda_window(self, atoms, preds)
+                if plane_rel is None:
+                    plane_rel = self.raw_plane_rows(atoms, preds)
                 if plane_rel is not None:
                     return plane_rel, {}
                 ids = self.topk_ids(preds)

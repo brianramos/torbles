@@ -1216,6 +1216,7 @@ static void *dev_array(handle_t *h, const void *host, uint64_t bytes, uint64_t t
 #ifndef EMULATE
 #include "gpu_scalar_planes.cuh"
 #include "gpu_group_planes.cuh"
+#include "gpu_window_planes.cuh"
 #include "gpu_text_planes.cuh"
 #include "gpu_rows_bitmap.cuh"
 

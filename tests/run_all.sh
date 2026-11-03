@@ -78,6 +78,7 @@ run "windows whose values every row outputs"    python3 tests/check_window_outpu
 run "encoded top-k and row numbers"             python3 tests/check_encoded_order.py
 run "GPU bitplane top-k and SQL fallback"        python3 tests/check_mask_topk.py
 run "full raw-plane order and ROW_NUMBER"      python3 tests/check_raw_plane_order.py
+run "CUDA ordered windows over raw planes"       python3 tests/check_cuda_ordered_windows.py
 run "algebraic refresh and compaction"         python3 tests/check_refresh.py
 run "SQL INSERT, UPDATE, DELETE and MERGE"     python3 tests/check_sql_dml.py
 run "durable SQL and crash recovery"           python3 tests/check_durable.py
