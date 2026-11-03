@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (unreleased), alpha
+## 0.4.0 (2026-11-03), alpha
 
 Tables wider than a torble. A torble holds 31 columns, and 0.3.0 refused a table that needed more once its hidden
 columns were counted. 0.4.0 loads a table of any width and keeps it in several torbles, joined by the same algebraic
