@@ -11,17 +11,23 @@ from torbles import algq
 LIMIT = 1024
 
 
-def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, projection=None):
+def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, projection=None, interchange=None, rank_switch=False):
     if not 1 <= limit <= LIMIT or not 1 <= len(keys) <= 5 or len(measures) > 2:
         return None
-    if any(transform not in (0, 1, 3) for _, _, _, transform, _ in keys):
+    if any(transform not in (0, 1, 3, 4) for _, _, _, transform, _ in keys):
         return None
     if rank not in (0, 1) or (distinct is not None and distinct[3] not in (0, 1)):
         return None
 
     library = algq.gpu_lib()
     extra = distinct is not None or projection is not None
-    run = getattr(library, "gpu_group_distinct_planes" if extra else "gpu_group_planes", None)
+    name = "gpu_group_distinct_planes" if extra else "gpu_group_planes"
+    if (interchange is not None or rank_switch) and hasattr(library, "gpu_group_distinct_sector_planes"):
+        name = "gpu_group_distinct_sector_planes"
+    else:
+        interchange = None
+        rank_switch = False
+    run = getattr(library, name, None)
     if run is None:
         return None
     run.restype = C.c_int
@@ -33,6 +39,8 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
     if extra:
         run.argtypes += [C.POINTER(algq._PlaneGroupKey), C.c_uint32, algq.vp, algq.vp, C.c_uint64,
                          C.c_uint64, C.c_uint32]
+    if interchange is not None or rank_switch:
+        run.argtypes += [algq.vp, C.c_uint32, C.c_uint32, C.c_uint32, C.POINTER(C.c_uint64)]
     plan = algq._plan_table(fact)
 
     def descriptor(spec):
@@ -46,7 +54,7 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
     codes = np.empty((limit, len(keys)), np.uint64)
     counts = np.empty(limit, np.uint64)
     sums = np.empty((limit, len(measures)), np.uint64) if measures else None
-    nout = C.c_uint32()
+    nout, selected = C.c_uint32(), C.c_uint64()
     uniques = np.empty(limit, np.uint64) if distinct is not None else None
     lookup = None
     mask = width = 0
@@ -65,9 +73,19 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
             args += (None if unique_spec is None else C.byref(unique_spec), rank,
                      None if uniques is None else uniques.ctypes.data,
                      None if lookup is None else lookup.ctypes.data, 0 if lookup is None else len(lookup), mask, width)
+        if interchange is not None or rank_switch:
+            args += ((None, 0, 0, 0) if interchange is None else
+                     (interchange.sectors.ctypes.data, interchange.shift, interchange.bits,
+                      interchange.sectors.shape[1]))
+            args += (C.byref(selected) if rank_switch else None,)
         rc = run(*args)
     if rc:
         return None
+    if interchange is not None:
+        stats["cuda_interchange_proven_sectors"] = int(np.count_nonzero(interchange.sectors[:, 0]))
+        stats["cuda_interchange_dimension_rows"] = interchange.covered
+    if selected.value:
+        stats["cuda_interchange_rank_rows"] = selected.value
     stats["cuda_encoded_group"] = stats.get("cuda_encoded_group", 0) + 1
     n = nout.value
     if distinct is not None:
@@ -80,8 +98,8 @@ def group(fact, keys, measures, limit, bitmap, stats):
     return None if result is None else result[:3]
 
 
-def group_distinct(fact, keys, measures, limit, bitmap, stats, *, distinct, rank, projection=None):
-    return _group(fact, keys, measures, limit, bitmap, stats, distinct, rank, projection)
+def group_distinct(fact, keys, measures, limit, bitmap, stats, *, distinct, rank, projection=None, interchange=None, rank_switch=False):
+    return _group(fact, keys, measures, limit, bitmap, stats, distinct, rank, projection, interchange, rank_switch)
 
 
 

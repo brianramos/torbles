@@ -58,7 +58,7 @@ run "snowflake FK filters and group keys"        python3 tests/check_snowflake.p
 run "shared SQL workload states"              python3 -m unittest check_sql_workload check_sql_algebra
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
 run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
-run "encoded exact distinct and ranked groups"  python3 -m unittest check_encoded_groups
+run "encoded exact distinct and ranked groups"  python3 -m unittest check_encoded_groups check_sql_interchanges
 run "bounded bitplane row ordering"             python3 -m unittest check_rowplanes
 run "dictionary predicates and projections"     python3 -m unittest check_text_planes check_text_hist
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py

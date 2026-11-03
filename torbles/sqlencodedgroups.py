@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Plan exact sparse COUNT DISTINCT and bounded encoded GROUP BY."""
 
+import os
+
 import sqlir as I
 import sqltypes as T
 
@@ -147,12 +149,52 @@ def run(executor, preds, aggs):
             rel.plane_ordered = True
             cx.stats["engine_queries"] += 1
             return rel
-        if distinct is not None or projection is not None:
-            result = sqlgpugroups.group_distinct(fact, [key[:-1] for key in keys], measures, cap, scope, cx.stats,
-                                                 distinct=distinct, rank=rank, projection=projection)
-        else:
-            grouped = sqlgpugroups.group(fact, [key[:-1] for key in keys], [], cap, scope, cx.stats)
-            result = None if grouped is None else (*grouped, None)
+        interchange, result = None, None
+        enabled = os.environ.get("TORBLES_INTERCHANGES") == "1"
+        count_switch = enabled and len(keys) == 1 and distinct is not None and rank == BY_COUNT
+        if projection is not None and enabled:
+            from . import sqlinterchanges
+
+            pos = next(i for i, spec in enumerate(keys) if spec[3] == 3)
+            low, _, _, _, _, decode = keys[pos]
+            interchange = sqlinterchanges.prepare(fact, low, s.group[pos].name, projection)
+            if isinstance(interchange, sqlinterchanges.Coordinate):
+                labels = interchange.labels
+                projected = list(keys)
+                projected[pos] = (low, None, interchange.shift, 4, interchange.width,
+                                  lambda codes: decode(labels[codes]))
+                result = sqlgpugroups.group_distinct(
+                    fact, [key[:-1] for key in projected], measures, cap, scope, cx.stats,
+                    distinct=distinct, rank=rank, rank_switch=count_switch,
+                )
+                if result is not None:
+                    keys = projected
+                    cx.stats["cuda_interchange_coordinate_bits"] = interchange.width
+                interchange = None
+        if count_switch and result is None and projection is None:
+            low, high, _, transform, _, _ = keys[0]
+            width = fact.width(low)
+            if high is None and transform == 0 and width <= 17:
+                # The identity field on a directly stored key needs no projection proof.
+                result = sqlgpugroups.group_distinct(
+                    fact, [(low, None, 0, 4, width)], measures, cap, scope, cx.stats,
+                    distinct=distinct, rank=rank, rank_switch=True,
+                )
+        if result is None:
+            if distinct is not None or projection is not None:
+                result = sqlgpugroups.group_distinct(
+                    fact, [key[:-1] for key in keys], measures, cap, scope, cx.stats,
+                    distinct=distinct, rank=rank, projection=projection, interchange=interchange,
+                )
+                if result is None and interchange is not None:
+                    result = sqlgpugroups.group_distinct(
+                        fact, [key[:-1] for key in keys], measures, cap, scope, cx.stats,
+                        distinct=distinct, rank=rank, projection=projection,
+                    )
+            else:
+                grouped = sqlgpugroups.group(fact, [key[:-1] for key in keys], measures, cap, scope, cx.stats)
+                result = None if grouped is None else (*grouped, None)
+
     else:
         result = encoded_groups(fact, [key[:-1] for key in keys], measures, cap, scope,
                                 distinct=distinct, rank=rank, projection=projection)

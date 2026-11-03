@@ -57,6 +57,17 @@ These totals use the same 41 verified queries on the same inputs. Q4 and Q29 wer
 | 1M | 68.4 ms | 106.6 ms | 166.4 ms | 290.9 ms |
 | 10M | 374.5 ms | 792.7 ms | 804.6 ms | 1,631.0 ms |
 
+## Experimental sector interchanges
+
+Set TORBLES_INTERCHANGES=1 to try certified CUDA projection shortcuts for generated dimension keys.
+The planner checks that a stored surrogate field and the dimension key induce the same partition before
+grouping on the field. It decodes the selected keys through the certified labels. It can also check
+affine XOR formulas over high-bit sectors and use the existing dimension lookup in sectors that lack
+a proof. Checks cover all reachable dimension rows and cache against the source revisions.
+A separate count-first switch can fix the winning groups before processing distinct keys and measures.
+It admits the shortcut when the winning population is at most 75% of the scope and the resulting hash
+capacity is at most half the original allocation.
+
 ## Persisted cross-query algebra
 
 A separate benchmark projected the three columns used by official Q1–Q4

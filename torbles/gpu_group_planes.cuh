@@ -6,6 +6,8 @@
 #include <cub/block/block_radix_sort.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_reduce.cuh>
+#include <functional>
+#include <memory>
 
 enum { GPU_GROUP_KEYS = 5, GPU_GROUP_SUMS = 2, GPU_GROUP_LIMIT = 1024, GPU_GROUP_SMALL = 16,
        GPU_GROUP_THREADS = 128, GPU_GROUP_ITEMS = 4,
@@ -14,6 +16,11 @@ enum { GPU_GROUP_KEYS = 5, GPU_GROUP_SUMS = 2, GPU_GROUP_LIMIT = 1024, GPU_GROUP
 struct gpu_group_key_t {
     int32_t low, high, shift, transform;
     int64_t offset;
+};
+
+struct gpu_group_sectors_t {
+    const uint32_t *words;
+    uint32_t shift, bits, stride;
 };
 
 struct gpu_group_plan_t {
@@ -25,6 +32,8 @@ struct gpu_group_plan_t {
     uint64_t projection_len, projection_mask;
     uint32_t projection_width;
     int projected;
+    gpu_group_sectors_t sectors;
+    const unsigned char *winners;
 };
 
 struct gpu_group_tuple_t { uint64_t key[GPU_GROUP_KEYS]; };
@@ -44,6 +53,18 @@ DEV uint32_t gpu_group_code(const gtable_t *table, int col, uint32_t row) {
 }
 
 DEV uint64_t gpu_group_value(const gtable_t *table, const gpu_group_key_t &key, uint32_t row) {
+    if (key.transform == 4) {
+        uint64_t word = row >> 6;
+        unsigned lane = row & 63;
+        uint32_t field = 0;
+        int width = table->width[key.low];
+        for (int bit = 0; bit < key.offset; ++bit) {
+            int significance = key.shift + bit;
+            int plane = table->msb[key.low] ? width - 1 - significance : significance;
+            field |= (uint32_t)((table->P[key.low][plane][word] >> lane) & 1) << bit;
+        }
+        return field;
+    }
     uint64_t value = gpu_group_code(table, key.low, row);
     if (key.high >= 0) value |= (uint64_t)gpu_group_code(table, key.high, row) << key.shift;
     if (key.transform == 1) {
@@ -56,15 +77,34 @@ DEV uint64_t gpu_group_value(const gtable_t *table, const gpu_group_key_t &key, 
     return value;
 }
 
+DEV uint64_t gpu_group_project(const gpu_group_plan_t &plan, uint32_t raw) {
+    uint64_t index = raw & plan.projection_mask;
+    if (index >= plan.projection_len) return UINT64_MAX;
+    uint64_t value;
+    if (plan.sectors.words) {
+        uint32_t mask = (UINT32_C(1) << plan.sectors.bits) - 1;
+        uint32_t sector = (raw >> plan.sectors.shift) & mask;
+        const uint32_t *formula = plan.sectors.words + (size_t)sector * plan.sectors.stride;
+        if (formula[0] == 1) {
+            uint32_t code = formula[1];
+            for (unsigned bit = 0; bit < plan.projection_width; ++bit)
+                code ^= (uint32_t)(popc32(raw & formula[2 + bit]) & 1) << bit;
+            value = code;
+        } else {
+            value = plan.projection[index];
+        }
+    } else {
+        value = plan.projection[index];
+    }
+    return value < (UINT64_C(1) << plan.projection_width) ? value : UINT64_MAX;
+}
+
 DEV gpu_group_tuple_t gpu_group_key(const gtable_t *table, const gpu_group_plan_t &plan, uint32_t row) {
     gpu_group_tuple_t tuple{};
     for (int i = 0; i < plan.nkey; ++i) {
         uint64_t value = gpu_group_value(table, plan.key[i], row);
-        if (plan.key[i].transform == 3) {
-            uint64_t index = value & plan.projection_mask;
-            value = index < plan.projection_len ? plan.projection[index] : UINT64_MAX;
-            if (value >= (UINT64_C(1) << plan.projection_width)) value = UINT64_MAX;
-        }
+        if (plan.key[i].transform == 3)
+            value = gpu_group_project(plan, (uint32_t)value);
         tuple.key[i] = value;
     }
     return tuple;
@@ -99,6 +139,7 @@ template <bool Distinct> __global__ void gpu_group_accumulate(const gtable_t *ta
     uint64_t row = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
     if (row >= table->n || (scope && !((scope[row >> 6] >> (row & 63)) & 1))) return;
     gpu_group_tuple_t tuple = gpu_group_key(table, plan, (uint32_t)row);
+    if (plan.winners && !plan.winners[tuple.key[0]]) return;
     if (plan.projected >= 0 && tuple.key[plan.projected] == UINT64_MAX) {
         atomicExch(invalid, 1U);
         return;
@@ -209,8 +250,15 @@ static bool gpu_group_col(const gtable_t &t, int col) {
 }
 
 static bool gpu_group_prepare_key(const gtable_t &t, const gpu_group_key_t &key, gpu_group_key_t &out) {
-    if (!gpu_group_col(t, key.low) || key.high < -1 || key.transform < 0 || key.transform > 1)
-        return false;
+    if (!gpu_group_col(t, key.low) || key.high < -1) return false;
+    if (key.transform == 4) {
+        int width = t.width[key.low];
+        if (key.high != -1 || key.shift < 0 || key.shift >= width ||
+            key.offset < 1 || key.offset > width - key.shift) return false;
+        out = key;
+        return true;
+    }
+    if (key.transform < 0 || key.transform > 1) return false;
     if (key.high >= 0 && (!gpu_group_col(t, key.high) || key.shift < t.width[key.low] ||
                           key.shift >= 64 || t.width[key.high] > 64 - key.shift))
         return false;
@@ -230,12 +278,63 @@ static uint64_t gpu_group_active(const gtable_t &t, const uint64_t *filter) {
     return active;
 }
 
+__global__ void gpu_coordinate_counts(const gtable_t *table, const uint64_t *scope,
+                                      gpu_group_key_t key, uint32_t *histogram) {
+    uint64_t row = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    bool eligible = row < table->n && (!scope || ((scope[row >> 6] >> (row & 63)) & 1));
+#if __CUDA_ARCH__ >= 700
+    unsigned active = __ballot_sync(0xffffffffU, eligible);
+#endif
+    if (!eligible) return;
+    uint32_t coordinate = (uint32_t)gpu_group_value(table, key, (uint32_t)row);
+    unsigned weight = 1;
+#if __CUDA_ARCH__ >= 700
+    unsigned peers = __match_any_sync(active, coordinate);
+    if ((threadIdx.x & 31) != (unsigned)(__ffs(peers) - 1)) return;
+    weight = popc32(peers);
+#endif
+    atomicAdd(histogram + coordinate, weight);
+}
+
+/* ORDER BY COUNT(*) fixes the winners before their other aggregates are
+ * evaluated. The exact histogram also supplies the second pass's row bound. */
+static uint64_t gpu_coordinate_winners(handle_t *h, const uint64_t *scope, gpu_group_key_t key,
+                         uint32_t k, uint64_t active, uint64_t full_capacity,
+                         gpu_group_buffer<unsigned char> &device_winners) {
+    uint32_t domain = UINT32_C(1) << key.offset;
+    gpu_group_buffer<uint32_t> histogram;
+    std::unique_ptr<uint32_t, decltype(&free)> counts((uint32_t *)malloc(domain * sizeof(uint32_t)), free);
+    std::unique_ptr<uint64_t, decltype(&free)> scores((uint64_t *)malloc(domain * sizeof(uint64_t)), free);
+    if (!counts || !scores || !histogram.alloc(domain) || !histogram.clear(domain)) return 0;
+    gpu_coordinate_counts<<<(unsigned)((h->host.n + 255) / 256), 256>>>(
+        h->dev, scope, key, histogram.data);
+    if (cudaGetLastError() != cudaSuccess ||
+        cudaMemcpy(counts.get(), histogram.data, domain * sizeof(uint32_t), cudaMemcpyDeviceToHost) != cudaSuccess)
+        return 0;
+    uint32_t occupied = 0;
+    for (uint32_t code = 0; code < domain; ++code)
+        if (counts.get()[code]) scores.get()[occupied++] = ((uint64_t)counts.get()[code] << 32) | (UINT32_MAX - code);
+    if (occupied <= k) return 0;
+    std::partial_sort(scores.get(), scores.get() + k, scores.get() + occupied, std::greater<uint64_t>{});
+    uint64_t mass = 0;
+    for (uint32_t i = 0; i < k; ++i) mass += scores.get()[i] >> 32;
+    if (!mass || mass * 4 > active * 3 || pow2_at_least((mass * 4 + 2) / 3) > full_capacity / 2) return 0;
+
+    std::unique_ptr<unsigned char, decltype(&free)> winners((unsigned char *)calloc(domain, 1), free);
+    if (!winners || !device_winners.alloc(domain)) return 0;
+    for (uint32_t i = 0; i < k; ++i) winners.get()[UINT32_MAX - (uint32_t)scores.get()[i]] = 1;
+    if (cudaMemcpy(device_winners.data, winners.get(), domain, cudaMemcpyHostToDevice) != cudaSuccess) return 0;
+    return mass;
+}
+
 static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
                     const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
                     uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
                     uint64_t *out_sums, uint32_t *out_n, const gpu_group_key_t *distinct,
                     uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
-                    uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width) {
+                    uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width,
+                    gpu_group_sectors_t sectors, uint64_t *selected_rows) {
+    if (selected_rows) *selected_rows = 0;
     if (!out_n) return -1;
     *out_n = 0;
     if (!hv || nkey < 1 || nkey > GPU_GROUP_KEYS || !keys || nsum < 0 || nsum > GPU_GROUP_SUMS ||
@@ -262,6 +361,21 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
         }
     }
     if ((projection != nullptr) != (plan.projected >= 0)) return -1;
+    size_t sector_words = 0;
+    if (sectors.words) {
+        if (!projection || sectors.shift >= 32 || sectors.bits > 16 ||
+            sectors.bits > 32 - sectors.shift || sectors.stride != 2 + projection_width)
+            return -1;
+        uint32_t nsectors = UINT32_C(1) << sectors.bits;
+        sector_words = (size_t)nsectors * sectors.stride;
+        for (uint32_t i = 0; i < nsectors; ++i) {
+            const uint32_t *formula = sectors.words + (size_t)i * sectors.stride;
+            if (formula[0] > 1 || (formula[0] && formula[1] >= (UINT64_C(1) << projection_width)))
+                return -1;
+        }
+    } else if (sectors.shift || sectors.bits || sectors.stride) {
+        return -1;
+    }
     if (distinct && !gpu_group_prepare_key(t, *distinct, plan.distinct)) return -1;
     for (int i = 0; i < nsum; ++i) {
         if (!gpu_group_col(t, sum_cols[i])) return -1;
@@ -270,6 +384,20 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
     if (!t.n) return 0;
     uint64_t active = gpu_group_active(t, filter);
     uint64_t capacity = pow2_at_least((active * 4 + 2) / 3);
+    gpu_group_buffer<uint64_t> scope;
+    if (!scope.alloc(filter ? t.nw : 0) ||
+        (filter && cudaMemcpy(scope.data, filter, t.nw * sizeof *filter, cudaMemcpyHostToDevice) != cudaSuccess))
+        return -2;
+    gpu_group_buffer<unsigned char> device_winners;
+    uint64_t winner_mass = 0;
+    if (selected_rows && distinct && !rank && nkey == 1 && plan.key[0].transform == 4 &&
+        plan.key[0].offset <= 17 && active > k) {
+        winner_mass = gpu_coordinate_winners(h, scope.data, plan.key[0], k, active, capacity, device_winners);
+        if (winner_mass) {
+            capacity = pow2_at_least((winner_mass * 4 + 2) / 3);
+            plan.winners = device_winners.data;
+        }
+    }
     if (capacity > (UINT64_C(1) << 27)) return -1;
     uint32_t slots = (uint32_t)capacity;
     bool small = k <= GPU_GROUP_SMALL;
@@ -278,25 +406,23 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
     size_t first_size = small ? blocks * k : slots;
     size_t second_size = small ? (blocks > 1 ? next * k : 0) : slots;
     gpu_group_buffer<unsigned long long> owners, pairs;
-    gpu_group_buffer<uint32_t> counts, uniques, lookup;
+    gpu_group_buffer<uint32_t> counts, uniques, lookup, sector_data;
     gpu_group_buffer<unsigned int> invalid;
-    gpu_group_buffer<uint64_t> scope, sums0, sums1, first, second;
+    gpu_group_buffer<uint64_t> sums0, sums1, first, second;
     gpu_group_buffer<gpu_group_result_t> result;
     gpu_group_buffer<unsigned char> sort_scratch;
     if (!owners.alloc(slots) || !counts.alloc(slots) ||
         !pairs.alloc(distinct ? slots : 0) || !uniques.alloc(distinct ? slots : 0) ||
         !lookup.alloc(projection ? projection_len : 0) || !invalid.alloc(projection ? 1 : 0) ||
+        !sector_data.alloc(sector_words) ||
         !sums0.alloc(nsum > 0 ? slots : 0) || !sums1.alloc(nsum > 1 ? slots : 0) ||
-        !scope.alloc(filter ? t.nw : 0) || !first.alloc(first_size) ||
+        !first.alloc(first_size) ||
         !second.alloc(second_size) || !result.alloc(k) ||
         !owners.clear(slots) || !counts.clear(slots) ||
         !pairs.clear(distinct ? slots : 0) || !uniques.clear(distinct ? slots : 0) ||
         !invalid.clear(projection ? 1 : 0) ||
         !sums0.clear(nsum > 0 ? slots : 0) || !sums1.clear(nsum > 1 ? slots : 0))
         return -2;
-    if (filter && cudaMemcpy(scope.data, filter, t.nw * sizeof *filter, cudaMemcpyHostToDevice) != cudaSuccess)
-        return -2;
-
     if (projection) {
         if (cudaMemcpy(lookup.data, projection, projection_len * sizeof *projection, cudaMemcpyHostToDevice) != cudaSuccess)
             return -2;
@@ -304,6 +430,13 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
         plan.projection_len = projection_len;
         plan.projection_mask = projection_mask;
         plan.projection_width = projection_width;
+    }
+    if (sector_words) {
+        if (cudaMemcpy(sector_data.data, sectors.words, sector_words * sizeof *sectors.words,
+                       cudaMemcpyHostToDevice) != cudaSuccess)
+            return -2;
+        plan.sectors = sectors;
+        plan.sectors.words = sector_data.data;
     }
     unsigned grid = (unsigned)((t.n + 255) / 256);
     if (distinct) {
@@ -356,6 +489,7 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
         if (distinct) out_distinct[i] = host[i].distinct;
         ++*out_n;
     }
+    if (selected_rows) *selected_rows = winner_mass;
     return 0;
 }
 extern "C" int gpu_group_planes(void *hv, const uint64_t *filter, int32_t nkey,
@@ -363,7 +497,7 @@ extern "C" int gpu_group_planes(void *hv, const uint64_t *filter, int32_t nkey,
                     uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
                     uint64_t *out_sums, uint32_t *out_n) {
     return gpu_group_run(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
-                         out_sums, out_n, nullptr, 0, nullptr, nullptr, 0, 0, 0);
+                         out_sums, out_n, nullptr, 0, nullptr, nullptr, 0, 0, 0, {}, nullptr);
 }
 
 extern "C" int gpu_group_distinct_planes(void *hv, const uint64_t *filter, int32_t nkey,
@@ -374,7 +508,20 @@ extern "C" int gpu_group_distinct_planes(void *hv, const uint64_t *filter, int32
                     uint64_t projection_mask, uint32_t projection_width) {
     return gpu_group_run(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
                          out_sums, out_n, distinct, rank, out_distinct, projection,
-                         projection_len, projection_mask, projection_width);
+                         projection_len, projection_mask, projection_width, {}, nullptr);
+}
+
+extern "C" int gpu_group_distinct_sector_planes(void *hv, const uint64_t *filter, int32_t nkey,
+                    const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
+                    uint32_t k, uint64_t *out_keys, uint64_t *out_counts, uint64_t *out_sums,
+                    uint32_t *out_n, const gpu_group_key_t *distinct, uint32_t rank,
+                    uint64_t *out_distinct, const uint32_t *projection, uint64_t projection_len,
+                    uint64_t projection_mask, uint32_t projection_width, const uint32_t *sectors,
+                    uint32_t sector_shift, uint32_t sector_bits, uint32_t stride, uint64_t *selected_rows) {
+    return gpu_group_run(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
+                         out_sums, out_n, distinct, rank, out_distinct, projection,
+                         projection_len, projection_mask, projection_width,
+                         {sectors, sector_shift, sector_bits, stride}, selected_rows);
 }
 
 __global__ void gpu_distinct_bits(const gtable_t *table, const uint64_t *scope,
