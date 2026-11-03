@@ -103,7 +103,9 @@ run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORB
 run "no row kernel for many groups"               env TORBLES_ROWPATH_GROUPS=0 python3 tests/check_small.py
 run "row kernel for every GROUP BY of 2+ groups"  env TORBLES_ROWPATH_GROUPS=2 python3 tests/check_small.py
 echo "== GPU executor vs CPU engine ($( [ -n "${TORBLES_GPU_LIB:-}" ] && echo CUDA || echo emulated ))"
-run "CUDA packed SQL stages"                     python3 -m unittest check_cuda_plane_stages
+if python3 -c 'import algq; raise SystemExit(not hasattr(algq.gpu_lib(), "gpu_scalar_plane_moments"))'; then
+  run "CUDA packed SQL stages"                     python3 -m unittest check_cuda_plane_stages
+fi
 run "GPU per-word kernel (default)"               env TORBLES_GPU_MM=word python3 tests/check_gpu.py
 run "GPU tile matrix product, __popc"             env TORBLES_GPU_MM=popc python3 tests/check_gpu.py
 run "GPU tile matrix product, tensor cores"       env TORBLES_GPU_MM=mma python3 tests/check_gpu.py
