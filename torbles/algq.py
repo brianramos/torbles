@@ -152,6 +152,11 @@ lib.pt_free.restype, lib.pt_free.argtypes = None, [vp]
 lib.at_view.restype, lib.at_view.argtypes = vp, [ctypes.c_int, vp, vp]
 lib.at_view_free.restype, lib.at_view_free.argtypes = None, [vp]
 
+_at_xor_words = getattr(lib, "at_xor_words", None)
+_xor_words_argtypes = [vp, ctypes.c_uint64, vp, vp, vp, vp]
+if _at_xor_words is not None:
+    _at_xor_words.restype, _at_xor_words.argtypes = ctypes.c_int, _xor_words_argtypes
+
 _plane_order = getattr(lib, "at_plane_order", None)
 if _plane_order is not None:
     _plane_order.restype = ctypes.c_int
@@ -179,6 +184,8 @@ def gpu_lib():
             g.gpu_topk.restype = ctypes.c_int
             g.gpu_topk.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.c_int, i32p, i32p, ctypes.c_uint32,
                                    u64p, ctypes.POINTER(ctypes.c_uint32), ctypes.POINTER(ctypes.c_double)]
+        if hasattr(g, "gpu_xor_words"):
+            g.gpu_xor_words.restype, g.gpu_xor_words.argtypes = ctypes.c_int, _xor_words_argtypes
         g.gpu_cache_evict.restype = ctypes.c_int; g.gpu_cache_evict.argtypes = [vp, u64p, ctypes.c_int]
         g.gpu_cache_entries.restype = ctypes.c_int; g.gpu_cache_entries.argtypes = [vp, u64p, u64p, ctypes.c_int]
         g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.restype = None; g.gpu_close.argtypes = [vp]
@@ -1371,6 +1378,52 @@ class Table:
         p = self._part_of(c)
         return lib.at_width(p.at, p.idx(c))
     def nrows(self): return len(self.used_ids)
+    def _xor_rows(self, columns, rows, deltas):
+        """Patch owned raw planes while the refresh owner excludes readers and aliases."""
+        if (self.parts is not None or self.cluster is not None or self.codecs or self.data
+                or self.wide or self.refbit or self._vflag or getattr(self, "_relationships", None)):
+            raise ValueError("plane updates require an owned raw table with only native bitplanes")
+        if _at_xor_words is None:
+            raise RuntimeError("rebuild the native library for plane updates")
+        storage = self._storage()
+        cols = np.ascontiguousarray(columns, np.int32)
+        ids = np.ascontiguousarray(rows, np.uint64)
+        xor = np.ascontiguousarray(deltas, np.uint32)
+        if not (cols.ndim == ids.ndim == xor.ndim == 1 and len(cols) == len(ids) == len(xor)):
+            raise ValueError("columns, rows and XOR deltas must be parallel vectors")
+        if not len(ids):
+            return
+        if (int(cols.min()) < 0 or int(cols.max()) >= len(self.cols) or int(ids.max()) >= self.n):
+            raise ValueError("plane patch references an invalid column or row")
+        touched = [self.cols[c] for c in np.unique(cols[xor != 0]).tolist()]
+        if not touched:
+            return
+        widths = {name: (1 << self.width(name)) - 1 for name in touched}
+        words = ids >> np.uint64(6)
+        masks = np.uint64(1) << (ids & np.uint64(63))
+        args = (len(ids), cols.ctypes.data, words.ctypes.data, masks.ctypes.data, xor.ctypes.data)
+        with _GPU_LOCK:
+            if _at_xor_words(storage.at, *args):
+                raise RuntimeError("native CPU rejected the plane patch")
+            for name, upper_bound in widths.items():
+                self._colmax[name] = upper_bound
+                self._decoded.pop(name, None)
+                for engine in ("alg", "plain"):
+                    getattr(self, "_ranked", {}).pop((name, engine), None)
+            if storage.gpu:
+                gpu_patch = getattr(storage.glib, "gpu_xor_words", None)
+                try:
+                    synced = gpu_patch is not None and gpu_patch(storage.gpu, *args) == 0
+                except Exception:
+                    synced = False
+                if synced:
+                    self._gpu_xor_batches = getattr(self, "_gpu_xor_batches", 0) + 1
+                else:
+                    handle, storage.gpu = storage.gpu, None
+                    _GPU_LIVE.discard(storage)
+                    storage.glib.gpu_close(handle)
+                    self._gpu_xor_evictions = getattr(self, "_gpu_xor_evictions", 0) + 1
+
     def _plane_order(self, keys, desc, npart=0, bitmap=None, count=None, row_numbers=False):
         """Stable physical row IDs, and optional ROW_NUMBER values, from stored planes."""
         if _plane_order is None or self.parts is not None or self.n > 0xffffffff:

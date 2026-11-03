@@ -478,7 +478,23 @@ typedef struct {
     unsigned int *dins, *dnins; unsigned long long *ok, *os, *oc; int hclean;               /* insertion list, output */
     qplan_t *dq; unsigned long long *dacc; uint64_t *drs, *drc; uint64_t nrcap;
     void *topk; size_t topk_scan_bytes;
+    void *xor_patches; size_t xor_capacity;
+    uint32_t xor_blocked;
 } handle_t;
+
+/* Views have no torus faces and borrow their plane storage. Virtual
+ * columns and their rank flags also need a fresh expanded upload. */
+static uint32_t xor_blocked_columns(const atable_t *t) {
+    if (!t->nfaces) return UINT32_MAX;
+    uint32_t blocked = 0;
+    for (int c = 0; c < t->k; ++c) {
+        int flag = t->vflag[c];
+        if (!flag) continue;
+        if (flag < 1 || flag > t->k) return UINT32_MAX;
+        blocked |= (1u << c) | (1u << (flag - 1));
+    }
+    return blocked;
+}
 
 static int supported(const qplan_t *q) {
     if (q->wide || q->widekey) return 0;                        /* 128-bit sums or group codes: the CPU engine */
@@ -524,6 +540,7 @@ extern "C" const char *gpu_name(void) { return "CPU emulation of the GPU kernels
 extern "C" void *gpu_open(const atable_t *t) {
     handle_t *h = (handle_t *)calloc(1, sizeof *h); gtable_t *g = &h->host;
     g->n = t->n; g->nw = t->nw; g->k = t->k;
+    h->xor_blocked = xor_blocked_columns(t);
     size_t np = 0; for (int c = 0; c < t->k; c++) np += t->width[c];
     h->bytes = np * t->nw * 8; h->buf = (uint64_t *)malloc(h->bytes ? h->bytes : 8); size_t off = 0;
     for (int c = 0; c < t->k; c++) {
@@ -686,6 +703,7 @@ static void mma_selftest(void) {
 extern "C" void *gpu_open(const atable_t *t) {
     handle_t *h = (handle_t *)calloc(1, sizeof *h); gtable_t *g = &h->host;
     g->n = t->n; g->nw = t->nw; g->k = t->k;
+    h->xor_blocked = xor_blocked_columns(t);
     cudaDeviceProp prop; int dev = 0; cudaGetDevice(&dev); cudaGetDeviceProperties(&prop, dev); NSM = prop.multiProcessorCount;
     size_t np = 0; for (int c = 0; c < t->k; c++) np += t->width[c];
     h->bytes = np * t->nw * 8; CK(cudaMalloc((void **)&h->buf, h->bytes ? h->bytes : 8)); size_t off = 0;
@@ -839,9 +857,101 @@ extern "C" void gpu_close(void *hv) {
     if (h->dnins) cudaFree(h->dnins);
     if (h->drs) { cudaFree(h->drs); cudaFree(h->drc); }
     if (h->topk) cudaFree(h->topk);
+    if (h->xor_patches) cudaFree(h->xor_patches);
     free(h);
 }
 #endif
+
+/* Incremental sync of a warm handle's decoded value planes. XOR is
+ * commutative, so overlapping records can safely update the same word. */
+struct gpu_xor_patch_t {
+    uint64_t word, rows;
+    uint32_t col, code;
+};
+
+DEV void gpu_xor_apply(const gtable_t *t, gpu_xor_patch_t p) {
+    for (uint32_t code = p.code; code; code &= code - 1) {
+        int bit = ctz32(code);
+        int plane = t->msb[p.col] ? t->width[p.col] - 1 - bit : bit;
+        uint64_t *word = const_cast<uint64_t *>(t->P[p.col][plane]) + p.word;
+#ifdef EMULATE
+        *word ^= p.rows;
+#else
+        atomicXor((unsigned long long *)word, (unsigned long long)p.rows);
+#endif
+    }
+}
+
+#ifndef EMULATE
+__global__ void gpu_xor_kernel(const gtable_t *t, const gpu_xor_patch_t *patches, uint64_t n) {
+    uint64_t stride = (uint64_t)gridDim.x * blockDim.x;
+    for (uint64_t i = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x; i < n; i += stride)
+        gpu_xor_apply(t, patches[i]);
+}
+
+static int gpu_xor_upload(handle_t *h, const gpu_xor_patch_t *patches, size_t n) {
+    if (!n) return 0;
+    size_t bytes = n * sizeof *patches;
+    if (bytes > h->xor_capacity) {
+        size_t capacity = h->xor_capacity ? h->xor_capacity : 64 * sizeof *patches;
+        while (capacity < bytes && capacity <= SIZE_MAX / 2) capacity *= 2;
+        if (capacity < bytes) capacity = bytes;
+        if (h->xor_patches) {
+            CKI(cudaFree(h->xor_patches));
+            h->xor_patches = nullptr;
+            h->xor_capacity = 0;
+        }
+        CKI(cudaMalloc(&h->xor_patches, capacity));
+        h->xor_capacity = capacity;
+    }
+    CKI(cudaMemcpy(h->xor_patches, patches, bytes, cudaMemcpyHostToDevice));
+    size_t grids = (n + 255) / 256;
+    unsigned blocks = grids > 65535 ? 65535 : (unsigned)grids;
+    gpu_xor_kernel<<<blocks, 256>>>(h->dev, (const gpu_xor_patch_t *)h->xor_patches, n);
+    CKI(cudaGetLastError());
+    CKI(cudaDeviceSynchronize());
+    return 0;
+}
+#endif
+
+/* The caller serializes with queries and mirrors the same validated edits
+ * on the owning host torble. Invalid input leaves the device untouched.
+ * A CUDA error may leave a partial update and requires discarding the handle. */
+extern "C" int gpu_xor_words(void *hv, uint64_t npatch, const int32_t *cols, const uint64_t *words,
+                              const uint64_t *rows, const uint32_t *value_xor) {
+    handle_t *h = (handle_t *)hv;
+    if (!h || !h->buf || h->xor_blocked == UINT32_MAX) return -1;
+    if (!npatch) return 0;
+    if (!cols || !words || !rows || !value_xor || npatch > SIZE_MAX / sizeof(gpu_xor_patch_t)) return -1;
+    const gtable_t *t = &h->host;
+    size_t n = 0;
+    for (uint64_t i = 0; i < npatch; ++i) {
+        int32_t c = cols[i];
+        if (c < 0 || c >= t->k || (h->xor_blocked & (1u << c)) ||
+            words[i] >= t->nw) return -1;
+        uint64_t live = t->n - words[i] * 64;
+        if (live < 64 && rows[i] >> live) return -1;
+        int width = t->width[c];
+        if (width < 0 || width > 32 || (width < 32 && value_xor[i] >> width)) return -1;
+        if (rows[i] && value_xor[i]) ++n;
+    }
+    if (!n) return 0;
+#ifdef EMULATE
+    for (uint64_t i = 0; i < npatch; ++i)
+        if (rows[i] && value_xor[i]) gpu_xor_apply(t, {words[i], rows[i], (uint32_t)cols[i], value_xor[i]});
+    return 0;
+#else
+    gpu_xor_patch_t small[64];
+    gpu_xor_patch_t *patches = n <= 64 ? small : (gpu_xor_patch_t *)malloc(n * sizeof *patches);
+    if (!patches) return -2;
+    size_t at = 0;
+    for (uint64_t i = 0; i < npatch; ++i)
+        if (rows[i] && value_xor[i]) patches[at++] = {words[i], rows[i], (uint32_t)cols[i], value_xor[i]};
+    int rc = gpu_xor_upload(h, patches, n);
+    if (patches != small) free(patches);
+    return rc;
+#endif
+}
 
 /* ---------------------------------------------------------------- bounded lexicographic top-k
  * The CUDA path keeps two packed masks per word: candidates tied with the cutoff prefix, and rows already known

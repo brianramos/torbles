@@ -5,12 +5,14 @@
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 import duckdb
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from torbles.refresh import RefreshTable
+from torbles import algq
 
 
 UINT32_MAX = (1 << 32) - 1
@@ -40,8 +42,8 @@ def where_sql(where):
 
 
 class RefreshChecks(unittest.TestCase):
-    def new_table(self, columns):
-        table = RefreshTable(columns)
+    def new_table(self, columns, **options):
+        table = RefreshTable(columns, **options)
         self.addCleanup(table.close)
         return table
 
@@ -173,6 +175,141 @@ class RefreshChecks(unittest.TestCase):
         table.compact()
         self.assertEqual(table.stats["physical_rows"], 0)
         self.assertEqual(list(table.append(fixture(1))), [2])
+
+    def test_in_place_repeated_updates_within_words(self):
+        original = fixture(131)
+        table = self.new_table(original, update_mode="planes")
+        expected = {name: column.copy() for name, column in original.items()}
+        batches = [([63, 64, 65, 130], {"x": u32([511, 4, 5, 6]), "g": u32([15, 14, 13, 12])}),
+                   ([65, 64, 66], {"x": u32([40, 30, 20])}),
+                   ([64, 66], {"x": u32([30, 20])})]
+        for ids, edits in batches:
+            table.update(ids, edits)
+            for name, values in edits.items():
+                expected[name][ids] = values
+            self.check_read(table, [130, 65, 66, 63, 64, 67],
+                            [tuple(expected[name][i] for name in NAMES) for i in (130, 65, 66, 63, 64, 67)])
+        rows = (expected["g"] >= 10) & (expected["x"] <= 500)
+        where = {"g": (10, 15), "x": (0, 500)}
+        self.assertEqual(table.count(where), int(rows.sum()))
+        self.assertEqual(table.sum("x", where), int(expected["x"][rows].sum(dtype=np.uint64)))
+        groups = {int(g): int(expected["x"][rows & (expected["g"] == g)].sum(dtype=np.uint64))
+                  for g in np.unique(expected["g"][rows])}
+        self.assertEqual(table.group_sum("g", "x", where), groups)
+        stats = table.stats
+        self.assertEqual(stats["update_mode"], "planes")
+        self.assertEqual(stats["plane_update_batches"], 2)
+        self.assertEqual(stats["plane_update_rows"], 7)
+        self.assertEqual(stats["plane_update_values"], 11)
+        self.assertEqual(stats["width_fallback_batches"], 0)
+        self.assertEqual(stats["segments"], 1)
+        self.assertEqual(stats["physical_rows"], 131)
+        self.assertEqual(stats["override_entries"], 0)
+
+    def test_in_place_width_fallback_is_one_atomic_replacement_batch(self):
+        table = self.new_table(dict(g=u32([0, 1]), x=u32([0, 31]), y=u32([0, 1])), update_mode="planes")
+        self.assertEqual(list(table.append(dict(g=u32([1, 0]), x=u32([255, 80]), y=u32([2, 0])))), [2, 3])
+        table.update([3, 1], {"x": u32([128, 30])})
+        self.check_read(table, [0, 1, 2, 3], [(0, 0, 0), (1, 30, 1), (1, 255, 2), (0, 128, 0)])
+        self.assertEqual(table.stats["plane_update_rows"], 2)
+        self.assertEqual(table.stats["physical_rows"], 4)
+        snapshot = table.stats
+        with self.assertRaises(KeyError):
+            table.update([1, 3, 40], {"x": u32([1, 2, 3])})
+        with self.assertRaises(VALIDATION_ERRORS):
+            table.update([1, 3], {"x": [1, -1]})
+        self.assertEqual(table.stats, snapshot)
+        self.check_read(table, [1, 3], [(1, 30, 1), (0, 128, 0)])
+
+        # The first value needs a wider plane. Both edits go to one segment.
+        table.update([0, 2], {"x": u32([32, 127])})
+        self.assertEqual(table.stats["width_fallback_batches"], 1)
+        self.assertEqual(table.stats["plane_update_rows"], 2)
+        self.assertEqual(table.stats["segments"], 3)
+        self.assertEqual(table.stats["physical_rows"], 6)
+        self.assertEqual(table.stats["override_entries"], 2)
+        table.update([2, 0], {"x": u32([126, 33])})
+        expected = [(0, 33, 0), (1, 30, 1), (1, 126, 2), (0, 128, 0)]
+        self.check_read(table, [0, 1, 2, 3], expected)
+        self.assertEqual(table.stats["plane_update_rows"], 4)
+        self.assertEqual(table.sum("x"), 317)
+        self.assertEqual(table.group_sum("g", "x"), {0: 161, 1: 156})
+        self.assertEqual(table.count({"x": (127, 255)}), 1)
+        table.compact()
+        self.check_read(table, [0, 1, 2, 3], expected)
+        self.assertEqual(table.stats["physical_rows"], 4)
+        self.assertEqual(table.stats["override_entries"], 0)
+
+    def test_warmed_gpu_applies_incremental_updates_to_retained_handle(self):
+        gpu = algq.gpu_lib()
+        if not hasattr(gpu, "gpu_xor_words"):
+            self.skipTest("GPU executor with incremental word updates is not built")
+        data = fixture(8195)
+        table = self.new_table(data, update_mode="planes")
+        model = {name: column.copy() for name, column in data.items()}
+        visible = np.ones(8195, dtype=bool)
+        table.delete([1])
+        visible[1] = False
+        where = {"g": (3, 15), "x": (50, 300)}
+        devices = []
+        execute = algq.Query._exec
+
+        def observe(query, device, native_table, plan):
+            ran = execute(query, device, native_table, plan)
+            if ran:
+                devices.append(query.device)
+            return ran
+
+        def compare_gpu():
+            rows = visible & (model["g"] >= 3) & (model["x"] >= 50) & (model["x"] <= 300)
+            self.assertEqual(table.count(where, engine="gpu"), int(rows.sum()))
+            self.assertEqual(table.sum("x", where, engine="gpu"), int(model["x"][rows].sum(dtype=np.uint64)))
+            grouped = {int(g): int(model["x"][rows & (model["g"] == g)].sum(dtype=np.uint64))
+                       for g in np.unique(model["g"][rows])}
+            self.assertEqual(table.group_sum("g", "x", where, engine="gpu"), grouped)
+
+        with patch.object(algq.Query, "_exec", observe):
+            compare_gpu()
+            base = table._segments[0].table
+            handle = base._storage().gpu
+            self.assertTrue(handle)
+            with patch.object(gpu, "gpu_xor_words", wraps=gpu.gpu_xor_words) as sync:
+                for ids, g, x in (([63, 64, 65, 8194], [4, 3, 2, 1], [120, 200, 60, 99]),
+                                  ([65, 64], [15, 0], [180, 75])):
+                    table.update(ids, {"g": u32(g), "x": u32(x)})
+                    model["g"][ids], model["x"][ids] = g, x
+                    compare_gpu()
+                    self.assertEqual(base._storage().gpu, handle)
+                self.assertEqual(sync.call_count, 2)
+            table.delete([63, 8194])
+            visible[[63, 8194]] = False
+            extra = dict(g=u32([9, 8]), x=u32([57, 310]), y=u32([0, 1]))
+            self.assertEqual(list(table.append(extra)), [8195, 8196])
+            model = {name: np.concatenate((model[name], extra[name])) for name in NAMES}
+            visible = np.concatenate((visible, [True, True]))
+            compare_gpu()
+            self.assertEqual(base._storage().gpu, handle)
+        self.assertTrue(devices and all(d.startswith("gpu") for d in devices), devices)
+        ids = [8196, 64, 65, 8195]
+        self.check_read(table, ids, [tuple(model[name][i] for name in NAMES) for i in ids])
+
+
+    def test_failed_gpu_sync_rebuilds_from_committed_cpu_planes(self):
+        gpu = algq.gpu_lib()
+        if not hasattr(gpu, "gpu_xor_words"):
+            self.skipTest("GPU executor with incremental word updates is not built")
+        data = fixture(257)
+        table = self.new_table(data, update_mode="planes")
+        total = int(data["x"].sum(dtype=np.uint64))
+        self.assertEqual(table.sum("x", engine="gpu"), total)
+        with patch.object(gpu, "gpu_xor_words", return_value=-2) as sync:
+            table.update([0], {"x": u32([100])})
+            self.assertEqual(sync.call_count, 1)
+        self.assertIsNone(table._segments[0].table._storage().gpu)
+        self.assertEqual(table.stats["gpu_plane_evictions"], 1)
+        self.assertEqual(table.sum("x"), total + 100)
+        self.assertEqual(table.sum("x", engine="gpu"), total + 100)
+        self.assertEqual(table.stats["segments"], 1)
 
 
 if __name__ == "__main__":

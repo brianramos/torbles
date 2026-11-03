@@ -144,7 +144,7 @@ def xor_kernel(values, ids):
         table.close()
 
 
-def run_scale(n, batch, cycles, repeats, seed):
+def run_scale(n, batch, cycles, repeats, seed, update_mode, updates_only):
     if n < 2 * batch * cycles:
         raise ValueError("need two distinct base IDs per fact edit across the workload")
     rng = np.random.default_rng(seed)
@@ -154,8 +154,8 @@ def run_scale(n, batch, cycles, repeats, seed):
     regions = rng.integers(0, 32, DIM_ROWS, dtype=np.uint32)
     edit_ids = rng.choice(n, size=(cycles, 2, batch), replace=False).astype(np.uint64)
     dim_batch = min(32, DIM_ROWS)
-    fact = RefreshTable(initial, name="fact")
-    dim = RefreshTable({"region": regions}, name="dim")
+    fact = RefreshTable(initial, name="fact", update_mode=update_mode)
+    dim = RefreshTable({"region": regions}, name="dim", update_mode=update_mode)
     record = dict(input_rows=n, changes_per_fact_operation=batch, dimension_updates=dim_batch, cycles=[], queries={})
     try:
         with duckdb.connect(config={"threads": "24"}) as con:
@@ -187,6 +187,8 @@ def run_scale(n, batch, cycles, repeats, seed):
                 )
                 changes = {}
                 for name, op, sql, data in operations:
+                    if updates_only and name in ("append", "delete"):
+                        continue
                     if i % 2:
                         _, duck_ms = timed(lambda: execute_with_batch(con, sql, data))
                         outcome, torbles_ms = timed(op)
@@ -223,6 +225,8 @@ def main():
     parser.add_argument("--batch", type=int, default=2048)
     parser.add_argument("--cycles", type=int, default=8)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--update-mode", choices=("segments", "planes"), default="segments")
+    parser.add_argument("--updates-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if min(*args.rows, args.batch, args.cycles, args.repeats) <= 0:
@@ -233,9 +237,11 @@ def main():
     if "emulat" in gpu.lower() or "no CUDA" in gpu:
         raise RuntimeError("use the real CUDA executor for this benchmark")
     record = dict(duckdb=duckdb.__version__, torbles=torbles.__version__, gpu=gpu, threads=24,
-                  input_seed=20261103, repeats=args.repeats, scales={})
+                  input_seed=20261103, repeats=args.repeats, update_mode=args.update_mode,
+                  updates_only=args.updates_only, scales={})
     for n in args.rows:
-        record["scales"][n] = run_scale(n, args.batch, args.cycles, args.repeats, record["input_seed"])
+        record["scales"][n] = run_scale(n, args.batch, args.cycles, args.repeats, record["input_seed"],
+                                           args.update_mode, args.updates_only)
         args.output.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
 
