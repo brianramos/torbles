@@ -379,10 +379,16 @@ without a match, has an empty frame and NULL measures. `<measure> OVER w` reads 
 over `w` runs on the reduced frame. The matcher is MATCH_RECOGNIZE's; a match can neither take rows nor read values
 outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
 
+### Writable tables
+
+Register a table with Database.add_writable_table(name, columns, primary_key="id") to run INSERT, UPDATE, DELETE,
+and MERGE through Database.sql. Writable tables are in memory and have fixed nonnullable unsigned integer columns and
+one immutable primary key. See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
+
 ### Not supported, and why
 
-- **Statements other than queries.** The database is built by the loaders and is read-only once saved, so there is no
-  DDL, DML, transaction or privilege statement (the one session statement is `SET TIME ZONE`). Sequence generators
+- **Statements other than queries.** Tables built by the loaders remain read-only. The SQL layer has no
+  DDL, transaction or privilege statement (the one session statement is `SET TIME ZONE`). Sequence generators
   (`NEXT VALUE FOR`), identity and default values, triggers, routines (`CREATE FUNCTION`, SQL/PSM), user-defined types,
   reference types, typed tables and `ONLY`, system-versioned tables (`FOR SYSTEM_TIME AS OF`) and periods declared on
   tables belong to those statements. PERIOD predicates on value pairs are supported.

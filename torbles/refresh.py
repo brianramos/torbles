@@ -59,14 +59,18 @@ class _Segment:
     def visible(self, row):
         return bool((int(self.bitmap[row >> 6]) >> (row & 63)) & 1)
 
-    def clear(self, rows):
+    def _prepare_clear(self, rows):
         rows = np.asarray(rows, np.uint64)
         bits = np.left_shift(np.uint64(1), rows & 63)
-        np.bitwise_and.at(self._words, (rows >> 6).astype(np.intp), ~bits)
+        return (rows >> 6).astype(np.intp), ~bits, self._words.view()
+
+    def _apply_clear(self, prepared):
+        words, keep, bitmap = prepared
+        np.bitwise_and.at(self._words, words, keep)
         # GPU delta caches use ndarray identity. Give each visibility revision a
         # new view so device reads refresh without copying the host bitmap.
-        self.bitmap = self._words.view()
-        self.live -= len(rows)
+        self.bitmap = bitmap
+        self.live -= len(words)
 
     def active_rows(self):
         if self.live == self.rows:
@@ -125,9 +129,17 @@ class RefreshTable:
             raise OverflowError("logical row IDs exceed uint64")
         if n:
             segment = _Segment(self.name, data, start, stop)
-            self._segments.append(segment)
-            self._origins.append(segment)
-            self._starts.append(start)
+            segments, origins, starts = len(self._segments), len(self._origins), len(self._starts)
+            try:
+                self._segments.append(segment)
+                self._origins.append(segment)
+                self._starts.append(start)
+            except BaseException:
+                del self._segments[segments:]
+                del self._origins[origins:]
+                del self._starts[starts:]
+                segment.table.close()
+                raise
             self._live += n
             self._next_id = stop
         return range(start, stop)
@@ -219,11 +231,18 @@ class RefreshTable:
         with self._lock:
             self._check_open()
             ids, groups = self._locate(ids, distinct=True)
-            for segment, (_, rows) in groups.items():
-                segment.clear(rows)
-            for logical in ids.tolist():
-                self._overrides.pop(logical, None)
-            self._live -= len(ids)
+            self._apply_delete(self._prepare_delete(ids, groups))
+
+    def _prepare_delete(self, ids, groups):
+        return [(segment, segment._prepare_clear(rows)) for segment, (_, rows) in groups.items()], ids.tolist()
+
+    def _apply_delete(self, prepared):
+        clear, ids = prepared
+        for segment, plan in clear:
+            segment._apply_clear(plan)
+        for logical in ids:
+            self._overrides.pop(logical, None)
+        self._live -= len(ids)
 
     def update(self, ids, columns):
         """Replace specified columns for a batch of distinct live IDs."""
@@ -234,20 +253,39 @@ class RefreshTable:
             ids, groups = self._locate(ids, distinct=True)
             if any(len(column) != len(ids) for column in data.values()):
                 raise ValueError("replacement columns must match the number of row IDs")
-            if not len(ids) or not data:
-                return
-            if self._update_mode == "planes" and self._update_planes(data, groups):
-                return
-            unchanged = tuple(name for name in self.columns if name not in data)
-            previous = self._gather(unchanged, len(ids), groups)
-            segment = _Segment(self.name, {**previous, **data}, 0, 0, ids.copy())
-            for old, (_, rows) in groups.items():
-                old.clear(rows)
+            self._update_prepared(ids, data, groups)
+
+    def _update_prepared(self, ids, data, groups):
+        if not len(ids) or not data:
+            return
+        if self._update_mode == "planes" and self._update_planes(data, groups):
+            return
+        unchanged = tuple(name for name in self.columns if name not in data)
+        previous = self._gather(unchanged, len(ids), groups)
+        clear = [(old, old._prepare_clear(rows)) for old, (_, rows) in groups.items()]
+        segment = _Segment(self.name, {**previous, **data}, 0, 0, ids.copy())
+        try:
+            logical_ids = ids.tolist()
+            prior = [self._overrides.get(logical) for logical in logical_ids]
             self._segments.append(segment)
-            self._overrides.update((logical, (segment, row)) for row, logical in enumerate(ids.tolist()))
-            if self._update_mode == "planes":
-                self._width_fallback_batches += 1
-                self._width_fallback_rows += len(ids)
+            try:
+                self._overrides.update((logical, (segment, row)) for row, logical in enumerate(logical_ids))
+            except BaseException:
+                self._segments.pop()
+                for logical, item in zip(logical_ids, prior):
+                    if item is None:
+                        self._overrides.pop(logical, None)
+                    else:
+                        self._overrides[logical] = item
+                raise
+        except BaseException:
+            segment.table.close()
+            raise
+        for old, plan in clear:
+            old._apply_clear(plan)
+        if self._update_mode == "planes":
+            self._width_fallback_batches += 1
+            self._width_fallback_rows += len(ids)
 
     def _update_planes(self, data, groups):
         """Prepare every segment's XOR patch before committing any native changes."""
@@ -345,17 +383,25 @@ class RefreshTable:
                     result = (0 if result is None else result) + int(value)
             return result
 
+    def group_count(self, key, where=None, *, engine="alg"):
+        """Return counts keyed by distinct visible values of one column."""
+        return self._group_aggregate(key, None, where, engine)
+
     def group_sum(self, key, column, where=None, *, engine="alg"):
         """Return exact sums keyed by distinct visible values of one column."""
+        return self._group_aggregate(key, column, where, engine)
+
+    def _group_aggregate(self, key, column, where, engine):
         with self._lock:
             self._check_open()
-            self._check_columns((key, column))
+            self._check_columns((key,) if column is None else (key, column))
             terms = self._filters(where, engine)
             result = {}
             for seg in self._segments:
                 if not seg.live:
                     continue
-                query = self._query(seg, terms).group_by(seg.table[key]).sum(seg.table[column])
+                query = self._query(seg, terms).group_by(seg.table[key])
+                query.count() if column is None else query.sum(seg.table[column])
                 for (group,), value in query.run(engine).items():
                     group = int(group)
                     result[group] = result.get(group, 0) + int(value)

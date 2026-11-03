@@ -8,7 +8,7 @@ Compaction rebuilds live rows into one native segment and preserves logical IDs.
 
 With update_mode="planes", a batch that fits the existing encoded widths modifies the owned segments directly. The store reads the old codes of the changed rows, computes old XOR new and patches only those row bits. The native batch updates value and parity planes together. An already resident CUDA segment receives the same sparse deltas. A failed device patch discards the GPU copy so the next read uploads the committed CPU state. A batch needing a wider code uses the replacement-segment path.
 
-The prototype runs in memory through the Python API. Each table serializes its own operations. SQL DML, durable commits, crash recovery and atomic transactions across tables remain outside its scope.
+Each refresh store serializes its own operations. Durable commits, crash recovery and atomic transactions across tables remain outside its scope.
 
 ## Benchmark
 
@@ -18,6 +18,24 @@ Run from the repository root after building the CPU and CUDA libraries.
 
 The workload models a TPC-DS-style refresh and includes explicit fact and dimension updates. A cycle appends a fact batch, replaces fact measures, deletes a different fact batch, and updates a separate dimension store. DuckDB uses in-memory indexed IDs and the same data and mutations. The join check groups fact sums by dimension ID and applies the dimension filter to those results. It also verifies a filtered count and a selective sum after every cycle, then compares before and after compaction. The JSON records first calls and repeated warm reads separately. Results describe this workload and fixture.
 Add --update-mode planes to benchmark the in-place path. Add --updates-only to measure the cost of fact and dimension updates without adding insert segments.
+
+## SQL DML
+
+Register an in-memory table, then use ordinary Database.sql:
+
+    db = torbles.Database()
+    db.add_writable_table("fact", {"id": [1, 2], "v": [20, 40], "bucket": [0, 1], "dk": [3, 4]})
+    db.sql("INSERT INTO fact VALUES (3, 25, 1, 4)")
+    db.sql("UPDATE fact SET v = v + 1 WHERE id = 1")
+    db.sql("DELETE FROM fact WHERE id = 2")
+
+Every writable table has fixed, nonnullable uint32 columns and one immutable primary key. Stage tables can be ordinary loaded
+tables, writable tables, or a supported derived relation. INSERT accepts VALUES and SELECT and supplies every target column.
+UPDATE and DELETE accept predicates, including correlated subqueries through the existing query evaluator. UPDATE FROM and
+DELETE USING accept one source. A simple equality from the target primary key to a source column uses indexed row lookup.
+MERGE uses that equality and supports one unconditional matched UPDATE or DELETE and one unconditional not-matched INSERT.
+Conditional MERGE branches, RETURNING, defaults, foreign-key enforcement and persistence of writable tables are outside this
+prototype. Each successful statement returns one Count row. Statements in a script are applied in order.
 
 ## Standard SQL surface
 
@@ -38,4 +56,11 @@ SQL/Foundation (ISO/IEC 9075-2) defines INSERT, UPDATE, DELETE and MERGE. A batc
       WHEN NOT MATCHED THEN INSERT (id, v, bucket, dk)
         VALUES (u.id, u.v, u.bucket, u.dk);
 
-These examples describe the SQL interface a future adapter could expose. The refresh prototype is driven through the Python API. The DuckDB benchmark uses its native UPDATE FROM and DELETE USING forms. TPC-DS supplies a benchmark workload and refresh data rather than a universal statement suite.
+These forms run through the SQL adapter. The matched SQL benchmark uses UPDATE FROM and DELETE USING for its staged fast path,
+plus INSERT SELECT and MERGE. TPC-DS supplies a benchmark workload and refresh data rather than a universal statement suite.
+
+    PYTHONPATH=. python bench/benchmark_sql_dml.py campaign --output /tmp/torbles-sql-dml
+
+This benchmark stages identical batches outside the timers and times SQL execution on both engines. It verifies affected counts,
+touched rows and aggregate reads after each cycle. It is an in-memory workload inspired by data maintenance rather than an
+official TPC result.

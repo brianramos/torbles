@@ -1697,6 +1697,11 @@ class Binder:
         for frame in reversed(self.ctes):
             for k, cte in frame.items():
                 if _ieq(k, name): return self.cte_binding(cte, alias or k)
+        for k, writable in getattr(self.db, "_writable", {}).items():
+            if _ieq(k, name):
+                binding = I.Binding(alias or k, [(c, T.SqlType("UINTEGER"), False) for c in writable.columns])
+                binding.writable = writable
+                return binding
         t = None
         for k, tb in self.db.tables.items():
             if k == name: t = tb; break
@@ -3017,8 +3022,9 @@ def _rename(b, names):
     """a table under AS x(a, b, ...): its first columns shown (and referenced) by the new names; a stored table keeps
     its column names underneath (the planes are read by them)"""
     if len(names) > len(b.cols): raise SqlError(f"table {b.alias} has {len(b.cols)} columns, {len(names)} names given")
-    if b.table is not None:
+    if b.table is not None or hasattr(b, "writable"):
         nb = I.Binding(b.alias, b.cols, table=b.table, q=b.q)
+        if hasattr(b, "writable"): nb.writable = b.writable
         nb.display = {c: names[i] for i, (c, _, _) in enumerate(b.cols) if i < len(names)}
         return nb
     cols = [(names[i] if i < len(names) else c, t, nl) for i, (c, t, nl) in enumerate(b.cols)]

@@ -1280,7 +1280,9 @@ def run_select(s, cx, as_rel=False):
             keep = rows_where(s.where, rel, cx); rel = rel.take(keep)
     else:
         rel, aggplan = None, {}
-        if all(b.table is not None for b in bindings):
+        if not wins and any(hasattr(b, "writable") for b in bindings):
+            rel = _writable_aggregate(s, bindings, aggs, cx)
+        if rel is None and all(b.table is not None and not hasattr(b, "_dml_rel") for b in bindings):
             rel, aggplan = plan_star(s, bindings, need, aggs, cx)
         if rel is None and JOIN_PREAGG:
             got = join_preagg(s, aggs, cx)
@@ -1288,6 +1290,152 @@ def run_select(s, cx, as_rel=False):
         if rel is None:
             rel, aggplan = run_general(s, bindings, need, aggs, cx)
     return finish_select(s, rel, aggs, wins, aggplan, cx, as_rel)
+
+
+def _writable_bounds(terms, bindings):
+    """Lower nonnullable integer comparisons to intersected inclusive uint32 ranges."""
+    max_code = (1 << 32) - 1
+    bounds = {b: {} for b in bindings}
+    empty = False
+    for term in terms:
+        e = _fold_consts(term)
+        if isinstance(e, I.Lit) and (e.v is None or type(e.v) is bool):
+            if e.v is True:
+                continue
+            # Keep checking unsupported terms so the ordinary SQL path keeps their error semantics.
+            empty = True
+            continue
+        if not isinstance(e, I.Func):
+            return None
+        args = [_strip_cast(x) for x in e.args]
+        op = e.fn
+        if op == "between" and len(args) == 3:
+            col, low, high = args
+            if not all(isinstance(v, I.Lit) and type(v.v) is int for v in (low, high)):
+                return None
+            low, high = low.v, high.v
+        elif op in ("=", "<", "<=", ">", ">=") and len(args) == 2:
+            col, lit = args
+            if isinstance(col, I.Lit):
+                col, lit = lit, col
+                op = {"=": "=", "<": ">", "<=": ">=", ">": "<", ">=": "<="}[op]
+            if not isinstance(lit, I.Lit) or type(lit.v) is not int:
+                return None
+            value = lit.v
+            low = value + (op == ">") if op in ("=", ">", ">=") else 0
+            high = value - (op == "<") if op in ("=", "<", "<=") else max_code
+        else:
+            return None
+        if not isinstance(col, I.Col) or col.b not in bounds or not col.t.integer:
+            return None
+        before_low, before_high = bounds[col.b].get(col.name, (0, max_code))
+        bounds[col.b][col.name] = max(low, before_low), min(high, before_high)
+    return bounds, empty or any(low > high for columns in bounds.values() for low, high in columns.values())
+
+
+def _writable_aggregate(s, bindings, aggs, cx):
+    """Native fixed-width reductions, using the normal SQL finalizer on the exact results."""
+    if (cx.engine not in ("alg", "gpu") or not s.aggregate or s.sets is not None or s.sample is not None
+            or any(not hasattr(b, "writable") or b.sample is not None or hasattr(b, "_dml_rel") for b in bindings)
+            or any(a.distinct or a.filter is not None or a.order for a in aggs.values())):
+        return None
+    args = {}
+    for key, agg in aggs.items():
+        arg = agg.args[0] if len(agg.args) == 1 else None
+        if not (agg.name == "count_star" or agg.name in ("sum", "count") and isinstance(arg, I.Col)):
+            return None
+        args[key] = arg
+    terms = _conjuncts(s.where)
+    if len(bindings) == 2:
+        return _writable_join_sum(s, bindings, aggs, args, terms, cx)
+    if len(bindings) != 1 or len(s.group) > 1:
+        return None
+    binding = bindings[0]
+    group = s.group[0] if s.group else None
+    if group is not None and (not isinstance(group, I.Col) or group.b is not binding):
+        return None
+    if any(arg is not None and arg.b is not binding for arg in args.values()):
+        return None
+    filters = _writable_bounds(terms, bindings)
+    if filters is None:
+        return None
+    bounds, empty = filters
+    where, store = bounds[binding], binding.writable.store
+    if group is None:
+        out = Rel(1)
+        for key, agg in aggs.items():
+            if agg.name == "sum":
+                value = None if empty else store.sum(args[key].name, where, engine=cx.engine)
+            else:
+                value = 0 if empty else store.count(where, engine=cx.engine)
+            out.cols[key] = [value]
+    else:
+        columns = {}
+        for key, agg in aggs.items():
+            if empty:
+                values = {}
+            elif agg.name == "sum":
+                values = store.group_sum(group.name, args[key].name, where, engine=cx.engine)
+            else:
+                values = store.group_count(group.name, where, engine=cx.engine)
+            columns[key] = values
+        groups = list(next(iter(columns.values()))) if columns else (
+            [] if empty else list(store.group_count(group.name, where, engine=cx.engine))
+        )
+        out = Rel(len(groups))
+        out.cols[group.key()] = groups
+        for key, values in columns.items():
+            out.cols[key] = [values[g] for g in groups]
+    cx.stats["writable_native_blocks"] = cx.stats.get("writable_native_blocks", 0) + 1
+    out.grouped = True
+    return out
+
+
+def _writable_join_sum(s, bindings, aggs, args, terms, cx):
+    """Join a fact SUM grouped on its foreign key with a unique dimension key."""
+    if (s.group or not aggs or any(a.name != "sum" for a in aggs.values())
+            or not isinstance(s.from_, I.Join) or s.from_.kind not in ("inner", "cross")
+            or getattr(s.from_, "partition", None) is not None):
+        return None
+    terms = terms + _conjuncts(s.from_.cond)
+    fact = next(iter(args.values())).b
+    if fact not in bindings or any(arg.b is not fact for arg in args.values()):
+        return None
+    dim = bindings[1] if bindings[0] is fact else bindings[0]
+    for i, term in enumerate(terms):
+        if not isinstance(term, I.Func) or term.fn != "=" or len(term.args) != 2:
+            continue
+        fk, pk = map(_strip_cast, term.args)
+        if isinstance(fk, I.Col) and fk.b is dim:
+            fk, pk = pk, fk
+        if (isinstance(fk, I.Col) and isinstance(pk, I.Col) and fk.b is fact and pk.b is dim
+                and pk.name == dim.writable.primary_key):
+            break
+    else:
+        return None
+    filters = _writable_bounds(terms[:i] + terms[i + 1:], bindings)
+    if filters is None:
+        return None
+    bounds, empty = filters
+    keep = set()
+    if not empty:
+        dim_cols = dim.writable.scan(list(dict.fromkeys([pk.name, *bounds[dim]])))
+        ids = dim_cols[pk.name]
+        mask = np.ones(len(ids), bool)
+        for name, (low, high) in bounds[dim].items():
+            mask &= (dim_cols[name] >= low) & (dim_cols[name] <= high)
+        keep = set(ids[mask].tolist())
+    out = Rel(1)
+    for key, arg in args.items():
+        matches = []
+        if keep:
+            grouped = fact.writable.store.group_sum(fk.name, arg.name, bounds[fact], engine=cx.engine)
+            matches = [value for code, value in grouped.items() if code in keep]
+        out.cols[key] = [sum(matches) if matches else None]
+    cx.stats["writable_native_blocks"] = cx.stats.get("writable_native_blocks", 0) + 1
+    cx.stats["writable_native_joins"] = cx.stats.get("writable_native_joins", 0) + 1
+    out.grouped = True
+    return out
 
 
 # ------------------------------------------------------------------ group-level evaluation
@@ -5061,6 +5209,28 @@ def _mat_binding(b, cols, conds, cx, deferred=None):
         try: rel = _mat_binding(b, {c.key(): c for c in cols}, [], cx)
         finally: b.sample = sp
         return _pushed_rows(sample_rel(rel, sp, cx), conds, cx, deferred)
+    source = getattr(b, "_dml_rel", None)
+    if source is not None:
+        rel = Rel(source.n)
+        rel.cnt = source.cnt
+        for c in cols:
+            key = c.key()
+            array = source.cols.array(key)
+            if array is None:
+                rel.cols[key] = source.cols[key]
+            else:
+                rel.cols.put(key, array)
+        return _pushed_rows(rel, conds, cx, deferred)
+    writable = getattr(b, "writable", None)
+    if writable is not None:
+        names = list(dict.fromkeys(c.name for c in cols))
+        data = writable.scan(names) if names else {}
+        n = len(data[names[0]]) if names else writable.store.count()
+        rel = Rel(n)
+        for c in cols:
+            rel.cols.put(c.key(), ColArr(data[c.name]))
+        cx.stats["writable_scan_rows"] = cx.stats.get("writable_scan_rows", 0) + n
+        return _pushed_rows(rel, conds, cx, deferred)
     if b.table is not None:
         s = I.Select(); s.from_ = b
         s.items = []; s.where = _and(conds) if conds else None
