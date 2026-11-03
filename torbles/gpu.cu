@@ -123,6 +123,19 @@ DEV uint64_t filter_g(const gtable_t *T, const qplan_t *q, uint64_t w) {
     if (q->xmode) F &= q->xmode == 1 ? q->xrows[w] : ~q->xrows[w];
     return F;
 }
+/* Scalar extrema by plane elimination. Each mask keeps the candidates with the best prefix. */
+DEV void extrema_g(const gtable_t *T, const qplan_t *q, uint64_t w, uint64_t F, uint32_t *lo, uint32_t *hi) {
+    uint64_t L = F, H = F;
+    uint32_t l = 0, h = 0;
+    int c = q->ext_col, b = T->width[c];
+    for (int j = b - 1; j >= 0; j--) {
+        uint64_t p = X(T, c, T->msb[c] ? b - 1 - j : j, w);
+        uint64_t lower = L & ~p, higher = H & p;
+        if (lower) L = lower; else l |= 1u << j;
+        if (higher) { H = higher; h |= 1u << j; }
+    }
+    *lo = l; *hi = h;
+}
 /* looked-up keys (at most 2): one gather per live row; rows whose foreign key is outside the dimension are dropped */
 DEV uint64_t lookups_g(const gtable_t *T, const qplan_t *q, uint32_t *const *avals, uint64_t w, uint64_t F, uint32_t kl[2][64], int *slot) {
     int ns = 0;
@@ -466,8 +479,9 @@ typedef struct {
 
 static int supported(const qplan_t *q) {
     if (q->wide || q->widekey) return 0;                        /* 128-bit sums or group codes: the CPU engine */
-    if (q->ext_on || q->agg == A_ROWS || q->agg == A_DIST) return 0;   /* MIN / MAX, row bitmaps, COUNT(DISTINCT) cells: the CPU engine */
+    if (q->agg == A_ROWS || q->agg == A_DIST) return 0;           /* row bitmaps and DISTINCT cells: the CPU engine */
     if (q->nsemi) return 0;                                     /* semi-join lookups stay on the CPU */
+    if (q->ext_on) return q->agg == A_GENERAL && !q->nkey && !q->nattr;
     if (q->agg == A_GENERAL) return 0;                         /* the caller converts what it can to A_POLYG / A_MM */
     if (q->agg == A_MM && !q->nkey) return 0;
     if (q->nkey > 6) return 0;
@@ -538,6 +552,7 @@ static void dev_free(void *d) { free(d); }
 /* the query on the emulated device: hq is q with its delta plane's device copy, av the attribute arrays' */
 static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const *av, dtmp_t *, double *ms) {
     int64_t tot = 0; uint64_t cnt = 0;
+    uint32_t lo = UINT32_MAX, hi = 0;
     uint64_t total = h->host.nw, *rs = NULL, *rc = NULL; int nr = 0;
     if (q->nranges) {
         rs = (uint64_t *)malloc(q->nranges * 8); rc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -579,11 +594,21 @@ static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const
         for (uint64_t vt = 0; vt < total; vt++) {
             uint64_t w = vt;
             if (nr) { int lo = 0, hi = nr - 1; while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rc[mid] <= vt) lo = mid; else hi = mid - 1; } w = rs[lo] + (vt - rc[lo]); }
-            if (w < h->host.nw) word_g(&h->host, hq, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
+            if (w >= h->host.nw) continue;
+            if (q->ext_on) {
+                uint64_t F = filter_g(&h->host, hq, w);
+                if (!F) continue;
+                uint32_t l, u; extrema_g(&h->host, hq, w, F, &l, &u);
+                if (l < lo) lo = l;
+                if (u > hi) hi = u;
+                cnt += popc(F);
+            } else word_g(&h->host, hq, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
         }
     }
     free(rs); free(rc);
-    q->total_sum = tot; q->total_cnt = cnt; if (ms) *ms = 0; return 0;
+    q->total_sum = q->ext_on ? (cnt ? lo : 0) : tot; q->total_cnt = cnt;
+    if (q->ext_on) q->total_sum_hi = hi;
+    if (ms) *ms = 0; return 0;
 }
 extern "C" void gpu_close(void *hv) {
     handle_t *h = (handle_t *)hv; for (int i = 0; i < h->ncache; i++) dev_free(h->cache[i].dev);
@@ -594,7 +619,7 @@ __global__ void kdecode(uint64_t *p, uint64_t nw, int b) {            /* prefix 
     uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x; if (w >= nw) return;
     uint64_t x = 0; for (int j = 0; j < b; j++) { x ^= p[(uint64_t)j * nw + w]; p[(uint64_t)j * nw + w] = x; }
 }
-__global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t *gsum, uint64_t *gcnt, unsigned long long *acc,
+template <bool Ext> __global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t *gsum, uint64_t *gcnt, unsigned long long *acc,
                        const uint64_t *rstart, const uint64_t *rcum, int nr, uint64_t total) {
     uint64_t t = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x, w = t;
     int64_t tot = 0; uint64_t cnt = 0;
@@ -602,6 +627,25 @@ __global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t 
         int lo = 0, hi = nr - 1;
         while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rcum[mid] <= t) lo = mid; else hi = mid - 1; }
         w = rstart[lo] + (t - rcum[lo]);
+    }
+    if (Ext) {
+        uint32_t lo = UINT32_MAX, hi = 0;
+        if (t < total && w < T->nw) {
+            uint64_t F = filter_g(T, q, w);
+            if (F) { extrema_g(T, q, w, F, &lo, &hi); cnt = popc(F); }
+        }
+        for (int o = 16; o; o >>= 1) {
+            uint32_t l = __shfl_down_sync(0xffffffffu, lo, o), h = __shfl_down_sync(0xffffffffu, hi, o);
+            if (l < lo) lo = l;
+            if (h > hi) hi = h;
+            cnt += __shfl_down_sync(0xffffffffu, cnt, o);
+        }
+        if ((threadIdx.x & 31) == 0 && cnt) {
+            atomicMax(&acc[0], (unsigned long long)(UINT32_MAX - lo));  /* complemented MIN, zero identity */
+            atomicAdd(&acc[1], (unsigned long long)cnt);
+            atomicMax(&acc[2], (unsigned long long)hi);
+        }
+        return;
     }
     if (t < total && w < T->nw) word_g(T, q, av.p, w, gsum, gcnt, &tot, &cnt);
     for (int o = 16; o; o >>= 1) { tot += __shfl_down_sync(0xffffffffu, tot, o); cnt += __shfl_down_sync(0xffffffffu, cnt, o); }
@@ -660,7 +704,7 @@ extern "C" void *gpu_open(const atable_t *t) {
     }
     CK(cudaDeviceSynchronize());
     CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, g, sizeof(gtable_t), cudaMemcpyHostToDevice));
-    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
+    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 24));
     CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
     if (MMA_OK < 0) mma_selftest();
     return h;
@@ -668,7 +712,7 @@ extern "C" void *gpu_open(const atable_t *t) {
 static void *view_tail(handle_t *h) {          /* a view's own device state (its planes are its sources') */
     if (!NSM) { cudaDeviceProp prop; int dev = 0; cudaGetDevice(&dev); cudaGetDeviceProperties(&prop, dev); NSM = prop.multiProcessorCount; }
     CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, &h->host, sizeof(gtable_t), cudaMemcpyHostToDevice));
-    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
+    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 24));
     CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
     if (MMA_OK < 0) mma_selftest();
     return h;
@@ -717,7 +761,7 @@ static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp,
     if (q->agg == A_DOM && q->ndom) { CKI(cudaMalloc((void **)&dt, q->ndom * 4)); T->p[T->n++] = dt; CKI(cudaMemcpy(dt, q->dom_t, q->ndom * 4, cudaMemcpyHostToDevice)); hq->dom_t = dt; }
     if (ng) { CKI(cudaMalloc((void **)&gs, ng * 8)); T->p[T->n++] = gs; CKI(cudaMalloc((void **)&gc, ng * 8)); T->p[T->n++] = gc;
               CKI(cudaMemset(gs, 0, ng * 8)); CKI(cudaMemset(gc, 0, ng * 8)); }
-    CKI(cudaMemcpy(h->dq, hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, 16));
+    CKI(cudaMemcpy(h->dq, hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, q->ext_on ? 24 : 16));
     uint64_t total = h->host.nw; int nr = 0;
     if (q->nranges) {
         uint64_t *hs = (uint64_t *)malloc(q->nranges * 8), *hc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -770,13 +814,17 @@ static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp,
         if (nins > q->out_cap) h->hclean = 1;                  /* all gathered and cleared; the caller reruns */
     } else {
         cudaEventRecord(e0);
-        if (total) kquery<<<(unsigned)((total + 255) / 256), 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
+        unsigned blocks = (unsigned)((total + 255) / 256);
+        if (total && q->ext_on) kquery<true><<<blocks, 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
+        else if (total) kquery<false><<<blocks, 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
         cudaEventRecord(e1); CKI(cudaEventSynchronize(e1)); CKI(cudaGetLastError());
         cudaEventElapsedTime(&kms, e0, e1);
     }
     if (ms) *ms = kms;
-    unsigned long long a[2]; CKI(cudaMemcpy(a, h->dacc, 16, cudaMemcpyDeviceToHost));
-    q->total_sum = (int64_t)a[0]; q->total_cnt = a[1];
+    unsigned long long a[3]; CKI(cudaMemcpy(a, h->dacc, q->ext_on ? 24 : 16, cudaMemcpyDeviceToHost));
+    q->total_sum = q->ext_on ? (a[1] ? UINT32_MAX - (int64_t)a[0] : 0) : (int64_t)a[0];
+    q->total_cnt = a[1];
+    if (q->ext_on) q->total_sum_hi = (int64_t)a[2];
     if (ng) { CKI(cudaMemcpy(q->out_sum, gs, ng * 8, cudaMemcpyDeviceToHost)); CKI(cudaMemcpy(q->out_cnt, gc, ng * 8, cudaMemcpyDeviceToHost)); }
     cudaEventDestroy(e0); cudaEventDestroy(e1);
     return 0;

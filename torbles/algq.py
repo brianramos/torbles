@@ -1356,11 +1356,17 @@ class Table:
         p = self._part_of(c)
         return lib.at_width(p.at, p.idx(c))
     def nrows(self): return len(self.used_ids)
+    def _decode_column(self, c):
+        """Bulk decode the planes into a transient code array."""
+        part = self._part_of(c)
+        out = np.empty(self.n, dtype=np.uint32)
+        lib.at_decode_column(part.at, part.idx(c), out.ctypes.data)
+        return out
+
     def decoded(self, c):          # dimension attribute as integers, decoded from the torus planes
         if c not in self._decoded:
             if self.parts is not None: self._decoded[c] = self._part_of(c).decoded(c); return self._decoded[c]
-            out = np.empty(self.n, dtype=np.uint32); lib.at_decode_column(self.at, self.idx(c), out.ctypes.data)
-            self._decoded[c] = out
+            self._decoded[c] = self._decode_column(c)
         return self._decoded[c]
     def space(self, fk, dim):
         """the id space of the dimension joined through foreign key fk (row ids or derived surrogates)"""
@@ -1610,9 +1616,10 @@ class CodeGroups:
 
 class Groups:
     """a typed GROUP BY result as columns (Query.run_columns): keys [(codes, valid mask or None, codec or None)] (the codes
-    order and compare like the values; codec.decode gives the values), vals [one value per group, as run() gives them]"""
-    __slots__ = ("keys", "vals")
-    def __init__(self, keys, vals): self.keys, self.vals = keys, vals
+    order and compare like the values; codec.decode gives the values), vals [one value per group, as run() gives them].
+    The internal SQL array path can retain native sums and counts in separate arrays."""
+    __slots__ = ("keys", "vals", "counts")
+    def __init__(self, keys, vals, counts=None): self.keys, self.vals, self.counts = keys, vals, counts
     def __len__(self): return len(self.vals)
 
 
@@ -1689,6 +1696,13 @@ def lower_measure(e, fact):
 class MinMax(tuple):
     """(min, max) of a group (Query.minmax)"""
 
+    observations = None
+
+    def __new__(cls, values, observations=None):
+        out = super().__new__(cls, values)
+        if observations is not None: out.observations = observations
+        return out
+
 def _merge_vals(a, b):
     """two partial results of one group: sums add, (sum, count) pairs add, (min, max) pairs combine"""
     if isinstance(a, MinMax): return MinMax((min(a[0], b[0]), max(a[1], b[1])))
@@ -1748,13 +1762,14 @@ class Query:
         if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
         if col.name in getattr(self.fact, "wide", {}): raise ValueError(f"{col.name}: MIN / MAX of a self-extending column")
         self.measure = None; self._ext = col; self._count = None; return self
-    def rank_codes(self, col, ranks, engine="alg", bits=8):
+    def rank_codes(self, col, ranks, engine="alg", bits=8, *, with_spans=False):
         """Rank selection on the planes: the codes at the given 0-based ranks (ascending) among the codes of fact column
         col on the rows that pass the filters and joins (NULL rows left out), without reading any row. Radix selection
         from the top plane down, `bits` planes per level: each level is one engine GROUP BY over those planes, restricted
         to the rows whose higher planes hold the prefix chosen so far (a code interval), and the cumulative counts of its
         2^bits buckets give the next digits of each rank's code. A negative rank counts from the top (-1: the largest).
-        -> ({rank: code}, number of passing non-NULL rows), ranks as passed; ranks past that number are left out."""
+        -> ({rank: code}, number of passing non-NULL rows), ranks as passed; ranks past that number are left out.
+        With with_spans, also return {rank: (strictly smaller count, equal count)} from the same histograms."""
         fact = self.fact
         if not (isinstance(col, Col) and col.table is fact): raise ValueError("rank_codes() takes a column of the fact table")
         if col.name in getattr(fact, "wide", {}): raise ValueError(f"{col.name}: rank selection on a self-extending column")
@@ -1782,32 +1797,39 @@ class Query:
                 k = rev
             full = np.zeros(1 << nb, np.int64); np.add.at(full, k, np.asarray(cn, np.int64))
             return np.cumsum(full)
-        if w == 0: return {}, 0
+        if w == 0: return ({}, 0, {}) if with_spans else ({}, 0)
         nb0 = min(bits, w)
         cum = counts(None, nb0, w - nb0); total = int(cum[-1])
         ranks_in = list(ranks)
         ranks = [int(r) + total if int(r) < 0 else int(r) for r in ranks]          # negative: counted from the top
         want = sorted({r for r in ranks if 0 <= r < total})
-        if not want: return {}, total
+        if not want: return ({}, total, {}) if with_spans else ({}, total)
         ranks0 = list(ranks_in)
-        state = {}                                           # rank -> (prefix, rank within the prefix's rows)
+        state = {}                                           # rank -> (prefix, rank within it, count of its rows)
         for r in want:
-            d = int(np.searchsorted(cum, r, side="right")); state[r] = (d, r - (int(cum[d - 1]) if d else 0))
+            d = int(np.searchsorted(cum, r, side="right"))
+            start = int(cum[d - 1]) if d else 0
+            state[r] = (d, r - start, int(cum[d]) - start)
         done = nb0
         while done < w:
             nb = min(bits, w - done); sh = w - done - nb
             nxt = {}                                         # this level's prefixes, from the previous level's only
-            for p in sorted({pr for pr, _ in state.values()}):
+            for p in sorted({pr for pr, _, _ in state.values()}):
                 c = counts((p << (w - done), ((p + 1) << (w - done)) - 1), nb, sh)
-                for r, (pr, rr) in state.items():
+                for r, (pr, rr, _) in state.items():
                     if pr != p: continue
-                    d = int(np.searchsorted(c, rr, side="right")); nxt[r] = ((p << nb) | d, rr - (int(c[d - 1]) if d else 0))
+                    d = int(np.searchsorted(c, rr, side="right"))
+                    start = int(c[d - 1]) if d else 0
+                    nxt[r] = ((p << nb) | d, rr - start, int(c[d]) - start)
             state = nxt; done += nb
-        back = {}
+        back, spans = {}, {}
         for r0 in ranks0:
             r = int(r0) + total if int(r0) < 0 else int(r0)
-            if r in state: back[r0] = state[r][0]
-        return back, total
+            if r in state:
+                code, within, equal = state[r]
+                back[r0] = code
+                if with_spans: spans[r0] = (r - within, equal)
+        return (back, total, spans) if with_spans else (back, total)
 
     def rows(self, engine="alg"):
         """the ids of the fact rows that pass the filters and joins (a row bitmap from the engine)"""
@@ -2017,7 +2039,8 @@ class Query:
             return out
         if getattr(self, "_ext", None) is not None:
             if rA is None or rB is None: return rA if rB is None else rB
-            return MinMax((min(rA[0], rB[0]), max(rA[1], rB[1])))
+            n = None if rA.observations is None or rB.observations is None else rA.observations + rB.observations
+            return MinMax((min(rA[0], rB[0]), max(rA[1], rB[1])), n)
         if getattr(self, "_both", False): return _merge_vals(rA, rB)
         if self.measure is None: return rA + rB
         return None if rA is None and rB is None else (rA or 0) + (rB or 0)
@@ -2344,7 +2367,7 @@ class Query:
         ext = getattr(self, "_ext", None)
         if ext is not None:                          # MIN / MAX codes -> values of the column's type
             ecd = ext.codec()
-            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else MinMax(ecd.decode(_codes_array(list(v)))))
+            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else MinMax(ecd.decode(_codes_array(list(v))), v.observations))
         if getattr(self, "_both", False) and self.measure is not None:
             v0 = val; val = lambda v: v if v is None else (v0(v[0]), v[1])
         if not self.keys: return val(r)
@@ -2371,7 +2394,9 @@ class Query:
             cols = [_codes_array(c) for c in zip(*keys)] if keys else [np.zeros(0, np.int64) for _ in range(nk + len(vpos))]
             vals = [r[k] for k in keys]
             both = False
-        if both and not scale and ext is None: vl = list(zip(vals.tolist(), r.cnt.tolist()))
+        separate = getattr(self, "_separate_group_counts", False) and not scale and ext is None
+        if separate and isinstance(vals, np.ndarray): vl = vals
+        elif both and not scale and ext is None: vl = list(zip(vals.tolist(), r.cnt.tolist()))
         elif both and ext is None: vl = [(_exact_dec(v, scale), c) for v, c in zip(vals.tolist(), r.cnt.tolist())]
         elif both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
         elif isinstance(vals, np.ndarray) and not scale and not ext: vl = vals.tolist()
@@ -2385,7 +2410,7 @@ class Query:
         else: vl = [val(v) for v in (vals.tolist() if isinstance(vals, np.ndarray) else vals)]
         valid = {i: np.asarray(cols[nk + j]) != 0 for j, i in enumerate(vpos)}
         keys = [(np.asarray(cols[i]), valid.get(i), decs[i]) for i in range(nk)]
-        return Groups(keys, vl)
+        return Groups(keys, vl, r.cnt if separate and both else None)
 
     def _run_codes(self, engine="alg"):
         try: return self._run_codes0(engine)
@@ -2665,6 +2690,12 @@ class Query:
             plan.nattr = 0
             self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan
             if getattr(self, "_rowbits", False): return out_rows
+            if len(out_rows) >= 512:
+                live = np.flatnonzero(out_rows)
+                if len(live) * 16 < len(out_rows):
+                    # A selective row mask, such as a top-k boundary, needs only its occupied words.
+                    bits = np.flatnonzero(np.unpackbits(out_rows[live].view(np.uint8), bitorder="little"))
+                    return (live[bits >> 6] * 64 + (bits & 63)).astype(np.uint64)
             return np.nonzero(np.unpackbits(out_rows.view(np.uint8), bitorder="little")[:fact.n])[0].astype(np.uint64)
         ext = getattr(self, "_ext", None)
         if ext is not None: plan.ext_on, plan.ext_col = 1, fv.idx(ext.name)
@@ -2886,7 +2917,7 @@ class Query:
         if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"][:2]
         ext = ctx.get("ext", False)
         if not self.keys and ext:    # MIN / MAX of nothing is NULL
-            return MinMax((int(plan.total_sum), int(plan.total_sum_hi))) if plan.total_cnt else None
+            return MinMax((int(plan.total_sum), int(plan.total_sum_hi)), int(plan.total_cnt)) if plan.total_cnt else None
         if not self.keys:            # SQL semantics: COUNT of nothing is 0, SUM of nothing is NULL
             if self.measure is None: return int(plan.total_cnt)
             if not plan.total_cnt: return (None, 0) if getattr(self, "_both", False) else None

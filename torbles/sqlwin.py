@@ -329,27 +329,71 @@ def sort_keys(a, desc=False, nulls_first=False):
 
 
 def lexsort(keys, n):
-    """np.lexsort(keys) (the last key the primary one): when the other key is already in order row by row (an ORDER BY
-    on the rows' own order, often), a stable sort on the primary key alone, a radix sort when its codes fit 16 bits"""
+    """Stable lexicographic order, with the last key primary."""
     if not keys: return np.arange(n)
-    if len(keys) <= 2 and n > 1:
-        if len(keys) == 2 and not bool((keys[0][1:] >= keys[0][:-1]).all()): return np.lexsort(keys)
+    # A globally monotone least-significant key is already supplied by the
+    # stable input order. Several such tie-breakers can be dropped in turn.
+    while len(keys) > 1 and bool((keys[0][1:] >= keys[0][:-1]).all()):
+        keys = keys[1:]
+    if len(keys) == 1 and n > 1:
         k = keys[-1]
-        if len(keys) == 1 and bool((k[1:] >= k[:-1]).all()): return np.arange(n)       # already in order
+        if bool((k[1:] >= k[:-1]).all()): return np.arange(n)
         lo, hi = int(k.min()), int(k.max())
-        if hi - lo < 1 << 16: k = (k - lo).astype(np.uint16)
+        if hi - lo < 1 << 16:
+            if k.dtype.kind == "i": k = k.astype(np.int64, copy=False)
+            k = (k - lo).astype(np.uint16)
         return np.argsort(k, kind="stable")
+    if n >= 1 << 15 and len(keys) > 1 and all(k.dtype.kind in "iu" for k in keys):
+        bounds = []
+        for k in reversed(keys):
+            lo, hi = int(k.min()), int(k.max())
+            bounds.append((lo, (hi - lo).bit_length()))
+        bits = sum(width for _, width in bounds)
+        if bits <= 63:
+            dtype = np.uint16 if bits <= 16 else np.uint32 if bits <= 32 else np.uint64
+            packed = np.zeros(n, dtype=dtype)
+            for k, (lo, width) in zip(reversed(keys), bounds):
+                if width:
+                    packed <<= width
+                    if k.dtype.kind == "i": k = k.astype(np.int64, copy=False)
+                    packed |= (k - lo).astype(dtype)
+            if 16 < bits <= 32:
+                # Two stable 16-bit radix passes also cover a compact composite key.
+                low = np.argsort(packed.astype(np.uint16), kind="stable")
+                high = (packed[low] >> 16).astype(np.uint16)
+                return low[np.argsort(high, kind="stable")]
+            return np.argsort(packed, kind="stable")
     return np.lexsort(keys)
+
+
+def _window_order(parts, okeys, specs, n):
+    pc = _combine([eq_keys(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
+    oc = [sort_keys(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
+    keys = list(reversed(oc)) + ([pc] if pc is not None else [])
+    return pc, oc, lexsort(keys, n)
+
+
+def row_numbers(parts, okeys, specs, n):
+    """ROW_NUMBER in input order using only the sorted partition boundaries."""
+    pc, _, perm = _window_order(parts, okeys, specs, n)
+    positions = np.arange(n, dtype=np.int64)
+    if pc is not None and n:
+        ordered = pc[perm]
+        starts = np.zeros(n, dtype=np.int64)
+        np.copyto(starts[1:], positions[1:], where=ordered[1:] != ordered[:-1])
+        np.maximum.accumulate(starts, out=starts)
+        positions -= starts
+    positions += 1
+    result = np.empty(n, dtype=np.int64)
+    result[perm] = positions
+    return result
 
 
 def layout(parts, okeys, specs, n):
     """order the rows of a window: parts / okeys are the PARTITION BY / ORDER BY value columns (collation keys applied),
     specs [(desc, nulls_first)]"""
     L = Layout(); L.n = n
-    pc = _combine([eq_keys(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
-    oc = [sort_keys(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
-    keys = list(reversed(oc)) + ([pc] if pc is not None else [])
-    L.perm = lexsort(keys, n)
+    pc, oc, L.perm = _window_order(parts, okeys, specs, n)
     L.ar = np.arange(n)
     newp = np.zeros(n, bool)
     if n: newp[0] = True
