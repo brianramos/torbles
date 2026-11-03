@@ -4,28 +4,36 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.5.1 alpha** runs on x86-64 Linux and WSL2.
+**0.6.0 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.5.1
+## What’s new in 0.6.0
 
-- **High-cardinality grouping.** Eligible CPU queries ordered by count with a
-  small limit read the raw bitplanes in tiles, combine exact counts and sums
-  in one native reduction, and compute AVG for the selected groups.
-  Timestamp minute keys are derived during the scan. [SQL execution](docs/SQL.md#performance)
+- **Packed SQL stages on CPU and CUDA.** Eligible plans reduce raw bitplanes for
+  exact scalar moments, distinct counts, grouping, bounded ordering, and
+  dictionary histograms. SQL can also rank groups before reading their remaining
+  aggregate inputs. [SQL execution](docs/SQL.md#how-a-query-runs)
+- **Reusable SQL algebra.** Compatible SELECTs can share an exact moment
+  calculation in one batch. A saved catalog can also answer new affine
+  aggregates and combine learned filter scopes, with source validation before
+  reuse. [Learned algebra](docs/SQL.md#durable-learned-algebra)
+- **SQL writes and local transactions.** Writable uint32 tables support INSERT,
+  UPDATE, DELETE and primary-key MERGE. The durable prototype supports
+  explicit transactions, autocommit and crash recovery.
+  [Transactions](docs/SQL.md#durable-sql-prototype) · [Refresh guide](docs/REFRESH.md)
 
-## What’s new in 0.5.0
+## ClickBench
 
-- **SQL writes on bitplanes.** Writable uint32 tables support INSERT, UPDATE,
-  DELETE, and primary-key MERGE. Eligible updates patch the stored planes on
-  CPU and synchronize resident CUDA copies. [Refresh guide](docs/REFRESH.md)
-- **Durable SQL prototype.** Open a local database directory with
-  torbles.open_durable() for explicit transactions, autocommit, and crash
-  recovery. Concurrent clients share a serialized SQL executor.
-  [Transactions](docs/SQL.md#durable-sql-prototype)
-- **Ordering and window execution.** Eligible ORDER BY, top-k, and ROW_NUMBER
-  plans use masks derived from stored planes. SQL also carries native masks
-  and aggregate states further through eligible filters, joins, and grouping.
-  [SQL execution](docs/SQL.md#how-a-query-runs)
+All 43 queries matched DuckDB on official 1M- and 10M-row subsets. Independent
+Nsight traces recorded CUDA launches in every query at both scales.
+
+| Rows | Torbles GPU | Torbles CPU | DuckDB |
+|---:|---:|---:|---:|
+| 1M | 72.6 ms | 114.7 ms | 229.2 ms |
+| 10M | 420.2 ms | 859.2 ms | 1,155.1 ms |
+
+These totals sum warm medians. The CPU comparators come from earlier runs on
+the same inputs and hardware. Another 10M GPU run with the same native library
+took 1,163.9 ms. [Method, CUDA coverage and separate workload benchmarks](docs/CLICKBENCH.md)
 
 ## Try it
 
@@ -33,7 +41,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.5.1'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.6.0'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales
@@ -113,6 +121,6 @@ source.close()
 - [Star Schema Benchmark](docs/SSB.md) documents the queries, hardware, and reproduction commands. [Historical release timings](https://github.com/brianramos/torbles/blob/f493619883100849e20abc3fb65a1bf3ee354975/README.md#results) include separate SQL and engine API measurements.
 - [Algebra inventory](ALGEBRA_INVENTORY.md) links individual capabilities to their bounds, tests, and benchmark receipts.
 - The test suite and differential fuzzers compare results against DuckDB. [Regression suite](tests/run_all.sh) · [Snowflake checks](tests/check_snowflake.py)
-- SQL is read-only after the database is built. The native paths have limits on key shapes, arithmetic, and columns per kernel pass. SQL uses general execution for other supported plans. Some GPU requests run on the CPU. [SQL coverage](docs/SQL.md) · [Engine limits](docs/ENGINE.md)
+- Built snapshots support reads. SQL writes use the writable-table API. The native paths have limits on key shapes, arithmetic, and columns per pass. SQL uses general execution for other supported plans, and some GPU requests use CPU stages. [SQL coverage](docs/SQL.md) · [Engine limits](docs/ENGINE.md)
 
 Apache 2.0. [License](LICENSE) · [Changelog](CHANGELOG.md)

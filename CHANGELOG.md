@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.0, alpha
+
+- Compose compatible SQL statements over shared packed filters and exact
+  aggregate states. The durable algebra catalog saves learned bases and
+  derives new affine and scope-composed queries after reopening a verified
+  snapshot. Source changes invalidate the saved state and refresh the basis.
+- Carry encoded group state through filtering, CASE branches, ranking and
+  offsets. Decode selected keys and payloads at the output boundary.
+- Port packed bitmap filters, wide moments, distinct and grouped reductions,
+  dictionary histograms, bounded ordering and minute buckets to CUDA.
+- Verify ClickBench at 1M and 10M rows and record per-query CUDA kernel
+  launches. See [ClickBench measurements](docs/CLICKBENCH.md).
+
 ## 0.5.1, alpha
 
 - Fuse sparse counts and exact sums for eligible CPU GROUP BY queries with
