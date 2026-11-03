@@ -36,7 +36,8 @@ class TextPlaneChecks(unittest.TestCase):
         if duck:
             self.assertEqual(result.rows, db.con.execute(sql).fetchall())
         self.assertEqual(result.stats.get("dictionary_text_predicates", 0), predicates)
-        self.assertEqual(bool(result.stats.get("dictionary_projection_rows")), projection)
+        self.assertEqual("dictionary_plane_groups" in result.stats
+                         or bool(result.stats.get("dictionary_projection_rows")), projection)
         return result
 
     def test_like_and_not_like_keep_null_unknown(self):
@@ -55,9 +56,10 @@ class TextPlaneChecks(unittest.TestCase):
                          "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
         self.check_query(db, "SELECT g, AVG(CHAR_LENGTH(url)) AS l, COUNT(*) AS n FROM t WHERE url <> '' "
                          "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
-        self.check_query(db, r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
+        regex = self.check_query(db, r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
                          "AVG(STRLEN(url)) AS l, COUNT(*) AS n, MIN(url) FROM t WHERE url <> '' "
                          "GROUP BY k HAVING COUNT(*) > 5000 ORDER BY l DESC, k", projection=True)
+        self.assertEqual(regex.stats.get("dictionary_histogram_codes"), 5)
         self.check_query(db, "SELECT g, AVG(STRLEN(title)) AS l, COUNT(*) AS n FROM t "
                          "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
         self.assertEqual(db.sql("SELECT g, AVG(STRLEN(url)) FROM t GROUP BY g "
@@ -92,6 +94,24 @@ class TextPlaneChecks(unittest.TestCase):
         res = self.check_query(db, "SELECT count(*) FROM t WHERE url NOT LIKE '%café.com%'",
                                predicates=1)
         self.assertEqual(res.stats.get("dictionary_dimension_predicates"), 1)
+
+    @unittest.skipIf(sqltextplanes._lookup_sums is None, "native plane lookup unavailable")
+    def test_length_contracts_only_groups_that_can_pass_having(self):
+        rows = np.arange(70_013)
+        ids = rows % 17
+        data = pd.DataFrame(dict(
+            url=np.array([f"https://café.com/{i}" for i in range(17)])[ids],
+            g=np.where(rows < 15000, 0, rows % 37 + 1),
+            **{f"attr{i}": ids * (i + 1) for i in range(32)},
+        ))
+        db = torbles.from_frames({"t": data})
+        self.addCleanup(db.close)
+        self.assertEqual(db["t"].codecs["url"].kind, "ref")
+        query = ("SELECT g, COUNT(*), AVG(STRLEN(url)) FROM t WHERE url LIKE '%café%' "
+                 "GROUP BY g HAVING COUNT(*) >= 10000 ORDER BY g")
+        result = self.check_query(db, query, predicates=1, projection=True)
+        self.assertEqual(result.stats.get("dictionary_plane_groups"), 1)
+        self.assertEqual(result.stats.get("dictionary_plane_selected_rows"), 15000)
 
     def test_text_caches_belong_to_open_table(self):
         first = self.database()

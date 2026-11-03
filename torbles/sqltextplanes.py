@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Dictionary maps and bitplane reductions for text predicates and projections."""
 
+import ctypes as C
 import re
 
 import numpy as np
@@ -191,6 +192,89 @@ def _length_map(fact, source, byte_length):
     return _cache(fact, "_text_lengths", (name, codec, byte_length), build, 4)
 
 
+_lookup_sums = getattr(algq.lib, "at_plane_lookup_sums", None)
+if _lookup_sums is not None:
+    _lookup_sums.restype = C.c_int
+    _lookup_sums.argtypes = [algq.vp, algq.vp, C.c_int32, C.c_int32, C.c_uint32,
+                            algq.vp, C.c_uint64, algq.vp, C.c_uint32, algq.vp]
+
+
+def _contract_length(planner, preds, aggs, group, key, source, table, fk, length, having):
+    """Derive candidate group masks, then contract projected lengths over them."""
+    from . import sqlexec as E, sqlgroupplans as P
+
+    fact = planner.tab[planner.fact]
+    name, codec = source
+    if (_lookup_sums is None or key is None or key[1] is not None or having is None
+            or name in table.nullable or any(a.name == "min" for a in aggs.values())):
+        return None
+    comparison, boundary = having
+    if comparison is np.greater:
+        boundary += 1
+    elif comparison is not np.greater_equal:
+        return None
+    if boundary <= 0 or fact.n // boundary > 128:
+        return None
+    value = name if fk is None else fk
+    if value in fact.wide or (fk is not None and fact.fk_nulls.get(fk, 0)):
+        return None
+    scope = P.bitmap(planner, preds)
+    if scope is None:
+        return None
+    cap = fact.n // boundary
+    if cap:
+        states = fact._plane_group([key[:-1]], [], cap, scope)
+        if states is None:
+            return None
+        codes, counts, _ = states
+        keep = counts >= boundary
+        codes = np.ascontiguousarray(codes[keep, 0], dtype=np.uint32)
+        counts = counts[keep]
+    else:
+        codes = np.empty(0, dtype=np.uint32)
+        counts = np.empty(0, dtype=np.uint64)
+    sums = np.zeros(len(codes), dtype=np.uint64)
+    if len(codes):
+        byte_length = length.fn in _BYTE_LENGTH
+
+        def make_lookup():
+            lengths = _length_map(table, source, byte_length)
+            if int(lengths.max(initial=0)) >= 1 << 32:
+                return None
+            if fk is not None:
+                stored = table.decoded(name)
+                if int(stored.max(initial=0)) >= len(lengths):
+                    return None
+                lengths = lengths[stored]
+            return lengths.astype(np.uint32)
+
+        try:
+            lookup = _cache(table, "_text_lengths", ("lookup", name, codec, byte_length, fk is not None),
+                            make_lookup, 4)
+        except UnicodeError:
+            return None
+        if lookup is None:
+            return None
+        view = algq._plan_table(fact)
+        key_idx, value_idx = view.idx(key[0]), view.idx(value)
+        mask = fact.kmask(fk) if fk is not None else 0
+        if _lookup_sums(algq._run_on(view).at, scope.ctypes.data, key_idx, value_idx,
+                        mask or (1 << 32) - 1, lookup.ctypes.data, len(lookup),
+                        codes.ctypes.data, len(codes), sums.ctypes.data):
+            return None
+    result = E.Rel(len(codes))
+    result.grouped = True
+    result.cols[group.key()] = key[-1](codes)
+    for agg_key, agg in aggs.items():
+        vals = counts if agg.name == "count_star" else np.asarray(
+            [total / count for total, count in zip(sums.tolist(), counts.tolist())], dtype=np.float64)
+        result.cols.put(agg_key, E.ColArr(vals))
+    planner.cx.stats["engine_queries"] += bool(cap) + bool(len(codes))
+    planner.cx.stats["dictionary_plane_groups"] = len(codes)
+    planner.cx.stats["dictionary_plane_selected_rows"] = int(counts.sum())
+    return result
+
+
 def project_group(planner, preds, aggs):
     """Group one stored text projection with exact length sums and dictionary MIN."""
     from . import sqlexec as E
@@ -242,6 +326,15 @@ def project_group(planner, preds, aggs):
         return None
     if key is not None and key[3] != 0:
         return None
+    if key is None:
+        from . import sqltexthist
+        histogram = sqltexthist.project_group(planner, preds, aggs, group, col, source, table, fk,
+                                              length, having, joins)
+        if histogram is not None:
+            return histogram
+    contracted = _contract_length(planner, preds, aggs, group, key, source, table, fk, length, having)
+    if contracted is not None:
+        return contracted
     try:
         selected = _rows(fact, preds, joins)
     except (TypeError, ValueError, OverflowError):

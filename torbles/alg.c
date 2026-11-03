@@ -1732,6 +1732,132 @@ static uint64_t plane_equal_word(const atable_t *t, int col, uint32_t code, uint
     return mask;
 }
 
+enum { LOOKUP_SUM_KEYS = 128, LOOKUP_SUM_NODES = 2 + 32 * LOOKUP_SUM_KEYS };
+
+typedef struct { uint16_t child[2], key; } lookup_sum_node_t;
+typedef struct { uint64_t mask; unsigned key; } lookup_sum_match_t;
+typedef struct {
+    const atable_t *table;
+    const uint64_t *filter;
+    const uint32_t *lookup;
+    uint64_t lookup_len;
+    uint32_t lookup_mask;
+    int group_col, lookup_col;
+    lookup_sum_node_t trie[LOOKUP_SUM_NODES];
+    _Atomic int invalid;
+} lookup_sum_plan_t;
+typedef struct {
+    lookup_sum_plan_t *plan;
+    uint64_t begin, end, sums[LOOKUP_SUM_KEYS];
+} lookup_sum_job_t;
+
+/* A trie over the physical XOR digits shares common equality prefixes.
+ * Branches terminate as soon as their intersection with the scope is empty. */
+static void lookup_sum_match(const lookup_sum_plan_t *plan, uint64_t word, unsigned digit,
+                             unsigned node, uint64_t scope, lookup_sum_match_t *matches,
+                             unsigned *nmatch, uint64_t *selected) {
+    const lookup_sum_node_t *n = plan->trie + node;
+    if (n->key) {
+        matches[(*nmatch)++] = (lookup_sum_match_t){scope, n->key - 1};
+        *selected |= scope;
+        return;
+    }
+    uint64_t plane = plan->table->V[plan->group_col][digit][word];
+    uint64_t one = scope & plane, zero = scope & ~plane;
+    if (zero && n->child[0])
+        lookup_sum_match(plan, word, digit + 1, n->child[0], zero, matches, nmatch, selected);
+    if (one && n->child[1])
+        lookup_sum_match(plan, word, digit + 1, n->child[1], one, matches, nmatch, selected);
+}
+
+static void *lookup_sum_worker(void *arg) {
+    lookup_sum_job_t *job = arg;
+    lookup_sum_plan_t *p = job->plan;
+    const atable_t *t = p->table;
+    int col = p->lookup_col, width = t->width[col];
+    for (uint64_t w = job->begin; w < job->end; ++w) {
+        uint64_t scope = rowmask(t, w) & (p->filter ? p->filter[w] : UINT64_MAX);
+        if (!scope) continue;
+        lookup_sum_match_t matches[LOOKUP_SUM_KEYS];
+        unsigned nmatch = 0;
+        uint64_t selected = 0;
+        lookup_sum_match(p, w, 0, 1, scope, matches, &nmatch, &selected);
+        if (!selected) continue;
+
+        uint64_t codes[64] = {0}, value = 0;
+        for (int b = 0; b < width; ++b) {
+            value ^= t->V[col][b][w];
+            unsigned bit = t->msb[col] ? width - b - 1 : b;
+            if ((p->lookup_mask >> bit) & 1) codes[bit] = value & selected;
+        }
+        transpose64(codes);
+        for (unsigned m = 0; m < nmatch; ++m) {
+            uint64_t total = 0;
+            for (uint64_t rows = matches[m].mask; rows; rows &= rows - 1) {
+                uint64_t code = codes[__builtin_ctzll(rows)];
+                if (code >= p->lookup_len) {
+                    atomic_store_explicit(&p->invalid, 1, memory_order_relaxed);
+                    return NULL;
+                }
+                total += p->lookup[code];
+            }
+            job->sums[matches[m].key] += total;
+        }
+    }
+    return NULL;
+}
+
+int at_plane_lookup_sums(const atable_t *t, const uint64_t *filter,
+                        int32_t group_col, int32_t lookup_col, uint32_t lookup_mask,
+                        const uint32_t *lookup, uint64_t lookup_len,
+                        const uint32_t *keys, uint32_t nkeys, uint64_t *sums) {
+    if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        t->nw != (t->n + 63) / 64 || !keys || !nkeys || nkeys > LOOKUP_SUM_KEYS ||
+        !lookup || !lookup_len || lookup_len > SIZE_MAX / sizeof *lookup || !sums) return -1;
+    int cols[] = {group_col, lookup_col};
+    for (unsigned i = 0; i < sizeof cols / sizeof cols[0]; ++i) {
+        int col = cols[i];
+        if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32)
+            return -1;
+        for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
+    }
+    lookup_sum_plan_t plan = {.table = t, .filter = filter, .lookup = lookup,
+        .lookup_len = lookup_len, .lookup_mask = lookup_mask, .group_col = group_col, .lookup_col = lookup_col};
+    int width = t->width[group_col], msb = t->msb[group_col];
+    unsigned nodes = 1;
+    for (unsigned k = 0; k < nkeys; ++k) {
+        if ((uint64_t)keys[k] >= (UINT64_C(1) << width)) return -1;
+        unsigned node = 1, previous = 0;
+        for (int b = 0; b < width; ++b) {
+            unsigned bit = (keys[k] >> (msb ? width - b - 1 : b)) & 1;
+            uint16_t *edge = &plan.trie[node].child[bit ^ previous];
+            if (!*edge) *edge = ++nodes;
+            node = *edge;
+            previous = bit;
+        }
+        if (plan.trie[node].key) return -1;
+        plan.trie[node].key = k + 1;
+    }
+
+    int workers = nthreads(), useful = 1 + (int)(t->n / 65536);
+    if (workers > useful) workers = useful;
+    if (workers > 64) workers = 64;
+    if (workers < 1) workers = 1;
+    lookup_sum_job_t jobs[64] = {0};
+    for (int i = 0; i < workers; ++i) {
+        jobs[i].plan = &plan;
+        jobs[i].begin = t->nw * i / workers;
+        jobs[i].end = t->nw * (i + 1) / workers;
+    }
+    pool_jobs(workers, lookup_sum_worker, jobs, sizeof *jobs);
+    if (atomic_load_explicit(&plan.invalid, memory_order_relaxed)) return -1;
+    for (unsigned k = 0; k < nkeys; ++k) {
+        sums[k] = 0;
+        for (int i = 0; i < workers; ++i) sums[k] += jobs[i].sums[k];
+    }
+    return 0;
+}
+
 /* Small equality result, with fallback when the match set is larger. */
 int at_plane_equal_ids(const atable_t *t, const uint64_t *visible, const at_group_key_t *key,
                        uint64_t code, uint32_t limit, uint64_t *ids, uint32_t *nout) {
