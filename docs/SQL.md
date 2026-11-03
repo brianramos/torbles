@@ -151,6 +151,17 @@ is x, and `x IS NULL` computes x where DuckDB's statistics cannot decide it (a c
 
 ### Performance
 
+For eligible high-cardinality GROUP BY queries ordered by descending count
+with a small LIMIT, the CPU reads only the selected raw bitplanes. It
+reconstructs key and measure codes in 64-row tiles, then combines exact
+counts and sums by sparse key. AVG divides the exact sum by its count after
+group selection. Only the selected groups' keys and values are decoded into
+SQL results. Supported keys include split integers, dictionary strings, and
+the minute of an unzoned timestamp. The planner keeps the general execution
+path for cases such as nullable measures, explicit tie breakers, WITH TIES,
+and other grouping expressions.
+
+
 What the engine computes (filters, joins to dimensions, the aggregates of a star block, MIN and MAX, rank selections)
 runs on the bit planes, and on the GPU where the GPU executor supports it. The rest of a query runs here, in Python
 and NumPy on the CPU, whichever engine is selected: window functions not read from their aggregated series (Window

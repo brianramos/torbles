@@ -56,6 +56,7 @@ run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
 run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
+run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py

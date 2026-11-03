@@ -3781,6 +3781,10 @@ class _Planner:
             p = self.engine_pred(c)
             if p is not None: preds += p
             else: residual.append(c)
+        if not empty and not residual:
+            grouped = self.raw_plane_group(preds, aggs)
+            if grouped is not None:
+                return grouped, {}
         atoms = {k: c for k, c in need.items() if c.b not in self.nulled}
         nulled_atoms = {k: c for k, c in need.items() if c.b in self.nulled}
         for c in residual:
@@ -4331,6 +4335,111 @@ class _Planner:
                 u = np.unique(np.stack([grp, code], 1), axis=0)
                 out = np.bincount(u[:, 0], minlength=G).astype(np.int64)
         return out.tolist()
+
+    def raw_plane_group(self, preds, aggs):
+        """Compute a bounded COUNT-ordered result directly from the fact's planes."""
+        s, cx, fact = self.s, self.cx, self.tab[self.fact]
+        if (algq._plane_group_topk is None or not COLUMNAR or not VEC_GROUPS
+                or cx.engine != "alg" or s.from_ is not self.fact or self.joins
+                or self.left or self.fact_sample is not None or s.sample is not None
+                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 3
+                or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
+                or s.percent or s.with_ties or len(s.order) != 1):
+            return None
+        lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+        off = s.offset.v if isinstance(s.offset, I.Lit) else s.offset
+        off = 0 if off is None else off
+        if type(lim) is not int or type(off) is not int or lim <= 0 or off < 0 or lim + off > 1024:
+            return None
+        spec, desc, _ = s.order[0]
+        order = s.items[spec[1]][0] if spec[0] == "pos" else spec[1]
+        if not desc or not isinstance(order, I.Agg) or order.name not in ("count", "count_star"):
+            return None
+        group_keys = {g.key() for g in s.group}
+        if any(x.key() not in group_keys and x.key() not in aggs for x, _ in s.items):
+            return None
+
+        from torbles.sqlgroupkeys import plane_group_key
+        keys = [plane_group_key(expr, self.fact, fact) for expr in s.group]
+        if any(key is None for key in keys):
+            return None
+        domain = 1
+        for low, high, shift, transform, _, _ in keys:
+            if transform == 1:                       # EXTRACT(MINUTE)
+                domain *= 60
+            else:
+                width = fact.width(low) if high is None else shift + fact.width(high)
+                domain *= 1 << int(width)
+            if domain >= 1 << 14:
+                break
+        else:
+            return None                              # small domains already group cheaply by popcount
+
+        measures, plans = [], {}
+        for key, agg in aggs.items():
+            if agg.distinct or agg.filter is not None or agg.order:
+                return None
+            if agg.name == "count_star":
+                plans[key] = ("count", 0, 0)
+                continue
+            if agg.name not in ("count", "sum", "avg") or len(agg.args) != 1 or not agg.args[0].t.integer:
+                return None
+            arg = _strip_cast(agg.args[0])
+            if not isinstance(arg, I.Col) or arg.b is not self.fact or arg.nullable:
+                return None
+            binding, name = self.canon(arg)
+            if binding is not self.fact or name not in fact.cols or name in getattr(fact, "nullable", {}):
+                return None
+            if agg.name == "count":
+                plans[key] = ("count", 0, 0)
+                continue
+            codec = fact.codecs.get(name)
+            if (codec is None or codec.kind != "int" or name in getattr(fact, "wide", {}) or name in fact.sidecars):
+                return None
+            offset = int(codec.offset)
+            max_code = (1 << int(fact.width(name))) - 1
+            if fact.n * max_code >= 1 << 64:
+                return None
+            if agg.name == "sum":
+                low, high = T.INT_RANGE[agg.t.id]
+                if min(0, offset) * fact.n < low or max(0, offset + max_code) * fact.n > high:
+                    return None
+            if name not in measures:
+                if len(measures) == 2:
+                    return None
+                measures.append(name)
+            plans[key] = (agg.name, measures.index(name), offset)
+
+        bitmap = fact.used_bm
+        if preds:
+            query = algq.Query(fact, join_mode="auto")
+            for pred in preds:
+                query.where(pred)
+            query._rows = query._rowbits = True
+            try:
+                bitmap = query._run_codes("alg") & bitmap
+            except (TypeError, ValueError, OverflowError):
+                return None
+            cx.stats["engine_queries"] += 1
+        result = fact._plane_group([key[:-1] for key in keys], measures, lim + off, bitmap)
+        if result is None:
+            return None
+        codes, counts, sums = result
+        counts = counts[off:].tolist()
+        rel = Rel(len(counts))
+        for i, (expr, key) in enumerate(zip(s.group, keys)):
+            rel.cols[expr.key()] = key[-1](codes[off:, i])
+        for key, (kind, index, offset) in plans.items():
+            if kind == "count":
+                rel.cols[key] = counts
+            else:
+                exact = [code + offset * n for code, n in zip(sums[off:, index].tolist(), counts)]
+                rel.cols[key] = exact if kind == "sum" else [v / n for v, n in zip(exact, counts)]
+        rel.plane_ordered = True
+        cx.stats["engine_queries"] += 1
+        cx.stats["raw_plane_group_rows"] = cx.stats.get("raw_plane_group_rows", 0) + fact.n
+        cx.stats["raw_plane_group_groups"] = cx.stats.get("raw_plane_group_groups", 0) + rel.n
+        return rel
 
     def raw_plane_rows(self, atoms, preds):
         """A full fact sort or one ROW_NUMBER can order IDs before reading payload values."""

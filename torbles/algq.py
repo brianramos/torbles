@@ -163,6 +163,18 @@ if _plane_order is not None:
     _plane_order.argtypes = [vp, vp, ctypes.c_int32, vp, vp, ctypes.c_int32,
                              vp, vp, ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64)]
 
+class _PlaneGroupKey(ctypes.Structure):
+    _fields_ = [("low", ctypes.c_int32), ("high", ctypes.c_int32), ("shift", ctypes.c_int32),
+                ("transform", ctypes.c_int32), ("offset", ctypes.c_int64)]
+
+
+_plane_group_topk = getattr(lib, "at_group_topk", None)
+if _plane_group_topk is not None:
+    _plane_group_topk.restype = ctypes.c_int
+    _plane_group_topk.argtypes = [vp, vp, ctypes.c_int32, ctypes.POINTER(_PlaneGroupKey),
+                                 ctypes.c_int32, vp, ctypes.c_uint32, vp, vp, vp, ctypes.POINTER(ctypes.c_uint32)]
+
+
 # optional GPU executor (gpu.cu): libgpu.so (CUDA) or, for testing, libgpu_emu.so (the same kernels run on the CPU)
 _libg = None
 def gpu_lib():
@@ -1440,6 +1452,30 @@ class Table:
         if rc != 0:
             return None
         return None if ids is None else ids[:nout.value], None if ranks is None else ranks[:nout.value]
+
+    def _plane_group(self, keys, measures, k, bitmap):
+        """Return bounded group keys, counts and code sums from one native scan."""
+        if _plane_group_topk is None:
+            return None
+        source = _plan_table(self)
+        specs = (_PlaneGroupKey * len(keys))(*(
+            _PlaneGroupKey(source.idx(low), -1 if high is None else source.idx(high), shift, transform, offset)
+            for low, high, shift, transform, offset in keys
+        ))
+        columns = (ctypes.c_int32 * len(measures))(*(source.idx(name) for name in measures))
+        codes = np.empty((k, len(keys)), np.uint64)
+        counts = np.empty(k, np.uint64)
+        sums = np.empty((k, len(measures)), np.uint64) if measures else None
+        nout = ctypes.c_uint32()
+        rc = _plane_group_topk(
+            _run_on(source).at, None if bitmap is None else bitmap.ctypes.data, len(keys), specs,
+            len(measures), columns if measures else None, k, codes.ctypes.data, counts.ctypes.data,
+            None if sums is None else sums.ctypes.data, nout,
+        )
+        if rc != 0:
+            return None
+        n = nout.value
+        return codes[:n], counts[:n], None if sums is None else sums[:n]
 
     def _decode_column(self, c):
         """Bulk decode the planes into a transient code array."""
