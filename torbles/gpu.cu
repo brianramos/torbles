@@ -18,6 +18,7 @@
 #include <string.h>
 #include "torble.h"
 #include "version.h"
+#include <algorithm>
 
 #ifdef EMULATE
   #define DEV static inline
@@ -30,6 +31,7 @@
   #define ADD_U64(p, v) (*(unsigned long long *)(p) += (unsigned long long)(v))
 #else
   #include <cuda_runtime.h>
+  #include <cub/device/device_scan.cuh>
   #define DEV __device__ __forceinline__
   #define HD __host__ __device__ __forceinline__
   DEV int popc(uint64_t x) { return __popcll(x); }
@@ -122,6 +124,19 @@ DEV uint64_t filter_g(const gtable_t *T, const qplan_t *q, uint64_t w) {
     uint64_t F = eval_prog_g(T, q, w) & rowmask_g(T, w);
     if (q->xmode) F &= q->xmode == 1 ? q->xrows[w] : ~q->xrows[w];
     return F;
+}
+/* Scalar extrema by plane elimination. Each mask keeps the candidates with the best prefix. */
+DEV void extrema_g(const gtable_t *T, const qplan_t *q, uint64_t w, uint64_t F, uint32_t *lo, uint32_t *hi) {
+    uint64_t L = F, H = F;
+    uint32_t l = 0, h = 0;
+    int c = q->ext_col, b = T->width[c];
+    for (int j = b - 1; j >= 0; j--) {
+        uint64_t p = X(T, c, T->msb[c] ? b - 1 - j : j, w);
+        uint64_t lower = L & ~p, higher = H & p;
+        if (lower) L = lower; else l |= 1u << j;
+        if (higher) { H = higher; h |= 1u << j; }
+    }
+    *lo = l; *hi = h;
 }
 /* looked-up keys (at most 2): one gather per live row; rows whose foreign key is outside the dimension are dropped */
 DEV uint64_t lookups_g(const gtable_t *T, const qplan_t *q, uint32_t *const *avals, uint64_t w, uint64_t F, uint32_t kl[2][64], int *slot) {
@@ -462,12 +477,30 @@ typedef struct {
     mmp_t *dP; unsigned long long *hk, *hs, *hc; uint64_t hcap; unsigned int *dovf;    /* A_MM: planes, group hash */
     unsigned int *dins, *dnins; unsigned long long *ok, *os, *oc; int hclean;               /* insertion list, output */
     qplan_t *dq; unsigned long long *dacc; uint64_t *drs, *drc; uint64_t nrcap;
+    void *topk; size_t topk_scan_bytes;
+    void *xor_patches; size_t xor_capacity;
+    uint32_t xor_blocked;
 } handle_t;
+
+/* Views have no torus faces and borrow their plane storage. Virtual
+ * columns and their rank flags also need a fresh expanded upload. */
+static uint32_t xor_blocked_columns(const atable_t *t) {
+    if (!t->nfaces) return UINT32_MAX;
+    uint32_t blocked = 0;
+    for (int c = 0; c < t->k; ++c) {
+        int flag = t->vflag[c];
+        if (!flag) continue;
+        if (flag < 1 || flag > t->k) return UINT32_MAX;
+        blocked |= (1u << c) | (1u << (flag - 1));
+    }
+    return blocked;
+}
 
 static int supported(const qplan_t *q) {
     if (q->wide || q->widekey) return 0;                        /* 128-bit sums or group codes: the CPU engine */
-    if (q->ext_on || q->agg == A_ROWS || q->agg == A_DIST) return 0;   /* MIN / MAX, row bitmaps, COUNT(DISTINCT) cells: the CPU engine */
+    if (q->agg == A_ROWS || q->agg == A_DIST) return 0;           /* row bitmaps and DISTINCT cells: the CPU engine */
     if (q->nsemi) return 0;                                     /* semi-join lookups stay on the CPU */
+    if (q->ext_on) return q->agg == A_GENERAL && !q->nkey && !q->nattr;
     if (q->agg == A_GENERAL) return 0;                         /* the caller converts what it can to A_POLYG / A_MM */
     if (q->agg == A_MM && !q->nkey) return 0;
     if (q->nkey > 6) return 0;
@@ -507,6 +540,7 @@ extern "C" const char *gpu_name(void) { return "CPU emulation of the GPU kernels
 extern "C" void *gpu_open(const atable_t *t) {
     handle_t *h = (handle_t *)calloc(1, sizeof *h); gtable_t *g = &h->host;
     g->n = t->n; g->nw = t->nw; g->k = t->k;
+    h->xor_blocked = xor_blocked_columns(t);
     size_t np = 0; for (int c = 0; c < t->k; c++) np += t->width[c];
     h->bytes = np * t->nw * 8; h->buf = (uint64_t *)malloc(h->bytes ? h->bytes : 8); size_t off = 0;
     for (int c = 0; c < t->k; c++) {
@@ -538,6 +572,7 @@ static void dev_free(void *d) { free(d); }
 /* the query on the emulated device: hq is q with its delta plane's device copy, av the attribute arrays' */
 static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const *av, dtmp_t *, double *ms) {
     int64_t tot = 0; uint64_t cnt = 0;
+    uint32_t lo = UINT32_MAX, hi = 0;
     uint64_t total = h->host.nw, *rs = NULL, *rc = NULL; int nr = 0;
     if (q->nranges) {
         rs = (uint64_t *)malloc(q->nranges * 8); rc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -579,11 +614,21 @@ static int run_query(handle_t *h, qplan_t *q, const qplan_t *hq, uint32_t *const
         for (uint64_t vt = 0; vt < total; vt++) {
             uint64_t w = vt;
             if (nr) { int lo = 0, hi = nr - 1; while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rc[mid] <= vt) lo = mid; else hi = mid - 1; } w = rs[lo] + (vt - rc[lo]); }
-            if (w < h->host.nw) word_g(&h->host, hq, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
+            if (w >= h->host.nw) continue;
+            if (q->ext_on) {
+                uint64_t F = filter_g(&h->host, hq, w);
+                if (!F) continue;
+                uint32_t l, u; extrema_g(&h->host, hq, w, F, &l, &u);
+                if (l < lo) lo = l;
+                if (u > hi) hi = u;
+                cnt += popc(F);
+            } else word_g(&h->host, hq, av, w, q->out_sum, q->out_cnt, &tot, &cnt);
         }
     }
     free(rs); free(rc);
-    q->total_sum = tot; q->total_cnt = cnt; if (ms) *ms = 0; return 0;
+    q->total_sum = q->ext_on ? (cnt ? lo : 0) : tot; q->total_cnt = cnt;
+    if (q->ext_on) q->total_sum_hi = hi;
+    if (ms) *ms = 0; return 0;
 }
 extern "C" void gpu_close(void *hv) {
     handle_t *h = (handle_t *)hv; for (int i = 0; i < h->ncache; i++) dev_free(h->cache[i].dev);
@@ -594,7 +639,7 @@ __global__ void kdecode(uint64_t *p, uint64_t nw, int b) {            /* prefix 
     uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x; if (w >= nw) return;
     uint64_t x = 0; for (int j = 0; j < b; j++) { x ^= p[(uint64_t)j * nw + w]; p[(uint64_t)j * nw + w] = x; }
 }
-__global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t *gsum, uint64_t *gcnt, unsigned long long *acc,
+template <bool Ext> __global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t *gsum, uint64_t *gcnt, unsigned long long *acc,
                        const uint64_t *rstart, const uint64_t *rcum, int nr, uint64_t total) {
     uint64_t t = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x, w = t;
     int64_t tot = 0; uint64_t cnt = 0;
@@ -602,6 +647,25 @@ __global__ void kquery(const gtable_t *T, const qplan_t *q, avals_t av, int64_t 
         int lo = 0, hi = nr - 1;
         while (lo < hi) { int mid = (lo + hi + 1) / 2; if (rcum[mid] <= t) lo = mid; else hi = mid - 1; }
         w = rstart[lo] + (t - rcum[lo]);
+    }
+    if (Ext) {
+        uint32_t lo = UINT32_MAX, hi = 0;
+        if (t < total && w < T->nw) {
+            uint64_t F = filter_g(T, q, w);
+            if (F) { extrema_g(T, q, w, F, &lo, &hi); cnt = popc(F); }
+        }
+        for (int o = 16; o; o >>= 1) {
+            uint32_t l = __shfl_down_sync(0xffffffffu, lo, o), h = __shfl_down_sync(0xffffffffu, hi, o);
+            if (l < lo) lo = l;
+            if (h > hi) hi = h;
+            cnt += __shfl_down_sync(0xffffffffu, cnt, o);
+        }
+        if ((threadIdx.x & 31) == 0 && cnt) {
+            atomicMax(&acc[0], (unsigned long long)(UINT32_MAX - lo));  /* complemented MIN, zero identity */
+            atomicAdd(&acc[1], (unsigned long long)cnt);
+            atomicMax(&acc[2], (unsigned long long)hi);
+        }
+        return;
     }
     if (t < total && w < T->nw) word_g(T, q, av.p, w, gsum, gcnt, &tot, &cnt);
     for (int o = 16; o; o >>= 1) { tot += __shfl_down_sync(0xffffffffu, tot, o); cnt += __shfl_down_sync(0xffffffffu, cnt, o); }
@@ -639,6 +703,7 @@ static void mma_selftest(void) {
 extern "C" void *gpu_open(const atable_t *t) {
     handle_t *h = (handle_t *)calloc(1, sizeof *h); gtable_t *g = &h->host;
     g->n = t->n; g->nw = t->nw; g->k = t->k;
+    h->xor_blocked = xor_blocked_columns(t);
     cudaDeviceProp prop; int dev = 0; cudaGetDevice(&dev); cudaGetDeviceProperties(&prop, dev); NSM = prop.multiProcessorCount;
     size_t np = 0; for (int c = 0; c < t->k; c++) np += t->width[c];
     h->bytes = np * t->nw * 8; CK(cudaMalloc((void **)&h->buf, h->bytes ? h->bytes : 8)); size_t off = 0;
@@ -660,7 +725,7 @@ extern "C" void *gpu_open(const atable_t *t) {
     }
     CK(cudaDeviceSynchronize());
     CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, g, sizeof(gtable_t), cudaMemcpyHostToDevice));
-    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
+    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 24));
     CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
     if (MMA_OK < 0) mma_selftest();
     return h;
@@ -668,7 +733,7 @@ extern "C" void *gpu_open(const atable_t *t) {
 static void *view_tail(handle_t *h) {          /* a view's own device state (its planes are its sources') */
     if (!NSM) { cudaDeviceProp prop; int dev = 0; cudaGetDevice(&dev); cudaGetDeviceProperties(&prop, dev); NSM = prop.multiProcessorCount; }
     CK(cudaMalloc((void **)&h->dev, sizeof(gtable_t))); CK(cudaMemcpy(h->dev, &h->host, sizeof(gtable_t), cudaMemcpyHostToDevice));
-    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 16));
+    CK(cudaMalloc((void **)&h->dq, sizeof(qplan_t))); CK(cudaMalloc((void **)&h->dacc, 24));
     CK(cudaMalloc((void **)&h->dP, MAXMP * sizeof(mmp_t))); CK(cudaMalloc((void **)&h->dovf, 4));
     if (MMA_OK < 0) mma_selftest();
     return h;
@@ -717,7 +782,7 @@ static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp,
     if (q->agg == A_DOM && q->ndom) { CKI(cudaMalloc((void **)&dt, q->ndom * 4)); T->p[T->n++] = dt; CKI(cudaMemcpy(dt, q->dom_t, q->ndom * 4, cudaMemcpyHostToDevice)); hq->dom_t = dt; }
     if (ng) { CKI(cudaMalloc((void **)&gs, ng * 8)); T->p[T->n++] = gs; CKI(cudaMalloc((void **)&gc, ng * 8)); T->p[T->n++] = gc;
               CKI(cudaMemset(gs, 0, ng * 8)); CKI(cudaMemset(gc, 0, ng * 8)); }
-    CKI(cudaMemcpy(h->dq, hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, 16));
+    CKI(cudaMemcpy(h->dq, hq, sizeof(qplan_t), cudaMemcpyHostToDevice)); CKI(cudaMemset(h->dacc, 0, q->ext_on ? 24 : 16));
     uint64_t total = h->host.nw; int nr = 0;
     if (q->nranges) {
         uint64_t *hs = (uint64_t *)malloc(q->nranges * 8), *hc = (uint64_t *)malloc(q->nranges * 8); total = 0;
@@ -770,13 +835,17 @@ static int run_query(handle_t *h, qplan_t *q, qplan_t *hq, uint32_t *const *avp,
         if (nins > q->out_cap) h->hclean = 1;                  /* all gathered and cleared; the caller reruns */
     } else {
         cudaEventRecord(e0);
-        if (total) kquery<<<(unsigned)((total + 255) / 256), 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
+        unsigned blocks = (unsigned)((total + 255) / 256);
+        if (total && q->ext_on) kquery<true><<<blocks, 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
+        else if (total) kquery<false><<<blocks, 256>>>(h->dev, h->dq, av, gs, gc, h->dacc, h->drs, h->drc, nr, total);
         cudaEventRecord(e1); CKI(cudaEventSynchronize(e1)); CKI(cudaGetLastError());
         cudaEventElapsedTime(&kms, e0, e1);
     }
     if (ms) *ms = kms;
-    unsigned long long a[2]; CKI(cudaMemcpy(a, h->dacc, 16, cudaMemcpyDeviceToHost));
-    q->total_sum = (int64_t)a[0]; q->total_cnt = a[1];
+    unsigned long long a[3]; CKI(cudaMemcpy(a, h->dacc, q->ext_on ? 24 : 16, cudaMemcpyDeviceToHost));
+    q->total_sum = q->ext_on ? (a[1] ? UINT32_MAX - (int64_t)a[0] : 0) : (int64_t)a[0];
+    q->total_cnt = a[1];
+    if (q->ext_on) q->total_sum_hi = (int64_t)a[2];
     if (ng) { CKI(cudaMemcpy(q->out_sum, gs, ng * 8, cudaMemcpyDeviceToHost)); CKI(cudaMemcpy(q->out_cnt, gc, ng * 8, cudaMemcpyDeviceToHost)); }
     cudaEventDestroy(e0); cudaEventDestroy(e1);
     return 0;
@@ -787,9 +856,343 @@ extern "C" void gpu_close(void *hv) {
     if (h->hk) { cudaFree(h->hk); cudaFree(h->hs); cudaFree(h->hc); cudaFree(h->dins); cudaFree(h->ok); cudaFree(h->os); cudaFree(h->oc); }
     if (h->dnins) cudaFree(h->dnins);
     if (h->drs) { cudaFree(h->drs); cudaFree(h->drc); }
+    if (h->topk) cudaFree(h->topk);
+    if (h->xor_patches) cudaFree(h->xor_patches);
     free(h);
 }
 #endif
+
+/* Incremental sync of a warm handle's decoded value planes. XOR is
+ * commutative, so overlapping records can safely update the same word. */
+struct gpu_xor_patch_t {
+    uint64_t word, rows;
+    uint32_t col, code;
+};
+
+DEV void gpu_xor_apply(const gtable_t *t, gpu_xor_patch_t p) {
+    for (uint32_t code = p.code; code; code &= code - 1) {
+        int bit = ctz32(code);
+        int plane = t->msb[p.col] ? t->width[p.col] - 1 - bit : bit;
+        uint64_t *word = const_cast<uint64_t *>(t->P[p.col][plane]) + p.word;
+#ifdef EMULATE
+        *word ^= p.rows;
+#else
+        atomicXor((unsigned long long *)word, (unsigned long long)p.rows);
+#endif
+    }
+}
+
+#ifndef EMULATE
+__global__ void gpu_xor_kernel(const gtable_t *t, const gpu_xor_patch_t *patches, uint64_t n) {
+    uint64_t stride = (uint64_t)gridDim.x * blockDim.x;
+    for (uint64_t i = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x; i < n; i += stride)
+        gpu_xor_apply(t, patches[i]);
+}
+
+static int gpu_xor_upload(handle_t *h, const gpu_xor_patch_t *patches, size_t n) {
+    if (!n) return 0;
+    size_t bytes = n * sizeof *patches;
+    if (bytes > h->xor_capacity) {
+        size_t capacity = h->xor_capacity ? h->xor_capacity : 64 * sizeof *patches;
+        while (capacity < bytes && capacity <= SIZE_MAX / 2) capacity *= 2;
+        if (capacity < bytes) capacity = bytes;
+        if (h->xor_patches) {
+            CKI(cudaFree(h->xor_patches));
+            h->xor_patches = nullptr;
+            h->xor_capacity = 0;
+        }
+        CKI(cudaMalloc(&h->xor_patches, capacity));
+        h->xor_capacity = capacity;
+    }
+    CKI(cudaMemcpy(h->xor_patches, patches, bytes, cudaMemcpyHostToDevice));
+    size_t grids = (n + 255) / 256;
+    unsigned blocks = grids > 65535 ? 65535 : (unsigned)grids;
+    gpu_xor_kernel<<<blocks, 256>>>(h->dev, (const gpu_xor_patch_t *)h->xor_patches, n);
+    CKI(cudaGetLastError());
+    CKI(cudaDeviceSynchronize());
+    return 0;
+}
+#endif
+
+/* The caller serializes with queries and mirrors the same validated edits
+ * on the owning host torble. Invalid input leaves the device untouched.
+ * A CUDA error may leave a partial update and requires discarding the handle. */
+extern "C" int gpu_xor_words(void *hv, uint64_t npatch, const int32_t *cols, const uint64_t *words,
+                              const uint64_t *rows, const uint32_t *value_xor) {
+    handle_t *h = (handle_t *)hv;
+    if (!h || !h->buf || h->xor_blocked == UINT32_MAX) return -1;
+    if (!npatch) return 0;
+    if (!cols || !words || !rows || !value_xor || npatch > SIZE_MAX / sizeof(gpu_xor_patch_t)) return -1;
+    const gtable_t *t = &h->host;
+    size_t n = 0;
+    for (uint64_t i = 0; i < npatch; ++i) {
+        int32_t c = cols[i];
+        if (c < 0 || c >= t->k || (h->xor_blocked & (1u << c)) ||
+            words[i] >= t->nw) return -1;
+        uint64_t live = t->n - words[i] * 64;
+        if (live < 64 && rows[i] >> live) return -1;
+        int width = t->width[c];
+        if (width < 0 || width > 32 || (width < 32 && value_xor[i] >> width)) return -1;
+        if (rows[i] && value_xor[i]) ++n;
+    }
+    if (!n) return 0;
+#ifdef EMULATE
+    for (uint64_t i = 0; i < npatch; ++i)
+        if (rows[i] && value_xor[i]) gpu_xor_apply(t, {words[i], rows[i], (uint32_t)cols[i], value_xor[i]});
+    return 0;
+#else
+    gpu_xor_patch_t small[64];
+    gpu_xor_patch_t *patches = n <= 64 ? small : (gpu_xor_patch_t *)malloc(n * sizeof *patches);
+    if (!patches) return -2;
+    size_t at = 0;
+    for (uint64_t i = 0; i < npatch; ++i)
+        if (rows[i] && value_xor[i]) patches[at++] = {words[i], rows[i], (uint32_t)cols[i], value_xor[i]};
+    int rc = gpu_xor_upload(h, patches, n);
+    if (patches != small) free(patches);
+    return rc;
+#endif
+}
+
+/* ---------------------------------------------------------------- bounded lexicographic top-k
+ * The CUDA path keeps two packed masks per word: candidates tied with the cutoff prefix, and rows already known
+ * to precede it. Each radix digit counts the candidate masks' intersections with four value planes. A device
+ * prefix scan resolves ties by physical row id. Only the bounded result goes back to the host. */
+enum { TOPK_LIMIT = 1024, TOPK_RADIX = 16 };
+struct topk_digit_t { int col, shift, bits, desc; };
+
+static bool topk_filter_ok(const gtable_t &t, const qplan_t &q) {
+    if (q.nprog < 0 || q.nprog > 1024 || q.nsemi || q.nattr || q.xmode || q.nranges) return false;
+    int depth = 0;
+    for (int i = 0; i < q.nprog; i++) {
+        const pinstr_t &p = q.prog[i];
+        switch (p.op) {
+        case P_AND: case P_OR: case P_XOR:
+            if (depth < 2) return false;
+            depth--; continue;
+        case P_NOT:
+            if (!depth) return false;
+            continue;
+        case P_TRUE: break;
+        case P_EQ: case P_NE: case P_LT: case P_LE: case P_GT: case P_GE: case P_BETWEEN:
+        case P_PREFIX: case P_BIT: case P_CUBE: case P_CLT: case P_CGE: {
+            if (p.col < 0 || p.col >= t.k) return false;
+            int width = t.width[p.col];
+            if (p.op == P_PREFIX && p.b > (unsigned)width) return false;
+            if (p.op == P_BIT && p.a >= 32) return false;
+            if ((p.op == P_CUBE || p.op == P_CLT || p.op == P_CGE) && width < 32 && p.b >> width) return false;
+            break;
+        }
+        default: return false;
+        }
+        if (++depth > 48) return false;
+    }
+    return depth == (q.nprog != 0);
+}
+
+#ifdef EMULATE
+struct topk_entry_t { uint64_t key, row; };
+static bool topk_before(const topk_entry_t &a, const topk_entry_t &b) {
+    return a.key < b.key || (a.key == b.key && a.row < b.row);
+}
+static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *cols, const int32_t *desc,
+                    uint32_t k, uint64_t *ids, uint32_t *n, double *ms) {
+    topk_entry_t heap[TOPK_LIMIT]; uint32_t used = 0;
+    const gtable_t *t = &h->host;
+    for (uint64_t w = 0; w < t->nw; w++) {
+        uint64_t rows = filter_g(t, q, w);
+        while (rows) {
+            int r = ctz64(rows); rows &= rows - 1;
+            uint64_t key = 0;
+            for (int c = 0; c < nkeys; c++)
+                key = (key << 32) | (value_at(t, cols[c], w, r) ^ (desc[c] ? UINT32_MAX : 0));
+            topk_entry_t entry = {key, w * 64 + (unsigned)r};
+            if (used < k) {
+                heap[used++] = entry;
+                std::push_heap(heap, heap + used, topk_before);
+            } else if (topk_before(entry, heap[0])) {
+                std::pop_heap(heap, heap + used, topk_before);
+                heap[used - 1] = entry;
+                std::push_heap(heap, heap + used, topk_before);
+            }
+        }
+    }
+    for (uint32_t i = 0; i < used; i++) ids[i] = heap[i].row;
+    *n = used;
+    if (ms) *ms = 0;
+    return 0;
+}
+#else
+struct topk_state_t {
+    uint32_t hist[TOPK_RADIX], left, bucket, emitted;
+};
+struct topk_masks_t { uint64_t tied, better; };
+
+DEV uint64_t topk_plane(const gtable_t *t, topk_digit_t d, int bit, uint64_t w) {
+    if (bit >= d.bits) return 0;
+    int value_bit = d.shift + bit;
+    uint64_t x = X(t, d.col, t->msb[d.col] ? t->width[d.col] - 1 - value_bit : value_bit, w);
+    return d.desc ? ~x : x;
+}
+DEV topk_masks_t topk_split(const gtable_t *t, topk_digit_t d, uint32_t bucket, uint64_t w, topk_masks_t m) {
+    for (int b = d.bits - 1; b >= 0 && m.tied; b--) {
+        uint64_t x = topk_plane(t, d, b, w);
+        if (bucket & (1u << b)) { m.better |= m.tied & ~x; m.tied &= x; }
+        else m.tied &= ~x;
+    }
+    return m;
+}
+DEV unsigned topk_warp_sum(unsigned n) {
+#if __CUDA_ARCH__ >= 800
+    return __reduce_add_sync(0xffffffffu, n);
+#else
+    for (int d = 16; d; d >>= 1) n += __shfl_down_sync(0xffffffffu, n, d);
+    return n;
+#endif
+}
+template <bool First> __global__ void topk_hist(const gtable_t *t, const qplan_t *q, topk_masks_t *masks,
+                                              topk_state_t *state, topk_digit_t prev, topk_digit_t digit) {
+    __shared__ uint32_t bins[4][TOPK_RADIX];
+    uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    uint64_t tied = 0, planes[4] = {0, 0, 0, 0};
+    if (w < t->nw) {
+        if (First) {
+            tied = filter_g(t, q, w);
+            masks[w] = {tied, 0};
+        } else {
+            topk_masks_t m = masks[w];
+            if (m.tied) {
+                m = topk_split(t, prev, state->bucket, w, m);
+                masks[w] = m;
+                tied = m.tied;
+            }
+        }
+        if (tied) {
+#pragma unroll
+            for (int j = 0; j < 4; j++) planes[j] = topk_plane(t, digit, j, w);
+        }
+    }
+    if (!__syncthreads_or(tied != 0)) return;
+#pragma unroll
+    for (int i = 0; i < TOPK_RADIX; i++) {
+        uint64_t m = tied;
+#pragma unroll
+        for (int j = 0; j < 4; j++) m &= (i & (1 << j)) ? planes[j] : ~planes[j];
+        unsigned n = topk_warp_sum(popc(m));
+        if ((threadIdx.x & 31) == 0) bins[threadIdx.x >> 5][i] = n;
+    }
+    __syncthreads();
+    if (threadIdx.x < TOPK_RADIX) {
+        int i = threadIdx.x;
+        uint32_t n = bins[0][i] + bins[1][i] + bins[2][i] + bins[3][i];
+        if (n) atomicAdd(&state->hist[i], n);
+    }
+}
+__global__ void topk_choose(topk_state_t *state) {
+    uint32_t left = state->left, d = 0;
+    while (d + 1 < TOPK_RADIX && state->hist[d] < left) left -= state->hist[d++];
+    state->left = left;
+    state->bucket = d;
+    for (int i = 0; i < TOPK_RADIX; i++) state->hist[i] = 0;
+}
+__global__ void topk_ties(const gtable_t *t, topk_masks_t *masks, const topk_state_t *state,
+                          topk_digit_t digit, uint32_t *offsets) {
+    uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (w >= t->nw) return;
+    topk_masks_t m = topk_split(t, digit, state->bucket, w, masks[w]);
+    masks[w] = m;
+    offsets[w] = popc(m.tied);
+}
+__global__ void topk_emit(const gtable_t *t, const topk_masks_t *masks, topk_state_t *state,
+                          const uint32_t *offsets, uint32_t k, uint64_t *ids) {
+    uint64_t w = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (w >= t->nw) return;
+    topk_masks_t m = masks[w];
+    uint32_t offset = offsets[w];
+    uint32_t keep = offset < state->left ? state->left - offset : 0;
+    if (!keep) m.tied = 0;
+    else while (popc(m.tied) > keep) m.tied ^= 1ULL << (63 - __clzll(m.tied));
+    uint64_t rows = m.tied | m.better;
+    if (!rows) return;
+    unsigned pos = atomicAdd(&state->emitted, popc(rows));
+    while (rows && pos < k) {
+        ids[pos++] = w * 64 + ctz64(rows);
+        rows &= rows - 1;
+    }
+}
+
+static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *cols, const int32_t *desc,
+                    uint32_t k, uint64_t *ids, uint32_t *n, double *ms) {
+    int nw = (int)h->host.nw;
+    size_t fixed = sizeof(topk_masks_t) * nw + sizeof(uint64_t) * TOPK_LIMIT
+                   + sizeof(topk_state_t) + sizeof(uint32_t) * nw;
+    size_t scratch_off = (fixed + 255) & ~(size_t)255;
+    if (!h->topk) {
+        CKI(cub::DeviceScan::ExclusiveSum(nullptr, h->topk_scan_bytes, (uint32_t *)nullptr, (uint32_t *)nullptr, nw));
+        CKI(cudaMalloc(&h->topk, scratch_off + h->topk_scan_bytes));
+    }
+    auto *masks = (topk_masks_t *)h->topk;
+    auto *out = (uint64_t *)(masks + nw);
+    auto *state = (topk_state_t *)(out + TOPK_LIMIT);
+    auto *offsets = (uint32_t *)(state + 1);
+    void *scratch = (char *)h->topk + scratch_off;
+    topk_state_t init = {}; init.left = k;
+    CKI(cudaMemcpy(state, &init, sizeof init, cudaMemcpyHostToDevice));
+    CKI(cudaMemcpy(h->dq, q, sizeof *q, cudaMemcpyHostToDevice));
+    cudaEvent_t start, end;
+    CKI(cudaEventCreate(&start));
+    if (cudaEventCreate(&end) != cudaSuccess) { cudaEventDestroy(start); return -2; }
+    int rc = [&]() {
+        CKI(cudaEventRecord(start));
+        unsigned blocks = ((unsigned)nw + 127) / 128;
+        topk_digit_t prev = {};
+        bool first = true;
+        for (int i = 0; i < nkeys; i++) {
+            int width = h->host.width[cols[i]];
+            for (int end_bit = width; end_bit > 0;) {
+                int bits = end_bit % 4 ? end_bit % 4 : 4;
+                end_bit -= bits;
+                topk_digit_t digit = {cols[i], end_bit, bits, desc[i]};
+                if (first) topk_hist<true><<<blocks, 128>>>(h->dev, h->dq, masks, state, prev, digit);
+                else topk_hist<false><<<blocks, 128>>>(h->dev, h->dq, masks, state, prev, digit);
+                topk_choose<<<1, 1>>>(state);
+                prev = digit;
+                first = false;
+            }
+        }
+        topk_ties<<<blocks, 128>>>(h->dev, masks, state, prev, offsets);
+        CKI(cub::DeviceScan::ExclusiveSum(scratch, h->topk_scan_bytes, offsets, offsets, nw));
+        topk_emit<<<blocks, 128>>>(h->dev, masks, state, offsets, k, out);
+        CKI(cudaEventRecord(end));
+        CKI(cudaEventSynchronize(end));
+        CKI(cudaGetLastError());
+        float elapsed = 0;
+        CKI(cudaEventElapsedTime(&elapsed, start, end));
+        if (ms) *ms = elapsed;
+        CKI(cudaMemcpy(n, &state->emitted, sizeof *n, cudaMemcpyDeviceToHost));
+        if (*n > k) return -2;
+        if (*n) CKI(cudaMemcpy(ids, out, *n * sizeof *ids, cudaMemcpyDeviceToHost));
+        return 0;
+    }();
+    cudaEventDestroy(start);
+    cudaEventDestroy(end);
+    return rc;
+}
+#endif
+
+extern "C" int gpu_topk(void *hv, const qplan_t *filter, int nkeys, const int32_t *cols, const int32_t *desc,
+                         uint32_t k, uint64_t *out_ids, uint32_t *out_n, double *ms) {
+    if (!hv || !filter || !cols || !desc || !out_ids || !out_n || nkeys < 1 || nkeys > 2 || !k || k > TOPK_LIMIT)
+        return -1;
+    handle_t *h = (handle_t *)hv;
+    if (h->host.n > UINT32_MAX || !topk_filter_ok(h->host, *filter)) return -1;
+    for (int i = 0; i < nkeys; i++)
+        if (cols[i] < 0 || cols[i] >= h->host.k || h->host.width[cols[i]] < 1 || h->host.width[cols[i]] > 32 ||
+            (desc[i] != 0 && desc[i] != 1)) return -1;
+    *out_n = 0;
+    if (ms) *ms = 0;
+    if (!h->host.nw) return 0;
+    return run_topk(h, filter, nkeys, cols, desc, k, out_ids, out_n, ms);
+}
 
 /* ---------------------------------------------------------------- a query's host arrays on the device (handle_t) */
 /* the device copy of a host array of the query: the cached one of (host, bytes, tag), else a new copy, cached when the

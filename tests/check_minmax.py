@@ -26,6 +26,16 @@ def want_mm(mask, key=None):
     for k in np.unique(key[mask]):
         v = cols["x"][mask & (key == k)]; out[(int(k),)] = (int(v.min()), int(v.max()))
     return out
+# The only selected values can equal the CUDA reduction's sentinel or lie in a partial word.
+edge = Table("edge", {"x": np.array([0] * 64 + [2**32 - 1], np.uint32),
+                      "last": np.array([0] * 64 + [1], np.uint32)}, msb=("x",))
+for predicate, expected in ((edge.last == 1, (2**32 - 1, 2**32 - 1)),
+                            (edge.last == 0, (0, 0)),
+                            ((edge.last == 0) & (edge.x > 0), None)):
+    q = Query(edge).where(predicate).minmax(edge.x)
+    assert q.run("gpu") == expected and q.device == "gpu", (expected, q.device)
+edge.close()
+
 cases = [
     ("no GROUP BY", lambda: Query(fact).minmax(fact.x), np.ones(nf, bool), None),
     ("filter", lambda: Query(fact).where(fact.y < 100).minmax(fact.x), cols["y"] < 100, None),
@@ -40,7 +50,8 @@ for eng in ("alg", "plain", "gpu"):
     for th in (1, 2):
         algq.set_threads(th)
         for name, mk, mask, key in cases:
-            got = mk().run(eng); want = want_mm(mask, key)
+            q = mk(); got = q.run(eng); want = want_mm(mask, key)
+            if eng == "gpu" and key is None: assert q.device == "gpu", (name, q.device)
             if got is not None and not isinstance(got, dict): got = tuple(got)
             if isinstance(got, dict): got = {k: tuple(v) for k, v in got.items()}
             ok = got == want
@@ -51,6 +62,19 @@ for eng in ("alg", "plain", "gpu"):
         ok = np.array_equal(np.asarray(ids, np.int64), want_ids)
         fails += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} passing rows [{eng}, {th} thread(s)]: {len(ids)} rows")
+# SQL can reuse the scalar extrema scan's population for COUNT(*) and other base counts.
+import duckdb
+with duckdb.connect() as con:
+    con.execute("CREATE TABLE t AS SELECT i::INTEGER id, CASE WHEN i % 2 = 0 THEN i END v FROM range(131) r(i)")
+    db = torbles.from_duckdb(con, keep_plain=True)
+    for eng in ("alg", "plain", "gpu"):
+        for where in ("", " WHERE id > 130", " WHERE id BETWEEN 62 AND 68"):
+            sql = "SELECT MIN(id), MAX(id), COUNT(*) FROM t" + where
+            result = db.sql(sql, eng)
+            assert result.rows == con.execute(sql).fetchall() and result.stats["engine_queries"] == 1
+        sql = "SELECT MIN(id), MAX(id), MIN(v), COUNT(*), COUNT(v) FROM t"
+        assert db.sql(sql, eng).rows == con.execute(sql).fetchall()
+    db.close()
 algq.set_threads(1)
 print("ALL MATCH" if not fails else f"{fails} FAILURES")
 sys.exit(1 if fails else 0)

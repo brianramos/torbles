@@ -328,27 +328,114 @@ def sort_keys(a, desc=False, nulls_first=False):
     return g
 
 
-def lexsort(keys, n):
-    """np.lexsort(keys) (the last key the primary one): when the other key is already in order row by row (an ORDER BY
-    on the rows' own order, often), a stable sort on the primary key alone, a radix sort when its codes fit 16 bits"""
-    if not keys: return np.arange(n)
-    if len(keys) <= 2 and n > 1:
-        if len(keys) == 2 and not bool((keys[0][1:] >= keys[0][:-1]).all()): return np.lexsort(keys)
-        k = keys[-1]
-        if len(keys) == 1 and bool((k[1:] >= k[:-1]).all()): return np.arange(n)       # already in order
+def _skip_monotone_keys(keys):
+    # A globally monotone least-significant key is already supplied by the
+    # stable input order. Several such tie-breakers can be dropped in turn.
+    while len(keys) > 1 and bool((keys[0][1:] >= keys[0][:-1]).all()):
+        keys = keys[1:]
+    return keys
+
+
+def _pack_order(keys, n):
+    if not keys or n < 1 << 15 or not all(k.dtype.kind in "iu" for k in keys):
+        return None
+    bounds = []
+    for k in reversed(keys):
         lo, hi = int(k.min()), int(k.max())
-        if hi - lo < 1 << 16: k = (k - lo).astype(np.uint16)
+        bounds.append((lo, (hi - lo).bit_length()))
+    bits = sum(width for _, width in bounds)
+    if not 0 < bits <= 63:
+        return None
+    dtype = np.uint16 if bits <= 16 else np.uint32 if bits <= 32 else np.uint64
+    packed = np.zeros(n, dtype=dtype)
+    for k, (lo, width) in zip(reversed(keys), bounds):
+        if width:
+            packed <<= width
+            if k.dtype.kind == "i": k = k.astype(np.int64, copy=False)
+            packed |= (k - lo).astype(dtype)
+    return packed, bits, bounds[0][1]
+
+
+def _native_packed_order(packed, bits, partition_shift=None):
+    """Native stable permutation, or ROW_NUMBER when a partition shift is given."""
+    import algq
+    n = len(packed)
+    if (algq._order_codes is None or n < 1 << 17 or n > np.iinfo(np.uint32).max
+            or bits + (n - 1).bit_length() > 64):
+        return None
+    out = np.empty(n, dtype=np.int64)
+    rc = algq._order_codes(packed.ctypes.data, packed.itemsize, n, bits, partition_shift or 0,
+                           out.ctypes.data, partition_shift is not None)
+    return out if rc == 0 else None
+
+
+def lexsort(keys, n):
+    """Stable lexicographic order, with the last key primary."""
+    if not keys: return np.arange(n)
+    keys = _skip_monotone_keys(keys)
+    if len(keys) == 1 and n > 1:
+        k = keys[-1]
+        if bool((k[1:] >= k[:-1]).all()): return np.arange(n)
+        lo, hi = int(k.min()), int(k.max())
+        if hi - lo < 1 << 16:
+            if k.dtype.kind == "i": k = k.astype(np.int64, copy=False)
+            k = (k - lo).astype(np.uint16)
         return np.argsort(k, kind="stable")
+    packing = _pack_order(keys, n)
+    if packing is not None:
+        packed, bits, _ = packing
+        if bits > 16:
+            perm = _native_packed_order(packed, bits)
+            if perm is not None: return perm
+        if 16 < bits <= 32:
+            # Two stable 16-bit radix passes also cover a compact composite key.
+            low = np.argsort(packed.astype(np.uint16), kind="stable")
+            high = (packed[low] >> 16).astype(np.uint16)
+            return low[np.argsort(high, kind="stable")]
+        return np.argsort(packed, kind="stable")
     return np.lexsort(keys)
+
+
+def _window_keys(parts, okeys, specs):
+    pc = _combine([eq_keys(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
+    oc = [sort_keys(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
+    keys = list(reversed(oc)) + ([pc] if pc is not None else [])
+    return pc, oc, keys
+
+
+def row_numbers(parts, okeys, specs, n, *, stats=None):
+    """ROW_NUMBER in input order using only the sorted partition boundaries."""
+    pc, _, keys = _window_keys(parts, okeys, specs)
+    if not keys: return np.arange(1, n + 1, dtype=np.int64)
+    if n >= 1 << 17:
+        order_keys = _skip_monotone_keys(keys)
+        ordered = len(order_keys) == 1 and bool((order_keys[0][1:] >= order_keys[0][:-1]).all())
+        packing = None if ordered else _pack_order(order_keys, n)
+        if packing is not None:
+            packed, bits, partition_bits = packing
+            result = _native_packed_order(packed, bits, bits - partition_bits if pc is not None else bits)
+            if result is not None:
+                if stats is not None: stats["native_row_number_rows"] = stats.get("native_row_number_rows", 0) + n
+                return result
+    perm = lexsort(keys, n)
+    positions = np.arange(n, dtype=np.int64)
+    if pc is not None and n:
+        ordered = pc[perm]
+        starts = np.zeros(n, dtype=np.int64)
+        np.copyto(starts[1:], positions[1:], where=ordered[1:] != ordered[:-1])
+        np.maximum.accumulate(starts, out=starts)
+        positions -= starts
+    positions += 1
+    result = np.empty(n, dtype=np.int64)
+    result[perm] = positions
+    return result
 
 
 def layout(parts, okeys, specs, n):
     """order the rows of a window: parts / okeys are the PARTITION BY / ORDER BY value columns (collation keys applied),
     specs [(desc, nulls_first)]"""
     L = Layout(); L.n = n
-    pc = _combine([eq_keys(p) if is_codes(p) else group_codes(p) for p in parts]) if parts else None
-    oc = [sort_keys(k, d, nf) if is_codes(k) else order_codes(k, d, nf) for k, (d, nf) in zip(okeys, specs)]
-    keys = list(reversed(oc)) + ([pc] if pc is not None else [])
+    pc, oc, keys = _window_keys(parts, okeys, specs)
     L.perm = lexsort(keys, n)
     L.ar = np.arange(n)
     newp = np.zeros(n, bool)

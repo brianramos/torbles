@@ -20,6 +20,7 @@ the referenced row's derived surrogate (see keydesign.py). torbles does not enfo
 match (or NULL) never joins, as in an SQL inner join. A column with NULLs gets a validity plane (its hidden column
 c#v, 1 where the value is not NULL); fill_nulls= replaces NULLs by a value instead."""
 import json, os, re, time
+from threading import RLock
 import numpy as np
 import algq
 from algq import Table, Query, Surrogate
@@ -130,12 +131,33 @@ class Database:
         self.con = con if con is not None else duckdb.connect()
         self._add = {}                                # name -> dict(primary_key, foreign_keys, columns)
         self.tables, self.meta, self.notes = {}, {}, []
+        self._writable, self._sql_lock = {}, RLock()
+
+    def add_writable_table(self, name, columns, *, primary_key="id"):
+        """Register an in-memory uint32 table for SQL reads and atomic DML statements."""
+        from torbles.sqlwrite import WritableTable
+
+        with self._sql_lock:
+            if self.con is None:
+                raise RuntimeError("database is closed")
+            if not isinstance(name, str) or not name:
+                raise ValueError("writable table name must be a nonempty string")
+            if any(k.lower() == name.lower() for k in (*self.tables, *self._writable, *self._add)):
+                raise ValueError(f"table {name!r} already exists")
+            table = WritableTable(name, columns, primary_key)
+            if len({c.lower() for c in table.columns}) != len(table.columns):
+                table.close()
+                raise ValueError("writable column names must be unique ignoring case")
+            self._writable[name] = table
+        return self
 
     # ------------------------------------------------------------------ sources
     def add_table(self, name, source=None, primary_key=None, foreign_keys=None, columns=None):
         """source: a pandas / polars DataFrame, a pyarrow Table, a dict of arrays, a DuckDB relation, a file path
         (.parquet, .csv, .tsv, .json, globs allowed), or None for a table already in the connection.
         foreign_keys: {column: "table" or "table.column"}; columns: the columns to load (default: all)."""
+        if any(k.lower() == name.lower() for k in self._writable):
+            raise ValueError(f"table {name!r} already exists as a writable table")
         if source is not None:
             if isinstance(source, (str, os.PathLike)):
                 p = str(source); low = p.lower()
@@ -517,11 +539,12 @@ class Database:
         return lut_final[np.asarray(rows, np.int64)].astype(np.uint32)
 
     # ------------------------------------------------------------------ use
-    def __getitem__(self, name): return self.tables[name]
+    def __getitem__(self, name):
+        return self._writable[name] if name in self._writable else self.tables[name]
     def __repr__(self):
         return "Database(" + ", ".join(f"{n}: {t.n:,} rows" for n, t in self.tables.items()) + ")"
-    def __contains__(self, name): return name in self.tables
-    def __iter__(self): return iter(self.tables)
+    def __contains__(self, name): return name in self.tables or name in self._writable
+    def __iter__(self): return iter((*self.tables, *self._writable))
 
     def query(self, fact):
         """a query over this database's tables (fact: a table or its name)"""
@@ -542,10 +565,21 @@ class Database:
         (.columns, .rows, .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
         see docs/SQL.md for how each part of a query is evaluated and for the functions supported."""
         import sqlfront, sqlexec
-        out = None
-        for q in sqlfront.bind(self, text):
-            out = sqlexec.run(self, q, engine)
-        return out
+        if not self._writable:
+            out = None
+            for q in sqlfront.bind(self, text):
+                out = sqlexec.run(self, q, engine)
+            return out
+        from torbles import sqldml, sqldmlparse
+        with self._sql_lock:
+            out = None
+            for statement in sqlfront.split_statements(text):
+                if sqldmlparse.is_dml(statement):
+                    out = sqldml.run(self, sqldmlparse.parse_dml(statement), engine)
+                else:
+                    for q in sqlfront.bind(self, statement):
+                        out = sqlexec.run(self, q, engine)
+            return out
 
     def sql_result(self, q):
         """run the query's SQL rendering on the source (DuckDB) and return it in torbles' result form"""
@@ -594,14 +628,22 @@ class Database:
         """release every table's native storage (planes or file mappings, sidecars, plain columns, GPU copies: using
         a table afterwards raises algq.TableClosedError) and the DuckDB connection, when this Database opened it.
         Closing again does nothing."""
-        for t in getattr(self, "tables", {}).values(): t.close()
-        if self._own and self.con is not None: self.con.close()
-        self.con = None
+        with self._sql_lock:
+            for t in self._writable.values():
+                t.close()
+            self._writable.clear()
+            for t in self.tables.values():
+                t.close()
+            if self._own and self.con is not None:
+                self.con.close()
+            self.con = None
 
     # ------------------------------------------------------------------ persistence
     def save(self, path):
         """Write the database to a directory: one file per torble (its bit planes, memory-mapped on load) plus a
         manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates)."""
+        if self._writable:
+            raise ValueError("persistence of writable tables is not supported")
         save(self, path)
 
 
@@ -953,6 +995,7 @@ def load(path, validate=True, con=None):
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
+    db._writable, db._sql_lock = {}, RLock()
     db._own, db.con, db._add, db.tables, db.meta, db.notes, db.integrity = False, con, {}, {}, {}, man.get("notes", []), {}
     try: return _load_tables(db, path, man, validate)
     except BaseException:

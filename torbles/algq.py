@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""torbles 0.4.0: algebraic queries over torbles.
+"""torbles 0.5.1: algebraic queries over torbles.
 
 Queries are built as algebraic expressions (operator overloading), compiled into:
   - Boolean polynomials over bit planes (filters), one program per table,
@@ -122,11 +122,15 @@ def sum_width(measure, fact):
                             "torbles refuses rather than risk a wrong answer")
     return int(bound >= 1 << 63)
 
-__version__ = "0.4.0"
+__version__ = "0.5.1"
 _libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__).with_name("libalg.so"))   # (an instrumented build: tests/sanitize_math.sh)
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
 vp, u64 = ctypes.c_void_p, ctypes.c_uint64
+_order_codes = getattr(lib, "at_order_codes", None)
+if _order_codes is not None:
+    _order_codes.restype = ctypes.c_int
+    _order_codes.argtypes = [vp, ctypes.c_uint, u64, ctypes.c_uint, ctypes.c_uint, vp, ctypes.c_int]
 for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_create", vp, [u64, ctypes.c_int, vp]),
                         ("at_save", ctypes.c_int, [vp, ctypes.c_char_p]), ("at_load", vp, [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]),
                         ("at_bytes", u64, [vp]), ("at_width", ctypes.c_int, [vp, ctypes.c_int]), ("at_nplanes", ctypes.c_int, [vp]),
@@ -148,6 +152,29 @@ lib.pt_free.restype, lib.pt_free.argtypes = None, [vp]
 lib.at_view.restype, lib.at_view.argtypes = vp, [ctypes.c_int, vp, vp]
 lib.at_view_free.restype, lib.at_view_free.argtypes = None, [vp]
 
+_at_xor_words = getattr(lib, "at_xor_words", None)
+_xor_words_argtypes = [vp, ctypes.c_uint64, vp, vp, vp, vp]
+if _at_xor_words is not None:
+    _at_xor_words.restype, _at_xor_words.argtypes = ctypes.c_int, _xor_words_argtypes
+
+_plane_order = getattr(lib, "at_plane_order", None)
+if _plane_order is not None:
+    _plane_order.restype = ctypes.c_int
+    _plane_order.argtypes = [vp, vp, ctypes.c_int32, vp, vp, ctypes.c_int32,
+                             vp, vp, ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64)]
+
+class _PlaneGroupKey(ctypes.Structure):
+    _fields_ = [("low", ctypes.c_int32), ("high", ctypes.c_int32), ("shift", ctypes.c_int32),
+                ("transform", ctypes.c_int32), ("offset", ctypes.c_int64)]
+
+
+_plane_group_topk = getattr(lib, "at_group_topk", None)
+if _plane_group_topk is not None:
+    _plane_group_topk.restype = ctypes.c_int
+    _plane_group_topk.argtypes = [vp, vp, ctypes.c_int32, ctypes.POINTER(_PlaneGroupKey),
+                                 ctypes.c_int32, vp, ctypes.c_uint32, vp, vp, vp, ctypes.POINTER(ctypes.c_uint32)]
+
+
 # optional GPU executor (gpu.cu): libgpu.so (CUDA) or, for testing, libgpu_emu.so (the same kernels run on the CPU)
 _libg = None
 def gpu_lib():
@@ -164,6 +191,13 @@ def gpu_lib():
         g.gpu_query.restype = ctypes.c_int; g.gpu_query.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.POINTER(ctypes.c_double)]
         u64p = ctypes.POINTER(ctypes.c_uint64)       # the device copies of host arrays (see _gpu_tag)
         g.gpu_query_tagged.restype = ctypes.c_int; g.gpu_query_tagged.argtypes = [vp, ctypes.POINTER(QPlan), u64p, ctypes.POINTER(ctypes.c_double)]
+        if hasattr(g, "gpu_topk"):
+            i32p = ctypes.POINTER(ctypes.c_int32)
+            g.gpu_topk.restype = ctypes.c_int
+            g.gpu_topk.argtypes = [vp, ctypes.POINTER(QPlan), ctypes.c_int, i32p, i32p, ctypes.c_uint32,
+                                   u64p, ctypes.POINTER(ctypes.c_uint32), ctypes.POINTER(ctypes.c_double)]
+        if hasattr(g, "gpu_xor_words"):
+            g.gpu_xor_words.restype, g.gpu_xor_words.argtypes = ctypes.c_int, _xor_words_argtypes
         g.gpu_cache_evict.restype = ctypes.c_int; g.gpu_cache_evict.argtypes = [vp, u64p, ctypes.c_int]
         g.gpu_cache_entries.restype = ctypes.c_int; g.gpu_cache_entries.argtypes = [vp, u64p, u64p, ctypes.c_int]
         g.gpu_name.restype = ctypes.c_char_p; g.gpu_close.restype = None; g.gpu_close.argtypes = [vp]
@@ -1356,11 +1390,104 @@ class Table:
         p = self._part_of(c)
         return lib.at_width(p.at, p.idx(c))
     def nrows(self): return len(self.used_ids)
+    def _xor_rows(self, columns, rows, deltas):
+        """Patch owned raw planes while the refresh owner excludes readers and aliases."""
+        if (self.parts is not None or self.cluster is not None or self.codecs or self.data
+                or self.wide or self.refbit or self._vflag or getattr(self, "_relationships", None)):
+            raise ValueError("plane updates require an owned raw table with only native bitplanes")
+        if _at_xor_words is None:
+            raise RuntimeError("rebuild the native library for plane updates")
+        storage = self._storage()
+        cols = np.ascontiguousarray(columns, np.int32)
+        ids = np.ascontiguousarray(rows, np.uint64)
+        xor = np.ascontiguousarray(deltas, np.uint32)
+        if not (cols.ndim == ids.ndim == xor.ndim == 1 and len(cols) == len(ids) == len(xor)):
+            raise ValueError("columns, rows and XOR deltas must be parallel vectors")
+        if not len(ids):
+            return
+        if (int(cols.min()) < 0 or int(cols.max()) >= len(self.cols) or int(ids.max()) >= self.n):
+            raise ValueError("plane patch references an invalid column or row")
+        touched = [self.cols[c] for c in np.unique(cols[xor != 0]).tolist()]
+        if not touched:
+            return
+        widths = {name: (1 << self.width(name)) - 1 for name in touched}
+        words = ids >> np.uint64(6)
+        masks = np.uint64(1) << (ids & np.uint64(63))
+        args = (len(ids), cols.ctypes.data, words.ctypes.data, masks.ctypes.data, xor.ctypes.data)
+        with _GPU_LOCK:
+            if _at_xor_words(storage.at, *args):
+                raise RuntimeError("native CPU rejected the plane patch")
+            for name, upper_bound in widths.items():
+                self._colmax[name] = upper_bound
+                self._decoded.pop(name, None)
+                for engine in ("alg", "plain"):
+                    getattr(self, "_ranked", {}).pop((name, engine), None)
+            if storage.gpu:
+                gpu_patch = getattr(storage.glib, "gpu_xor_words", None)
+                try:
+                    synced = gpu_patch is not None and gpu_patch(storage.gpu, *args) == 0
+                except Exception:
+                    synced = False
+                if synced:
+                    self._gpu_xor_batches = getattr(self, "_gpu_xor_batches", 0) + 1
+                else:
+                    handle, storage.gpu = storage.gpu, None
+                    _GPU_LIVE.discard(storage)
+                    storage.glib.gpu_close(handle)
+                    self._gpu_xor_evictions = getattr(self, "_gpu_xor_evictions", 0) + 1
+
+    def _plane_order(self, keys, desc, npart=0, bitmap=None, count=None, row_numbers=False):
+        """Stable physical row IDs, and optional ROW_NUMBER values, from stored planes."""
+        if _plane_order is None or self.parts is not None or self.n > 0xffffffff:
+            return None
+        cols = (ctypes.c_int32 * len(keys))(*(self.idx(key) for key in keys))
+        directions = (ctypes.c_int32 * len(desc))(*desc)
+        cap = self.n if count is None else count
+        ids = None if row_numbers and bitmap is None else np.empty(cap, np.uint64)
+        ranks = np.empty(cap, np.int64) if row_numbers else None
+        nout = ctypes.c_uint64()
+        rc = _plane_order(self.at, None if bitmap is None else bitmap.ctypes.data, len(keys), cols,
+                          directions, npart, None if ids is None else ids.ctypes.data,
+                          None if ranks is None else ranks.ctypes.data, cap, nout)
+        if rc != 0:
+            return None
+        return None if ids is None else ids[:nout.value], None if ranks is None else ranks[:nout.value]
+
+    def _plane_group(self, keys, measures, k, bitmap):
+        """Return bounded group keys, counts and code sums from one native scan."""
+        if _plane_group_topk is None:
+            return None
+        source = _plan_table(self)
+        specs = (_PlaneGroupKey * len(keys))(*(
+            _PlaneGroupKey(source.idx(low), -1 if high is None else source.idx(high), shift, transform, offset)
+            for low, high, shift, transform, offset in keys
+        ))
+        columns = (ctypes.c_int32 * len(measures))(*(source.idx(name) for name in measures))
+        codes = np.empty((k, len(keys)), np.uint64)
+        counts = np.empty(k, np.uint64)
+        sums = np.empty((k, len(measures)), np.uint64) if measures else None
+        nout = ctypes.c_uint32()
+        rc = _plane_group_topk(
+            _run_on(source).at, None if bitmap is None else bitmap.ctypes.data, len(keys), specs,
+            len(measures), columns if measures else None, k, codes.ctypes.data, counts.ctypes.data,
+            None if sums is None else sums.ctypes.data, nout,
+        )
+        if rc != 0:
+            return None
+        n = nout.value
+        return codes[:n], counts[:n], None if sums is None else sums[:n]
+
+    def _decode_column(self, c):
+        """Bulk decode the planes into a transient code array."""
+        part = self._part_of(c)
+        out = np.empty(self.n, dtype=np.uint32)
+        lib.at_decode_column(part.at, part.idx(c), out.ctypes.data)
+        return out
+
     def decoded(self, c):          # dimension attribute as integers, decoded from the torus planes
         if c not in self._decoded:
             if self.parts is not None: self._decoded[c] = self._part_of(c).decoded(c); return self._decoded[c]
-            out = np.empty(self.n, dtype=np.uint32); lib.at_decode_column(self.at, self.idx(c), out.ctypes.data)
-            self._decoded[c] = out
+            self._decoded[c] = self._decode_column(c)
         return self._decoded[c]
     def space(self, fk, dim):
         """the id space of the dimension joined through foreign key fk (row ids or derived surrogates)"""
@@ -1610,9 +1737,10 @@ class CodeGroups:
 
 class Groups:
     """a typed GROUP BY result as columns (Query.run_columns): keys [(codes, valid mask or None, codec or None)] (the codes
-    order and compare like the values; codec.decode gives the values), vals [one value per group, as run() gives them]"""
-    __slots__ = ("keys", "vals")
-    def __init__(self, keys, vals): self.keys, self.vals = keys, vals
+    order and compare like the values; codec.decode gives the values), vals [one value per group, as run() gives them].
+    The internal SQL array path can retain native sums and counts in separate arrays."""
+    __slots__ = ("keys", "vals", "counts")
+    def __init__(self, keys, vals, counts=None): self.keys, self.vals, self.counts = keys, vals, counts
     def __len__(self): return len(self.vals)
 
 
@@ -1689,6 +1817,13 @@ def lower_measure(e, fact):
 class MinMax(tuple):
     """(min, max) of a group (Query.minmax)"""
 
+    observations = None
+
+    def __new__(cls, values, observations=None):
+        out = super().__new__(cls, values)
+        if observations is not None: out.observations = observations
+        return out
+
 def _merge_vals(a, b):
     """two partial results of one group: sums add, (sum, count) pairs add, (min, max) pairs combine"""
     if isinstance(a, MinMax): return MinMax((min(a[0], b[0]), max(a[1], b[1])))
@@ -1748,13 +1883,14 @@ class Query:
         if not (isinstance(col, Col) and col.table is self.fact): raise ValueError("minmax() takes a column of the fact table")
         if col.name in getattr(self.fact, "wide", {}): raise ValueError(f"{col.name}: MIN / MAX of a self-extending column")
         self.measure = None; self._ext = col; self._count = None; return self
-    def rank_codes(self, col, ranks, engine="alg", bits=8):
+    def rank_codes(self, col, ranks, engine="alg", bits=8, *, with_spans=False):
         """Rank selection on the planes: the codes at the given 0-based ranks (ascending) among the codes of fact column
         col on the rows that pass the filters and joins (NULL rows left out), without reading any row. Radix selection
         from the top plane down, `bits` planes per level: each level is one engine GROUP BY over those planes, restricted
         to the rows whose higher planes hold the prefix chosen so far (a code interval), and the cumulative counts of its
         2^bits buckets give the next digits of each rank's code. A negative rank counts from the top (-1: the largest).
-        -> ({rank: code}, number of passing non-NULL rows), ranks as passed; ranks past that number are left out."""
+        -> ({rank: code}, number of passing non-NULL rows), ranks as passed; ranks past that number are left out.
+        With with_spans, also return {rank: (strictly smaller count, equal count)} from the same histograms."""
         fact = self.fact
         if not (isinstance(col, Col) and col.table is fact): raise ValueError("rank_codes() takes a column of the fact table")
         if col.name in getattr(fact, "wide", {}): raise ValueError(f"{col.name}: rank selection on a self-extending column")
@@ -1782,37 +1918,56 @@ class Query:
                 k = rev
             full = np.zeros(1 << nb, np.int64); np.add.at(full, k, np.asarray(cn, np.int64))
             return np.cumsum(full)
-        if w == 0: return {}, 0
+        if w == 0: return ({}, 0, {}) if with_spans else ({}, 0)
         nb0 = min(bits, w)
         cum = counts(None, nb0, w - nb0); total = int(cum[-1])
         ranks_in = list(ranks)
         ranks = [int(r) + total if int(r) < 0 else int(r) for r in ranks]          # negative: counted from the top
         want = sorted({r for r in ranks if 0 <= r < total})
-        if not want: return {}, total
+        if not want: return ({}, total, {}) if with_spans else ({}, total)
         ranks0 = list(ranks_in)
-        state = {}                                           # rank -> (prefix, rank within the prefix's rows)
+        state = {}                                           # rank -> (prefix, rank within it, count of its rows)
         for r in want:
-            d = int(np.searchsorted(cum, r, side="right")); state[r] = (d, r - (int(cum[d - 1]) if d else 0))
+            d = int(np.searchsorted(cum, r, side="right"))
+            start = int(cum[d - 1]) if d else 0
+            state[r] = (d, r - start, int(cum[d]) - start)
         done = nb0
         while done < w:
             nb = min(bits, w - done); sh = w - done - nb
             nxt = {}                                         # this level's prefixes, from the previous level's only
-            for p in sorted({pr for pr, _ in state.values()}):
+            for p in sorted({pr for pr, _, _ in state.values()}):
                 c = counts((p << (w - done), ((p + 1) << (w - done)) - 1), nb, sh)
-                for r, (pr, rr) in state.items():
+                for r, (pr, rr, _) in state.items():
                     if pr != p: continue
-                    d = int(np.searchsorted(c, rr, side="right")); nxt[r] = ((p << nb) | d, rr - (int(c[d - 1]) if d else 0))
+                    d = int(np.searchsorted(c, rr, side="right"))
+                    start = int(c[d - 1]) if d else 0
+                    nxt[r] = ((p << nb) | d, rr - start, int(c[d]) - start)
             state = nxt; done += nb
-        back = {}
+        back, spans = {}, {}
         for r0 in ranks0:
             r = int(r0) + total if int(r0) < 0 else int(r0)
-            if r in state: back[r0] = state[r][0]
-        return back, total
+            if r in state:
+                code, within, equal = state[r]
+                back[r0] = code
+                if with_spans: spans[r0] = (r - within, equal)
+        return (back, total, spans) if with_spans else (back, total)
 
     def rows(self, engine="alg"):
         """the ids of the fact rows that pass the filters and joins (a row bitmap from the engine)"""
         q = copy_query(self); q.keys = []; q.measure = None; q._ext = None; q._rows = True
         return q._run_codes("plain" if engine == "plain" else "alg")
+
+    def _topk_rows(self, keys, k):
+        """Attempt GPU selection on a fact-only, narrow filter plan. None asks SQL to use its ordinary path."""
+        fact = self.fact
+        if not 1 <= len(keys) <= 2 or not 1 <= k <= 1024:
+            return None
+        if self.joins or fact.parts is not None or getattr(fact, "wide", None) or not hasattr(gpu_lib(), "gpu_topk"):
+            return None
+        q = copy_query(self)
+        q.keys, q.measure, q._ext = [], None, None
+        q._rows, q._topk = True, (keys, k)
+        return q._run_codes("gpu")
 
     def _sql_aggs(self):
         """the aggregate in SQL, one expression per column of its value: SUM(e) (and COUNT(e) for a (sum, count)
@@ -1961,6 +2116,14 @@ class Query:
         return tags
 
     def _exec_loop(self, dev, table, plan):
+        if dev == "gpu" and hasattr(plan, "_topk_args"):
+            with _GPU_LOCK:
+                rc = gpu_lib().gpu_topk(table.gpu_handle(), ctypes.byref(plan), *plan._topk_args)
+            if rc != 0:
+                self._gpu_fail = "unsupported top-k plan" if rc == -1 else "CUDA top-k error"
+                return False
+            self.device, self.kernel_ms = "gpu", plan._topk_args[-1].value
+            return True
         tags = self._gpu_tags(plan) if dev == "gpu" else None
         while True:
             if dev == "gpu":
@@ -2017,7 +2180,8 @@ class Query:
             return out
         if getattr(self, "_ext", None) is not None:
             if rA is None or rB is None: return rA if rB is None else rB
-            return MinMax((min(rA[0], rB[0]), max(rA[1], rB[1])))
+            n = None if rA.observations is None or rB.observations is None else rA.observations + rB.observations
+            return MinMax((min(rA[0], rB[0]), max(rA[1], rB[1])), n)
         if getattr(self, "_both", False): return _merge_vals(rA, rB)
         if self.measure is None: return rA + rB
         return None if rA is None and rB is None else (rA or 0) + (rB or 0)
@@ -2344,7 +2508,7 @@ class Query:
         ext = getattr(self, "_ext", None)
         if ext is not None:                          # MIN / MAX codes -> values of the column's type
             ecd = ext.codec()
-            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else MinMax(ecd.decode(_codes_array(list(v)))))
+            val = (lambda v: v) if ecd is None else (lambda v: v if v is None else MinMax(ecd.decode(_codes_array(list(v))), v.observations))
         if getattr(self, "_both", False) and self.measure is not None:
             v0 = val; val = lambda v: v if v is None else (v0(v[0]), v[1])
         if not self.keys: return val(r)
@@ -2371,7 +2535,9 @@ class Query:
             cols = [_codes_array(c) for c in zip(*keys)] if keys else [np.zeros(0, np.int64) for _ in range(nk + len(vpos))]
             vals = [r[k] for k in keys]
             both = False
-        if both and not scale and ext is None: vl = list(zip(vals.tolist(), r.cnt.tolist()))
+        separate = getattr(self, "_separate_group_counts", False) and not scale and ext is None
+        if separate and isinstance(vals, np.ndarray): vl = vals
+        elif both and not scale and ext is None: vl = list(zip(vals.tolist(), r.cnt.tolist()))
         elif both and ext is None: vl = [(_exact_dec(v, scale), c) for v, c in zip(vals.tolist(), r.cnt.tolist())]
         elif both: vl = [val((v, c)) for v, c in zip(vals.tolist(), r.cnt.tolist())]
         elif isinstance(vals, np.ndarray) and not scale and not ext: vl = vals.tolist()
@@ -2385,7 +2551,7 @@ class Query:
         else: vl = [val(v) for v in (vals.tolist() if isinstance(vals, np.ndarray) else vals)]
         valid = {i: np.asarray(cols[nk + j]) != 0 for j, i in enumerate(vpos)}
         keys = [(np.asarray(cols[i]), valid.get(i), decs[i]) for i in range(nk)]
-        return Groups(keys, vl)
+        return Groups(keys, vl, r.cnt if separate and both else None)
 
     def _run_codes(self, engine="alg"):
         try: return self._run_codes0(engine)
@@ -2661,10 +2827,35 @@ class Query:
             return out_sum.copy(), out_cnt.astype(np.int64), int(plan.total_sum), int(plan.total_cnt)
         if getattr(self, "_rows", False):         # the passing rows as a bitmap
             plan.agg = A_ROWS; plan.nkey = 0
+            if hasattr(self, "_topk"):
+                if plan.nsemi or plan.xmode or plan.nranges:
+                    return None
+                keys, k = self._topk
+                cols = (ctypes.c_int32 * len(keys))(*(fv.idx(name) for name, _ in keys))
+                desc = (ctypes.c_int32 * len(keys))(*(descending for _, descending in keys))
+                ids = np.empty(k, np.uint64)
+                count, ms = ctypes.c_uint32(), ctypes.c_double()
+                plan._topk_args = (len(keys), cols, desc, k, ids.ctypes.data_as(ctypes.POINTER(ctypes.c_uint64)),
+                                   count, ms)
+                try:
+                    ran = self._exec("gpu", _run_on(fv), plan)
+                finally:
+                    del plan._topk_args
+                if not ran:
+                    return None
+                self.last_plan = plan
+                # Preserve fact order for the SQL final sort's stable ties.
+                return np.sort(ids[:count.value])
             out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
             plan.nattr = 0
             self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan
             if getattr(self, "_rowbits", False): return out_rows
+            if len(out_rows) >= 512:
+                live = np.flatnonzero(out_rows)
+                if len(live) * 16 < len(out_rows):
+                    # A selective row mask, such as a top-k boundary, needs only its occupied words.
+                    bits = np.flatnonzero(np.unpackbits(out_rows[live].view(np.uint8), bitorder="little"))
+                    return (live[bits >> 6] * 64 + (bits & 63)).astype(np.uint64)
             return np.nonzero(np.unpackbits(out_rows.view(np.uint8), bitorder="little")[:fact.n])[0].astype(np.uint64)
         ext = getattr(self, "_ext", None)
         if ext is not None: plan.ext_on, plan.ext_col = 1, fv.idx(ext.name)
@@ -2886,7 +3077,7 @@ class Query:
         if ctx["dense"] is not None: out_sum, out_cnt = ctx["dense"][:2]
         ext = ctx.get("ext", False)
         if not self.keys and ext:    # MIN / MAX of nothing is NULL
-            return MinMax((int(plan.total_sum), int(plan.total_sum_hi))) if plan.total_cnt else None
+            return MinMax((int(plan.total_sum), int(plan.total_sum_hi)), int(plan.total_cnt)) if plan.total_cnt else None
         if not self.keys:            # SQL semantics: COUNT of nothing is 0, SUM of nothing is NULL
             if self.measure is None: return int(plan.total_cnt)
             if not plan.total_cnt: return (None, 0) if getattr(self, "_both", False) else None

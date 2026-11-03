@@ -54,7 +54,9 @@ run "MIN/MAX by plane elimination, row bitmaps"  python3 tests/check_minmax.py
 run "SQL vs DuckDB, ISO forms, Python API, fuzzing" python3 tests/check_sql.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_sql.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
-run "snowflake FK filters and general fallback" python3 tests/check_snowflake.py
+run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
+run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
+run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py
@@ -69,6 +71,12 @@ run "rank selection, cell bits, join partial sums" python3 tests/check_algebra.p
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_algebra.py 50 8
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_algebra.py 50 9
 run "windows whose values every row outputs"    python3 tests/check_window_output.py
+run "encoded top-k and row numbers"             python3 tests/check_encoded_order.py
+run "GPU bitplane top-k and SQL fallback"        python3 tests/check_mask_topk.py
+run "full raw-plane order and ROW_NUMBER"      python3 tests/check_raw_plane_order.py
+run "algebraic refresh and compaction"         python3 tests/check_refresh.py
+run "SQL INSERT, UPDATE, DELETE and MERGE"     python3 tests/check_sql_dml.py
+run "durable SQL and crash recovery"           python3 tests/check_durable.py
 run "the release fuzzing campaign's faults"     python3 tests/check_campaign_sql.py
 echo "== GROUP BY modes"
 run "native relationship discovery and composition" python3 -m unittest discover -s tests -p test_relationships.py

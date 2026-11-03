@@ -4,17 +4,28 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**Current release is 0.4.0 alpha.** Runs on x86-64 Linux and WSL2.
+**0.5.1 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.4.0
+## What’s new in 0.5.1
 
-- **Wide tables.** One logical table can span several row-aligned torbles. The
-  loader can store attributes that depend on a key once per key value. SQL still
-  sees those attributes as columns of the original table. [Storage design](docs/ENGINE.md#tables-wider-than-a-torble-040)
-- **Snowflake filter pushdown.** SQL can carry ancestor filters through eligible
-  chains of declared integer foreign keys. Filter-only branches feed the native
-  fact query. Queries that return ancestor values filter the fact first and then
-  join for those values. [SQL execution](docs/SQL.md#how-a-query-runs)
+- **High-cardinality grouping.** Eligible CPU queries ordered by count with a
+  small limit read the raw bitplanes in tiles, combine exact counts and sums
+  in one native reduction, and compute AVG for the selected groups.
+  Timestamp minute keys are derived during the scan. [SQL execution](docs/SQL.md#performance)
+
+## What’s new in 0.5.0
+
+- **SQL writes on bitplanes.** Writable uint32 tables support INSERT, UPDATE,
+  DELETE, and primary-key MERGE. Eligible updates patch the stored planes on
+  CPU and synchronize resident CUDA copies. [Refresh guide](docs/REFRESH.md)
+- **Durable SQL prototype.** Open a local database directory with
+  torbles.open_durable() for explicit transactions, autocommit, and crash
+  recovery. Concurrent clients share a serialized SQL executor.
+  [Transactions](docs/SQL.md#durable-sql-prototype)
+- **Ordering and window execution.** Eligible ORDER BY, top-k, and ROW_NUMBER
+  plans use masks derived from stored planes. SQL also carries native masks
+  and aggregate states further through eligible filters, joins, and grouping.
+  [SQL execution](docs/SQL.md#how-a-query-runs)
 
 ## Try it
 
@@ -22,7 +33,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.4.0'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.5.1'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales

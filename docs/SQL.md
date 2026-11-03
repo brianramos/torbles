@@ -151,6 +151,17 @@ is x, and `x IS NULL` computes x where DuckDB's statistics cannot decide it (a c
 
 ### Performance
 
+For eligible high-cardinality GROUP BY queries ordered by descending count
+with a small LIMIT, the CPU reads only the selected raw bitplanes. It
+reconstructs key and measure codes in 64-row tiles, then combines exact
+counts and sums by sparse key. AVG divides the exact sum by its count after
+group selection. Only the selected groups' keys and values are decoded into
+SQL results. Supported keys include split integers, dictionary strings, and
+the minute of an unzoned timestamp. The planner keeps the general execution
+path for cases such as nullable measures, explicit tie breakers, WITH TIES,
+and other grouping expressions.
+
+
 What the engine computes (filters, joins to dimensions, the aggregates of a star block, MIN and MAX, rank selections)
 runs on the bit planes, and on the GPU where the GPU executor supports it. The rest of a query runs here, in Python
 and NumPy on the CPU, whichever engine is selected: window functions not read from their aggregated series (Window
@@ -379,10 +390,16 @@ without a match, has an empty frame and NULL measures. `<measure> OVER w` reads 
 over `w` runs on the reduced frame. The matcher is MATCH_RECOGNIZE's; a match can neither take rows nor read values
 outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
 
+### Writable tables
+
+Register a table with Database.add_writable_table(name, columns, primary_key="id") to run INSERT, UPDATE, DELETE,
+and MERGE through Database.sql. Writable tables are in memory and have fixed nonnullable unsigned integer columns and
+one immutable primary key. See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
+
 ### Not supported, and why
 
-- **Statements other than queries.** The database is built by the loaders and is read-only once saved, so there is no
-  DDL, DML, transaction or privilege statement (the one session statement is `SET TIME ZONE`). Sequence generators
+- **Statements other than queries.** Tables built by the loaders remain read-only. The SQL layer has no
+  DDL, transaction or privilege statement (the one session statement is `SET TIME ZONE`). Sequence generators
   (`NEXT VALUE FOR`), identity and default values, triggers, routines (`CREATE FUNCTION`, SQL/PSM), user-defined types,
   reference types, typed tables and `ONLY`, system-versioned tables (`FOR SYSTEM_TIME AS OF`) and periods declared on
   tables belong to those statements. PERIOD predicates on value pairs are supported.
@@ -469,3 +486,47 @@ instead of taking the machine's memory.
 
 ---
 Copyright 2026 Brian Richard RAMOS. Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+### Durable SQL prototype
+
+Create a database directory with a fixed catalog of writable uint32 tables.
+Open the same directory without a catalog to recover it. Each client gets its
+own connection and can use the same INSERT, UPDATE, DELETE and MERGE forms as
+an in-memory writable table.
+
+~~~python
+import torbles
+
+with torbles.open_durable(
+    "inventory.torbles",
+    tables={"stock": ({"id": [1, 2], "quantity": [10, 20]}, "id")},
+) as db, db.connect() as client:
+    client.sql("BEGIN")
+    client.sql("UPDATE stock SET quantity = quantity - 1 WHERE id = 1")
+    client.sql("INSERT INTO stock VALUES (3, 5)")
+    client.sql("COMMIT")
+
+with torbles.open_durable("inventory.torbles") as db, db.connect() as client:
+    print(client.sql("SELECT SUM(quantity) FROM stock").rows)
+~~~
+
+Call SQL with one statement at a time. A write outside an explicit transaction
+commits automatically. An explicit transaction sees its own changes. An
+execution error aborts it, and closing its connection rolls it back. Use
+the same thread for all statements of an explicit transaction and finish it
+before closing the database. Other clients wait for that transaction to end.
+The prototype serializes SQL execution, including read-only transactions.
+One process can open a directory at a time on a local POSIX filesystem.
+
+A commit writes one checksummed redo frame and waits for file fsync. Redo stores
+evaluated values and primary keys, so recovery applies mutations through the
+bitplane adapters without reevaluating SQL. Opening rebuilds the bitplanes
+from the initial checkpoint and committed frames. Recovery drops an incomplete
+final frame and rejects checksum failures in complete frames. If a commit
+reports an I/O error, close and reopen the database to resolve its outcome.
+
+Rollback of a transaction with writes also rebuilds from the initial checkpoint
+and committed log. The log grows with committed changes until a future
+checkpointing mechanism is added. Database creation writes the initial catalog
+and data. The durable API currently exposes SQL over that catalog.

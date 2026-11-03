@@ -94,7 +94,8 @@ class SnowflakeChecks(unittest.TestCase):
                     self.assertGreater(stats["engine_queries"], 0, stats)
                     self.assertEqual(stats["general_blocks"], 0, stats)
                     wanted_device = "cpu" if engine == "alg" else engine
-                    self.assertTrue(any(d.startswith(wanted_device) for d in fact_devices), fact_devices)
+                    if result.rows:
+                        self.assertTrue(any(d.startswith(wanted_device) for d in fact_devices), fact_devices)
                 else:
                     self.assertGreater(stats["general_blocks"], 0, stats)
                     if projected_ancestor:
@@ -113,14 +114,31 @@ class SnowflakeChecks(unittest.TestCase):
         self.check_query("SELECT count(*), sum(f.amount) " + BRANCHES.replace("JOIN seller", "LEFT JOIN seller")
                          + f"WHERE {SECTION_FILTER} AND {SELLER_FILTER}", expected=[(6 * 274, 20 * 274)])
 
-    def test_deep_output_keeps_general_path(self):
+    def test_unfiltered_ancestor_grouping(self):
         self.check_query("SELECT z.label, count(*), sum(f.amount) " + CHAIN
-                         + "GROUP BY z.label ORDER BY z.label")
+                         + "GROUP BY z.label ORDER BY z.label", edges=2)
 
-    def test_projected_ancestor_uses_native_prefilter(self):
+    def test_filtered_ancestor_grouping(self):
         self.check_query("SELECT z.label, count(*), sum(f.amount) " + CHAIN
                          + f"WHERE {SECTION_FILTER} GROUP BY z.label ORDER BY z.label",
-                         edges=2, projected_ancestor=True, expected=[("keep", 7 * 274, 32 * 274)])
+                         edges=2, expected=[("keep", 7 * 274, 32 * 274)])
+
+    def test_grouping_multiple_ancestors_preserves_null_keys(self):
+        self.check_query("SELECT z.label, s.zone, i.family, count(*), sum(f.amount) " + BRANCHES
+                         + "GROUP BY z.label, s.zone, i.family ORDER BY z.label, s.zone, i.family", edges=3)
+
+    def test_ancestor_grouping_empty_mask(self):
+        self.check_query("SELECT z.label, count(*) " + CHAIN
+                         + "WHERE z.label = 'missing' GROUP BY z.label", edges=2, expected=[])
+
+    def test_projected_ancestor_rows_keep_prefilter_fallback(self):
+        self.check_query("SELECT z.label, f.amount " + CHAIN
+                         + f"WHERE {SECTION_FILTER} ORDER BY z.label, f.amount", edges=2, projected_ancestor=True)
+
+    def test_aggregate_over_deep_measure_keeps_prefilter_fallback(self):
+        self.check_query("SELECT z.label, sum(c.active) " + CHAIN
+                         + f"WHERE {SECTION_FILTER} GROUP BY z.label", edges=2, projected_ancestor=True,
+                         expected=[("keep", 7 * 274)])
 
     def test_casted_fk_equality_keeps_general_path(self):
         casted = CHAIN.replace("c.section_id = z.id", "CAST(c.section_id AS TINYINT) = z.id")

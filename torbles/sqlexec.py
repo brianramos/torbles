@@ -123,9 +123,11 @@ class Rel:
     """rows of a block while it is evaluated: cols {expression key: [value per row]} (Cols: engine columns stay codes
     until read as values), cnt [rows each row stands for], mom {(variant, moment): [sum per row]}, vcnt {variant: [count
     per row]}"""
-    __slots__ = ("n", "cols", "cnt", "mom", "vcnt")
+    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered")
     def __init__(self, n):
         self.n, self.cols, self.cnt, self.mom, self.vcnt = n, Cols(), [1] * n, {}, {}
+        self.grouped = False
+        self.plane_ordered = False
     def take(self, idx):
         r = Rel(len(idx))
         r.cols = self.cols.take(idx)
@@ -351,6 +353,7 @@ def _dict_eval(e, rel, cx):
 VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
 COLUMNAR = True             # the engine's GROUP BY results and row bitmaps stay codes (ColArr) until read as values
 ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
+RAW_PLANE_ORDER = True       # direct radix partition of stored planes for simple fact ordering
 TOPK = True                 # ORDER BY ... LIMIT k on fact columns reads only the rows that can be among the first k
 TOPK_MAX = 100_000          # (rank selection on the planes; past k = this, every passing row is read)
 # rank selection, top-k bounds and COUNT(DISTINCT) cell bits from this many fact rows on (on fewer, reading the values
@@ -1277,7 +1280,9 @@ def run_select(s, cx, as_rel=False):
             keep = rows_where(s.where, rel, cx); rel = rel.take(keep)
     else:
         rel, aggplan = None, {}
-        if all(b.table is not None for b in bindings):
+        if not wins and any(hasattr(b, "writable") for b in bindings):
+            rel = _writable_aggregate(s, bindings, aggs, cx)
+        if rel is None and all(b.table is not None and not hasattr(b, "_dml_rel") for b in bindings):
             rel, aggplan = plan_star(s, bindings, need, aggs, cx)
         if rel is None and JOIN_PREAGG:
             got = join_preagg(s, aggs, cx)
@@ -1287,9 +1292,157 @@ def run_select(s, cx, as_rel=False):
     return finish_select(s, rel, aggs, wins, aggplan, cx, as_rel)
 
 
+def _writable_bounds(terms, bindings):
+    """Lower nonnullable integer comparisons to intersected inclusive uint32 ranges."""
+    max_code = (1 << 32) - 1
+    bounds = {b: {} for b in bindings}
+    empty = False
+    for term in terms:
+        e = _fold_consts(term)
+        if isinstance(e, I.Lit) and (e.v is None or type(e.v) is bool):
+            if e.v is True:
+                continue
+            # Keep checking unsupported terms so the ordinary SQL path keeps their error semantics.
+            empty = True
+            continue
+        if not isinstance(e, I.Func):
+            return None
+        args = [_strip_cast(x) for x in e.args]
+        op = e.fn
+        if op == "between" and len(args) == 3:
+            col, low, high = args
+            if not all(isinstance(v, I.Lit) and type(v.v) is int for v in (low, high)):
+                return None
+            low, high = low.v, high.v
+        elif op in ("=", "<", "<=", ">", ">=") and len(args) == 2:
+            col, lit = args
+            if isinstance(col, I.Lit):
+                col, lit = lit, col
+                op = {"=": "=", "<": ">", "<=": ">=", ">": "<", ">=": "<="}[op]
+            if not isinstance(lit, I.Lit) or type(lit.v) is not int:
+                return None
+            value = lit.v
+            low = value + (op == ">") if op in ("=", ">", ">=") else 0
+            high = value - (op == "<") if op in ("=", "<", "<=") else max_code
+        else:
+            return None
+        if not isinstance(col, I.Col) or col.b not in bounds or not col.t.integer:
+            return None
+        before_low, before_high = bounds[col.b].get(col.name, (0, max_code))
+        bounds[col.b][col.name] = max(low, before_low), min(high, before_high)
+    return bounds, empty or any(low > high for columns in bounds.values() for low, high in columns.values())
+
+
+def _writable_aggregate(s, bindings, aggs, cx):
+    """Native fixed-width reductions, using the normal SQL finalizer on the exact results."""
+    if (cx.engine not in ("alg", "gpu") or not s.aggregate or s.sets is not None or s.sample is not None
+            or any(not hasattr(b, "writable") or b.sample is not None or hasattr(b, "_dml_rel") for b in bindings)
+            or any(a.distinct or a.filter is not None or a.order for a in aggs.values())):
+        return None
+    args = {}
+    for key, agg in aggs.items():
+        arg = agg.args[0] if len(agg.args) == 1 else None
+        if not (agg.name == "count_star" or agg.name in ("sum", "count") and isinstance(arg, I.Col)):
+            return None
+        args[key] = arg
+    terms = _conjuncts(s.where)
+    if len(bindings) == 2:
+        return _writable_join_sum(s, bindings, aggs, args, terms, cx)
+    if len(bindings) != 1 or len(s.group) > 1:
+        return None
+    binding = bindings[0]
+    group = s.group[0] if s.group else None
+    if group is not None and (not isinstance(group, I.Col) or group.b is not binding):
+        return None
+    if any(arg is not None and arg.b is not binding for arg in args.values()):
+        return None
+    filters = _writable_bounds(terms, bindings)
+    if filters is None:
+        return None
+    bounds, empty = filters
+    where, store = bounds[binding], binding.writable.store
+    if group is None:
+        out = Rel(1)
+        for key, agg in aggs.items():
+            if agg.name == "sum":
+                value = None if empty else store.sum(args[key].name, where, engine=cx.engine)
+            else:
+                value = 0 if empty else store.count(where, engine=cx.engine)
+            out.cols[key] = [value]
+    else:
+        columns = {}
+        for key, agg in aggs.items():
+            if empty:
+                values = {}
+            elif agg.name == "sum":
+                values = store.group_sum(group.name, args[key].name, where, engine=cx.engine)
+            else:
+                values = store.group_count(group.name, where, engine=cx.engine)
+            columns[key] = values
+        groups = list(next(iter(columns.values()))) if columns else (
+            [] if empty else list(store.group_count(group.name, where, engine=cx.engine))
+        )
+        out = Rel(len(groups))
+        out.cols[group.key()] = groups
+        for key, values in columns.items():
+            out.cols[key] = [values[g] for g in groups]
+    cx.stats["writable_native_blocks"] = cx.stats.get("writable_native_blocks", 0) + 1
+    out.grouped = True
+    return out
+
+
+def _writable_join_sum(s, bindings, aggs, args, terms, cx):
+    """Join a fact SUM grouped on its foreign key with a unique dimension key."""
+    if (s.group or not aggs or any(a.name != "sum" for a in aggs.values())
+            or not isinstance(s.from_, I.Join) or s.from_.kind not in ("inner", "cross")
+            or getattr(s.from_, "partition", None) is not None):
+        return None
+    terms = terms + _conjuncts(s.from_.cond)
+    fact = next(iter(args.values())).b
+    if fact not in bindings or any(arg.b is not fact for arg in args.values()):
+        return None
+    dim = bindings[1] if bindings[0] is fact else bindings[0]
+    for i, term in enumerate(terms):
+        if not isinstance(term, I.Func) or term.fn != "=" or len(term.args) != 2:
+            continue
+        fk, pk = map(_strip_cast, term.args)
+        if isinstance(fk, I.Col) and fk.b is dim:
+            fk, pk = pk, fk
+        if (isinstance(fk, I.Col) and isinstance(pk, I.Col) and fk.b is fact and pk.b is dim
+                and pk.name == dim.writable.primary_key):
+            break
+    else:
+        return None
+    filters = _writable_bounds(terms[:i] + terms[i + 1:], bindings)
+    if filters is None:
+        return None
+    bounds, empty = filters
+    keep = set()
+    if not empty:
+        dim_cols = dim.writable.scan(list(dict.fromkeys([pk.name, *bounds[dim]])))
+        ids = dim_cols[pk.name]
+        mask = np.ones(len(ids), bool)
+        for name, (low, high) in bounds[dim].items():
+            mask &= (dim_cols[name] >= low) & (dim_cols[name] <= high)
+        keep = set(ids[mask].tolist())
+    out = Rel(1)
+    for key, arg in args.items():
+        matches = []
+        if keep:
+            grouped = fact.writable.store.group_sum(fk.name, arg.name, bounds[fact], engine=cx.engine)
+            matches = [value for code, value in grouped.items() if code in keep]
+        out.cols[key] = [sum(matches) if matches else None]
+    cx.stats["writable_native_blocks"] = cx.stats.get("writable_native_blocks", 0) + 1
+    cx.stats["writable_native_joins"] = cx.stats.get("writable_native_joins", 0) + 1
+    out.grouped = True
+    return out
+
+
 # ------------------------------------------------------------------ group-level evaluation
 def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     names = [n for _, n in s.items]; types = [x.t for x, _ in s.items]
+    if rel.plane_ordered:
+        return Relation.of_columns(names, types, [ev(x, rel, cx) for x, _ in s.items], rel.n)
     if s.aggregate:
         out = aggregate(s, rel, aggs, aggplan, cx)
     else:
@@ -1406,7 +1559,7 @@ def _grouping_cols(s, out, sets, gset):
             v = 0
             for p in pos: v = (v << 1) | (0 if p in st else 1)
             per_set.append(v)
-        out.cols[gx.key()] = [per_set[si] for si in gset]
+        out.cols[gx.key()] = [per_set[0]] * out.n if gset is None else [per_set[si] for si in gset]
 
 
 def _group_arrays(s, rel, sets, garr, gvals, gkeys, collated):
@@ -1488,6 +1641,9 @@ class _FlatMembers:
 
 def aggregate(s, rel, aggs, aggplan, cx):
     """GROUP BY (with grouping sets) and every aggregate, from the rows of rel (each standing for cnt rows)"""
+    if rel.grouped:
+        _grouping_cols(s, rel, [list(range(len(s.group)))], None)
+        return rel if s.having is None else rel.take(rows_where(s.having, rel, cx))
     vec = VEC_GROUPS and rel.n > 32
     garr = [codes_of(g, rel, cx) if vec and T.coll_key(g.t) is None else None for g in s.group]
     gvals = [None if a is not None else ev(g, rel, cx) for g, a in zip(s.group, garr)]      # engine columns stay codes
@@ -2153,6 +2309,8 @@ def compute_windows(wins, rel, cx, series=None):
     layouts = {}                                           # windows with the same PARTITION BY / ORDER BY share one ordering
     for w in wins:
         if w.key() in rel.cols: continue
+        if rel.cols.array(w.key()) is not None:
+            continue                                       # computed from the source planes before gathering payload
         if series and w.key() in series:                   # from the window's aggregated series: each row's group's value
             v = series[w.key()].values_for(rel, cx)
             if isinstance(v, ColArr): rel.cols.put(w.key(), v)
@@ -2179,6 +2337,12 @@ def compute_windows(wins, rel, cx, series=None):
                 if isinstance(v, Err): raise SqlError(v.msg)
         okv = lambda: [_ckeys(ev(o[0], rel, cx), o[0].t) for o in w.order]       # the ORDER BY values (row by row)
         specs = [(o[1], o[2]) for o in w.order]
+        if (VEC_WINDOWS and n and len(wins) == 1 and w.name == "row_number" and not w.args
+                and (w.frame is None or all(bound[1] is None for bound in w.frame[1:]))
+                and w.rpr is None and w.filter is None and not w.agg_order
+                and all(isinstance(col, ColArr) for col in parts + okeys)):
+            rel.cols.put(w.key(), ColArr(sqlwin.row_numbers(parts, okeys, specs, n, stats=cx.stats)))
+            continue
         lk = (tuple(p.key() for p in w.partition), tuple((o[0].key(), o[1], o[2]) for o in w.order))
         L = layouts.get(lk)
         if L is None: L = layouts[lk] = sqlwin.layout(parts, okeys, specs, n)
@@ -2965,9 +3129,9 @@ def plan_star(s, bindings, need, aggs, cx):
 def _plan_snowflake(s, bindings, joins, conj, edges, need, aggs, cx):
     """Fold ancestor filters into masks on the fact's direct dimensions.
 
-    A subtree that only supplies filters can keep or remove a row. When
-    an ancestor supplies values, use the masks to prefilter the fact scan
-    and let the original joins provide those values.
+    A subtree that only supplies filters can keep or remove a row.
+    Group keys can also be pulled back through the tree. Other ancestor
+    values are provided by the original joins after a fact prefilter.
     """
     refuse = (None, None)
     if len(bindings) < 3 or s.sample is not None or any(b.sample is not None for b in bindings):
@@ -3027,9 +3191,9 @@ def _plan_snowflake(s, bindings, joins, conj, edges, need, aggs, cx):
                 return refuse
             predicates.setdefault(b, []).append(predicate)
 
-        if needs_deep and not predicates:
+        projections = _snowflake_group_keys(s, incoming, direct, deep, need, aggs, outputs, rest, cx.engine) if needs_deep else None
+        if needs_deep and not projections and not predicates:
             return refuse
-
         masks = {}
         for b in reversed(reachable[1:]):
             if not children[b] and b not in predicates:
@@ -3048,22 +3212,111 @@ def _plan_snowflake(s, bindings, joins, conj, edges, need, aggs, cx):
     except (ValueError, TypeError, OverflowError, SqlError, _NotStarNow):
         return refuse
 
-    block = s
-    if needs_deep:
-        block = I.Select()
-        block.from_ = fact
-    planner = _Planner(block, fact, direct, {edge[1].name: b for b, edge in direct.items()}, cx)
+    fks = {edge[1].name: b for b, edge in direct.items()}
+    planner = _Planner(s, fact, direct, fks, cx)
     planner.samples.extend(masks.values())
     if needs_deep:
-        return run_general(s, bindings, need, aggs, cx, prejoin=(planner, len(deep)))
-    try:
-        result = planner.run(rest, need, aggs)
-    except (ValueError, SqlError, _NotStarNow):
-        return refuse
+        result = _snowflake_grouped(planner, incoming, direct, masks, rest, need, aggs, projections) if projections else None
+        if result is None:
+            if not predicates:
+                return refuse
+            block = I.Select()
+            block.from_ = fact
+            planner = _Planner(block, fact, direct, fks, cx)
+            planner.samples.extend(masks.values())
+            return run_general(s, bindings, need, aggs, cx, prejoin=(planner, len(deep)))
+    else:
+        try:
+            result = planner.run(rest, need, aggs)
+        except (ValueError, SqlError, _NotStarNow):
+            return refuse
     cx.stats["star_blocks"] += 1
     cx.stats["snowflake_blocks"] += 1
     cx.stats["snowflake_edges"] += len(deep)
     return result
+
+
+def _snowflake_group_keys(s, incoming, direct, deep, need, aggs, outputs, rest, engine):
+    """The ancestor group keys that can be represented by columns on direct dimensions."""
+    if not s.aggregate or not s.group or engine not in ("alg", "gpu"):
+        return None
+    group_cols = {g.key(): g for g in s.group if isinstance(g, I.Col) and g.b in deep}
+    required = {c.key() for c in need.values() if c.b in deep}
+    required.update(c.key() for e in outputs if e is not None for c in I.cols_of(e) if c.b in deep)
+    if not required or not required <= group_cols.keys() or len(required) > algq.MAXKEY:
+        return None
+    # Deferred rank or distinct queries could outlive the temporary group dimensions.
+    if any(a.distinct or a.name in _RANK_AGGS for a in aggs.values()):
+        return None
+    if any(c.b in deep for a in aggs.values() for c in I.cols_of(a)):
+        return None
+    if subqueries_in(outputs + rest):
+        return None
+
+    projections = {}
+    for key, col in group_cols.items():
+        if key not in required:
+            continue
+        t = col.b.table
+        codec = t.codecs.get(col.name)
+        if codec is None or codec.kind == "ref" or col.name in getattr(t, "wide", {}):
+            return None
+        root = col.b
+        while root not in direct:
+            root = incoming[root][1].b
+        projections.setdefault(root, []).append((key, col, codec))
+    return projections
+
+
+def _snowflake_grouped(planner, incoming, direct, masks, rest, need, aggs, projections):
+    """Compose ancestor group codes on dimension rows, then aggregate on the fact's planes."""
+    # Table.space caches dimensions on its owner. Keep temporary dimensions out of the shared fact's cache.
+    fact = planner.fact.table
+    fact_view = copy.copy(fact)
+    fact_view._spaces = dict(getattr(fact, "_spaces", {}))
+    planner.tab[planner.fact] = fact_view
+    transient = []
+    try:
+        for root, cols in projections.items():
+            used = np.unpackbits(masks[root].bm.view(np.uint8), bitorder="little")[:root.table.n].astype(bool)
+            selected = np.flatnonzero(used)
+            rows = {root: selected}
+
+            def pullback(binding):
+                if binding not in rows:
+                    _, source, _ = incoming[binding]
+                    parent = source.b.table
+                    fk = parent.decoded(source.name)[pullback(source.b)]
+                    mask = parent.kmask(source.name)
+                    rows[binding] = fk & np.uint32(mask) if mask else fk
+                return rows[binding]
+
+            data, codecs, nullable = {}, {}, {}
+            for index, (key, col, codec) in enumerate(cols):
+                name = f"p{index}"
+                ids = pullback(col.b)
+                data[name] = np.zeros(root.table.n, np.uint32)
+                data[name][selected] = col.b.table.decoded(col.name)[ids]
+                codecs[name] = codec
+                validity = getattr(col.b.table, "nullable", {}).get(col.name)
+                if validity is not None:
+                    nullable[name] = valid_name = f"{name}#v"
+                    data[valid_name] = np.zeros(root.table.n, np.uint32)
+                    data[valid_name][selected] = col.b.table.decoded(validity)[ids]
+            dim = algq.Table(f"{root.table.name}#snowflake", data, used=used)
+            transient.append(dim)
+            dim.codecs, dim.nullable = codecs, nullable
+            binding = I.Binding(dim.name, [], table=dim)
+            planner.tab[binding] = dim
+            planner.joins[binding] = direct[root][1].name
+            for index, (key, _, _) in enumerate(cols):
+                planner.snowflake_keys[key] = binding, f"p{index}"
+        return planner.run(rest, need, aggs)
+    except (ValueError, TypeError, OverflowError, IndexError, SqlError, _NotStarNow):
+        return None
+    finally:
+        for dim in transient:
+            dim.close()
 
 
 def _conjuncts(e):
@@ -3087,11 +3340,14 @@ class _Planner:
         self.hidden = {}                                            # fk name -> hidden binding for an implicit join
         self.left, self.nulled = {}, set()                          # LEFT JOIN dims; dims NULL in the current pass
         self.samples, self.fact_sample = [], None                   # TABLESAMPLE: dimension row masks; fact rows
+        self.snowflake_keys = {}
 
     # columns -------------------------------------------------------------
     def canon(self, col):
         """the column the engine reads for col: a fact FK column is its raw values (when some references have no
         match) or its dimension's key (the stored surrogate is not the value); -> (binding, column name)"""
+        if self.snowflake_keys and (projected := self.snowflake_keys.get(col.key())) is not None:
+            return projected
         if col.b is self.fact:
             fi = _fk_info(col)
             if fi is not None:
@@ -3525,6 +3781,10 @@ class _Planner:
             p = self.engine_pred(c)
             if p is not None: preds += p
             else: residual.append(c)
+        if not empty and not residual:
+            grouped = self.raw_plane_group(preds, aggs)
+            if grouped is not None:
+                return grouped, {}
         atoms = {k: c for k, c in need.items() if c.b not in self.nulled}
         nulled_atoms = {k: c for k, c in need.items() if c.b in self.nulled}
         for c in residual:
@@ -3607,6 +3867,17 @@ class _Planner:
         # a block without aggregates returns one row per fact row: read the passing rows' columns from the planes
         # (a row bitmap) instead of grouping them by every column it reads
         rows_block = ROWS_BLOCK and not s.aggregate and not aggs and (bool(s.items) or self.dense_atoms(atoms))
+        # Native groups are already SQL groups when the exact same nonnullable integer keys were grouped
+        # and every aggregate has a state for the whole group. Multiple LEFT JOIN passes can repeat keys.
+        direct_groups = (
+            COLUMNAR and VEC_GROUPS and s.aggregate and bool(s.group) and s.sets is None and not self.left
+            and not empty and not residual and nkeys <= algq.MAXKEY and self.fact_sample is None
+            and all(isinstance(g, I.Col) and g.t.id in T.INT_RANGE for g in s.group)
+            and set(atoms) == {g.key() for g in s.group} and not vpos
+            and len(aggplan) == len(aggs)
+            and all(p["kind"] == "moment" and p["variant"] == 0 and p.get("rowfilter_expr") is None
+                    and aggs[k].name in ("sum", "count", "count_star") for k, p in aggplan.items())
+        )
         if nkeys > algq.MAXKEY or self.fact_sample is not None or rows_block:
             # more columns than GROUP BY keys (or a sampled fact): the passing rows themselves (a row bitmap), their
             # columns read from the planes; every aggregate is then computed from its arguments' values
@@ -3616,11 +3887,18 @@ class _Planner:
                     for col in I.cols_of(x):
                         (nulled_atoms if col.b in self.nulled else atoms)[col.key()] = col
             aggplan = {}
-            if rows_block and not residual and not empty: preds = preds + self.topk_preds(preds)
-            rel = self.rows_rel(atoms, preds, empty)
+            ids = None
+            if rows_block and not residual and not empty:
+                plane_rel = self.raw_plane_rows(atoms, preds)
+                if plane_rel is not None:
+                    return plane_rel, {}
+                ids = self.topk_ids(preds)
+                if ids is None: preds = preds + self.topk_preds(preds)
+            rel = self.rows_rel(atoms, preds, empty, ids=ids)
         else:
-            try: rel = self.engine(keys, atom_list, preds, empty, variants, vpreds, mlist)
+            try: rel = self.engine(keys, atom_list, preds, empty, variants, vpreds, mlist, direct_groups)
             except _TooManyGroups:
+                direct_groups = False
                 # the atoms' code domain passes 2^128: the passing rows themselves
                 to_values()
                 for k, a in aggs.items():
@@ -3645,6 +3923,18 @@ class _Planner:
         for k, plan in aggplan.items():                      # an aggregate's FILTER, on the rows the WHERE keeps (an
             if plan.get("rowfilter_expr") is not None:       # error on a row it drops is not the query's)
                 plan["rowfilter"] = set(rows_where(plan["rowfilter_expr"], rel, cx))
+        if direct_groups and all(rel.cols.array(k) is not None and rel.cols.array(k).valid is None for k in atoms):
+            # A base native group has a positive count. Its states can become SQL result columns directly.
+            out = Rel(rel.n); out.cols = rel.cols; out.grouped = True
+            for k, plan in aggplan.items():
+                if aggs[k].name == "sum":
+                    m = rel.mom[(0, plan["moments"][0])]
+                    if isinstance(m, np.ndarray): out.cols.put(k, ColArr(m, codec=_INTC))
+                    else: out.cols[k] = [0 if x is None else x for x in m]
+                else: out.cols.put(k, ColArr(rel.cnt, codec=_INTC))
+            cx.stats["direct_groups"] = cx.stats.get("direct_groups", 0) + 1
+            return out, {}
+        if isinstance(rel.cnt, np.ndarray): rel.cnt = rel.cnt.tolist()
         _states(rel, aggs, aggplan)
         return rel, {k: (aggplan[k] if aggplan[k].get("kind") == "rank" else dict(kind="state")) for k in aggs if k in aggplan}
 
@@ -3804,25 +4094,21 @@ class _Planner:
             if dom * 4 >= n: return True
         return False
 
-    def topk_preds(self, preds):
-        """ORDER BY ... LIMIT k (+ OFFSET) of a block without aggregates, ordered by fact columns: rank selection on the
-        planes (algq.Query.rank_codes) gives the code of the k-th row on the first ORDER BY column; the block then
-        reads only the rows before it or tied with it, and while the ties are many, the next ORDER BY column splits
-        them the same way. The final ORDER BY / LIMIT sorts what is read as before (the same rows, in the same order).
-        -> [one engine predicate], or [] when the block reads every passing row"""
+    def topk_spec(self):
+        """The bounded rank and leading fact keys usable by either top-k path."""
         s, cx = self.s, self.cx
-        if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return []
-        if self.tab[self.fact].n < ALG_MIN_ROWS: return []
-        if s.distinct or s.distinct_on is not None or s.qualify is not None: return []
+        if not TOPK or self.left or self.fact_sample is not None or not s.order or s.limit is None or s.percent: return 0, []
+        if self.tab[self.fact].n < ALG_MIN_ROWS: return 0, []
+        if s.distinct or s.distinct_on is not None or s.qualify is not None: return 0, []
         # windows over every row need them all: those in the SELECT list and those in the ORDER BY (ORDER BY x, LAG(id)
         # OVER (ORDER BY id) LIMIT k read LAG from the k rows); windows read from their series are computed on every row
         wl = collect([x for x, _ in s.items] + [o[0][1] for o in s.order if o[0][0] == "expr"], I.Win)
-        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return []
+        if wl and not all(k in cx.series.get(id(s), {}) for k in wl): return 0, []
         lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
         off = 0 if s.offset is None else (s.offset.v if isinstance(s.offset, I.Lit) else s.offset)
-        if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return []
+        if type(lim) is not int or type(off) is not int or lim < 0 or off < 0: return 0, []
         k = lim + off
-        if not 0 < k <= TOPK_MAX: return []
+        if not 0 < k <= TOPK_MAX: return 0, []
         fact = self.tab[self.fact]
         okeys = []
         for e, desc, nf in s.order:
@@ -3833,15 +4119,37 @@ class _Planner:
             vc = getattr(fact, "nullable", {}).get(name)
             if vc is not None and nf: break                     # NULLs first: they are among the first rows
             okeys.append((name, bool(desc), vc))
+        return k, okeys
+
+    def topk_ids(self, preds):
+        """Exact GPU shortlist for a bounded fact sort, or None for rank predicates."""
+        if self.cx.engine != "gpu" or self.joins or self.s.with_ties:
+            return None
+        k, keys = self.topk_spec()
+        if not keys or len(keys) != len(self.s.order) or len(keys) > 2 or k > 1024:
+            return None
+        if any(validity is not None for _, _, validity in keys):
+            return None
+        q = algq.Query(self.tab[self.fact], join_mode="auto")
+        for pred in preds: q.where(pred)
+        ids = q._topk_rows([(name, desc) for name, desc, _ in keys], k)
+        if ids is not None:
+            self.cx.stats["engine_queries"] += 1
+            self.cx.stats["gpu_mask_topk"] = self.cx.stats.get("gpu_mask_topk", 0) + 1
+        return ids
+
+    def topk_preds(self, preds):
+        """ORDER BY ... LIMIT k (+ OFFSET) of a block without aggregates, ordered by fact columns: rank selection on the
+        planes (algq.Query.rank_codes) gives the code of the k-th row on the first ORDER BY column; the block then
+        reads only the rows before it or tied with it, and while the ties are many, the next ORDER BY column splits
+        them the same way. The final ORDER BY / LIMIT sorts what is read as before (the same rows, in the same order).
+        -> [one engine predicate], or [] when the block reads every passing row"""
+        k, okeys = self.topk_spec()
         if not okeys: return []
+        cx, fact = self.cx, self.tab[self.fact]
         q0 = algq.Query(fact); q0.join_mode = "auto"
         for b, fk in self.joins.items(): q0.join(self.tab[b], fk)
         for p in preds: q0.where(p)
-        def count(extra):
-            q = algq.copy_query(q0); q._codes = True; q.keys = []; q.measure = None
-            q.pred = extra if q.pred is None else algq.BoolOp("AND", q.pred, extra)
-            cx.stats["engine_queries"] += 1
-            return int(q._run_codes(cx.engine))
         def code_cmp(name, op, code, vc):
             c = algq.Cmp(algq.Col(fact, name), op, int(code))
             return c if vc is None else algq.BoolOp("AND", algq.Cmp(algq.Col(fact, vc), "EQ", 1), c)
@@ -3850,15 +4158,17 @@ class _Planner:
             q = algq.copy_query(q0)
             if tie is not None: q.pred = tie if q.pred is None else algq.BoolOp("AND", q.pred, tie)
             cx.stats["engine_queries"] += 1
-            got, m = q.rank_codes(algq.Col(fact, name), [-need if desc else need - 1], engine=cx.engine)
+            rank = -need if desc else need - 1
+            got, total, spans = q.rank_codes(algq.Col(fact, name), [rank], engine=cx.engine, with_spans=True)
             if not got:                                         # fewer rows than needed: every row of this tie group
                 if i == 0: return []
                 break
-            t = next(iter(got.values()))
+            t = got[rank]
+            below, ne = spans[rank]
+            nb = total - below - ne if desc else below
             better = code_cmp(name, "GT" if desc else "LT", t, vc)
             eq = code_cmp(name, "EQ", t, vc)
             if tie is not None: better, eq = algq.BoolOp("AND", tie, better), algq.BoolOp("AND", tie, eq)
-            nb = count(better); ne = count(eq)
             before.append(better); tie = eq; need -= nb
             if ne <= max(4 * k, 1000) or need <= 0: break
         p = tie
@@ -4026,22 +4336,221 @@ class _Planner:
                 out = np.bincount(u[:, 0], minlength=G).astype(np.int64)
         return out.tolist()
 
-    def rows_rel(self, atoms, preds, empty):
-        """the passing fact rows (engine row bitmap) with the atoms' values read from the planes"""
-        q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
-        for b, fk in self.joins.items(): q.join(self.tab[b], fk)
-        for p in preds: q.where(p)
-        self.cx.stats["engine_queries"] += 1
-        ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
+    def raw_plane_group(self, preds, aggs):
+        """Compute a bounded COUNT-ordered result directly from the fact's planes."""
+        s, cx, fact = self.s, self.cx, self.tab[self.fact]
+        if (algq._plane_group_topk is None or not COLUMNAR or not VEC_GROUPS
+                or cx.engine != "alg" or s.from_ is not self.fact or self.joins
+                or self.left or self.fact_sample is not None or s.sample is not None
+                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 3
+                or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
+                or s.percent or s.with_ties or len(s.order) != 1):
+            return None
+        lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+        off = s.offset.v if isinstance(s.offset, I.Lit) else s.offset
+        off = 0 if off is None else off
+        if type(lim) is not int or type(off) is not int or lim <= 0 or off < 0 or lim + off > 1024:
+            return None
+        spec, desc, _ = s.order[0]
+        order = s.items[spec[1]][0] if spec[0] == "pos" else spec[1]
+        if not desc or not isinstance(order, I.Agg) or order.name not in ("count", "count_star"):
+            return None
+        group_keys = {g.key() for g in s.group}
+        if any(x.key() not in group_keys and x.key() not in aggs for x, _ in s.items):
+            return None
+
+        from torbles.sqlgroupkeys import plane_group_key
+        keys = [plane_group_key(expr, self.fact, fact) for expr in s.group]
+        if any(key is None for key in keys):
+            return None
+        domain = 1
+        for low, high, shift, transform, _, _ in keys:
+            if transform == 1:                       # EXTRACT(MINUTE)
+                domain *= 60
+            else:
+                width = fact.width(low) if high is None else shift + fact.width(high)
+                domain *= 1 << int(width)
+            if domain >= 1 << 14:
+                break
+        else:
+            return None                              # small domains already group cheaply by popcount
+
+        measures, plans = [], {}
+        for key, agg in aggs.items():
+            if agg.distinct or agg.filter is not None or agg.order:
+                return None
+            if agg.name == "count_star":
+                plans[key] = ("count", 0, 0)
+                continue
+            if agg.name not in ("count", "sum", "avg") or len(agg.args) != 1 or not agg.args[0].t.integer:
+                return None
+            arg = _strip_cast(agg.args[0])
+            if not isinstance(arg, I.Col) or arg.b is not self.fact or arg.nullable:
+                return None
+            binding, name = self.canon(arg)
+            if binding is not self.fact or name not in fact.cols or name in getattr(fact, "nullable", {}):
+                return None
+            if agg.name == "count":
+                plans[key] = ("count", 0, 0)
+                continue
+            codec = fact.codecs.get(name)
+            if (codec is None or codec.kind != "int" or name in getattr(fact, "wide", {}) or name in fact.sidecars):
+                return None
+            offset = int(codec.offset)
+            max_code = (1 << int(fact.width(name))) - 1
+            if fact.n * max_code >= 1 << 64:
+                return None
+            if agg.name == "sum":
+                low, high = T.INT_RANGE[agg.t.id]
+                if min(0, offset) * fact.n < low or max(0, offset + max_code) * fact.n > high:
+                    return None
+            if name not in measures:
+                if len(measures) == 2:
+                    return None
+                measures.append(name)
+            plans[key] = (agg.name, measures.index(name), offset)
+
+        bitmap = fact.used_bm
+        if preds:
+            query = algq.Query(fact, join_mode="auto")
+            for pred in preds:
+                query.where(pred)
+            query._rows = query._rowbits = True
+            try:
+                bitmap = query._run_codes("alg") & bitmap
+            except (TypeError, ValueError, OverflowError):
+                return None
+            cx.stats["engine_queries"] += 1
+        result = fact._plane_group([key[:-1] for key in keys], measures, lim + off, bitmap)
+        if result is None:
+            return None
+        codes, counts, sums = result
+        counts = counts[off:].tolist()
+        rel = Rel(len(counts))
+        for i, (expr, key) in enumerate(zip(s.group, keys)):
+            rel.cols[expr.key()] = key[-1](codes[off:, i])
+        for key, (kind, index, offset) in plans.items():
+            if kind == "count":
+                rel.cols[key] = counts
+            else:
+                exact = [code + offset * n for code, n in zip(sums[off:, index].tolist(), counts)]
+                rel.cols[key] = exact if kind == "sum" else [v / n for v, n in zip(exact, counts)]
+        rel.plane_ordered = True
+        cx.stats["engine_queries"] += 1
+        cx.stats["raw_plane_group_rows"] = cx.stats.get("raw_plane_group_rows", 0) + fact.n
+        cx.stats["raw_plane_group_groups"] = cx.stats.get("raw_plane_group_groups", 0) + rel.n
+        return rel
+
+    def raw_plane_rows(self, atoms, preds):
+        """A full fact sort or one ROW_NUMBER can order IDs before reading payload values."""
+        s, cx, fact = self.s, self.cx, self.tab[self.fact]
+        if (not RAW_PLANE_ORDER or not COLUMNAR or cx.engine not in ("alg", "gpu") or self.joins
+                or self.left or self.fact_sample is not None or fact.parts is not None
+                or fact.n < 1 << 17 or s.distinct or s.distinct_on is not None
+                or s.percent or s.with_ties or algq._plane_order is None):
+            return None
+        items = [x for x, _ in s.items]
+        order = [(items[spec[1]] if spec[0] == "pos" else spec[1], desc) for spec, desc, _ in s.order]
+        output_exprs = items + [s.qualify] + [x for x, _ in order]
+        if subqueries_in(output_exprs + [s.where]):
+            return None
+        windows = list(collect(output_exprs, I.Win).values())
+        w, npart = None, 0
+        if windows:
+            if not VEC_WINDOWS or len(windows) != 1:
+                return None
+            w = windows[0]
+            if (w.name != "row_number" or w.args or w.rpr is not None or w.filter is not None
+                    or w.agg_order or (w.frame is not None and any(b[1] is not None for b in w.frame[1:]))):
+                return None
+            order = [(x, False) for x in w.partition] + [(x, desc) for x, desc, _ in w.order]
+            npart = len(w.partition)
+        else:
+            if s.qualify is not None:
+                return None
+            lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+            off = s.offset.v if isinstance(s.offset, I.Lit) else s.offset
+            off = 0 if off is None else off
+            if type(off) is not int or off < 0 or (lim is not None and (type(lim) is not int or lim < 0)):
+                return None
+            if lim is not None and 0 < lim + off <= TOPK_MAX and self.topk_spec()[1]:
+                return None                                 # preserve bounded rank selection
+            output_exprs = items
+        if not 0 < len(order) <= 12:
+            return None
+
+        keys, directions = [], []
+        for col, desc in order:
+            if not isinstance(col, I.Col) or col.b is not self.fact:
+                return None
+            binding, name = self.canon(col)
+            codec = fact.codecs.get(name)
+            if (binding is not self.fact or codec is None or codec.kind not in ("int", "bool")
+                    or name in getattr(fact, "nullable", {}) or name in getattr(fact, "wide", {})):
+                return None
+            keys.append(name); directions.append(bool(desc))
+
+        bitmap, count = None, fact.n
+        if preds:
+            q = algq.Query(fact, join_mode="auto")
+            for pred in preds: q.where(pred)
+            q._rows = q._rowbits = True
+            bitmap = q._run_codes("alg")
+            count = int(q.last_plan.total_cnt)
+            cx.stats["engine_queries"] += 1
+        result = fact._plane_order(keys, directions, npart, bitmap, count, w is not None)
+        if result is None:
+            return None
+        ids, ranks = result
+        cx.stats["engine_queries"] += 1
+        stat = "raw_plane_row_number_rows" if w is not None else "raw_plane_order_rows"
+        cx.stats[stat] = cx.stats.get(stat, 0) + (len(ids) if ids is not None else len(ranks))
+        payload = {c.key() for e in output_exprs if e is not None for c in I.find(e, I.Col, stop=(I.Win,))}
+        payload_atoms = {k: c for k, c in atoms.items() if k in payload}
+        if w is None:
+            ids = ids[off:] if lim is None else ids[off:off + lim]
+            rel = self.rows_rel(payload_atoms, preds, False, ids=ids, fact_order=False)
+            rel.plane_ordered = True
+            return rel
+
+        if ids is None:
+            source = np.arange(fact.n, dtype=np.uint64)
+            by_row = ranks
+        else:
+            by_row = np.empty(fact.n, np.int64)
+            by_row[ids] = ranks
+            source = np.flatnonzero(np.unpackbits(bitmap.view(np.uint8), bitorder="little")[:fact.n]).astype(np.uint64)
+            by_row = by_row[source]
+        rel = self.rows_rel(payload_atoms, preds, False, ids=source)
+        rel.cols.put(w.key(), ColArr(by_row))
+        return rel
+
+    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
+        """Read the selected fact rows' atoms from the planes."""
+        if ids is None:
+            q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
+            for b, fk in self.joins.items(): q.join(self.tab[b], fk)
+            for p in preds: q.where(p)
+            self.cx.stats["engine_queries"] += 1
+            ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
         if self.fact_sample is not None: ids = ids[self.fact_sample[np.asarray(ids, np.int64)]]
         rel = Rel(len(ids))
         fact = self.tab[self.fact]
         cache = {}
+        # Dense gathers amortize word transposition and parallel decoding.
+        # The temporary arrays belong to this block, not the table's cache.
+        dense = fact.n >= 1 << 16 and len(ids) * 4 >= fact.n * 3
+        def read_codes(name):
+            if not dense: return fact.get_rows(name, ids)
+            values = fact._decode_column(name)
+            # The bitmap yields unique ascending row ids, so full coverage
+            # already has exactly the output's row order.
+            return values if fact_order and len(ids) == fact.n else values[ids]
         def fact_codes(name):
             if name not in cache:
-                v = fact.get_rows(name, ids).astype(np.uint64)
+                v = read_codes(name)
                 w = getattr(fact, "wide", {}).get(name)
-                if w is not None: v = v + (fact.get_rows(w[1], ids).astype(np.uint64) << np.uint64(w[0]))
+                if w is not None: v = v.astype(np.uint64) + (read_codes(w[1]).astype(np.uint64) << np.uint64(w[0]))
                 cache[name] = v
             return cache[name]
         for k, col in atoms.items():
@@ -4065,9 +4574,10 @@ class _Planner:
             rel.cols[k] = vals
         return rel
 
-    def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist):
+    def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist, direct_groups=False):
         """the engine queries: per variant, COUNT and the sum of each moment polynomial, grouped by the atoms"""
-        if COLUMNAR and keys and not empty: return self.engine_columns(keys, atom_list, preds, variants, vpreds, mlist)
+        if COLUMNAR and keys and not empty:
+            return self.engine_columns(keys, atom_list, preds, variants, vpreds, mlist, direct_groups)
         cx = self.cx
         def query(extra):
             q = algq.Query(self.tab[self.fact])
@@ -4090,6 +4600,7 @@ class _Planner:
             q = query(extra).sum(m); q._both = True
             return run(q)
         pre = {}                                 # variant -> (counts, sums of its first moment)
+        first_ext = None
         if empty:
             base = {} if keys else 0
         else:
@@ -4098,6 +4609,13 @@ class _Planner:
                 r = both([], m0)
                 if keys: base = {g: v[1] for g, v in r.items()}; pre[0] = {g: v[0] for g, v in r.items()}
                 else: base = r[1]; pre[0] = r[0]
+            elif (not keys and mlist[0] and isinstance(mlist[0][0], tuple)
+                  and mlist[0][0][0] == "ext" and mlist[0][0][1] not in getattr(self.tab[self.fact], "nullable", {})):
+                # Scalar extrema already count the matching rows in the same scan.
+                first_ext = mlist[0][0]
+                ext_value = run(query([]).minmax(algq.Col(self.tab[self.fact], first_ext[1])))
+                base = 0 if ext_value is None else ext_value.observations
+                if base is None: base = run(query([]).count())
             else: base = run(query([]).count())
         if not keys:
             n = base if not empty else 0
@@ -4122,6 +4640,7 @@ class _Planner:
             for mi, m in enumerate(mlist[vid]):
                 ext = isinstance(m, tuple) and m[0] == "ext"
                 if empty or not groups: sums = {} if keys else None
+                elif ext and vid == 0 and m is first_ext: sums = ext_value
                 elif ext: sums = run(query(extra).minmax(algq.Col(self.tab[self.fact], m[1])))
                 elif vid in pre and m is first_poly(vid): sums = pre[vid]
                 else: sums = run(query(extra).sum(m))
@@ -4131,7 +4650,7 @@ class _Planner:
         return rel
 
 
-    def engine_columns(self, keys, atom_list, preds, variants, vpreds, mlist):
+    def engine_columns(self, keys, atom_list, preds, variants, vpreds, mlist, direct_groups=False):
         """engine() with the groups as columns (Query.run_columns): the atoms stay codes, every further engine run is
         aligned with the first by its key codes"""
         cx = self.cx
@@ -4143,6 +4662,7 @@ class _Planner:
             return q
         def run(q):
             cx.stats["engine_queries"] += 1
+            q._separate_group_counts = direct_groups
             try: return q.run_columns(cx.engine)
             except (TypeError, OverflowError, ValueError) as ex:
                 m = str(ex)
@@ -4171,13 +4691,15 @@ class _Planner:
         m0 = first_poly(0)
         if m0 is not None:
             q = query([]).sum(m0); q._both = True
-            g = run(q); base_cnt = [v[1] for v in g.vals]; pre[0] = [v[0] for v in g.vals]
+            g = run(q)
+            if g.counts is not None: base_cnt, pre[0] = g.counts, g.vals
+            else: base_cnt, pre[0] = [v[1] for v in g.vals], [v[0] for v in g.vals]
         else:
-            g = run(query([]).count()); base_cnt = list(g.vals)
+            g = run(query([]).count()); base_cnt = g.vals
         G = len(base_cnt)
         rel = Rel(G); rel.cnt = base_cnt
         coded = all(c is not None for c, _, _ in g.keys)
-        base_keys = rowkey(g) if coded else None
+        base_keys = None
         for k, pos, vp in atom_list:
             codes, valid, cd = g.keys[pos]
             if codes is None:                            # values (a bridge result): as before
@@ -4191,7 +4713,9 @@ class _Planner:
         lookup = {}
         def align(h):
             """the base group of each group of a later run (every later run's groups are among the base's)"""
+            nonlocal base_keys
             if coded and all(c is not None for c, _, _ in h.keys):
+                if base_keys is None: base_keys = rowkey(g)
                 import sqlwin
                 cols = []
                 for (a, va), (b, vb) in zip(base_keys, rowkey(h)):
@@ -4211,7 +4735,8 @@ class _Planner:
             return np.array([lookup["d"][t] for t in rowvals(h)], np.int64)
         def spread(h, vals, default):
             out = [default] * G
-            for p, v in zip(align(h).tolist(), vals): out[p] = v
+            values = vals.tolist() if isinstance(vals, np.ndarray) else vals
+            for p, v in zip(align(h).tolist(), values): out[p] = v
             return out
         for vid in sorted(set(variants.values())):
             extra = vpreds[vid]
@@ -4793,6 +5318,28 @@ def _mat_binding(b, cols, conds, cx, deferred=None):
         try: rel = _mat_binding(b, {c.key(): c for c in cols}, [], cx)
         finally: b.sample = sp
         return _pushed_rows(sample_rel(rel, sp, cx), conds, cx, deferred)
+    source = getattr(b, "_dml_rel", None)
+    if source is not None:
+        rel = Rel(source.n)
+        rel.cnt = source.cnt
+        for c in cols:
+            key = c.key()
+            array = source.cols.array(key)
+            if array is None:
+                rel.cols[key] = source.cols[key]
+            else:
+                rel.cols.put(key, array)
+        return _pushed_rows(rel, conds, cx, deferred)
+    writable = getattr(b, "writable", None)
+    if writable is not None:
+        names = list(dict.fromkeys(c.name for c in cols))
+        data = writable.scan(names) if names else {}
+        n = len(data[names[0]]) if names else writable.store.count()
+        rel = Rel(n)
+        for c in cols:
+            rel.cols.put(c.key(), ColArr(data[c.name]))
+        cx.stats["writable_scan_rows"] = cx.stats.get("writable_scan_rows", 0) + n
+        return _pushed_rows(rel, conds, cx, deferred)
     if b.table is not None:
         s = I.Select(); s.from_ = b
         s.items = []; s.where = _and(conds) if conds else None
