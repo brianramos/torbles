@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1, alpha
+
+- Fuse sparse counts and exact sums for eligible CPU GROUP BY queries with
+  a small count-ordered limit. Compute AVG from the sum and count after
+  group selection. The path reads stored bitplanes and supports split
+  integer keys, dictionary strings, and timestamp minute keys.
+
 ## 0.5.0, alpha
 
 - SQL INSERT, UPDATE, DELETE, and primary-key MERGE operate on writable

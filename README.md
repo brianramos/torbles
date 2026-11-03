@@ -4,7 +4,14 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.5.0 alpha** runs on x86-64 Linux and WSL2.
+**0.5.1 alpha** runs on x86-64 Linux and WSL2.
+
+## What’s new in 0.5.1
+
+- **High-cardinality grouping.** Eligible CPU queries ordered by count with a
+  small limit read the raw bitplanes in tiles, combine exact counts and sums
+  in one native reduction, and compute AVG for the selected groups.
+  Timestamp minute keys are derived during the scan. [SQL execution](docs/SQL.md#performance)
 
 ## What’s new in 0.5.0
 
@@ -26,7 +33,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.5.0'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.5.1'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales
