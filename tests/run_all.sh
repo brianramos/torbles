@@ -73,6 +73,7 @@ run "windows whose values every row outputs"    python3 tests/check_window_outpu
 run "encoded top-k and row numbers"             python3 tests/check_encoded_order.py
 run "GPU bitplane top-k and SQL fallback"        python3 tests/check_mask_topk.py
 run "full raw-plane order and ROW_NUMBER"      python3 tests/check_raw_plane_order.py
+run "algebraic refresh and compaction"         python3 tests/check_refresh.py
 run "the release fuzzing campaign's faults"     python3 tests/check_campaign_sql.py
 echo "== GROUP BY modes"
 run "native relationship discovery and composition" python3 -m unittest discover -s tests -p test_relationships.py

@@ -793,6 +793,66 @@ int at_nplanes(const atable_t *t) {
     return np;
 }
 
+/* XOR a logical value mask into each selected physical row. Validate the
+ * whole batch first. A potential delta updates its two incident H edges
+ * and the difference of adjacent potentials on V. Callers serialize writes
+ * and own logical key/membership constraints and any external caches. */
+int at_xor_words(atable_t *t, uint64_t npatch, const int32_t *cols,
+                 const uint64_t *words, const uint64_t *rows, const uint32_t *value_xor) {
+    if (!t || t->k < 1 || t->k > MAXCOL || !t->nfaces ||
+        t->nw != t->n / 64 + (t->n % 64 != 0)) return -1;
+    if (!npatch) return 0;
+    if (!cols || !words || !rows || !value_xor || npatch > SIZE_MAX / sizeof *words) return -1;
+
+    uint32_t blocked = 0, validated = 0;
+    for (int c = 0; c < t->k; ++c) {
+        int flag = t->vflag[c];
+        if (!flag) continue;
+        if (flag < 1 || flag > t->k) return -1;
+        blocked |= (UINT32_C(1) << c) | (UINT32_C(1) << (flag - 1));
+    }
+
+    int changed = 0;
+    for (uint64_t i = 0; i < npatch; ++i) {
+        int c = cols[i];
+        uint64_t w = words[i];
+        if (c < 0 || c >= t->k || w >= t->nw || (rows[i] & ~rowmask(t, w))) return -1;
+        uint32_t col_bit = UINT32_C(1) << c;
+        if (blocked & col_bit) return -1;
+        int width = t->width[c];
+        if (width < 0 || width > 32 || (width < 32 && value_xor[i] >> width)) return -1;
+        if (!(validated & col_bit)) {
+            int left = c ? c - 1 : t->k;
+            for (int j = 0; j <= width; ++j) {
+                if (!t->V[c][j] || (j && (!t->H[left][j] || !t->H[c][j]))) return -1;
+            }
+            validated |= col_bit;
+        }
+        changed |= rows[i] != 0 && value_xor[i] != 0;
+    }
+    if (!changed) return 0;
+    if (t->revision == UINT64_MAX) return -1;
+
+    for (uint64_t i = 0; i < npatch; ++i) {
+        uint64_t mask = rows[i];
+        uint32_t code = value_xor[i];
+        if (!mask || !code) continue;
+        int c = cols[i], left = c ? c - 1 : t->k;
+        uint64_t w = words[i];
+        uint64_t delta = t->msb[c] ? revb(code, t->width[c]) : code;
+        uint64_t h = delta << 1;
+        for (uint64_t v = delta ^ h; v; v &= v - 1)
+            t->V[c][__builtin_ctzll(v)][w] ^= mask;
+        for (; h; h &= h - 1) {
+            int j = __builtin_ctzll(h);
+            t->H[left][j][w] ^= mask;
+            t->H[c][j][w] ^= mask;
+        }
+    }
+    ++t->revision;
+    return 0;
+}
+
 /* fault injection: flip row r in the p-th stored plane (a row past the table is not stored: nothing to flip) */
 void at_flip(atable_t *t, int p, uint64_t r) {
     if (r >= t->n) return;
