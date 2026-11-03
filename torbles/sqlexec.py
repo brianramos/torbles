@@ -123,10 +123,11 @@ class Rel:
     """rows of a block while it is evaluated: cols {expression key: [value per row]} (Cols: engine columns stay codes
     until read as values), cnt [rows each row stands for], mom {(variant, moment): [sum per row]}, vcnt {variant: [count
     per row]}"""
-    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped")
+    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered")
     def __init__(self, n):
         self.n, self.cols, self.cnt, self.mom, self.vcnt = n, Cols(), [1] * n, {}, {}
         self.grouped = False
+        self.plane_ordered = False
     def take(self, idx):
         r = Rel(len(idx))
         r.cols = self.cols.take(idx)
@@ -352,6 +353,7 @@ def _dict_eval(e, rel, cx):
 VEC_SCALARS = True          # arithmetic, comparisons and logic on int / double columns as numpy arrays
 COLUMNAR = True             # the engine's GROUP BY results and row bitmaps stay codes (ColArr) until read as values
 ROWS_BLOCK = True           # a block without aggregates reads its rows from the planes (False: groups them first)
+RAW_PLANE_ORDER = True       # direct radix partition of stored planes for simple fact ordering
 TOPK = True                 # ORDER BY ... LIMIT k on fact columns reads only the rows that can be among the first k
 TOPK_MAX = 100_000          # (rank selection on the planes; past k = this, every passing row is read)
 # rank selection, top-k bounds and COUNT(DISTINCT) cell bits from this many fact rows on (on fewer, reading the values
@@ -1291,6 +1293,8 @@ def run_select(s, cx, as_rel=False):
 # ------------------------------------------------------------------ group-level evaluation
 def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     names = [n for _, n in s.items]; types = [x.t for x, _ in s.items]
+    if rel.plane_ordered:
+        return Relation.of_columns(names, types, [ev(x, rel, cx) for x, _ in s.items], rel.n)
     if s.aggregate:
         out = aggregate(s, rel, aggs, aggplan, cx)
     else:
@@ -2157,6 +2161,8 @@ def compute_windows(wins, rel, cx, series=None):
     layouts = {}                                           # windows with the same PARTITION BY / ORDER BY share one ordering
     for w in wins:
         if w.key() in rel.cols: continue
+        if rel.cols.array(w.key()) is not None:
+            continue                                       # computed from the source planes before gathering payload
         if series and w.key() in series:                   # from the window's aggregated series: each row's group's value
             v = series[w.key()].values_for(rel, cx)
             if isinstance(v, ColArr): rel.cols.put(w.key(), v)
@@ -3731,6 +3737,9 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
+                plane_rel = self.raw_plane_rows(atoms, preds)
+                if plane_rel is not None:
+                    return plane_rel, {}
                 ids = self.topk_ids(preds)
                 if ids is None: preds = preds + self.topk_preds(preds)
             rel = self.rows_rel(atoms, preds, empty, ids=ids)
@@ -4175,7 +4184,91 @@ class _Planner:
                 out = np.bincount(u[:, 0], minlength=G).astype(np.int64)
         return out.tolist()
 
-    def rows_rel(self, atoms, preds, empty, ids=None):
+    def raw_plane_rows(self, atoms, preds):
+        """A full fact sort or one ROW_NUMBER can order IDs before reading payload values."""
+        s, cx, fact = self.s, self.cx, self.tab[self.fact]
+        if (not RAW_PLANE_ORDER or not COLUMNAR or cx.engine not in ("alg", "gpu") or self.joins
+                or self.left or self.fact_sample is not None or fact.parts is not None
+                or fact.n < 1 << 17 or s.distinct or s.distinct_on is not None
+                or s.percent or s.with_ties or algq._plane_order is None):
+            return None
+        items = [x for x, _ in s.items]
+        order = [(items[spec[1]] if spec[0] == "pos" else spec[1], desc) for spec, desc, _ in s.order]
+        output_exprs = items + [s.qualify] + [x for x, _ in order]
+        if subqueries_in(output_exprs + [s.where]):
+            return None
+        windows = list(collect(output_exprs, I.Win).values())
+        w, npart = None, 0
+        if windows:
+            if not VEC_WINDOWS or len(windows) != 1:
+                return None
+            w = windows[0]
+            if (w.name != "row_number" or w.args or w.rpr is not None or w.filter is not None
+                    or w.agg_order or (w.frame is not None and any(b[1] is not None for b in w.frame[1:]))):
+                return None
+            order = [(x, False) for x in w.partition] + [(x, desc) for x, desc, _ in w.order]
+            npart = len(w.partition)
+        else:
+            if s.qualify is not None:
+                return None
+            lim = s.limit.v if isinstance(s.limit, I.Lit) else s.limit
+            off = s.offset.v if isinstance(s.offset, I.Lit) else s.offset
+            off = 0 if off is None else off
+            if type(off) is not int or off < 0 or (lim is not None and (type(lim) is not int or lim < 0)):
+                return None
+            if lim is not None and 0 < lim + off <= TOPK_MAX and self.topk_spec()[1]:
+                return None                                 # preserve bounded rank selection
+            output_exprs = items
+        if not 0 < len(order) <= 12:
+            return None
+
+        keys, directions = [], []
+        for col, desc in order:
+            if not isinstance(col, I.Col) or col.b is not self.fact:
+                return None
+            binding, name = self.canon(col)
+            codec = fact.codecs.get(name)
+            if (binding is not self.fact or codec is None or codec.kind not in ("int", "bool")
+                    or name in getattr(fact, "nullable", {}) or name in getattr(fact, "wide", {})):
+                return None
+            keys.append(name); directions.append(bool(desc))
+
+        bitmap, count = None, fact.n
+        if preds:
+            q = algq.Query(fact, join_mode="auto")
+            for pred in preds: q.where(pred)
+            q._rows = q._rowbits = True
+            bitmap = q._run_codes("alg")
+            count = int(q.last_plan.total_cnt)
+            cx.stats["engine_queries"] += 1
+        result = fact._plane_order(keys, directions, npart, bitmap, count, w is not None)
+        if result is None:
+            return None
+        ids, ranks = result
+        cx.stats["engine_queries"] += 1
+        stat = "raw_plane_row_number_rows" if w is not None else "raw_plane_order_rows"
+        cx.stats[stat] = cx.stats.get(stat, 0) + (len(ids) if ids is not None else len(ranks))
+        payload = {c.key() for e in output_exprs if e is not None for c in I.find(e, I.Col, stop=(I.Win,))}
+        payload_atoms = {k: c for k, c in atoms.items() if k in payload}
+        if w is None:
+            ids = ids[off:] if lim is None else ids[off:off + lim]
+            rel = self.rows_rel(payload_atoms, preds, False, ids=ids, fact_order=False)
+            rel.plane_ordered = True
+            return rel
+
+        if ids is None:
+            source = np.arange(fact.n, dtype=np.uint64)
+            by_row = ranks
+        else:
+            by_row = np.empty(fact.n, np.int64)
+            by_row[ids] = ranks
+            source = np.flatnonzero(np.unpackbits(bitmap.view(np.uint8), bitorder="little")[:fact.n]).astype(np.uint64)
+            by_row = by_row[source]
+        rel = self.rows_rel(payload_atoms, preds, False, ids=source)
+        rel.cols.put(w.key(), ColArr(by_row))
+        return rel
+
+    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
         """Read the selected fact rows' atoms from the planes."""
         if ids is None:
             q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
@@ -4195,7 +4288,7 @@ class _Planner:
             values = fact._decode_column(name)
             # The bitmap yields unique ascending row ids, so full coverage
             # already has exactly the output's row order.
-            return values if len(ids) == fact.n else values[ids]
+            return values if fact_order and len(ids) == fact.n else values[ids]
         def fact_codes(name):
             if name not in cache:
                 v = read_codes(name)

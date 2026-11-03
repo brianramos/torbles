@@ -286,6 +286,296 @@ static inline uint64_t rowmask(const atable_t *t, uint64_t w) {
     uint64_t left = t->n - w * 64; return left >= 64 ? ~0ULL : ((1ULL << left) - 1);
 }
 
+/* Radix ordering over the stored XOR planes. Each pass holds only the
+ * current digit and two arrays of row ids. In each bucket, workers
+ * scatter contiguous pieces of the prior order into disjoint ranges. */
+enum { PLANE_ORDER_BITS = 8, PLANE_ORDER_KEYS = 12 };
+typedef struct {
+    const atable_t *table;
+    const uint64_t *filter;
+    const int32_t *cols;
+    uint8_t *digit;
+    uint64_t *ids, *rank;
+    uint32_t *src, *dst;
+    uint64_t begin, end, words_begin, words_end, count;
+    unsigned col, bit, bits, desc, npart;
+    _Atomic int *inversion;
+    uint32_t offsets[1 << PLANE_ORDER_BITS];
+} plane_order_job_t;
+
+static inline uint64_t plane_order_rows(const plane_order_job_t *j, uint64_t w) {
+    return rowmask(j->table, w) & (j->filter ? j->filter[w] : UINT64_MAX);
+}
+
+static void *plane_order_count(void *arg) {
+    plane_order_job_t *j = arg;
+    j->count = 0;
+    for (uint64_t w = j->words_begin; w < j->words_end; ++w)
+        j->count += __builtin_popcountll(plane_order_rows(j, w));
+    return NULL;
+}
+
+static void *plane_order_init(void *arg) {
+    plane_order_job_t *j = arg;
+    if (!j->filter) {
+        for (uint64_t i = j->begin; i < j->end; ++i) j->src[i] = (uint32_t)i;
+    } else {
+        uint32_t *out = j->src + j->count;
+        for (uint64_t w = j->words_begin; w < j->words_end; ++w) {
+            uint64_t mask = plane_order_rows(j, w);
+            while (mask) {
+                *out++ = (uint32_t)(64 * w + __builtin_ctzll(mask));
+                mask &= mask - 1;
+            }
+        }
+    }
+    return NULL;
+}
+
+/* If a trailing ORDER BY key is globally monotone, stable physical order
+ * already supplies it. Test all within-word neighbours using shifted planes,
+ * and the single adjacent pair at each word/worker boundary. */
+static void *plane_order_monotone(void *arg) {
+    plane_order_job_t *j = arg;
+    const atable_t *t = j->table;
+    unsigned c = j->col, width = t->width[c], msb = t->msb[c];
+    uint32_t prev = 0;
+    uint64_t start = j->words_begin;
+    if (start) {
+        uint64_t x = 0;
+        for (unsigned p = 0; p < width; ++p) {
+            x ^= t->V[c][p][start - 1];
+            prev |= (uint32_t)(x >> 63) << (msb ? width - p - 1 : p);
+        }
+    }
+    for (uint64_t w = start; w < j->words_end; ++w) {
+        if ((w & 63) == 0 && atomic_load_explicit(j->inversion, memory_order_relaxed)) return NULL;
+        uint64_t x = 0, bad = 0, equal = rowmask(t, w) >> 1;
+        uint32_t first = 0, last = 0;
+        unsigned tail = w + 1 < t->nw ? 63 : (unsigned)((t->n - 1) & 63);
+        for (unsigned p = 0; p < width; ++p) {
+            x ^= t->V[c][p][w];
+            uint64_t a = j->desc ? x >> 1 : x, b = j->desc ? x : x >> 1;
+            if (msb) {
+                bad |= equal & a & ~b;
+                equal &= ~(a ^ b);
+                if (bad) goto unordered;
+            } else {
+                bad = (bad & ~(a ^ b)) | (a & ~b);
+            }
+            unsigned bit = msb ? width - p - 1 : p;
+            first |= (uint32_t)(x & 1) << bit;
+            last |= (uint32_t)((x >> tail) & 1) << bit;
+        }
+        if ((!msb && (bad & equal)) || (w && (j->desc ? prev < first : prev > first))) goto unordered;
+        prev = last;
+    }
+    return NULL;
+unordered:
+    atomic_store_explicit(j->inversion, 1, memory_order_relaxed);
+    return NULL;
+}
+
+static inline uint64_t plane_order_transpose8(uint64_t x) {
+    uint64_t z = (x ^ (x >> 7)) & UINT64_C(0x00aa00aa00aa00aa);
+    x ^= z ^ (z << 7);
+    z = (x ^ (x >> 14)) & UINT64_C(0x0000cccc0000cccc);
+    x ^= z ^ (z << 14);
+    z = (x ^ (x >> 28)) & UINT64_C(0x00000000f0f0f0f0);
+    return x ^ z ^ (z << 28);
+}
+
+static void *plane_order_digit(void *arg) {
+    plane_order_job_t *j = arg;
+    const atable_t *t = j->table;
+    unsigned c = j->col, width = t->width[c], msb = t->msb[c];
+    unsigned first = msb ? width - j->bit - j->bits : j->bit;
+    const uint64_t *const *v = (const uint64_t *const *)t->V[c];
+    for (uint64_t w = j->words_begin; w < j->words_end; ++w) {
+        if (j->filter && !plane_order_rows(j, w)) continue;
+        uint64_t value = 0;
+        if (first + 1 <= width - first) {
+            for (unsigned p = 0; p <= first; ++p) value ^= v[p][w];
+        } else {
+            for (unsigned p = first + 1; p <= width; ++p) value ^= v[p][w];
+        }
+        uint64_t plane[PLANE_ORDER_BITS] = {0};
+        for (unsigned p = 0; p < j->bits; ++p) {
+            if (p) value ^= v[first + p][w];
+            plane[msb ? j->bits - p - 1 : p] = j->desc ? ~value : value;
+        }
+        /* The only row-indexed key scratch is this one radix digit. Its
+         * bytes make histogram/scatter random gathers a single load. */
+        uint8_t *digit = j->digit + w * 64;
+        for (unsigned r = 0; r < 64; r += 8) {
+            uint64_t block = 0;
+            for (unsigned p = 0; p < PLANE_ORDER_BITS; ++p)
+                block |= ((plane[p] >> r) & 255) << (p * 8);
+            block = plane_order_transpose8(block);
+            memcpy(digit + r, &block, sizeof block);
+        }
+    }
+    return NULL;
+}
+
+static void *plane_order_histogram(void *arg) {
+    plane_order_job_t *j = arg;
+    memset(j->offsets, 0, ((size_t)1 << j->bits) * sizeof *j->offsets);
+    for (uint64_t i = j->begin; i < j->end; ++i)
+        ++j->offsets[j->digit[j->src[i]]];
+    return NULL;
+}
+
+static void *plane_order_scatter(void *arg) {
+    plane_order_job_t *j = arg;
+    for (uint64_t i = j->begin; i < j->end; ++i) {
+        uint32_t id = j->src[i];
+        j->dst[j->offsets[j->digit[id]]++] = id;
+    }
+    return NULL;
+}
+
+/* The stored XOR sequence is invertible, so partition keys compare for
+ * equality without materializing their values. */
+static inline int plane_order_same(const plane_order_job_t *j, uint32_t a, uint32_t b) {
+    unsigned wa = a >> 6, wb = b >> 6, ra = a & 63, rb = b & 63;
+    for (unsigned k = 0; k < j->npart; ++k) {
+        unsigned c = j->cols[k];
+        for (int p = 0; p < j->table->width[c]; ++p) {
+            const uint64_t *v = j->table->V[c][p];
+            if (((v[wa] >> ra) ^ (v[wb] >> rb)) & 1) return 0;
+        }
+    }
+    return 1;
+}
+
+static void *plane_order_finish(void *arg) {
+    plane_order_job_t *j = arg;
+    if (!j->rank) {
+        for (uint64_t i = j->begin; i < j->end; ++i) j->ids[i] = j->src[i];
+        return NULL;
+    }
+    uint64_t start = j->npart ? j->begin : 0;
+    if (start && plane_order_same(j, j->src[start - 1], j->src[start])) {
+        uint32_t id = j->src[start];
+        uint64_t lo = 0;
+        while (lo < start) {
+            uint64_t mid = lo + (start - lo) / 2;
+            if (plane_order_same(j, j->src[mid], id)) start = mid;
+            else lo = mid + 1;
+        }
+    }
+    for (uint64_t i = j->begin; i < j->end; ++i) {
+        uint32_t id = j->src[i];
+        if (j->npart && i > j->begin && !plane_order_same(j, j->src[i - 1], id)) start = i;
+        if (j->ids) j->ids[i] = id;
+        j->rank[j->ids ? i : id] = i - start + 1;
+    }
+    return NULL;
+}
+
+/* Outputs are aligned with the sorted ids. With no filter, ids may be NULL
+ * to return only row numbers, indexed by physical row id.
+ * Returns -1 for an unsupported request, -2 for allocation failure and
+ * -3 when cap is too small. nout receives the number of qualifying rows. */
+int at_plane_order(const atable_t *t, const uint64_t *filter, int32_t nkeys,
+                   const int32_t *cols, const int32_t *desc, int32_t npart,
+                   uint64_t *ids, uint64_t *rank, uint64_t cap, uint64_t *nout) {
+    if (!nout) return -1;
+    *nout = 0;
+    if (!t || !cols || !desc || nkeys < 1 || nkeys > PLANE_ORDER_KEYS || npart < 0 || npart > nkeys ||
+        t->n > UINT32_MAX || (!ids && (!rank || filter)) || (ids && ids == rank)) return -1;
+    for (int k = 0; k < nkeys; ++k) {
+        int c = cols[k];
+        if (c < 0 || c >= t->k || (desc[k] != 0 && desc[k] != 1) || t->vflag[c] ||
+            t->width[c] < 0 || t->width[c] > 32) return -1;
+    }
+    if (!t->n) return 0;
+    extern int at_get_threads(void);
+    int workers = at_get_threads();
+    int useful = (int)((t->n + 65535) / 65536);
+    if (workers > useful) workers = useful;
+    if (workers > ORDER_WORKERS) workers = ORDER_WORKERS;
+    if (workers < 1) workers = 1;
+
+    plane_order_job_t jobs[ORDER_WORKERS];
+    for (int k = 0; k < workers; ++k)
+        jobs[k] = (plane_order_job_t){.table = t, .filter = filter, .cols = cols, .ids = ids, .rank = rank,
+            .npart = npart, .words_begin = t->nw * k / workers, .words_end = t->nw * (k + 1) / workers};
+    uint64_t n = t->n;
+    if (filter) {
+        pool_jobs(workers, plane_order_count, jobs, sizeof *jobs);
+        n = 0;
+        for (int k = 0; k < workers; ++k) {
+            uint64_t count = jobs[k].count;
+            jobs[k].count = n;
+            n += count;
+        }
+    }
+    *nout = n;
+    if (cap < n) return -3;
+    if (!n) return 0;
+    while (nkeys > npart) {
+        _Atomic int inversion = 0;
+        for (int k = 0; k < workers; ++k) {
+            jobs[k].col = cols[nkeys - 1]; jobs[k].desc = desc[nkeys - 1];
+            jobs[k].inversion = &inversion;
+        }
+        pool_jobs(workers, plane_order_monotone, jobs, sizeof *jobs);
+        if (atomic_load_explicit(&inversion, memory_order_relaxed)) break;
+        --nkeys;
+    }
+    if (n > SIZE_MAX / sizeof(uint32_t) || t->nw > SIZE_MAX / 64) return -2;
+    uint32_t *src = malloc(n * sizeof *src), *dst = nkeys ? malloc(n * sizeof *dst) : NULL;
+    uint8_t *digit = nkeys ? malloc(t->nw * 64) : NULL;
+    if (!src || (nkeys && (!dst || !digit))) {
+        free(src); free(dst); free(digit);
+        return -2;
+    }
+    for (int k = 0; k < workers; ++k) {
+        jobs[k].begin = n * k / workers; jobs[k].end = n * (k + 1) / workers;
+        jobs[k].src = src; jobs[k].digit = digit;
+    }
+    pool_jobs(workers, plane_order_init, jobs, sizeof *jobs);
+    for (int key = nkeys - 1; key >= 0; --key) {
+        unsigned c = cols[key], width = t->width[c];
+        for (unsigned bit = 0; bit < width; bit += PLANE_ORDER_BITS) {
+            unsigned bits = width - bit < PLANE_ORDER_BITS ? width - bit : PLANE_ORDER_BITS;
+            for (int k = 0; k < workers; ++k) {
+                jobs[k].col = c; jobs[k].bit = bit; jobs[k].bits = bits; jobs[k].desc = desc[key];
+                jobs[k].src = src; jobs[k].dst = dst;
+            }
+            pool_jobs(workers, plane_order_digit, jobs, sizeof *jobs);
+            pool_jobs(workers, plane_order_histogram, jobs, sizeof *jobs);
+            uint32_t prefix = 0;
+            unsigned occupied = 0;
+            for (unsigned b = 0; b < (1u << bits); ++b) {
+                uint32_t before = prefix;
+                for (int k = 0; k < workers; ++k) {
+                    uint32_t count = jobs[k].offsets[b];
+                    jobs[k].offsets[b] = prefix;
+                    prefix += count;
+                }
+                occupied += prefix != before;
+            }
+            if (occupied > 1) {
+                pool_jobs(workers, plane_order_scatter, jobs, sizeof *jobs);
+                uint32_t *swap = src; src = dst; dst = swap;
+            }
+        }
+    }
+    /* For a sparse mask n can be smaller than the number of workers. The
+     * finish pass must avoid reading an empty worker's first row. */
+    if ((uint64_t)workers > n) workers = (int)n;
+    for (int k = 0; k < workers; ++k) {
+        jobs[k].begin = n * k / workers; jobs[k].end = n * (k + 1) / workers;
+        jobs[k].src = src;
+    }
+    pool_jobs(workers, plane_order_finish, jobs, sizeof *jobs);
+    free(src); free(dst); free(digit);
+    return 0;
+}
+
 /* ---------------------------------------------------------------- build */
 /* the planes of words [w0, w1): one 64 x 64 transpose per column per word, then the V and H planes (independent per
  * word, so the build runs on all cores) */

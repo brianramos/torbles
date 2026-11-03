@@ -152,6 +152,12 @@ lib.pt_free.restype, lib.pt_free.argtypes = None, [vp]
 lib.at_view.restype, lib.at_view.argtypes = vp, [ctypes.c_int, vp, vp]
 lib.at_view_free.restype, lib.at_view_free.argtypes = None, [vp]
 
+_plane_order = getattr(lib, "at_plane_order", None)
+if _plane_order is not None:
+    _plane_order.restype = ctypes.c_int
+    _plane_order.argtypes = [vp, vp, ctypes.c_int32, vp, vp, ctypes.c_int32,
+                             vp, vp, ctypes.c_uint64, ctypes.POINTER(ctypes.c_uint64)]
+
 # optional GPU executor (gpu.cu): libgpu.so (CUDA) or, for testing, libgpu_emu.so (the same kernels run on the CPU)
 _libg = None
 def gpu_lib():
@@ -1365,6 +1371,23 @@ class Table:
         p = self._part_of(c)
         return lib.at_width(p.at, p.idx(c))
     def nrows(self): return len(self.used_ids)
+    def _plane_order(self, keys, desc, npart=0, bitmap=None, count=None, row_numbers=False):
+        """Stable physical row IDs, and optional ROW_NUMBER values, from stored planes."""
+        if _plane_order is None or self.parts is not None or self.n > 0xffffffff:
+            return None
+        cols = (ctypes.c_int32 * len(keys))(*(self.idx(key) for key in keys))
+        directions = (ctypes.c_int32 * len(desc))(*desc)
+        cap = self.n if count is None else count
+        ids = None if row_numbers and bitmap is None else np.empty(cap, np.uint64)
+        ranks = np.empty(cap, np.int64) if row_numbers else None
+        nout = ctypes.c_uint64()
+        rc = _plane_order(self.at, None if bitmap is None else bitmap.ctypes.data, len(keys), cols,
+                          directions, npart, None if ids is None else ids.ctypes.data,
+                          None if ranks is None else ranks.ctypes.data, cap, nout)
+        if rc != 0:
+            return None
+        return None if ids is None else ids[:nout.value], None if ranks is None else ranks[:nout.value]
+
     def _decode_column(self, c):
         """Bulk decode the planes into a transient code array."""
         part = self._part_of(c)
