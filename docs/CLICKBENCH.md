@@ -48,6 +48,15 @@ execution took 3.759 s and its warm median was 22.681 ms. Q29 took 1.417 s
 first and 45.151 ms warm. These timings capture the cost of building reusable
 text state on first use.
 
+## Four-engine comparison
+
+These totals use the same 41 verified queries on the same inputs. Q4 and Q29 were unverified in chDB 4.4.0 (ClickHouse 26.9.2.1).
+
+| Fact rows | Torbles GPU | Prior Torbles CPU | DuckDB | chDB |
+|---:|---:|---:|---:|---:|
+| 1M | 68.4 ms | 106.6 ms | 166.4 ms | 290.9 ms |
+| 10M | 374.5 ms | 792.7 ms | 804.6 ms | 1,631.0 ms |
+
 ## Persisted cross-query algebra
 
 A separate benchmark projected the three columns used by official Q1–Q4

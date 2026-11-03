@@ -35,6 +35,15 @@ These totals sum warm medians. The CPU comparators come from earlier runs on
 the same inputs and hardware. Another 10M GPU run with the same native library
 took 1,163.9 ms. [Method, CUDA coverage and separate workload benchmarks](docs/CLICKBENCH.md)
 
+### Four-engine comparison
+
+These totals use the same 41 verified queries on the same inputs. Q4 and Q29 were unverified in chDB 4.4.0 (ClickHouse 26.9.2.1).
+
+| Fact rows | Torbles GPU | Prior Torbles CPU | DuckDB | chDB |
+|---:|---:|---:|---:|---:|
+| 1M | 68.4 ms | 106.6 ms | 166.4 ms | 290.9 ms |
+| 10M | 374.5 ms | 792.7 ms | 804.6 ms | 1,631.0 ms |
+
 ## Try it
 
 Use Python 3.11 or newer, Git, and C and C++ compilers. The source install builds
