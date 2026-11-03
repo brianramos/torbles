@@ -153,7 +153,7 @@ class RawPlaneGroupChecks(unittest.TestCase):
         query = ("SELECT ip, width, COUNT(*) c FROM t WHERE flag = -14 "
                  "GROUP BY ip, width ORDER BY c DESC LIMIT 10 OFFSET 2000")
         result = self.db.sql(query)
-        self.assertIn("plane_group_selective_offset", result.stats)
+        self.assertIn("plane_group_packed_offset", result.stats)
         self.assertEqual(result.rows, self.db.con.execute(query).fetchall())
 
     def test_unsupported_aggregates_and_order_use_existing_path(self):

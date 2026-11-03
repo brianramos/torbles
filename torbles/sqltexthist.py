@@ -2,28 +2,35 @@
 # SPDX-License-Identifier: Apache-2.0
 """Reduce regex text groups from native per-code multiplicities."""
 
+import ctypes as C
+
 import numpy as np
 
 from . import algq
 from . import sqltextplanes as text
 
 
-def _histogram(fact, column, joins, preds):
-    query = algq.Query(fact, join_mode="auto")
-    for table, fk in joins:
-        query.join(table, fk)
-    for pred in preds:
-        query.where(pred)
-    if not fact.used.all():
-        query._xrows = (fact.used_bm, 1)
-    query._raw = True
-    keys, _, counts = query.group_by(algq.Col(fact, column)).count()._run_codes("alg")
-    return keys[:, 0], counts
+_code_histogram = getattr(algq.lib, "at_plane_code_histogram", None)
+if _code_histogram is not None:
+    _code_histogram.restype = C.c_int
+    _code_histogram.argtypes = [algq.vp, algq.vp, C.c_int32, C.c_uint32, algq.vp]
 
 
-def project_group(planner, preds, aggs, group, col, source, table, fk, length, having, joins):
+def code_counts(fact, column, scope):
+    """Return one exact count per physical code in a packed row scope."""
+    if _code_histogram is None:
+        return None
+    source = fact._part_of(column)
+    domain = fact.maxcode(column) + 1
+    counts = np.empty(domain, dtype=np.uint32)
+    if _code_histogram(source.at, scope.ctypes.data, source.idx(column), domain, counts.ctypes.data):
+        return None
+    return counts
+
+
+def project_group(planner, preds, aggs, group, col, source, table, fk, length, having):
     """Reduce a validated regex projection using one native code histogram."""
-    from . import sqlexec as E
+    from . import sqlexec as E, sqlgroupplans as P
 
     cx, fact = planner.cx, planner.tab[planner.fact]
     name, codec = source
@@ -33,10 +40,14 @@ def project_group(planner, preds, aggs, group, col, source, table, fk, length, h
     # FK surrogates can also have gaps, so consider their physical domain separately.
     if domain * 2 > fact.n or fact.maxcode(column) + 1 > min(1 << 23, fact.n):
         return None
-    try:
-        code, multiplicity = _histogram(fact, column, joins, preds)
-    except (TypeError, ValueError, OverflowError):
+    scope = P.bitmap(planner, preds)
+    if scope is None:
         return None
+    histogram = code_counts(fact, column, scope)
+    if histogram is None:
+        return None
+    code = np.flatnonzero(histogram)
+    multiplicity = histogram[code]
     if fk is not None:
         mask = fact.kmask(fk)
         ids = code & mask if mask else code

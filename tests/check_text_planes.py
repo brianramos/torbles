@@ -12,7 +12,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import torbles
-from torbles import sqltextplanes
+from torbles import sqltexthist, sqltextplanes
 
 
 class TextPlaneChecks(unittest.TestCase):
@@ -59,7 +59,8 @@ class TextPlaneChecks(unittest.TestCase):
         regex = self.check_query(db, r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
                          "AVG(STRLEN(url)) AS l, COUNT(*) AS n, MIN(url) FROM t WHERE url <> '' "
                          "GROUP BY k HAVING COUNT(*) > 5000 ORDER BY l DESC, k", projection=True)
-        self.assertEqual(regex.stats.get("dictionary_histogram_codes"), 5)
+        if sqltexthist._code_histogram is not None:
+            self.assertEqual(regex.stats.get("dictionary_histogram_codes"), 5)
         self.check_query(db, "SELECT g, AVG(STRLEN(title)) AS l, COUNT(*) AS n FROM t "
                          "GROUP BY g HAVING COUNT(*) > 5000 ORDER BY l DESC, g", projection=True)
         self.assertEqual(db.sql("SELECT g, AVG(STRLEN(url)) FROM t GROUP BY g "

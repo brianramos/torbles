@@ -114,6 +114,23 @@ def _count_relation(planner, aggs, rows, stat):
     return rel
 
 
+def _rank_packed_counts(planner, scope, specs, aggs, limit, offset):
+    """Rank native group states before decoding any group keys."""
+    fact = planner.tab[planner.fact]
+    query = algq.Query(fact)
+    query._raw = True
+    query._xrows = (scope, 1)
+    try:
+        codes, _, counts = query.group_by(*(algq.Col(fact, spec[0]) for spec in specs)).count()._run_codes("alg")
+    except (TypeError, ValueError, OverflowError):
+        return None
+    keep = np.argsort(-counts, kind="stable")[offset:offset + limit]
+    decoded = [spec[-1](codes[keep, i]) for i, spec in enumerate(specs)]
+    planner.cx.stats["engine_queries"] += 1
+    return _count_relation(planner, aggs, list(zip(counts[keep].tolist(), zip(*decoded))),
+                           "plane_group_packed_offset")
+
+
 def special_count(planner, preds, aggs):
     """Count-bounded CASE branches, ordered time buckets, and empty offsets."""
     from .sqlencodednative import BY_KEY, encoded_groups
@@ -136,6 +153,11 @@ def special_count(planner, preds, aggs):
         if selected <= offset:
             return _count_relation(planner, aggs, [], "plane_group_empty_offset")
         if fact.n >= E.ALG_MIN_ROWS and selected <= min(200_000, fact.n // 8):
+            if (limit + offset > 1024
+                    and all(spec is not None and spec[1] is None and spec[3] == 0 for spec in descriptors)):
+                ranked = _rank_packed_counts(planner, scope, descriptors, aggs, limit, offset)
+                if ranked is not None:
+                    return ranked
             ids = np.flatnonzero(np.unpackbits(scope.view(np.uint8), bitorder="little")[:fact.n])
             atoms = {expr.key(): expr for expr in s.group}
             source = planner.rows_rel(atoms, [], False, ids=ids.astype(np.uint64))
@@ -185,7 +207,7 @@ def special_count(planner, preds, aggs):
     yes_scope = bitmap(planner, pred)
     if scope is None or yes_scope is None:
         return None
-    rows = []
+    branches = []
     for mask, include_then in ((scope & yes_scope, True), (scope & ~yes_scope, False)):
         specs = list(descriptors)
         specs[pos] = yes if include_then else None
@@ -196,15 +218,26 @@ def special_count(planner, preds, aggs):
         if result is None:
             return None
         codes, counts, _ = result
-        columns = [spec[-1](codes[:, i]) for i, spec in enumerate(physical)]
-        if not include_then:
-            columns.insert(pos, [case.else_.v] * len(counts))
-        rows.extend(zip(counts.tolist(), zip(*columns)))
+        branches.append((physical, include_then, codes, counts))
         planner.cx.stats["engine_queries"] += 1
-    # The branch condition depends only on other group keys. A group
-    # can therefore occur in only one branch, including an empty CASE value.
-    rows.sort(key=lambda row: row[0], reverse=True)
-    return _count_relation(planner, aggs, rows[offset:offset + limit], "plane_group_case_branches")
+
+    # The condition is determined by the other group keys. The branches
+    # are disjoint, so ranking counts needs neither decoding nor a merge by key.
+    all_counts = np.concatenate([counts for _, _, _, counts in branches]).astype(np.int64)
+    ranked = np.argsort(-all_counts, kind="stable")[offset:offset + limit]
+    rows = [None] * len(ranked)
+    start = 0
+    for physical, include_then, codes, counts in branches:
+        end = start + len(counts)
+        spots = np.flatnonzero((ranked >= start) & (ranked < end))
+        ids = ranked[spots] - start
+        columns = [spec[-1](codes[ids, i]) for i, spec in enumerate(physical)]
+        if not include_then:
+            columns.insert(pos, [case.else_.v] * len(ids))
+        for spot, count, values in zip(spots, counts[ids].tolist(), zip(*columns)):
+            rows[spot] = (count, values)
+        start = end
+    return _count_relation(planner, aggs, rows, "plane_group_case_branches")
 
 
 def late_count(planner, preds, aggs):

@@ -1858,6 +1858,111 @@ int at_plane_lookup_sums(const atable_t *t, const uint64_t *filter,
     return 0;
 }
 
+enum { PLANE_HISTOGRAM_LOCAL_BYTES = 64 * 1024 * 1024 };
+
+typedef struct {
+    const atable_t *table;
+    const uint64_t *filter;
+    uint32_t *locals, *counts;
+    size_t stride;
+    uint32_t domain;
+    int col, workers;
+    _Atomic int invalid;
+} plane_histogram_t;
+
+typedef struct { plane_histogram_t *hist; int worker; } plane_histogram_job_t;
+
+static void *plane_histogram_count(void *arg) {
+    const plane_histogram_job_t *job = arg;
+    plane_histogram_t *h = job->hist;
+    const atable_t *t = h->table;
+    int col = h->col, width = t->width[col], msb = t->msb[col];
+    uint32_t *counts = h->locals + (size_t)job->worker * h->stride;
+    uint64_t begin = t->nw * job->worker / h->workers;
+    uint64_t end = t->nw * (job->worker + 1) / h->workers;
+    for (uint64_t w = begin; w < end; ++w) {
+        if ((w & 255) == 0 && atomic_load_explicit(&h->invalid, memory_order_relaxed)) break;
+        uint64_t mask = rowmask(t, w) & (h->filter ? h->filter[w] : UINT64_MAX);
+        if (!mask) continue;
+        uint64_t planes[64] = {0}, value = 0;
+        for (int b = 0; b < width; ++b) {
+            value ^= t->V[col][b][w];
+            planes[msb ? width - b - 1 : b] = value;
+        }
+        int sparse = __builtin_popcountll(mask) <= 3;
+        if (!sparse) transpose64(planes);
+        while (mask) {
+            unsigned row = __builtin_ctzll(mask);
+            mask &= mask - 1;
+            uint32_t code = 0;
+            if (sparse) {
+                for (int b = 0; b < width; ++b)
+                    code |= (uint32_t)((planes[b] >> row) & 1) << b;
+            } else {
+                code = (uint32_t)planes[row];
+            }
+            if (code >= h->domain) {
+                atomic_store_explicit(&h->invalid, 1, memory_order_relaxed);
+                return NULL;
+            }
+            ++counts[code];
+        }
+    }
+    return NULL;
+}
+
+static void *plane_histogram_merge(void *arg) {
+    const plane_histogram_job_t *job = arg;
+    plane_histogram_t *h = job->hist;
+    size_t begin = ((h->stride / 16) * job->worker / h->workers) * 16;
+    size_t end = ((h->stride / 16) * (job->worker + 1) / h->workers) * 16;
+    if (begin >= h->domain) return NULL;
+    if (end > h->domain) end = h->domain;
+    uint32_t *restrict out = h->counts + begin;
+    size_t count = end - begin;
+    memcpy(out, h->locals + begin, count * sizeof *out);
+    for (int worker = 1; worker < h->workers; ++worker) {
+        const uint32_t *restrict local = h->locals + (size_t)worker * h->stride + begin;
+        for (size_t i = 0; i < count; ++i) out[i] += local[i];
+    }
+    return NULL;
+}
+
+/* One encoded axis, directly from the packed planes. Exact counts in the
+ * caller's domain, with a bounded worker-local histogram and no row staging. */
+int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        t->nw != (t->n + 63) / 64 || col < 0 || col >= t->k || t->vflag[col] ||
+        t->width[col] < 0 || t->width[col] > 32 || !domain ||
+        domain > PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts || !counts) return -1;
+    for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
+    if (!t->n) {
+        memset(counts, 0, (size_t)domain * sizeof *counts);
+        return 0;
+    }
+
+    size_t stride = ((size_t)domain + 15) & ~(size_t)15;
+    int workers = nthreads(), useful = 1 + (int)(t->n / 16384);
+    int capacity = (int)(PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts / stride);
+    if (workers > useful) workers = useful;
+    if (workers > capacity) workers = capacity;
+    if (workers > 64) workers = 64;
+    if (workers < 1) workers = 1;
+    uint32_t *locals = calloc((size_t)workers * stride, sizeof *locals);
+    if (!locals) return -2;
+
+    plane_histogram_t hist = {.table = t, .filter = filter, .locals = locals,
+        .counts = counts, .stride = stride, .domain = domain, .col = col, .workers = workers};
+    plane_histogram_job_t jobs[64];
+    for (int i = 0; i < workers; ++i) jobs[i] = (plane_histogram_job_t){&hist, i};
+    pool_jobs(workers, plane_histogram_count, jobs, sizeof *jobs);
+    int rc = atomic_load_explicit(&hist.invalid, memory_order_relaxed) ? -1 : 0;
+    if (!rc) pool_jobs(workers, plane_histogram_merge, jobs, sizeof *jobs);
+    free(locals);
+    return rc;
+}
+
 /* Small equality result, with fallback when the match set is larger. */
 int at_plane_equal_ids(const atable_t *t, const uint64_t *visible, const at_group_key_t *key,
                        uint64_t code, uint32_t limit, uint64_t *ids, uint32_t *nout) {

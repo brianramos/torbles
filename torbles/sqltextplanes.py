@@ -201,7 +201,7 @@ if _lookup_sums is not None:
 
 def _contract_length(planner, preds, aggs, group, key, source, table, fk, length, having):
     """Derive candidate group masks, then contract projected lengths over them."""
-    from . import sqlexec as E, sqlgroupplans as P
+    from . import sqlexec as E, sqlgroupplans as P, sqltexthist
 
     fact = planner.tab[planner.fact]
     name, codec = source
@@ -222,7 +222,13 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
     if scope is None:
         return None
     cap = fact.n // boundary
-    if cap:
+    histogram = None
+    if cap and fact.maxcode(key[0]) + 1 <= min(1 << 18, fact.n // 4):
+        histogram = sqltexthist.code_counts(fact, key[0], scope)
+    if histogram is not None:
+        codes = np.flatnonzero(histogram >= boundary).astype(np.uint32)
+        counts = histogram[codes]
+    elif cap:
         states = fact._plane_group([key[:-1]], [], cap, scope)
         if states is None:
             return None
@@ -271,6 +277,8 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
         result.cols.put(agg_key, E.ColArr(vals))
     planner.cx.stats["engine_queries"] += bool(cap) + bool(len(codes))
     planner.cx.stats["dictionary_plane_groups"] = len(codes)
+    if histogram is not None:
+        planner.cx.stats["dictionary_plane_group_domain"] = len(histogram)
     planner.cx.stats["dictionary_plane_selected_rows"] = int(counts.sum())
     return result
 
@@ -329,7 +337,7 @@ def project_group(planner, preds, aggs):
     if key is None:
         from . import sqltexthist
         histogram = sqltexthist.project_group(planner, preds, aggs, group, col, source, table, fk,
-                                              length, having, joins)
+                                              length, having)
         if histogram is not None:
             return histogram
     contracted = _contract_length(planner, preds, aggs, group, key, source, table, fk, length, having)

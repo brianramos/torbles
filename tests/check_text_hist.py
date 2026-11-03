@@ -15,6 +15,7 @@ import torbles
 from torbles import sqltexthist
 
 
+@unittest.skipIf(sqltexthist._code_histogram is None, "native code histogram unavailable")
 class TextHistogramChecks(unittest.TestCase):
     @staticmethod
     def dataset(generated):
@@ -53,8 +54,8 @@ class TextHistogramChecks(unittest.TestCase):
         used = np.array([True, False, True, False, True, True, False])
         table = torbles.Table("sparse", {"v": codes}, used=used)
         self.addCleanup(table.close)
-        key, counts = sqltexthist._histogram(table, "v", (), ())
-        self.assertEqual(dict(zip(key.tolist(), counts.tolist())), {2: 1, 3: 1, 4: 2})
+        counts = sqltexthist.code_counts(table, "v", table.used_bm)
+        self.assertEqual(counts.tolist(), [0, 0, 1, 1, 2])
 
 
 if __name__ == "__main__":
