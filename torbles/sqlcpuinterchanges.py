@@ -2,11 +2,44 @@
 # SPDX-License-Identifier: Apache-2.0
 """Exact CPU group interchanges over physical equality codes."""
 
+import os
+
 import numpy as np
 
 from torbles import algq, sqlinterchanges
 from torbles.sqlencodednative import BY_COUNT, BY_DISTINCT, encoded_groups
 from torbles.sqltexthist import code_counts
+
+
+
+def enabled():
+    return os.environ.get("TORBLES_INTERCHANGES", "auto") != "0"
+
+
+def count_topk(fact, keys, cap, scope, stats):
+    """Use one physical histogram instead of a hash for bounded COUNT ranking."""
+    if len(keys) != 1:
+        return None
+    low, high, _, transform, _ = keys[0]
+    if high is not None or transform:
+        return None
+    domain = fact.maxcode(low) + 1
+    if domain > min(1 << 20, fact.n // 8):
+        return None
+    active = fact.n if scope is fact.used_bm else sum(int(word).bit_count() for word in scope)
+    if domain * 8 > active:
+        return None
+    histogram = code_counts(fact, low, scope)
+    if histogram is None:
+        return None
+    live = np.flatnonzero(histogram)
+    scores = histogram[live]
+    if len(live) > cap:
+        pick = np.argpartition(scores, -cap)[-cap:]
+        live, scores = live[pick], scores[pick]
+    order = np.lexsort((live, -scores.astype(np.int64)))
+    stats["cpu_interchange_histogram_codes"] = domain
+    return live[order].astype(np.uint64).reshape(-1, 1), scores[order].astype(np.uint64), None
 
 
 def _group(fact, keys, measures, cap, scope, distinct, rank):
@@ -15,8 +48,11 @@ def _group(fact, keys, measures, cap, scope, distinct, rank):
 
 
 def _ranked(fact, keys, measures, cap, scope, distinct, rank, stats):
+    # Unlike CUDA, the CPU histogram and candidate mask both scan host planes.
+    # Automatically do that extra work only for COUNT rank on large inputs.
+    mode = os.environ.get("TORBLES_INTERCHANGES", "auto")
     if (len(keys) != 1 or distinct is None or rank not in (BY_COUNT, BY_DISTINCT)
-            or cap > 64):
+            or cap > 64 or (mode != "1" and (rank != BY_COUNT or fact.n < 2000000))):
         return None
     low, high, shift, transform, width, _ = keys[0]
     # Bound the histogram footprint and avoid extra full passes on small inputs.

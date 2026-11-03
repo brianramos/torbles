@@ -130,6 +130,31 @@ DEV bool gpu_group_equal(gpu_group_tuple_t a, gpu_group_tuple_t b, int nkey) {
     return true;
 }
 
+DEV uint32_t gpu_group_dense_slot(gpu_group_tuple_t tuple, const gpu_group_plan_t &plan) {
+    uint32_t slot = 0;
+    for (int i = 0; i < plan.nkey; ++i)
+        slot = (slot << plan.dense_width[i]) | (uint32_t)tuple.key[i];
+    return slot;
+}
+
+__global__ void gpu_group_dense_counts(const gtable_t *table, const uint64_t *scope,
+                                       gpu_group_plan_t plan, uint32_t *counts) {
+    uint64_t row = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    bool eligible = row < table->n && (!scope || ((scope[row >> 6] >> (row & 63)) & 1));
+#if __CUDA_ARCH__ >= 700
+    unsigned active = __ballot_sync(0xffffffffU, eligible);
+#endif
+    if (!eligible) return;
+    uint32_t slot = gpu_group_dense_slot(gpu_group_key(table, plan, (uint32_t)row), plan);
+    unsigned weight = 1;
+#if __CUDA_ARCH__ >= 700
+    unsigned peers = __match_any_sync(active, slot);
+    if ((threadIdx.x & 31) != (unsigned)(__ffs(peers) - 1)) return;
+    weight = popc32(peers);
+#endif
+    atomicAdd(counts + slot, weight);
+}
+
 /* Publishing only a representative row is enough: that row's full key is
  * already immutable in the device planes. No lock, decoded key vector or
  * fingerprint-only equivalence is needed. */
@@ -154,9 +179,7 @@ template <bool Distinct> __global__ void gpu_group_accumulate(const gtable_t *ta
 #endif
     uint32_t pos;
     if (plan.dense_bits) {
-        pos = 0;
-        for (int i = 0; i < plan.nkey; ++i)
-            pos = (pos << plan.dense_width[i]) | (uint32_t)tuple.key[i];
+        pos = gpu_group_dense_slot(tuple, plan);
     } else {
         uint64_t hash = gpu_group_hash(tuple, plan.nkey);
         pos = (uint32_t)hash & (slots - 1);
@@ -339,7 +362,9 @@ static uint64_t gpu_coordinate_winners(handle_t *h, const uint64_t *scope, gpu_g
     uint32_t keep = 0;
     for (; keep < limit; ++keep) {
         uint64_t next = mass + (scores.get()[keep] >> 32);
-        if (next * 4 > active * 3 || pow2_at_least((next * 4 + 2) / 3) > full_capacity / 2) break;
+        // An unproven DISTINCT pass must save enough work to justify a retry.
+        bool too_many_rows = distinct_rank ? next * 8 > active * 3 : next * 4 > active * 3;
+        if (too_many_rows || pow2_at_least((next * 4 + 2) / 3) > full_capacity / 2) break;
         mass = next;
     }
     if (keep < k) return 0;
@@ -360,7 +385,10 @@ static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
                     uint64_t *out_sums, uint32_t *out_n, const gpu_group_key_t *distinct,
                     uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
                     uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width,
-                    gpu_group_sectors_t sectors, uint64_t *selected_rows, bool try_pruning) {
+                    gpu_group_sectors_t sectors, uint64_t *selected_rows, bool try_pruning,
+                    uint32_t *dense_slots, const uint64_t *resident_scope = nullptr,
+                    uint64_t resident_active = 0) {
+    if (dense_slots) *dense_slots = 0;
     if (selected_rows) *selected_rows = 0;
     if (!out_n) return -1;
     *out_n = 0;
@@ -409,12 +437,13 @@ static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
         plan.sums[i] = sum_cols[i];
     }
     if (!t.n) return 0;
-    uint64_t active = gpu_group_active(t, filter);
+    uint64_t active = resident_scope ? resident_active : gpu_group_active(t, filter);
     uint64_t capacity = pow2_at_least((active * 4 + 2) / 3);
     gpu_group_buffer<uint64_t> scope;
-    if (!scope.alloc(filter ? t.nw : 0) ||
-        (filter && cudaMemcpy(scope.data, filter, t.nw * sizeof *filter, cudaMemcpyHostToDevice) != cudaSuccess))
+    if (!resident_scope && (!scope.alloc(filter ? t.nw : 0) ||
+        (filter && cudaMemcpy(scope.data, filter, t.nw * sizeof *filter, cudaMemcpyHostToDevice) != cudaSuccess)))
         return -2;
+    const uint64_t *scope_data = resident_scope ? resident_scope : scope.data;
     gpu_group_buffer<unsigned char> device_winners;
     uint64_t winner_mass = 0;
     uint32_t excluded_bound = 0;
@@ -433,14 +462,34 @@ static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
         }
         if (coordinate && bits <= 17) plan.dense_bits = bits;
     }
-    if (plan.dense_bits && nkey == 1 && try_pruning && active > k) {
-        winner_mass = gpu_coordinate_winners(h, scope.data, plan.key[0], k, rank == 1, active, capacity,
+    if (dense_slots && !distinct) {
+        unsigned bits = 0;
+        for (int i = 0; i < nkey; ++i) {
+            const gpu_group_key_t &key = plan.key[i];
+            unsigned width;
+            if (key.transform == 1) width = 6;
+            else if (key.transform == 4) width = (unsigned)key.offset;
+            else if (key.transform == 0 && key.high < 0) width = (unsigned)t.width[key.low];
+            else { bits = 0; break; }
+            plan.dense_width[i] = width;
+            bits += width;
+        }
+        if (bits && bits <= 22) {
+            uint32_t domain = UINT32_C(1) << bits;
+            uint64_t state_bytes = (uint64_t)domain * (sizeof(uint32_t) + nsum * sizeof(uint64_t));
+            if (domain < capacity / 2 && state_bytes <= (UINT64_C(64) << 20))
+                plan.dense_bits = bits;
+        }
+    }
+    if (distinct && plan.dense_bits && nkey == 1 && try_pruning && active > k) {
+        winner_mass = gpu_coordinate_winners(h, scope_data, plan.key[0], k, rank == 1, active, capacity,
                                              device_winners, excluded_bound);
         if (winner_mass) {
             capacity = pow2_at_least((winner_mass * 4 + 2) / 3);
             plan.winners = device_winners.data;
         }
     }
+    if (!distinct && plan.dense_bits) capacity = 1024;  /* no hash storage */
     if (capacity > (UINT64_C(1) << 27)) return -1;
     uint32_t slots = (uint32_t)capacity;
     uint32_t group_slots = plan.dense_bits ? std::max(k, UINT32_C(1) << plan.dense_bits) : slots;
@@ -484,13 +533,15 @@ static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
         plan.sectors.words = sector_data.data;
     }
     unsigned grid = (unsigned)((t.n + 255) / 256);
-    if (distinct) {
+    if (plan.dense_bits && !distinct && !nsum) {
+        gpu_group_dense_counts<<<grid, 256>>>(h->dev, scope_data, plan, counts.data);
+    } else if (distinct) {
         gpu_group_accumulate<true><<<grid, 256>>>(
-            h->dev, scope.data, plan, slots, owners.data, counts.data, sums0.data, sums1.data,
+            h->dev, scope_data, plan, slots, owners.data, counts.data, sums0.data, sums1.data,
             pairs.data, uniques.data, invalid.data);
     } else {
         gpu_group_accumulate<false><<<grid, 256>>>(
-            h->dev, scope.data, plan, slots, owners.data, counts.data, sums0.data, sums1.data,
+            h->dev, scope_data, plan, slots, owners.data, counts.data, sums0.data, sums1.data,
             nullptr, nullptr, invalid.data);
     }
     if (cudaGetLastError() != cudaSuccess) return -2;
@@ -537,6 +588,7 @@ static int gpu_group_run_once(void *hv, const uint64_t *filter, int32_t nkey,
         ++*out_n;
     }
     if (selected_rows) *selected_rows = winner_mass;
+    if (dense_slots && plan.dense_bits) *dense_slots = group_slots;
     return 0;
 }
 static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
@@ -545,14 +597,14 @@ static int gpu_group_run(void *hv, const uint64_t *filter, int32_t nkey,
                     uint64_t *out_sums, uint32_t *out_n, const gpu_group_key_t *distinct,
                     uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
                     uint64_t projection_len, uint64_t projection_mask, uint32_t projection_width,
-                    gpu_group_sectors_t sectors, uint64_t *selected_rows) {
+                    gpu_group_sectors_t sectors, uint64_t *selected_rows, uint32_t *dense_slots = nullptr) {
     int rc = gpu_group_run_once(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
                                out_sums, out_n, distinct, rank, out_distinct, projection,
-                               projection_len, projection_mask, projection_width, sectors, selected_rows, true);
+                               projection_len, projection_mask, projection_width, sectors, selected_rows, true, dense_slots);
     if (rc != GPU_GROUP_UNCERTIFIED) return rc;
     return gpu_group_run_once(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
                               out_sums, out_n, distinct, rank, out_distinct, projection,
-                              projection_len, projection_mask, projection_width, sectors, selected_rows, false);
+                              projection_len, projection_mask, projection_width, sectors, selected_rows, false, dense_slots);
 }
 
 extern "C" int gpu_group_planes(void *hv, const uint64_t *filter, int32_t nkey,
@@ -561,6 +613,14 @@ extern "C" int gpu_group_planes(void *hv, const uint64_t *filter, int32_t nkey,
                     uint64_t *out_sums, uint32_t *out_n) {
     return gpu_group_run(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
                          out_sums, out_n, nullptr, 0, nullptr, nullptr, 0, 0, 0, {}, nullptr);
+}
+
+extern "C" int gpu_group_dense_planes(void *hv, const uint64_t *filter, int32_t nkey,
+                    const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
+                    uint32_t k, uint64_t *out_keys, uint64_t *out_counts, uint64_t *out_sums,
+                    uint32_t *out_n, uint32_t *dense_slots) {
+    return gpu_group_run(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts,
+                         out_sums, out_n, nullptr, 0, nullptr, nullptr, 0, 0, 0, {}, nullptr, dense_slots);
 }
 
 extern "C" int gpu_group_distinct_planes(void *hv, const uint64_t *filter, int32_t nkey,
@@ -585,6 +645,170 @@ extern "C" int gpu_group_distinct_sector_planes(void *hv, const uint64_t *filter
                          out_sums, out_n, distinct, rank, out_distinct, projection,
                          projection_len, projection_mask, projection_width,
                          {sectors, sector_shift, sector_bits, stride}, selected_rows);
+}
+
+struct gpu_group_collision_t {
+    unsigned long long *seen[2], *collided[2];
+    uint32_t mask;
+};
+
+DEV uint32_t gpu_collision_bin(uint64_t hash, uint32_t mask, int i) {
+    return (uint32_t)(i ? gpu_group_mix(hash ^ UINT64_C(0xe7037ed1a0b428db)) : hash) & mask;
+}
+
+__global__ void gpu_collision_mark(const gtable_t *table, const uint64_t *scope,
+                                  gpu_group_plan_t plan, gpu_group_collision_t sketch) {
+    uint64_t row = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (row >= table->n || (scope && !((scope[row >> 6] >> (row & 63)) & 1))) return;
+    uint64_t hash = gpu_group_hash(gpu_group_key(table, plan, (uint32_t)row), plan.nkey);
+    for (int i = 0; i < 2; ++i) {
+        uint32_t bin = gpu_collision_bin(hash, sketch.mask, i);
+        unsigned long long bit = 1ULL << (bin & 63);
+        if (atomicOr(sketch.seen[i] + (bin >> 6), bit) & bit)
+            atomicOr(sketch.collided[i] + (bin >> 6), bit);
+    }
+}
+
+struct gpu_collision_summary_t {
+    uint32_t ambiguous, singleton;
+    uint32_t rows[GPU_GROUP_SMALL];
+};
+
+__global__ void gpu_collision_scope(const gtable_t *table, const uint64_t *scope,
+                    gpu_group_plan_t plan, gpu_group_collision_t sketch, uint32_t k,
+                    uint32_t *ambiguous_scope, gpu_collision_summary_t *summary) {
+    uint64_t row = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned lane = threadIdx.x & 31;
+    bool live = row < table->n && (!scope || ((scope[row >> 6] >> (row & 63)) & 1));
+    bool ambiguous = false;
+    if (live) {
+        uint64_t hash = gpu_group_hash(gpu_group_key(table, plan, (uint32_t)row), plan.nkey);
+        ambiguous = true;
+        for (int i = 0; i < 2 && ambiguous; ++i) {
+            uint32_t bin = gpu_collision_bin(hash, sketch.mask, i);
+            ambiguous = (sketch.collided[i][bin >> 6] >> (bin & 63)) & 1;
+        }
+    }
+    uint32_t candidates = __ballot_sync(0xffffffffU, ambiguous);
+    uint32_t singletons = __ballot_sync(0xffffffffU, live && !ambiguous);
+    if (lane || row >= table->n) return;
+    ambiguous_scope[row >> 5] = candidates;
+    if (candidates) atomicAdd(&summary->ambiguous, (uint32_t)popc32(candidates));
+    if (singletons && atomicAdd(&summary->singleton, 0U) < k) {
+        uint32_t at = atomicAdd(&summary->singleton, (uint32_t)popc32(singletons));
+        for (; singletons && at < k; ++at) {
+            summary->rows[at] = (uint32_t)row + ctz32(singletons);
+            singletons &= singletons - 1;
+        }
+    }
+}
+
+__global__ void gpu_collision_singletons(const gtable_t *table, gpu_group_plan_t plan,
+                  const gpu_collision_summary_t *summary, unsigned start, unsigned count,
+                  gpu_group_result_t *out) {
+    unsigned at = threadIdx.x;
+    if (at >= count) return;
+    uint32_t row = summary->rows[start + at];
+    gpu_group_result_t result{};
+    result.tuple = gpu_group_key(table, plan, row);
+    result.count = 1;
+    for (int j = 0; j < plan.nsum; ++j) result.sums[j] = gpu_group_code(table, plan.sums[j], row);
+    out[at] = result;
+}
+
+/* A repeated tuple has at least two arrivals at each of its two bins, so
+ * every occurrence survives the intersection. Other candidates still use
+ * full key equality. Rows outside the intersection are proven singletons. */
+static int gpu_group_collision_try(handle_t *h, const uint64_t *filter, int32_t nkey,
+                    const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
+                    uint32_t k, uint64_t *out_keys, uint64_t *out_counts, uint64_t *out_sums,
+                    uint32_t *out_n, uint64_t *collision_rows) {
+    const gtable_t &t = h->host;
+    if (t.n > UINT32_MAX) return -1;
+    uint64_t active = gpu_group_active(t, filter);
+    if (active < 65536 || active > (UINT64_C(1) << 25)) return -1;
+    gpu_group_plan_t plan{};
+    plan.nkey = nkey;
+    plan.nsum = nsum;
+    plan.projected = -1;
+    for (int i = 0; i < nkey; ++i)
+        if (!gpu_group_prepare_key(t, keys[i], plan.key[i])) return -1;
+    for (int i = 0; i < nsum; ++i) {
+        if (!gpu_group_col(t, sum_cols[i])) return -1;
+        plan.sums[i] = sum_cols[i];
+    }
+    uint32_t bins = (uint32_t)pow2_at_least(active * 4), words = bins / 64;
+    gpu_group_buffer<unsigned long long> flags;
+    gpu_group_buffer<uint64_t> scope, candidate;
+    gpu_group_buffer<gpu_collision_summary_t> summary;
+    gpu_group_buffer<gpu_group_result_t> device_rows;
+    if (!flags.alloc((size_t)words * 4) || !flags.clear((size_t)words * 4) ||
+        !scope.alloc(filter ? t.nw : 0) || !candidate.alloc(t.nw) || !candidate.clear(t.nw) ||
+        !summary.alloc(1) || !summary.clear(1) ||
+        (filter && cudaMemcpy(scope.data, filter, t.nw * sizeof *filter, cudaMemcpyHostToDevice) != cudaSuccess))
+        return -2;
+    gpu_group_collision_t sketch = {
+        {flags.data, flags.data + words}, {flags.data + 2 * words, flags.data + 3 * words}, bins - 1
+    };
+    unsigned blocks = (unsigned)((t.n + 255) / 256);
+    gpu_collision_mark<<<blocks, 256>>>(h->dev, scope.data, plan, sketch);
+    if (cudaGetLastError() != cudaSuccess) return -2;
+    gpu_collision_scope<<<blocks, 256>>>(h->dev, scope.data, plan, sketch, k,
+                                      (uint32_t *)candidate.data, summary.data);
+    gpu_collision_summary_t sizes;
+    if (cudaGetLastError() != cudaSuccess ||
+        cudaMemcpy(&sizes, summary.data, sizeof sizes, cudaMemcpyDeviceToHost) != cudaSuccess)
+        return -2;
+    if ((uint64_t)sizes.ambiguous * 2 > active) return -1;
+
+    uint64_t staged_keys[GPU_GROUP_SMALL * GPU_GROUP_KEYS], staged_counts[GPU_GROUP_SMALL];
+    uint64_t staged_sums[GPU_GROUP_SMALL * GPU_GROUP_SUMS];
+    uint32_t found = 0;
+    if (sizes.ambiguous) {
+        int rc = gpu_group_run_once(h, nullptr, nkey, keys, nsum, sum_cols, k,
+                                   staged_keys, staged_counts, staged_sums, &found,
+                                   nullptr, 0, nullptr, nullptr, 0, 0, 0, {}, nullptr, false,
+                                   nullptr, candidate.data, sizes.ambiguous);
+        if (rc) return rc;
+    }
+    unsigned singles = std::min(k - found, sizes.singleton);
+    if (singles) {
+        if (!device_rows.alloc(singles)) return -2;
+        gpu_collision_singletons<<<1, GPU_GROUP_SMALL>>>(h->dev, plan, summary.data, 0, singles, device_rows.data);
+        gpu_group_result_t host[GPU_GROUP_SMALL];
+        if (cudaGetLastError() != cudaSuccess ||
+            cudaMemcpy(host, device_rows.data, singles * sizeof *host, cudaMemcpyDeviceToHost) != cudaSuccess)
+            return -2;
+        for (unsigned i = 0; i < singles; ++i) {
+            unsigned j = found + i;
+            for (int c = 0; c < nkey; ++c) staged_keys[j * nkey + c] = host[i].tuple.key[c];
+            for (int m = 0; m < nsum; ++m) staged_sums[j * nsum + m] = host[i].sums[m];
+            staged_counts[j] = 1;
+        }
+    }
+    found += singles;
+    memcpy(out_keys, staged_keys, found * nkey * sizeof *out_keys);
+    memcpy(out_counts, staged_counts, found * sizeof *out_counts);
+    if (nsum) memcpy(out_sums, staged_sums, found * nsum * sizeof *out_sums);
+    *out_n = found;
+    *collision_rows = sizes.ambiguous;
+    return 0;
+}
+
+/* Opt-in experiment. UINT64_MAX reports that the ordinary path was used. */
+extern "C" int gpu_group_collision_planes(void *hv, const uint64_t *filter, int32_t nkey,
+                    const gpu_group_key_t *keys, int32_t nsum, const int32_t *sum_cols,
+                    uint32_t k, uint64_t *out_keys, uint64_t *out_counts, uint64_t *out_sums,
+                    uint32_t *out_n, uint64_t *collision_rows) {
+    if (!collision_rows) return -1;
+    *collision_rows = UINT64_MAX;
+    if (hv && nkey >= 1 && nkey <= GPU_GROUP_KEYS && keys && nsum >= 0 && nsum <= GPU_GROUP_SUMS &&
+        (!nsum || (sum_cols && out_sums)) && k && k <= GPU_GROUP_SMALL && out_keys && out_counts && out_n) {
+        int rc = gpu_group_collision_try((handle_t *)hv, filter, nkey, keys, nsum, sum_cols, k,
+                                         out_keys, out_counts, out_sums, out_n, collision_rows);
+        if (!rc) return 0;
+    }
+    return gpu_group_planes(hv, filter, nkey, keys, nsum, sum_cols, k, out_keys, out_counts, out_sums, out_n);
 }
 
 __global__ void gpu_distinct_bits(const gtable_t *table, const uint64_t *scope,

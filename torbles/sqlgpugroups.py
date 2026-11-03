@@ -3,6 +3,7 @@
 """Bounded CUDA reductions over the fact's resident encoded planes."""
 
 import ctypes as C
+import os
 
 import numpy as np
 
@@ -21,7 +22,20 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
 
     library = algq.gpu_lib()
     extra = distinct is not None or projection is not None
-    name = "gpu_group_distinct_planes" if extra else "gpu_group_planes"
+    automatic = not extra and os.environ.get("TORBLES_INTERCHANGES", "auto") != "0"
+    # A wide leading coordinate with additional key fields and measures is
+    # where certifying singleton groups can avoid substantial hash state.
+    collision = (automatic and measures and len(keys) > 1 and keys[0][1] is not None
+                 and keys[0][3] == 0 and limit <= 16 and fact.n >= 1 << 17
+                 and hasattr(library, "gpu_group_collision_planes"))
+    dense = automatic and not collision and hasattr(library, "gpu_group_dense_planes")
+    name = "gpu_group_planes"
+    if extra:
+        name = "gpu_group_distinct_planes"
+    elif collision:
+        name = "gpu_group_collision_planes"
+    elif dense:
+        name = "gpu_group_dense_planes"
     if (interchange is not None or rank_switch) and hasattr(library, "gpu_group_distinct_sector_planes"):
         name = "gpu_group_distinct_sector_planes"
     else:
@@ -36,6 +50,10 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
         C.c_int32, algq.vp, C.c_uint32, algq.vp, algq.vp, algq.vp, C.POINTER(C.c_uint32),
     ]
 
+    if dense:
+        run.argtypes += [C.POINTER(C.c_uint32)]
+    if collision:
+        run.argtypes += [C.POINTER(C.c_uint64)]
     if extra:
         run.argtypes += [C.POINTER(algq._PlaneGroupKey), C.c_uint32, algq.vp, algq.vp, C.c_uint64,
                          C.c_uint64, C.c_uint32]
@@ -54,7 +72,8 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
     codes = np.empty((limit, len(keys)), np.uint64)
     counts = np.empty(limit, np.uint64)
     sums = np.empty((limit, len(measures)), np.uint64) if measures else None
-    nout, selected = C.c_uint32(), C.c_uint64()
+    nout, selected, dense_slots = C.c_uint32(), C.c_uint64(), C.c_uint32()
+    collision_rows = C.c_uint64()
     uniques = np.empty(limit, np.uint64) if distinct is not None else None
     lookup = None
     mask = width = 0
@@ -69,6 +88,10 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
         args = (handle, None if bitmap is None else bitmap.ctypes.data,
                 len(keys), specs, len(measures), columns if measures else None, limit,
                 codes.ctypes.data, counts.ctypes.data, None if sums is None else sums.ctypes.data, nout)
+        if dense:
+            args += (C.byref(dense_slots),)
+        if collision:
+            args += (C.byref(collision_rows),)
         if extra:
             args += (None if unique_spec is None else C.byref(unique_spec), rank,
                      None if uniques is None else uniques.ctypes.data,
@@ -81,6 +104,10 @@ def _group(fact, keys, measures, limit, bitmap, stats, distinct=None, rank=0, pr
         rc = run(*args)
     if rc:
         return None
+    if collision and collision_rows.value != (1 << 64) - 1:
+        stats["cuda_interchange_collision_rows"] = collision_rows.value
+    if dense_slots.value:
+        stats["cuda_interchange_dense_slots"] = dense_slots.value
     if rank_switch and distinct is not None:
         widths = [offset if transform == 4 else fact.width(low)
                   for low, _, _, transform, offset in keys]

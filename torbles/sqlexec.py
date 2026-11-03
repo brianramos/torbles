@@ -4450,8 +4450,16 @@ class _Planner:
         if bitmap is None:
             return None
         specs = [key[:-1] for key in keys]
-        result = (sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
-                  if cx.engine == "gpu" else fact._plane_group(specs, measures, lim + off, bitmap))
+        if cx.engine == "gpu":
+            result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+        else:
+            result = None
+            if not measures:
+                from torbles import sqlcpuinterchanges
+                if sqlcpuinterchanges.enabled():
+                    result = sqlcpuinterchanges.count_topk(fact, specs, lim + off, bitmap, cx.stats)
+            if result is None:
+                result = fact._plane_group(specs, measures, lim + off, bitmap)
         if result is None:
             return None
         codes, counts, sums = result
