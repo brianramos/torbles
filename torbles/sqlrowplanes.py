@@ -14,14 +14,15 @@ import sqltypes as T
 _MAX_KEYS = 12
 _MAX_ROWS = 1024
 _topk = getattr(algq.lib, "at_plane_topk", None)
-if _topk is not None:
-    _topk.restype = ctypes.c_int
-    _topk.argtypes = [
+_TOPK_ARGS = [
         ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int32,
         ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
         ctypes.c_uint32, ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint32),
         ctypes.POINTER(ctypes.c_uint64),
     ]
+if _topk is not None:
+    _topk.restype = ctypes.c_int
+    _topk.argtypes = _TOPK_ARGS
 
 
 def _ordered_columns(planner, fact, col):
@@ -45,7 +46,7 @@ def bounded_ids(planner, preds):
     """Return ordered, post-OFFSET row IDs and qualifying row count, or None."""
     s, cx = planner.s, planner.cx
     fact = planner.tab[planner.fact]
-    if (_topk is None or cx.engine != "alg" or s.from_ is not planner.fact
+    if (cx.engine not in ("alg", "gpu") or s.from_ is not planner.fact
             or planner.left or planner.fact_sample is not None or s.sample is not None
             or s.aggregate or s.distinct or s.distinct_on is not None or s.qualify is not None
             or s.percent or s.with_ties or not s.order
@@ -70,28 +71,42 @@ def bounded_ids(planner, preds):
         desc.extend([bool(descending)] * len(physical))
     if len(keys) > _MAX_KEYS:
         return None
+    native = getattr(algq.gpu_lib(), "gpu_topk_bitmap", None) if cx.engine == "gpu" else _topk
+    if native is None:
+        return None
     flags = [flag for key in keys if (flag := fact._part_of(key)._vflag_of(key)) is not None]
     source = fact if fact.parts is None else fact.view(tuple(dict.fromkeys(keys + flags)))
-    bitmap = fact.used_bm
-    if preds or planner.joins:
-        query = algq.Query(fact, join_mode="auto")
-        for b, fk in planner.joins.items():
-            query.join(planner.tab[b], fk)
-        for pred in preds:
-            query.where(pred)
-        query._rows = query._rowbits = True
-        try:
-            bitmap = query._run_codes("alg") & bitmap
-        except (TypeError, ValueError, OverflowError):
-            return None
-        cx.stats["engine_queries"] += 1
+    from . import sqlgroupplans
+    bitmap = sqlgroupplans.bitmap(planner, preds)
+    if bitmap is None:
+        return None
 
     count, inputs = ctypes.c_uint32(), ctypes.c_uint64()
     out = np.empty(lim + off, np.uint64)
     cols = (ctypes.c_int32 * len(keys))(*(source.idx(key) for key in keys))
     directions = (ctypes.c_int32 * len(keys))(*desc)
-    rc = _topk(source.at, bitmap.ctypes.data, len(keys), cols, directions,
-               len(out), out.ctypes.data, count, inputs)
+    if cx.engine == "gpu":
+        native.restype = ctypes.c_int
+        native.argtypes = [*_TOPK_ARGS, ctypes.POINTER(ctypes.c_double)]
+        ms = ctypes.c_double()
+        with algq._GPU_LOCK:
+            try:
+                handle = source.gpu_handle()
+            except RuntimeError:
+                return None
+            rc = native(handle, bitmap.ctypes.data, len(keys), cols, directions,
+                        len(out), out.ctypes.data, count, inputs, ms)
+        if not rc:
+            ids = out[:count.value]
+            order = [ids]
+            for name, descending in reversed(list(zip(keys, desc))):
+                codes = fact.get_rows(name, ids)
+                order.append(~codes if descending else codes)
+            out = ids[np.lexsort(tuple(order))]
+            cx.stats["cuda_raw_topk_rows"] = count.value
+    else:
+        rc = native(source.at, bitmap.ctypes.data, len(keys), cols, directions,
+                    len(out), out.ctypes.data, count, inputs)
     if rc:
         return None
     cx.stats["engine_queries"] += 1

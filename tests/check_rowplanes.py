@@ -53,6 +53,13 @@ class RawPlaneTopKChecks(unittest.TestCase):
             "ORDER BY stamp DESC, phrase ASC, id DESC LIMIT 21 OFFSET 17"
         )
         self.assertGreater(result.stats.get("raw_plane_topk_rows", 0), 21)
+        if hasattr(torbles.algq.gpu_lib(), "gpu_topk_bitmap"):
+            gpu = self.db.sql(
+                "SELECT * FROM hits WHERE c33 BETWEEN 20 AND 85 AND phrase <> '' "
+                "ORDER BY stamp DESC, phrase ASC, id DESC LIMIT 21 OFFSET 17", engine="gpu"
+            )
+            self.assertIn("cuda_raw_topk_rows", gpu.stats)
+            self.assertEqual(gpu.rows, result.rows)
 
     def test_mixed_directions_and_repeated_keys(self):
         result = self.check_query(

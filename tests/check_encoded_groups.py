@@ -72,6 +72,11 @@ class EncodedGroupsChecks(unittest.TestCase):
         self.assertEqual(actual.stats.get("encoded_group_groups"), 4)
         self.assertEqual([n for _, n in actual.rows], sorted(oracle.values(), reverse=True)[:4])
         self.assertTrue(all(oracle[k] == n for k, n in actual.rows))
+        if hasattr(torbles.algq.gpu_lib(), "gpu_group_distinct_planes"):
+            gpu = db.sql(select + " ORDER BY c DESC LIMIT 4", engine="gpu")
+            self.assertIn("cuda_encoded_group_distinct", gpu.stats)
+            self.assertEqual([n for _, n in gpu.rows], sorted(oracle.values(), reverse=True)[:4])
+            self.assertTrue(all(oracle[k] == n for k, n in gpu.rows))
 
     def test_unordered_limit_and_nullable_fallback(self):
         select = "SELECT uid, phrase, COUNT(*) FROM t GROUP BY uid, phrase"

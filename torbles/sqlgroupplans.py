@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Bounded reductions over one fact's encoded keys."""
 
+import ctypes as C
+
 import numpy as np
 
 import algq
@@ -49,7 +51,9 @@ def bitmap(planner, preds):
         query.where(pred)
     query._rows = query._rowbits = True
     try:
-        result = query._run_codes("alg") & fact.used_bm
+        result = query._run_codes(planner.cx.engine) & fact.used_bm
+        if planner.cx.engine == "gpu" and query.device == "gpu":
+            planner.cx.stats["cuda_scope_bitmaps"] = planner.cx.stats.get("cuda_scope_bitmaps", 0) + 1
     except (TypeError, ValueError, OverflowError):
         return None
     planner.cx.stats["engine_queries"] += 1
@@ -91,9 +95,9 @@ def _plain_count(agg):
     return agg.name == "count_star" and not agg.distinct and agg.filter is None and not agg.order
 
 
-def _basic(planner, aggs):
+def _basic(planner, aggs, engines=("alg",)):
     s = planner.s
-    return (single_fact(planner) and planner.cx.engine == "alg" and s.aggregate
+    return (single_fact(planner) and planner.cx.engine in engines and s.aggregate
             and s.sets is None and s.having is None and s.qualify is None
             and not s.distinct and s.distinct_on is None and not s.percent and not s.with_ties
             and all(expr.key() in aggs or any(expr.key() == g.key() for g in s.group)
@@ -121,14 +125,41 @@ def _rank_packed_counts(planner, scope, specs, aggs, limit, offset):
     query._raw = True
     query._xrows = (scope, 1)
     try:
-        codes, _, counts = query.group_by(*(algq.Col(fact, spec[0]) for spec in specs)).count()._run_codes("alg")
+        codes, _, counts = query.group_by(*(algq.Col(fact, spec[0]) for spec in specs)).count()._run_codes(planner.cx.engine)
     except (TypeError, ValueError, OverflowError):
         return None
+    if planner.cx.engine == "gpu" and query.device == "gpu":
+        planner.cx.stats["cuda_packed_offset"] = len(counts)
     keep = np.argsort(-counts, kind="stable")[offset:offset + limit]
     decoded = [spec[-1](codes[keep, i]) for i, spec in enumerate(specs)]
     planner.cx.stats["engine_queries"] += 1
     return _count_relation(planner, aggs, list(zip(counts[keep].tolist(), zip(*decoded))),
                            "plane_group_packed_offset")
+
+
+def _gpu_minute(fact, spec, scope, offset, limit):
+    fn = getattr(algq.gpu_lib(), "gpu_epoch_minute_histogram", None)
+    if fn is None:
+        return None
+    low, high, shift, transform, base, decode = spec
+    minute = 60_000_000
+    domain = (fact.maxcode(low) + base % minute) // minute + 1
+    if domain > 1 << 20:
+        return None
+    source = algq._plan_table(fact)
+    key = algq._PlaneGroupKey(source.idx(low), -1 if high is None else source.idx(high), shift, transform, base)
+    counts = np.empty(domain, np.uint32)
+    fn.restype = C.c_int
+    fn.argtypes = [algq.vp, algq.vp, C.POINTER(algq._PlaneGroupKey), C.c_uint32, algq.vp]
+    with algq._GPU_LOCK:
+        try:
+            handle = algq._run_on(source).gpu_handle()
+        except RuntimeError:
+            return None
+        if fn(handle, scope.ctypes.data, key, domain, counts.ctypes.data):
+            return None
+    keys = np.flatnonzero(counts)[offset:offset + limit]
+    return list(zip(counts[keys].tolist(), zip(decode(keys))))
 
 
 def special_count(planner, preds, aggs):
@@ -137,10 +168,11 @@ def special_count(planner, preds, aggs):
 
     s = planner.s
     limit_offset = bounds(s)
-    if (not limit_offset or not _basic(planner, aggs) or not s.group
+    if (not limit_offset or not _basic(planner, aggs, ("alg", "gpu")) or not s.group
             or not aggs or not all(map(_plain_count, aggs.values()))):
         return None
     limit, offset = limit_offset
+    gpu = planner.cx.engine == "gpu"
     fact = planner.tab[planner.fact]
     descriptors = [plane_group_key(expr, planner.fact, fact) for expr in s.group]
     if offset and count_order(s) and all(isinstance(expr, I.Col) for expr in s.group):
@@ -158,6 +190,8 @@ def special_count(planner, preds, aggs):
                 ranked = _rank_packed_counts(planner, scope, descriptors, aggs, limit, offset)
                 if ranked is not None:
                     return ranked
+            if gpu:
+                return None
             ids = np.flatnonzero(np.unpackbits(scope.view(np.uint8), bitorder="little")[:fact.n])
             atoms = {expr.key(): expr for expr in s.group}
             source = planner.rows_rel(atoms, [], False, ids=ids.astype(np.uint64))
@@ -177,6 +211,13 @@ def special_count(planner, preds, aggs):
         if scope is None:
             return None
         spec = descriptors[0]
+        if gpu:
+            rows = _gpu_minute(fact, spec, scope, offset, limit)
+            if rows is None:
+                return None
+            planner.cx.stats["engine_queries"] += 1
+            planner.cx.stats["cuda_minute_groups"] = len(rows)
+            return _count_relation(planner, aggs, rows, "plane_group_ordered_bucket")
         result = encoded_groups(fact, [spec[:-1]], [], limit + offset, scope, rank=BY_KEY)
         if result is None:
             return None
@@ -214,7 +255,12 @@ def special_count(planner, preds, aggs):
         physical = [spec for spec in specs if spec is not None]
         if not physical:
             return None
-        result = fact._plane_group([spec[:-1] for spec in physical], [], limit + offset, mask)
+        keys = [spec[:-1] for spec in physical]
+        if gpu:
+            from . import sqlgpugroups
+            result = sqlgpugroups.group(fact, keys, [], limit + offset, mask, planner.cx.stats)
+        else:
+            result = fact._plane_group(keys, [], limit + offset, mask)
         if result is None:
             return None
         codes, counts, _ = result
@@ -246,7 +292,7 @@ def late_count(planner, preds, aggs):
 
     s = planner.s
     limit_offset = bounds(s)
-    if (not limit_offset or sum(limit_offset) > 1024 or not _basic(planner, aggs)
+    if (not limit_offset or sum(limit_offset) > 1024 or not _basic(planner, aggs, ("alg", "gpu"))
             or not count_order(s) or len(s.group) != 1):
         return None
     order, _ = order_expr(s)
@@ -282,7 +328,12 @@ def late_count(planner, preds, aggs):
     if scope is None:
         return None
     limit, offset = limit_offset
-    result = fact._plane_group([key[:-1]], [], limit + offset, scope)
+    if planner.cx.engine == "gpu":
+        from . import sqlgpugroups
+
+        result = sqlgpugroups.group(fact, [key[:-1]], [], limit + offset, scope, planner.cx.stats)
+    else:
+        result = fact._plane_group([key[:-1]], [], limit + offset, scope)
     if result is None:
         return None
     codes, counts, _ = result

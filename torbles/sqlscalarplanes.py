@@ -18,12 +18,21 @@ if _moments is not None:
                          C.POINTER(C.c_uint64)]
 
 
+def _gpu_moments():
+    fn = getattr(algq.gpu_lib(), "gpu_scalar_plane_moments", None)
+    if fn is not None:
+        fn.restype = C.c_int
+        fn.argtypes = [algq.vp, algq.vp, C.c_int32, C.POINTER(algq._PlaneGroupKey),
+                       C.POINTER(C.c_uint64), C.POINTER(C.c_double)]
+    return fn
+
+
 def run(planner, preds, aggs):
     from . import sqlexec as E
 
     s, cx = planner.s, planner.cx
     fact = planner.tab[planner.fact]
-    if (_moments is None or not sqlgroupplans.single_fact(planner) or cx.engine != "alg"
+    if (not sqlgroupplans.single_fact(planner) or cx.engine not in ("alg", "gpu")
             or not E.ALG_MIN_ROWS <= fact.n < 1 << 32 or not s.aggregate or s.group or s.sets is not None
             or s.having is not None or s.order or s.limit is not None or s.offset is not None
             or s.qualify is not None or s.distinct or not aggs
@@ -64,14 +73,28 @@ def run(planner, preds, aggs):
                 return None
             columns[low] = algq._PlaneGroupKey(source.idx(low), source.idx(high) if high else -1, shift, 0, 0)
         plans[key] = (agg.name, list(columns).index(low), offset)
-    if not columns:
+    if not columns and (cx.engine != "gpu" or not (preds or planner.joins)):
+        return None
+    native = _gpu_moments() if cx.engine == "gpu" else _moments
+    if native is None:
         return None
     scope = sqlgroupplans.bitmap(planner, preds)
     if scope is None:
         return None
     specs = (algq._PlaneGroupKey * len(columns))(*columns.values())
     out = (C.c_uint64 * 5)()
-    if _moments(algq._run_on(source).at, scope.ctypes.data, len(columns), specs, out):
+    view = algq._run_on(source)
+    if cx.engine == "gpu":
+        ms = C.c_double()
+        with algq._GPU_LOCK:
+            try:
+                handle = view.gpu_handle()
+            except RuntimeError:
+                return None
+            if native(handle, scope.ctypes.data, len(columns), specs, out, ms):
+                return None
+        cx.stats["cuda_scalar_moments"] = len(columns)
+    elif native(view.at, scope.ctypes.data, len(columns), specs, out):
         return None
     count = out[0]
     rel = E.Rel(1)
@@ -104,7 +127,7 @@ def point_ids(planner):
     s = planner.s
     fact = planner.tab[planner.fact]
     term = s.where
-    if (_find_equal is None or planner.cx.engine != "alg" or not sqlgroupplans.single_fact(planner)
+    if (planner.cx.engine not in ("alg", "gpu") or not sqlgroupplans.single_fact(planner)
             or planner.joins or s.aggregate or s.order or s.limit is not None or s.offset is not None
             or s.qualify is not None or s.distinct or not isinstance(term, I.Func)
             or term.fn != "=" or len(term.args) != 2
@@ -129,8 +152,25 @@ def point_ids(planner):
     key = algq._PlaneGroupKey(source.idx(low), source.idx(high), shift, 0, 0)
     ids = np.empty(256, np.uint64)
     count = C.c_uint32()
-    if _find_equal(algq._run_on(source).at, fact.used_bm.ctypes.data, key, code,
-                   len(ids), ids.ctypes.data, count):
+    view = algq._run_on(source)
+    if planner.cx.engine == "gpu":
+        native = getattr(algq.gpu_lib(), "gpu_plane_equal_ids", None)
+        if native is None:
+            return None
+        native.restype = C.c_int
+        native.argtypes = [algq.vp, algq.vp, C.POINTER(algq._PlaneGroupKey), C.c_uint64,
+                           algq.vp, C.POINTER(C.c_uint32)]
+        with algq._GPU_LOCK:
+            try:
+                handle = view.gpu_handle()
+            except RuntimeError:
+                return None
+            if native(handle, fact.used_bm.ctypes.data, key, code, ids.ctypes.data, count):
+                return None
+        ids[:count.value].sort()
+        planner.cx.stats["cuda_plane_point_lookup"] = count.value
+    elif _find_equal is None or _find_equal(view.at, fact.used_bm.ctypes.data, key, code,
+                                           len(ids), ids.ctypes.data, count):
         return None
     planner.cx.stats["engine_queries"] += 1
     planner.cx.stats["raw_plane_point_lookup"] = count.value

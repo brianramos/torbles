@@ -40,7 +40,7 @@ def run(executor, preds, aggs):
 
     s, cx, binding = executor.s, executor.cx, executor.fact
     fact = executor.tab[binding]
-    if (not COLUMNAR or not VEC_GROUPS or cx.engine != "alg" or not single_fact(executor)
+    if (not COLUMNAR or not VEC_GROUPS or cx.engine not in ("alg", "gpu") or not single_fact(executor)
             or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or len(s.group) > 3
             or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
             or s.percent or s.with_ties or len(s.order) > 1):
@@ -126,11 +126,36 @@ def run(executor, preds, aggs):
             else:
                 return None
 
+    gpu = cx.engine == "gpu"
+    if gpu and keys and rank != BY_UNORDERED and (
+        (distinct is None and projection is None) or rank not in (BY_COUNT, BY_DISTINCT)
+    ):
+        return None
     scope = bitmap(executor, preds)
     if scope is None:
         return None
-    result = encoded_groups(fact, [key[:-1] for key in keys], measures, cap, scope,
-                            distinct=distinct, rank=rank, projection=projection)
+    if gpu:
+        from torbles import sqlgpugroups
+
+        if not keys:
+            unique = sqlgpugroups.distinct(fact, distinct, scope, cx.stats)
+            if unique is None:
+                return None
+            rel = Rel(1)
+            for key in plans:
+                rel.cols[key] = [unique]
+            rel.plane_ordered = True
+            cx.stats["engine_queries"] += 1
+            return rel
+        if distinct is not None or projection is not None:
+            result = sqlgpugroups.group_distinct(fact, [key[:-1] for key in keys], measures, cap, scope, cx.stats,
+                                                 distinct=distinct, rank=rank, projection=projection)
+        else:
+            grouped = sqlgpugroups.group(fact, [key[:-1] for key in keys], [], cap, scope, cx.stats)
+            result = None if grouped is None else (*grouped, None)
+    else:
+        result = encoded_groups(fact, [key[:-1] for key in keys], measures, cap, scope,
+                                distinct=distinct, rank=rank, projection=projection)
     if result is None:
         return None
     codes, counts, sums, uniques = result

@@ -2578,7 +2578,7 @@ class Query:
         M = None
         for g in _term_groups(fact, mine):
             q = Query(fact, self.join_mode); q.pred = _and_all(g); q._rows = q._rowbits = q._split = True
-            bm = q._run_codes("plain" if engine == "plain" else "alg")[:nw]
+            bm = q._run_codes(engine)[:nw]
             M = bm.copy() if M is None else (M & bm)
         xr = getattr(self, "_xrows", None)
         if xr is not None: M &= xr[0][:nw] if xr[1] == 1 else ~xr[0][:nw]
@@ -2850,7 +2850,24 @@ class Query:
                 return np.sort(ids[:count.value])
             out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
             plan.nattr = 0
-            self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan
+            table = _run_on(fv)
+            ran = False
+            if self._dev == "gpu":
+                native = getattr(gpu_lib(), "gpu_rows_bitmap", None)
+                if native is not None:
+                    native.restype = ctypes.c_int
+                    native.argtypes = [vp, ctypes.POINTER(QPlan)]
+                    with _GPU_LOCK:
+                        try:
+                            handle = table.gpu_handle()
+                        except RuntimeError:
+                            handle = None
+                        if handle and native(handle, ctypes.byref(plan)) == 0:
+                            self.device = "gpu"
+                            ran = True
+            if not ran:
+                self._exec("plain" if engine == "plain" else "cpu", table, plan)
+            self.last_plan = plan
             if getattr(self, "_rowbits", False): return out_rows
             if len(out_rows) >= 512:
                 live = np.flatnonzero(out_rows)

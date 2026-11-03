@@ -175,7 +175,7 @@ def _shape(query):
     return (table.name, axis, regions), projections, basis
 
 
-def _read_state(db, query, columns):
+def _read_state(db, query, columns, engine):
     """Execute the basis through the existing packed scalar-moments path."""
     source = query.from_
     columns = sorted(columns)
@@ -185,7 +185,7 @@ def _read_state(db, query, columns):
         scan = copy(query)
         scan.items = [(I.Agg("count_star", [], T.BIGINT), "__rows")]
         scan.items += [(I.Agg("sum", [source.col(col)], T.HUGEINT), col) for col in chunk]
-        n, *values = E.run(db, scan).rows[0]
+        n, *values = E.run(db, scan, engine).rows[0]
         count = n
         sums.update((col, int(value) if value is not None else 0) for col, value in zip(chunk, values))
     return count, sums
@@ -276,7 +276,10 @@ def _json(value):
 class Catalog:
     """Reusable recipes and exact aggregate bases tied to a verified source."""
 
-    def __init__(self):
+    def __init__(self, engine="alg"):
+        if engine not in ("alg", "gpu"):
+            raise ValueError("algebra catalog engine must be 'alg' or 'gpu'")
+        self.engine = engine
         self._lock = RLock()
         self._snapshot = None
         self._recipes = []
@@ -296,7 +299,7 @@ class Catalog:
             if got is not None:
                 states[key] = got[0]
                 continue
-            count, sums = _read_state(db, query, missing)
+            count, sums = _read_state(db, query, missing, self.engine)
             states[key] = (count, {**(old[1] if old else {}), **sums})
 
     def learn(self, db, sql):
@@ -342,7 +345,7 @@ class Catalog:
                     try:
                         self.refresh(db)
                     except T.SqlError:
-                        return E.run(db, query)
+                        return E.run(db, query, self.engine)
                 if snapshot is not None and snapshot == self._snapshot:
                     key, projections, columns = plan
                     got = _derived(self._states, key, columns)
@@ -362,7 +365,7 @@ class Catalog:
                                 else:
                                     lo, hi = T.INT_RANGE[agg.t.id]
                                     if not lo <= total <= hi:
-                                        return E.run(db, query)
+                                        return E.run(db, query, self.engine)
                                     value = total
                             rel.cols[agg.key()] = [value]
                         cx = E.Cx(db)
@@ -373,7 +376,7 @@ class Catalog:
                                                 [expr.t for expr, _ in query.items], [tuple(values)])
                             result.stats = dict(cx.stats, algebra_derivation=reason)
                             return result
-            return E.run(db, query)
+            return E.run(db, query, self.engine)
 
     def save(self, path):
         """Atomically replace a checksum-protected catalog file."""
@@ -381,7 +384,8 @@ class Catalog:
         with self._lock:
             states = [[table, axis, regions, count, sums]
                       for (table, axis, regions), (count, sums) in self._states.items()]
-            record = {"version": 1, "snapshot": self._snapshot, "recipes": self._recipes, "states": states}
+            record = {"version": 1, "engine": self.engine, "snapshot": self._snapshot,
+                      "recipes": self._recipes, "states": states}
             data = _json({"sha256": sha256(_json(record)).hexdigest(), "catalog": record})
         if len(data) > _MAX_FILE:
             raise ValueError("algebra catalog exceeds the format size limit")
@@ -413,7 +417,7 @@ class Catalog:
             if ((snapshot is not None and not isinstance(snapshot, str)) or not isinstance(recipes, list)
                     or any(not isinstance(recipe, str) for recipe in recipes)):
                 raise ValueError("invalid catalog metadata")
-            result = cls()
+            result = cls(record.get("engine", "alg"))
             result._snapshot, result._recipes = snapshot, recipes
             for table, axis, regions, count, sums in record["states"]:
                 regions = tuple(tuple(region) for region in regions)

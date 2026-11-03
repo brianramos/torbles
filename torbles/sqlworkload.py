@@ -98,7 +98,7 @@ def run(db, sql, engine):
     queries = _bind_reads(db, sql)
     results = [None] * len(queries)
     families, bindings = {}, {}
-    if engine == "alg" and not db._writable:
+    if engine in ("alg", "gpu") and not db._writable:
         for index, query in enumerate(queries):
             family = _family(query, bindings)
             if family is None:

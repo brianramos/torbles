@@ -203,9 +203,9 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
     """Derive candidate group masks, then contract projected lengths over them."""
     from . import sqlexec as E, sqlgroupplans as P, sqltexthist
 
-    fact = planner.tab[planner.fact]
+    cx, fact = planner.cx, planner.tab[planner.fact]
     name, codec = source
-    if (_lookup_sums is None or key is None or key[1] is not None or having is None
+    if ((cx.engine == "alg" and _lookup_sums is None) or key is None or key[1] is not None or having is None
             or name in table.nullable or any(a.name == "min" for a in aggs.values())):
         return None
     comparison, boundary = having
@@ -224,11 +224,13 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
     cap = fact.n // boundary
     histogram = None
     if cap and fact.maxcode(key[0]) + 1 <= min(1 << 18, fact.n // 4):
-        histogram = sqltexthist.code_counts(fact, key[0], scope)
+        histogram = sqltexthist.code_counts(fact, key[0], scope, cx)
     if histogram is not None:
         codes = np.flatnonzero(histogram >= boundary).astype(np.uint32)
         counts = histogram[codes]
     elif cap:
+        if cx.engine == "gpu":
+            return None
         states = fact._plane_group([key[:-1]], [], cap, scope)
         if states is None:
             return None
@@ -264,9 +266,13 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
         view = algq._plan_table(fact)
         key_idx, value_idx = view.idx(key[0]), view.idx(value)
         mask = fact.kmask(fk) if fk is not None else 0
-        if _lookup_sums(algq._run_on(view).at, scope.ctypes.data, key_idx, value_idx,
-                        mask or (1 << 32) - 1, lookup.ctypes.data, len(lookup),
-                        codes.ctypes.data, len(codes), sums.ctypes.data):
+        target = algq._run_on(view)
+        mask = mask or (1 << 32) - 1
+        if cx.engine == "gpu":
+            if not sqltexthist.lookup_sums(cx, target, scope, key_idx, value_idx, mask, lookup, codes, sums):
+                return None
+        elif _lookup_sums(target.at, scope.ctypes.data, key_idx, value_idx, mask,
+                          lookup.ctypes.data, len(lookup), codes.ctypes.data, len(codes), sums.ctypes.data):
             return None
     result = E.Rel(len(codes))
     result.grouped = True
@@ -288,7 +294,7 @@ def project_group(planner, preds, aggs):
     from . import sqlexec as E
 
     s, cx, fact = planner.s, planner.cx, planner.tab[planner.fact]
-    if (not E.COLUMNAR or not E.VEC_GROUPS or cx.engine != "alg" or s.from_ is not planner.fact
+    if (not E.COLUMNAR or not E.VEC_GROUPS or cx.engine not in ("alg", "gpu") or s.from_ is not planner.fact
             or planner.left or planner.fact_sample is not None or s.sample is not None
             or not E.ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or len(s.group) != 1
             or s.qualify is not None or s.distinct or s.distinct_on is not None
@@ -343,6 +349,8 @@ def project_group(planner, preds, aggs):
     contracted = _contract_length(planner, preds, aggs, group, key, source, table, fk, length, having)
     if contracted is not None:
         return contracted
+    if cx.engine == "gpu":
+        return None
     try:
         selected = _rows(fact, preds, joins)
     except (TypeError, ValueError, OverflowError):

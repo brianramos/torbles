@@ -4371,7 +4371,7 @@ class _Planner:
 
         s, cx, fact = self.s, self.cx, self.tab[self.fact]
         if (algq._plane_group_topk is None or not COLUMNAR or not VEC_GROUPS
-                or cx.engine != "alg" or not sqlgroupplans.single_fact(self)
+                or cx.engine not in ("alg", "gpu") or not sqlgroupplans.single_fact(self)
                 or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 5
                 or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
                 or s.percent or s.with_ties or len(s.order) != 1):
@@ -4441,10 +4441,17 @@ class _Planner:
                 measures.append(name)
             plans[key] = (agg.name, measures.index(name), offset)
 
+        if cx.engine == "gpu":
+            from torbles import sqlgpugroups
+
+            if lim + off > sqlgpugroups.LIMIT:
+                return None
         bitmap = sqlgroupplans.bitmap(self, preds)
         if bitmap is None:
             return None
-        result = fact._plane_group([key[:-1] for key in keys], measures, lim + off, bitmap)
+        specs = [key[:-1] for key in keys]
+        result = (sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+                  if cx.engine == "gpu" else fact._plane_group(specs, measures, lim + off, bitmap))
         if result is None:
             return None
         codes, counts, sums = result

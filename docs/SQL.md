@@ -59,7 +59,8 @@ those moments into affine sums and averages, or combine saved scopes using inter
 nonnullable integer filter column. Queries outside the basis run through the ordinary SQL executor.
 The catalog checks source identity before reuse. After a change, its first eligible query refreshes the learned
 bases, or the caller can run `algebra.refresh(db)` explicitly. Use `refresh=False` to execute against current data
-without refreshing a stale catalog. Checkpoint reuse after reopening requires a validated, matching saved snapshot.
+without refreshing a stale catalog. Checkpoint reuse after reopening requires a validated, matching saved snapshot. A catalog created with
+Catalog(engine="gpu") requests CUDA for learning and refresh. Queries answered from saved bases finalize on the host.
 
 ## How a query runs
 

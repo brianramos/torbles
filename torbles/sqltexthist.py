@@ -16,16 +16,47 @@ if _code_histogram is not None:
     _code_histogram.argtypes = [algq.vp, algq.vp, C.c_int32, C.c_uint32, algq.vp]
 
 
-def code_counts(fact, column, scope):
+def _cuda_call(cx, table, name, args, types, stat):
+    try:
+        fn = getattr(algq.gpu_lib(), name, None)
+        if fn is None:
+            return False
+        fn.restype = C.c_int
+        fn.argtypes = [algq.vp, *types, C.POINTER(C.c_double)]
+        elapsed = C.c_double()
+        handle = table.gpu_handle()
+        with algq._GPU_LOCK:
+            rc = fn(handle, *args, C.byref(elapsed))
+    except (OSError, RuntimeError):
+        return False
+    if rc:
+        return False
+    cx.stats[stat] = cx.stats.get(stat, 0) + 1
+    cx.stats["gpu_text_kernel_ms"] = cx.stats.get("gpu_text_kernel_ms", 0.0) + elapsed.value
+    return True
+
+
+def code_counts(fact, column, scope, cx=None):
     """Return one exact count per physical code in a packed row scope."""
-    if _code_histogram is None:
-        return None
     source = fact._part_of(column)
     domain = fact.maxcode(column) + 1
     counts = np.empty(domain, dtype=np.uint32)
-    if _code_histogram(source.at, scope.ctypes.data, source.idx(column), domain, counts.ctypes.data):
+    args = (scope.ctypes.data, source.idx(column), domain, counts.ctypes.data)
+    if cx is not None and cx.engine == "gpu":
+        if not _cuda_call(cx, source, "gpu_plane_code_histogram", args,
+                          (algq.vp, C.c_int32, C.c_uint32, algq.vp), "gpu_text_histograms"):
+            return None
+    elif _code_histogram is None or _code_histogram(source.at, *args):
         return None
     return counts
+
+
+def lookup_sums(cx, table, scope, key, value, mask, lookup, codes, sums):
+    args = (scope.ctypes.data, key, value, mask, lookup.ctypes.data, len(lookup),
+            codes.ctypes.data, len(codes), sums.ctypes.data)
+    types = (algq.vp, C.c_int32, C.c_int32, C.c_uint32, algq.vp, C.c_uint64,
+             algq.vp, C.c_uint32, algq.vp)
+    return _cuda_call(cx, table, "gpu_plane_lookup_sums", args, types, "gpu_text_lookup_sums")
 
 
 def project_group(planner, preds, aggs, group, col, source, table, fk, length, having):
@@ -43,7 +74,7 @@ def project_group(planner, preds, aggs, group, col, source, table, fk, length, h
     scope = P.bitmap(planner, preds)
     if scope is None:
         return None
-    histogram = code_counts(fact, column, scope)
+    histogram = code_counts(fact, column, scope, cx)
     if histogram is None:
         return None
     code = np.flatnonzero(histogram)
