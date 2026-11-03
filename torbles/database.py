@@ -46,37 +46,54 @@ def _physical(data, extend, refs):
     return len(data) + 2 * len(extend) + bool(refs)
 
 
+def _same_per_value(data, nullable, C, first, inv, rows):
+    """is column C (with its validity plane) constant on the rows that share a value (inv: each row's value, first: a row
+    of each value)?"""
+    v = data[C][rows]
+    if not np.array_equal(v[first][inv], v): return False
+    vc = nullable.get(C)
+    if vc is None: return True
+    f = data[vc][rows]
+    return np.array_equal(f[first][inv], f)
+
+
+def fd_candidates(data, nullable, candidates, n, sample=1 << 16):
+    """The determinants worth checking, from a strided sample of at most `sample` rows: {D: (the columns D determines
+    on the sample, D's number of values there)}, for D never NULL, with at most half as many values as sampled rows
+    and two determined columns or more. A dependency on every row holds on the sample, so nothing is missed; what the
+    sample suggests, fd_verify checks on every row."""
+    if n < 4: return {}
+    rows = slice(0, n, max(1, n // sample))
+    out = {}
+    for D in candidates:
+        if D in nullable: continue
+        u, first, inv = np.unique(data[D][rows], return_index=True, return_inverse=True)
+        inv = np.asarray(inv).ravel()
+        if 2 * len(u) > len(inv): continue
+        deps = [C for C in candidates if C != D and _same_per_value(data, nullable, C, first, inv, rows)]
+        if len(deps) >= 2: out[D] = (deps, len(u))
+    return out
+
+
+def fd_verify(data, nullable, D, deps, n):
+    """the columns of deps that D determines on every row, and D's values: (columns, (values, a row of each, each
+    row's value)); no columns when D has more than half as many values as rows"""
+    u, first, inv = np.unique(data[D], return_index=True, return_inverse=True)
+    inv = np.asarray(inv).ravel()
+    if 2 * len(u) > n: return [], (u, first, inv)
+    return [C for C in deps if _same_per_value(data, nullable, C, first, inv, slice(None))], (u, first, inv)
+
+
 def fd_groups(data, nullable, candidates, n, sample=1 << 16):
     """The columns each column determines: {determinant: (columns, its number of values)}. A column C is determined by
     D when the rows with the same value of D have the same value of C, or are all NULL in C (codes and validity planes
     compared: data holds the codes, nullable maps a column to its validity plane's name in data). Only the candidates
     are considered, as determinants (never NULL, and with at most half as many values as rows: there is storage to
     save) and as determined columns; a determinant is kept with two columns or more. A strided sample of the rows rules
-    out most pairs before the check on every row."""
-    if n < 4: return {}
-    step = max(1, n // sample)
-    def same(C, first, inv, rows):
-        v = data[C][rows]
-        if not np.array_equal(v[first][inv], v): return False
-        vc = nullable.get(C)
-        if vc is None: return True
-        f = data[vc][rows]
-        return np.array_equal(f[first][inv], f)
+    out most pairs (fd_candidates) before the check on every row (fd_verify)."""
     out = {}
-    for D in candidates:
-        if D in nullable: continue
-        rows = slice(0, n, step)
-        u, first, inv = np.unique(data[D][rows], return_index=True, return_inverse=True)
-        inv = np.asarray(inv).ravel()
-        if 2 * len(u) > len(inv): continue
-        deps = [C for C in candidates if C != D and same(C, first, inv, rows)]
-        if len(deps) < 2: continue
-        if step > 1:                                       # on every row
-            rows = slice(None)
-            u, first, inv = np.unique(data[D], return_index=True, return_inverse=True)
-            inv = np.asarray(inv).ravel()
-            if 2 * len(u) > n: continue
-            deps = [C for C in deps if same(C, first, inv, rows)]
+    for D, (deps, _) in fd_candidates(data, nullable, candidates, n, sample).items():
+        deps, (u, _, _) = fd_verify(data, nullable, D, deps, n)
         if len(deps) >= 2: out[D] = (deps, len(u))
     return out
 
@@ -210,12 +227,13 @@ class Database:
             moved, made = {}, {}                       # column -> its determinant; determinant -> its dimension
             if groups and name not in dims and _physical(data, extend, refs) > algq.MAXCOL:
                 cand = [c for c in data if "#" not in c and c not in fk and c != pk and c not in extend and c in codecs]
-                fds = fd_groups(data, nullable, cand, n)
+                fds = fd_candidates(data, nullable, cand, n)      # from a sample; each checked on every row when its turn comes
                 for D in sorted(fds, key=lambda D: (fds[D][1], -len(fds[D][0]), cand.index(D))):   # smallest first
                     if _physical(data, extend, refs) <= algq.MAXCOL or len(refs) >= 32: break   # (32 references' bits)
-                    deps = [C for C in fds[D][0] if C in data and C not in made]
-                    if D not in data or D in moved or len(deps) < 2: continue
-                    made[D] = self._group(name, D, deps, data, codecs, info, nullable, refs, designs, cols[name])
+                    if D not in data or D in moved: continue
+                    deps, vals = fd_verify(data, nullable, D, [C for C in fds[D][0] if C in data and C not in made], n)
+                    if len(deps) < 2: continue
+                    made[D] = self._group(name, D, deps, data, codecs, info, nullable, refs, designs, vals)
                     moved.update({C: D for C in deps})
             cluster = next((c for c in list(fk) + [c for c in data if c not in fk]
                             if c not in extend and "#" not in c and c not in nullable and n > 1 and bool(np.all(data[c][1:] >= data[c][:-1]))), None)
@@ -240,14 +258,14 @@ class Database:
         self._designs = designs
         return self
 
-    def _group(self, name, D, deps, data, codecs, info, nullable, refs, designs, types):
-        """Columns deps of table `name`, each determined by column D (fd_groups), go to a dimension of their own,
+    def _group(self, name, D, deps, data, codecs, info, nullable, refs, designs, vals):
+        """Columns deps of table `name`, each determined by column D (fd_verify), go to a dimension of their own,
         stored once per value of D in D's order and keyed by it (its key designed like any dimension's), and D becomes
         the foreign key to it: its codes in the table become the dimension's surrogates. Every value of D has its row,
-        so every reference joins. Built from the table's codes (the same codecs). Returns the dimension's name."""
+        so every reference joins. Built from the table's codes (the same codecs); vals: D's values, a row of each and
+        each row's value (fd_verify). Returns the dimension's name."""
         t0 = time.perf_counter()
-        u, first, inv = np.unique(data[D], return_index=True, return_inverse=True)
-        inv = np.asarray(inv).ravel()
+        u, first, inv = vals
         g = f"{name}#{D}"
         gdata, gcodecs, gnull = {D: u.astype(np.uint32)}, {D: codecs[D]}, {}
         for C in deps:
