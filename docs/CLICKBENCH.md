@@ -2,9 +2,52 @@
 
 Torbles ran the 43 official ClickBench queries on the first one and first ten
 Parquet partitions, retaining all 105 columns. The inputs had 1 million and
-10 million rows. These local in-memory runs use a different protocol from the
+10 million rows. These local warm runs use a different protocol from the
 public 100M-row leaderboard. [Pinned ClickBench revision](https://github.com/ClickHouse/ClickBench/tree/072ed80e09fde25c7a11ccdd407c5731aaee9bc7)
 
+
+## Tagged 0.7.0 rerun
+
+Torbles was built from tag `v0.7.0` at
+`3fc21a35b5cf20d56e4de7088a7d74ce6739d6da`, with automatic interchanges.
+All engines ran sequentially on WSL2 with an Intel Core Ultra 9 290HX Plus,
+24 CPU threads, and an RTX 5090 Laptop GPU with 23.9 GiB of device memory.
+The CUDA build used toolkit 13.3.73 and driver 610.74.
+Each engine ran all 43 queries on the same canonical 1M and 10M row
+inputs. Setup and loading are outside the query timer. The reported totals
+sum the median of the first three warm executions per query after an initial
+execution. Timings include fetching results into Python.
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|
+| 1M | 64.5 ms | 125.8 ms | 247.0 ms | 88.2 ms | 514.0 ms |
+| 10M | 382.6 ms | 879.7 ms | 1,220.8 ms | 413.1 ms | 2,470.3 ms |
+
+The initial answers were checked against fresh DuckDB 2.0.0 runs, allowing
+SQL-defined ties and floating-point tolerance. An untimed CUDA replay
+independently verified every Torbles result and recorded successful CUDA
+dispatch for 43 of 43 queries at each scale. Seven 1M replays also called
+an instrumented CPU query entry point. Host SQL binding and result fetching
+are included in the wall times.
+
+Sirius `76ef37d231` uses DuckDB 2.0.0 and GPU-pinned Parquet.
+It used CPU fallback for Q29. Umbra 26.10 used a local PostgreSQL connection,
+so its result-fetch time includes loopback transport. Two Q24 timestamp
+fields were normalized to epoch seconds for comparison, and the Q29 regex
+was adjusted so the dot excludes line feeds, matching DuckDB semantics.
+chDB was 4.4.0 with ClickHouse 26.9.2.1.
+
+### Matched six-engine comparison
+
+These totals use the same 41 verified queries across all six engines.
+chDB's Q4 numerical result and Q29 regex groups did not verify.
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | chDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1M | 60.0 ms | 117.5 ms | 183.7 ms | 291.4 ms | 82.3 ms | 434.5 ms |
+| 10M | 329.8 ms | 811.5 ms | 831.6 ms | 1,891.2 ms | 358.7 ms | 2,011.8 ms |
+
+[Per-query medians and verification outcomes](CLICKBENCH-0.7.0.csv)
 
 ## 0.7.0 automatic interchanges
 

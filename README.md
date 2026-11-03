@@ -18,12 +18,35 @@ them on the CPU or, for supported plans, on CUDA.
 - **Automatic grouping interchanges.** The optimizer can use dense coordinates,
   certified rank pruning, and exact singleton proofs where the data admits them.
 
-## Verified performance
+## ClickBench on 0.7.0
 
-On the same RTX 5090 Laptop GPU, the 43-query ClickBench warm total went from
-76.0 to 66.3 ms at 1M rows and from 404.0 to 360.3 ms at 10M rows with automatic
-interchanges. The CPU total was essentially flat at 1M and slightly higher
-at 10M. [ClickBench methods and results](docs/CLICKBENCH.md)
+All 43 queries verified on both official subsets. Totals sum the median of
+three warm executions per query, including fetching result rows.
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|
+| 1M | 64.5 ms | 125.8 ms | 247.0 ms | 88.2 ms | 514.0 ms |
+| 10M | 382.6 ms | 879.7 ms | 1,220.8 ms | 413.1 ms | 2,470.3 ms |
+
+Same WSL2 laptop, RTX 5090 Laptop GPU, and 24 CPU threads. The Torbles CUDA
+replay observed successful device dispatch on every query. Sirius used
+CPU fallback for Q29. chDB verified 41 queries and is included in the
+[matched 41-query comparison](docs/CLICKBENCH.md#matched-six-engine-comparison).
+[Method and per-query timings](docs/CLICKBENCH.md#tagged-070-rerun)
+
+
+<details>
+<summary>Matched 41-query timings with chDB</summary>
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | chDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1M | 60.0 ms | 117.5 ms | 183.7 ms | 291.4 ms | 82.3 ms | 434.5 ms |
+| 10M | 329.8 ms | 811.5 ms | 831.6 ms | 1,891.2 ms | 358.7 ms | 2,011.8 ms |
+
+chDB differed on the wide-integer average in Q4 and regex grouping in Q29
+at both scales.
+
+</details>
 
 At 4M input rows, full ordered running SUM took 462 ms with Python rows and
 41 ms with NumPy columns in separate matched campaigns. A grouped rank
