@@ -299,13 +299,14 @@ two ways.
 
 **Determined columns go to a dimension of their own** (`Database.build(groups=True)`, the default). When every row with
 the same value of a column D has the same values of columns C1..Ck (NULL included), the table carries a dimension keyed
-by D in denormalized form: customer attributes repeated on every sale, say. `fd_groups` finds such groups on the loaded
-codes (a strided sample of 64K rows rules out most pairs, every row is then checked); D must never be NULL and have at
-most half as many values as rows, and only columns within 32 bits qualify. For a table that no foreign key references,
-the loader moves groups while the table is still wider than a torble, those with the fewest values of D first (their
-dimensions are the cheapest to join: a flattened star schema gives back the levels of its hierarchies, city -> nation ->
-region or brand -> category -> manufacturer, as small dimensions with derived surrogates, before any order-level key
-that determines several of them), at most 32 references in all: the dimension `T#D` holds one row per value of D, in D's
+by D in denormalized form: customer attributes repeated on every sale, say. The loader finds such groups on the loaded
+codes: a strided sample of 64K rows names the candidates (`fd_candidates`: a dependency on every row holds on the
+sample), and each is checked on every row when its turn comes (`fd_verify`). D must never be NULL and have at most half
+as many values as rows, and only columns within 32 bits qualify. For a table that no foreign key references, the loader
+moves groups while the table is still wider than a torble, those with the fewest values of D first (their dimensions are
+the cheapest to join: a flattened star schema gives back the levels of its hierarchies, city -> nation -> region or
+brand -> category -> manufacturer, as small dimensions with derived surrogates, before any order-level key that
+determines several of them), at most 32 references in all: the dimension `T#D` holds one row per value of D, in D's
 order, its key designed like any dimension's (a derived surrogate when its columns form a hierarchy), and D becomes the
 foreign key to it, storing the surrogate. k columns leave the table for one row per value of D. A query reads C through
 the substitution D := surrogate: a filter on C is a dimension filter, cubes and comparators on D's planes (or a lookup),

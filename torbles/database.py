@@ -58,20 +58,28 @@ def _same_per_value(data, nullable, C, first, inv, rows):
 
 
 def fd_candidates(data, nullable, candidates, n, sample=1 << 16):
-    """The determinants worth checking, from a strided sample of at most `sample` rows: {D: (the columns D determines
-    on the sample, D's number of values there)}, for D never NULL, with at most half as many values as sampled rows
-    and two determined columns or more. A dependency on every row holds on the sample, so nothing is missed; what the
-    sample suggests, fd_verify checks on every row."""
+    """The determinants worth checking, from about `sample` rows: {D: (the columns D determines there, an estimate of
+    D's number of values)}, for D never NULL, with at most half as many values as rows and two determined columns or
+    more. The rows are a stride of the table when D's values repeat in it; otherwise (a key of many values, each on a
+    few rows: a stride would see most of them once, and every column would look determined) every row of a sample of
+    D's values, chosen by a hash of the value, so that each value is seen with all its rows. A dependency on every row
+    holds on any subset of the rows, so nothing is missed; what the sample suggests, fd_verify checks on every row."""
     if n < 4: return {}
-    rows = slice(0, n, max(1, n // sample))
+    step = max(1, n // sample)
     out = {}
     for D in candidates:
         if D in nullable: continue
-        u, first, inv = np.unique(data[D][rows], return_index=True, return_inverse=True)
+        v = data[D]
+        rows, scale = slice(0, n, step), 1
+        u, first, inv = np.unique(v[rows], return_index=True, return_inverse=True)
+        if step > 1 and 2 * len(u) > len(np.asarray(inv).ravel()):       # few repeats in a stride: sample values
+            h = np.asarray(v, np.uint32) * np.uint32(2654435761)           # Knuth's multiplicative hash (wraps)
+            rows, scale = np.flatnonzero(h < np.uint32((1 << 32) // step)), step
+            u, first, inv = np.unique(v[rows], return_index=True, return_inverse=True)
         inv = np.asarray(inv).ravel()
-        if 2 * len(u) > len(inv): continue
+        if not len(inv) or 2 * len(u) > len(inv): continue
         deps = [C for C in candidates if C != D and _same_per_value(data, nullable, C, first, inv, rows)]
-        if len(deps) >= 2: out[D] = (deps, len(u))
+        if len(deps) >= 2: out[D] = (deps, len(u) * scale)
     return out
 
 

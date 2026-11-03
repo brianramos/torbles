@@ -138,6 +138,12 @@ try:
     check("u" not in g and "c" not in g, "no determinant with more values than half the rows, or with fewer than two columns", g)
     g2 = fd_groups(f, {"v": "v#v", "k": "v#v"}, ["k", "a", "b"], len(k))
     check("k" not in g2, "a column with NULLs determines nothing", g2)
+    K = rng.integers(0, 120000, 600000).astype(np.uint32)        # 5 rows per value: a stride sees most values once
+    h = {"K": K, "a": (K * 7 % 1013).astype(np.uint32), "b": (K // 3).astype(np.uint32), "x": rng.integers(0, 50, len(K)).astype(np.uint32)}
+    h["near"] = h["b"].copy(); h["near"][77] += 1
+    g3 = fd_groups(h, {}, list(h), len(K), sample=4096)
+    check(list(g3) == ["K"] and sorted(g3["K"][0]) == ["a", "b"] and abs(g3["K"][1] - len(np.unique(K))) < 1,
+          "a key of many values, few rows each: found by sampling its values, every row checked", g3)
 
     # ------------------------------------------------------------------ SQL: row-aligned parts
     print("== SQL: a fact of 62 columns in parts, a dimension of 40")
