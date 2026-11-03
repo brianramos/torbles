@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.7.0, alpha
+
+- Choose certified grouping interchanges automatically. Narrow equality
+  coordinates can index group state directly from the bitplanes. Exact
+  rank bounds can reduce grouped distinct work, and singleton certificates
+  let CUDA group only rows that could repeat. The optimizer retains the
+  full reducer when the candidate work or proof does not justify the route.
+- Execute eligible `ROW_NUMBER` and ordered integer running `SUM` on CUDA.
+  Keep their values on device through supported `QUALIFY` comparisons,
+  ordering by the window value, and literal `LIMIT` and `OFFSET`. Gather
+  selected narrow integer and Boolean payloads from the source bitplanes.
+  `fetch_columns()` returns NumPy columns in projection order. Eligible
+  primitive results build Python tuples only when requested.
+- Reuse a statement-local CUDA window result for supported derived scalar
+  and grouped reductions, an inner self-join count on a unique global
+  rank, and `UNION`, `INTERSECT`, and `EXCEPT` over that same shared rank
+  column. Two filtered `COUNT(*)` branches of a shared CTE can reuse one
+  window build. These relational routes cover specific SQL shapes, with
+  general expressions and other joins and set operations using the
+  existing executor. See [CUDA window temporaries](docs/CUDA_WINDOW_TEMPORARIES.md).
+- On an RTX 5090 Laptop GPU, automatic interchanges reduced the verified
+  43-query ClickBench warm total from 76.0 to 66.3 ms at 1M rows and from
+  404.0 to 360.3 ms at 10M. The paired CPU total was flat at 1M and
+  0.8% higher at 10M.
+- On a 4M-row integer fixture, an eligible grouped rank reduction took
+  7.6 ms versus 1,059.2 ms on the preceding Torbles CUDA route. A shared-rank
+  self-join count took 6.9 ms versus 99.7 ms. These are warm full-result
+  times for the stated query shapes. Full dense payload gathering showed
+  no consistent speedup on the same fixture.
+- Preserve projected join inputs after a bounded wide-key lookup in an
+  internal scan. Replays the SQL fuzzer regression found on the 0.6.0 PR.
+
 ## 0.6.0, alpha
 
 - Compose compatible SQL statements over shared packed filters and exact

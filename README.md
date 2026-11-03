@@ -4,45 +4,31 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.6.0 alpha** runs on x86-64 Linux and WSL2.
+**0.7.0 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.6.0
+## What’s new in 0.7.0
 
-- **Packed SQL stages on CPU and CUDA.** Eligible plans reduce raw bitplanes for
-  exact scalar moments, distinct counts, grouping, bounded ordering, and
-  dictionary histograms. SQL can also rank groups before reading their remaining
-  aggregate inputs. [SQL execution](docs/SQL.md#how-a-query-runs)
-- **Reusable SQL algebra.** Compatible SELECTs can share an exact moment
-  calculation in one batch. A saved catalog can also answer new affine
-  aggregates and combine learned filter scopes, with source validation before
-  reuse. [Learned algebra](docs/SQL.md#durable-learned-algebra)
-- **SQL writes and local transactions.** Writable uint32 tables support INSERT,
-  UPDATE, DELETE and primary-key MERGE. The durable prototype supports
-  explicit transactions, autocommit and crash recovery.
-  [Transactions](docs/SQL.md#durable-sql-prototype) · [Refresh guide](docs/REFRESH.md)
+- **CUDA ordered windows.** Eligible `ROW_NUMBER` and integer running `SUM`
+  use raw bitplanes for ordering and segmented scans.
+- **GPU-resident window consumers.** Supported `QUALIFY`, ordering, slicing,
+  payload gathers, grouped reductions, and shared-rank joins and set operations
+  consume statement-local GPU temporaries. [Supported shapes](docs/CUDA_WINDOW_TEMPORARIES.md)
+- **Columnar output.** Use `db.sql(query, engine="gpu").fetch_columns()` to
+  fetch eligible results as NumPy columns and defer Python tuple assembly.
+- **Automatic grouping interchanges.** The optimizer can use dense coordinates,
+  certified rank pruning, and exact singleton proofs where the data admits them.
 
-## ClickBench
+## Verified performance
 
-All 43 queries matched DuckDB on official 1M- and 10M-row subsets. Independent
-Nsight traces recorded CUDA launches in every query at both scales.
+On the same RTX 5090 Laptop GPU, the 43-query ClickBench warm total went from
+76.0 to 66.3 ms at 1M rows and from 404.0 to 360.3 ms at 10M rows with automatic
+interchanges. The CPU total was essentially flat at 1M and slightly higher
+at 10M. [ClickBench methods and results](docs/CLICKBENCH.md)
 
-| Rows | Torbles GPU | Torbles CPU | DuckDB |
-|---:|---:|---:|---:|
-| 1M | 72.6 ms | 114.7 ms | 229.2 ms |
-| 10M | 420.2 ms | 859.2 ms | 1,155.1 ms |
-
-These totals sum warm medians. The CPU comparators come from earlier runs on
-the same inputs and hardware. Another 10M GPU run with the same native library
-took 1,163.9 ms. [Method, CUDA coverage and separate workload benchmarks](docs/CLICKBENCH.md)
-
-### Four-engine comparison
-
-These totals use the same 41 verified queries on the same inputs. Q4 and Q29 were unverified in chDB 4.4.0 (ClickHouse 26.9.2.1).
-
-| Fact rows | Torbles GPU | Prior Torbles CPU | DuckDB | chDB |
-|---:|---:|---:|---:|---:|
-| 1M | 68.4 ms | 106.6 ms | 166.4 ms | 290.9 ms |
-| 10M | 374.5 ms | 792.7 ms | 804.6 ms | 1,631.0 ms |
+At 4M input rows, full ordered running SUM took 462 ms with Python rows and
+41 ms with NumPy columns in separate matched campaigns. A grouped rank
+reduction took 7.57 ms and a shared-rank equality count took 6.85 ms with
+resident CUDA consumers. [Window benchmark](docs/CUDA_WINDOW_TEMPORARIES.md#measurements)
 
 ## Try it
 
@@ -50,7 +36,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.6.0'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.7.0'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales

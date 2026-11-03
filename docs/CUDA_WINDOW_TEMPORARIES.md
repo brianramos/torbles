@@ -30,3 +30,22 @@ is constant over the proven range or its allocation would exceed the budget.
 
 `cuda_window_download_bytes` counts transferred window values and row IDs.
 It excludes source upload, payload gathering and scalar control counters.
+
+
+## Measurements
+
+Warm end-to-end medians at 4M input rows on an RTX 5090 Laptop GPU.
+Each result was verified against DuckDB. The relational comparison uses
+`21e40d7` as the baseline and `226b196` as the candidate.
+
+| Stage | Prior Torbles | Resident CUDA | DuckDB |
+|---|---:|---:|---:|
+| Gather three payload columns for 17 rows | 6.94 ms | 6.82 ms | 48.04 ms |
+| Grouped rank COUNT and SUM | 1,059.22 ms | 7.57 ms | 33.66 ms |
+| Shared unique-rank self-join count | 99.73 ms | 6.85 ms | 35.15 ms |
+| Shared unique-rank intersection | 108.03 ms | 7.88 ms | 34.43 ms |
+| Two counts from one shared rank CTE | 101.73 ms | 6.66 ms | 33.35 ms |
+
+The dense payload case took 73.39 ms on the GPU gather path and 71.35 ms
+with the prior host gather. Each transferred a full result. The resident
+join and shared counts transferred 8 and 16 bytes of result data.

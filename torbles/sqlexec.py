@@ -3979,9 +3979,11 @@ class _Planner:
                     bounded = bounded_ids(self, preds)
                 if bounded is not None:
                     ids, scanned = bounded
-                    payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
-                    out = self.rows_rel({k: c for k, c in atoms.items() if k in payload},
-                                        preds, False, ids=ids, fact_order=False)
+                    # Internal join scans have requested atoms but no SELECT items.
+                    if s.items:
+                        payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
+                        atoms = {k: c for k, c in atoms.items() if k in payload}
+                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
                     out.plane_ordered = True
                     if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned

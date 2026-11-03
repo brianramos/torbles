@@ -5,6 +5,23 @@ Parquet partitions, retaining all 105 columns. The inputs had 1 million and
 10 million rows. These local in-memory runs use a different protocol from the
 public 100M-row leaderboard. [Pinned ClickBench revision](https://github.com/ClickHouse/ClickBench/tree/072ed80e09fde25c7a11ccdd407c5731aaee9bc7)
 
+
+## 0.7.0 automatic interchanges
+
+All 43 official queries verified at 1M and 10M rows. The table sums warm
+medians from interleaved runs on the same loaded table. DuckDB is the
+previously verified reference on the same input.
+
+| Rows | Torbles CPU off → auto | Torbles CUDA off → auto | DuckDB |
+|---:|---:|---:|---:|
+| 1M | 116.2 → 116.2 ms | 76.0 → 66.3 ms | 229.2 ms |
+| 10M | 892.7 → 900.2 ms | 404.0 → 360.3 ms | 1,155.1 ms |
+
+At 10M, CUDA Q9 fell from 14.97 to 10.50 ms, Q10 from 20.71 to 7.14 ms,
+and Q33 from 31.34 to 7.19 ms. Q33 sent 191,352 of 10M rows to full-key
+reduction after proving the remaining keys were singletons. The run used
+`fedfcc3`, an RTX 5090 Laptop GPU, and 24 CPU threads.
+
 ## Read-only SQL
 
 | Fact rows | Torbles GPU | Prior Torbles CPU | DuckDB | CUDA query ranges | CUDA kernel launches |

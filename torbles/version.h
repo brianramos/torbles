@@ -6,5 +6,5 @@
  * void them; torble.h's own TORBLES_VERSION is the version its structures last changed in. */
 #ifndef TORBLES_RELEASE_H
 #define TORBLES_RELEASE_H
-#define TORBLES_RELEASE "0.6.0"
+#define TORBLES_RELEASE "0.7.0"
 #endif
