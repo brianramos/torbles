@@ -62,6 +62,10 @@ class CudaPlaneStages(unittest.TestCase):
 
     def test_packed_scope_from_dictionary_semijoin(self):
         self.exact("SELECT COUNT(*) FROM t WHERE phrase LIKE '%a.test%'", "cuda_scope_bitmaps")
+        self.exact(r"SELECT COUNT(*) FROM t WHERE regexp_matches(phrase, 'A\.TEST/', 'i')",
+                   "dictionary_text_predicates")
+        self.exact(r"SELECT COUNT(*) FROM t WHERE NOT regexp_full_match(phrase, '.*a\.test/.*')",
+                   "cuda_scope_bitmaps")
 
     def test_exact_wide_and_dictionary_distinct(self):
         self.exact("SELECT COUNT(DISTINCT watch) FROM t WHERE width > 21", "cuda_encoded_distinct")
@@ -83,6 +87,6 @@ class CudaPlaneStages(unittest.TestCase):
         self.exact("SELECT DATE_TRUNC('minute',stamp) m,COUNT(*) FROM t WHERE width > 21 "
                    "GROUP BY m ORDER BY m LIMIT 10 OFFSET 1000", "cuda_minute_groups")
         self.exact("SELECT ip, AVG(STRLEN(phrase)), COUNT(*) FROM t WHERE phrase <> '' "
-                   "GROUP BY ip HAVING COUNT(*) > 5000 ORDER BY ip", "gpu_text_lookup_sums")
+                   "GROUP BY ip HAVING COUNT(*) > 1 ORDER BY ip", "gpu_text_lookup_sums")
         self.exact("SELECT regexp_replace(phrase,'/[^/]*$','') k,COUNT(*),AVG(STRLEN(phrase)),MIN(phrase) "
-                   "FROM t WHERE phrase <> '' GROUP BY k ORDER BY k", "gpu_text_histograms")
+                   "FROM t WHERE phrase <> '' GROUP BY k HAVING COUNT(*) > 100 ORDER BY k", "gpu_regex_moments")

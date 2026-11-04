@@ -4,54 +4,43 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.7.0 alpha** runs on x86-64 Linux and WSL2.
+**0.8.0 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.7.0
+## What’s new in 0.8.0
 
-- **CUDA ordered windows.** Eligible `ROW_NUMBER` and integer running `SUM`
-  use raw bitplanes for ordering and segmented scans.
-- **GPU-resident window consumers.** Supported `QUALIFY`, ordering, slicing,
-  payload gathers, grouped reductions, and shared-rank joins and set operations
-  consume statement-local GPU temporaries. [Supported shapes](docs/CUDA_WINDOW_TEMPORARIES.md)
-- **Columnar output.** Use `db.sql(query, engine="gpu").fetch_columns()` to
-  fetch eligible results as NumPy columns and defer Python tuple assembly.
-- **Automatic grouping interchanges.** The optimizer can use dense coordinates,
-  certified rank pruning, and exact singleton proofs where the data admits them.
+- **Regex filters on bitplanes.** Compile literal regex predicates over the
+  dictionary and apply the resulting membership mask to stored codes.
+- **CUDA regex grouping.** Compile the dictionary mapping on the host, then
+  compute counts, byte-length sums, and minimum source codes on CUDA. The GPU
+  returns groups that pass the count bound.
+- **Larger grouped string reductions.** Use the observed group counts to select
+  candidates and contract text lengths in bounded batches on CPU and CUDA.
 
-## ClickBench on 0.7.0
+## ClickBench at 100M rows
 
-All 43 queries verified on both official subsets. Totals sum the median of
-three warm executions per query, including fetching result rows.
+**Torbles CUDA completed all 43 verified queries in 2.06 s on AC and 4.07 s on
+battery** on the 99,997,497-row, 105-column fixture. The table sums each
+query’s median of three warm executions, including fetching the results.
 
-| Rows | Torbles CUDA | Torbles CPU | DuckDB | Umbra | Sirius |
-|---:|---:|---:|---:|---:|---:|
-| 1M | 64.5 ms | 125.8 ms | 247.0 ms | 88.2 ms | 514.0 ms |
-| 10M | 382.6 ms | 879.7 ms | 1,220.8 ms | 413.1 ms | 2,470.3 ms |
+| Engine | AC | Battery |
+|---|---:|---:|
+| Torbles CUDA | **2.06 s** | **4.07 s** |
+| Umbra | — | 4.96 s |
+| CedarDB | — | 8.90 s |
+| DuckDB, native | 11.71 s | 16.59 s |
+| Hyper | 12.89 s | — |
+| Torbles CPU | 16.83 s | — |
+| DuckDB, Parquet | 21.74 s | — |
+| StarRocks | 28.15 s | — |
+| ClickHouse via chDB | 32.44 s | 32.24 s over 42 verified queries |
+| DataFusion | 34.65 s | — |
+| Sirius | 65.21 s | — |
 
-Same WSL2 laptop, RTX 5090 Laptop GPU, and 24 CPU threads. The Torbles CUDA
-replay observed successful device dispatch on every query. Sirius used
-CPU fallback for Q29. chDB verified 41 queries and is included in the
-[matched 41-query comparison](docs/CLICKBENCH.md#matched-six-engine-comparison).
-[Method and per-query timings](docs/CLICKBENCH.md#tagged-070-rerun)
-
-
-<details>
-<summary>Matched 41-query timings with chDB</summary>
-
-| Rows | Torbles CUDA | Torbles CPU | DuckDB | chDB | Umbra | Sirius |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1M | 60.0 ms | 117.5 ms | 183.7 ms | 291.4 ms | 82.3 ms | 434.5 ms |
-| 10M | 329.8 ms | 811.5 ms | 831.6 ms | 1,891.2 ms | 358.7 ms | 2,011.8 ms |
-
-chDB differed on the wide-integer average in Q4 and regex grouping in Q29
-at both scales.
-
-</details>
-
-At 4M input rows, full ordered running SUM took 462 ms with Python rows and
-41 ms with NumPy columns in separate matched campaigns. A grouped rank
-reduction took 7.57 ms and a shared-rank equality count took 6.85 ms with
-resident CUDA consumers. [Window benchmark](docs/CUDA_WINDOW_TEMPORARIES.md#measurements)
+The runs used the same WSL2 laptop with 24 logical CPUs and an RTX 5090 Laptop
+GPU. Torbles used an mmap-backed bitplane store and Sirius streamed Parquet.
+The first CUDA sweep took 48.70 s on AC, with dictionary compilation and other
+first-use work included. [Method, storage, and per-query results](docs/CLICKBENCH-0.8.0.md)
+· [0.7.0 subset results](docs/CLICKBENCH.md)
 
 ## Try it
 
@@ -59,7 +48,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.7.0'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.8.0'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales

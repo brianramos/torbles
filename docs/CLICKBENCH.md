@@ -1,5 +1,7 @@
 # ClickBench on official subsets
 
+The [0.8.0 measurements](CLICKBENCH-0.8.0.md) cover the complete 100M-row fixture.
+
 Torbles ran the 43 official ClickBench queries on the first one and first ten
 Parquet partitions, retaining all 105 columns. The inputs had 1 million and
 10 million rows. These local warm runs use a different protocol from the
