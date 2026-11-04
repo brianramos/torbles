@@ -49,10 +49,12 @@ def _like_match(pattern, escape, insensitive):
 
 
 def dictionary_predicate(planner, expr):
-    """Build a code-domain bitmap for a literal LIKE or NOT LIKE on a text column."""
+    """Compile a literal text predicate once over its dictionary."""
     negated = isinstance(expr, I.Func) and expr.fn == "not" and len(expr.args) == 1
     term = expr.args[0] if negated else expr
-    if not isinstance(term, I.Func) or term.fn not in ("like", "ilike") or len(term.args) not in (2, 3):
+    if not isinstance(term, I.Func) or len(term.args) not in (2, 3):
+        return None
+    if term.fn not in ("like", "ilike", "regexp_matches", "regexp_full_match"):
         return None
     col, *args = term.args
     if not all(isinstance(arg, I.Lit) and isinstance(arg.v, str) for arg in args):
@@ -64,18 +66,21 @@ def dictionary_predicate(planner, expr):
     is_fact = binding is planner.fact
     if not is_fact and (binding not in planner.hidden.values() or not getattr(table, "generated", None)):
         return None
-    pattern = args[0].v
-    insensitive = term.fn == "ilike"
+    literals = tuple(arg.v for arg in args)
     try:
-        escape = F._esc(args[1].v) if len(args) == 2 else None
-        matcher = _like_match(pattern, escape, insensitive)
+        if term.fn in ("like", "ilike"):
+            escape = F._esc(literals[1]) if len(literals) == 2 else None
+            matcher = _like_match(literals[0], escape, term.fn == "ilike")
+        else:
+            regex = F._rx(*literals)
+            matcher = regex.fullmatch if term.fn == "regexp_full_match" else regex.search
     except T.SqlError:
         return None
 
     validity = table.nullable.get(name)
 
     def make():
-        matches = np.fromiter((matcher(text) != negated for text in codec.values), np.bool_, count=len(codec.values))
+        matches = np.fromiter((bool(matcher(text)) != negated for text in codec.values), np.bool_, count=len(codec.values))
         if is_fact:
             return algq.CodeSet(algq.Col(table, name), matches, sql=I.render(expr))
         codes = table.decoded(name)
@@ -87,7 +92,7 @@ def dictionary_predicate(planner, expr):
         columns = (name,) if validity is None else (name, validity)
         return algq.RowMask(table, rows, cols=columns, sql=I.render(expr))
 
-    cache_key = (id(table), is_fact, name, codec, pattern, escape, insensitive, negated)
+    cache_key = (id(table), is_fact, name, codec, term.fn, literals, negated)
     predicate = _cache(table, "_text_predicates", cache_key, make, 8)
     stats = planner.cx.stats
     stats["dictionary_text_predicates"] = stats.get("dictionary_text_predicates", 0) + 1
@@ -193,6 +198,7 @@ def _length_map(fact, source, byte_length):
 
 
 _lookup_sums = getattr(algq.lib, "at_plane_lookup_sums", None)
+_LOOKUP_KEYS = 128
 if _lookup_sums is not None:
     _lookup_sums.restype = C.c_int
     _lookup_sums.argtypes = [algq.vp, algq.vp, C.c_int32, C.c_int32, C.c_uint32,
@@ -213,7 +219,7 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
         boundary += 1
     elif comparison is not np.greater_equal:
         return None
-    if boundary <= 0 or fact.n // boundary > 128:
+    if boundary <= 0:
         return None
     value = name if fk is None else fk
     if value in fact.wide or (fk is not None and fact.fk_nulls.get(fk, 0)):
@@ -229,7 +235,7 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
         codes = np.flatnonzero(histogram >= boundary).astype(np.uint32)
         counts = histogram[codes]
     elif cap:
-        if cx.engine == "gpu":
+        if cx.engine == "gpu" or cap > _LOOKUP_KEYS:
             return None
         states = fact._plane_group([key[:-1]], [], cap, scope)
         if states is None:
@@ -241,6 +247,8 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
     else:
         codes = np.empty(0, dtype=np.uint32)
         counts = np.empty(0, dtype=np.uint64)
+    if len(codes) > 8 * _LOOKUP_KEYS:
+        return None
     sums = np.zeros(len(codes), dtype=np.uint64)
     if len(codes):
         byte_length = length.fn in _BYTE_LENGTH
@@ -268,12 +276,15 @@ def _contract_length(planner, preds, aggs, group, key, source, table, fk, length
         mask = fact.kmask(fk) if fk is not None else 0
         target = algq._run_on(view)
         mask = mask or (1 << 32) - 1
-        if cx.engine == "gpu":
-            if not sqltexthist.lookup_sums(cx, target, scope, key_idx, value_idx, mask, lookup, codes, sums):
+        for start in range(0, len(codes), _LOOKUP_KEYS):
+            stop = start + _LOOKUP_KEYS
+            keys, totals = codes[start:stop], sums[start:stop]
+            if cx.engine == "gpu":
+                if not sqltexthist.lookup_sums(cx, target, scope, key_idx, value_idx, mask, lookup, keys, totals):
+                    return None
+            elif _lookup_sums(target.at, scope.ctypes.data, key_idx, value_idx, mask,
+                              lookup.ctypes.data, len(lookup), keys.ctypes.data, len(keys), totals.ctypes.data):
                 return None
-        elif _lookup_sums(target.at, scope.ctypes.data, key_idx, value_idx, mask,
-                          lookup.ctypes.data, len(lookup), codes.ctypes.data, len(codes), sums.ctypes.data):
-            return None
     result = E.Rel(len(codes))
     result.grouped = True
     result.cols[group.key()] = key[-1](codes)
