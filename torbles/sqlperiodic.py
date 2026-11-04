@@ -320,6 +320,10 @@ def bitmap(fact, preds, stats):
     if (not algq._COMPRESSED_MASKS or _bitmap_encoded is None or not preds or not fact.n
             or not any(part._storage().encoded for part in (fact.parts or (fact,)))):
         return None
+    # A logical wide comparison needs the low and high predicates from
+    # Query._run_wide. This compiler only accepts physical columns.
+    if fact.wide and any(algq.pred_cols(pred) & fact.wide.keys() for pred in preds):
+        return None
     source = algq._plan_table(fact)
     program = []
     try:

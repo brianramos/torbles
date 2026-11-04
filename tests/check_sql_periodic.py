@@ -115,6 +115,33 @@ class PeriodicSQLChecks(unittest.TestCase):
 
 
 class AutomaticSectorChecks(unittest.TestCase):
+    def test_encoded_bitmap_declines_split_integer_predicates(self):
+        if algq._at_save_cycles is None or sqlperiodic._bitmap_encoded is None:
+            self.skipTest("native topology bitmap unavailable")
+        oracle = duckdb.connect()
+        self.addCleanup(oracle.close)
+        oracle.execute("""
+            CREATE TABLE w AS SELECT CASE WHEN i % 8 = 0 THEN 4294967313 ELSE 17 END::BIGINT AS value
+            FROM range(131077) r(i)
+        """)
+        source = torbles.from_duckdb(oracle, groups=False)
+        self.addCleanup(source.close)
+        with TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "encoded"
+            source.save(snapshot, compression="topology")
+            db = torbles.load(snapshot)
+            try:
+                fact = db["w"]
+                self.assertTrue(fact._storage().encoded)
+                self.assertIn("value", fact.wide)
+                predicate = algq.Col(fact, "value") == 4294967313
+                self.assertIsNone(sqlperiodic.bitmap(fact, [predicate], {}))
+                self.assertFalse(algq._at_has_dense(fact._raw_at))
+                sql = "SELECT COUNT(*) FROM w WHERE value = 4294967313"
+                self.assertEqual(db.sql(sql, engine="alg").fetchall(), oracle.execute(sql).fetchall())
+            finally:
+                db.close()
+
     def test_ingestion_combines_independent_vertical_edges(self):
         if algq._at_save_cycles is None:
             self.skipTest("native topology writer unavailable")
