@@ -79,6 +79,10 @@ _certify = _bind(algq.lib, "at_periodic_periods", C.c_int,
 _sector_args = [C.POINTER(_Sector), C.c_uint32]
 _discover = _bind(algq.lib, "at_periodic_plan_sectors", C.c_int,
                   [algq.vp, C.c_uint32, C.c_uint32, C.c_uint32, *_sector_args, C.POINTER(_Metrics)])
+_discover_persisted = _bind(algq.lib, "at_periodic_plan_sectors_ex", C.c_int,
+                            [algq.vp, C.c_uint32, C.c_uint32, C.c_uint32, *_sector_args,
+                             C.POINTER(_Metrics), C.POINTER(C.c_uint64)])
+_has_persisted = _bind(algq.lib, "at_periodic_has_persisted", C.c_int, [algq.vp, C.c_uint32])
 _cpu_sectors = _bind(algq.lib, "at_periodic_reduce_sectors", C.c_int,
                      [algq.vp, *_sector_args, *_prog_args, C.POINTER(_Metrics)])
 
@@ -154,7 +158,7 @@ def _safe_predicate(expr, strip):
 def _automatic(fact, source, mask, parts, stats):
     if _discover is None or fact.n < _MIN_AUTO_ROWS:
         return None
-    key = mask if source is fact else tuple(source.cols)
+    key = mask if source is fact else (tuple(source.cols), mask)
     resident = fact.__dict__.setdefault("_periodic_auto", {})
     anchor = _anchors(parts)
     entry = resident.get(key)
@@ -165,23 +169,35 @@ def _automatic(fact, source, mask, parts, stats):
     storage = algq._run_on(source)
     started = perf_counter_ns()
     metrics = _Metrics()
-    whole = (_Sector * 1)()
-    rc = _discover(storage.at, mask, 0, _MAX_WORDS, whole, 1, metrics)
     words = (fact.n + 63) // 64
     count = (words + _SECTOR_WORDS - 1) // _SECTOR_WORDS
-    stats["periodic_probes"] = stats.get("periodic_probes", 0) + 1
     entry = _Candidate(anchor, storage)
-    if not rc and whole[0].cycle_words:
-        entry.cycle = whole[0].cycle_words
-    elif not rc and count > 1:
+    sectors = None
+    if _discover_persisted is not None and _has_persisted is not None and _has_persisted(storage.at, mask):
+        uses = C.c_uint64()
         sectors = (_Sector * count)()
-        rc = _discover(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics)
-        stats["periodic_probes"] += 1
-        if not rc and metrics.periodic_sectors and metrics.representative_words * 4 <= words:
-            entry.sectors, entry.metrics = sectors, metrics
-    stats["periodic_probe_ms"] = stats.get("periodic_probe_ms", 0.0) + (perf_counter_ns() - started) / 1e6
+        rc = _discover_persisted(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics, uses)
+        stats["periodic_ingested_proof_uses"] = stats.get("periodic_ingested_proof_uses", 0) + uses.value
+        elapsed_key = "periodic_ingested_plan_ms"
+    else:
+        whole = (_Sector * 1)()
+        rc = _discover(storage.at, mask, 0, _MAX_WORDS, whole, 1, metrics)
+        stats["periodic_probes"] = stats.get("periodic_probes", 0) + 1
+        if not rc and whole[0].cycle_words:
+            entry.cycle = whole[0].cycle_words
+        elif not rc and count > 1:
+            sectors = (_Sector * count)()
+            rc = _discover(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics)
+            stats["periodic_probes"] += 1
+        elapsed_key = "periodic_probe_ms"
+    stats[elapsed_key] = stats.get(elapsed_key, 0.0) + (perf_counter_ns() - started) / 1e6
     if rc or _anchors(parts) != anchor:
         return None
+    if sectors is not None and metrics.periodic_sectors and metrics.representative_words * 4 <= words:
+        if count == 1:
+            entry.cycle = sectors[0].cycle_words
+        else:
+            entry.sectors, entry.metrics = sectors, metrics
     if key not in resident and len(resident) >= _AUTO_CACHE_SIZE:
         resident.pop(next(iter(resident), None), None)
     resident[key] = entry

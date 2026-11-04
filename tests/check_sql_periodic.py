@@ -3,6 +3,8 @@
 """Exact SQL reductions on a certified periodic table."""
 
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import duckdb
@@ -113,6 +115,39 @@ class PeriodicSQLChecks(unittest.TestCase):
 
 
 class AutomaticSectorChecks(unittest.TestCase):
+    def test_ingestion_combines_independent_vertical_edges(self):
+        if algq._at_save_cycles is None:
+            self.skipTest("native topology writer unavailable")
+        oracle = duckdb.connect()
+        self.addCleanup(oracle.close)
+        oracle.execute("""
+            CREATE TABLE edges AS
+            WITH phases AS (
+                SELECT (i // 64 % 11 = 0)::INTEGER AS a, (i // 64 % 13 = 0)::INTEGER AS b
+                FROM range(262144) t(i)
+            )
+            SELECT a + 2 * xor(a, b) AS x FROM phases
+        """)
+        db = torbles.from_duckdb(oracle, groups=False)
+        self.addCleanup(db.close)
+        sql = "SELECT COUNT(*), SUM(x), MIN(x), MAX(x) FROM edges"
+        expected = oracle.execute(sql).fetchall()
+        before = db.sql(sql)
+        self.assertEqual(before.fetchall(), expected)
+        self.assertNotIn("periodic_native_device", before.stats)
+        with TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "edges"
+            db.save(snapshot, compression="topology")
+            reopened = torbles.load(snapshot)
+            try:
+                after = reopened.sql(sql)
+                self.assertEqual(after.fetchall(), expected)
+                self.assertEqual(after.stats["periodic_native_device"], "cpu")
+                self.assertEqual(after.stats["periodic_representatives"], 11 * 13 * 64)
+                self.assertGreater(after.stats["periodic_ingested_proof_uses"], 0)
+            finally:
+                reopened.close()
+
     def test_automatic_local_cycles_across_physical_parts(self):
         if sqlperiodic._discover is None:
             self.skipTest("native sector planner unavailable")
@@ -167,6 +202,37 @@ class AutomaticSectorChecks(unittest.TestCase):
         part.flip(0, 64)
         part.flip(0, 64)
         self.assertEqual(check(24, "alg")["periodic_probes"], 2)
+
+        if algq._at_save_cycles is None:
+            return
+        with TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "ingested"
+            db.save(snapshot, compression="topology")
+            with self.assertRaises(FileExistsError):
+                db.save(snapshot, compression="topology")
+
+            for engine in (("alg", "gpu") if has_cuda() else ("alg",)):
+                db = torbles.load(snapshot)
+                try:
+                    self.assertEqual(db.integrity["sectors"]["rows_with_faults"], 0)
+                    cold = check(25, engine)
+                    self.assertGreater(cold["periodic_ingested_proof_uses"], 0)
+                    self.assertNotIn("periodic_probes", cold)
+                    warm = check(26, engine)
+                    self.assertEqual(warm["periodic_proof_cache_hits"], 1)
+                    if engine == "gpu":
+                        self.assertEqual(warm["periodic_uploaded_bytes"], 0)
+                finally:
+                    db.close()
+
+            plane_file = snapshot / "sectors.part0.tbl"
+            original = plane_file.read_bytes()
+            self.assertEqual(int.from_bytes(original[8:12], "little"), 2)
+            for invalid in (original[:-1], original[:-1] + bytes([original[-1] ^ 1])):
+                plane_file.write_bytes(invalid)
+                with self.assertRaises(torbles.LoadError):
+                    torbles.load(snapshot, validate=False)
+            plane_file.write_bytes(original)
 
 
 if __name__ == "__main__":

@@ -654,13 +654,16 @@ class Database:
             self.con = None
 
     # ------------------------------------------------------------------ persistence
-    def save(self, path):
-        """Write the database to a directory: one file per torble (its bit planes, memory-mapped on load) plus a
-        manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates)."""
+    def save(self, path, *, compression=None):
+        """Write the database, schema and sidecars to a directory.
+
+        Use compression="topology" with a new destination to encode repeating
+        sectors on the native torus edges as part of the saved snapshot.
+        """
         with self._sql_lock:
             if self._writable:
                 raise ValueError("persistence of writable tables is not supported")
-            save(self, path)
+            save(self, path, compression=compression)
 
 
 # ---------------------------------------------------------------------- helpers
@@ -939,8 +942,28 @@ def from_frictionless(package, **build_opts):
 
 
 # ---------------------------------------------------------------------- persistence
-def save(db, path):
-    import ctypes
+def save(db, path, *, compression=None):
+    if compression is None:
+        return _save_snapshot(db, path, algq.lib.at_save)
+    if compression != "topology":
+        raise ValueError("compression must be None or 'topology'")
+    writer = algq._at_save_cycles
+    if writer is None:
+        raise RuntimeError("native topology compression requires a rebuilt libalg")
+    from tempfile import TemporaryDirectory
+
+    target = os.path.abspath(path)
+    if os.path.lexists(target):
+        raise FileExistsError(target)
+    parent = os.path.dirname(target)
+    os.makedirs(parent, exist_ok=True)
+    with TemporaryDirectory(prefix=".torbles-", dir=parent) as staging:
+        snapshot = os.path.join(staging, "snapshot")
+        _save_snapshot(db, snapshot, writer)
+        os.rename(snapshot, target)
+
+
+def _save_snapshot(db, path, writer):
     snapshot = None
     if getattr(db, "_sql_snapshot", None) is not None:
         from torbles import sqlsnapshot
@@ -948,7 +971,7 @@ def save(db, path):
     files = [] if snapshot is not None else None
 
     def save_torble(at, filename):
-        if algq.lib.at_save(at, filename.encode()) != 0:
+        if writer(at, os.fsencode(filename)) != 0:
             raise OSError(f"cannot write {filename}")
         if files is not None:
             files.append(os.path.relpath(filename, path))
@@ -1026,8 +1049,9 @@ def _fname(s): return re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"%{ord(m.group(0)):0
 
 
 def load(path, validate=True, con=None):
-    """Open a saved database. The bit planes are memory-mapped (privately: nothing is written back); with validate,
-    every torus face is checked on load and single-bit faults are repaired in memory (the report is in db.integrity).
+    """Open a saved database. Raw planes are mapped privately and compressed
+    planes are restored to their native layout. With validate, every torus face
+    is checked and single-bit faults are repaired in memory (see db.integrity).
     con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional)."""
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
@@ -1057,7 +1081,7 @@ def _load_tables(db, path, man, validate, files=None):
     def load_torble(filename):
         if files is not None:
             files.append(os.path.relpath(filename, path))
-        return algq.lib.at_load(filename.encode(), ctypes.byref(err))
+        return algq.lib.at_load(os.fsencode(filename), ctypes.byref(err))
 
     def load_array(filename):
         if files is not None:
@@ -1072,7 +1096,8 @@ def _load_tables(db, path, man, validate, files=None):
             for i, pm in enumerate(m.get("parts") or [dict(file=m["file"], cols=m["cols"], msb=m["msb"])]):
                 at = load_torble(os.path.join(path, pm["file"]))
                 if not at: raise LoadError(f"{name}: cannot load {pm['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
-                                           3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
+                                           3: "written by an incompatible version", 4: "header or payload damaged",
+                                           5: "file truncated"}.get(err.value, str(err.value)))
                 h = t if not m.get("parts") else Table.__new__(Table)
                 if h is not t: h.name = f"{name}#{i}"
                 h._own(at)                         # the mapping is the table's from here on (unmapped with it)

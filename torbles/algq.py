@@ -143,6 +143,9 @@ for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_cre
                         ("jp_terms", ctypes.c_int64, [vp, ctypes.c_int, vp, ctypes.c_int64, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_double, vp, ctypes.c_int64, ctypes.POINTER(ctypes.c_double)]), ("tb_date_surrogate", None, [vp, u64, vp]),
                         ("tb_refok", u64, [vp, u64, ctypes.c_uint32, u64, vp, vp, ctypes.c_uint32, vp]), ("pt_query", ctypes.c_int64, [vp, ctypes.POINTER(QPlan)])]:
     f = getattr(lib, name); f.restype = res; f.argtypes = args
+_at_save_cycles = getattr(lib, "at_save_cycles", None)
+if _at_save_cycles is not None:
+    _at_save_cycles.restype, _at_save_cycles.argtypes = ctypes.c_int, [vp, ctypes.c_char_p]
 # the release of a Table's storage (Table.close, or its finalizer): a torble's planes or a loaded file's mapping
 # (at_release), then its header (at_free), and the plain baseline's column table
 lib.at_free.restype, lib.at_free.argtypes = None, [vp]

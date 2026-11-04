@@ -49,11 +49,21 @@ typedef struct {
  * with no proof has cycle_words=0. sector_words=0 requests one global
  * sector; otherwise output ceil(table words / sector_words) descriptors.
  * Callers serialize against writes and anchor the source revision(s).
+ * max_words bounds word-period discovery for unindexed dependencies.
  * Both functions accept a NULL metrics pointer. */
 int at_periodic_plan_sectors(const atable_t *t, uint32_t columns_mask,
                              uint32_t sector_words, uint32_t max_words,
                              tp_sector_t *sectors, uint32_t capacity,
                              tp_sector_metrics_t *metrics);
+/* A current, validated sector index is available for at least one selected
+ * physical column. Its entries may be motifs or ordinary sectors. The
+ * extended planner counts each index decision it uses. Composed indexed
+ * periods are bounded by the execution limit, independently of max_words. */
+int at_periodic_has_persisted(const atable_t *t, uint32_t columns_mask);
+int at_periodic_plan_sectors_ex(const atable_t *t, uint32_t columns_mask,
+                                uint32_t sector_words, uint32_t max_words,
+                                tp_sector_t *sectors, uint32_t capacity,
+                                tp_sector_metrics_t *metrics, uint64_t *persisted_uses);
 int at_periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
                                uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
                                const tp_plan_t *plan, tp_state_t *out,

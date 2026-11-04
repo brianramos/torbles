@@ -238,6 +238,26 @@ ordinary SQL executor. Result statistics expose proof time and cache hits,
 whether a table or sector plan ran, and the number of proven and ordinary
 sectors. CUDA also reports the plane payload, uploaded bytes, and kernel time.
 
+### Topology compression during ingestion
+
+Save a newly ingested database with `db.save(path, compression="topology")`
+to store compact sectors inside the native torble files. Use a new destination.
+The writer encodes the physical V and H edges in 4,096-word sectors, choosing
+exact motifs or literal words for each edge. In particular, an H edge is the
+XOR between adjacent column potentials. It can repeat even when both columns
+are individually irregular. The writer keeps the independent edges that
+carry the torus face checks and uses the raw file format when it is smaller.
+
+`torbles.load(path)` checks the encoded directory and payload and restores
+the dense V and H layout for the existing kernels. The compressed format
+reduces persisted bytes. Reopen still allocates the expanded planes, and
+ordinary queries use those planes. Eligible CPU and CUDA SQL can compose
+sector cycles from the stored directory and skip rechecking those planes.
+Separately encoded V edges can prove a column cycle longer than the
+query-time discovery bound.
+`periodic_ingested_proof_uses` records directory lookups on the first plan.
+Native revisions still invalidate stored proofs after in-memory changes.
+
 ## Data types
 
 | SQL type | values | stored columns |
