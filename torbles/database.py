@@ -560,6 +560,15 @@ class Database:
         import sqlapi
         return sqlapi.Query(self, items)
 
+    def prepare_periodic(self, name, max_words=128):
+        """Verify reusable packed-word periods for a stored table's CPU SQL queries."""
+        from torbles import sqlperiodic
+
+        with self._sql_lock:
+            if self.con is None:
+                raise RuntimeError("database is closed")
+            return sqlperiodic.prepare(self.tables[name], max_words)
+
     def sql(self, text, engine="alg"):
         """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
         (.columns, .rows, .fetch_columns(), .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;

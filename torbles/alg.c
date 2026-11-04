@@ -286,6 +286,53 @@ static inline uint64_t rowmask(const atable_t *t, uint64_t w) {
     uint64_t left = t->n - w * 64; return left >= 64 ? ~0ULL : ((1ULL << left) - 1);
 }
 
+/* Verify word periods on the stored XOR planes. XOR across planes is
+ * invertible, so a repeat of these words is a repeat of the logical codes.
+ * Callers serialize against mutation and keep the certificate revision. */
+int at_periodic_periods(const atable_t *t, uint32_t max_words,
+                        uint16_t *periods, uint32_t capacity) {
+    if (!t || !periods || !max_words || max_words > 128 ||
+        t->k < 1 || t->k > MAXCOL || capacity < (uint32_t)t->k ||
+        t->nw != t->n / 64 + (t->n % 64 != 0) || t->nw > SIZE_MAX / sizeof(uint64_t)) return -1;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    uint16_t found[MAXCOL] = {0};
+    size_t full = (size_t)(t->n / 64);
+    if (max_words > full / 2) max_words = (uint32_t)(full / 2);
+    size_t prefix = 2 * (size_t)max_words;
+    uint64_t tail = t->n % 64 ? rowmask(t, full) : 0;
+    for (int col = 0; col < t->k && max_words; ++col) {
+        int width = t->width[col];
+        if (t->vflag[col] || width < 1 || width > 32) continue;
+        uint32_t period;
+        for (period = 1; period <= max_words; ++period) {
+            int bit;
+            for (bit = 0; bit < width; ++bit) {
+                const uint64_t *v = t->V[col][bit];
+                if (v && memcmp(v + period, v, (prefix - period) * sizeof *v)) break;
+            }
+            if (bit == width) break;
+        }
+        if (period > max_words) continue;
+
+        /* The prefix has length twice the period bound. By Fine-Wilf,
+         * its least period divides any other allowed prefix period.
+         * Thus any periodic extension must repeat this same least motif. */
+        int bit;
+        for (bit = 0; bit < width; ++bit) {
+            const uint64_t *v = t->V[col][bit];
+            if (!v) continue;
+            if (memcmp(v + prefix, v + prefix - period, (full - prefix) * sizeof *v) ||
+                (tail && ((v[full] ^ v[full % period]) & tail))) break;
+        }
+        if (bit == width) found[col] = (uint16_t)period;
+    }
+
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
+    memcpy(periods, found, (size_t)t->k * sizeof *periods);
+    return 0;
+}
+
 /* Radix ordering over the stored XOR planes. Each pass holds only the
  * current digit and two arrays of row ids. In each bucket, workers
  * scatter contiguous pieces of the prior order into disjoint ranges. */

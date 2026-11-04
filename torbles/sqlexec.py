@@ -3844,6 +3844,12 @@ class _Planner:
     def run_pass(self, rest, need, aggs, extra):
         s, cx = self.s, self.cx
         first_pass = not getattr(self, "_ran_pass", False); self._ran_pass = True
+        if cx.engine == "alg" and getattr(self.tab[self.fact], "_periodic", None) is not None:
+            from torbles import sqlperiodic
+
+            periodic = sqlperiodic.run(self, rest, need, aggs, extra)
+            if periodic is not None:
+                return periodic, {}
         preds = list(extra)            # engine predicates (algq), conjunction
         residual = []                  # IR conjuncts evaluated per group
         empty = False

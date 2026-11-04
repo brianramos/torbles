@@ -214,6 +214,22 @@ Results). A window whose values every row outputs keeps them as an integer or do
 and an ORDER BY the rows already follow is not applied; returning a million rows still builds a million Python
 tuples, as any engine does (`bench/window_output.py`).
 
+### Periodic aggregation experiment
+
+`db.prepare_periodic("events")` verifies packed-word periods on the stored
+table. Eligible CPU SQL then reads one common cycle of the referenced columns
+and their validity planes. Each representative carries the number of original
+rows it represents, including any partial final cycle.
+
+This route covers integer scalar and grouped `COUNT`, `SUM`, `AVG`, `MIN`,
+and `MAX` with supported predicates. The existing SQL executor handles the
+weighted aggregation and final ordering. Result statistics record
+`periodic_rows` and `periodic_representatives` when the route runs.
+
+Preparation is explicit and uses one stored physical table at a time. The
+optimizer checks native identity, revision, and row visibility before reusing
+the proof. Queries outside the route's bounds use the normal executor.
+
 ## Data types
 
 | SQL type | values | stored columns |
