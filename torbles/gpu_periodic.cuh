@@ -14,12 +14,14 @@ extern "C" void gpu_periodic_close(void *) {}
 
 #else
 
+#include <stddef.h>
+
 struct gpu_periodic_handle {
     gtable_t host, *table;
     uint64_t *planes;
-    pinstr_t *prog, *host_prog;
-    tp_state_t *states, *host_states;
-    cudaStream_t stream;
+    qplan_t *prog;
+    tp_state_t *states;
+    uint32_t *bad_group;
     cudaEvent_t start, stop;
     uint32_t repeats, remainder, tail;
 };
@@ -66,12 +68,12 @@ DEV void periodic_measure_g(const gtable_t *t, uint32_t word, uint64_t mask,
     if (measure.flags & TP_MAX) atomicMax(&state->maxs[index], hi);
 }
 
-static __global__ void gpu_periodic_words(const gtable_t *t, const pinstr_t *prog, int32_t nprog,
+static __global__ void gpu_periodic_words(const gtable_t *t, const qplan_t *prog,
                                           tp_plan_t plan, uint32_t repeats, uint32_t remainder,
-                                          uint32_t tail, tp_state_t *states) {
+                                          uint32_t tail, tp_state_t *states, uint32_t *bad_group) {
     uint32_t word = blockIdx.x * blockDim.x + threadIdx.x;
     if (word >= t->nw) return;
-    uint64_t pending = eval_program_g(t, prog, nprog, word);
+    uint64_t pending = eval_prog_g(t, prog, word);
     uint32_t copies = repeats + (word < remainder);
     /* The certificate covers occupied lanes of the original partial word. */
     uint64_t partial = word == remainder && tail ? (UINT64_C(1) << tail) - 1 : 0;
@@ -95,7 +97,7 @@ static __global__ void gpu_periodic_words(const gtable_t *t, const pinstr_t *pro
                     code |= bit << pw_g(t, key.col, j);
                 }
                 if (code >= key.radix - (key.valid >= 0)) {
-                    atomicExch(&states[plan.groups].mins[0], 1u);
+                    atomicExch(bad_group, 1u);
                     return;
                 }
             }
@@ -166,12 +168,9 @@ static bool gpu_periodic_plan(const gtable_t &t, const tp_plan_t &plan) {
 extern "C" void gpu_periodic_close(void *handle) {
     auto *h = (gpu_periodic_handle *)handle;
     if (!h) return;
-    if (h->stream) cudaStreamSynchronize(h->stream);
     if (h->stop) cudaEventDestroy(h->stop);
     if (h->start) cudaEventDestroy(h->start);
-    if (h->stream) cudaStreamDestroy(h->stream);
-    if (h->host_states) cudaFreeHost(h->host_states);
-    if (h->host_prog) cudaFreeHost(h->host_prog);
+    if (h->bad_group) cudaFree(h->bad_group);
     if (h->states) cudaFree(h->states);
     if (h->prog) cudaFree(h->prog);
     if (h->table) cudaFree(h->table);
@@ -198,15 +197,11 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
     auto *h = (gpu_periodic_handle *)calloc(1, sizeof(gpu_periodic_handle));
     if (!h) return NULL;
     size_t bytes = columns_width * cycle_words * sizeof(uint64_t);
-    constexpr size_t prog_capacity = TP_MAX_PROGRAM * sizeof(pinstr_t);
-    constexpr size_t state_capacity = (TP_MAX_GROUPS + 1) * sizeof(tp_state_t);
     if ((bytes && cudaMalloc((void **)&h->planes, bytes) != cudaSuccess) ||
         cudaMalloc((void **)&h->table, sizeof(gtable_t)) != cudaSuccess ||
-        cudaMalloc((void **)&h->prog, prog_capacity) != cudaSuccess ||
-        cudaMallocHost((void **)&h->host_prog, prog_capacity) != cudaSuccess ||
-        cudaMalloc((void **)&h->states, state_capacity) != cudaSuccess ||
-        cudaMallocHost((void **)&h->host_states, state_capacity) != cudaSuccess ||
-        cudaStreamCreateWithFlags(&h->stream, cudaStreamNonBlocking) != cudaSuccess ||
+        cudaMalloc((void **)&h->prog, sizeof(qplan_t)) != cudaSuccess ||
+        cudaMalloc((void **)&h->states, TP_MAX_GROUPS * sizeof(tp_state_t)) != cudaSuccess ||
+        cudaMalloc((void **)&h->bad_group, sizeof(uint32_t)) != cudaSuccess ||
         cudaEventCreate(&h->start) != cudaSuccess || cudaEventCreate(&h->stop) != cudaSuccess) {
         gpu_periodic_close(h);
         return NULL;
@@ -218,9 +213,8 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
     h->host.k = t->k;
     h->host.nw = cycle_words;
     h->host.n = (uint64_t)cycle_words * 64;
-    uint64_t *decoded = nullptr;
     if (bytes) {
-        decoded = (uint64_t *)malloc(bytes);
+        auto *decoded = (uint64_t *)malloc(bytes);
         if (!decoded) {
             gpu_periodic_close(h);
             return NULL;
@@ -239,15 +233,14 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
                 offset += cycle_words;
             }
         }
+        cudaError_t status = cudaMemcpy(h->planes, decoded, bytes, cudaMemcpyHostToDevice);
+        free(decoded);
+        if (status != cudaSuccess) {
+            gpu_periodic_close(h);
+            return NULL;
+        }
     }
-    /* Order initial uploads on the query stream and retain staging until completion. */
-    bool queued = (!bytes || cudaMemcpyAsync(h->planes, decoded, bytes, cudaMemcpyHostToDevice,
-                                             h->stream) == cudaSuccess) &&
-                  cudaMemcpyAsync(h->table, &h->host, sizeof(h->host), cudaMemcpyHostToDevice,
-                                  h->stream) == cudaSuccess;
-    cudaError_t status = cudaStreamSynchronize(h->stream);
-    free(decoded);
-    if (!queued || status != cudaSuccess) {
+    if (cudaMemcpy(h->table, &h->host, sizeof(h->host), cudaMemcpyHostToDevice) != cudaSuccess) {
         gpu_periodic_close(h);
         return NULL;
     }
@@ -262,43 +255,36 @@ extern "C" int gpu_periodic_reduce(void *handle, const pinstr_t *prog, int32_t n
     if (!h || !plan || !out || !gpu_periodic_plan(h->host, *plan) ||
         !gpu_periodic_program(h->host, prog, nprog)) return -1;
 
+    qplan_t filter;
+    filter.nprog = nprog;
     size_t prog_bytes = (size_t)nprog * sizeof(pinstr_t);
+    if (prog_bytes) memcpy(filter.prog, prog, prog_bytes);
     size_t state_bytes = plan->groups * sizeof(tp_state_t);
-    /* One trailing state carries the device-side plan validation status. */
-    size_t transfer_bytes = state_bytes + sizeof(tp_state_t);
+    if (cudaMemcpy(h->prog, &filter, offsetof(qplan_t, prog) + prog_bytes,
+                   cudaMemcpyHostToDevice) != cudaSuccess ||
+        cudaMemset(h->states, 0, state_bytes) != cudaSuccess ||
+        cudaMemset(h->bad_group, 0, sizeof(uint32_t)) != cudaSuccess ||
+        cudaEventRecord(h->start) != cudaSuccess) return -2;
+
     constexpr uint32_t threads = 64;
     uint32_t blocks = ((uint32_t)h->host.nw + threads - 1) / threads;
-    if (prog_bytes) {
-        memcpy(h->host_prog, prog, prog_bytes);
-        if (cudaMemcpyAsync(h->prog, h->host_prog, prog_bytes, cudaMemcpyHostToDevice,
-                            h->stream) != cudaSuccess) goto failed;
-    }
-    if (cudaMemsetAsync(h->states, 0, transfer_bytes, h->stream) != cudaSuccess ||
-        (ms && cudaEventRecord(h->start, h->stream) != cudaSuccess)) goto failed;
-
-    gpu_periodic_words<<<blocks, threads, 0, h->stream>>>(h->table, h->prog, nprog, *plan,
-        h->repeats, h->remainder, h->tail, h->states);
-    if (cudaGetLastError() != cudaSuccess ||
-        (ms && cudaEventRecord(h->stop, h->stream) != cudaSuccess) ||
-        cudaMemcpyAsync(h->host_states, h->states, transfer_bytes, cudaMemcpyDeviceToHost,
-                        h->stream) != cudaSuccess) goto failed;
-    if (cudaStreamSynchronize(h->stream) != cudaSuccess) return -2;
-    if (h->host_states[plan->groups].mins[0]) return -1;
+    gpu_periodic_words<<<blocks, threads>>>(h->table, h->prog, *plan, h->repeats, h->remainder,
+                                           h->tail, h->states, h->bad_group);
+    uint32_t bad_group = 0;
+    if (cudaGetLastError() != cudaSuccess || cudaEventRecord(h->stop) != cudaSuccess ||
+        cudaMemcpy(&bad_group, h->bad_group, sizeof(bad_group), cudaMemcpyDeviceToHost) != cudaSuccess)
+        return -2;
+    if (bad_group) return -1;
+    if (cudaMemcpy(out, h->states, state_bytes, cudaMemcpyDeviceToHost) != cudaSuccess) return -2;
     if (ms) {
         float elapsed = 0;
         if (cudaEventElapsedTime(&elapsed, h->start, h->stop) != cudaSuccess) return -2;
         *ms = elapsed;
     }
-    memcpy(out, h->host_states, state_bytes);
     for (uint32_t group = 0; group < plan->groups; ++group)
         for (uint32_t i = 0; i < TP_MAX_MEASURES; ++i)
             out[group].mins[i] = UINT32_MAX - out[group].mins[i];
     return 0;
-
-failed:
-    /* Drain any queued work before this handle's pinned buffers can be reused. */
-    cudaStreamSynchronize(h->stream);
-    return -2;
 }
 
 #endif
