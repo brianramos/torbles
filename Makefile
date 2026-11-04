@@ -23,13 +23,13 @@ MATHCU := $(sort $(wildcard $(T)/math_*_gpu.cu))
 
 all: $(T)/libalg.so $(T)/libgpu_emu.so $(T)/libmathgpu_emu.so
 
-$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/version.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h $(MATHC) $(MATHH)
+$(T)/libalg.so: $(T)/alg.c $(T)/torble.h $(T)/periodic.h $(T)/version.h $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(T)/relationships.h $(MATHC) $(MATHH)
 	$(CC) -O2 -march=native -shared -fPIC $(T)/alg.c $(T)/relationships.c $(T)/relationships_optimizer.c $(T)/relationships_system.c $(T)/relationships_dag.c $(T)/relationships_stage.c $(MATHC) -o $@ -lpthread -lm
 
 $(T)/libmathgpu_emu.so: $(MATHCU) $(MATHH)
 	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(MATHCU) -o $@
 
-$(T)/libgpu_emu.so: $(T)/gpu.cu $(T)/torble.h $(T)/version.h
+$(T)/libgpu_emu.so: $(T)/gpu.cu $(T)/gpu_periodic.cuh $(T)/torble.h $(T)/periodic.h $(T)/version.h
 	$(CXX) -O2 -fwrapv -DEMULATE -x c++ -shared -fPIC $(T)/gpu.cu -o $@
 
 gpu: $(T)/libalg.so

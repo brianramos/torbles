@@ -561,7 +561,7 @@ class Database:
         return sqlapi.Query(self, items)
 
     def prepare_periodic(self, name, max_words=128):
-        """Verify reusable packed-word periods for a stored table's CPU SQL queries."""
+        """Verify reusable packed-word periods for a stored table's CPU and CUDA SQL queries."""
         from torbles import sqlperiodic
 
         with self._sql_lock:

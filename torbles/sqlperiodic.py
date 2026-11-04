@@ -1,22 +1,74 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
-"""Weighted SQL aggregation over certified periodic native planes."""
+"""SQL planning for native reductions over certified periodic planes."""
 
 import ctypes as C
+from functools import cache
 from math import lcm
+import weakref
 
 import numpy as np
 import sqlir as I
+import sqltypes as T
 
 from . import algq
 from .sqlsnapshot import _revision
 
 _MAX_WORDS = 128
 _MIN_REPEATS = 8
+_MAX_KEYS = 3
+_MAX_MEASURES = 2
+_MAX_GROUPS = 4096
+_MAX_PROGRAM = 1024
+_SUM, _MIN, _MAX = 1, 2, 4
 _PREDICATES = {
     "and", "or", "not", "=", "<>", "<", "<=", ">", ">=", "between",
     "is_null", "is_not_null", "is_distinct", "is_not_distinct",
 }
+_NON_COLUMN_OPS = {algq.P[name] for name in ("TRUE", "AND", "OR", "NOT", "XOR")}
+
+
+class _Key(C.Structure):
+    _fields_ = [("col", C.c_int32), ("valid", C.c_int32), ("radix", C.c_uint32)]
+
+
+class _Measure(C.Structure):
+    _fields_ = [("col", C.c_int32), ("valid", C.c_int32), ("flags", C.c_uint32)]
+
+
+class _Plan(C.Structure):
+    _fields_ = [("nkeys", C.c_uint32), ("nmeasures", C.c_uint32), ("groups", C.c_uint32),
+                ("keys", _Key * _MAX_KEYS), ("measures", _Measure * _MAX_MEASURES)]
+
+
+class _State(C.Structure):
+    _fields_ = [("count", C.c_uint64), ("valid", C.c_uint64 * _MAX_MEASURES),
+                ("sums", C.c_uint64 * _MAX_MEASURES), ("mins", C.c_uint32 * _MAX_MEASURES),
+                ("maxs", C.c_uint32 * _MAX_MEASURES)]
+
+
+def _bind(lib, name, restype, argtypes):
+    fn = getattr(lib, name, None)
+    if fn is not None:
+        fn.restype, fn.argtypes = restype, argtypes
+    return fn
+
+
+_prog_args = [C.POINTER(algq.PInstr), C.c_int32, C.POINTER(_Plan), C.POINTER(_State)]
+_cpu = _bind(algq.lib, "at_periodic_reduce", C.c_int, [algq.vp, C.c_uint32, *_prog_args])
+_certify = _bind(algq.lib, "at_periodic_periods", C.c_int,
+                 [algq.vp, C.c_uint32, C.POINTER(C.c_uint16), C.c_uint32])
+
+
+def _close_cycle(close, handle, lock=algq._GPU_LOCK):
+    with lock:
+        close(handle)
+
+
+class _DeviceCycle:
+    def __init__(self, handle, size, close):
+        self.handle, self.size = handle, size
+        self._release = weakref.finalize(self, _close_cycle, close, handle)
 
 
 def _anchor(fact):
@@ -30,22 +82,19 @@ def prepare(fact, max_words=_MAX_WORDS):
         raise ValueError(f"max_words must be an integer from 1 through {_MAX_WORDS}")
     if fact.parts is not None or getattr(fact, "_vflag", None):
         return {}
-    native = getattr(algq.lib, "at_periodic_periods", None)
-    if native is None:
+    if _certify is None:
         return {}
     anchor = _anchor(fact)
     cached = getattr(fact, "_periodic", None)
     if cached is not None and cached[:2] == (anchor, max_words):
         return dict(cached[2])
 
-    native.restype = C.c_int
-    native.argtypes = [C.c_void_p, C.c_uint32, C.POINTER(C.c_uint16), C.c_uint32]
     columns = tuple(fact.cols)
     periods = (C.c_uint16 * len(columns))()
-    if native(anchor[1], max_words, periods, len(columns)) or _anchor(fact) != anchor:
+    if _certify(anchor[1], max_words, periods, len(columns)) or _anchor(fact) != anchor:
         return {}
     result = {name: period for name, period in zip(columns, periods) if period}
-    fact._periodic = anchor, max_words, result
+    fact._periodic = anchor, max_words, result, {}
     return dict(result)
 
 
@@ -68,18 +117,92 @@ def _safe_predicate(expr, strip):
             and all(_safe_predicate(arg, strip) for arg in expr.args))
 
 
-def run(planner, rest, need, aggs, extra):
-    """Return weighted representative rows for the usual SQL aggregate stage."""
+@cache
+def _cuda_functions(lib):
+    open_cycle = _bind(lib, "gpu_periodic_open", algq.vp,
+                       [algq.vp, C.c_uint32, C.c_uint32, C.POINTER(C.c_uint64)])
+    reduce = _bind(lib, "gpu_periodic_reduce", C.c_int,
+                   [algq.vp, *_prog_args, C.POINTER(C.c_double)])
+    close = _bind(lib, "gpu_periodic_close", None, [algq.vp])
+    return open_cycle, reduce, close
+
+
+def _cuda(fact, cycle, mask, program, plan, states, resident, stats):
+    try:
+        open_cycle, reduce, close = _cuda_functions(algq.gpu_lib())
+    except (RuntimeError, OSError):
+        return False
+    if open_cycle is None or reduce is None or close is None:
+        return False
+    tag = cycle, mask
+    uploaded = 0
+    retired = None
+    elapsed = C.c_double()
+    with algq._GPU_LOCK:
+        entry = resident.get(tag)
+        if entry is None:
+            size = C.c_uint64()
+            handle = open_cycle(fact.at, cycle, mask, size)
+            if not handle:
+                return False
+            entry = _DeviceCycle(handle, size.value, close)
+            uploaded = entry.size
+            if len(resident) >= 8:
+                retired = resident.pop(next(iter(resident)))
+            resident[tag] = entry
+        rc = reduce(entry.handle, program, len(program), plan, states, elapsed)
+    del retired
+    if rc:
+        return False
+    stats["periodic_uploaded_bytes"] = stats.get("periodic_uploaded_bytes", 0) + uploaded
+    stats["periodic_gpu_plane_bytes"] = entry.size
+    stats["periodic_kernel_ms"] = stats.get("periodic_kernel_ms", 0.0) + elapsed.value
+    stats["periodic_native_device"] = "cuda"
+    return True
+
+
+def _format_result(E, groups, aggregates, states):
+    present = [i for i, state in enumerate(states) if state.count] if groups else [0]
+    selected = [states[i] for i in present]
+    rel = E.Rel(len(present))
+    rel.grouped = True
+    for expr, radix, valid, offset in reversed(groups):
+        codes = [index % radix for index in present]
+        rel.cols[expr.key()] = [None if valid >= 0 and code == radix - 1 else code + offset
+                                for code in codes]
+        present = [index // radix for index in present]
+    for key, kind, index, offset in aggregates:
+        def value(state):
+            if kind == "count_star":
+                return state.count
+            count = state.valid[index]
+            if kind == "count":
+                return count
+            if not count:
+                return None
+            if kind == "min":
+                return state.mins[index] + offset
+            if kind == "max":
+                return state.maxs[index] + offset
+            total = state.sums[index] + offset * count
+            return total if kind == "sum" else total / count
+        rel.cols[key] = [value(state) for state in selected]
+    return rel
+
+
+def run(planner, rest, aggs, extra):
+    """Lower supported aggregates and return their native group states."""
     from . import sqlexec as E
 
     s, cx, binding = planner.s, planner.cx, planner.fact
     fact = planner.tab[binding]
     cached = getattr(fact, "_periodic", None)
-    if (cached is None or cx.engine != "alg" or s.from_ is not binding or not s.aggregate
+    if (cached is None or cx.engine not in ("alg", "gpu") or s.from_ is not binding or not s.aggregate
             or planner.joins or planner.left or planner.nulled or extra
             or planner.fact_sample is not None or s.sample is not None
             or getattr(binding, "writable", None) is not None
             or fact.parts is not None or getattr(fact, "_vflag", None)
+            or not 0 < fact.n < 1 << 32 or len(s.group) > _MAX_KEYS or not aggs
             or s.sets is not None or s.qualify is not None or s.distinct or s.distinct_on is not None):
         return None
 
@@ -87,65 +210,116 @@ def run(planner, rest, need, aggs, extra):
     top += [spec[1] for spec, _, _ in s.order if spec[0] == "expr"]
     if any(expr is not None and I.has(expr, (I.Win, I.Subq, I.Outer)) for expr in top):
         return None
-    if any(not isinstance(expr, I.Col) or not expr.t.integer for expr in s.group):
-        return None
-
-    predicates = [E._fold_consts(expr) for expr in rest]
-    atoms = dict(need)
-    for agg in aggs.values():
-        if (agg.name not in ("count_star", "count", "sum", "avg", "min", "max")
-                or agg.order or agg.distinct or len(agg.args) != int(agg.name != "count_star")):
-            return None
-        for arg in agg.args:
-            col = E._strip_cast(arg)
-            if not arg.t.integer or not isinstance(col, I.Col) or not col.t.integer:
-                return None
-            atoms[col.key()] = col
-    filters = predicates + [E._fold_consts(agg.filter) for agg in aggs.values() if agg.filter is not None]
-    if any(not _safe_predicate(expr, E._strip_cast) for expr in filters):
-        return None
-    for expr in filters:
-        atoms.update((col.key(), col) for col in I.cols_of(expr))
-    if not atoms:
-        return None
-
-    anchor, _, periods = cached
+    anchor, _, periods, cache = cached
     if _anchor(fact) != anchor:
         return None
     validity = getattr(fact, "nullable", {})
     refs = getattr(fact, "_refdim", {})
     moved = getattr(fact, "moved", {})
-    cycle = 1
-    for col in atoms.values():
-        name = col.name
-        if (col.b is not binding or not col.t.integer or name in refs or name in moved
-                or name in fact.wide or getattr(fact.codecs.get(name), "kind", None) != "int"):
+    dependencies = set()
+
+    def eligible(col):
+        return (isinstance(col, I.Col) and col.b is binding and col.t.integer and col.name in fact.cols
+                and col.name not in refs and col.name not in moved and col.name not in fact.wide
+                and getattr(fact.codecs.get(col.name), "kind", None) == "int")
+
+    def valid_index(name):
+        physical = validity.get(name)
+        if physical is None:
+            return -1
+        dependencies.add(physical)
+        return fact.idx(physical)
+
+    groups, aggregates, measures = [], [], {}
+    plan = _Plan()
+    plan.groups = 1
+    for i, expr in enumerate(s.group):
+        if not eligible(expr):
             return None
-        for physical in (name, validity.get(name)):
-            if physical is None:
-                continue
-            period = periods.get(physical)
-            if period is None:
+        name = expr.name
+        dependencies.add(name)
+        valid = valid_index(name)
+        radix = int(fact.maxcode(name)) + 1 + (valid >= 0)
+        if radix * plan.groups > _MAX_GROUPS:
+            return None
+        plan.groups *= radix
+        plan.keys[i] = _Key(fact.idx(name), valid, radix)
+        groups.append((expr, radix, valid, int(fact.codecs[name].offset)))
+    plan.nkeys = len(groups)
+    flags = {"count": 0, "sum": _SUM, "avg": _SUM, "min": _MIN, "max": _MAX}
+    for key, agg in aggs.items():
+        kind = agg.name
+        if agg.filter is not None or agg.distinct or agg.order:
+            return None
+        if kind == "count_star":
+            aggregates.append((key, kind, 0, 0))
+            continue
+        if kind not in flags or len(agg.args) != 1 or not agg.args[0].t.integer:
+            return None
+        col = E._strip_cast(agg.args[0])
+        if not eligible(col):
+            return None
+        name, flag = col.name, flags[kind]
+        offset = int(fact.codecs[name].offset)
+        if kind == "sum":
+            low, high = T.INT_RANGE[agg.t.id]
+            if min(0, offset) * fact.n < low or max(0, offset + int(fact.maxcode(name))) * fact.n > high:
                 return None
-            cycle = lcm(cycle, period)
-            if cycle > _MAX_WORDS:
+        if name not in measures:
+            if len(measures) == _MAX_MEASURES:
                 return None
+            index = measures[name] = len(measures)
+            plan.measures[index] = _Measure(-1, valid_index(name), 0)
+        index = measures[name]
+        if flag:
+            dependencies.add(name)
+            plan.measures[index].col = fact.idx(name)
+            plan.measures[index].flags |= flag
+        aggregates.append((key, kind, index, offset))
+    plan.nmeasures = len(measures)
+
+    program = []
+    for term in rest:
+        term = E._fold_consts(term)
+        if isinstance(term, I.Lit) and term.v is True:
+            continue
+        if not _safe_predicate(term, E._strip_cast) or not all(eligible(c) for c in I.cols_of(term)):
+            return None
+        predicate = planner.native(term)
+        if predicate is None:
+            return None
+        prior = len(program)
+        try:
+            algq.compile_pred(predicate, fact, program)
+        except TypeError:
+            return None
+        if prior:
+            program.append(algq.PInstr(algq.P["AND"], 0, 0, 0))
+        if len(program) > _MAX_PROGRAM:
+            return None
+    dependencies.update(fact.cols[op.col] for op in program if op.op not in _NON_COLUMN_OPS)
+    if not dependencies or not dependencies <= periods.keys():
+        return None
+    cycle = lcm(*(periods[name] for name in dependencies))
+    if cycle > _MAX_WORDS:
+        return None
 
     full, tail = divmod(fact.n, 64)
-    repeats, remainder = divmod(full, cycle)
-    if repeats < _MIN_REPEATS or not _full_scope(fact, full, tail):
+    if full // cycle < _MIN_REPEATS or not _full_scope(fact, full, tail):
         return None
-    representatives = cycle * 64
-    ids = np.arange(representatives, dtype=np.uint64)
-    rel = planner.rows_rel(atoms, [], False, ids=ids)
+    instructions = (algq.PInstr * len(program))(*program)
+    states = (_State * plan.groups)()
+    if cx.engine == "gpu":
+        mask = sum(1 << fact.idx(name) for name in dependencies)
+        if not _cuda(fact, cycle, mask, instructions, plan, states, cache, cx.stats):
+            return None
+    else:
+        if _cpu is None or _cpu(fact.at, cycle, instructions, len(instructions), plan, states):
+            return None
+        cx.stats["periodic_native_device"] = "cpu"
     if _anchor(fact) != anchor:
         return None
-    weights = np.full(representatives, repeats, dtype=np.int64)
-    weights[:remainder * 64 + tail] += 1
-    rel.cnt = weights.tolist()
-    if predicates:
-        rel = rel.take(E.rows_where(E._and(predicates), rel, cx))
     cx.stats["engine_queries"] += 1
     cx.stats["periodic_rows"] = cx.stats.get("periodic_rows", 0) + fact.n
-    cx.stats["periodic_representatives"] = cx.stats.get("periodic_representatives", 0) + representatives
-    return rel
+    cx.stats["periodic_representatives"] = cx.stats.get("periodic_representatives", 0) + cycle * 64
+    return _format_result(E, groups, aggregates, states)

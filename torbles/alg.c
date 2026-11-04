@@ -23,6 +23,7 @@
 #include "torble.h"
 #include "version.h"
 #include "relationships.h"
+#include "periodic.h"
 #include <unistd.h>
 
 const char *at_version(void) { return TORBLES_RELEASE; }
@@ -2173,6 +2174,163 @@ static inline uint32_t extract_msb(const uint64_t *x, int nb, int r) {  /* first
 static inline uint32_t extract_col(const atable_t *t, const uint64_t *x, int c, int r) {
     return t->msb[c] ? extract_msb(x, t->width[c], r) : extract(x, t->width[c], r);
 }
+static int periodic_column(const atable_t *t, int32_t col) {
+    if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) return 0;
+    for (int bit = 0; bit < t->width[col]; ++bit) if (!t->V[col][bit]) return 0;
+    return 1;
+}
+
+static int periodic_validity(const atable_t *t, int32_t valid) {
+    return valid == -1 || (periodic_column(t, valid) && t->width[valid] == 1);
+}
+
+static int periodic_program(const atable_t *t, const pinstr_t *prog, int32_t nprog) {
+    if (nprog < 0 || nprog > TP_MAX_PROGRAM || (nprog && !prog)) return 0;
+    int depth = 0;
+    uint32_t checked = 0;
+    for (int32_t i = 0; i < nprog; ++i) {
+        const pinstr_t *p = prog + i;
+        if (p->op == P_AND || p->op == P_OR || p->op == P_XOR) {
+            if (depth < 2) return 0;
+            --depth;
+            continue;
+        }
+        if (p->op == P_NOT) {
+            if (!depth) return 0;
+            continue;
+        }
+        if (++depth > TP_MAX_STACK || p->op < P_TRUE || p->op > P_XOR) return 0;
+        if (p->op == P_TRUE) continue;
+        if (p->col < 0 || p->col >= t->k) return 0;
+        uint32_t col = UINT32_C(1) << p->col;
+        if (!(checked & col)) {
+            if (!periodic_column(t, p->col)) return 0;
+            checked |= col;
+        }
+        unsigned width = (unsigned)t->width[p->col];
+        if ((p->op == P_CUBE || p->op == P_CLT || p->op == P_CGE) &&
+            (!p->b || (width < 32 && (p->b >> width)))) return 0;
+        if (p->op == P_PREFIX && p->b > width) return 0;
+        if (p->op == P_BIT && p->a >= 32) return 0;
+    }
+    return !nprog || depth == 1;
+}
+
+static int periodic_plan(const atable_t *t, const tp_plan_t *plan) {
+    if (plan->nkeys > TP_MAX_KEYS || plan->nmeasures > TP_MAX_MEASURES ||
+        !plan->groups || plan->groups > TP_MAX_GROUPS) return 0;
+    uint32_t groups = 1;
+    for (uint32_t i = 0; i < plan->nkeys; ++i) {
+        const tp_key_t *key = plan->keys + i;
+        if (!periodic_column(t, key->col) || !periodic_validity(t, key->valid) ||
+            !key->radix || groups > TP_MAX_GROUPS / key->radix) return 0;
+        groups *= key->radix;
+    }
+    if (groups != plan->groups) return 0;
+    for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+        const tp_measure_t *measure = plan->measures + i;
+        if ((measure->flags & ~(TP_SUM | TP_MIN | TP_MAX)) ||
+            !periodic_validity(t, measure->valid) ||
+            ((measure->flags || measure->col != -1) && !periodic_column(t, measure->col))) return 0;
+    }
+    return 1;
+}
+
+static uint64_t periodic_valid_word(const atable_t *t, dec_t *d, int col, uint64_t word) {
+    return col < 0 ? UINT64_MAX : decode_n(t, d, col, word, 1)[0];
+}
+
+static int periodic_reduce_word(const atable_t *t, uint64_t word, uint64_t repeats,
+                                const pinstr_t *prog, int32_t nprog,
+                                const tp_plan_t *plan, tp_state_t *out) {
+    dec_t d;
+    DEC_RESET(d);
+    uint64_t pending = eval_prog(t, prog, nprog, &d, word) & rowmask(t, word);
+    if (!pending) return 0;
+    const uint64_t *keys[TP_MAX_KEYS], *measures[TP_MAX_MEASURES];
+    uint64_t key_valid[TP_MAX_KEYS], measure_valid[TP_MAX_MEASURES];
+    for (uint32_t i = 0; i < plan->nkeys; ++i) {
+        const tp_key_t *key = plan->keys + i;
+        key_valid[i] = periodic_valid_word(t, &d, key->valid, word);
+        keys[i] = decode(t, &d, key->col, word);
+    }
+    for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+        const tp_measure_t *measure = plan->measures + i;
+        measure_valid[i] = periodic_valid_word(t, &d, measure->valid, word);
+        measures[i] = measure->flags ? decode(t, &d, measure->col, word) : NULL;
+    }
+
+    /* Split the bitmap by the first remaining row's mixed-radix key.
+     * Intersect decoded value planes instead of transposing every row. */
+    while (pending) {
+        unsigned row = (unsigned)__builtin_ctzll(pending);
+        uint64_t group_mask = pending;
+        uint32_t group = 0;
+        for (uint32_t i = 0; i < plan->nkeys; ++i) {
+            const tp_key_t *key = plan->keys + i;
+            uint32_t code = 0;
+            if (!(key_valid[i] >> row & 1)) {
+                code = key->radix - 1;
+                group_mask &= ~key_valid[i];
+            } else {
+                int width = t->width[key->col];
+                group_mask &= key_valid[i];
+                for (int bit = 0; bit < width; ++bit) {
+                    uint64_t plane = keys[i][t->msb[key->col] ? width - 1 - bit : bit];
+                    uint32_t set = (uint32_t)((plane >> row) & 1);
+                    code |= set << bit;
+                    group_mask &= set ? plane : ~plane;
+                }
+                if (code >= key->radix - (key->valid >= 0)) return -1;
+            }
+            group = group * key->radix + code;
+        }
+        pending &= ~group_mask;
+        tp_state_t *state = out + group;
+        state->count += (uint64_t)__builtin_popcountll(group_mask) * repeats;
+        for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+            uint64_t mask = group_mask & measure_valid[i];
+            if (!mask) continue;
+            state->valid[i] += (uint64_t)__builtin_popcountll(mask) * repeats;
+            const tp_measure_t *measure = plan->measures + i;
+            if (measure->flags & TP_SUM) {
+                uint64_t sum = 0;
+                int width = t->width[measure->col];
+                for (int bit = 0; bit < width; ++bit) {
+                    uint64_t plane = measures[i][t->msb[measure->col] ? width - 1 - bit : bit];
+                    sum += (uint64_t)__builtin_popcountll(plane & mask) << bit;
+                }
+                state->sums[i] += sum * repeats;
+            }
+            if (measure->flags & (TP_MIN | TP_MAX)) {
+                uint32_t lo, hi;
+                ext_word(measures[i], t->width[measure->col], t->msb[measure->col], mask, &lo, &hi);
+                if ((measure->flags & TP_MIN) && lo < state->mins[i]) state->mins[i] = lo;
+                if ((measure->flags & TP_MAX) && hi > state->maxs[i]) state->maxs[i] = hi;
+            }
+        }
+    }
+    return 0;
+}
+
+int at_periodic_reduce(const atable_t *t, uint32_t cycle_words, const pinstr_t *prog,
+                        int32_t nprog, const tp_plan_t *plan, tp_state_t *out) {
+    if (!t || !plan || !out || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        !cycle_words || cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64 ||
+        t->nw != t->n / 64 + (t->n % 64 != 0)) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+    memset(out, 0, (size_t)plan->groups * sizeof *out);
+    for (uint32_t group = 0; group < plan->groups; ++group)
+        for (uint32_t i = 0; i < TP_MAX_MEASURES; ++i) out[group].mins[i] = UINT32_MAX;
+
+    uint64_t full = t->n / 64, copies = full / cycle_words, extra = full % cycle_words;
+    for (uint32_t phase = 0; phase < cycle_words; ++phase)
+        if (periodic_reduce_word(t, phase, copies + (phase < extra), prog, nprog, plan, out)) return -1;
+    if ((t->n % 64) && periodic_reduce_word(t, full, 1, prog, nprog, plan, out)) return -1;
+    return revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ? 0 : -1;
+}
+
 /* Bounded native profiling for relationship-system physical alternatives. The
  * sampled masks have exactly the ordinary fact executor's filter/semijoin/delta
  * semantics. No result rows or column-sized intermediate arrays are materialized. */

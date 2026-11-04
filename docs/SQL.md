@@ -216,19 +216,21 @@ tuples, as any engine does (`bench/window_output.py`).
 
 ### Periodic aggregation experiment
 
-`db.prepare_periodic("events")` verifies packed-word periods on the stored
-table. Eligible CPU SQL then reads one common cycle of the referenced columns
-and their validity planes. Each representative carries the number of original
-rows it represents, including any partial final cycle.
+`db.prepare_periodic("events")` verifies packed-word periods on one stored
+physical table. Native CPU and CUDA kernels evaluate eligible SQL filters and
+aggregates over one common cycle of the referenced value and validity planes.
+They weight the packed masks for complete cycles and handle the remaining
+words and final partial word exactly. CUDA uploads the referenced planes of
+that cycle and reuses the device copy across queries.
 
-This route covers integer scalar and grouped `COUNT`, `SUM`, `AVG`, `MIN`,
-and `MAX` with supported predicates. The existing SQL executor handles the
-weighted aggregation and final ordering. Result statistics record
-`periodic_rows` and `periodic_representatives` when the route runs.
-
-Preparation is explicit and uses one stored physical table at a time. The
-optimizer checks native identity, revision, and row visibility before reusing
-the proof. Queries outside the route's bounds use the normal executor.
+The route covers integer scalar and grouped `COUNT`, `SUM`, `AVG`, `MIN`,
+and `MAX` with supported predicates, up to three group keys and two measure
+columns. Python handles planning and formats the finished groups. The optimizer
+checks native identity, revision, and row visibility before reusing the proof.
+Other queries use the normal executor. Result statistics include
+`periodic_native_device`, `periodic_rows`, and `periodic_representatives`. CUDA
+also reports `periodic_gpu_plane_bytes`, `periodic_uploaded_bytes`, and
+`periodic_kernel_ms`.
 
 ## Data types
 

@@ -56,6 +56,7 @@ run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
 run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
 run "shared SQL workload states"              python3 -m unittest check_sql_workload check_sql_algebra
+run "native periodic SQL reductions"          python3 tests/check_sql_periodic.py
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
 run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
 run "encoded exact distinct and ranked groups"  python3 -m unittest check_encoded_groups check_sql_interchanges

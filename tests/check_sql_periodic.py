@@ -9,6 +9,7 @@ import duckdb
 import numpy as np
 
 import torbles
+from torbles import algq
 
 
 class PeriodicSQLChecks(unittest.TestCase):
@@ -32,14 +33,16 @@ class PeriodicSQLChecks(unittest.TestCase):
         self.addCleanup(self.db.close)
         self.periods = self.db.prepare_periodic("t")
 
-    def exact(self, sql, periodic=True):
+    def exact(self, sql, periodic=True, engine="alg"):
         expected = self.oracle.execute(sql).fetchall()
-        result = self.db.sql(sql)
+        result = self.db.sql(sql, engine=engine)
         self.assertEqual(result.fetchall(), expected)
         self.assertEqual("periodic_representatives" in result.stats, periodic, result.stats)
         if periodic:
             self.assertEqual(result.stats["periodic_rows"], self.rows)
             self.assertLess(result.stats["periodic_representatives"], self.rows)
+            self.assertEqual(result.stats["periodic_native_device"], "cpu" if engine == "alg" else "cuda")
+        return result.stats
 
     def test_weighted_cross_column_group_and_tail(self):
         self.assertEqual([self.periods[k] for k in ("x", "y", "g")], [3, 5, 7])
@@ -49,8 +52,29 @@ class PeriodicSQLChecks(unittest.TestCase):
         self.exact(f"SELECT g, COUNT(*), COUNT(y), SUM(y), AVG(y) FROM t {filt} "
                    "GROUP BY g HAVING COUNT(*) > 100 ORDER BY g NULLS LAST")
         self.exact("SELECT g, SUM(y) FILTER (WHERE x < 0), COUNT(*) FROM t "
-                   "GROUP BY g ORDER BY g NULLS LAST")
+                   "GROUP BY g ORDER BY g NULLS LAST", periodic=False)
         self.exact("SELECT COUNT(*), SUM(y), AVG(y), MIN(y) FROM t WHERE x > 1000")
+
+    def test_cuda_reuses_only_the_uploaded_cycle(self):
+        try:
+            name = algq.gpu_name().lower()
+            cuda = hasattr(algq.gpu_lib(), "gpu_periodic_open") and "emulat" not in name and name != "no cuda device"
+        except (OSError, RuntimeError):
+            cuda = False
+        if not cuda:
+            self.skipTest("CUDA periodic kernels unavailable")
+        sql = ("SELECT g, COUNT(*), COUNT(x), SUM(x), AVG(y), MIN(y), MAX(x) FROM t "
+               "WHERE x BETWEEN -12 AND 3 OR (x IS NULL AND y > 7) "
+               "GROUP BY g HAVING COUNT(*) > 100 ORDER BY g NULLS LAST")
+        cold = self.exact(sql, engine="gpu")
+        self.assertGreater(cold["periodic_uploaded_bytes"], 0)
+        self.assertLess(cold["periodic_uploaded_bytes"], self.rows // 8)
+        warm = self.exact(sql, engine="gpu")
+        self.assertEqual(warm["periodic_uploaded_bytes"], 0)
+        self.assertEqual(warm["periodic_gpu_plane_bytes"], cold["periodic_uploaded_bytes"])
+        self.assertGreater(warm["periodic_kernel_ms"], 0)
+        self.exact("SELECT x, g, COUNT(*), MIN(y), MAX(y), SUM(y) FROM t "
+                   "WHERE y IS NOT NULL GROUP BY x, g ORDER BY x NULLS LAST, g NULLS LAST", engine="gpu")
 
     def test_unproven_column_and_nonaggregate_fall_back(self):
         self.exact("SELECT COUNT(*) FROM t WHERE noise > 90000", periodic=False)
