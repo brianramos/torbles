@@ -10,6 +10,15 @@ import numpy as np
 
 import torbles
 from torbles import algq
+from torbles import sqlperiodic
+
+
+def has_cuda():
+    try:
+        name = algq.gpu_name().lower()
+        return hasattr(algq.gpu_lib(), "gpu_periodic_open_sectors") and "emulat" not in name and name != "no cuda device"
+    except (OSError, RuntimeError):
+        return False
 
 
 class PeriodicSQLChecks(unittest.TestCase):
@@ -57,12 +66,7 @@ class PeriodicSQLChecks(unittest.TestCase):
         self.exact("SELECT COUNT(*), SUM(y), AVG(y), MIN(y) FROM t WHERE x > 1000")
 
     def test_cuda_reuses_only_the_uploaded_cycle(self):
-        try:
-            name = algq.gpu_name().lower()
-            cuda = hasattr(algq.gpu_lib(), "gpu_periodic_open") and "emulat" not in name and name != "no cuda device"
-        except (OSError, RuntimeError):
-            cuda = False
-        if not cuda:
+        if not has_cuda():
             self.skipTest("CUDA periodic kernels unavailable")
         sql = ("SELECT g, COUNT(*), COUNT(x), SUM(x), AVG(y), MIN(y), MAX(x) FROM t "
                "WHERE x BETWEEN -12 AND 3 OR (x IS NULL AND y > 7) "
@@ -95,7 +99,8 @@ class PeriodicSQLChecks(unittest.TestCase):
         fact.flip(0, 64)
         fact.flip(0, 64)
         sql = "SELECT COUNT(*) FROM t WHERE x IS NOT NULL"
-        self.exact(sql, periodic=False)
+        with patch.object(sqlperiodic, "_discover", None):
+            self.exact(sql, periodic=False)
         self.db.prepare_periodic("t")
         self.exact(sql)
         fact.used[1] = False
@@ -105,6 +110,63 @@ class PeriodicSQLChecks(unittest.TestCase):
         fallback = self.db.sql(sql)
         self.assertEqual(fallback.fetchall(), original)
         self.assertNotIn("periodic_representatives", fallback.stats)
+
+
+class AutomaticSectorChecks(unittest.TestCase):
+    def test_automatic_local_cycles_across_physical_parts(self):
+        if sqlperiodic._discover is None:
+            self.skipTest("native sector planner unavailable")
+        rows_per_sector = sqlperiodic._SECTOR_WORDS * 64
+        rows = rows_per_sector * 4 + 32_777
+        filler = ", ".join(f"0::INTEGER AS filler_{i}" for i in range(32))
+        oracle = duckdb.connect()
+        self.addCleanup(oracle.close)
+        oracle.execute(f"""
+            CREATE TABLE sectors AS
+            WITH position AS (
+                SELECT i // {rows_per_sector} AS s, i % {rows_per_sector} AS lane
+                FROM range({rows}) t(i)
+            ), phase AS (
+                SELECT *, lane % (64 * (s + 3)) AS p FROM position
+            )
+            SELECT CASE WHEN s = 1 THEN lane % 104729
+                        WHEN p % 13 = 0 THEN NULL ELSE p % 97 - 48 + s END::INTEGER AS x,
+                   CASE WHEN p // 64 = 2 THEN NULL ELSE p // 64 - 2 END::INTEGER AS g,
+                   {filler},
+                   CASE WHEN p % 17 = 0 THEN NULL ELSE p % 41 - 20 - s END::INTEGER AS y
+            FROM phase
+        """)
+        db = torbles.from_duckdb(oracle, groups=False)
+        self.addCleanup(db.close)
+        table = db["sectors"]
+        self.assertIsNot(table._part_of("x"), table._part_of("y"))
+        template = ("SELECT g, COUNT(*), COUNT(y), SUM(y), AVG(y), MIN(y), MAX(y) FROM sectors "
+                    "WHERE x BETWEEN -12 AND {} OR (x IS NULL AND y < 4) "
+                    "GROUP BY g ORDER BY g NULLS LAST")
+
+        def check(bound, engine):
+            sql = template.format(bound)
+            result = db.sql(sql, engine=engine)
+            self.assertEqual(result.fetchall(), oracle.execute(sql).fetchall())
+            stats = result.stats
+            self.assertEqual(stats.get("periodic_scope"), "sectors", stats)
+            self.assertEqual(stats["periodic_certified_sectors"], 4)
+            self.assertEqual(stats["periodic_ordinary_sectors"], 1)
+            self.assertLess(stats["periodic_representatives"], rows // 4)
+            self.assertEqual(stats["periodic_native_device"], "cpu" if engine == "alg" else "cuda")
+            return stats
+
+        self.assertEqual(check(20, "alg")["periodic_probes"], 2)
+        self.assertEqual(check(21, "alg")["periodic_proof_cache_hits"], 1)
+        if has_cuda():
+            cold = check(22, "gpu")
+            self.assertEqual(cold["periodic_proof_cache_hits"], 1)
+            self.assertGreater(cold["periodic_uploaded_bytes"], 0)
+            self.assertEqual(check(23, "gpu")["periodic_uploaded_bytes"], 0)
+        part = table._part_of("y")
+        part.flip(0, 64)
+        part.flip(0, 64)
+        self.assertEqual(check(24, "alg")["periodic_probes"], 2)
 
 
 if __name__ == "__main__":

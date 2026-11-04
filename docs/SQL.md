@@ -214,24 +214,29 @@ Results). A window whose values every row outputs keeps them as an integer or do
 and an ORDER BY the rows already follow is not applied; returning a million rows still builds a million Python
 tuples, as any engine does (`bench/window_output.py`).
 
-### Periodic aggregation experiment
+### Automatic periodic aggregation
 
-`db.prepare_periodic("events")` verifies packed-word periods on one stored
-physical table. Native CPU and CUDA kernels evaluate eligible SQL filters and
-aggregates over one common cycle of the referenced value and validity planes.
-They weight the packed masks for complete cycles and handle the remaining
-words and final partial word exactly. CUDA uploads the referenced planes of
-that cycle and reuses the device copy across queries.
+For eligible SQL, the optimizer looks for an exact packed-word cycle across
+the value and validity planes the query reads. It checks the whole table
+first, then contiguous sectors of 4,096 words (262,144 rows). A bounded prefix
+check screens out irregular columns before full verification. Per-column
+periods of up to 128 words can compose into a shared cycle of up to 4,096
+words. The optimizer caches proofs and misses by the referenced physical
+columns and their revisions, including for tables split across torbles.
 
-The route covers integer scalar and grouped `COUNT`, `SUM`, `AVG`, `MIN`,
-and `MAX` with supported predicates, up to three group keys and two measure
-columns. Per-column periods of up to 128 packed words can compose into a shared
-cycle of up to 4,096 words. Python handles planning and formats the finished groups. The optimizer
-checks native identity, revision, and row visibility before reusing the proof.
-Other queries use the normal executor. Result statistics include
-`periodic_native_device`, `periodic_rows`, and `periodic_representatives`. CUDA
-also reports `periodic_gpu_plane_bytes`, `periodic_uploaded_bytes`, and
-`periodic_kernel_ms`.
+Native CPU and CUDA reductions weight the packed masks for complete cycles
+and account for remaining words and a final partial word. A sector plan can
+include ordinary scans for irregular sectors when the full plan eliminates at
+least three quarters of its word work. CUDA uploads the compact value planes
+and reuses the device copy. The route covers integer scalar and grouped
+`COUNT`, `SUM`, `AVG`, `MIN`, and `MAX` with supported predicates, up to
+three group keys and two measure columns, on densely visible stored tables.
+
+`db.prepare_periodic("events")` can still precompute whole-table periods on
+one physical torble. Set `TORBLES_PERIODIC=0` before import to compare the
+ordinary SQL executor. Result statistics expose proof time and cache hits,
+whether a table or sector plan ran, and the number of proven and ordinary
+sectors. CUDA also reports the plane payload, uploaded bytes, and kernel time.
 
 ## Data types
 

@@ -287,50 +287,137 @@ static inline uint64_t rowmask(const atable_t *t, uint64_t w) {
     uint64_t left = t->n - w * 64; return left >= 64 ? ~0ULL : ((1ULL << left) - 1);
 }
 
-/* Verify word periods on the stored XOR planes. XOR across planes is
- * invertible, so a repeat of these words is a repeat of the logical codes.
- * Callers serialize against mutation and keep the certificate revision. */
+static int periodic_column(const atable_t *t, int32_t col) {
+    if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) return 0;
+    for (int bit = 0; bit < t->width[col]; ++bit) if (!t->V[col][bit]) return 0;
+    return 1;
+}
+
+/* A prefix of length twice the bound is sufficient. By Fine-Wilf its
+ * least period divides every other bounded prefix period. Any extension
+ * with an allowed period therefore repeats that same least motif. */
+static unsigned periodic_prefix(const atable_t *t, unsigned col, size_t first,
+                                unsigned max_words) {
+    size_t prefix = 2 * (size_t)max_words;
+    for (unsigned period = 1; period <= max_words; ++period) {
+        int bit;
+        for (bit = 0; bit < t->width[col]; ++bit) {
+            const uint64_t *v = t->V[col][bit];
+            if (v && memcmp(v + first + period, v + first, (prefix - period) * sizeof *v)) break;
+        }
+        if (bit == t->width[col]) return period;
+    }
+    return 0;
+}
+
+static int periodic_verify(const atable_t *t, unsigned col, size_t first,
+                           size_t full, uint64_t tail, size_t prefix,
+                           unsigned period) {
+    for (int bit = 0; bit < t->width[col]; ++bit) {
+        const uint64_t *v = t->V[col][bit];
+        if (!v) continue;
+        v += first;
+        if (memcmp(v + prefix, v + prefix - period, (full - prefix) * sizeof *v) ||
+            (tail && ((v[full] ^ v[full % period]) & tail))) return 0;
+    }
+    return 1;
+}
+
+static int periodic_layout(const atable_t *t) {
+    return t && t->k >= 1 && t->k <= MAXCOL &&
+           t->nw == t->n / 64 + (t->n % 64 != 0) &&
+           t->nw <= SIZE_MAX / sizeof(uint64_t);
+}
+
+/* The word periods of the stored XOR planes are also periods of their
+ * logical codes because XOR across planes is invertible. */
 int at_periodic_periods(const atable_t *t, uint32_t max_words,
                         uint16_t *periods, uint32_t capacity) {
-    if (!t || !periods || !max_words || max_words > 128 ||
-        t->k < 1 || t->k > MAXCOL || capacity < (uint32_t)t->k ||
-        t->nw != t->n / 64 + (t->n % 64 != 0) || t->nw > SIZE_MAX / sizeof(uint64_t)) return -1;
+    if (!periodic_layout(t) || !periods || !max_words || max_words > 128 ||
+        capacity < (uint32_t)t->k) return -1;
 
     uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
     uint16_t found[MAXCOL] = {0};
     size_t full = (size_t)(t->n / 64);
     if (max_words > full / 2) max_words = (uint32_t)(full / 2);
-    size_t prefix = 2 * (size_t)max_words;
     uint64_t tail = t->n % 64 ? rowmask(t, full) : 0;
     for (int col = 0; col < t->k && max_words; ++col) {
-        int width = t->width[col];
-        if (t->vflag[col] || width < 1 || width > 32) continue;
-        uint32_t period;
-        for (period = 1; period <= max_words; ++period) {
-            int bit;
-            for (bit = 0; bit < width; ++bit) {
-                const uint64_t *v = t->V[col][bit];
-                if (v && memcmp(v + period, v, (prefix - period) * sizeof *v)) break;
-            }
-            if (bit == width) break;
-        }
-        if (period > max_words) continue;
-
-        /* The prefix has length twice the period bound. By Fine-Wilf,
-         * its least period divides any other allowed prefix period.
-         * Thus any periodic extension must repeat this same least motif. */
-        int bit;
-        for (bit = 0; bit < width; ++bit) {
-            const uint64_t *v = t->V[col][bit];
-            if (!v) continue;
-            if (memcmp(v + prefix, v + prefix - period, (full - prefix) * sizeof *v) ||
-                (tail && ((v[full] ^ v[full % period]) & tail))) break;
-        }
-        if (bit == width) found[col] = (uint16_t)period;
+        if (t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) continue;
+        unsigned period = periodic_prefix(t, (unsigned)col, 0, max_words);
+        if (period && periodic_verify(t, (unsigned)col, 0, full, tail, 2 * max_words, period))
+            found[col] = (uint16_t)period;
     }
-
     if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
     memcpy(periods, found, (size_t)t->k * sizeof *periods);
+    return 0;
+}
+
+static unsigned periodic_lcm(unsigned a, unsigned b) {
+    unsigned x = a, y = b;
+    while (y) { unsigned r = x % y; x = y; y = r; }
+    return (a / x) * b;
+}
+
+static unsigned periodic_sector_cycle(const atable_t *t, uint32_t columns,
+                                      const tp_sector_t *sector, unsigned max_words) {
+    unsigned cap = sector->full_words / TP_MIN_REPEATS;
+    if (cap > TP_MAX_CYCLE_WORDS) cap = TP_MAX_CYCLE_WORDS;
+    if (max_words > cap) max_words = cap;
+    if (!max_words) return 0;
+    unsigned periods[MAXCOL], cycle = 1;
+
+    /* Every dependency must have a cheap compatible prefix before any
+     * column is read beyond that prefix. */
+    for (uint32_t mask = columns; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        unsigned period = periodic_prefix(t, col, sector->first_word, max_words);
+        if (!period) return 0;
+        cycle = periodic_lcm(cycle, period);
+        if (cycle > cap) return 0;
+        periods[col] = period;
+    }
+    uint64_t tail = sector->tail_rows ? (UINT64_C(1) << sector->tail_rows) - 1 : 0;
+    for (uint32_t mask = columns; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        if (!periodic_verify(t, col, sector->first_word, sector->full_words,
+                             tail, 2 * max_words, periods[col])) return 0;
+    }
+    return cycle;
+}
+
+static void periodic_sector_metrics(tp_sector_metrics_t *m, const tp_sector_t *sector) {
+    if (sector->cycle_words) ++m->periodic_sectors;
+    else ++m->ordinary_sectors;
+    m->representative_words += (sector->cycle_words ? sector->cycle_words : sector->full_words)
+                               + (sector->tail_rows != 0);
+}
+
+int at_periodic_plan_sectors(const atable_t *t, uint32_t columns_mask,
+                             uint32_t sector_words, uint32_t max_words,
+                             tp_sector_t *sectors, uint32_t capacity,
+                             tp_sector_metrics_t *metrics) {
+    if (!periodic_layout(t) || !t->n || t->n > UINT32_MAX || !columns_mask ||
+        (columns_mask >> t->k) || !sectors || sector_words > TP_MAX_SECTOR_WORDS ||
+        !max_words || max_words > 128) return -1;
+    if (!sector_words) sector_words = (uint32_t)t->nw;
+    uint32_t nsectors = (uint32_t)((t->nw + sector_words - 1) / sector_words);
+    if (capacity < nsectors) return -1;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1)
+        if (!periodic_column(t, __builtin_ctz(mask))) return -1;
+    uint32_t full = (uint32_t)(t->n / 64);
+    tp_sector_metrics_t result = {0};
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        uint32_t first = i * sector_words, words = full - first;
+        if (words > sector_words) words = sector_words;
+        tp_sector_t sector = {first, words, 0, i + 1 == nsectors ? (uint32_t)(t->n % 64) : 0};
+        sector.cycle_words = periodic_sector_cycle(t, columns_mask, &sector, max_words);
+        sectors[i] = sector;
+        periodic_sector_metrics(&result, &sector);
+    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
+    if (metrics) *metrics = result;
     return 0;
 }
 
@@ -2174,12 +2261,6 @@ static inline uint32_t extract_msb(const uint64_t *x, int nb, int r) {  /* first
 static inline uint32_t extract_col(const atable_t *t, const uint64_t *x, int c, int r) {
     return t->msb[c] ? extract_msb(x, t->width[c], r) : extract(x, t->width[c], r);
 }
-static int periodic_column(const atable_t *t, int32_t col) {
-    if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) return 0;
-    for (int bit = 0; bit < t->width[col]; ++bit) if (!t->V[col][bit]) return 0;
-    return 1;
-}
-
 static int periodic_validity(const atable_t *t, int32_t valid) {
     return valid == -1 || (periodic_column(t, valid) && t->width[valid] == 1);
 }
@@ -2313,22 +2394,124 @@ static int periodic_reduce_word(const atable_t *t, uint64_t word, uint64_t repea
     return 0;
 }
 
-int at_periodic_reduce(const atable_t *t, uint32_t cycle_words, const pinstr_t *prog,
-                        int32_t nprog, const tp_plan_t *plan, tp_state_t *out) {
-    if (!t || !plan || !out || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
-        !cycle_words || cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64 ||
-        t->nw != t->n / 64 + (t->n % 64 != 0)) return -1;
-    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
-    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+static void periodic_init_states(const tp_plan_t *plan, tp_state_t *out) {
     memset(out, 0, (size_t)plan->groups * sizeof *out);
     for (uint32_t group = 0; group < plan->groups; ++group)
         for (uint32_t i = 0; i < TP_MAX_MEASURES; ++i) out[group].mins[i] = UINT32_MAX;
+}
 
-    uint64_t full = t->n / 64, copies = full / cycle_words, extra = full % cycle_words;
-    for (uint32_t phase = 0; phase < cycle_words; ++phase)
-        if (periodic_reduce_word(t, phase, copies + (phase < extra), prog, nprog, plan, out)) return -1;
-    if ((t->n % 64) && periodic_reduce_word(t, full, 1, prog, nprog, plan, out)) return -1;
-    return revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ? 0 : -1;
+static int periodic_reduce_range(const atable_t *t, const tp_sector_t *sector,
+                                 const pinstr_t *prog, int32_t nprog,
+                                 const tp_plan_t *plan, tp_state_t *out) {
+    uint32_t full = sector->full_words, cycle = sector->cycle_words;
+    uint32_t phases = cycle ? cycle : full;
+    uint32_t copies = cycle ? full / cycle : 1, extra = cycle ? full % cycle : 0;
+    for (uint32_t phase = 0; phase < phases; ++phase)
+        if (periodic_reduce_word(t, (uint64_t)sector->first_word + phase,
+                                 copies + (phase < extra), prog, nprog, plan, out)) return -1;
+    if (sector->tail_rows && periodic_reduce_word(t, (uint64_t)sector->first_word + full,
+                                                  1, prog, nprog, plan, out)) return -1;
+    return 0;
+}
+
+int at_periodic_reduce(const atable_t *t, uint32_t cycle_words, const pinstr_t *prog,
+                        int32_t nprog, const tp_plan_t *plan, tp_state_t *out) {
+    if (!periodic_layout(t) || !plan || !out || t->n > UINT32_MAX ||
+        !cycle_words || cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+    periodic_init_states(plan, out);
+    tp_sector_t whole = {0, (uint32_t)(t->n / 64), cycle_words, (uint32_t)(t->n % 64)};
+    int rc = periodic_reduce_range(t, &whole, prog, nprog, plan, out);
+    return revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ? rc : -1;
+}
+
+typedef struct {
+    const atable_t *t;
+    const tp_sector_t *sectors;
+    const pinstr_t *prog;
+    const tp_plan_t *plan;
+    uint32_t nsectors;
+    int32_t nprog;
+    _Atomic uint32_t next;
+    _Atomic int invalid;
+} periodic_sector_work_t;
+
+typedef struct { periodic_sector_work_t *work; tp_state_t *out; } periodic_sector_job_t;
+
+static void *periodic_sector_worker(void *arg) {
+    periodic_sector_job_t *job = arg;
+    periodic_sector_work_t *work = job->work;
+    periodic_init_states(work->plan, job->out);
+    while (!atomic_load_explicit(&work->invalid, memory_order_relaxed)) {
+        uint32_t i = atomic_fetch_add_explicit(&work->next, 1, memory_order_relaxed);
+        if (i >= work->nsectors) break;
+        if (periodic_reduce_range(work->t, work->sectors + i, work->prog, work->nprog,
+                                  work->plan, job->out))
+            atomic_store_explicit(&work->invalid, 1, memory_order_relaxed);
+    }
+    return NULL;
+}
+
+static void periodic_merge_states(const tp_plan_t *plan, tp_state_t *out, const tp_state_t *part) {
+    for (uint32_t g = 0; g < plan->groups; ++g) {
+        out[g].count += part[g].count;
+        for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+            out[g].valid[i] += part[g].valid[i];
+            out[g].sums[i] += part[g].sums[i];
+            if (out[g].mins[i] > part[g].mins[i]) out[g].mins[i] = part[g].mins[i];
+            if (out[g].maxs[i] < part[g].maxs[i]) out[g].maxs[i] = part[g].maxs[i];
+        }
+    }
+}
+
+int at_periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
+                               uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
+                               const tp_plan_t *plan, tp_state_t *out,
+                               tp_sector_metrics_t *metrics) {
+    if (!periodic_layout(t) || !sectors || !nsectors || nsectors > t->nw ||
+        !plan || !out || t->n > UINT32_MAX) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+
+    uint32_t full = (uint32_t)(t->n / 64), at = 0;
+    tp_sector_metrics_t result = {0};
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        const tp_sector_t *sector = sectors + i;
+        uint32_t tail = i + 1 == nsectors ? (uint32_t)(t->n % 64) : 0;
+        if (sector->first_word != at || sector->full_words > full - at ||
+            (!sector->full_words && !tail) || sector->tail_rows != tail ||
+            sector->cycle_words > TP_MAX_CYCLE_WORDS ||
+            sector->cycle_words > sector->full_words / TP_MIN_REPEATS) return -1;
+        at += sector->full_words;
+        periodic_sector_metrics(&result, sector);
+    }
+    if (at != full) return -1;
+
+    int workers = nthreads(), useful = 1 + (int)(result.representative_words / 2048);
+    if (workers > useful) workers = useful;
+    if ((uint32_t)workers > nsectors) workers = (int)nsectors;
+    periodic_sector_work_t work = {
+        .t = t, .sectors = sectors, .prog = prog, .plan = plan, .nsectors = nsectors, .nprog = nprog,
+    };
+    periodic_sector_job_t jobs[64] = {{&work, out}};
+    tp_state_t *partials = NULL;
+    if (workers > 1) {
+        partials = malloc((size_t)(workers - 1) * plan->groups * sizeof *partials);
+        if (!partials) return -1;
+        for (int i = 1; i < workers; ++i)
+            jobs[i] = (periodic_sector_job_t){&work, partials + (size_t)(i - 1) * plan->groups};
+    }
+    pool_jobs(workers, periodic_sector_worker, jobs, sizeof *jobs);
+    int rc = -1;
+    if (!atomic_load_explicit(&work.invalid, memory_order_relaxed) &&
+        revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) {
+        for (int i = 1; i < workers; ++i) periodic_merge_states(plan, out, jobs[i].out);
+        if (metrics) *metrics = result;
+        rc = 0;
+    }
+    free(partials);
+    return rc;
 }
 
 /* Bounded native profiling for relationship-system physical alternatives. The

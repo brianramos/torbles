@@ -8,6 +8,11 @@ extern "C" void *gpu_periodic_open(const atable_t *, uint32_t, uint32_t, uint64_
     if (bytes) *bytes = 0;
     return NULL;
 }
+extern "C" void *gpu_periodic_open_sectors(const atable_t *, const tp_sector_t *, uint32_t,
+                                            uint32_t, uint64_t *bytes) {
+    if (bytes) *bytes = 0;
+    return NULL;
+}
 extern "C" int gpu_periodic_reduce(void *, const pinstr_t *, int32_t,
                                    const tp_plan_t *, tp_state_t *, double *) { return -1; }
 extern "C" void gpu_periodic_close(void *) {}
@@ -16,9 +21,14 @@ extern "C" void gpu_periodic_close(void *) {}
 
 #include <stddef.h>
 
+/* n <= UINT32_MAX bounds complete-word multiplicity to 26 bits. */
+enum { GPU_PERIODIC_WEIGHT_BITS = 26 };
+static constexpr uint32_t GPU_PERIODIC_WEIGHT_MASK = (1u << GPU_PERIODIC_WEIGHT_BITS) - 1;
+
 struct gpu_periodic_handle {
     gtable_t host, *table;
     uint64_t *planes;
+    uint32_t *weights;
     qplan_t *prog;
     tp_state_t *states;
     uint32_t *bad_group;
@@ -68,15 +78,26 @@ DEV void periodic_measure_g(const gtable_t *t, uint32_t word, uint64_t mask,
     if (measure.flags & TP_MAX) atomicMax(&state->maxs[index], hi);
 }
 
+template <bool Sectors>
 static __global__ void gpu_periodic_words(const gtable_t *t, const qplan_t *prog,
                                           tp_plan_t plan, uint32_t repeats, uint32_t remainder,
-                                          uint32_t tail, tp_state_t *states, uint32_t *bad_group) {
+                                          uint32_t tail, const uint32_t *weights,
+                                          tp_state_t *states, uint32_t *bad_group) {
     uint32_t word = blockIdx.x * blockDim.x + threadIdx.x;
     if (word >= t->nw) return;
     uint64_t pending = eval_prog_g(t, prog, word);
-    uint32_t copies = repeats + (word < remainder);
-    /* The certificate covers occupied lanes of the original partial word. */
-    uint64_t partial = word == remainder && tail ? (UINT64_C(1) << tail) - 1 : 0;
+    uint32_t copies, partial_rows;
+    if (Sectors) {
+        uint32_t weight = weights[word];
+        copies = weight & GPU_PERIODIC_WEIGHT_MASK;
+        partial_rows = weight >> GPU_PERIODIC_WEIGHT_BITS;
+    } else {
+        copies = repeats + (word < remainder);
+        partial_rows = word == remainder ? tail : 0;
+    }
+    uint64_t partial = partial_rows ? (UINT64_C(1) << partial_rows) - 1 : 0;
+    /* An ordinary tail word has no full copies. Exclude padding from extrema and keys. */
+    if (Sectors && !copies) pending &= partial;
     while (pending) {
         int lane = ctz64(pending);
         uint64_t mask = pending;
@@ -174,17 +195,18 @@ extern "C" void gpu_periodic_close(void *handle) {
     if (h->states) cudaFree(h->states);
     if (h->prog) cudaFree(h->prog);
     if (h->table) cudaFree(h->table);
+    if (h->weights) cudaFree(h->weights);
     if (h->planes) cudaFree(h->planes);
     free(h);
 }
 
-extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
-                                   uint32_t column_mask, uint64_t *plane_bytes) {
-    if (plane_bytes) *plane_bytes = 0;
-    if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
-        !cycle_words || cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64 ||
-        t->nw != t->n / 64 + (t->n % 64 != 0) || (column_mask >> t->k)) return NULL;
+static bool gpu_periodic_source(const atable_t *t, uint32_t column_mask) {
+    return t && t->k >= 1 && t->k <= MAXCOL && t->n <= UINT32_MAX &&
+           t->nw == t->n / 64 + (t->n % 64 != 0) && !(column_mask >> t->k);
+}
 
+static gpu_periodic_handle *gpu_periodic_alloc(const atable_t *t, uint32_t word_count,
+                                               uint32_t column_mask, bool sectors, size_t *bytes) {
     size_t columns_width = 0;
     for (int c = 0; c < t->k; ++c) {
         if (!(column_mask >> c & 1)) continue;
@@ -193,11 +215,13 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
             if (!t->V[c][j]) return NULL;
         columns_width += t->width[c];
     }
+    if (columns_width > SIZE_MAX / sizeof(uint64_t) / word_count) return NULL;
+    *bytes = columns_width * word_count * sizeof(uint64_t);
 
     auto *h = (gpu_periodic_handle *)calloc(1, sizeof(gpu_periodic_handle));
     if (!h) return NULL;
-    size_t bytes = columns_width * cycle_words * sizeof(uint64_t);
-    if ((bytes && cudaMalloc((void **)&h->planes, bytes) != cudaSuccess) ||
+    if ((*bytes && cudaMalloc((void **)&h->planes, *bytes) != cudaSuccess) ||
+        (sectors && cudaMalloc((void **)&h->weights, (size_t)word_count * sizeof(uint32_t)) != cudaSuccess) ||
         cudaMalloc((void **)&h->table, sizeof(gtable_t)) != cudaSuccess ||
         cudaMalloc((void **)&h->prog, sizeof(qplan_t)) != cudaSuccess ||
         cudaMalloc((void **)&h->states, TP_MAX_GROUPS * sizeof(tp_state_t)) != cudaSuccess ||
@@ -207,12 +231,34 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
         return NULL;
     }
 
+    h->host.k = t->k;
+    h->host.nw = word_count;
+    h->host.n = (uint64_t)word_count * 64;
+    size_t offset = 0;
+    for (int c = 0; c < t->k; ++c) {
+        if (!(column_mask >> c & 1)) continue;
+        h->host.width[c] = t->width[c];
+        h->host.msb[c] = t->msb[c];
+        for (int j = 0; j < t->width[c]; ++j) {
+            h->host.P[c][j] = h->planes + offset;
+            offset += word_count;
+        }
+    }
+    return h;
+}
+
+extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
+                                   uint32_t column_mask, uint64_t *plane_bytes) {
+    if (plane_bytes) *plane_bytes = 0;
+    if (!gpu_periodic_source(t, column_mask) || !cycle_words ||
+        cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64) return NULL;
+
+    size_t bytes = 0;
+    auto *h = gpu_periodic_alloc(t, cycle_words, column_mask, false, &bytes);
+    if (!h) return NULL;
     h->repeats = (uint32_t)(t->n / 64 / cycle_words);
     h->remainder = (uint32_t)(t->n / 64 % cycle_words);
     h->tail = (uint32_t)(t->n % 64);
-    h->host.k = t->k;
-    h->host.nw = cycle_words;
-    h->host.n = (uint64_t)cycle_words * 64;
     if (bytes) {
         auto *decoded = (uint64_t *)malloc(bytes);
         if (!decoded) {
@@ -221,11 +267,7 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
         }
         size_t offset = 0;
         for (int c = 0; c < t->k; ++c) {
-            if (!(column_mask >> c & 1)) continue;
-            h->host.width[c] = t->width[c];
-            h->host.msb[c] = t->msb[c];
-            for (int j = 0; j < t->width[c]; ++j) {
-                h->host.P[c][j] = h->planes + offset;
+            for (int j = 0; j < h->host.width[c]; ++j) {
                 for (uint32_t word = 0; word < cycle_words; ++word) {
                     uint64_t prev = j ? decoded[offset - cycle_words + word] : 0;
                     decoded[offset + word] = prev ^ t->V[c][j][word];
@@ -241,6 +283,102 @@ extern "C" void *gpu_periodic_open(const atable_t *t, uint32_t cycle_words,
         }
     }
     if (cudaMemcpy(h->table, &h->host, sizeof(h->host), cudaMemcpyHostToDevice) != cudaSuccess) {
+        gpu_periodic_close(h);
+        return NULL;
+    }
+    if (plane_bytes) *plane_bytes = bytes;
+    return h;
+}
+
+static uint32_t gpu_periodic_sector_words(const tp_sector_t &s) {
+    return s.cycle_words ? s.cycle_words : s.full_words + (s.tail_rows != 0);
+}
+
+static bool gpu_periodic_sector_weights(gpu_periodic_handle *h, const tp_sector_t *sectors,
+                                        uint32_t nsectors, uint32_t word_count) {
+    size_t bytes = (size_t)word_count * sizeof(uint32_t);
+    auto *weights = (uint32_t *)malloc(bytes);
+    if (!weights) return false;
+    size_t offset = 0;
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        const tp_sector_t &s = sectors[i];
+        if (s.cycle_words) {
+            uint32_t copies = s.full_words / s.cycle_words, remainder = s.full_words % s.cycle_words;
+            for (uint32_t word = 0; word < s.cycle_words; ++word) {
+                uint32_t tail = word == remainder ? s.tail_rows : 0;
+                weights[offset++] = (tail << GPU_PERIODIC_WEIGHT_BITS) | (copies + (word < remainder));
+            }
+        } else {
+            for (uint32_t word = 0; word < s.full_words; ++word) weights[offset++] = 1;
+            if (s.tail_rows) weights[offset++] = s.tail_rows << GPU_PERIODIC_WEIGHT_BITS;
+        }
+    }
+    cudaError_t status = cudaMemcpy(h->weights, weights, bytes, cudaMemcpyHostToDevice);
+    free(weights);
+    return status == cudaSuccess;
+}
+
+static bool gpu_periodic_sector_planes(gpu_periodic_handle *h, const atable_t *t,
+                                       const tp_sector_t *sectors, uint32_t nsectors) {
+    uint32_t words = (uint32_t)h->host.nw;
+    size_t bytes = (size_t)words * sizeof(uint64_t);
+    /* Bound staging to one packed plane. Decode XOR planes in place on CUDA. */
+    auto *packed = (uint64_t *)malloc(bytes);
+    if (!packed) return false;
+    bool ok = true;
+    size_t plane_offset = 0;
+    for (int c = 0; ok && c < t->k; ++c) {
+        int width = h->host.width[c];
+        if (!width) continue;
+        uint64_t *column = h->planes + plane_offset;
+        for (int j = 0; j < width; ++j) {
+            size_t offset = 0;
+            for (uint32_t i = 0; i < nsectors; ++i) {
+                const tp_sector_t &s = sectors[i];
+                uint32_t n = gpu_periodic_sector_words(s);
+                memcpy(packed + offset, t->V[c][j] + s.first_word, (size_t)n * sizeof(uint64_t));
+                offset += n;
+            }
+            if (cudaMemcpy(h->planes + plane_offset, packed, bytes, cudaMemcpyHostToDevice) != cudaSuccess) {
+                ok = false;
+                break;
+            }
+            plane_offset += words;
+        }
+        if (ok) {
+            kdecode<<<(words + 255) / 256, 256>>>(column, words, width);
+            ok = cudaGetLastError() == cudaSuccess;
+        }
+    }
+    free(packed);
+    return ok;
+}
+
+extern "C" void *gpu_periodic_open_sectors(const atable_t *t, const tp_sector_t *sectors,
+                                            uint32_t nsectors, uint32_t column_mask,
+                                            uint64_t *plane_bytes) {
+    if (plane_bytes) *plane_bytes = 0;
+    if (!gpu_periodic_source(t, column_mask) || !sectors || !nsectors || nsectors > t->nw) return NULL;
+    uint64_t covered = 0;
+    uint32_t words = 0;
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        const tp_sector_t &s = sectors[i];
+        if (s.first_word != covered / 64 || (!s.full_words && !s.tail_rows) ||
+            s.cycle_words > s.full_words || s.cycle_words > TP_MAX_CYCLE_WORDS ||
+            s.tail_rows >= 64 || (s.tail_rows && i + 1 != nsectors)) return NULL;
+        covered += (uint64_t)s.full_words * 64 + s.tail_rows;
+        if (covered > t->n) return NULL;
+        words += gpu_periodic_sector_words(s);
+    }
+    if (covered != t->n) return NULL;
+
+    size_t bytes = 0;
+    auto *h = gpu_periodic_alloc(t, words, column_mask, true, &bytes);
+    if (!h) return NULL;
+    if (!gpu_periodic_sector_weights(h, sectors, nsectors, words) ||
+        (bytes && !gpu_periodic_sector_planes(h, t, sectors, nsectors)) ||
+        cudaMemcpy(h->table, &h->host, sizeof(h->host), cudaMemcpyHostToDevice) != cudaSuccess ||
+        cudaStreamSynchronize(0) != cudaSuccess) {
         gpu_periodic_close(h);
         return NULL;
     }
@@ -268,8 +406,13 @@ extern "C" int gpu_periodic_reduce(void *handle, const pinstr_t *prog, int32_t n
 
     constexpr uint32_t threads = 64;
     uint32_t blocks = ((uint32_t)h->host.nw + threads - 1) / threads;
-    gpu_periodic_words<<<blocks, threads>>>(h->table, h->prog, *plan, h->repeats, h->remainder,
-                                           h->tail, h->states, h->bad_group);
+    if (h->weights)
+        gpu_periodic_words<true><<<blocks, threads>>>(h->table, h->prog, *plan, 0, 0, 0,
+                                                      h->weights, h->states, h->bad_group);
+    else
+        gpu_periodic_words<false><<<blocks, threads>>>(h->table, h->prog, *plan, h->repeats,
+                                                       h->remainder, h->tail, NULL, h->states,
+                                                       h->bad_group);
     uint32_t bad_group = 0;
     if (cudaGetLastError() != cudaSuccess || cudaEventRecord(h->stop) != cudaSuccess ||
         cudaMemcpy(&bad_group, h->bad_group, sizeof(bad_group), cudaMemcpyDeviceToHost) != cudaSuccess)

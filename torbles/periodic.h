@@ -9,7 +9,8 @@ extern "C" {
 
 enum {
     TP_MAX_KEYS = 3, TP_MAX_MEASURES = 2, TP_MAX_GROUPS = 4096,
-    TP_MAX_CYCLE_WORDS = 4096, TP_MAX_PROGRAM = 1024, TP_MAX_STACK = 48
+    TP_MAX_CYCLE_WORDS = 4096, TP_MAX_PROGRAM = 1024, TP_MAX_STACK = 48,
+    TP_SECTOR_WORDS = 4096, TP_MAX_SECTOR_WORDS = 1 << 20, TP_MIN_REPEATS = 8
 };
 enum { TP_SUM = 1, TP_MIN = 2, TP_MAX = 4 };
 
@@ -36,6 +37,27 @@ typedef struct {
  * Returns 0 on success and -1 for an unsupported or invalid plan. */
 int at_periodic_reduce(const atable_t *t, uint32_t cycle_words, const pinstr_t *prog,
                         int32_t nprog, const tp_plan_t *plan, tp_state_t *out);
+
+/* Physical word ranges. cycle_words=0 scans all complete words. The
+ * final descriptor alone may carry tail_rows (1..63). */
+typedef struct { uint32_t first_word, full_words, cycle_words, tail_rows; } tp_sector_t;
+typedef struct {
+    uint64_t periodic_sectors, ordinary_sectors, representative_words;
+} tp_sector_metrics_t;
+
+/* Prove a common period only for selected physical columns. A sector
+ * with no proof has cycle_words=0. sector_words=0 requests one global
+ * sector; otherwise output ceil(table words / sector_words) descriptors.
+ * Callers serialize against writes and anchor the source revision(s).
+ * Both functions accept a NULL metrics pointer. */
+int at_periodic_plan_sectors(const atable_t *t, uint32_t columns_mask,
+                             uint32_t sector_words, uint32_t max_words,
+                             tp_sector_t *sectors, uint32_t capacity,
+                             tp_sector_metrics_t *metrics);
+int at_periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
+                               uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
+                               const tp_plan_t *plan, tp_state_t *out,
+                               tp_sector_metrics_t *metrics);
 
 #ifdef __cplusplus
 }

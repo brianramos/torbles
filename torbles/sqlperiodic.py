@@ -5,6 +5,8 @@
 import ctypes as C
 from functools import cache
 from math import lcm
+import os
+from time import perf_counter_ns
 import weakref
 
 import numpy as np
@@ -17,6 +19,11 @@ from .sqlsnapshot import _revision
 _MAX_WORDS = 128
 _MAX_CYCLE_WORDS = 4096
 _MIN_REPEATS = 8
+_SECTOR_WORDS = 4096
+_MIN_AUTO_ROWS = 1 << 16
+_AUTO_CACHE_SIZE = 16
+_GPU_SECTOR_BYTES = 32 << 20
+_ENABLED = os.environ.get("TORBLES_PERIODIC", "auto") != "0"
 _MAX_KEYS = 3
 _MAX_MEASURES = 2
 _MAX_GROUPS = 4096
@@ -48,6 +55,16 @@ class _State(C.Structure):
                 ("maxs", C.c_uint32 * _MAX_MEASURES)]
 
 
+class _Sector(C.Structure):
+    _fields_ = [("first_word", C.c_uint32), ("full_words", C.c_uint32),
+                ("cycle_words", C.c_uint32), ("tail_rows", C.c_uint32)]
+
+
+class _Metrics(C.Structure):
+    _fields_ = [("periodic_sectors", C.c_uint64), ("ordinary_sectors", C.c_uint64),
+                ("representative_words", C.c_uint64)]
+
+
 def _bind(lib, name, restype, argtypes):
     fn = getattr(lib, name, None)
     if fn is not None:
@@ -59,6 +76,11 @@ _prog_args = [C.POINTER(algq.PInstr), C.c_int32, C.POINTER(_Plan), C.POINTER(_St
 _cpu = _bind(algq.lib, "at_periodic_reduce", C.c_int, [algq.vp, C.c_uint32, *_prog_args])
 _certify = _bind(algq.lib, "at_periodic_periods", C.c_int,
                  [algq.vp, C.c_uint32, C.POINTER(C.c_uint16), C.c_uint32])
+_sector_args = [C.POINTER(_Sector), C.c_uint32]
+_discover = _bind(algq.lib, "at_periodic_plan_sectors", C.c_int,
+                  [algq.vp, C.c_uint32, C.c_uint32, C.c_uint32, *_sector_args, C.POINTER(_Metrics)])
+_cpu_sectors = _bind(algq.lib, "at_periodic_reduce_sectors", C.c_int,
+                     [algq.vp, *_sector_args, *_prog_args, C.POINTER(_Metrics)])
 
 
 def _close_cycle(close, handle, lock=algq._GPU_LOCK):
@@ -75,6 +97,17 @@ class _DeviceCycle:
 def _anchor(fact):
     at = fact.at
     return fact._native, at, _revision(at), fact.n, tuple(fact.cols)
+
+
+def _anchors(parts):
+    return tuple(_anchor(part) for part in parts)
+
+
+class _Candidate:
+    def __init__(self, anchor, storage, cycle=0, sectors=None, metrics=None, resident=None):
+        self.anchor, self.storage = anchor, storage
+        self.cycle, self.sectors, self.metrics = cycle, sectors, metrics
+        self.resident = {} if resident is None else resident
 
 
 def prepare(fact, max_words=_MAX_WORDS):
@@ -118,6 +151,43 @@ def _safe_predicate(expr, strip):
             and all(_safe_predicate(arg, strip) for arg in expr.args))
 
 
+def _automatic(fact, source, mask, parts, stats):
+    if _discover is None or fact.n < _MIN_AUTO_ROWS:
+        return None
+    key = mask if source is fact else tuple(source.cols)
+    resident = fact.__dict__.setdefault("_periodic_auto", {})
+    anchor = _anchors(parts)
+    entry = resident.get(key)
+    if entry is not None and entry.anchor == anchor:
+        stats["periodic_proof_cache_hits"] = stats.get("periodic_proof_cache_hits", 0) + 1
+        return entry
+
+    storage = algq._run_on(source)
+    started = perf_counter_ns()
+    metrics = _Metrics()
+    whole = (_Sector * 1)()
+    rc = _discover(storage.at, mask, 0, _MAX_WORDS, whole, 1, metrics)
+    words = (fact.n + 63) // 64
+    count = (words + _SECTOR_WORDS - 1) // _SECTOR_WORDS
+    stats["periodic_probes"] = stats.get("periodic_probes", 0) + 1
+    entry = _Candidate(anchor, storage)
+    if not rc and whole[0].cycle_words:
+        entry.cycle = whole[0].cycle_words
+    elif not rc and count > 1:
+        sectors = (_Sector * count)()
+        rc = _discover(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics)
+        stats["periodic_probes"] += 1
+        if not rc and metrics.periodic_sectors and metrics.representative_words * 4 <= words:
+            entry.sectors, entry.metrics = sectors, metrics
+    stats["periodic_probe_ms"] = stats.get("periodic_probe_ms", 0.0) + (perf_counter_ns() - started) / 1e6
+    if rc or _anchors(parts) != anchor:
+        return None
+    if key not in resident and len(resident) >= _AUTO_CACHE_SIZE:
+        resident.pop(next(iter(resident), None), None)
+    resident[key] = entry
+    return entry
+
+
 @cache
 def _cuda_functions(lib):
     open_cycle = _bind(lib, "gpu_periodic_open", algq.vp,
@@ -125,15 +195,19 @@ def _cuda_functions(lib):
     reduce = _bind(lib, "gpu_periodic_reduce", C.c_int,
                    [algq.vp, *_prog_args, C.POINTER(C.c_double)])
     close = _bind(lib, "gpu_periodic_close", None, [algq.vp])
-    return open_cycle, reduce, close
+    open_sectors = _bind(lib, "gpu_periodic_open_sectors", algq.vp,
+                         [algq.vp, *_sector_args, C.c_uint32, C.POINTER(C.c_uint64)])
+    return open_cycle, reduce, close, open_sectors
 
 
-def _cuda(fact, cycle, mask, program, plan, states, resident, stats):
+def _cuda(candidate, mask, program, plan, states, stats):
     try:
-        open_cycle, reduce, close = _cuda_functions(algq.gpu_lib())
+        open_cycle, reduce, close, open_sectors = _cuda_functions(algq.gpu_lib())
     except (RuntimeError, OSError):
         return False
-    if open_cycle is None or reduce is None or close is None:
+    sectors, cycle, resident = candidate.sectors, candidate.cycle, candidate.resident
+    open_handle = open_cycle if sectors is None else open_sectors
+    if open_handle is None or reduce is None or close is None:
         return False
     tag = cycle, mask
     uploaded = 0
@@ -142,8 +216,16 @@ def _cuda(fact, cycle, mask, program, plan, states, resident, stats):
     with algq._GPU_LOCK:
         entry = resident.get(tag)
         if entry is None:
+            if sectors is not None:
+                # Packed planes and one device weight per representative word.
+                width = sum(candidate.storage.width(name)
+                            for i, name in enumerate(candidate.storage.cols) if mask >> i & 1)
+                if candidate.metrics.representative_words * (8 * width + 4) > _GPU_SECTOR_BYTES:
+                    stats["periodic_gpu_budget_fallback"] = True
+                    return False
             size = C.c_uint64()
-            handle = open_cycle(fact.at, cycle, mask, size)
+            geometry = (cycle,) if sectors is None else (sectors, len(sectors))
+            handle = open_handle(candidate.storage.at, *geometry, mask, size)
             if not handle:
                 return False
             entry = _DeviceCycle(handle, size.value, close)
@@ -197,12 +279,10 @@ def run(planner, rest, aggs, extra):
 
     s, cx, binding = planner.s, planner.cx, planner.fact
     fact = planner.tab[binding]
-    cached = getattr(fact, "_periodic", None)
-    if (cached is None or cx.engine not in ("alg", "gpu") or s.from_ is not binding or not s.aggregate
+    if (not _ENABLED or cx.engine not in ("alg", "gpu") or s.from_ is not binding or not s.aggregate
             or planner.joins or planner.left or planner.nulled or extra
             or planner.fact_sample is not None or s.sample is not None
             or getattr(binding, "writable", None) is not None
-            or fact.parts is not None or getattr(fact, "_vflag", None)
             or not 0 < fact.n < 1 << 32 or len(s.group) > _MAX_KEYS or not aggs
             or s.sets is not None or s.qualify is not None or s.distinct or s.distinct_on is not None):
         return None
@@ -211,9 +291,7 @@ def run(planner, rest, aggs, extra):
     top += [spec[1] for spec, _, _ in s.order if spec[0] == "expr"]
     if any(expr is not None and I.has(expr, (I.Win, I.Subq, I.Outer)) for expr in top):
         return None
-    anchor, _, periods, cache = cached
-    if _anchor(fact) != anchor:
-        return None
+    source = algq._plan_table(fact)
     validity = getattr(fact, "nullable", {})
     refs = getattr(fact, "_refdim", {})
     moved = getattr(fact, "moved", {})
@@ -222,6 +300,7 @@ def run(planner, rest, aggs, extra):
     def eligible(col):
         return (isinstance(col, I.Col) and col.b is binding and col.t.integer and col.name in fact.cols
                 and col.name not in refs and col.name not in moved and col.name not in fact.wide
+                and fact._vflag_of(col.name) is None
                 and getattr(fact.codecs.get(col.name), "kind", None) == "int")
 
     def valid_index(name):
@@ -229,7 +308,7 @@ def run(planner, rest, aggs, extra):
         if physical is None:
             return -1
         dependencies.add(physical)
-        return fact.idx(physical)
+        return source.idx(physical)
 
     groups, aggregates, measures = [], [], {}
     plan = _Plan()
@@ -244,7 +323,7 @@ def run(planner, rest, aggs, extra):
         if radix * plan.groups > _MAX_GROUPS:
             return None
         plan.groups *= radix
-        plan.keys[i] = _Key(fact.idx(name), valid, radix)
+        plan.keys[i] = _Key(source.idx(name), valid, radix)
         groups.append((expr, radix, valid, int(fact.codecs[name].offset)))
     plan.nkeys = len(groups)
     flags = {"count": 0, "sum": _SUM, "avg": _SUM, "min": _MIN, "max": _MAX}
@@ -274,7 +353,7 @@ def run(planner, rest, aggs, extra):
         index = measures[name]
         if flag:
             dependencies.add(name)
-            plan.measures[index].col = fact.idx(name)
+            plan.measures[index].col = source.idx(name)
             plan.measures[index].flags |= flag
         aggregates.append((key, kind, index, offset))
     plan.nmeasures = len(measures)
@@ -291,36 +370,58 @@ def run(planner, rest, aggs, extra):
             return None
         prior = len(program)
         try:
-            algq.compile_pred(predicate, fact, program)
-        except TypeError:
+            algq.compile_pred(predicate, source, program)
+        except (TypeError, algq._TooWide):
             return None
         if prior:
             program.append(algq.PInstr(algq.P["AND"], 0, 0, 0))
         if len(program) > _MAX_PROGRAM:
             return None
-    dependencies.update(fact.cols[op.col] for op in program if op.op not in _NON_COLUMN_OPS)
-    if not dependencies or not dependencies <= periods.keys():
+    dependencies.update(source.cols[op.col] for op in program if op.op not in _NON_COLUMN_OPS)
+    if not dependencies:
         return None
-    cycle = lcm(*(periods[name] for name in dependencies))
-    if cycle > _MAX_CYCLE_WORDS:
-        return None
-
+    mask = sum(1 << source.idx(name) for name in dependencies)
+    parts = (fact,) if fact.parts is None else tuple(dict.fromkeys(fact._part_of(name) for name in source.cols))
     full, tail = divmod(fact.n, 64)
-    if full // cycle < _MIN_REPEATS or not _full_scope(fact, full, tail):
+    candidate = None
+    cached = getattr(fact, "_periodic", None)
+    if cached is not None and fact.parts is None:
+        anchor, _, periods, resident = cached
+        if dependencies <= periods.keys() and _anchor(fact) == anchor:
+            cycle = lcm(*(periods[name] for name in dependencies))
+            if cycle <= _MAX_CYCLE_WORDS and full // cycle >= _MIN_REPEATS:
+                candidate = _Candidate((anchor,), fact, cycle, resident=resident)
+    if candidate is None:
+        candidate = _automatic(fact, source, mask, parts, cx.stats)
+    if candidate is None or (not candidate.cycle and candidate.sectors is None):
+        return None
+    if not _full_scope(fact, full, tail):
         return None
     instructions = (algq.PInstr * len(program))(*program)
     states = (_State * plan.groups)()
+    cycle, sectors, metrics = candidate.cycle, candidate.sectors, candidate.metrics
     if cx.engine == "gpu":
-        mask = sum(1 << fact.idx(name) for name in dependencies)
-        if not _cuda(fact, cycle, mask, instructions, plan, states, cache, cx.stats):
+        if not _cuda(candidate, mask, instructions, plan, states, cx.stats):
             return None
     else:
-        if _cpu is None or _cpu(fact.at, cycle, instructions, len(instructions), plan, states):
+        args = instructions, len(instructions), plan, states
+        if sectors is None:
+            rc = -1 if _cpu is None else _cpu(candidate.storage.at, cycle, *args)
+        else:
+            rc = -1 if _cpu_sectors is None else _cpu_sectors(
+                candidate.storage.at, sectors, len(sectors), *args, None)
+        if rc:
             return None
         cx.stats["periodic_native_device"] = "cpu"
-    if _anchor(fact) != anchor:
+    if _anchors(parts) != candidate.anchor:
         return None
     cx.stats["engine_queries"] += 1
     cx.stats["periodic_rows"] = cx.stats.get("periodic_rows", 0) + fact.n
-    cx.stats["periodic_representatives"] = cx.stats.get("periodic_representatives", 0) + cycle * 64
+    representatives = cycle if metrics is None else metrics.representative_words
+    cx.stats["periodic_representatives"] = cx.stats.get("periodic_representatives", 0) + representatives * 64
+    cx.stats["periodic_certified_sectors"] = cx.stats.get("periodic_certified_sectors", 0) + (
+        1 if metrics is None else metrics.periodic_sectors)
+    cx.stats["periodic_ordinary_sectors"] = cx.stats.get("periodic_ordinary_sectors", 0) + (
+        0 if metrics is None else metrics.ordinary_sectors)
+    cx.stats["periodic_scope"] = "table" if sectors is None else "sectors"
     return _format_result(E, groups, aggregates, states)
