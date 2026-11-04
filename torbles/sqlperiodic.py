@@ -383,7 +383,8 @@ def run(planner, rest, aggs, extra):
     s, cx, binding = planner.s, planner.cx, planner.fact
     fact = planner.tab[binding]
     if (not _ENABLED or cx.engine not in ("alg", "gpu") or s.from_ is not binding or not s.aggregate
-            or planner.joins or planner.left or planner.nulled or extra
+            or planner.joins or planner.left or planner.nulled
+            or any(not isinstance(p, (algq.RefOk, algq._OnKey)) or algq.tables_of(p) != {fact} for p in extra)
             or planner.fact_sample is not None or s.sample is not None
             or getattr(binding, "writable", None) is not None
             or not 0 < fact.n < 1 << 32 or len(s.group) > _MAX_KEYS or not aggs
@@ -462,6 +463,16 @@ def run(planner, rest, aggs, extra):
     plan.nmeasures = len(measures)
 
     program = []
+    try:
+        for predicate in extra:
+            prior = len(program)
+            algq.compile_pred(predicate, source, program)
+            if prior:
+                program.append(algq.PInstr(algq.P["AND"], 0, 0, 0))
+    except (TypeError, ValueError, algq._TooWide):
+        return None
+    if len(program) > _MAX_PROGRAM:
+        return None
     for term in rest:
         term = E._fold_consts(term)
         if isinstance(term, I.Lit) and term.v is True:

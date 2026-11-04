@@ -3152,6 +3152,11 @@ def plan_star(s, bindings, need, aggs, cx):
         if j.kind in ("inner", "cross"): conj += _conjuncts(j.cond)
     conj += _conjuncts(s.where)
     edges = _edges(conj + [c for cs in left.values() for c in cs])
+    if edges and not left and getattr(cx.db, "_join_header", None):
+        from torbles import sqlheaderjoins
+        result = sqlheaderjoins.run(s, bindings, joins, conj, edges, need, aggs, cx)
+        if result is not None:
+            return result
     # the fact: every other binding is joined to it through one of its foreign keys
     fact, used = None, None
     cands = sorted(bindings, key=lambda b: -b.table.n)

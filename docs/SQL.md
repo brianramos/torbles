@@ -269,6 +269,22 @@ route. `periodic_encoded_payload_bytes` records referenced block bytes on
 CPU and value bytes uploaded on initial CUDA setup. CUDA separately
 reports descriptor bytes and resident representative planes.
 
+### Stored hierarchy joins
+
+Snapshots can carry a versioned `join_hierarchy` section in the database
+manifest. It holds occupied high-bit foreign-key cells and verified
+attribute values for stored paths of up to three joins. The manifest can
+be read independently of the native plane files. On validated reopen,
+Torbles checks the proof against the saved schema and file identities.
+
+For eligible inner joins with fact-side aggregates, a dimension or ancestor
+filter becomes a predicate on the fact's foreign-key coordinate bits.
+The fact's reference-validity bit still excludes missing keys. The same
+predicate can run on ordinary bitplanes or through the native CPU and CUDA
+periodic paths. Other query shapes and stale proofs use the usual join
+planner. The result exposes `join_header_paths` and `join_header_plan_ms`
+when the header route runs.
+
 ## Data types
 
 | SQL type | values | stored columns |

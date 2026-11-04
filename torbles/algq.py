@@ -760,6 +760,15 @@ class JoinPoly:
         self.sel = ((bm[rr >> 6] >> (rr & 63).astype(np.uint64)) & np.uint64(1)).astype(bool) if len(reps) else np.zeros(0, bool)
         self.space = "code" if len(R) < b else "id"
 
+    @classmethod
+    def from_cells(cls, bits, width, codes, selected):
+        poly = cls.__new__(cls)
+        poly.R, poly.nb, poly.b = list(bits), len(bits), width
+        poly.codes = np.asarray(codes, np.int64)
+        poly.sel = np.asarray(selected, bool)
+        poly.space = "code"
+        return poly
+
     def _terms(self, sel, form, budget, invert=False):
         """interval terms of the selected codes with their chosen form; None if over budget (native: jp_terms)"""
         if NATIVE_PLAN:

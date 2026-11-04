@@ -55,6 +55,7 @@ run "SQL vs DuckDB, ISO forms, Python API, fuzzing" python3 tests/check_sql.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_sql.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
 run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
+run "stored hierarchy filters and join headers" python3 tests/check_join_header.py
 run "shared SQL workload states"              python3 -m unittest check_sql_workload check_sql_algebra
 run "native periodic SQL reductions"          python3 tests/check_sql_periodic.py
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
