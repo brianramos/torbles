@@ -2952,6 +2952,7 @@ int at_plane_equal_ids(const atable_t *t, const uint64_t *visible, const at_grou
     if (width < 64 && (code >> width)) return 0;
     uint32_t low = (uint32_t)(code & ((UINT64_C(1) << low_width) - 1));
     uint32_t high = key->high < 0 ? 0 : (uint32_t)(code >> key->shift);
+    if (key->high >= 0 && (((uint64_t)high << key->shift) | low) != code) return 0;
     for (uint64_t word = 0; word < t->nw; ++word) {
         uint64_t mask = rowmask(t, word) & visible[word];
         if (!mask) continue;
@@ -3695,6 +3696,21 @@ uint64_t bm_ids(const uint64_t *bm, uint64_t nw, uint32_t *out) {
     for (uint64_t w = 0; w < nw; w++) { uint64_t x = bm[w]; while (x) { out[k++] = (uint32_t)(w * 64 + __builtin_ctzll(x)); x &= x - 1; } }
     return k;
 }
+/* Enumerate only a bounded result. The caller can discard the prefix on
+ * overflow; no ID at or beyond nrows is returned. */
+int64_t bm_ids_bounded(const uint64_t *bm, uint64_t nrows, uint64_t *out, uint64_t capacity) {
+    if (!nrows) return 0;
+    if (!bm || (capacity && !out)) return -1;
+    if (capacity > INT64_MAX) capacity = INT64_MAX;
+    uint64_t count = 0, words = nrows / 64 + (nrows % 64 != 0);
+    for (uint64_t w = 0; w < words; ++w) {
+        uint64_t bits = bm[w], left = nrows - w * 64;
+        if (left < 64) bits &= (UINT64_C(1) << left) - 1;
+        if ((uint64_t)__builtin_popcountll(bits) > capacity - count) return -1;
+        for (; bits; bits &= bits - 1) out[count++] = w * 64 + __builtin_ctzll(bits);
+    }
+    return (int64_t)count;
+}
 /* decode a full column to integers (dimension attributes) */
 typedef struct { const atable_t *t; int c; uint32_t *out; } dcctx_t;
 static void decode_range(void *v, uint64_t w0, uint64_t w1);
@@ -3709,13 +3725,104 @@ static void decode_range(void *v, uint64_t w0, uint64_t w1) {
         for (int r = 0; r < 64 && w * 64 + r < t->n; r++) out[w * 64 + r] = t->msb[c] ? revb((uint32_t)A[r], t->width[c]) : (uint32_t)A[r];
     }
 }
-/* values of column c at the given rows (any column, virtual ones included): each row's word is decoded once */
+typedef struct {
+    const atable_t *table;
+    unsigned col;
+    uint32_t sector;
+    int encoded;
+    tb_cycle_v_t edges[NB];
+} gather_edges_t;
+
+static int gather_edges(gather_edges_t *g, const atable_t *t, unsigned col) {
+    if (!t || col >= MAXCOL || col >= (unsigned)t->k || t->vflag[col] ||
+        t->width[col] < 0 || t->width[col] > 32) return 0;
+    g->table = t;
+    g->col = col;
+    g->sector = 0;
+    g->encoded = at_cycle_v_planes(t, 0, col, g->edges) > 0;
+    if (g->encoded) return 1;
+    /* A view created before dense fallback can still have empty aliases.
+     * Its flattened owner already holds the current values. */
+    if (t->cycle_sources[col]) {
+        g->table = t->cycle_sources[col];
+        g->col = t->cycle_columns[col];
+    }
+    if (!g->table->width[g->col]) return 1;
+    if (!g->table->cycle_store) return g->table->V[g->col][0] != NULL;
+    pthread_mutex_lock(&TB_MATERIALIZE_LOCK);
+    int dense = g->table->V[g->col][0] != NULL;
+    pthread_mutex_unlock(&TB_MATERIALIZE_LOCK);
+    return dense;
+}
+
+static int gather_word(gather_edges_t *g, uint64_t word, int width, uint64_t *out) {
+    uint64_t value = 0;
+    if (g->encoded) {
+        uint32_t sector = (uint32_t)(word / TP_SECTOR_WORDS), phase = (uint32_t)(word % TP_SECTOR_WORDS);
+        if (sector != g->sector) {
+            if (at_cycle_v_planes(g->table, sector, g->col, g->edges) < 0) return 0;
+            g->sector = sector;
+        }
+        for (int bit = 0; bit < width; ++bit) {
+            value ^= tb_cycle_v_word(&g->edges[bit], phase);
+            out[bit] = value;
+        }
+    } else {
+        for (int bit = 0; bit < width; ++bit) {
+            value ^= g->table->V[g->col][bit][word];
+            out[bit] = value;
+        }
+    }
+    return 1;
+}
+
+static int gather_virtual_word(const atable_t *t, int c, uint64_t word, uint64_t flag,
+                                gather_edges_t *lo, gather_edges_t *hi, uint64_t *out) {
+    int width = t->width[c], count = __builtin_popcountll(flag);
+    if (!count) {
+        memset(out, 0, (size_t)width * sizeof *out);
+        return 1;
+    }
+    uint64_t rank = t->vrank[c][word], sideword = rank >> 6;
+    unsigned shift = (unsigned)(rank & 63);
+    int two = shift + (unsigned)count > 64;
+    uint64_t a[32] = {0}, b[32] = {0};
+    if ((sideword < lo->table->nw && !gather_word(lo, sideword, width, a)) ||
+        (two && sideword + 1 < hi->table->nw && !gather_word(hi, sideword + 1, width, b))) return 0;
+    uint64_t mask = count == 64 ? UINT64_MAX : (UINT64_C(1) << count) - 1;
+    for (int bit = 0; bit < width; ++bit) {
+        uint64_t packed = a[bit] >> shift;
+        if (two) packed |= b[bit] << (64 - shift);
+        out[bit] = tb_pdep(packed & mask, flag);
+    }
+    return 1;
+}
+
+/* Values at the requested rows. Only the current column's word and compact
+ * sector descriptors are decoded; a virtual column follows its flag and
+ * sidecar rank without materializing either torble. */
 void at_get_rows(const atable_t *t, int c, const uint64_t *rows, uint64_t n, uint32_t *out) {
-    dec_t D; uint64_t cur = ~0ULL; const uint64_t *x = 0;
-    for (uint64_t i = 0; i < n; i++) {
+    if (!n || !t || c < 0 || c >= t->k || !rows || !out) return;
+    int flag = t->vflag[c], width = t->width[c];
+    gather_edges_t source, lo, hi;
+    if (!gather_edges(&source, t, flag ? (unsigned)(flag - 1) : (unsigned)c)) return;
+    if (flag) {
+        if (!t->vrank[c] || !gather_edges(&lo, t->vside[c], 0) || lo.table->width[lo.col] != width) return;
+        hi = lo;
+    }
+    uint64_t cur = UINT64_MAX, planes[32];
+    for (uint64_t i = 0; i < n; ++i) {
         uint64_t w = rows[i] >> 6;
-        if (w != cur) { DEC_RESET(D); x = decode(t, &D, c, w); cur = w; }
-        out[i] = extract_col(t, x, c, (int)(rows[i] & 63));
+        if (rows[i] >= t->n) { out[i] = 0; continue; }
+        if (w != cur) {
+            if (flag) {
+                uint64_t bits;
+                if (!gather_word(&source, w, 1, &bits) ||
+                    !gather_virtual_word(t, c, w, bits & rowmask(t, w), &lo, &hi, planes)) return;
+            } else if (!gather_word(&source, w, width, planes)) return;
+            cur = w;
+        }
+        out[i] = extract_col(t, planes, c, (int)(rows[i] & 63));
     }
 }
 /* payload offsets: the tail of row r starts at dir[w] + sum over the rows before r in its word of max(0, len - H).

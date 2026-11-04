@@ -269,6 +269,15 @@ route. `periodic_encoded_payload_bytes` records referenced block bytes on
 CPU and value bytes uploaded on initial CUDA setup. CUDA separately
 reports descriptor bytes and resident representative planes.
 
+### Selective row reads
+
+Read-only projections can enumerate a small set of row IDs from a native
+filter bitmap without a primary key. For supported ordered limits, the
+planner reads the order keys for those candidates before gathering the
+winning rows' payload. Sparse payload reads decode only the requested
+words and can leave topology-compressed parts compact. Larger match sets
+use the ordinary bitmap or ordering paths.
+
 ### Stored hierarchy joins
 
 Snapshots can carry a versioned `join_hierarchy` section in the database

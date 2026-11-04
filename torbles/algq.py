@@ -158,6 +158,28 @@ if _at_cycle_validate is not None:
     _at_cycle_validate.restype = ctypes.c_int
     _at_cycle_validate.argtypes = [vp, vp, u64, ctypes.POINTER(u64)]
 _COMPRESSED_MASKS = __import__("os").environ.get("TORBLES_COMPRESSED_MASKS", "1") != "0"
+_SPARSE_GATHER = __import__("os").environ.get("TORBLES_SPARSE_GATHER", "1") != "0"
+_bm_ids_bounded = getattr(lib, "bm_ids_bounded", None)
+if _bm_ids_bounded is not None:
+    _bm_ids_bounded.restype, _bm_ids_bounded.argtypes = ctypes.c_int64, [vp, u64, vp, u64]
+
+
+def _sparse_bitmap_ids(bitmap, n):
+    """Enumerate a small set of passing lanes without unpacking the row bitmap."""
+    if not _SPARSE_GATHER or _bm_ids_bounded is None:
+        return None
+    ids = np.empty(min(32768, max(64, n // 256)), np.uint64)
+    count = _bm_ids_bounded(bitmap.ctypes.data, n, ids.ctypes.data, len(ids))
+    return ids[:count] if count >= 0 else None
+
+
+def _bitmap_ids(bitmap, n):
+    if len(bitmap) >= 512:
+        live = np.flatnonzero(bitmap)
+        if len(live) * 16 < len(bitmap):
+            bits = np.flatnonzero(np.unpackbits(bitmap[live].view(np.uint8), bitorder="little"))
+            return (live[bits >> 6] * 64 + (bits & 63)).astype(np.uint64)
+    return np.flatnonzero(np.unpackbits(bitmap.view(np.uint8), bitorder="little")[:n]).astype(np.uint64)
 # the release of a Table's storage (Table.close, or its finalizer): a torble's planes or a loaded file's mapping
 # (at_release), then its header (at_free), and the plain baseline's column table
 lib.at_free.restype, lib.at_free.argtypes = None, [vp]
@@ -1619,7 +1641,9 @@ class Table:
         rows = np.ascontiguousarray(rows, np.uint64); out = np.empty(len(rows), np.uint32)
         if len(rows) and int(rows.max()) >= self.n:          # the planes hold n rows (none, for an empty table)
             raise IndexError(f"{self.name}: row {int(rows.max())} of a table of {self.n} rows")
-        lib.at_get_rows(self.at, self.idx(c), rows.ctypes.data, len(rows), out.ctypes.data); return out
+        at = self._raw_at if _SPARSE_GATHER and _bm_ids_bounded is not None else self.at
+        lib.at_get_rows(at, self.idx(c), rows.ctypes.data, len(rows), out.ctypes.data)
+        return out
     def plain_bytes(self): return 4 * self.n * len(self.cols)
     def repair(self):
         if self.parts is not None: return sum(p.repair() for p in self.parts)
@@ -2922,13 +2946,7 @@ class Query:
                 self._exec("plain" if engine == "plain" else "cpu", table, plan)
             self.last_plan = plan
             if getattr(self, "_rowbits", False): return out_rows
-            if len(out_rows) >= 512:
-                live = np.flatnonzero(out_rows)
-                if len(live) * 16 < len(out_rows):
-                    # A selective row mask, such as a top-k boundary, needs only its occupied words.
-                    bits = np.flatnonzero(np.unpackbits(out_rows[live].view(np.uint8), bitorder="little"))
-                    return (live[bits >> 6] * 64 + (bits & 63)).astype(np.uint64)
-            return np.nonzero(np.unpackbits(out_rows.view(np.uint8), bitorder="little")[:fact.n])[0].astype(np.uint64)
+            return _bitmap_ids(out_rows, fact.n)
         ext = getattr(self, "_ext", None)
         if ext is not None: plan.ext_on, plan.ext_col = 1, fv.idx(ext.name)
         # aggregation

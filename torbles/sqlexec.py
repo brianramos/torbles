@@ -4660,21 +4660,39 @@ class _Planner:
 
     def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
         """Read the selected fact rows' atoms from the planes."""
+        cx, fact = self.cx, self.tab[self.fact]
+        sparse = algq._SPARSE_GATHER and algq._bm_ids_bounded is not None
+        if (ids is None and sparse and not empty and preds and cx.engine in ("alg", "gpu")
+                and not self.joins and self.fact_sample is None):
+            from torbles.sqlgroupplans import bitmap
+
+            scope = bitmap(self, preds)
+            if scope is not None:
+                ids = algq._sparse_bitmap_ids(scope, fact.n)
+                if ids is None:
+                    ids = algq._bitmap_ids(scope, fact.n)
+                else:
+                    cx.stats["raw_sparse_bitmap_rows"] = cx.stats.get("raw_sparse_bitmap_rows", 0) + len(ids)
         if ids is None:
-            q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
+            q = algq.Query(fact); q.join_mode = "auto"
             for b, fk in self.joins.items(): q.join(self.tab[b], fk)
             for p in preds: q.where(p)
-            self.cx.stats["engine_queries"] += 1
-            ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
+            cx.stats["engine_queries"] += 1
+            ids = np.zeros(0, np.uint64) if empty else q.rows(cx.engine)
         if self.fact_sample is not None: ids = ids[self.fact_sample[np.asarray(ids, np.int64)]]
         rel = Rel(len(ids))
-        fact = self.tab[self.fact]
         cache = {}
+        encoded_columns = set()
         # Dense gathers amortize word transposition and parallel decoding.
         # The temporary arrays belong to this block, not the table's cache.
         dense = fact.n >= 1 << 16 and len(ids) * 4 >= fact.n * 3
         def read_codes(name):
-            if not dense: return fact.get_rows(name, ids)
+            if not dense:
+                if sparse and len(ids):
+                    part = fact._part_of(name)
+                    if part._storage().needs_dense and not algq._at_has_dense(part._raw_at):
+                        encoded_columns.add(name)
+                return fact.get_rows(name, ids)
             values = fact._decode_column(name)
             # The bitmap yields unique ascending row ids, so full coverage
             # already has exactly the output's row order.
@@ -4710,6 +4728,10 @@ class _Planner:
             vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
             if ok is not None: vals = [x if o else None for x, o in zip(vals, ok.tolist())]
             rel.cols[k] = vals
+        if sparse and not dense and cache:
+            cx.stats["raw_sparse_gather_rows"] = cx.stats.get("raw_sparse_gather_rows", 0) + len(ids)
+            if encoded_columns:
+                cx.stats["raw_sparse_encoded_columns"] = cx.stats.get("raw_sparse_encoded_columns", 0) + len(encoded_columns)
         return rel
 
     def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist, direct_groups=False):

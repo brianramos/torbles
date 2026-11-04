@@ -80,18 +80,22 @@ def bounded_ids(planner, preds):
     if len(keys) > _MAX_KEYS:
         return None
     native = getattr(algq.gpu_lib(), "gpu_topk_bitmap", None) if cx.engine == "gpu" else _topk
-    if native is None:
-        return None
-    if cx.engine == "gpu":
+    if cx.engine == "gpu" and native is not None:
         legacy = planner.topk_ids(preds)
         if legacy is not None:
             return _order_ids(fact, legacy, keys, desc)[off:], None
-    flags = [flag for key in keys if (flag := fact._part_of(key)._vflag_of(key)) is not None]
-    source = fact if fact.parts is None else fact.view(tuple(dict.fromkeys(keys + flags)))
     from . import sqlgroupplans
     bitmap = sqlgroupplans.bitmap(planner, preds)
     if bitmap is None:
         return None
+    sparse = algq._sparse_bitmap_ids(bitmap, fact.n) if preds else None
+    if sparse is not None:
+        cx.stats["raw_sparse_topk_matches"] = len(sparse)
+        return _order_ids(fact, sparse, keys, desc)[off:off + lim], len(sparse)
+    if native is None:
+        return None
+    flags = [flag for key in keys if (flag := fact._part_of(key)._vflag_of(key)) is not None]
+    source = fact if fact.parts is None else fact.view(tuple(dict.fromkeys(keys + flags)))
 
     count, inputs = ctypes.c_uint32(), ctypes.c_uint64()
     out = np.empty(lim + off, np.uint64)
