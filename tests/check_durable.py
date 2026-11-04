@@ -44,6 +44,9 @@ class DurableChecks(unittest.TestCase):
             con.sql("UPDATE stage SET v = 0 WHERE id = 2")
             expected = [(1, 20), (2, 22), (5, 55)]
             self.assertEqual(con.sql(ROWS).rows, expected)
+            point = con.sql("SELECT v FROM fact WHERE id = 5")
+            self.assertEqual(point.rows, [(55,)])
+            self.assertEqual(point.stats["writable_key_lookup"], 1)
             con.sql("COMMIT TRANSACTION")
 
             n = db.wal_bytes
@@ -52,6 +55,7 @@ class DurableChecks(unittest.TestCase):
             con.sql("ROLLBACK")
             self.assertEqual(db.wal_bytes, n)
             self.assertEqual(con.sql(ROWS).rows, expected)
+            self.assertEqual(con.sql("SELECT v FROM fact WHERE id = 5").rows, [(55,)])
 
             con.sql("BEGIN")
             con.sql("DELETE FROM fact")
@@ -62,7 +66,9 @@ class DurableChecks(unittest.TestCase):
 
         with torbles.open_durable(self.path) as db, db.connect() as con:
             self.assertEqual(con.sql(ROWS).rows, expected)
-            self.assertEqual(con.sql("SELECT v FROM stage WHERE id = 2").rows, [(0,)])
+            point = con.sql("SELECT v FROM stage WHERE id = 2")
+            self.assertEqual(point.rows, [(0,)])
+            self.assertEqual(point.stats["writable_key_lookup"], 1)
 
     def test_clients_wait_for_commit(self):
         with torbles.open_durable(self.path, tables=TABLES) as db, db.connect() as writer:

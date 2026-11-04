@@ -3,9 +3,11 @@
 """SQL statement execution and atomicity for writable bitplane tables."""
 
 import unittest
+from unittest.mock import patch
 
 import duckdb
 import torbles
+from torbles import algq
 
 
 class SQLDMLChecks(unittest.TestCase):
@@ -31,6 +33,57 @@ class SQLDMLChecks(unittest.TestCase):
         if keyed is not None:
             self.assertEqual(bool(got.stats["writable_key_lookup"]), keyed)
         return got
+
+    def point(self, sql, key_rows=1):
+        result = self.match(sql)
+        self.assertEqual(result.stats.get("writable_key_lookup"), 1, result.stats)
+        self.assertEqual(result.stats.get("writable_key_rows"), key_rows, result.stats)
+        self.assertNotIn("writable_scan_rows", result.stats)
+        return result
+
+    def test_primary_key_select_gathers_visible_rows_from_planes(self):
+        self.register("inventory", {"id": [37, 2, 4294967295, 0], "v": [13, 21, 34, 55]})
+        table = self.db["inventory"]
+        with patch.object(table, "scan", side_effect=AssertionError("point read scanned rows")), \
+                patch.object(algq.Table, "_decode_column", side_effect=AssertionError("point read decoded a column")):
+            self.point("SELECT i.id, i.v AS amount FROM inventory AS i "
+                       "WHERE CAST(37 AS BIGINT) = CAST(i.id AS BIGINT) AND i.v < 20 ORDER BY amount")
+            self.point("SELECT COUNT(*), SUM(v) FROM inventory WHERE id = 37")
+            self.point("SELECT COUNT(*), SUM(v) FROM inventory WHERE id = 999", key_rows=0)
+            self.point("SELECT v FROM inventory WHERE id = CAST(0 AS UINTEGER)")
+            self.point("SELECT v FROM inventory WHERE id = CAST(4294967295 AS UINTEGER)")
+            self.point("SELECT v FROM inventory WHERE id = CAST(4294967296 AS UBIGINT)", key_rows=0)
+            self.point("SELECT v FROM inventory WHERE id = CAST(-1 AS BIGINT)", key_rows=0)
+
+        self.match("UPDATE inventory SET v = 1000000 WHERE id = 37", keyed=True)
+        self.assertEqual(table.store.stats["width_fallback_batches"], 1)
+        self.point("SELECT v FROM inventory WHERE id = 37")
+        self.match("INSERT INTO inventory VALUES (68, 89)")
+        self.point("SELECT v FROM inventory WHERE id = 68")
+        self.match("DELETE FROM inventory WHERE id = 2", keyed=True)
+        self.point("SELECT v FROM inventory WHERE id = 2", key_rows=0)
+        self.match("INSERT INTO inventory VALUES (2, 144)")
+        self.point("SELECT v FROM inventory WHERE id = 2")
+
+        table.store.compact()
+        self.assertEqual(table.store.stats["segments"], 1)
+        for key in (2, 37, 68):
+            with self.subTest(key=key):
+                self.point(f"SELECT id, v FROM inventory WHERE id = {key}")
+
+    def test_primary_key_select_retains_residual_and_fallback_semantics(self):
+        self.point("SELECT v FROM fact WHERE id = 1 AND v = 99")
+        residual = "CAST(CAST(v AS VARCHAR) || 'x' AS INTEGER) > 0"
+        self.point(f"SELECT v FROM fact WHERE id = 999 AND {residual}", key_rows=0)
+        with self.assertRaisesRegex(torbles.SqlError, "100x"):
+            self.db.sql(f"SELECT v FROM fact WHERE id = 1 AND {residual}")
+
+        for sql in ("SELECT id FROM fact WHERE id = 1 OR id = 3 ORDER BY id",
+                    "SELECT v FROM fact WHERE CAST(id AS SMALLINT) = 2"):
+            with self.subTest(sql=sql):
+                result = self.match(sql)
+                self.assertNotIn("writable_key_lookup", result.stats)
+                self.assertEqual(result.stats.get("writable_scan_rows"), 4)
 
     def test_four_statements_and_native_reads(self):
         self.register("stage", {"id": [2, 5], "v": [201, 230], "dk": [1, 2]})

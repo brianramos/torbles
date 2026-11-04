@@ -1392,6 +1392,10 @@ def _writable_aggregate(s, bindings, aggs, cx):
     if len(bindings) != 1 or len(s.group) > 1:
         return None
     binding = bindings[0]
+    from torbles.sqldml import point_key
+
+    if point_key(binding, binding.writable, terms) is not None:
+        return None  # The ordinary finalizer can aggregate the gathered point row.
     group = s.group[0] if s.group else None
     if group is not None and (not isinstance(group, I.Col) or group.b is not binding):
         return None
@@ -5466,6 +5470,15 @@ def _mat_binding(b, cols, conds, cx, deferred=None):
         return _pushed_rows(rel, conds, cx, deferred)
     writable = getattr(b, "writable", None)
     if writable is not None:
+        if conds:
+            from torbles.sqldml import point_key, read_point
+
+            key = point_key(b, writable, conds)
+            if key is not None:
+                rel = read_point(b, writable, key, cols, cx)
+                cx.stats["writable_key_lookup"] = cx.stats.get("writable_key_lookup", 0) + 1
+                cx.stats["writable_key_rows"] = cx.stats.get("writable_key_rows", 0) + rel.n
+                return _pushed_rows(rel, conds, cx, deferred)
         names = list(dict.fromkeys(c.name for c in cols))
         data = writable.scan(names) if names else {}
         n = len(data[names[0]]) if names else writable.store.count()

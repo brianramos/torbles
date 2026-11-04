@@ -501,7 +501,9 @@ outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
 
 Register a table with Database.add_writable_table(name, columns, primary_key="id") to run INSERT, UPDATE, DELETE,
 and MERGE through Database.sql. Writable tables are in memory and have fixed nonnullable unsigned integer columns and
-one immutable primary key. See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
+one immutable primary key. A SQL filter with an exact integer equality on that key can use the same lookup as
+UPDATE and DELETE. The reader gathers the selected row from the bitplanes and evaluates any remaining predicates.
+See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
 
 ### Not supported, and why
 
