@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""torbles 0.7.0: algebraic queries over torbles.
+"""torbles 0.8.0: algebraic queries over torbles.
 
 Queries are built as algebraic expressions (operator overloading), compiled into:
   - Boolean polynomials over bit planes (filters), one program per table,
@@ -122,7 +122,7 @@ def sum_width(measure, fact):
                             "torbles refuses rather than risk a wrong answer")
     return int(bound >= 1 << 63)
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 _libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__).with_name("libalg.so"))   # (an instrumented build: tests/sanitize_math.sh)
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))

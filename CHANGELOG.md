@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.0, alpha
+
+- Compile literal regex predicates into dictionary membership masks. Eligible
+  CUDA plans apply those masks to stored bitplanes and preserve SQL null semantics.
+- Reduce eligible regex groups on CUDA. The host compiles the dictionary mapping
+  once, and CUDA computes group counts, byte-length sums, and minimum source
+  codes. The device returns groups that pass the count bound.
+- Derive candidates for grouped string lengths from their observed counts and
+  process bounded batches. This extends the path to larger fact tables on CPU
+  and CUDA.
+- Verify all 43 ClickBench queries on the 99,997,497-row fixture with the release
+  prototype. The CUDA warm total was 2.06 s on AC and 4.07 s on battery.
+  [Measurements and verification](docs/CLICKBENCH-0.8.0.md)
+
 ## 0.7.0, alpha
 
 - Choose certified grouping interchanges automatically. Narrow equality
