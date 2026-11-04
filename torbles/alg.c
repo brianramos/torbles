@@ -389,6 +389,130 @@ int at_periodic_has_persisted(const atable_t *t, uint32_t columns_mask) {
     return periodic_index_columns(t, columns_mask, NULL) != 0;
 }
 
+static unsigned periodic_index_period(const periodic_index_t *index, uint32_t sector) {
+    return index->periods[(size_t)sector * index->owner->k];
+}
+
+static int periodic_index_current(uint32_t indexed, const periodic_index_t *indices) {
+    for (uint32_t mask = indexed; mask; mask &= mask - 1) {
+        const periodic_index_t *index = indices + __builtin_ctz(mask);
+        if (index->revision != __atomic_load_n(&index->owner->revision, __ATOMIC_ACQUIRE)) return 0;
+    }
+    return 1;
+}
+
+/* A later local motif can be shorter than the first motif. Its first p
+ * words alone only prove the match if the first motif also repeats at p. */
+static int periodic_reference_repeats(const atable_t *t, unsigned col, unsigned first_period,
+                                      unsigned period) {
+    unsigned shift = period % first_period;
+    if (!shift) return 1;
+    unsigned right = first_period - shift;
+    for (int bit = 0; bit < t->width[col]; ++bit) {
+        const uint64_t *v = t->V[col][bit];
+        if (memcmp(v, v + shift, right * sizeof *v) ||
+            memcmp(v, v + right, shift * sizeof *v)) return 0;
+    }
+    return 1;
+}
+
+static int periodic_global_match(const atable_t *t, unsigned col, uint32_t first,
+                                  uint32_t words, uint32_t cycle) {
+    for (uint32_t phase = first % cycle; words; phase = 0) {
+        uint32_t span = cycle - phase;
+        if (span > words) span = words;
+        for (int bit = 0; bit < t->width[col]; ++bit) {
+            const uint64_t *v = t->V[col][bit];
+            if (memcmp(v + first, v + phase, span * sizeof *v)) return 0;
+        }
+        first += span;
+        words -= span;
+    }
+    return 1;
+}
+
+static unsigned periodic_global_local(const periodic_index_t *index, uint32_t sector,
+                                       uint32_t full_words) {
+    unsigned period = periodic_index_period(index, sector);
+    return period <= TP_SECTOR_WORDS / TP_MIN_REPEATS && period <= full_words ? period : 0;
+}
+
+int at_periodic_ingested_global(const atable_t *t, uint32_t columns_mask,
+                                uint32_t *cycle, uint64_t *uses) {
+    if (!cycle || !periodic_layout(t) || !t->n || t->n > UINT32_MAX || !columns_mask ||
+        (columns_mask >> t->k)) return -1;
+    *cycle = 0;
+    if (uses) *uses = 0;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (revision != t->cycle_revision) return -1;
+    periodic_index_t indices[MAXCOL];
+    uint32_t indexed = periodic_index_columns(t, columns_mask, indices);
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        if (!periodic_column(t, col)) return -1;
+        const atable_t *owner = t->cycle_sources[col];
+        if (owner && owner->cycle_periods &&
+            __atomic_load_n(&owner->revision, __ATOMIC_ACQUIRE) != owner->cycle_revision) return -1;
+    }
+    if (indexed != columns_mask) return 0;
+
+    uint32_t nsectors = (uint32_t)((t->nw + TP_SECTOR_WORDS - 1) / TP_SECTOR_WORDS);
+    uint32_t full = (uint32_t)(t->n / 64), cap = full / TP_MIN_REPEATS;
+    if (cap > TP_MAX_CYCLE_WORDS) cap = TP_MAX_CYCLE_WORDS;
+    uint32_t candidate = 1, result = 0;
+    uint64_t inspected = 0;
+    /* The whole candidate prefix fits in the first sector. Later periods
+     * are certificates to compare, so they cannot increase its length. */
+    uint32_t first_words = full < TP_SECTOR_WORDS ? full : TP_SECTOR_WORDS;
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        unsigned period = periodic_global_local(indices + col, 0, first_words);
+        ++inspected;
+        if (!period) goto finished;
+        candidate = periodic_lcm(candidate, period);
+        if (candidate > cap) goto finished;
+    }
+
+    uint32_t tail_rows = (uint32_t)(t->n % 64);
+    for (uint32_t sector = 1; sector < nsectors; ++sector) {
+        uint32_t first = sector * TP_SECTOR_WORDS, words = full - first;
+        if (words > TP_SECTOR_WORDS) words = TP_SECTOR_WORDS;
+        int final = sector + 1 == nsectors;
+        for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+            unsigned col = (unsigned)__builtin_ctz(mask);
+            const periodic_index_t *index = indices + col;
+            unsigned period = periodic_global_local(index, sector, words);
+            ++inspected;
+            /* Only a bounded final literal can be matched without an index. */
+            if (final && words + (tail_rows != 0) <= candidate) {
+                if (!periodic_global_match(t, col, first, words, candidate)) goto finished;
+                continue;
+            }
+            if (!period || !periodic_reference_repeats(t, col, periodic_index_period(index, 0), period) ||
+                !periodic_global_match(t, col, first, period, candidate)) goto finished;
+        }
+    }
+    if (tail_rows) {
+        uint64_t tail = (UINT64_C(1) << tail_rows) - 1;
+        for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+            unsigned col = (unsigned)__builtin_ctz(mask);
+            for (int bit = 0; bit < t->width[col]; ++bit) {
+                const uint64_t *v = t->V[col][bit];
+                if ((v[full] ^ v[full % candidate]) & tail) goto finished;
+            }
+        }
+    }
+    result = candidate;
+
+finished:
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        !periodic_index_current(indexed, indices)) return -1;
+    *cycle = result;
+    if (uses) *uses = inspected;
+    return 0;
+}
+
 static unsigned periodic_sector_cycle(const atable_t *t, uint32_t columns,
                                       const tp_sector_t *sector, unsigned max_words,
                                       uint32_t indexed, const periodic_index_t *indices,
@@ -404,7 +528,7 @@ static unsigned periodic_sector_cycle(const atable_t *t, uint32_t columns,
     for (uint32_t mask = indexed; mask; mask &= mask - 1) {
         unsigned col = (unsigned)__builtin_ctz(mask);
         const periodic_index_t *index = indices + col;
-        unsigned period = index->periods[(size_t)sector_id * index->owner->k];
+        unsigned period = periodic_index_period(index, sector_id);
         ++*persisted_uses;
         if (!period || period > cap) return 0;
         cycle = periodic_lcm(cycle, period);
@@ -468,11 +592,8 @@ int at_periodic_plan_sectors_ex(const atable_t *t, uint32_t columns_mask,
         sectors[i] = sector;
         periodic_sector_metrics(&result, &sector);
     }
-    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
-    for (uint32_t mask = indexed; mask; mask &= mask - 1) {
-        const periodic_index_t *index = indices + __builtin_ctz(mask);
-        if (index->revision != __atomic_load_n(&index->owner->revision, __ATOMIC_ACQUIRE)) return -1;
-    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        !periodic_index_current(indexed, indices)) return -1;
     if (metrics) *metrics = result;
     if (persisted_uses) *persisted_uses = uses;
     return 0;

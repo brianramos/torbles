@@ -123,10 +123,12 @@ class AutomaticSectorChecks(unittest.TestCase):
         oracle.execute("""
             CREATE TABLE edges AS
             WITH phases AS (
-                SELECT (i // 64 % 11 = 0)::INTEGER AS a, (i // 64 % 13 = 0)::INTEGER AS b
-                FROM range(262144) t(i)
+                SELECT i, (i // 64 % 11 = 0)::INTEGER AS a, (i // 64 % 13 = 0)::INTEGER AS b
+                FROM range(524325) t(i)
             )
-            SELECT a + 2 * xor(a, b) AS x FROM phases
+            SELECT a + 2 * xor(a, b) AS x,
+                   CASE WHEN i // 262144 % 2 = 0 THEN b ELSE 1 - b END AS shifted
+            FROM phases
         """)
         db = torbles.from_duckdb(oracle, groups=False)
         self.addCleanup(db.close)
@@ -143,8 +145,14 @@ class AutomaticSectorChecks(unittest.TestCase):
                 after = reopened.sql(sql)
                 self.assertEqual(after.fetchall(), expected)
                 self.assertEqual(after.stats["periodic_native_device"], "cpu")
+                self.assertEqual(after.stats["periodic_scope"], "table")
                 self.assertEqual(after.stats["periodic_representatives"], 11 * 13 * 64)
                 self.assertGreater(after.stats["periodic_ingested_proof_uses"], 0)
+                local_sql = "SELECT COUNT(*), SUM(shifted) FROM edges"
+                local = reopened.sql(local_sql)
+                self.assertEqual(local.fetchall(), oracle.execute(local_sql).fetchall())
+                self.assertEqual(local.stats["periodic_scope"], "sectors")
+                self.assertEqual(local.stats["periodic_certified_sectors"], 2)
             finally:
                 reopened.close()
 
@@ -222,6 +230,13 @@ class AutomaticSectorChecks(unittest.TestCase):
                     self.assertEqual(warm["periodic_proof_cache_hits"], 1)
                     if engine == "gpu":
                         self.assertEqual(warm["periodic_uploaded_bytes"], 0)
+                    else:
+                        changed_part = db["sectors"]._part_of("y")
+                        changed_part.flip(0, 64)
+                        changed_part.flip(0, 64)
+                        stale = check(27, engine)
+                        self.assertLess(stale["periodic_ingested_proof_uses"],
+                                        cold["periodic_ingested_proof_uses"])
                 finally:
                     db.close()
 

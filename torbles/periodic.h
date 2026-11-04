@@ -60,6 +60,10 @@ int at_periodic_plan_sectors(const atable_t *t, uint32_t columns_mask,
  * extended planner counts each index decision it uses. Composed indexed
  * periods are bounded by the execution limit, independently of max_words. */
 int at_periodic_has_persisted(const atable_t *t, uint32_t columns_mask);
+/* Stitch indexed local motifs into one global cycle by comparing only
+ * bounded motif words and a bounded final literal. cycle=0 is a miss. */
+int at_periodic_ingested_global(const atable_t *t, uint32_t columns_mask,
+                                uint32_t *cycle, uint64_t *uses);
 int at_periodic_plan_sectors_ex(const atable_t *t, uint32_t columns_mask,
                                 uint32_t sector_words, uint32_t max_words,
                                 tp_sector_t *sectors, uint32_t capacity,

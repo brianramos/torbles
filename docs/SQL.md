@@ -254,7 +254,8 @@ reduces persisted bytes. Reopen still allocates the expanded planes, and
 ordinary queries use those planes. Eligible CPU and CUDA SQL can compose
 sector cycles from the stored directory and skip rechecking those planes.
 Separately encoded V edges can prove a column cycle longer than the
-query-time discovery bound.
+query-time discovery bound. A bounded phase comparison can also coalesce
+compatible sector motifs into one table-wide cycle.
 `periodic_ingested_proof_uses` records directory lookups on the first plan.
 Native revisions still invalidate stored proofs after in-memory changes.
 

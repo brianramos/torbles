@@ -83,6 +83,8 @@ _discover_persisted = _bind(algq.lib, "at_periodic_plan_sectors_ex", C.c_int,
                             [algq.vp, C.c_uint32, C.c_uint32, C.c_uint32, *_sector_args,
                              C.POINTER(_Metrics), C.POINTER(C.c_uint64)])
 _has_persisted = _bind(algq.lib, "at_periodic_has_persisted", C.c_int, [algq.vp, C.c_uint32])
+_ingested_global = _bind(algq.lib, "at_periodic_ingested_global", C.c_int,
+                         [algq.vp, C.c_uint32, C.POINTER(C.c_uint32), C.POINTER(C.c_uint64)])
 _cpu_sectors = _bind(algq.lib, "at_periodic_reduce_sectors", C.c_int,
                      [algq.vp, *_sector_args, *_prog_args, C.POINTER(_Metrics)])
 
@@ -175,9 +177,16 @@ def _automatic(fact, source, mask, parts, stats):
     sectors = None
     if _discover_persisted is not None and _has_persisted is not None and _has_persisted(storage.at, mask):
         uses = C.c_uint64()
-        sectors = (_Sector * count)()
-        rc = _discover_persisted(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics, uses)
-        stats["periodic_ingested_proof_uses"] = stats.get("periodic_ingested_proof_uses", 0) + uses.value
+        cycle = C.c_uint32()
+        rc = 0 if _ingested_global is None else _ingested_global(storage.at, mask, cycle, uses)
+        proof_uses = uses.value
+        if not rc and cycle.value:
+            entry.cycle = cycle.value
+        else:
+            sectors = (_Sector * count)()
+            rc = _discover_persisted(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics, uses)
+            proof_uses += uses.value
+        stats["periodic_ingested_proof_uses"] = stats.get("periodic_ingested_proof_uses", 0) + proof_uses
         elapsed_key = "periodic_ingested_plan_ms"
     else:
         whole = (_Sector * 1)()
