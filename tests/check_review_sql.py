@@ -423,5 +423,21 @@ cases(db, "F02 frame offsets near 2^63, windows over no rows", [
     ("CUME_DIST over no rows", "SELECT id, cume_dist() OVER () AS c FROM tk WHERE id < 0", []),
 ])
 db.close()
+# A bounded wide equality inside a general join still carries the join's input columns.
+db = torbles.from_ddl(
+    "CREATE TABLE wf (k INTEGER, code BIGINT); CREATE TABLE wd (k INTEGER, cutoff BIGINT);",
+    {"wf": pd.DataFrame({"k": [1, 2], "code": [5, 1 << 45]}),
+     "wd": pd.DataFrame({"k": [1, 2], "cutoff": [0, 1 << 46]})},
+    keep_plain=True,
+)
+wide_join = ("SELECT f.k, d.k FROM wf f LEFT JOIN wd d ON f.k=d.k AND f.code>d.cutoff "
+             "WHERE f.code={} ORDER BY f.k")
+cases(db, "Bounded wide lookup in a general outer join", [
+    ("matching row", wide_join.format(5), [(1, 1)]),
+    ("null-padded row", wide_join.format(1 << 45), [(2, None)]),
+    ("empty left input", wide_join.format(1 << 44), []),
+])
+db.close()
+
 print("\nALL MATCH" if fails == 0 else f"\n{fails} FAILURES")
 sys.exit(1 if fails else 0)

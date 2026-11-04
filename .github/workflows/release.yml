@@ -1,14 +1,18 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # On a version tag (v*): the sdist and manylinux x86-64 wheels (portable build: the popcount kernels choose AVX2 /
-# AVX-512 at run time), tested, then published to PyPI by trusted publishing. To enable publishing, add this
-# repository as a trusted publisher of the "torbles" project on pypi.org (environment "pypi"); until then the
-# publish job fails and the built files remain available as workflow artifacts.
+# AVX-512 at run time), tested. Publishing is opt-in via a manual run on a version tag. To enable publishing, add this
+# repository as a trusted publisher of the "torbles" project on pypi.org (environment "pypi"); the built files remain available as workflow artifacts.
 name: release
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      publish_to_pypi:
+        description: Publish this version tag to PyPI
+        type: boolean
+        default: false
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -49,7 +53,7 @@ jobs:
           name: wheels
           path: wheelhouse/*.whl
   publish:
-    if: github.event_name == 'push' && github.ref_type == 'tag'
+    if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && inputs.publish_to_pypi
     needs: [sdist, wheels]
     runs-on: ubuntu-latest
     environment: pypi

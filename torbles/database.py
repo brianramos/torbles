@@ -562,7 +562,7 @@ class Database:
 
     def sql(self, text, engine="alg"):
         """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
-        (.columns, .rows, .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
+        (.columns, .rows, .fetch_columns(), .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
         see docs/SQL.md for how each part of a query is evaluated and for the functions supported."""
         import sqlfront, sqlexec
         if not self._writable:
@@ -580,6 +580,12 @@ class Database:
                     for q in sqlfront.bind(self, statement):
                         out = sqlexec.run(self, q, engine)
             return out
+
+    def sql_batch(self, text, engine="alg"):
+        """Run a read-only SQL workload and return one Relation per statement."""
+        from torbles import sqlworkload
+        with self._sql_lock:
+            return sqlworkload.run(self, text, engine)
 
     def sql_result(self, q):
         """run the query's SQL rendering on the source (DuckDB) and return it in torbles' result form"""
@@ -642,9 +648,10 @@ class Database:
     def save(self, path):
         """Write the database to a directory: one file per torble (its bit planes, memory-mapped on load) plus a
         manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates)."""
-        if self._writable:
-            raise ValueError("persistence of writable tables is not supported")
-        save(self, path)
+        with self._sql_lock:
+            if self._writable:
+                raise ValueError("persistence of writable tables is not supported")
+            save(self, path)
 
 
 # ---------------------------------------------------------------------- helpers
@@ -925,18 +932,35 @@ def from_frictionless(package, **build_opts):
 # ---------------------------------------------------------------------- persistence
 def save(db, path):
     import ctypes
+    snapshot = None
+    if getattr(db, "_sql_snapshot", None) is not None:
+        from torbles import sqlsnapshot
+        snapshot = sqlsnapshot.token(db)
+    files = [] if snapshot is not None else None
+
+    def save_torble(at, filename):
+        if algq.lib.at_save(at, filename.encode()) != 0:
+            raise OSError(f"cannot write {filename}")
+        if files is not None:
+            files.append(os.path.relpath(filename, path))
+
+    def save_array(filename, array):
+        np.save(filename, array)
+        if files is not None:
+            files.append(os.path.relpath(filename, path))
+
     os.makedirs(path, exist_ok=True)
     man = dict(format=FORMAT, version=algq.__version__, tables={}, notes=db.notes, order=list(db.tables))
     sgs = {}
     for name, t in db.tables.items():
         base = os.path.join(path, _fname(name))
         for suf, tb in ([("", t)] if t.parts is None else [(f".part{i}", p) for i, p in enumerate(t.parts)]):
-            if algq.lib.at_save(tb.at, (base + suf + ".tbl").encode()) != 0: raise OSError(f"cannot write {base}{suf}.tbl")
+            save_torble(tb.at, base + suf + ".tbl")
         arrays = {}
         side = {}
         for c, sc in getattr(t, "sidecars", {}).items():
             fn = base + "." + _fname(c) + ".side.tbl"
-            if algq.lib.at_save(sc["side"], fn.encode()) != 0: raise OSError(f"cannot write {fn}")
+            save_torble(sc["side"], fn)
             arrays[f"rank:{c}"] = sc["rank"]; side[c] = dict(rows=int(sc["rows"]))
         codecs = {}
         for c, cd in t.codecs.items():
@@ -959,7 +983,7 @@ def save(db, path):
                 sid = sgs.get(id(sg))
                 if sid is None:
                     sid = sgs[id(sg)] = f"sg{len(sgs)}"
-                    np.save(os.path.join(path, sid + ".npy"), np.asarray(sg.s_of_row, np.int64))
+                    save_array(os.path.join(path, sid + ".npy"), np.asarray(sg.s_of_row, np.int64))
                     if sg.stale: raise ValueError("save: a surrogate has stale points (moved rows); compact the fact first")
             refs[fk] = dict(dim=dim.name, bit=bit, surrogate=sid, w=None if sg is None else sg.w,
                             coords=None if sg is None else {k: [int(x) for x in v] for k, v in getattr(sg, "coords", {}).items()})
@@ -967,7 +991,7 @@ def save(db, path):
         for k, v in arrays.items():
             if v.dtype == object:
                 vals = [int(x) for x in v]; man.setdefault("intdicts", {}).setdefault(name, {})[k] = [str(x) for x in vals]
-            else: np.save(base + "." + _fname(k) + ".npy", v)
+            else: save_array(base + "." + _fname(k) + ".npy", v)
         m = db.meta.get(name, {})
         man["tables"][name] = dict(
             file=_fname(name) + ".tbl" if t.parts is None else None, rows=int(t.n), cols=t.cols, msb=sorted(t.msb_cols), cluster=t.cluster,
@@ -981,6 +1005,10 @@ def save(db, path):
             moved=getattr(t, "moved", {}), groups=getattr(t, "groups", {}), generated=getattr(t, "generated", None),
             used_all=bool(t.used.all()), meta=m, dense_dim=any(t is ot._refdim.get(f) for ot in db.tables.values() for f in getattr(ot, "_refdim", {})))
         man["tables"][name]["meta"] = json.loads(json.dumps(m, default=str))
+    if snapshot is not None:
+        record = sqlsnapshot.save_record(db, path, man, snapshot, files)
+        if record is not None:
+            man["sql_snapshot"] = record
     with open(os.path.join(path, "manifest.json.tmp"), "w") as f: json.dump(man, f, indent=1, default=str)
     os.replace(os.path.join(path, "manifest.json.tmp"), os.path.join(path, "manifest.json"))
 
@@ -997,23 +1025,43 @@ def load(path, validate=True, con=None):
     db = Database.__new__(Database)
     db._writable, db._sql_lock = {}, RLock()
     db._own, db.con, db._add, db.tables, db.meta, db.notes, db.integrity = False, con, {}, {}, {}, man.get("notes", []), {}
-    try: return _load_tables(db, path, man, validate)
+    try:
+        before = None
+        if validate and "sql_snapshot" in man:
+            from torbles import sqlsnapshot
+            before = sqlsnapshot.load_start(path, man, validate)
+        files = [] if before is not None else None
+        _load_tables(db, path, man, validate, files)
+        if files is not None:
+            sqlsnapshot.load_finish(db, path, man, files, before)
+        return db
     except BaseException:
         db.close()                                # what was mapped so far is released now, not with the traceback
         raise
 
 
-def _load_tables(db, path, man, validate):
+def _load_tables(db, path, man, validate, files=None):
     import ctypes
     sgs = {}
     err = ctypes.c_int(0)
+
+    def load_torble(filename):
+        if files is not None:
+            files.append(os.path.relpath(filename, path))
+        return algq.lib.at_load(filename.encode(), ctypes.byref(err))
+
+    def load_array(filename):
+        if files is not None:
+            files.append(os.path.relpath(filename, path))
+        return np.load(filename)
+
     for name in man["order"]:
         m = man["tables"][name]; base = os.path.join(path, _fname(name))
         t = Table.__new__(Table); t.name = name
         parts = []                                 # a table wider than one torble: its parts, one file each
         try:
             for i, pm in enumerate(m.get("parts") or [dict(file=m["file"], cols=m["cols"], msb=m["msb"])]):
-                at = algq.lib.at_load(os.path.join(path, pm["file"]).encode(), ctypes.byref(err))
+                at = load_torble(os.path.join(path, pm["file"]))
                 if not at: raise LoadError(f"{name}: cannot load {pm['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
                                            3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
                 h = t if not m.get("parts") else Table.__new__(Table)
@@ -1037,17 +1085,17 @@ def _load_tables(db, path, man, validate):
         t.wide = {c: tuple(v) for c, v in m["wide"].items()}
         t._decoded, t._used_ids = {}, None
         if m["used_all"]: t.used = np.ones(t.n, bool)
-        else: t.used = np.unpackbits(np.load(base + ".used.npy"), bitorder="little")[:t.n].astype(bool)
+        else: t.used = np.unpackbits(load_array(base + ".used.npy"), bitorder="little")[:t.n].astype(bool)
         bits = np.zeros(((t.n + 63) // 64 + 1) * 64, np.uint8); bits[:t.n] = t.used
         t.used_bm = np.packbits(bits, bitorder="little").view(np.uint64)
         for h in (t.parts or ()): h.used, h.used_bm = t.used, t.used_bm
         t.sidecars = {}
         for c, sc in m["sidecars"].items():
-            side = algq.lib.at_load((base + "." + _fname(c) + ".side.tbl").encode(), ctypes.byref(err))
+            side = load_torble(base + "." + _fname(c) + ".side.tbl")
             if not side: raise LoadError(f"{name}.{c}: cannot load its sidecar")
             h = t._part_of(c)                      # the torble that holds the column: the table or one of its parts
             h._own_side(side)
-            rank = np.load(base + "." + _fname(f"rank:{c}") + ".npy")
+            rank = load_array(base + "." + _fname(f"rank:{c}") + ".npy")
             flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
             algq.lib.at_set_virtual(h.at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
             h.sidecars[c] = t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
@@ -1061,7 +1109,7 @@ def _load_tables(db, path, man, validate):
             if j["kind"] == "dict":
                 fb = base + "." + _fname(f"dictblob:{c}") + ".npy"
                 if os.path.exists(fb):
-                    vals = ct.unpack_strings(np.load(fb), np.load(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
+                    vals = ct.unpack_strings(load_array(fb), load_array(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
                     if j.get("sql_type") == "BLOB": vals = [v.encode("latin-1") for v in vals]
                     if (j.get("sql_type") or "").startswith("ROW"):
                         import sqltypes as T
@@ -1069,7 +1117,7 @@ def _load_tables(db, path, man, validate):
                 elif f"dict:{c}" in man.get("intdicts", {}).get(name, {}):
                     vals = [int(x) for x in man["intdicts"][name][f"dict:{c}"]]
                     vals = _int_values(vals, j.get("sql_type", "BIGINT"))
-                else: vals = np.load(base + "." + _fname(f"dict:{c}") + ".npy").tolist()
+                else: vals = load_array(base + "." + _fname(f"dict:{c}") + ".npy").tolist()
             t.codecs[c] = ct.from_json(j, vals)
         t.pk, t.sqlname = m["pk"], name
         # references
@@ -1080,7 +1128,7 @@ def _load_tables(db, path, man, validate):
             if r["surrogate"] is not None:
                 sg = sgs.get(r["surrogate"])
                 if sg is None:
-                    sg = sgs[r["surrogate"]] = Surrogate(r["w"], np.load(os.path.join(path, r["surrogate"] + ".npy")))
+                    sg = sgs[r["surrogate"]] = Surrogate(r["w"], load_array(os.path.join(path, r["surrogate"] + ".npy")))
                     sg.coords = r.get("coords") or {}
             t.refbit[fk], t.surr[fk], t._refdim[fk] = int(r["bit"]), sg, dim
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}

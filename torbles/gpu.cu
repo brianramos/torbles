@@ -1023,7 +1023,7 @@ static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *col
 }
 #else
 struct topk_state_t {
-    uint32_t hist[TOPK_RADIX], left, bucket, emitted;
+    uint32_t hist[TOPK_RADIX], left, bucket, emitted, inputs;
 };
 struct topk_masks_t { uint64_t tied, better; };
 
@@ -1087,7 +1087,8 @@ template <bool First> __global__ void topk_hist(const gtable_t *t, const qplan_t
         if (n) atomicAdd(&state->hist[i], n);
     }
 }
-__global__ void topk_choose(topk_state_t *state) {
+__global__ void topk_choose(topk_state_t *state, bool first) {
+    if (first) for (int i = 0; i < TOPK_RADIX; i++) state->inputs += state->hist[i];
     uint32_t left = state->left, d = 0;
     while (d + 1 < TOPK_RADIX && state->hist[d] < left) left -= state->hist[d++];
     state->left = left;
@@ -1121,7 +1122,7 @@ __global__ void topk_emit(const gtable_t *t, const topk_masks_t *masks, topk_sta
 }
 
 static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *cols, const int32_t *desc,
-                    uint32_t k, uint64_t *ids, uint32_t *n, double *ms) {
+                    uint32_t k, uint64_t *ids, uint32_t *n, double *ms, uint64_t *inputs = nullptr) {
     int nw = (int)h->host.nw;
     size_t fixed = sizeof(topk_masks_t) * nw + sizeof(uint64_t) * TOPK_LIMIT
                    + sizeof(topk_state_t) + sizeof(uint32_t) * nw;
@@ -1154,7 +1155,7 @@ static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *col
                 topk_digit_t digit = {cols[i], end_bit, bits, desc[i]};
                 if (first) topk_hist<true><<<blocks, 128>>>(h->dev, h->dq, masks, state, prev, digit);
                 else topk_hist<false><<<blocks, 128>>>(h->dev, h->dq, masks, state, prev, digit);
-                topk_choose<<<1, 1>>>(state);
+                topk_choose<<<1, 1>>>(state, first);
                 prev = digit;
                 first = false;
             }
@@ -1170,6 +1171,11 @@ static int run_topk(handle_t *h, const qplan_t *q, int nkeys, const int32_t *col
         if (ms) *ms = elapsed;
         CKI(cudaMemcpy(n, &state->emitted, sizeof *n, cudaMemcpyDeviceToHost));
         if (*n > k) return -2;
+        if (inputs) {
+            uint32_t selected;
+            CKI(cudaMemcpy(&selected, &state->inputs, sizeof selected, cudaMemcpyDeviceToHost));
+            *inputs = selected;
+        }
         if (*n) CKI(cudaMemcpy(ids, out, *n * sizeof *ids, cudaMemcpyDeviceToHost));
         return 0;
     }();
@@ -1207,6 +1213,39 @@ static void *dev_array(handle_t *h, const void *host, uint64_t bytes, uint64_t t
     else T->p[T->n++] = d;
     return d;
 }
+#ifndef EMULATE
+#include "gpu_scalar_planes.cuh"
+#include "gpu_group_planes.cuh"
+#include "gpu_window_planes.cuh"
+#include "gpu_window_relational.cuh"
+#include "gpu_text_planes.cuh"
+#include "gpu_rows_bitmap.cuh"
+
+extern "C" int gpu_topk_bitmap(void *hv, const uint64_t *scope, int nkeys, const int32_t *cols,
+                                const int32_t *desc, uint32_t k, uint64_t *ids, uint32_t *count,
+                                uint64_t *inputs, double *ms) {
+    if (!hv || !scope || !cols || !desc || !ids || !count || !inputs ||
+        nkeys < 1 || nkeys > 12 || !k || k > TOPK_LIMIT) return -1;
+    auto *h = (handle_t *)hv;
+    if (h->host.n > UINT32_MAX) return -1;
+    for (int i = 0; i < nkeys; ++i)
+        if (cols[i] < 0 || cols[i] >= h->host.k || !h->host.width[cols[i]] ||
+            (desc[i] != 0 && desc[i] != 1)) return -1;
+    *count = 0;
+    *inputs = 0;
+    if (ms) *ms = 0;
+    if (!h->host.nw) return 0;
+    auto *mask = (uint64_t *)dev_copy(scope, h->host.nw * sizeof *scope);
+    if (!mask) return -2;
+    qplan_t plan = {};
+    plan.xmode = 1;
+    plan.xrows = mask;
+    int rc = run_topk(h, &plan, nkeys, cols, desc, k, ids, count, ms, inputs);
+    dev_free(mask);
+    return rc;
+}
+#endif
+
 /* tags: of attr_vals[a] at [a] (a < nattr) and of xrows at [8]; NULL: none (every copy is this query's only) */
 extern "C" int gpu_query_tagged(void *hv, qplan_t *q, const uint64_t *tags, double *ms) {
     if (!supported(q)) return -1;

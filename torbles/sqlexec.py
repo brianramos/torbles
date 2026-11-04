@@ -40,7 +40,9 @@ class Relation:
         return cls(names, types, None if cols else [()] * n, cols if cols else None)
     @property
     def rows(self):
-        if self._rows is None: self._rows = list(zip(*self._cols))
+        if self._rows is None:
+            columns = [col.tolist() if isinstance(col, np.ndarray) else col for col in self._cols]
+            self._rows = list(zip(*columns))
         return self._rows
     @rows.setter
     def rows(self, v): self._rows, self._cols = v, None
@@ -51,6 +53,20 @@ class Relation:
     def __repr__(self): return f"Relation({self.names}, {len(self.rows)} rows)"
     def fetchall(self): return list(self.rows)
     def fetchone(self): return self.rows[0] if self.rows else None
+    def fetch_columns(self):
+        """Return NumPy columns in SQL projection order, including duplicate names."""
+        cols = self._cols
+        if cols is None:
+            cols = list(zip(*self.rows)) if self.rows else [()] * len(self.names)
+        arrays = []
+        for col in cols:
+            if isinstance(col, np.ndarray):
+                arrays.append(col.copy())
+            else:
+                array = np.empty(len(col), dtype=object)
+                array[:] = list(col)
+                arrays.append(array)
+        return tuple(arrays)
     def df(self):
         import pandas as pd
         return pd.DataFrame(self.rows, columns=self.names)
@@ -123,11 +139,11 @@ class Rel:
     """rows of a block while it is evaluated: cols {expression key: [value per row]} (Cols: engine columns stay codes
     until read as values), cnt [rows each row stands for], mom {(variant, moment): [sum per row]}, vcnt {variant: [count
     per row]}"""
-    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered")
+    __slots__ = ("n", "cols", "cnt", "mom", "vcnt", "grouped", "plane_ordered", "native_window", "native_qualified", "native_terminal")
     def __init__(self, n):
         self.n, self.cols, self.cnt, self.mom, self.vcnt = n, Cols(), [1] * n, {}, {}
         self.grouped = False
-        self.plane_ordered = False
+        self.plane_ordered = self.native_window = self.native_qualified = self.native_terminal = False
     def take(self, idx):
         r = Rel(len(idx))
         r.cols = self.cols.take(idx)
@@ -788,6 +804,9 @@ def run(db, q, engine="alg"):
     cx = Cx(db, engine)
     with decimal.localcontext(T.CTX):
         r = run_query(q, cx)
+        if getattr(r, "_primitive_window_output", False):
+            r.stats = cx.stats
+            return r
         dec = [t.s if t.id == "DECIMAL" else None for t in r.types]
         cols = r._cols if r._cols is not None else (list(zip(*r.rows)) if r.rows and r.types else [])
         out = []
@@ -939,6 +958,13 @@ def _col_values(c, idx):
 
 
 def run_setop(q, cx):
+    if cx.engine == "gpu":
+        from torbles.sqlwindowplanes import execute_resident
+        from torbles.sqlwindowconsumers import run_setop as window_setop
+
+        result = window_setop(q, cx, execute_resident)
+        if result is not None:
+            return result
     types = [t for _, t in q.items]
     if COLUMNAR and VEC_SCALARS and q.op in ("union", "intersect", "except") and not any(T.coll_key(t) for t in types):
         import sqlwin                                  # the operands as histograms of their row codes
@@ -1248,6 +1274,21 @@ def run_select(s, cx, as_rel=False):
         # FETCH FIRST 0 ROWS / LIMIT 0: no row is output, so nothing is evaluated (as DuckDB: an error in a value
         # that no output row uses does not fail the query)
         return Relation([n for _, n in s.items], [x.t for x, _ in s.items], [])
+    if cx.engine == "gpu" and not as_rel:
+        from torbles.sqlwindowplanes import execute_resident, group_derived
+        from torbles.sqlwindowconsumers import run_select as window_select
+
+        result = window_select(s, cx, execute_resident)
+        if result is None and s.group:
+            result = group_derived(s, cx)
+        if result is not None:
+            return result
+    if cx.engine == "gpu" and s.aggregate and not as_rel:
+        from torbles.sqlwindowplanes import reduce_derived
+
+        reduced = reduce_derived(s, cx)
+        if reduced is not None:
+            return reduced
     bindings = block_bindings(s.from_)
     bset = set(bindings)
     items = [x for x, _ in s.items]
@@ -1442,6 +1483,8 @@ def _writable_join_sum(s, bindings, aggs, args, terms, cx):
 def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
     names = [n for _, n in s.items]; types = [x.t for x, _ in s.items]
     if rel.plane_ordered:
+        if as_rel and not s.order and s.limit is None and s.offset is None:
+            return rel
         return Relation.of_columns(names, types, [ev(x, rel, cx) for x, _ in s.items], rel.n)
     if s.aggregate:
         out = aggregate(s, rel, aggs, aggplan, cx)
@@ -1451,8 +1494,39 @@ def finish_select(s, rel, aggs, wins, aggplan, cx, as_rel=False):
             idx = [i for i in range(rel.n) for _ in range(rel.cnt[i])]
             rel = rel.take(idx)
         out = rel
+    if (out.native_window and not as_rel and (s.qualify is None or out.native_qualified)
+            and not s.distinct and (out.native_terminal
+            or (not s.order and s.limit is None and s.offset is None))):
+        from torbles.coltypes import IntCodec
+
+        cols = [out.cols.array(expr.key()) for expr, _ in s.items]
+        arrays = []
+        for col in cols:
+            if col is None or col.valid is not None or col.codes.dtype != np.int64:
+                break
+            if col.codec is None:
+                arrays.append(col.codes)
+                continue
+            if type(col.codec) is not IntCodec:
+                break
+            offset = col.codec.offset
+            if offset and len(col) and not (
+                -(1 << 63) <= int(col.codes.min()) + offset
+                and int(col.codes.max()) + offset < (1 << 63)
+            ):
+                break
+            if not -(1 << 63) <= offset < (1 << 63):
+                break
+            arrays.append(col.codes + offset if offset else col.codes)
+        else:
+            if arrays:
+                result = Relation.of_columns(names, types, arrays, out.n)
+                result._primitive_window_output = True
+                return result
+    if out.native_terminal:
+        return Relation.of_columns(names, types, [ev(expr, out, cx) for expr, _ in s.items], out.n)
     if wins: compute_windows(list(wins.values()), out, cx, cx.series.get(id(s)))
-    if s.qualify is not None:
+    if s.qualify is not None and not out.native_qualified:
         out = out.take(rows_where(s.qualify, out, cx))
     if as_rel and not s.distinct and not s.order and s.limit is None and s.offset is None:
         return out                                    # the rows before their values are built (a set operation's side)
@@ -3782,9 +3856,18 @@ class _Planner:
             if p is not None: preds += p
             else: residual.append(c)
         if not empty and not residual:
-            grouped = self.raw_plane_group(preds, aggs)
+            from torbles import sqlencodedgroups, sqlgroupplans, sqlscalarplanes, sqltextplanes
+            grouped = sqlscalarplanes.run(self, preds, aggs)
+            if grouped is None:
+                grouped = sqlencodedgroups.run(self, preds, aggs)
+            if grouped is None:
+                grouped = self.raw_plane_group(preds, aggs)
             if grouped is not None:
                 return grouped, {}
+            for lower in (sqlgroupplans.special_count, sqlgroupplans.late_count, sqltextplanes.project_group):
+                grouped = lower(self, preds, aggs)
+                if grouped is not None:
+                    return grouped, {}
         atoms = {k: c for k, c in need.items() if c.b not in self.nulled}
         nulled_atoms = {k: c for k, c in need.items() if c.b in self.nulled}
         for c in residual:
@@ -3889,7 +3972,27 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
-                plane_rel = self.raw_plane_rows(atoms, preds)
+                from torbles.sqlrowplanes import bounded_ids
+                from torbles.sqlscalarplanes import point_ids
+                bounded = point_ids(self)
+                if bounded is None:
+                    bounded = bounded_ids(self, preds)
+                if bounded is not None:
+                    ids, scanned = bounded
+                    # Internal join scans have requested atoms but no SELECT items.
+                    if s.items:
+                        payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
+                        atoms = {k: c for k, c in atoms.items() if k in payload}
+                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
+                    out.plane_ordered = True
+                    if s.order and scanned is not None:
+                        cx.stats["raw_plane_topk_rows"] = scanned
+                    return out, {}
+                from torbles.sqlwindowplanes import run as cuda_window
+
+                plane_rel = cuda_window(self, atoms, preds)
+                if plane_rel is None:
+                    plane_rel = self.raw_plane_rows(atoms, preds)
                 if plane_rel is not None:
                     return plane_rel, {}
                 ids = self.topk_ids(preds)
@@ -4011,6 +4114,10 @@ class _Planner:
         if p is not None:
             if p.sql is None: p.sql = I.render(c)
             return [p]
+        from torbles.sqltextplanes import dictionary_predicate
+        fast = dictionary_predicate(self, c)
+        if fast is not None:
+            return fast
         if b is self.fact:
             cols = {self.canon(x) for x in I.cols_of(c)}
             if len(cols) == 1:
@@ -4338,11 +4445,12 @@ class _Planner:
 
     def raw_plane_group(self, preds, aggs):
         """Compute a bounded COUNT-ordered result directly from the fact's planes."""
+        from torbles import sqlgroupplans
+
         s, cx, fact = self.s, self.cx, self.tab[self.fact]
         if (algq._plane_group_topk is None or not COLUMNAR or not VEC_GROUPS
-                or cx.engine != "alg" or s.from_ is not self.fact or self.joins
-                or self.left or self.fact_sample is not None or s.sample is not None
-                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 3
+                or cx.engine not in ("alg", "gpu") or not sqlgroupplans.single_fact(self)
+                or not ALG_MIN_ROWS <= fact.n < 1 << 32 or s.sets is not None or not 1 <= len(s.group) <= 5
                 or s.having is not None or s.qualify is not None or s.distinct or s.distinct_on is not None
                 or s.percent or s.with_ties or len(s.order) != 1):
             return None
@@ -4359,10 +4467,11 @@ class _Planner:
         if any(x.key() not in group_keys and x.key() not in aggs for x, _ in s.items):
             return None
 
-        from torbles.sqlgroupkeys import plane_group_key
-        keys = [plane_group_key(expr, self.fact, fact) for expr in s.group]
-        if any(key is None for key in keys):
+        layout = sqlgroupplans.layout(self, s.group)
+        if layout is None:
             return None
+        physical, deferred = layout
+        keys = [key for _, key in physical]
         domain = 1
         for low, high, shift, transform, _, _ in keys:
             if transform == 1:                       # EXTRACT(MINUTE)
@@ -4410,25 +4519,34 @@ class _Planner:
                 measures.append(name)
             plans[key] = (agg.name, measures.index(name), offset)
 
-        bitmap = fact.used_bm
-        if preds:
-            query = algq.Query(fact, join_mode="auto")
-            for pred in preds:
-                query.where(pred)
-            query._rows = query._rowbits = True
-            try:
-                bitmap = query._run_codes("alg") & bitmap
-            except (TypeError, ValueError, OverflowError):
+        if cx.engine == "gpu":
+            from torbles import sqlgpugroups
+
+            if lim + off > sqlgpugroups.LIMIT:
                 return None
-            cx.stats["engine_queries"] += 1
-        result = fact._plane_group([key[:-1] for key in keys], measures, lim + off, bitmap)
+        bitmap = sqlgroupplans.bitmap(self, preds)
+        if bitmap is None:
+            return None
+        specs = [key[:-1] for key in keys]
+        if cx.engine == "gpu":
+            result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+        else:
+            result = None
+            if not measures:
+                from torbles import sqlcpuinterchanges
+                if sqlcpuinterchanges.enabled():
+                    result = sqlcpuinterchanges.count_topk(fact, specs, lim + off, bitmap, cx.stats)
+            if result is None:
+                result = fact._plane_group(specs, measures, lim + off, bitmap)
         if result is None:
             return None
         codes, counts, sums = result
         counts = counts[off:].tolist()
         rel = Rel(len(counts))
-        for i, (expr, key) in enumerate(zip(s.group, keys)):
+        for i, (expr, key) in enumerate(physical):
             rel.cols[expr.key()] = key[-1](codes[off:, i])
+        for expr in deferred:
+            rel.cols[expr.key()] = ev(expr, rel, cx)
         for key, (kind, index, offset) in plans.items():
             if kind == "count":
                 rel.cols[key] = counts
@@ -4553,6 +4671,11 @@ class _Planner:
                 if w is not None: v = v.astype(np.uint64) + (read_codes(w[1]).astype(np.uint64) << np.uint64(w[0]))
                 cache[name] = v
             return cache[name]
+        def dim_codes(table, name, rows):
+            if len(rows) * 64 < table.n:
+                return table.get_rows(name, rows)
+            return table.decoded(name)[rows]
+
         for k, col in atoms.items():
             b, name = self.canon(col)
             if b is self.fact:
@@ -4562,11 +4685,11 @@ class _Planner:
                 f = fact_codes(fk).astype(np.int64)
                 sg = getattr(fact, "surr", {}).get(fk)
                 rows = (f & sg.mask) if sg is not None else f
-                codes = t.decoded(name)[rows]
+                codes = dim_codes(t, name, rows)
             cd = getattr(t, "codecs", {}).get(name)
             vc = getattr(t, "nullable", {}).get(name)
             ok = None
-            if vc is not None: ok = np.asarray(fact_codes(vc) if b is self.fact else t.decoded(vc)[rows]) != 0
+            if vc is not None: ok = np.asarray(fact_codes(vc) if b is self.fact else dim_codes(t, vc, rows)) != 0
             if COLUMNAR: rel.cols.put(k, ColArr(codes, ok, cd)); continue      # decoded when read as values
             codes = codes.tolist()                       # Python integers: 64-bit codes past 2^63 stay exact
             vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
@@ -5357,13 +5480,23 @@ def _mat_binding(b, cols, conds, cx, deferred=None):
     if shared is not None and id(shared) in cx.ctes: res = cx.ctes[id(shared)]
     elif getattr(b, "rec", None) is not None and id(b.rec.binding) in cx.ctes: res = cx.ctes[id(b.rec.binding)]
     else:
-        res = run_query(b.q, cx)
+        query = b.q
+        if cx.engine == "gpu" and conds and shared is None and not getattr(b, "rec", None):
+            from torbles.sqlwindowplanes import push_derived_qualify
+
+            query = push_derived_qualify(b, conds)
+            if query is not b.q:
+                cx.stats["window_derived_qualify_pushdowns"] = cx.stats.get("window_derived_qualify_pushdowns", 0) + 1
+        res = run_query(query, cx)
         if shared is not None and not getattr(b, "rec", None): cx.ctes[id(shared)] = res
     names = [c for c, _, _ in b.cols]
-    rel = Rel(len(res.rows))
+    rel = Rel(len(res))
     for c in cols:
         j = names.index(c.name)
-        rel.cols[c.key()] = [r[j] for r in res.rows]
+        if getattr(res, "_primitive_window_output", False):
+            rel.cols.put(c.key(), ColArr(res._cols[j]))
+        else:
+            rel.cols[c.key()] = [r[j] for r in res.rows]
     return _pushed_rows(rel, conds, cx, deferred)
 
 

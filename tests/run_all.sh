@@ -26,7 +26,7 @@ run() {   # name, command...
   local t0=$(date +%s%N) out; out=$("$@" 2>&1); local rc=$?
   local ms=$(( ($(date +%s%N) - t0) / 1000000 )); local dt="$((ms / 1000)).$(( (ms % 1000) / 100 ))"
   local last=$(printf '%s\n' "$out" | tail -1)
-  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES|^OK$"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
+  if [ $rc -eq 0 ] && printf '%s' "$last" | grep -qE "ALL MATCH|ALL FIX TESTS PASSED|NO MISMATCHES|^OK( \(skipped=[0-9]+\))?$"; then printf '  %-44s ok   (%ss)\n' "$name" "$dt"
   else printf '  %-44s FAIL (%ss)\n' "$name" "$dt"; printf '%s\n' "$out" | tail -15 | sed 's/^/      /'; fails=$((fails + 1)); fi
 }
 echo "== CPU engine vs plain columns vs DuckDB"
@@ -55,8 +55,12 @@ run "SQL vs DuckDB, ISO forms, Python API, fuzzing" python3 tests/check_sql.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_sql.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_sql.py
 run "snowflake FK filters and group keys"        python3 tests/check_snowflake.py
+run "shared SQL workload states"              python3 -m unittest check_sql_workload check_sql_algebra
 run "direct native GROUP BY states"             python3 tests/check_direct_groups.py
 run "raw-plane top groups and fused AVG"        python3 tests/check_raw_plane_group.py
+run "encoded exact distinct and ranked groups"  python3 -m unittest check_encoded_groups check_sql_interchanges
+run "bounded bitplane row ordering"             python3 -m unittest check_rowplanes
+run "dictionary predicates and projections"     python3 -m unittest check_text_planes check_text_hist
 run "ISO forms: zones, collations, samples, ..."  python3 tests/check_iso.py
 run "  ... on the plain columnar baseline engine"   env TORBLES_SQL_ENGINE=plain python3 tests/check_iso.py
 run "  ... on the GPU executor"                     env TORBLES_SQL_ENGINE=gpu python3 tests/check_iso.py
@@ -74,6 +78,7 @@ run "windows whose values every row outputs"    python3 tests/check_window_outpu
 run "encoded top-k and row numbers"             python3 tests/check_encoded_order.py
 run "GPU bitplane top-k and SQL fallback"        python3 tests/check_mask_topk.py
 run "full raw-plane order and ROW_NUMBER"      python3 tests/check_raw_plane_order.py
+run "CUDA ordered windows over raw planes"       python3 tests/check_cuda_ordered_windows.py
 run "algebraic refresh and compaction"         python3 tests/check_refresh.py
 run "SQL INSERT, UPDATE, DELETE and MERGE"     python3 tests/check_sql_dml.py
 run "durable SQL and crash recovery"           python3 tests/check_durable.py
@@ -99,6 +104,9 @@ run "planner without native planning or cache"    env TORBLES_NATIVE_PLAN=0 TORB
 run "no row kernel for many groups"               env TORBLES_ROWPATH_GROUPS=0 python3 tests/check_small.py
 run "row kernel for every GROUP BY of 2+ groups"  env TORBLES_ROWPATH_GROUPS=2 python3 tests/check_small.py
 echo "== GPU executor vs CPU engine ($( [ -n "${TORBLES_GPU_LIB:-}" ] && echo CUDA || echo emulated ))"
+if python3 -c 'import algq; raise SystemExit(not hasattr(algq.gpu_lib(), "gpu_scalar_plane_moments"))'; then
+  run "CUDA packed SQL stages"                     python3 -m unittest check_cuda_plane_stages
+fi
 run "GPU per-word kernel (default)"               env TORBLES_GPU_MM=word python3 tests/check_gpu.py
 run "GPU tile matrix product, __popc"             env TORBLES_GPU_MM=popc python3 tests/check_gpu.py
 run "GPU tile matrix product, tensor cores"       env TORBLES_GPU_MM=mma python3 tests/check_gpu.py

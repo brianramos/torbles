@@ -474,6 +474,158 @@ static void *plane_order_finish(void *arg) {
     return NULL;
 }
 
+/* Select a bounded lexicographic prefix of physical row IDs. A logical wide
+ * key is represented by consecutive high and low columns of the same direction.
+ * Only the candidate and accepted masks scale with row count. */
+#define PLANE_TOPK_KEYS 12
+#define PLANE_TOPK_LIMIT 1024
+
+typedef struct {
+    uint64_t id;
+    uint32_t key[PLANE_TOPK_KEYS];
+} plane_topk_row_t;
+
+static int plane_topk_cmp(const void *pa, const void *pb) {
+    const plane_topk_row_t *a = pa, *b = pb;
+    for (unsigned c = 0; c < PLANE_TOPK_KEYS; ++c) {
+        if (a->key[c] != b->key[c]) return a->key[c] < b->key[c] ? -1 : 1;
+    }
+    return (a->id > b->id) - (a->id < b->id);
+}
+
+static uint32_t plane_topk_code(const atable_t *t, int c, uint64_t row) {
+    uint64_t w = row >> 6;
+    unsigned bit = row & 63;
+    uint32_t code = 0, value = 0;
+    uint64_t virtual_bits[32];
+    int flag = t->vflag[c];
+    if (flag) tb_virtual_planes(t, c, t->V[flag - 1][0][w], w, virtual_bits, t->width[c]);
+    for (int p = 0; p < t->width[c]; ++p) {
+        if (flag) value = (uint32_t)((virtual_bits[p] >> bit) & 1);
+        else value ^= (uint32_t)((t->V[c][p][w] >> bit) & 1);
+        unsigned significance = t->msb[c] ? t->width[c] - 1 - p : p;
+        code |= value << significance;
+    }
+    return code;
+}
+
+int at_plane_topk(const atable_t *t, const uint64_t *filter, int32_t nkeys,
+                  const int32_t *cols, const int32_t *desc, uint32_t cap,
+                  uint64_t *ids, uint32_t *nout, uint64_t *ninput) {
+    if (!nout || !ninput) return -1;
+    *nout = 0;
+    *ninput = 0;
+    if (!t || !cols || !desc || !ids || !cap || cap > PLANE_TOPK_LIMIT ||
+        nkeys < 1 || nkeys > PLANE_TOPK_KEYS || t->n > UINT32_MAX ||
+        t->nw != (t->n + 63) / 64) return -1;
+    for (int i = 0; i < nkeys; ++i) {
+        int c = cols[i];
+        if (c < 0 || c >= t->k || t->width[c] < 0 || t->width[c] > 32 ||
+            (desc[i] != 0 && desc[i] != 1)) return -1;
+    }
+    if (!t->n) return 0;
+
+    uint64_t *masks = calloc(3 * t->nw, sizeof *masks);
+    uint32_t *words = malloc(t->nw * sizeof *words);
+    plane_topk_row_t *rows = calloc(cap, sizeof *rows);
+    if (!masks || !words || !rows) {
+        free(rows);
+        free(words);
+        free(masks);
+        return -2;
+    }
+    uint64_t *active = masks, *chosen = active + t->nw, *value = chosen + t->nw;
+    uint64_t remaining = 0;
+    size_t nwords = 0;
+    for (uint64_t w = 0; w < t->nw; ++w) {
+        active[w] = rowmask(t, w) & (filter ? filter[w] : UINT64_MAX);
+        if (active[w]) {
+            words[nwords++] = (uint32_t)w;
+            remaining += __builtin_popcountll(active[w]);
+        }
+    }
+    *ninput = remaining;
+    uint32_t need = remaining < cap ? (uint32_t)remaining : cap;
+
+    for (int k = 0; k < nkeys && remaining > need; ++k) {
+        int c = cols[k], width = t->width[c];
+        for (int bit = 0; bit < width && remaining > need; ++bit) {
+            /* High-to-low binary bits are a prefix XOR for MSB storage
+             * and a suffix XOR starting at the closing plane for LSB. */
+            int physical = t->msb[c] ? bit : width - bit;
+            int flag = t->vflag[c];
+            const uint64_t *plane = t->V[c][physical];
+            uint64_t preferred_count = 0;
+            for (size_t i = 0; i < nwords; ++i) {
+                uint32_t w = words[i];
+                if (flag) {
+                    uint64_t virtual_bits[32];
+                    int vp = t->msb[c] ? bit : width - 1 - bit;
+                    tb_virtual_planes(t, c, t->V[flag - 1][0][w], w, virtual_bits, vp + 1);
+                    value[w] = virtual_bits[vp];
+                } else {
+                    uint64_t x = plane[w];
+                    value[w] = bit ? value[w] ^ x : x;
+                }
+                preferred_count += __builtin_popcountll(active[w] & (desc[k] ? value[w] : ~value[w]));
+            }
+            if (!preferred_count || preferred_count == remaining) continue;
+            int keep_preferred = preferred_count >= need;
+            size_t next_words = 0;
+            for (size_t i = 0; i < nwords; ++i) {
+                uint32_t w = words[i];
+                uint64_t preferred = active[w] & (desc[k] ? value[w] : ~value[w]);
+                if (keep_preferred) active[w] = preferred;
+                else {
+                    chosen[w] |= preferred;
+                    active[w] ^= preferred;
+                }
+                if (active[w]) words[next_words++] = w;
+            }
+            nwords = next_words;
+            if (keep_preferred) remaining = preferred_count;
+            else {
+                remaining -= preferred_count;
+                need -= (uint32_t)preferred_count;
+            }
+        }
+    }
+    /* The remaining candidates tie on all inspected keys, or all fit.
+     * Physical row order chooses deterministically at the tie boundary. */
+    for (size_t i = 0; i < nwords && need; ++i) {
+        uint32_t w = words[i];
+        uint64_t bits = active[w];
+        while (bits && need) {
+            uint64_t low = bits & -bits;
+            chosen[w] |= low;
+            bits ^= low;
+            --need;
+        }
+    }
+
+    uint32_t n = 0;
+    for (uint64_t w = 0; w < t->nw; ++w) {
+        uint64_t mask = chosen[w];
+        while (mask) {
+            uint64_t row = 64 * w + __builtin_ctzll(mask);
+            rows[n].id = row;
+            for (int k = 0; k < nkeys; ++k) {
+                uint32_t code = plane_topk_code(t, cols[k], row);
+                rows[n].key[k] = desc[k] ? ~code : code;
+            }
+            ++n;
+            mask &= mask - 1;
+        }
+    }
+    qsort(rows, n, sizeof *rows, plane_topk_cmp);
+    for (uint32_t i = 0; i < n; ++i) ids[i] = rows[i].id;
+    *nout = n;
+    free(rows);
+    free(words);
+    free(masks);
+    return 0;
+}
+
 /* Outputs are aligned with the sorted ids. With no filter, ids may be NULL
  * to return only row numbers, indexed by physical row id.
  * Returns -1 for an unsupported request, -2 for allocation failure and
@@ -938,13 +1090,13 @@ static inline uint64_t hslot(touch_t *h, u128 key) {
 /* Sparse top groups. Transpose only the requested planes of each word.
  * Partition compact records as they are decoded, then reduce each shard
  * independently. Only each worker's bounded top groups reach the merge. */
-enum { AT_GROUP_RAW, AT_GROUP_MINUTE };
+enum { AT_GROUP_RAW, AT_GROUP_MINUTE, AT_GROUP_EPOCH_MINUTE, AT_GROUP_PROJECT, AT_GROUP_COORDINATE };
 typedef struct {
     int32_t low, high, shift, transform;
     int64_t offset;
 } at_group_key_t;
 
-enum { GROUP_SHARDS = 256, GROUP_BLOCK = 128, GROUP_LIMIT = 1024, GROUP_BUNDLES = 4 };
+enum { GROUP_SHARDS = 256, GROUP_BLOCK = 128, GROUP_LIMIT = 1024, GROUP_BUNDLES = 6, GROUP_KEYS = 5, GROUP_PREFIX_LIMIT = 16 };
 typedef struct { uint64_t low, high; uint32_t sum[2]; } group_record_t;
 typedef struct group_block_s {
     struct group_block_s *next;
@@ -952,16 +1104,19 @@ typedef struct group_block_s {
     group_record_t records[GROUP_BLOCK];
 } group_block_t;
 typedef struct { group_block_t *blocks; uint64_t n; } group_shard_t;
-typedef struct { uint64_t low, high, sum[2]; uint32_t count; } group_slot_t;
+typedef struct { uint64_t low, high, sum[2]; uint32_t count, distinct; } group_slot_t;
 typedef struct {
     const atable_t *t;
     const uint64_t *filter;
     const at_group_key_t *key;
     const int32_t *sum;
-    unsigned nkey, nsum, bundles, limit;
+    unsigned nkey, nsum, bundles, limit, rank, distinct_width;
+    size_t distinct_words;
+    const uint32_t *projection;
+    uint64_t projection_length, projection_mask;
     int col[MAXCOL], ncol, bundle[MAXCOL], offset[MAXCOL];
-    unsigned key_width[3];
-    int64_t minute_offset[3];
+    unsigned key_width[GROUP_KEYS + 1];
+    int64_t minute_offset[GROUP_KEYS + 1];
     int workers;
     _Atomic unsigned next;
     _Atomic int failed;
@@ -973,6 +1128,7 @@ typedef struct group_worker_s {
     group_shard_t shard[GROUP_SHARDS];
     group_slot_t *heap;
     unsigned nheap;
+    uint64_t distinct_total, *distinct_bits;
 } group_worker_t;
 
 static inline uint64_t group_hash(uint64_t lo, uint64_t hi) {
@@ -1035,6 +1191,31 @@ static inline uint64_t group_minute(uint64_t code, int64_t offset) {
     return (uint64_t)rem / UINT64_C(60000000);
 }
 
+static inline u128 group_pack(group_plan_t *p, uint64_t rows[GROUP_BUNDLES][64], unsigned r) {
+    u128 packed = 0;
+    for (unsigned i = 0; i < p->nkey + !!p->distinct_width; ++i) {
+        const at_group_key_t *k = p->key + i;
+        uint64_t code = group_value(p, rows, k->low, r);
+        if (k->high >= 0) code |= (uint64_t)group_value(p, rows, k->high, r) << k->shift;
+        if (k->transform == AT_GROUP_MINUTE) code = group_minute(code, p->minute_offset[i]);
+        else if (k->transform == AT_GROUP_EPOCH_MINUTE)
+            code = code / UINT64_C(60000000)
+                   + (code % UINT64_C(60000000) + p->minute_offset[i]) / UINT64_C(60000000);
+        else if (k->transform == AT_GROUP_PROJECT) {
+            uint64_t index = code & p->projection_mask;
+            if (index >= p->projection_length || (uint64_t)p->projection[index] >= (UINT64_C(1) << p->key_width[i])) {
+                atomic_store_explicit(&p->failed, 2, memory_order_relaxed);
+                return 0;
+            }
+            code = p->projection[index];
+        } else if (k->transform == AT_GROUP_COORDINATE) {
+            code = (code >> k->shift) & ((UINT64_C(1) << k->offset) - 1);
+        }
+        packed = (packed << p->key_width[i]) | code;
+    }
+    return packed;
+}
+
 static void *group_partition(void *arg) {
     group_worker_t *j = arg;
     group_plan_t *p = j->plan;
@@ -1047,16 +1228,15 @@ static void *group_partition(void *arg) {
         while (mask) {
             unsigned r = __builtin_ctzll(mask);
             mask &= mask - 1;
-            u128 packed = 0;
-            for (unsigned i = 0; i < p->nkey; ++i) {
-                const at_group_key_t *k = p->key + i;
-                uint64_t code = group_value(p, rows, k->low, r);
-                if (k->high >= 0) code |= (uint64_t)group_value(p, rows, k->high, r) << k->shift;
-                if (k->transform == AT_GROUP_MINUTE) code = group_minute(code, p->minute_offset[i]);
-                packed = (packed << p->key_width[i]) | code;
-            }
+            u128 packed = group_pack(p, rows, r);
+            if (p->projection && atomic_load_explicit(&p->failed, memory_order_relaxed)) return NULL;
             uint64_t lo = (uint64_t)packed, hi = (uint64_t)(packed >> 64);
-            unsigned shard = group_hash(lo, hi) & (GROUP_SHARDS - 1);
+            if (j->distinct_bits) {
+                j->distinct_bits[lo >> 6] |= UINT64_C(1) << (lo & 63);
+                continue;
+            }
+            u128 shard_key = p->nkey ? packed >> p->distinct_width : packed;
+            unsigned shard = group_hash((uint64_t)shard_key, (uint64_t)(shard_key >> 64)) & (GROUP_SHARDS - 1);
             group_shard_t *s = j->shard + shard;
             group_block_t *b = s->blocks;
             if (!b || b->n == GROUP_BLOCK) {
@@ -1078,8 +1258,9 @@ static void *group_partition(void *arg) {
     return NULL;
 }
 
-static inline int group_better(const group_slot_t *a, const group_slot_t *b) {
-    if (a->count != b->count) return a->count > b->count;
+static inline int group_better(const group_slot_t *a, const group_slot_t *b, unsigned rank) {
+    if (rank == 0 && a->count != b->count) return a->count > b->count;
+    if (rank == 1 && a->distinct != b->distinct) return a->distinct > b->distinct;
     return a->high == b->high ? a->low < b->low : a->high < b->high;
 }
 
@@ -1087,16 +1268,16 @@ static void group_keep(group_worker_t *j, group_slot_t s) {
     group_slot_t *heap = j->heap;
     if (j->nheap < j->plan->limit) {
         unsigned i = j->nheap++;
-        while (i && group_better(&heap[(i - 1) / 2], &s)) {
+        while (i && group_better(&heap[(i - 1) / 2], &s, j->plan->rank)) {
             heap[i] = heap[(i - 1) / 2];
             i = (i - 1) / 2;
         }
         heap[i] = s;
-    } else if (group_better(&s, &heap[0])) {
+    } else if (group_better(&s, &heap[0], j->plan->rank)) {
         unsigned i = 0, child = 1;
         while (child < j->nheap) {
-            if (child + 1 < j->nheap && group_better(&heap[child], &heap[child + 1])) ++child;
-            if (!group_better(&s, &heap[child])) break;
+            if (child + 1 < j->nheap && group_better(&heap[child], &heap[child + 1], j->plan->rank)) ++child;
+            if (!group_better(&s, &heap[child], j->plan->rank)) break;
             heap[i] = heap[child];
             i = child;
             child = 2 * i + 1;
@@ -1122,6 +1303,81 @@ static group_slot_t *group_grow(group_slot_t *old, uint64_t capacity) {
     return slots;
 }
 
+typedef struct {
+    group_slot_t *slots;
+    uint64_t capacity, occupied;
+} group_hash_t;
+
+static int group_hash_init(group_hash_t *h, uint64_t rows) {
+    h->capacity = 2;
+    while (h->capacity < rows + rows / 2 + 1 && h->capacity < 65536) h->capacity <<= 1;
+    h->slots = calloc((size_t)h->capacity, sizeof *h->slots);
+    return h->slots != NULL;
+}
+
+static group_slot_t *group_hash_entry(group_hash_t *h, uint64_t low, uint64_t high) {
+    group_slot_t *slot = group_slot(h->slots, h->capacity, low, high);
+    if (!slot->count) {
+        if (h->occupied >= h->capacity * 2 / 3) {
+            group_slot_t *bigger = group_grow(h->slots, h->capacity);
+            if (!bigger) return NULL;
+            h->slots = bigger;
+            h->capacity *= 2;
+            slot = group_slot(h->slots, h->capacity, low, high);
+        }
+        slot->low = low;
+        slot->high = high;
+        ++h->occupied;
+    }
+    return slot;
+}
+
+static int group_reduce_shard(group_worker_t *j, unsigned part, uint64_t rows) {
+    group_plan_t *p = j->plan;
+    group_hash_t groups = {0}, pairs = {0};
+    int ok = 0;
+    if (p->nkey && !group_hash_init(&groups, p->distinct_width ? 512 : rows)) goto done;
+    if (p->distinct_width && !group_hash_init(&pairs, rows)) goto done;
+    for (int w = 0; w < p->workers; ++w) {
+        group_shard_t *s = j->all[w].shard + part;
+        while (s->blocks) {
+            group_block_t *b = s->blocks;
+            for (unsigned i = 0; i < b->n; ++i) {
+                const group_record_t *r = b->records + i;
+                unsigned fresh = 0;
+                if (p->distinct_width) {
+                    group_slot_t *pair = group_hash_entry(&pairs, r->low, r->high);
+                    if (!pair) goto done;
+                    fresh = !pair->count;
+                    pair->count = 1;
+                }
+                if (p->nkey) {
+                    u128 key = U128(r->high, r->low) >> p->distinct_width;
+                    group_slot_t *slot = group_hash_entry(&groups, (uint64_t)key, (uint64_t)(key >> 64));
+                    if (!slot) goto done;
+                    ++slot->count;
+                    slot->distinct += fresh;
+                    slot->sum[0] += r->sum[0];
+                    slot->sum[1] += r->sum[1];
+                }
+            }
+            s->blocks = b->next;
+            free(b);
+        }
+    }
+    if (p->nkey) {
+        for (uint64_t i = 0; i < groups.capacity; ++i)
+            if (groups.slots[i].count) group_keep(j, groups.slots[i]);
+    } else {
+        j->distinct_total += pairs.occupied;
+    }
+    ok = 1;
+done:
+    free(groups.slots);
+    free(pairs.slots);
+    return ok;
+}
+
 static void *group_reduce(void *arg) {
     group_worker_t *j = arg;
     group_plan_t *p = j->plan;
@@ -1130,73 +1386,149 @@ static void *group_reduce(void *arg) {
            (part = atomic_fetch_add_explicit(&p->next, 1, memory_order_relaxed)) < GROUP_SHARDS) {
         uint64_t rows = 0;
         for (int w = 0; w < p->workers; ++w) rows += j->all[w].shard[part].n;
-        if (!rows) continue;
-        uint64_t capacity = 2;
-        while (capacity < rows + rows / 2 + 1 && capacity < 65536) capacity <<= 1;
-        uint64_t occupied = 0;
-        group_slot_t *slots = capacity <= SIZE_MAX / sizeof *slots ? calloc((size_t)capacity, sizeof *slots) : NULL;
-        if (!slots) {
+        if (rows && !group_reduce_shard(j, part, rows)) {
             atomic_store_explicit(&p->failed, 1, memory_order_relaxed);
             break;
         }
-        for (int w = 0; w < p->workers; ++w) {
-            group_shard_t *s = j->all[w].shard + part;
-            while (s->blocks) {
-                group_block_t *b = s->blocks;
-                for (unsigned i = 0; i < b->n; ++i) {
-                    const group_record_t *r = b->records + i;
-                    group_slot_t *slot = group_slot(slots, capacity, r->low, r->high);
-                    if (!slot->count) {
-                        if (occupied >= capacity * 2 / 3) {
-                            group_slot_t *bigger = group_grow(slots, capacity);
-                            if (!bigger) {
-                                free(slots);
-                                atomic_store_explicit(&p->failed, 1, memory_order_relaxed);
-                                return NULL;
-                            }
-                            slots = bigger;
-                            capacity *= 2;
-                            slot = group_slot(slots, capacity, r->low, r->high);
-                        }
-                        slot->low = r->low;
-                        slot->high = r->high;
-                        ++occupied;
-                    }
-                    ++slot->count;
-                    slot->sum[0] += r->sum[0];
-                    slot->sum[1] += r->sum[1];
-                }
-                s->blocks = b->next;
-                free(b);
-            }
-        }
-        for (uint64_t i = 0; i < capacity; ++i) if (slots[i].count) group_keep(j, slots[i]);
-        free(slots);
+    }
+    return NULL;
+}
+
+static void *group_reduce_bits(void *arg) {
+    group_worker_t *j = arg;
+    size_t i = (size_t)(j - j->all), words = j->plan->distinct_words;
+    int workers = j->plan->workers;
+    for (size_t w = words * i / workers; w < words * (i + 1) / workers; ++w) {
+        uint64_t combined = 0;
+        for (int worker = 0; worker < workers; ++worker) combined |= j->all[worker].distinct_bits[w];
+        j->distinct_total += __builtin_popcountll(combined);
     }
     return NULL;
 }
 
 static int group_cmp(const void *a, const void *b) {
-    return group_better(a, b) ? -1 : group_better(b, a);
+    return group_better(a, b, 0) ? -1 : group_better(b, a, 0);
+}
+static int group_cmp_distinct(const void *a, const void *b) {
+    return group_better(a, b, 1) ? -1 : group_better(b, a, 1);
+}
+static int group_cmp_key(const void *a, const void *b) {
+    return group_better(a, b, 2) ? -1 : group_better(b, a, 2);
+}
+
+static uint64_t plane_equal_word(const atable_t *t, int col, uint32_t code, uint64_t word, uint64_t mask);
+
+typedef struct {
+    uint32_t value[GROUP_PREFIX_LIMIT][GROUP_KEYS][2];
+    const group_plan_t *plan;
+    unsigned groups;
+} group_prefix_t;
+
+typedef struct {
+    const group_prefix_t *prefix;
+    uint64_t begin, end;
+    uint64_t count[GROUP_PREFIX_LIMIT];
+} group_prefix_job_t;
+
+static void *group_prefix_count(void *arg) {
+    group_prefix_job_t *job = arg;
+    const group_prefix_t *prefix = job->prefix;
+    const group_plan_t *p = prefix->plan;
+    for (uint64_t w = job->begin; w < job->end; ++w) {
+        uint64_t scope = rowmask(p->t, w) & (p->filter ? p->filter[w] : UINT64_MAX);
+        for (unsigned g = 0; g < prefix->groups && scope; ++g) {
+            uint64_t mask = scope;
+            for (unsigned i = 0; i < p->nkey && mask; ++i) {
+                const at_group_key_t *key = p->key + i;
+                mask = plane_equal_word(p->t, key->low, prefix->value[g][i][0], w, mask);
+                if (mask && key->high >= 0)
+                    mask = plane_equal_word(p->t, key->high, prefix->value[g][i][1], w, mask);
+            }
+            job->count[g] += __builtin_popcountll(mask);
+            scope &= ~mask;                 /* the selected groups are disjoint */
+        }
+    }
+    return NULL;
+}
+
+/* An unordered LIMIT may pick any groups. Discover a small prefix of distinct
+ * keys, then count those groups over the entire scope with packed equality. */
+static int group_prefix(group_plan_t *p, int workers, uint64_t *out_keys,
+                        uint64_t *out_counts, uint32_t *out_n) {
+    u128 selected[GROUP_PREFIX_LIMIT];
+    group_prefix_t prefix = {.plan = p};
+    uint64_t budget = p->t->nw < 4096 ? p->t->nw : 4096;
+    for (uint64_t w = 0; w < budget && prefix.groups < p->limit; ++w) {
+        uint64_t mask = rowmask(p->t, w) & (p->filter ? p->filter[w] : UINT64_MAX);
+        if (!mask) continue;
+        uint64_t rows[GROUP_BUNDLES][64];
+        group_word(p, w, rows);
+        while (mask && prefix.groups < p->limit) {
+            u128 key = group_pack(p, rows, __builtin_ctzll(mask));
+            mask &= mask - 1;
+            unsigned i = 0;
+            while (i < prefix.groups && key != selected[i]) ++i;
+            if (i == prefix.groups) selected[prefix.groups++] = key;
+        }
+    }
+    if (prefix.groups < p->limit && budget != p->t->nw) return 0;
+    for (unsigned g = 0; g < prefix.groups; ++g) {
+        u128 packed = selected[g];
+        for (int i = (int)p->nkey - 1; i >= 0; --i) {
+            const at_group_key_t *key = p->key + i;
+            unsigned width = p->key_width[i];
+            uint64_t code = (uint64_t)(packed & (((u128)1 << width) - 1));
+            packed >>= width;
+            out_keys[(size_t)g * p->nkey + i] = code;
+            prefix.value[g][i][0] = (uint32_t)(code & ((UINT64_C(1) << p->t->width[key->low]) - 1));
+            if (key->high >= 0) prefix.value[g][i][1] = (uint32_t)(code >> key->shift);
+        }
+    }
+    if (prefix.groups) {
+        group_prefix_job_t jobs[64] = {0};
+        for (int i = 0; i < workers; ++i) {
+            jobs[i].prefix = &prefix;
+            jobs[i].begin = p->t->nw * i / workers;
+            jobs[i].end = p->t->nw * (i + 1) / workers;
+        }
+        pool_jobs(workers, group_prefix_count, jobs, sizeof *jobs);
+        for (unsigned g = 0; g < prefix.groups; ++g) {
+            out_counts[g] = 0;
+            for (int i = 0; i < workers; ++i) out_counts[g] += jobs[i].count[g];
+        }
+    }
+    *out_n = prefix.groups;
+    return 1;
 }
 
 /* Optional packed input mask. Output is row-major by key or measure,
  * sorted by descending count and then ascending raw key tuple. */
-int at_group_topk(const atable_t *t, const uint64_t *filter, int32_t nkey,
+static int group_encoded(const atable_t *t, const uint64_t *filter, int32_t nkey,
                   const at_group_key_t *keys, int32_t nsum, const int32_t *sums,
                   uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
-                  uint64_t *out_sums, uint32_t *out_n) {
+                  uint64_t *out_sums, uint32_t *out_n,
+                  int32_t distinct, uint32_t rank, uint64_t *out_distinct,
+                  const uint32_t *projection, uint64_t projection_length,
+                  uint64_t projection_mask, uint32_t projection_width) {
     if (!out_n) return -1;
     *out_n = 0;
     if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX || t->nw != (t->n + 63) / 64 ||
-        nkey < 1 || nkey > 3 || !keys || nsum < 0 || nsum > 2 || (nsum && (!sums || !out_sums)) ||
-        !k || k > GROUP_LIMIT || !out_keys || !out_counts) return -1;
-    group_plan_t p = {.t = t, .filter = filter, .key = keys, .sum = sums, .nkey = nkey, .nsum = nsum, .limit = k};
+        nkey < 0 || nkey > GROUP_KEYS || !keys || nsum < 0 || nsum > 2 || (nsum && (!sums || !out_sums)) ||
+        (nkey && (!out_keys || !out_counts)) || (!nkey && (!distinct || nsum)) ||
+        (distinct != 0 && distinct != 1) || (distinct && !out_distinct) || rank > 3 ||
+        (rank == 3 && (!nkey || nsum || distinct || k > GROUP_PREFIX_LIMIT)) || (rank == 1 && !distinct) || !k || k > GROUP_LIMIT) return -1;
+    group_plan_t p = {.t = t, .filter = filter, .key = keys, .sum = sums, .nkey = nkey, .nsum = nsum, .limit = k, .rank = rank};
     for (int c = 0; c < MAXCOL; ++c) p.bundle[c] = -1;
-    unsigned used[GROUP_BUNDLES] = {0}, packed_width = 0;
-    for (int i = 0; i < nkey; ++i) {
+    p.projection = projection;
+    p.projection_length = projection_length;
+    p.projection_mask = projection_mask;
+    if (projection && (!projection_length || projection_length > SIZE_MAX / sizeof *projection
+                       || !projection_width || projection_width > 32)) return -1;
+    unsigned used[GROUP_BUNDLES] = {0}, packed_width = 0, projections = 0;
+    for (int i = 0; i < nkey + distinct; ++i) {
         const at_group_key_t *q = keys + i;
-        if (q->high < -1 || (q->transform != AT_GROUP_RAW && q->transform != AT_GROUP_MINUTE) ||
+        if (q->high < -1 || (rank == 3 && q->transform != AT_GROUP_RAW) ||
+            (q->transform < AT_GROUP_RAW || q->transform > AT_GROUP_COORDINATE) ||
             !group_add_column(&p, q->low, used)) return -1;
         unsigned width = t->width[q->low];
         if (q->high >= 0) {
@@ -1207,33 +1539,69 @@ int at_group_topk(const atable_t *t, const uint64_t *filter, int32_t nkey,
         if (q->transform == AT_GROUP_MINUTE) {
             width = 6;
             p.minute_offset[i] = q->offset % INT64_C(3600000000);
+        } else if (q->transform == AT_GROUP_EPOCH_MINUTE) {
+            const int64_t minute = INT64_C(60000000);
+            int64_t rem = q->offset % minute;
+            if (rem < 0) rem += minute;
+            p.minute_offset[i] = rem;
+            uint64_t max_bucket = (uint64_t)(((((u128)1 << width) - 1) + rem) / minute);
+            width = max_bucket ? 64 - __builtin_clzll(max_bucket) : 1;
+        } else if (q->transform == AT_GROUP_PROJECT) {
+            if (!projection || projections++ || q->high >= 0) return -1;
+            width = projection_width;
+        } else if (q->transform == AT_GROUP_COORDINATE) {
+            if (q->high >= 0 || q->shift < 0 || (unsigned)q->shift >= width ||
+                q->offset < 1 || q->offset > width - (unsigned)q->shift) return -1;
+            width = (unsigned)q->offset;
         }
         p.key_width[i] = width;
+        if (i == nkey) p.distinct_width = width;
         packed_width += width;
     }
-    if (packed_width > 128) return -1;
+    if (packed_width > 128 || (!!projection != !!projections)) return -1;
     for (int i = 0; i < nsum; ++i) if (!group_add_column(&p, sums[i], used)) return -1;
-    if (!t->n) return 0;
+    if (!t->n) {
+        if (!nkey) { *out_distinct = 0; if (out_counts) *out_counts = 0; *out_n = 1; }
+        return 0;
+    }
     int workers = nthreads(), useful = (int)((t->n + 16383) / 16384);
     if (workers > useful) workers = useful;
     if (workers > 64) workers = 64;
     if (workers < 1) workers = 1;
+    if (rank == 3) {
+        if (group_prefix(&p, workers, out_keys, out_counts, out_n)) return 0;
+        rank = p.rank = 2;                   /* insufficient diversity in the discovery prefix */
+    }
     p.workers = workers;
     group_worker_t *jobs = calloc(workers, sizeof *jobs);
     group_slot_t *heaps = malloc((size_t)workers * k * sizeof *heaps);
-    if (!jobs || !heaps) { free(jobs); free(heaps); return -2; }
+    if (!nkey && p.distinct_width <= 22)
+        p.distinct_words = p.distinct_width <= 6 ? 1 : (size_t)1 << (p.distinct_width - 6);
+    uint64_t *bits = p.distinct_words ? calloc((size_t)workers * p.distinct_words, sizeof *bits) : NULL;
+    if (!jobs || !heaps || (p.distinct_words && !bits)) {
+        free(jobs); free(heaps); free(bits);
+        return -2;
+    }
     for (int i = 0; i < workers; ++i) {
         jobs[i].plan = &p; jobs[i].all = jobs;
         jobs[i].begin = t->nw * i / workers; jobs[i].end = t->nw * (i + 1) / workers;
         jobs[i].heap = heaps + (size_t)i * k;
+        jobs[i].distinct_bits = bits ? bits + (size_t)i * p.distinct_words : NULL;
     }
     pool_jobs(workers, group_partition, jobs, sizeof *jobs);
-    if (!atomic_load_explicit(&p.failed, memory_order_relaxed)) pool_jobs(workers, group_reduce, jobs, sizeof *jobs);
-    int rc = atomic_load_explicit(&p.failed, memory_order_relaxed) ? -2 : 0;
-    if (!rc) {
+    if (!atomic_load_explicit(&p.failed, memory_order_relaxed))
+        pool_jobs(workers, bits ? group_reduce_bits : group_reduce, jobs, sizeof *jobs);
+    int failure = atomic_load_explicit(&p.failed, memory_order_relaxed);
+    int rc = failure == 2 ? -1 : failure ? -2 : 0;
+    if (!rc && !nkey) {
+        *out_distinct = 0;
+        if (out_counts) *out_counts = 0;
+        for (int i = 0; i < workers; ++i) *out_distinct += jobs[i].distinct_total;
+        *out_n = 1;
+    } else if (!rc) {
         for (int i = 1; i < workers; ++i)
             for (unsigned h = 0; h < jobs[i].nheap; ++h) group_keep(jobs, jobs[i].heap[h]);
-        qsort(heaps, jobs[0].nheap, sizeof *heaps, group_cmp);
+        qsort(heaps, jobs[0].nheap, sizeof *heaps, rank == 0 ? group_cmp : rank == 1 ? group_cmp_distinct : group_cmp_key);
         for (unsigned i = 0; i < jobs[0].nheap; ++i) {
             const group_slot_t *g = heaps + i;
             u128 packed = U128(g->high, g->low);
@@ -1243,6 +1611,7 @@ int at_group_topk(const atable_t *t, const uint64_t *filter, int32_t nkey,
                 packed >>= width;
             }
             out_counts[i] = g->count;
+            if (distinct) out_distinct[i] = g->distinct;
             for (int sum = 0; sum < nsum; ++sum) out_sums[(size_t)i * nsum + sum] = g->sum[sum];
         }
         *out_n = jobs[0].nheap;
@@ -1251,10 +1620,389 @@ int at_group_topk(const atable_t *t, const uint64_t *filter, int32_t nkey,
         group_block_t *b = jobs[i].shard[part].blocks;
         while (b) { group_block_t *next = b->next; free(b); b = next; }
     }
+    free(bits);
     free(heaps);
     free(jobs);
     return rc;
 }
+int at_group_encoded_projected(const atable_t *t, const uint64_t *filter, int32_t nkey,
+                  const at_group_key_t *keys, int32_t nsum, const int32_t *sums,
+                  uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
+                  uint64_t *out_sums, uint32_t *out_n, int32_t distinct,
+                  uint32_t rank, uint64_t *out_distinct, const uint32_t *projection,
+                  uint64_t projection_length, uint64_t projection_mask, uint32_t projection_width) {
+    return group_encoded(t, filter, nkey, keys, nsum, sums, k, out_keys, out_counts, out_sums,
+                         out_n, distinct, rank, out_distinct,
+                         projection, projection_length, projection_mask, projection_width);
+}
+
+int at_group_encoded(const atable_t *t, const uint64_t *filter, int32_t nkey,
+                  const at_group_key_t *keys, int32_t nsum, const int32_t *sums,
+                  uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
+                  uint64_t *out_sums, uint32_t *out_n, int32_t distinct,
+                  uint32_t rank, uint64_t *out_distinct) {
+    return group_encoded(t, filter, nkey, keys, nsum, sums, k, out_keys, out_counts, out_sums,
+                         out_n, distinct, rank, out_distinct, NULL, 0, 0, 0);
+}
+
+int at_group_topk(const atable_t *t, const uint64_t *filter, int32_t nkey,
+                  const at_group_key_t *keys, int32_t nsum, const int32_t *sums,
+                  uint32_t k, uint64_t *out_keys, uint64_t *out_counts,
+                  uint64_t *out_sums, uint32_t *out_n) {
+    return at_group_encoded(t, filter, nkey, keys, nsum, sums, k, out_keys, out_counts,
+                            out_sums, out_n, 0, 0, NULL);
+}
+typedef struct {
+    const group_plan_t *plan;
+    uint64_t begin, end, count;
+    u128 sums[2];
+} scalar_plane_job_t;
+
+static void *scalar_plane_moments(void *arg) {
+    scalar_plane_job_t *job = arg;
+    const group_plan_t *p = job->plan;
+    const atable_t *t = p->t;
+    for (uint64_t w = job->begin; w < job->end; ++w) {
+        uint64_t mask = rowmask(t, w) & (p->filter ? p->filter[w] : UINT64_MAX);
+        if (!mask) continue;
+        job->count += __builtin_popcountll(mask);
+        for (unsigned i = 0; i < p->nkey; ++i) {
+            const at_group_key_t *key = p->key + i;
+            const int columns[2] = {key->low, key->high};
+            for (int j = 0; j < 2 && columns[j] >= 0; ++j) {
+                int c = columns[j], width = t->width[c];
+                uint64_t values[32], plane = 0;
+                if (t->vflag[c])
+                    tb_virtual_planes(t, c, t->V[t->vflag[c] - 1][0][w], w, values, width);
+                for (int b = 0; b < width; ++b) {
+                    if (t->vflag[c]) plane = values[b];
+                    else plane ^= t->V[c][b][w];
+                    int power = (t->msb[c] ? width - b - 1 : b) + (j ? key->shift : 0);
+                    job->sums[i] += (u128)__builtin_popcountll(plane & mask) << power;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+/* Count and up to two unsigned code sums, each written as low/high limbs. */
+int at_scalar_plane_moments(const atable_t *t, const uint64_t *filter, int32_t nsum,
+                            const at_group_key_t *keys, uint64_t *out) {
+    if (!t || !out || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        nsum < 0 || nsum > 2 || (nsum && !keys)) return -1;
+    group_plan_t p = {.t = t, .filter = filter, .key = keys, .nkey = nsum};
+    for (int c = 0; c < MAXCOL; ++c) p.bundle[c] = -1;
+    unsigned used[GROUP_BUNDLES] = {0};
+    for (int i = 0; i < nsum; ++i) {
+        const at_group_key_t *key = keys + i;
+        if (key->transform || key->high < -1 || !group_add_column(&p, key->low, used)) return -1;
+        if (key->high >= 0 && (key->shift < t->width[key->low] || key->shift >= 64 ||
+                !group_add_column(&p, key->high, used) || t->width[key->high] > 64 - key->shift)) return -1;
+    }
+    int workers = nthreads(), useful = 1 + (int)(t->n / 65536);
+    if (workers > useful) workers = useful;
+    if (workers > 64) workers = 64;
+    if (workers < 1) workers = 1;
+    scalar_plane_job_t jobs[64] = {0};
+    for (int i = 0; i < workers; ++i) {
+        jobs[i].plan = &p;
+        jobs[i].begin = t->nw * i / workers;
+        jobs[i].end = t->nw * (i + 1) / workers;
+    }
+    pool_jobs(workers, scalar_plane_moments, jobs, sizeof *jobs);
+    out[0] = 0;
+    u128 sums[2] = {0, 0};
+    for (int i = 0; i < workers; ++i) {
+        out[0] += jobs[i].count;
+        for (int j = 0; j < nsum; ++j) sums[j] += jobs[i].sums[j];
+    }
+    for (int i = 0; i < nsum; ++i) {
+        out[1 + 2 * i] = (uint64_t)sums[i];
+        out[2 + 2 * i] = (uint64_t)(sums[i] >> 64);
+    }
+    return 0;
+}
+
+static uint64_t plane_equal_word(const atable_t *t, int col, uint32_t code, uint64_t word, uint64_t mask) {
+    int width = t->width[col], previous = 0;
+    uint64_t virtual_values[32];
+    if (t->vflag[col])
+        tb_virtual_planes(t, col, t->V[t->vflag[col] - 1][0][word], word, virtual_values, width);
+    for (int b = 0; b < width && mask; ++b) {
+        int bit = (code >> (t->msb[col] ? width - b - 1 : b)) & 1;
+        uint64_t value = t->vflag[col] ? virtual_values[b] : t->V[col][b][word];
+        mask &= (t->vflag[col] ? bit : bit ^ previous) ? value : ~value;
+        previous = bit;
+    }
+    return mask;
+}
+
+enum { LOOKUP_SUM_KEYS = 128, LOOKUP_SUM_NODES = 2 + 32 * LOOKUP_SUM_KEYS };
+
+typedef struct { uint16_t child[2], key; } lookup_sum_node_t;
+typedef struct { uint64_t mask; unsigned key; } lookup_sum_match_t;
+typedef struct {
+    const atable_t *table;
+    const uint64_t *filter;
+    const uint32_t *lookup;
+    uint64_t lookup_len;
+    uint32_t lookup_mask;
+    int group_col, lookup_col;
+    lookup_sum_node_t trie[LOOKUP_SUM_NODES];
+    _Atomic int invalid;
+} lookup_sum_plan_t;
+typedef struct {
+    lookup_sum_plan_t *plan;
+    uint64_t begin, end, sums[LOOKUP_SUM_KEYS];
+} lookup_sum_job_t;
+
+/* A trie over the physical XOR digits shares common equality prefixes.
+ * Branches terminate as soon as their intersection with the scope is empty. */
+static void lookup_sum_match(const lookup_sum_plan_t *plan, uint64_t word, unsigned digit,
+                             unsigned node, uint64_t scope, lookup_sum_match_t *matches,
+                             unsigned *nmatch, uint64_t *selected) {
+    const lookup_sum_node_t *n = plan->trie + node;
+    if (n->key) {
+        matches[(*nmatch)++] = (lookup_sum_match_t){scope, n->key - 1};
+        *selected |= scope;
+        return;
+    }
+    uint64_t plane = plan->table->V[plan->group_col][digit][word];
+    uint64_t one = scope & plane, zero = scope & ~plane;
+    if (zero && n->child[0])
+        lookup_sum_match(plan, word, digit + 1, n->child[0], zero, matches, nmatch, selected);
+    if (one && n->child[1])
+        lookup_sum_match(plan, word, digit + 1, n->child[1], one, matches, nmatch, selected);
+}
+
+static void *lookup_sum_worker(void *arg) {
+    lookup_sum_job_t *job = arg;
+    lookup_sum_plan_t *p = job->plan;
+    const atable_t *t = p->table;
+    int col = p->lookup_col, width = t->width[col];
+    for (uint64_t w = job->begin; w < job->end; ++w) {
+        uint64_t scope = rowmask(t, w) & (p->filter ? p->filter[w] : UINT64_MAX);
+        if (!scope) continue;
+        lookup_sum_match_t matches[LOOKUP_SUM_KEYS];
+        unsigned nmatch = 0;
+        uint64_t selected = 0;
+        lookup_sum_match(p, w, 0, 1, scope, matches, &nmatch, &selected);
+        if (!selected) continue;
+
+        uint64_t codes[64] = {0}, value = 0;
+        for (int b = 0; b < width; ++b) {
+            value ^= t->V[col][b][w];
+            unsigned bit = t->msb[col] ? width - b - 1 : b;
+            if ((p->lookup_mask >> bit) & 1) codes[bit] = value & selected;
+        }
+        transpose64(codes);
+        for (unsigned m = 0; m < nmatch; ++m) {
+            uint64_t total = 0;
+            for (uint64_t rows = matches[m].mask; rows; rows &= rows - 1) {
+                uint64_t code = codes[__builtin_ctzll(rows)];
+                if (code >= p->lookup_len) {
+                    atomic_store_explicit(&p->invalid, 1, memory_order_relaxed);
+                    return NULL;
+                }
+                total += p->lookup[code];
+            }
+            job->sums[matches[m].key] += total;
+        }
+    }
+    return NULL;
+}
+
+int at_plane_lookup_sums(const atable_t *t, const uint64_t *filter,
+                        int32_t group_col, int32_t lookup_col, uint32_t lookup_mask,
+                        const uint32_t *lookup, uint64_t lookup_len,
+                        const uint32_t *keys, uint32_t nkeys, uint64_t *sums) {
+    if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        t->nw != (t->n + 63) / 64 || !keys || !nkeys || nkeys > LOOKUP_SUM_KEYS ||
+        !lookup || !lookup_len || lookup_len > SIZE_MAX / sizeof *lookup || !sums) return -1;
+    int cols[] = {group_col, lookup_col};
+    for (unsigned i = 0; i < sizeof cols / sizeof cols[0]; ++i) {
+        int col = cols[i];
+        if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32)
+            return -1;
+        for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
+    }
+    lookup_sum_plan_t plan = {.table = t, .filter = filter, .lookup = lookup,
+        .lookup_len = lookup_len, .lookup_mask = lookup_mask, .group_col = group_col, .lookup_col = lookup_col};
+    int width = t->width[group_col], msb = t->msb[group_col];
+    unsigned nodes = 1;
+    for (unsigned k = 0; k < nkeys; ++k) {
+        if ((uint64_t)keys[k] >= (UINT64_C(1) << width)) return -1;
+        unsigned node = 1, previous = 0;
+        for (int b = 0; b < width; ++b) {
+            unsigned bit = (keys[k] >> (msb ? width - b - 1 : b)) & 1;
+            uint16_t *edge = &plan.trie[node].child[bit ^ previous];
+            if (!*edge) *edge = ++nodes;
+            node = *edge;
+            previous = bit;
+        }
+        if (plan.trie[node].key) return -1;
+        plan.trie[node].key = k + 1;
+    }
+
+    int workers = nthreads(), useful = 1 + (int)(t->n / 65536);
+    if (workers > useful) workers = useful;
+    if (workers > 64) workers = 64;
+    if (workers < 1) workers = 1;
+    lookup_sum_job_t jobs[64] = {0};
+    for (int i = 0; i < workers; ++i) {
+        jobs[i].plan = &plan;
+        jobs[i].begin = t->nw * i / workers;
+        jobs[i].end = t->nw * (i + 1) / workers;
+    }
+    pool_jobs(workers, lookup_sum_worker, jobs, sizeof *jobs);
+    if (atomic_load_explicit(&plan.invalid, memory_order_relaxed)) return -1;
+    for (unsigned k = 0; k < nkeys; ++k) {
+        sums[k] = 0;
+        for (int i = 0; i < workers; ++i) sums[k] += jobs[i].sums[k];
+    }
+    return 0;
+}
+
+enum { PLANE_HISTOGRAM_LOCAL_BYTES = 64 * 1024 * 1024 };
+
+typedef struct {
+    const atable_t *table;
+    const uint64_t *filter;
+    uint32_t *locals, *counts;
+    size_t stride;
+    uint32_t domain;
+    int col, workers;
+    _Atomic int invalid;
+} plane_histogram_t;
+
+typedef struct { plane_histogram_t *hist; int worker; } plane_histogram_job_t;
+
+static void *plane_histogram_count(void *arg) {
+    const plane_histogram_job_t *job = arg;
+    plane_histogram_t *h = job->hist;
+    const atable_t *t = h->table;
+    int col = h->col, width = t->width[col], msb = t->msb[col];
+    uint32_t *counts = h->locals + (size_t)job->worker * h->stride;
+    uint64_t begin = t->nw * job->worker / h->workers;
+    uint64_t end = t->nw * (job->worker + 1) / h->workers;
+    for (uint64_t w = begin; w < end; ++w) {
+        if ((w & 255) == 0 && atomic_load_explicit(&h->invalid, memory_order_relaxed)) break;
+        uint64_t mask = rowmask(t, w) & (h->filter ? h->filter[w] : UINT64_MAX);
+        if (!mask) continue;
+        uint64_t planes[64] = {0}, value = 0;
+        for (int b = 0; b < width; ++b) {
+            value ^= t->V[col][b][w];
+            planes[msb ? width - b - 1 : b] = value;
+        }
+        int sparse = __builtin_popcountll(mask) <= 3;
+        if (!sparse) transpose64(planes);
+        while (mask) {
+            unsigned row = __builtin_ctzll(mask);
+            mask &= mask - 1;
+            uint32_t code = 0;
+            if (sparse) {
+                for (int b = 0; b < width; ++b)
+                    code |= (uint32_t)((planes[b] >> row) & 1) << b;
+            } else {
+                code = (uint32_t)planes[row];
+            }
+            if (code >= h->domain) {
+                atomic_store_explicit(&h->invalid, 1, memory_order_relaxed);
+                return NULL;
+            }
+            ++counts[code];
+        }
+    }
+    return NULL;
+}
+
+static void *plane_histogram_merge(void *arg) {
+    const plane_histogram_job_t *job = arg;
+    plane_histogram_t *h = job->hist;
+    size_t begin = ((h->stride / 16) * job->worker / h->workers) * 16;
+    size_t end = ((h->stride / 16) * (job->worker + 1) / h->workers) * 16;
+    if (begin >= h->domain) return NULL;
+    if (end > h->domain) end = h->domain;
+    uint32_t *restrict out = h->counts + begin;
+    size_t count = end - begin;
+    memcpy(out, h->locals + begin, count * sizeof *out);
+    for (int worker = 1; worker < h->workers; ++worker) {
+        const uint32_t *restrict local = h->locals + (size_t)worker * h->stride + begin;
+        for (size_t i = 0; i < count; ++i) out[i] += local[i];
+    }
+    return NULL;
+}
+
+/* One encoded axis, directly from the packed planes. Exact counts in the
+ * caller's domain, with a bounded worker-local histogram and no row staging. */
+int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
+        t->nw != (t->n + 63) / 64 || col < 0 || col >= t->k || t->vflag[col] ||
+        t->width[col] < 0 || t->width[col] > 32 || !domain ||
+        domain > PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts || !counts) return -1;
+    for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
+    if (!t->n) {
+        memset(counts, 0, (size_t)domain * sizeof *counts);
+        return 0;
+    }
+
+    size_t stride = ((size_t)domain + 15) & ~(size_t)15;
+    int workers = nthreads(), useful = 1 + (int)(t->n / 16384);
+    int capacity = (int)(PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts / stride);
+    if (workers > useful) workers = useful;
+    if (workers > capacity) workers = capacity;
+    if (workers > 64) workers = 64;
+    if (workers < 1) workers = 1;
+    uint32_t *locals = calloc((size_t)workers * stride, sizeof *locals);
+    if (!locals) return -2;
+
+    plane_histogram_t hist = {.table = t, .filter = filter, .locals = locals,
+        .counts = counts, .stride = stride, .domain = domain, .col = col, .workers = workers};
+    plane_histogram_job_t jobs[64];
+    for (int i = 0; i < workers; ++i) jobs[i] = (plane_histogram_job_t){&hist, i};
+    pool_jobs(workers, plane_histogram_count, jobs, sizeof *jobs);
+    int rc = atomic_load_explicit(&hist.invalid, memory_order_relaxed) ? -1 : 0;
+    if (!rc) pool_jobs(workers, plane_histogram_merge, jobs, sizeof *jobs);
+    free(locals);
+    return rc;
+}
+
+/* Small equality result, with fallback when the match set is larger. */
+int at_plane_equal_ids(const atable_t *t, const uint64_t *visible, const at_group_key_t *key,
+                       uint64_t code, uint32_t limit, uint64_t *ids, uint32_t *nout) {
+    if (!t || !visible || !key || !ids || !nout || !limit || t->k < 1 || t->k > MAXCOL ||
+        key->transform || key->high < -1) return -1;
+    group_plan_t plan = {.t = t};
+    for (int c = 0; c < MAXCOL; ++c) plan.bundle[c] = -1;
+    unsigned used[GROUP_BUNDLES] = {0};
+    if (!group_add_column(&plan, key->low, used)) return -1;
+    int low_width = t->width[key->low];
+    int width = low_width;
+    if (key->high >= 0) {
+        if (key->shift < low_width || key->shift >= 64 || !group_add_column(&plan, key->high, used) ||
+            t->width[key->high] > 64 - key->shift) return -1;
+        width = key->shift + t->width[key->high];
+    }
+    *nout = 0;
+    if (width < 64 && (code >> width)) return 0;
+    uint32_t low = (uint32_t)(code & ((UINT64_C(1) << low_width) - 1));
+    uint32_t high = key->high < 0 ? 0 : (uint32_t)(code >> key->shift);
+    for (uint64_t word = 0; word < t->nw; ++word) {
+        uint64_t mask = rowmask(t, word) & visible[word];
+        if (!mask) continue;
+        mask = plane_equal_word(t, key->low, low, word, mask);
+        if (mask && key->high >= 0) mask = plane_equal_word(t, key->high, high, word, mask);
+        while (mask) {
+            if (*nout == limit) return 1;
+            ids[(*nout)++] = word * 64 + __builtin_ctzll(mask);
+            mask &= mask - 1;
+        }
+    }
+    return 0;
+}
+
 /* a 128-bit sum kept as (lo, hi) words */
 static inline void add128(int64_t *lo, int64_t *hi, u128 v) { u128 x = U128(*hi, *lo) + v; *lo = (int64_t)(uint64_t)x; *hi = (int64_t)(uint64_t)(x >> 64); }
 static inline void hadd_n(touch_t *h, u128 key, uint64_t v, uint64_t nadd) {

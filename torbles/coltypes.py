@@ -97,6 +97,8 @@ class IntCodec(Codec):
 
     def decode(self, codes):
         a = np.asarray(codes)
+        if self.offset == 0 and a.dtype == np.int64:
+            return a.tolist()
         if a.dtype != object and abs(self.offset) < 2**62 and (not a.size or int(np.abs(a).max()) < 2**62):
             return (a.astype(np.int64) + self.offset).tolist()
         return [int(c) + self.offset for c in a.tolist()]

@@ -1,7 +1,7 @@
 # Copyright 2026 Brian Richard RAMOS
 # SPDX-License-Identifier: Apache-2.0
 # Licensed under the Apache License, Version 2.0 (see LICENSE or http://www.apache.org/licenses/LICENSE-2.0).
-"""torbles 0.5.1: algebraic queries over torbles.
+"""torbles 0.7.0: algebraic queries over torbles.
 
 Queries are built as algebraic expressions (operator overloading), compiled into:
   - Boolean polynomials over bit planes (filters), one program per table,
@@ -122,7 +122,7 @@ def sum_width(measure, fact):
                             "torbles refuses rather than risk a wrong answer")
     return int(bound >= 1 << 63)
 
-__version__ = "0.5.1"
+__version__ = "0.7.0"
 _libpath = Path(__import__("os").environ.get("TORBLES_ALG_LIB") or Path(__file__).with_name("libalg.so"))   # (an instrumented build: tests/sanitize_math.sh)
 if not _libpath.exists(): raise ImportError(f"{_libpath} not built: run `make` in the repository root")
 lib = ctypes.CDLL(str(_libpath))
@@ -1349,6 +1349,8 @@ class Table:
         close(), everything is freed then. Not while another thread is running a query on the table."""
         nat = self.__dict__.get("_native")
         if nat is None: return
+        for attr in ("_text_predicates", "_text_groups", "_text_lengths"):
+            self.__dict__.pop(attr, None)
         if self.parts is not None:                     # its views first (they point into the parts), then the parts
             for v in list(self._live_views): v.release()
             with self._view_lock: self._views.clear()
@@ -2576,7 +2578,7 @@ class Query:
         M = None
         for g in _term_groups(fact, mine):
             q = Query(fact, self.join_mode); q.pred = _and_all(g); q._rows = q._rowbits = q._split = True
-            bm = q._run_codes("plain" if engine == "plain" else "alg")[:nw]
+            bm = q._run_codes(engine)[:nw]
             M = bm.copy() if M is None else (M & bm)
         xr = getattr(self, "_xrows", None)
         if xr is not None: M &= xr[0][:nw] if xr[1] == 1 else ~xr[0][:nw]
@@ -2848,7 +2850,24 @@ class Query:
                 return np.sort(ids[:count.value])
             out_rows = np.zeros((fact.n + 63) // 64 + 1, np.uint64); keep.append(out_rows); plan.out_rows = out_rows.ctypes.data
             plan.nattr = 0
-            self._exec("plain" if engine == "plain" else "cpu", _run_on(fv), plan); self.last_plan = plan
+            table = _run_on(fv)
+            ran = False
+            if self._dev == "gpu":
+                native = getattr(gpu_lib(), "gpu_rows_bitmap", None)
+                if native is not None:
+                    native.restype = ctypes.c_int
+                    native.argtypes = [vp, ctypes.POINTER(QPlan)]
+                    with _GPU_LOCK:
+                        try:
+                            handle = table.gpu_handle()
+                        except RuntimeError:
+                            handle = None
+                        if handle and native(handle, ctypes.byref(plan)) == 0:
+                            self.device = "gpu"
+                            ran = True
+            if not ran:
+                self._exec("plain" if engine == "plain" else "cpu", table, plan)
+            self.last_plan = plan
             if getattr(self, "_rowbits", False): return out_rows
             if len(out_rows) >= 512:
                 live = np.flatnonzero(out_rows)

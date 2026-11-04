@@ -4,28 +4,54 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.5.1 alpha** runs on x86-64 Linux and WSL2.
+**0.7.0 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.5.1
+## What’s new in 0.7.0
 
-- **High-cardinality grouping.** Eligible CPU queries ordered by count with a
-  small limit read the raw bitplanes in tiles, combine exact counts and sums
-  in one native reduction, and compute AVG for the selected groups.
-  Timestamp minute keys are derived during the scan. [SQL execution](docs/SQL.md#performance)
+- **CUDA ordered windows.** Eligible `ROW_NUMBER` and integer running `SUM`
+  use raw bitplanes for ordering and segmented scans.
+- **GPU-resident window consumers.** Supported `QUALIFY`, ordering, slicing,
+  payload gathers, grouped reductions, and shared-rank joins and set operations
+  consume statement-local GPU temporaries. [Supported shapes](docs/CUDA_WINDOW_TEMPORARIES.md)
+- **Columnar output.** Use `db.sql(query, engine="gpu").fetch_columns()` to
+  fetch eligible results as NumPy columns and defer Python tuple assembly.
+- **Automatic grouping interchanges.** The optimizer can use dense coordinates,
+  certified rank pruning, and exact singleton proofs where the data admits them.
 
-## What’s new in 0.5.0
+## ClickBench on 0.7.0
 
-- **SQL writes on bitplanes.** Writable uint32 tables support INSERT, UPDATE,
-  DELETE, and primary-key MERGE. Eligible updates patch the stored planes on
-  CPU and synchronize resident CUDA copies. [Refresh guide](docs/REFRESH.md)
-- **Durable SQL prototype.** Open a local database directory with
-  torbles.open_durable() for explicit transactions, autocommit, and crash
-  recovery. Concurrent clients share a serialized SQL executor.
-  [Transactions](docs/SQL.md#durable-sql-prototype)
-- **Ordering and window execution.** Eligible ORDER BY, top-k, and ROW_NUMBER
-  plans use masks derived from stored planes. SQL also carries native masks
-  and aggregate states further through eligible filters, joins, and grouping.
-  [SQL execution](docs/SQL.md#how-a-query-runs)
+All 43 queries verified on both official subsets. Totals sum the median of
+three warm executions per query, including fetching result rows.
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|
+| 1M | 64.5 ms | 125.8 ms | 247.0 ms | 88.2 ms | 514.0 ms |
+| 10M | 382.6 ms | 879.7 ms | 1,220.8 ms | 413.1 ms | 2,470.3 ms |
+
+Same WSL2 laptop, RTX 5090 Laptop GPU, and 24 CPU threads. The Torbles CUDA
+replay observed successful device dispatch on every query. Sirius used
+CPU fallback for Q29. chDB verified 41 queries and is included in the
+[matched 41-query comparison](docs/CLICKBENCH.md#matched-six-engine-comparison).
+[Method and per-query timings](docs/CLICKBENCH.md#tagged-070-rerun)
+
+
+<details>
+<summary>Matched 41-query timings with chDB</summary>
+
+| Rows | Torbles CUDA | Torbles CPU | DuckDB | chDB | Umbra | Sirius |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1M | 60.0 ms | 117.5 ms | 183.7 ms | 291.4 ms | 82.3 ms | 434.5 ms |
+| 10M | 329.8 ms | 811.5 ms | 831.6 ms | 1,891.2 ms | 358.7 ms | 2,011.8 ms |
+
+chDB differed on the wide-integer average in Q4 and regex grouping in Q29
+at both scales.
+
+</details>
+
+At 4M input rows, full ordered running SUM took 462 ms with Python rows and
+41 ms with NumPy columns in separate matched campaigns. A grouped rank
+reduction took 7.57 ms and a shared-rank equality count took 6.85 ms with
+resident CUDA consumers. [Window benchmark](docs/CUDA_WINDOW_TEMPORARIES.md#measurements)
 
 ## Try it
 
@@ -33,7 +59,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.5.1'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.7.0'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales
@@ -113,6 +139,6 @@ source.close()
 - [Star Schema Benchmark](docs/SSB.md) documents the queries, hardware, and reproduction commands. [Historical release timings](https://github.com/brianramos/torbles/blob/f493619883100849e20abc3fb65a1bf3ee354975/README.md#results) include separate SQL and engine API measurements.
 - [Algebra inventory](ALGEBRA_INVENTORY.md) links individual capabilities to their bounds, tests, and benchmark receipts.
 - The test suite and differential fuzzers compare results against DuckDB. [Regression suite](tests/run_all.sh) · [Snowflake checks](tests/check_snowflake.py)
-- SQL is read-only after the database is built. The native paths have limits on key shapes, arithmetic, and columns per kernel pass. SQL uses general execution for other supported plans. Some GPU requests run on the CPU. [SQL coverage](docs/SQL.md) · [Engine limits](docs/ENGINE.md)
+- Built snapshots support reads. SQL writes use the writable-table API. The native paths have limits on key shapes, arithmetic, and columns per pass. SQL uses general execution for other supported plans, and some GPU requests use CPU stages. [SQL coverage](docs/SQL.md) · [Engine limits](docs/ENGINE.md)
 
 Apache 2.0. [License](LICENSE) · [Changelog](CHANGELOG.md)

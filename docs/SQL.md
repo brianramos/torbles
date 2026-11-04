@@ -34,6 +34,34 @@ against the given tables.
 executor (or its CPU emulation) give the same answers. A script may hold several statements; the result is the last
 one's. `SET TIME ZONE ...` sets the session's time zone; every other statement is a query.
 
+### Read-only workloads
+
+`db.sql_batch(text)` returns one relation per SELECT statement in input order. Compatible scalar COUNT, SUM,
+and AVG statements over the same table and predicate can share a packed scope and an exact moment calculation.
+Each result retains its original column names and types. Sharing lasts for the batch.
+
+### Durable learned algebra
+
+```python
+from torbles.sqlalgebra import Catalog
+
+algebra = Catalog().learn(db, "SELECT COUNT(*), SUM(x), AVG(y) FROM t")
+db.save("snapshot")
+algebra.save("workload.tqa")
+
+reopened = torbles.load("snapshot")
+algebra = Catalog.load("workload.tqa")
+answer = algebra.query(reopened, "SELECT SUM(x+y), AVG(x) FROM t")
+```
+
+A catalog learns exact count and sum bases for supported scalar integer aggregates. New queries can combine
+those moments into affine sums and averages, or combine saved scopes using interval proofs on a single
+nonnullable integer filter column. Queries outside the basis run through the ordinary SQL executor.
+The catalog checks source identity before reuse. After a change, its first eligible query refreshes the learned
+bases, or the caller can run `algebra.refresh(db)` explicitly. Use `refresh=False` to execute against current data
+without refreshing a stale catalog. Checkpoint reuse after reopening requires a validated, matching saved snapshot. A catalog created with
+Catalog(engine="gpu") requests CUDA for learning and refresh. Queries answered from saved bases finalize on the host.
+
 ## How a query runs
 
 DuckDB's parser reads the text (syntax only: `json_serialize_sql`, no data and no binding). The binder reads the tree
@@ -102,6 +130,13 @@ ones. No pair of rows is formed: a join of 33 million pairs on SSB SF1 becomes t
 table or CTE that only filters and computes columns of one stored table is grouped by the engine directly.
 Rank selection, the LIMIT bound and the cell bits apply from 2^16 fact rows on (`TORBLES_ALG_MIN_ROWS`); on a smaller
 table reading the values costs less than the extra engine queries.
+
+On the CPU, supported scalar moments, exact distinct counts, and bounded ordering can also run directly on stored
+planes, including split integer keys. Distinct counts use a code bitmap for a compact scalar domain or a native
+table of unique (group, value) codes. A grouped query ordered by count can rank groups before gathering arguments
+for aggregates such as MIN and COUNT(DISTINCT). Literal LIKE filters and supported text projections evaluate the
+pattern once per dictionary value. Ordered minute buckets and selected CASE keys can also use encoded group states.
+These paths check the query shape, types, and available storage metadata before selecting a specialized kernel.
 
 That group-level work is array algebra as well, never a loop of comparisons. Grouping keys, PARTITION BY and ORDER BY
 columns become dense order codes (equal codes for values SQL does not distinguish, codes ascending along the sort
