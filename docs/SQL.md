@@ -273,7 +273,8 @@ reports descriptor bytes and resident representative planes.
 
 Snapshots can carry a versioned `join_hierarchy` section in the database
 manifest. It holds occupied high-bit foreign-key cells and verified
-attribute values for stored paths of up to three joins. The manifest can
+attribute values for stored paths of up to three joins. Each attribute
+stores values over the coordinate bits that determine it. The manifest can
 be read independently of the native plane files. On validated reopen,
 Torbles checks the proof against the saved schema and file identities.
 

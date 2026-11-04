@@ -32,24 +32,30 @@ def _predicate(term, target, fact, fk, record, cx, E):
     attrs = record["attrs"]
     if fk not in fact.msb_cols or not _cell_expression(term, target, attrs, E):
         return None
-    cells = E.Rel(len(record["codes"]))
-    for col in I.cols_of(term):
-        cells.cols[col.key()] = attrs[col.name]
+    width = fact.width(fk)
+    source_bits = record["bits"]
+    columns = list(I.cols_of(term))
+    dependencies = sorted({bit for col in columns for bit in attrs[col.name]["bits"]}, reverse=True)
+    bits = [source_bits[len(source_bits) - 1 - bit] for bit in dependencies]
+    if bits and bits[0] >= width:
+        return None
+    occupied = np.asarray(record["codes"], np.int64)
+    codes = np.unique(joinheader.project(occupied, dependencies))
+    cells = E.Rel(len(codes))
+    for col in columns:
+        spec = attrs[col.name]
+        keep, values = spec["bits"], spec["values"]
+        if keep != dependencies:
+            domain = np.unique(joinheader.project(occupied, keep))
+            indexes = [len(dependencies) - 1 - dependencies.index(bit) for bit in keep]
+            values = [values[i] for i in np.searchsorted(domain, joinheader.project(codes, indexes))]
+        cells.cols[col.key()] = values
     selected = np.zeros(cells.n, bool)
     selected[E.rows_where(term, cells, cx)] = True
-    width = fact.width(fk)
-    bits, codes = record["bits"], np.asarray(record["codes"], np.int64)
-    if bits and bits[0] >= width:
-        # A fact with no rows in some of the dimension's high cells can
-        # have narrower storage. Use its ordinary planner in that case.
-        return None
     # The query may need fewer bits than the complete hierarchy cell.
     projection = keydesign.cell_bits(codes, selected)
     if projection is not None and len(projection) < len(bits):
-        projected = np.zeros(len(codes), np.int64)
-        for bit in projection:
-            projected = (projected << 1) | ((codes >> bit) & 1)
-        codes, first = np.unique(projected, return_index=True)
+        codes, first = np.unique(joinheader.project(codes, projection), return_index=True)
         bits = [bits[len(bits) - 1 - bit] for bit in projection]
         selected = selected[first]
     poly = algq.JoinPoly.from_cells(bits, width, codes, selected)

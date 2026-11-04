@@ -42,7 +42,7 @@ class JoinHeaderChecks(unittest.TestCase):
             original.save(snapshot, compression="topology")
             manifest_path = snapshot / "manifest.json"
             manifest = json.loads(manifest_path.read_text())
-            self.assertEqual(manifest["join_hierarchy"]["version"], 1)
+            self.assertEqual(manifest["join_hierarchy"]["version"], 2)
             self.assertIn(["city_id", "region_id"],
                           [entry["path"] for entry in manifest["join_hierarchy"]["records"]])
             with patch.dict("os.environ", {"TORBLES_JOIN_HEADER": "1"}):

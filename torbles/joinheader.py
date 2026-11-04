@@ -9,6 +9,7 @@ from pathlib import Path
 import struct
 import weakref
 
+import keydesign
 import numpy as np
 
 from .sqlsnapshot import _revision
@@ -115,7 +116,14 @@ def _scalar(value):
             type(value) is str and len(value.encode("utf-8", "surrogatepass")) <= _MAX_TEXT_BYTES)
 
 
-def _attributes(target, rows, starts, cache):
+def project(codes, bits):
+    result = np.zeros(len(codes), np.int64)
+    for bit in bits:
+        result = (result << 1) | ((codes >> bit) & 1)
+    return result
+
+
+def _attributes(target, codes, rows, starts, cache):
     attrs = {}
     for name in target.cols:
         codec = target.codecs.get(name)
@@ -129,10 +137,13 @@ def _attributes(target, rows, starts, cache):
         if not np.array_equal(np.minimum.reduceat(vals, starts), np.maximum.reduceat(vals, starts)):
             continue
         values = vals[starts]
+        dependencies = keydesign.cell_bits(codes, values)
+        _, indices = np.unique(project(codes, dependencies), return_index=True)
+        values = values[indices]
         decoded = codec.decode(np.maximum(values, 0))
         decoded = [None if code < 0 else value for code, value in zip(values, decoded)]
         if all(map(_scalar, decoded)):
-            attrs[name] = decoded
+            attrs[name] = {"bits": dependencies, "values": decoded}
             if len(attrs) == _MAX_ATTRS:
                 break
     return attrs
@@ -155,7 +166,7 @@ def build(db):
         if needed > remaining:
             return
         remaining -= needed
-        for attr, vals in _attributes(table, rows, starts, cache).items():
+        for attr, vals in _attributes(table, np.asarray(codes, np.int64), rows, starts, cache).items():
             needed = len(_json([attr, vals]))
             if needed <= remaining:
                 item["attrs"][attr] = vals
@@ -205,7 +216,7 @@ def _manifest_hash(manifest, records, files):
     dictionaries = {name: manifest.get("intdicts", {}).get(name) for name in names}
     # Normalize the writer's default JSON conversion before hashing.
     normalized = json.loads(json.dumps([tables, dictionaries], default=str))
-    return hashlib.sha256(_json([1, normalized, records, files])).hexdigest()
+    return hashlib.sha256(_json([2, normalized, records, files])).hexdigest()
 
 
 def _file_name(name):
@@ -258,7 +269,7 @@ def save_record(path, manifest, records, table_files):
     hashes = {name: _fingerprint(path / name, before[name][2])[0] for name in sorted(files)}
     if _stamps(path, files) != before:
         raise RuntimeError("source changed during hierarchy save")
-    return dict(version=1, records=records, files=hashes, sha256=_manifest_hash(manifest, records, hashes))
+    return dict(version=2, records=records, files=hashes, sha256=_manifest_hash(manifest, records, hashes))
 
 
 def _shape(item):
@@ -277,13 +288,20 @@ def _shape(item):
             and all(type(code) is int and 0 <= code < 1 << len(bits) for code in codes)
             and codes == sorted(set(codes)) and isinstance(attrs, dict) and len(attrs) <= _MAX_ATTRS):
         return False
-    return all(type(attr) is str and isinstance(vals, list) and len(vals) == len(codes)
-               and all(map(_scalar, vals)) for attr, vals in attrs.items())
+    for attr, spec in attrs.items():
+        if type(attr) is not str or not isinstance(spec, dict):
+            return False
+        keep, vals = spec.get("bits"), spec.get("values")
+        if not (isinstance(keep, list) and all(type(bit) is int and 0 <= bit < len(bits) for bit in keep)
+                and keep == sorted(set(keep), reverse=True) and isinstance(vals, list)
+                and 1 <= len(vals) <= min(len(codes), 1 << len(keep)) and all(map(_scalar, vals))):
+            return False
+    return True
 
 
 def load_start(path, manifest):
     header = manifest.get(HEADER)
-    if not isinstance(header, dict) or type(header.get("version")) is not int or header["version"] != 1:
+    if not isinstance(header, dict) or type(header.get("version")) is not int or header["version"] != 2:
         return None
     records, files = header.get("records"), header.get("files")
     if (not isinstance(records, list) or not 0 < len(records) <= _MAX_RECORDS or not all(map(_shape, records))
@@ -315,7 +333,9 @@ def _bind(db, item, table_cache, sg_cache):
     cells = _cells(tables[1], links[0][1])
     if cells is None or cells[:2] != (item["bits"], item["codes"]):
         return None
-    if any(attr not in tables[-1].codecs for attr in item["attrs"]):
+    codes = np.asarray(item["codes"], np.int64)
+    if any(attr not in tables[-1].codecs or len(np.unique(project(codes, spec["bits"]))) != len(spec["values"])
+           for attr, spec in item["attrs"].items()):
         return None
     stamps = []
     for i, table in enumerate(tables):
