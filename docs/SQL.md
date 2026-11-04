@@ -225,7 +225,8 @@ that cycle and reuses the device copy across queries.
 
 The route covers integer scalar and grouped `COUNT`, `SUM`, `AVG`, `MIN`,
 and `MAX` with supported predicates, up to three group keys and two measure
-columns. Python handles planning and formats the finished groups. The optimizer
+columns. Per-column periods of up to 128 packed words can compose into a shared
+cycle of up to 4,096 words. Python handles planning and formats the finished groups. The optimizer
 checks native identity, revision, and row visibility before reusing the proof.
 Other queries use the normal executor. Result statistics include
 `periodic_native_device`, `periodic_rows`, and `periodic_representatives`. CUDA

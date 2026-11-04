@@ -26,6 +26,7 @@ class PeriodicSQLChecks(unittest.TestCase):
                     ELSE (i % 320) % 41 - 20 END::INTEGER AS y,
                 CASE WHEN (i % 448) // 64 = 3 THEN NULL
                     ELSE (i % 448) // 64 - 3 END::INTEGER AS g,
+                ((i % 704) // 64)::INTEGER AS h,
                 i::INTEGER AS noise
             FROM range(?) r(i)
         """, [self.rows])
@@ -75,6 +76,14 @@ class PeriodicSQLChecks(unittest.TestCase):
         self.assertGreater(warm["periodic_kernel_ms"], 0)
         self.exact("SELECT x, g, COUNT(*), MIN(y), MAX(y), SUM(y) FROM t "
                    "WHERE y IS NOT NULL GROUP BY x, g ORDER BY x NULLS LAST, g NULLS LAST", engine="gpu")
+        self.check_composed_cycle(engine="gpu")
+
+    def check_composed_cycle(self, engine):
+        stats = self.exact("SELECT h, COUNT(*), SUM(y) FROM t WHERE x < 2 GROUP BY h ORDER BY h", engine=engine)
+        self.assertEqual(stats["periodic_representatives"], 3 * 5 * 11 * 64)
+
+    def test_cpu_composes_independent_column_periods(self):
+        self.check_composed_cycle(engine="alg")
 
     def test_unproven_column_and_nonaggregate_fall_back(self):
         self.exact("SELECT COUNT(*) FROM t WHERE noise > 90000", periodic=False)

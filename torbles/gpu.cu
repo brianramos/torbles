@@ -61,10 +61,10 @@ DEV uint64_t cmp_col(const gtable_t *T, int c, uint64_t w, int op, uint32_t k) {
     switch (op) { case P_EQ: return eq; case P_NE: return ~eq; case P_LT: return lt; case P_LE: return lt | eq;
                   case P_GT: return ~(lt | eq); default: return ~lt; }
 }
-DEV uint64_t eval_prog_g(const gtable_t *T, const qplan_t *q, uint64_t w) {
+DEV uint64_t eval_program_g(const gtable_t *T, const pinstr_t *prog, int32_t nprog, uint64_t w) {
     uint64_t st[48]; int sp = 0;
-    for (int i = 0; i < q->nprog; i++) {
-        const pinstr_t *I = &q->prog[i];
+    for (int i = 0; i < nprog; i++) {
+        const pinstr_t *I = &prog[i];
         switch (I->op) {
         case P_TRUE: st[sp++] = ~0ULL; break;
         case P_AND: sp--; st[sp - 1] &= st[sp]; break;
@@ -94,6 +94,9 @@ DEV uint64_t eval_prog_g(const gtable_t *T, const qplan_t *q, uint64_t w) {
         }
     }
     return sp ? st[0] : ~0ULL;
+}
+DEV uint64_t eval_prog_g(const gtable_t *T, const qplan_t *q, uint64_t w) {
+    return eval_program_g(T, q->prog, q->nprog, w);
 }
 /* the degree-2 measure over the rows in mask M: popcount algebra */
 DEV int64_t poly_sum_g(const gtable_t *T, const qplan_t *q, uint64_t w, uint64_t M) {

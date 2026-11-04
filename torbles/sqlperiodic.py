@@ -15,6 +15,7 @@ from . import algq
 from .sqlsnapshot import _revision
 
 _MAX_WORDS = 128
+_MAX_CYCLE_WORDS = 4096
 _MIN_REPEATS = 8
 _MAX_KEYS = 3
 _MAX_MEASURES = 2
@@ -301,7 +302,7 @@ def run(planner, rest, aggs, extra):
     if not dependencies or not dependencies <= periods.keys():
         return None
     cycle = lcm(*(periods[name] for name in dependencies))
-    if cycle > _MAX_WORDS:
+    if cycle > _MAX_CYCLE_WORDS:
         return None
 
     full, tail = divmod(fact.n, 64)
