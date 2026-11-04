@@ -222,15 +222,31 @@ class AutomaticSectorChecks(unittest.TestCase):
             for engine in (("alg", "gpu") if has_cuda() else ("alg",)):
                 db = torbles.load(snapshot)
                 try:
+                    reopened = db["sectors"]
                     self.assertEqual(db.integrity["sectors"]["rows_with_faults"], 0)
+                    self.assertTrue(all(not algq._at_has_dense(p._raw_at) for p in reopened.parts))
                     cold = check(25, engine)
                     self.assertGreater(cold["periodic_ingested_proof_uses"], 0)
                     self.assertNotIn("periodic_probes", cold)
+                    self.assertTrue(cold["periodic_encoded"])
                     warm = check(26, engine)
                     self.assertEqual(warm["periodic_proof_cache_hits"], 1)
+                    self.assertTrue(all(not algq._at_has_dense(p._raw_at) for p in reopened.parts))
                     if engine == "gpu":
                         self.assertEqual(warm["periodic_uploaded_bytes"], 0)
+                        fallback_sql = "SELECT SUM(x * y) FROM sectors"
+                        self.assertEqual(db.sql(fallback_sql, engine=engine).fetchall(),
+                                         oracle.execute(fallback_sql).fetchall())
+                        self.assertTrue(any(algq._at_has_dense(p._raw_at) for p in reopened.parts))
                     else:
+                        stats = {}
+                        pred = [algq.Col(reopened, "x") < 4, algq.Col(reopened, "x#v") == 1]
+                        bits = sqlperiodic.bitmap(reopened, pred, stats)
+                        selected = np.flatnonzero(np.unpackbits(bits.view(np.uint8), bitorder="little"))
+                        expected = oracle.execute("SELECT rowid FROM sectors WHERE x < 4 ORDER BY rowid").fetchnumpy()["rowid"]
+                        np.testing.assert_array_equal(selected, expected)
+                        self.assertLess(stats["encoded_bitmap_evaluated_words"], (rows + 63) // 64)
+                        self.assertTrue(all(not algq._at_has_dense(p._raw_at) for p in reopened.parts))
                         changed_part = db["sectors"]._part_of("y")
                         changed_part.flip(0, 64)
                         changed_part.flip(0, 64)

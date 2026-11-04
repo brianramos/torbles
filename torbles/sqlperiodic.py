@@ -87,6 +87,10 @@ _ingested_global = _bind(algq.lib, "at_periodic_ingested_global", C.c_int,
                          [algq.vp, C.c_uint32, C.POINTER(C.c_uint32), C.POINTER(C.c_uint64)])
 _cpu_sectors = _bind(algq.lib, "at_periodic_reduce_sectors", C.c_int,
                      [algq.vp, *_sector_args, *_prog_args, C.POINTER(_Metrics)])
+_cpu_encoded = _bind(algq.lib, "at_periodic_reduce_encoded", C.c_int,
+                     [algq.vp, C.c_uint32, *_sector_args, C.c_uint32, *_prog_args, C.POINTER(C.c_uint64)])
+_bitmap_encoded = _bind(algq.lib, "at_cycle_filter_bitmap", C.c_int,
+                        [algq.vp, C.POINTER(algq.PInstr), C.c_int32, algq.vp, algq.vp, C.POINTER(C.c_uint64)])
 
 
 def _close_cycle(close, handle, lock=algq._GPU_LOCK):
@@ -95,13 +99,14 @@ def _close_cycle(close, handle, lock=algq._GPU_LOCK):
 
 
 class _DeviceCycle:
-    def __init__(self, handle, size, close):
+    def __init__(self, handle, size, close, encoded_bytes=0, metadata_bytes=0):
         self.handle, self.size = handle, size
+        self.encoded_bytes, self.metadata_bytes = encoded_bytes, metadata_bytes
         self._release = weakref.finalize(self, _close_cycle, close, handle)
 
 
 def _anchor(fact):
-    at = fact.at
+    at = fact._raw_at
     return fact._native, at, _revision(at), fact.n, tuple(fact.cols)
 
 
@@ -114,6 +119,7 @@ class _Candidate:
         self.anchor, self.storage = anchor, storage
         self.cycle, self.sectors, self.metrics = cycle, sectors, metrics
         self.resident = {} if resident is None else resident
+        self.indexed = False
 
 
 def prepare(fact, max_words=_MAX_WORDS):
@@ -131,7 +137,7 @@ def prepare(fact, max_words=_MAX_WORDS):
 
     columns = tuple(fact.cols)
     periods = (C.c_uint16 * len(columns))()
-    if _certify(anchor[1], max_words, periods, len(columns)) or _anchor(fact) != anchor:
+    if _certify(fact.at, max_words, periods, len(columns)) or _anchor(fact) != anchor:
         return {}
     result = {name: period for name, period in zip(columns, periods) if period}
     fact._periodic = anchor, max_words, result, {}
@@ -169,34 +175,36 @@ def _automatic(fact, source, mask, parts, stats):
         return entry
 
     storage = algq._run_on(source)
+    at = storage._raw_at
     started = perf_counter_ns()
     metrics = _Metrics()
     words = (fact.n + 63) // 64
     count = (words + _SECTOR_WORDS - 1) // _SECTOR_WORDS
     entry = _Candidate(anchor, storage)
     sectors = None
-    if _discover_persisted is not None and _has_persisted is not None and _has_persisted(storage.at, mask):
+    if _discover_persisted is not None and _has_persisted is not None and _has_persisted(at, mask):
+        entry.indexed = True
         uses = C.c_uint64()
         cycle = C.c_uint32()
-        rc = 0 if _ingested_global is None else _ingested_global(storage.at, mask, cycle, uses)
+        rc = 0 if _ingested_global is None else _ingested_global(at, mask, cycle, uses)
         proof_uses = uses.value
         if not rc and cycle.value:
             entry.cycle = cycle.value
         else:
             sectors = (_Sector * count)()
-            rc = _discover_persisted(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics, uses)
+            rc = _discover_persisted(at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics, uses)
             proof_uses += uses.value
         stats["periodic_ingested_proof_uses"] = stats.get("periodic_ingested_proof_uses", 0) + proof_uses
         elapsed_key = "periodic_ingested_plan_ms"
     else:
         whole = (_Sector * 1)()
-        rc = _discover(storage.at, mask, 0, _MAX_WORDS, whole, 1, metrics)
+        rc = _discover(at, mask, 0, _MAX_WORDS, whole, 1, metrics)
         stats["periodic_probes"] = stats.get("periodic_probes", 0) + 1
         if not rc and whole[0].cycle_words:
             entry.cycle = whole[0].cycle_words
         elif not rc and count > 1:
             sectors = (_Sector * count)()
-            rc = _discover(storage.at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics)
+            rc = _discover(at, mask, _SECTOR_WORDS, _MAX_WORDS, sectors, count, metrics)
             stats["periodic_probes"] += 1
         elapsed_key = "periodic_probe_ms"
     stats[elapsed_key] = stats.get(elapsed_key, 0.0) + (perf_counter_ns() - started) / 1e6
@@ -222,12 +230,16 @@ def _cuda_functions(lib):
     close = _bind(lib, "gpu_periodic_close", None, [algq.vp])
     open_sectors = _bind(lib, "gpu_periodic_open_sectors", algq.vp,
                          [algq.vp, *_sector_args, C.c_uint32, C.POINTER(C.c_uint64)])
-    return open_cycle, reduce, close, open_sectors
+    open_encoded = _bind(lib, "gpu_periodic_open_encoded", algq.vp,
+                         [algq.vp, C.c_uint32, *_sector_args, C.c_uint32,
+                          C.POINTER(C.c_uint64), C.POINTER(C.c_uint64)])
+    encoded_metadata = _bind(lib, "gpu_periodic_encoded_metadata_bytes", C.c_uint64, [algq.vp])
+    return open_cycle, reduce, close, open_sectors, open_encoded, encoded_metadata
 
 
 def _cuda(candidate, mask, program, plan, states, stats):
     try:
-        open_cycle, reduce, close, open_sectors = _cuda_functions(algq.gpu_lib())
+        open_cycle, reduce, close, open_sectors, open_encoded, encoded_metadata = _cuda_functions(algq.gpu_lib())
     except (RuntimeError, OSError):
         return False
     sectors, cycle, resident = candidate.sectors, candidate.cycle, candidate.resident
@@ -248,13 +260,20 @@ def _cuda(candidate, mask, program, plan, states, stats):
                 if candidate.metrics.representative_words * (8 * width + 4) > _GPU_SECTOR_BYTES:
                     stats["periodic_gpu_budget_fallback"] = True
                     return False
-            size = C.c_uint64()
-            geometry = (cycle,) if sectors is None else (sectors, len(sectors))
-            handle = open_handle(candidate.storage.at, *geometry, mask, size)
+            size, payload = C.c_uint64(), C.c_uint64()
+            handle = None
+            if candidate.indexed and algq._COMPRESSED_MASKS and open_encoded is not None:
+                handle = open_encoded(candidate.storage._raw_at, cycle, sectors,
+                                      0 if sectors is None else len(sectors), mask, payload, size)
+            metadata = encoded_metadata(handle) if handle and encoded_metadata is not None else 0
+            if not handle:
+                payload.value = 0
+                geometry = (cycle,) if sectors is None else (sectors, len(sectors))
+                handle = open_handle(candidate.storage.at, *geometry, mask, size)
             if not handle:
                 return False
-            entry = _DeviceCycle(handle, size.value, close)
-            uploaded = entry.size
+            entry = _DeviceCycle(handle, size.value, close, payload.value, metadata)
+            uploaded = entry.encoded_bytes or entry.size
             if len(resident) >= 8:
                 retired = resident.pop(next(iter(resident)))
             resident[tag] = entry
@@ -266,7 +285,62 @@ def _cuda(candidate, mask, program, plan, states, stats):
     stats["periodic_gpu_plane_bytes"] = entry.size
     stats["periodic_kernel_ms"] = stats.get("periodic_kernel_ms", 0.0) + elapsed.value
     stats["periodic_native_device"] = "cuda"
+    if entry.encoded_bytes:
+        stats["periodic_encoded"] = True
+        stats["periodic_encoded_payload_bytes"] = entry.encoded_bytes
+        stats["periodic_encoded_metadata_bytes"] = entry.metadata_bytes
     return True
+
+
+def _cpu_reduce(candidate, mask, program, plan, states, stats):
+    sectors, cycle = candidate.sectors, candidate.cycle
+    args = program, len(program), plan, states
+    if candidate.indexed and algq._COMPRESSED_MASKS and _cpu_encoded is not None:
+        payload = C.c_uint64()
+        at = candidate.storage._raw_at
+        started = perf_counter_ns()
+        if not _cpu_encoded(at, cycle, sectors, 0 if sectors is None else len(sectors), mask, *args, payload):
+            stats["periodic_encoded"] = True
+            stats["periodic_encoded_payload_bytes"] = payload.value
+            stats["periodic_kernel_ms"] = (perf_counter_ns() - started) / 1e6
+            return True
+    at = candidate.storage.at
+    started = perf_counter_ns()
+    if sectors is None:
+        rc = -1 if _cpu is None else _cpu(at, cycle, *args)
+    else:
+        rc = -1 if _cpu_sectors is None else _cpu_sectors(at, sectors, len(sectors), *args, None)
+    if rc:
+        return False
+    stats["periodic_kernel_ms"] = (perf_counter_ns() - started) / 1e6
+    return True
+
+
+def bitmap(fact, preds, stats):
+    if (not algq._COMPRESSED_MASKS or _bitmap_encoded is None or not preds or not fact.n
+            or not any(part._storage().encoded for part in (fact.parts or (fact,)))):
+        return None
+    source = algq._plan_table(fact)
+    program = []
+    try:
+        for i, pred in enumerate(preds):
+            algq.compile_pred(pred, source, program)
+            if i:
+                program.append(algq.PInstr(algq.P["AND"], 0, 0, 0))
+    except (TypeError, algq._TooWide):
+        return None
+    if not program or len(program) > _MAX_PROGRAM:
+        return None
+    view = algq._run_on(source)
+    instructions = (algq.PInstr * len(program))(*program)
+    mask = np.zeros((fact.n + 63) // 64 + 1, np.uint64)
+    metrics = (C.c_uint64 * 3)()
+    if _bitmap_encoded(view._raw_at, instructions, len(instructions),
+                       fact.used_bm.ctypes.data, mask.ctypes.data, metrics):
+        return None
+    stats["encoded_bitmap_payload_bytes"] = metrics[1]
+    stats["encoded_bitmap_evaluated_words"] = metrics[2]
+    return mask
 
 
 def _format_result(E, groups, aggregates, states):
@@ -429,13 +503,7 @@ def run(planner, rest, aggs, extra):
         if not _cuda(candidate, mask, instructions, plan, states, cx.stats):
             return None
     else:
-        args = instructions, len(instructions), plan, states
-        if sectors is None:
-            rc = -1 if _cpu is None else _cpu(candidate.storage.at, cycle, *args)
-        else:
-            rc = -1 if _cpu_sectors is None else _cpu_sectors(
-                candidate.storage.at, sectors, len(sectors), *args, None)
-        if rc:
+        if not _cpu_reduce(candidate, mask, instructions, plan, states, cx.stats):
             return None
         cx.stats["periodic_native_device"] = "cpu"
     if _anchors(parts) != candidate.anchor:

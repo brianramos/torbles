@@ -44,6 +44,12 @@ def bitmap(planner, preds):
     fact = planner.tab[planner.fact]
     if not preds and not planner.joins:
         return fact.used_bm
+    if planner.cx.engine == "alg" and not planner.joins:
+        from . import sqlperiodic
+        encoded = sqlperiodic.bitmap(fact, preds, planner.cx.stats)
+        if encoded is not None:
+            planner.cx.stats["engine_queries"] += 1
+            return encoded
     query = algq.Query(fact, join_mode="auto")
     for binding, fk in planner.joins.items():
         query.join(planner.tab[binding], fk)

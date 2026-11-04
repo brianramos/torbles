@@ -248,16 +248,26 @@ XOR between adjacent column potentials. It can repeat even when both columns
 are individually irregular. The writer keeps the independent edges that
 carry the torus face checks and uses the raw file format when it is smaller.
 
-`torbles.load(path)` checks the encoded directory and payload and restores
-the dense V and H layout for the existing kernels. The compressed format
-reduces persisted bytes. Reopen still allocates the expanded planes, and
-ordinary queries use those planes. Eligible CPU and CUDA SQL can compose
-sector cycles from the stored directory and skip rechecking those planes.
+`torbles.load(path)` checks the encoded directory and payload. The default
+face validation XORs the stored V and H blocks directly. Clean snapshots
+stay compact on reopen. Repair and ordinary kernels restore dense planes
+on demand. Eligible CPU and CUDA SQL can compose sector cycles from the
+stored directory.
 Separately encoded V edges can prove a column cycle longer than the
 query-time discovery bound. A bounded phase comparison can also coalesce
 compatible sector motifs into one table-wide cycle.
 `periodic_ingested_proof_uses` records directory lookups on the first plan.
 Native revisions still invalidate stored proofs after in-memory changes.
+
+For a packed word, a value bitmask is the prefix XOR of its V edges.
+The CPU evaluates predicates and weighted reductions over encoded phase
+words. A consumer that needs row identities receives the resulting
+predicate bitmap, repeating its verified mask phases as needed. CUDA
+uploads referenced motifs and literal slices, and builds only the
+representative bitplanes on device. `periodic_encoded` identifies this
+route. `periodic_encoded_payload_bytes` records referenced block bytes on
+CPU and value bytes uploaded on initial CUDA setup. CUDA separately
+reports descriptor bytes and resident representative planes.
 
 ## Data types
 

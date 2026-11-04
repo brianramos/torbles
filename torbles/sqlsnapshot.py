@@ -44,7 +44,7 @@ def _occupancy(table):
 
 
 def _native_anchor(part):
-    at = part.at
+    at = part._raw_at
     return part._native, at, _revision(at), tuple(part.cols)
 
 

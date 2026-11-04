@@ -84,6 +84,7 @@ typedef struct atable_s {
     const struct atable_s *cycle_sources[MAXCOL];  /* owning parts for borrowed view columns */
     uint8_t cycle_columns[MAXCOL];
     uint64_t cycle_revision;         /* native revision covered by the loaded index */
+    struct tb_cycle_store_s *cycle_store;  /* independent encoded edge payloads owned by a v2 table */
 } atable_t;
 
 static inline uint64_t tb_pdep(uint64_t src, uint64_t mask) {   /* scatter the low bits of src into the set bits of mask */

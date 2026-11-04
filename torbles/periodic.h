@@ -72,6 +72,16 @@ int at_periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
                                uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
                                const tp_plan_t *plan, tp_state_t *out,
                                tp_sector_metrics_t *metrics);
+/* Execute the same plan directly against checked V-edge blocks. cycle is
+ * nonzero for a whole-table motif; otherwise use native sector descriptors. */
+int at_periodic_reduce_encoded(const atable_t *t, uint32_t cycle, const tp_sector_t *sectors,
+                               uint32_t nsectors, uint32_t mask, const pinstr_t *prog, int32_t nprog,
+                               const tp_plan_t *plan, tp_state_t *out, uint64_t *payload);
+/* Materialize only the requested row bitmap. Its predicate motifs can be
+ * shorter than the table's value cycles. Metrics are count, referenced
+ * encoded bytes, and evaluated predicate words. */
+int at_cycle_filter_bitmap(const atable_t *t, const pinstr_t *prog, int32_t nprog,
+                           const uint64_t *visible, uint64_t *out, uint64_t metrics[3]);
 
 #ifdef __cplusplus
 }

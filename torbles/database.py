@@ -1049,9 +1049,9 @@ def _fname(s): return re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"%{ord(m.group(0)):0
 
 
 def load(path, validate=True, con=None):
-    """Open a saved database. Raw planes are mapped privately and compressed
-    planes are restored to their native layout. With validate, every torus face
-    is checked and single-bit faults are repaired in memory (see db.integrity).
+    """Open a saved database. Raw planes are mapped privately. Compressed
+    planes stay encoded until a dense consumer needs them. With validate,
+    every torus face is checked and single-bit faults are repaired in memory.
     con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional)."""
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
@@ -1078,10 +1078,11 @@ def _load_tables(db, path, man, validate, files=None):
     sgs = {}
     err = ctypes.c_int(0)
 
-    def load_torble(filename):
+    def load_torble(filename, *, lazy=False):
         if files is not None:
             files.append(os.path.relpath(filename, path))
-        return algq.lib.at_load(os.fsencode(filename), ctypes.byref(err))
+        loader = algq._at_load_cycles_lazy if lazy else algq.lib.at_load
+        return loader(os.fsencode(filename), ctypes.byref(err))
 
     def load_array(filename):
         if files is not None:
@@ -1094,13 +1095,14 @@ def _load_tables(db, path, man, validate, files=None):
         parts = []                                 # a table wider than one torble: its parts, one file each
         try:
             for i, pm in enumerate(m.get("parts") or [dict(file=m["file"], cols=m["cols"], msb=m["msb"])]):
-                at = load_torble(os.path.join(path, pm["file"]))
+                lazy = algq._COMPRESSED_MASKS and algq._at_load_cycles_lazy is not None
+                at = load_torble(os.path.join(path, pm["file"]), lazy=lazy)
                 if not at: raise LoadError(f"{name}: cannot load {pm['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
                                            3: "written by an incompatible version", 4: "header or payload damaged",
                                            5: "file truncated"}.get(err.value, str(err.value)))
                 h = t if not m.get("parts") else Table.__new__(Table)
                 if h is not t: h.name = f"{name}#{i}"
-                h._own(at)                         # the mapping is the table's from here on (unmapped with it)
+                h._own(at, lazy=lazy and not algq._at_has_dense(at))
                 h.n, h.cols, h.msb_cols, h._vflag = int(m["rows"]), list(pm["cols"]), set(pm["msb"]), {}
                 parts.append(h)
         except BaseException:
@@ -1131,7 +1133,7 @@ def _load_tables(db, path, man, validate, files=None):
             h._own_side(side)
             rank = load_array(base + "." + _fname(f"rank:{c}") + ".npy")
             flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
-            algq.lib.at_set_virtual(h.at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
+            algq.lib.at_set_virtual(h._raw_at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
             h.sidecars[c] = t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
             h._vflag[c] = t._vflag[c] = flagcol
         # codecs
@@ -1172,19 +1174,27 @@ def _load_tables(db, path, man, validate, files=None):
         if m.get("generated"): t.generated = tuple(m["generated"])
         if validate:                              # faces first: nothing is decoded from unchecked planes
             rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
-            for part, at_ in ([("", t.at)] if t.parts is None else [(f"part{i}", h.at) for i, h in enumerate(t.parts)]) \
-                             + [(c, sc["side"]) for c, sc in t.sidecars.items()]:
-                nbad = algq.lib.at_validate(at_, None, 0)
-                fixed = algq.lib.at_repair(at_) if nbad else 0
-                left = algq.lib.at_validate(at_, None, 0) if nbad else 0
+            def repair(part, nbad, dense):
+                if not nbad:
+                    return
+                at_ = dense()
+                fixed = algq.lib.at_repair(at_)
+                left = algq.lib.at_validate(at_, None, 0)
                 rep["rows_with_faults"] += int(nbad); rep["repaired"] += int(fixed); rep["unrepaired"] += int(left)
                 if left: raise LoadError(f"{name}{'.' + part if part else ''}: {left} row(s) fail the torus face checks and could "
                                          "not be repaired (more than one bit lost)")
+            for part, table in ([("", t)] if t.parts is None else [(f"part{i}", h) for i, h in enumerate(t.parts)]):
+                storage = table._storage()
+                repair(part, algq._validate_planes(storage), storage.dense)
+            for part, side in t.sidecars.items():
+                at_ = side["side"]
+                repair(part, algq.lib.at_validate(at_, None, 0), lambda: at_)
             db.integrity[name] = rep
         if m.get("dense_dim"):                    # a referenced table: its plain columns serve the planner (small)
             for c in t.cols:
                 if c not in t.sidecars: t.data[c] = t.decoded(c)
-        elif t.cluster is not None and t.cluster not in t.sidecars:
+        elif (t.cluster is not None and t.cluster not in t.sidecars
+              and not t._part_of(t.cluster)._storage().needs_dense):
             t.data[t.cluster] = t.decoded(t.cluster)
         db.meta[name] = m.get("meta", {})
     return db

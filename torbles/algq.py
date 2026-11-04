@@ -146,6 +146,18 @@ for name, res, args in [("at_create", vp, [u64, ctypes.c_int, vp, vp]), ("pt_cre
 _at_save_cycles = getattr(lib, "at_save_cycles", None)
 if _at_save_cycles is not None:
     _at_save_cycles.restype, _at_save_cycles.argtypes = ctypes.c_int, [vp, ctypes.c_char_p]
+_at_load_cycles_lazy = getattr(lib, "at_load_cycles_lazy", None)
+_at_materialize = getattr(lib, "at_materialize", None)
+_at_has_dense = getattr(lib, "at_has_dense", None)
+_at_cycle_validate = getattr(lib, "at_cycle_validate", None)
+if _at_load_cycles_lazy is not None:
+    _at_load_cycles_lazy.restype, _at_load_cycles_lazy.argtypes = vp, [ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
+    _at_materialize.restype, _at_materialize.argtypes = ctypes.c_int, [vp]
+    _at_has_dense.restype, _at_has_dense.argtypes = ctypes.c_int, [vp]
+if _at_cycle_validate is not None:
+    _at_cycle_validate.restype = ctypes.c_int
+    _at_cycle_validate.argtypes = [vp, vp, u64, ctypes.POINTER(u64)]
+_COMPRESSED_MASKS = __import__("os").environ.get("TORBLES_COMPRESSED_MASKS", "1") != "0"
 # the release of a Table's storage (Table.close, or its finalizer): a torble's planes or a loaded file's mapping
 # (at_release), then its header (at_free), and the plain baseline's column table
 lib.at_free.restype, lib.at_free.argtypes = None, [vp]
@@ -902,8 +914,18 @@ class _Storage:
     """the native handles of one table (see _release): at is None once the table is closed; header is the torble's
     address until the finalizer frees it; gpu its GPU copy (glib: the GPU library); gtags the tags of its live arrays
     that GPU handles may hold device copies of (see _gpu_tag)"""
-    __slots__ = ("at", "header", "pt", "sides", "gpu", "glib", "gtags")
-    def __init__(self): self.at = self.header = self.pt = self.gpu = self.glib = None; self.sides, self.gtags = [], set()
+    __slots__ = ("at", "header", "pt", "sides", "gpu", "glib", "gtags", "needs_dense", "encoded")
+    def __init__(self):
+        self.at = self.header = self.pt = self.gpu = self.glib = None
+        self.sides, self.gtags = [], set()
+        self.needs_dense = self.encoded = False
+
+    def dense(self):
+        if self.needs_dense:
+            if _at_materialize(self.at):
+                raise MemoryError("could not restore the native torus planes")
+            self.needs_dense = False
+        return self.at
 
 
 # Device copies of host arrays. Besides its planes (uploaded once per table: gpu_handle), a GPU query reads host arrays:
@@ -1041,8 +1063,9 @@ class _View:
         k = len(self.cols)
         self._col = (ctypes.c_int32 * k)(*[p.idx(c) for p, c in zip(self._parts, self.cols)])
         s = self._s = _Storage()
-        s.at = lib.at_view(k, (ctypes.c_void_p * k)(*[p.at for p in self._parts]), self._col)
+        s.at = lib.at_view(k, (ctypes.c_void_p * k)(*[p._raw_at for p in self._parts]), self._col)
         if not s.at: raise ValueError(f"{base.name}: no view of {list(cols)} (a self-extending column needs its flags)")
+        s.needs_dense = _at_has_dense is not None and not _at_has_dense(s.at)
         self._fin = weakref.finalize(self, _release_view, s)
         self._fin.atexit = False
         self._keep = None
@@ -1052,7 +1075,9 @@ class _View:
         if self._s.at is None: raise TableClosedError(f"table {self.name!r} is closed: its native storage has been released")
         return self._s
     @property
-    def at(self): return self._open().at
+    def _raw_at(self): return self._open().at
+    @property
+    def at(self): return self._open().dense()
     @property
     def closed(self): return self._s.at is None or self.base.closed
     def idx(self, c): return self._ix[c]
@@ -1311,9 +1336,10 @@ class Table:
             while len(self._views) > VIEW_CACHE: self._views.popitem(last=False)
         return v
     # ---- ownership and release (see _Native)
-    def _own(self, at, pt=None):
+    def _own(self, at, pt=None, *, lazy=False):
         """this new Table takes the torble at (and the plain baseline's table pt): from here on they are freed with it"""
         nat = _Native(); nat.s.at, nat.s.header, nat.s.pt = at, at, pt
+        nat.s.needs_dense = nat.s.encoded = lazy
         if not at:
             nat.release(); raise MemoryError(f"{self.__dict__.get('name', 'table')}: the torble could not be allocated")
         self.__dict__["_native"] = nat
@@ -1329,10 +1355,14 @@ class Table:
                                    if nat is not None else f"table {self.__dict__.get('name', '?')!r} has no native storage")
         return nat.s
     @property
-    def at(self):
-        """the native torble (TableClosedError once the table is closed)"""
+    def _raw_at(self):
         if self.parts is not None: raise TypeError(self._spans())
         return self._storage().at
+    @property
+    def at(self):
+        """the native torble with dense planes (TableClosedError once closed)"""
+        if self.parts is not None: raise TypeError(self._spans())
+        return self._storage().dense()
     @property
     def pt(self):
         """the plain baseline's native column table, or None (dropped: drop_plain; loaded tables have none)"""
@@ -1393,7 +1423,7 @@ class Table:
         return self.cols.index(c)
     def width(self, c):
         p = self._part_of(c)
-        return lib.at_width(p.at, p.idx(c))
+        return lib.at_width(p._raw_at, p.idx(c))
     def nrows(self): return len(self.used_ids)
     def _xor_rows(self, columns, rows, deltas):
         """Patch owned raw planes while the refresh owner excludes readers and aliases."""
@@ -1529,7 +1559,7 @@ class Table:
         s = self._storage()
         if s.gpu is None:
             import time as _t; t0 = _t.perf_counter()
-            g = gpu_lib(); h = g.gpu_open(s.at); self.gpu_upload_s = _t.perf_counter() - t0
+            g = gpu_lib(); h = g.gpu_open(s.dense()); self.gpu_upload_s = _t.perf_counter() - t0
             if not h: raise RuntimeError("GPU upload failed")
             s.gpu, s.glib = h, g; _GPU_LIVE.add(s)
         return s.gpu
@@ -1602,7 +1632,17 @@ class Table:
         if self.parts is not None:
             out = [p.validate(maxbad) for p in self.parts]
             return sum(n for n, _ in out), sorted({r for _, b in out for r in b})[:maxbad]
-        bad = (ctypes.c_uint64 * maxbad)(); n = lib.at_validate(self.at, bad, maxbad); return n, list(bad[:min(n, maxbad)])
+        bad = (ctypes.c_uint64 * maxbad)()
+        n = _validate_planes(self._storage(), bad, maxbad)
+        return n, list(bad[:min(n, maxbad)])
+
+
+def _validate_planes(storage, bad=None, maxbad=0):
+    if storage.encoded and _at_cycle_validate is not None:
+        count = u64()
+        if not _at_cycle_validate(storage.at, bad, maxbad, count):
+            return count.value
+    return lib.at_validate(storage.dense(), bad, maxbad)
 
 def compile_pred(p, table, prog):
     if isinstance(p, _OnKey): prog.extend(p.program(table)); return
@@ -2759,7 +2799,8 @@ class Query:
                 if len(sel):
                     pos = np.searchsorted(dim.used_ids, sel); brk = np.nonzero(np.diff(pos) != 1)[0]
                     firsts, lasts = sel[np.concatenate([[0], brk + 1])], sel[np.concatenate([brk, [len(sel) - 1]])]
-                    col = fact.data[fact.cluster]
+                    col = fact.data.get(fact.cluster)
+                    if col is None: col = fact.decoded(fact.cluster)
                     rr = [(int(np.searchsorted(col, a, "left")), int(np.searchsorted(col, b_, "right"))) for a, b_ in zip(firsts, lasts)]
                 row_ranges = rr if row_ranges is None else [(max(a, c_), min(b_, d_)) for a, b_ in row_ranges for c_, d_ in rr if max(a, c_) < min(b_, d_)]
             # the join as one polynomial on the fk's planes: f(fk), f = the dimension filter (see JoinPoly)
