@@ -4,43 +4,33 @@ Torbles is an **algebraic relational datastore** for SQL and mathematical querie
 It stores columns as bitplanes and evaluates filters, joins, and aggregates over
 them on the CPU or, for supported plans, on CUDA.
 
-**0.8.0 alpha** runs on x86-64 Linux and WSL2.
+**0.9.0 alpha** runs on x86-64 Linux and WSL2.
 
-## What’s new in 0.8.0
+## What’s new in 0.9.0
 
-- **Regex filters on bitplanes.** Compile literal regex predicates over the
-  dictionary and apply the resulting membership mask to stored codes.
-- **CUDA regex grouping.** Compile the dictionary mapping on the host, then
-  compute counts, byte-length sums, and minimum source codes on CUDA. The GPU
-  returns groups that pass the count bound.
-- **Larger grouped string reductions.** Use the observed group counts to select
-  candidates and contract text lengths in bounded batches on CPU and CUDA.
+- **Topology-compressed snapshots.** Save with `compression="topology"` to
+  encode repeating torus edges as exact sector motifs. Eligible CPU and CUDA
+  SQL plans use the stored cycles and keep clean snapshots compact on reopen.
+- **Verified hierarchy joins.** Store proof metadata in the manifest so eligible
+  ancestor filters can run on the fact table’s foreign-key coordinate bits.
+- **Sparse reads.** Gather selected rows directly from bitplanes on read-only
+  tables and use primary-key lookups on writable tables. Ordered limits can
+  gather the winning rows’ payload in batches by physical part.
+- **Packed text and reusable referrer indexes.** Reopen with `packed_text=True`
+  to map UTF-8 dictionaries and decode returned strings on demand. A persisted
+  index supplies exact code counts and a registered referrer projection for
+  eligible CPU and CUDA group reductions.
+- **Cold query planning.** Answer eligible row counts from metadata and compare
+  native CPU filtering and grouping against the cost of a cold CUDA upload.
 
-## ClickBench at 100M rows
+[SQL paths and supported shapes](docs/SQL.md) · [Changelog](CHANGELOG.md)
 
-**Torbles CUDA completed all 43 verified queries in 2.06 s on AC and 4.07 s on
-battery** on the 99,997,497-row, 105-column fixture. The table sums each
-query’s median of three warm executions, including fetching the results.
+## Historical benchmarks
 
-| Engine | AC | Battery |
-|---|---:|---:|
-| Torbles CUDA | **2.06 s** | **4.07 s** |
-| Umbra | — | 4.96 s |
-| CedarDB | — | 8.90 s |
-| DuckDB, native | 11.71 s | 16.59 s |
-| Hyper | 12.89 s | — |
-| Torbles CPU | 16.83 s | — |
-| DuckDB, Parquet | 21.74 s | — |
-| StarRocks | 28.15 s | — |
-| ClickHouse via chDB | 32.44 s | 32.24 s over 42 verified queries |
-| DataFusion | 34.65 s | — |
-| Sirius | 65.21 s | — |
-
-The runs used the same WSL2 laptop with 24 logical CPUs and an RTX 5090 Laptop
-GPU. Torbles used an mmap-backed bitplane store and Sirius streamed Parquet.
-The first CUDA sweep took 48.70 s on AC, with dictionary compilation and other
-first-use work included. [Method, storage, and per-query results](docs/CLICKBENCH-0.8.0.md)
-· [0.7.0 subset results](docs/CLICKBENCH.md)
+The 0.8.0 ClickBench comparison covers 43 verified queries on 99,997,497 rows.
+Its Torbles CUDA warm totals were 2.06 s on AC and 4.07 s on battery. The report
+identifies the benchmark build, storage layouts, and first-execution timings.
+[0.8.0 ClickBench results](docs/CLICKBENCH-0.8.0.md) · [0.7.0 subset results](docs/CLICKBENCH.md)
 
 ## Try it
 
@@ -48,7 +38,7 @@ Use Python 3.11 or newer, Git, and C and C++ compilers. The source install build
 the CPU engine and uses `nvcc` when available.
 
 ```sh
-python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.8.0'
+python -m pip install 'git+https://github.com/brianramos/torbles.git@v0.9.0'
 ```
 
 This example creates three tables in memory. The region filter reaches the sales

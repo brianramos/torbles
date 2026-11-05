@@ -3987,7 +3987,7 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
-                from torbles.sqlrowplanes import bounded_ids
+                from torbles.sqlrowplanes import bounded_ids, bounded_payload
                 from torbles.sqlscalarplanes import point_ids
                 bounded = point_ids(self)
                 if bounded is None:
@@ -3998,8 +3998,15 @@ class _Planner:
                     if s.items:
                         payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
                         atoms = {k: c for k, c in atoms.items() if k in payload}
-                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
+                    from time import perf_counter
+
+                    gather_start = perf_counter()
+                    codes = bounded_payload(self, atoms, ids)
+                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False, payload_codes=codes)
                     out.plane_ordered = True
+                    cx.stats["bounded_payload_gather_ms"] = (perf_counter() - gather_start) * 1000
+                    cx.stats["bounded_payload_rows"] = len(ids)
+                    cx.stats["bounded_payload_columns"] = len(atoms)
                     if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned
                     return out, {}
@@ -4539,12 +4546,32 @@ class _Planner:
 
             if lim + off > sqlgpugroups.LIMIT:
                 return None
-        bitmap = sqlgroupplans.bitmap(self, preds)
+        specs = [key[:-1] for key in keys]
+        cold_scope = filter_scope = None
+        if cx.engine == "gpu":
+            cold_scope = sqlgroupplans.cold_wide_group_scope(self, preds)
+            if cold_scope is None:
+                filter_scope = sqlgroupplans.cold_filter_group_scope(self, preds, specs, measures)
+        prepared = cold_scope if cold_scope is not None else filter_scope
+        bitmap = prepared[0] if prepared is not None else sqlgroupplans.bitmap(self, preds)
         if bitmap is None:
             return None
-        specs = [key[:-1] for key in keys]
         if cx.engine == "gpu":
-            result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+            result = None
+            if cold_scope is not None:
+                _, selected, budget, upload_bytes = cold_scope
+                if selected <= budget:
+                    result = fact._plane_group(specs, measures, lim + off, bitmap)
+                    if result is None:
+                        cx.stats["cold_wide_group_cpu_refused"] = cx.stats.get("cold_wide_group_cpu_refused", 0) + 1
+                    else:
+                        cx.stats["cold_wide_group_cpu"] = cx.stats.get("cold_wide_group_cpu", 0) + 1
+                        cx.stats["cold_wide_group_rows"] = cx.stats.get("cold_wide_group_rows", 0) + selected
+                        cx.stats["cold_wide_group_avoided_plane_bytes"] = (
+                            cx.stats.get("cold_wide_group_avoided_plane_bytes", 0) + upload_bytes
+                        )
+            if result is None:
+                result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
         else:
             result = None
             if not measures:
@@ -4555,6 +4582,12 @@ class _Planner:
                 result = fact._plane_group(specs, measures, lim + off, bitmap)
         if result is None:
             return None
+        if filter_scope is not None:
+            _, upload_bytes, host_bytes = filter_scope
+            stats = cx.stats
+            stats["cold_filter_scope_cpu"] = stats.get("cold_filter_scope_cpu", 0) + 1
+            stats["cold_filter_avoided_plane_bytes"] = stats.get("cold_filter_avoided_plane_bytes", 0) + upload_bytes
+            stats["cold_filter_host_plane_bytes"] = stats.get("cold_filter_host_plane_bytes", 0) + host_bytes
         codes, counts, sums = result
         counts = counts[off:].tolist()
         rel = Rel(len(counts))
@@ -4658,7 +4691,7 @@ class _Planner:
         rel.cols.put(w.key(), ColArr(by_row))
         return rel
 
-    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
+    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True, *, payload_codes=None):
         """Read the selected fact rows' atoms from the planes."""
         cx, fact = self.cx, self.tab[self.fact]
         sparse = algq._SPARSE_GATHER and algq._bm_ids_bounded is not None
@@ -4687,6 +4720,8 @@ class _Planner:
         # The temporary arrays belong to this block, not the table's cache.
         dense = fact.n >= 1 << 16 and len(ids) * 4 >= fact.n * 3
         def read_codes(name):
+            if payload_codes is not None and name in payload_codes:
+                return payload_codes[name]
             if not dense:
                 if sparse and len(ids):
                     part = fact._part_of(name)

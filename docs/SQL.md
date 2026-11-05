@@ -278,6 +278,20 @@ winning rows' payload. Sparse payload reads decode only the requested
 words and can leave topology-compressed parts compact. Larger match sets
 use the ordinary bitmap or ordering paths.
 
+### Packed text and persisted referrer projections
+
+Use `torbles.load(path, packed_text=True)` to map saved VARCHAR dictionaries
+as UTF-8 bytes and offsets. Returned strings are decoded on demand.
+
+To prepare the registered referrer projection and its visible-row code counts
+during archive creation, use `db.save(path, referrers=(("hits", "Referer"),))`.
+This option can also be used with topology compression. On reopen, Torbles
+automatically discovers a compatible index and can evaluate eligible
+`REGEXP_REPLACE` groups with native CPU or CUDA reductions over the dictionary.
+The indexed plan reports `referrer_fact_rows_scanned = 0`. A predicate outside
+the supported scope falls back to ordinary execution. Use
+`referrer_index=False` on load to disable index discovery.
+
 ### Stored hierarchy joins
 
 Snapshots can carry a versioned `join_hierarchy` section in the database

@@ -19,6 +19,7 @@ import datetime as _dt, json, math
 from bisect import bisect_left, bisect_right
 from decimal import Decimal
 from fractions import Fraction
+from operator import index
 import numpy as np
 
 EPOCH = _dt.date(1970, 1, 1)
@@ -219,6 +220,49 @@ class TimestampCodec(Codec):
     def _state(self): return dict(offset=self.offset, zoned=self.zoned) if self.zoned else dict(offset=self.offset)
 
 
+class PackedStrings:
+    """Read-only UTF-8 values backed by the archive's blob and offset arrays."""
+
+    def __init__(self, blob, offsets):
+        if (blob.ndim != 1 or blob.dtype != np.uint8 or not blob.flags.c_contiguous
+                or offsets.ndim != 1 or offsets.dtype != np.int64 or not offsets.flags.c_contiguous
+                or not len(offsets) or offsets[0] != 0 or offsets[-1] != len(blob)
+                or np.any(offsets[1:] < offsets[:-1])):
+            raise ValueError("invalid packed UTF-8 dictionary")
+        self.blob, self.offsets = blob, offsets
+
+    def __len__(self):
+        return len(self.offsets) - 1
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return [self[i] for i in range(*key.indices(len(self)))]
+        key = index(key)
+        if key < 0:
+            key += len(self)
+        if not 0 <= key < len(self):
+            raise IndexError("string dictionary code out of range")
+        lo, hi = int(self.offsets[key]), int(self.offsets[key + 1])
+        return str(memoryview(self.blob)[lo:hi], "utf-8")
+
+    def __iter__(self):
+        blob = memoryview(self.blob)
+        offsets = self.offsets
+        for start in range(0, len(self), 65536):
+            batch = offsets[start:min(len(self), start + 65536) + 1].tolist()
+            for lo, hi in zip(batch, batch[1:]):
+                yield str(blob[lo:hi], "utf-8")
+
+    def span(self, code, start, length, trailing_lf=False):
+        """Decode an exact projected span and its optional unmatched final LF."""
+        if not 0 <= code < len(self):
+            raise ValueError("invalid projected dictionary code")
+        lo, hi = int(self.offsets[code]), int(self.offsets[code + 1])
+        if start < 0 or length < 0 or start + length > hi - lo:
+            raise ValueError("invalid projected dictionary span")
+        return str(memoryview(self.blob)[lo + start:lo + start + length], "utf-8") + ("\n" if trailing_lf else "")
+
+
 class DictCodec(Codec):
     """code = rank of the value among the column's distinct values (sorted: strings by code point, which is the
     byte order of UTF-8 and so the order DuckDB compares VARCHAR in). Numeric dictionaries compare like SQL: DOUBLE
@@ -227,7 +271,8 @@ class DictCodec(Codec):
     FLOATS = ("DOUBLE", "FLOAT", "REAL")
 
     def __init__(self, values, sql_type="VARCHAR"):
-        self.values = list(values); self.sql_type = sql_type
+        self.values = values if sql_type == "VARCHAR" and isinstance(values, PackedStrings) else list(values)
+        self.sql_type = sql_type
         self.numeric = sql_type not in ("VARCHAR", "BLOB", "JSON") and not sql_type.startswith("ROW")
         self.floating = sql_type.upper() in self.FLOATS
         self._keys = (self.values if not self.numeric else [_fkey(v) for v in self.values] if self.floating

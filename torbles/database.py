@@ -655,16 +655,21 @@ class Database:
             self.con = None
 
     # ------------------------------------------------------------------ persistence
-    def save(self, path, *, compression=None):
+    def save(self, path, *, compression=None, referrers=()):
         """Write the database, schema and sidecars to a directory.
 
         Use compression="topology" with a new destination to encode repeating
-        sectors on the native torus edges as part of the saved snapshot.
+        sectors. Optional (table, column) referrers pairs persist registered
+        text projections and visible code counts.
         """
         with self._sql_lock:
             if self._writable:
                 raise ValueError("persistence of writable tables is not supported")
             save(self, path, compression=compression)
+            if referrers:
+                from torbles.referrer_index import build_archive_referrers
+
+                return build_archive_referrers(path, referrers)
 
 
 # ---------------------------------------------------------------------- helpers
@@ -1065,11 +1070,15 @@ def _save_snapshot(db, path, writer):
 def _fname(s): return re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"%{ord(m.group(0)):02x}", str(s))
 
 
-def load(path, validate=True, con=None):
+def load(path, validate=True, con=None, *, packed_text=False, cuda_referrers=(), referrer_index=None):
     """Open a saved database. Raw planes are mapped privately. Compressed
     planes stay encoded until a dense consumer needs them. With validate,
-    every torus face is checked and single-bit faults are repaired in memory.
-    con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional)."""
+    torus faces are checked and single-bit faults are repaired in memory.
+    con: a DuckDB connection holding the source tables for sql_result() / verify().
+    packed_text: map VARCHAR dictionaries as UTF-8 bytes and offsets and decode on demand.
+    cuda_referrers: optional (table, column) pairs prepared on CUDA during load.
+    referrer_index: optional external index directory. The default discovers
+    indexes stored in the archive, and False disables index loading."""
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
@@ -1086,18 +1095,35 @@ def load(path, validate=True, con=None):
         hierarchy_before = (joinheader.load_start(path, man)
                             if validate and os.environ.get("TORBLES_JOIN_HEADER", "1") != "0" else None)
         hierarchy_files = {} if hierarchy_before is not None else None
-        _load_tables(db, path, man, validate, files, hierarchy_files)
+        cuda_referrers = tuple(cuda_referrers)
+        if referrer_index is None:
+            candidate = os.path.join(path, ".referrer-index")
+            referrer_index = candidate if os.path.isfile(os.path.join(candidate, "index.json")) else False
+        records = ()
+        if referrer_index:
+            from torbles.referrer_index import load_archive_referrers, read_archive_referrers
+
+            records = read_archive_referrers(path, man, referrer_index)
+        _load_tables(db, path, man, validate, files, hierarchy_files,
+                     packed_text=packed_text or bool(cuda_referrers) or bool(records))
         if files is not None:
             sqlsnapshot.load_finish(db, path, man, files, before)
         if hierarchy_files is not None:
             joinheader.load_finish(db, path, man, hierarchy_files, hierarchy_before)
+        if records:
+            load_archive_referrers(db, path, man, referrer_index, records)
+        if cuda_referrers:
+            from torbles.sqltexthist import prepare_referrer
+
+            db.text_preparation = {(table, col): prepare_referrer(db.tables[table], col)
+                                   for table, col in cuda_referrers}
         return db
     except BaseException:
         db.close()                                # what was mapped so far is released now, not with the traceback
         raise
 
 
-def _load_tables(db, path, man, validate, files=None, hierarchy_files=None):
+def _load_tables(db, path, man, validate, files=None, hierarchy_files=None, *, packed_text=False):
     import ctypes
     sgs = {}
     err = ctypes.c_int(0)
@@ -1115,9 +1141,9 @@ def _load_tables(db, path, man, validate, files=None, hierarchy_files=None):
         loader = algq._at_load_cycles_lazy if lazy else algq.lib.at_load
         return loader(os.fsencode(filename), ctypes.byref(err))
 
-    def load_array(filename):
+    def load_array(filename, mmap_mode=None):
         remember(filename)
-        return np.load(filename)
+        return np.load(filename, mmap_mode=mmap_mode)
 
     for name in man["order"]:
         if hierarchy_files is not None:
@@ -1177,7 +1203,11 @@ def _load_tables(db, path, man, validate, files=None, hierarchy_files=None):
             if j["kind"] == "dict":
                 fb = base + "." + _fname(f"dictblob:{c}") + ".npy"
                 if os.path.exists(fb):
-                    vals = ct.unpack_strings(load_array(fb), load_array(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
+                    offsets = base + "." + _fname(f"dictoffs:{c}") + ".npy"
+                    if packed_text and j.get("sql_type", "VARCHAR") == "VARCHAR":
+                        vals = ct.PackedStrings(load_array(fb, "r"), load_array(offsets, "r"))
+                    else:
+                        vals = ct.unpack_strings(load_array(fb), load_array(offsets))
                     if j.get("sql_type") == "BLOB": vals = [v.encode("latin-1") for v in vals]
                     if (j.get("sql_type") or "").startswith("ROW"):
                         import sqltypes as T

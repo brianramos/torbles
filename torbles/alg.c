@@ -2899,12 +2899,12 @@ static void *plane_histogram_merge(void *arg) {
 
 /* One encoded axis, directly from the packed planes. Exact counts in the
  * caller's domain, with a bounded worker-local histogram and no row staging. */
-int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
-                            int32_t col, uint32_t domain, uint32_t *counts) {
+static int plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                                int32_t col, uint32_t domain, uint32_t *counts, size_t scratch_bytes) {
     if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
         t->nw != (t->n + 63) / 64 || col < 0 || col >= t->k || t->vflag[col] ||
         t->width[col] < 0 || t->width[col] > 32 || !domain ||
-        domain > PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts || !counts) return -1;
+        domain > scratch_bytes / sizeof *counts || !counts) return -1;
     for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
     if (!t->n) {
         memset(counts, 0, (size_t)domain * sizeof *counts);
@@ -2913,7 +2913,7 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
 
     size_t stride = ((size_t)domain + 15) & ~(size_t)15;
     int workers = nthreads(), useful = 1 + (int)(t->n / 16384);
-    int capacity = (int)(PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts / stride);
+    int capacity = (int)(scratch_bytes / sizeof *counts / stride);
     if (workers > useful) workers = useful;
     if (workers > capacity) workers = capacity;
     if (workers > 64) workers = 64;
@@ -2930,6 +2930,17 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
     if (!rc) pool_jobs(workers, plane_histogram_merge, jobs, sizeof *jobs);
     free(locals);
     return rc;
+}
+
+int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, PLANE_HISTOGRAM_LOCAL_BYTES);
+}
+
+/* Archive preparation admits a larger dictionary under a fixed scratch budget. */
+int at_referrer_code_counts(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, 512u * 1024u * 1024u);
 }
 
 /* Small equality result, with fallback when the match set is larger. */
@@ -3824,6 +3835,66 @@ void at_get_rows(const atable_t *t, int c, const uint64_t *rows, uint64_t n, uin
         }
         out[i] = extract_col(t, planes, c, (int)(rows[i] & 63));
     }
+}
+typedef struct {
+    const atable_t *const *tables;
+    const int32_t *columns;
+    const uint64_t *rows;
+    uint64_t nrows;
+    uint32_t *out;
+} row_columns_t;
+
+static void get_rows_columns_range(void *ctx, uint64_t begin, uint64_t end) {
+    const row_columns_t *job = ctx;
+    for (uint64_t c = begin; c < end; ++c)
+        at_get_rows(job->tables[c], job->columns[c], job->rows, job->nrows,
+                    job->out + (size_t)c * job->nrows);
+}
+
+static int get_rows_column_valid(const atable_t *table, int32_t col) {
+    if (!table || table->k < 1 || table->k > MAXCOL || col < 0 || col >= table->k ||
+        table->nw != (table->n >> 6) + !!(table->n & 63) ||
+        table->width[col] < 0 || table->width[col] > 32) return 0;
+
+    int32_t width = table->width[col];
+    if (!table->nw || !width) return 1;
+    int32_t flag = table->vflag[col];
+    if (flag) {
+        const atable_t *side = table->vside[col];
+        if (flag < 1 || flag > table->k || !table->V[flag - 1][0] || !table->vrank[col] ||
+            !side || side->k < 1 || side->k > MAXCOL || side->width[0] != width ||
+            side->nw != (side->n >> 6) + !!(side->n & 63)) return 0;
+        table = side;
+        col = 0;
+    }
+    if (table->nw)
+        for (int32_t p = 0; p < width; ++p)
+            if (!table->V[col][p]) return 0;
+    return 1;
+}
+
+/* Gather the same row ids from several columns, including columns in
+ * different torbles. Caller supplies separate, column-major output. */
+int at_get_rows_columns(uint32_t ncols, const atable_t *const *tables, const int32_t *columns,
+                        const uint64_t *rows, uint64_t nrows, uint32_t *out) {
+    if (!ncols) return TR_OK;
+    if (!tables || !columns || (nrows && (!rows || !out)) ||
+        nrows > SIZE_MAX / sizeof(*rows) ||
+        nrows > SIZE_MAX / sizeof(*out) / ncols) return TR_INVALID;
+
+    uint64_t limit = UINT64_MAX;
+    for (uint32_t c = 0; c < ncols; ++c) {
+        const atable_t *table = tables[c];
+        if (!get_rows_column_valid(table, columns[c])) return TR_INVALID;
+        if (table->n < limit) limit = table->n;
+    }
+    if (!nrows) return TR_OK;
+    for (uint64_t r = 0; r < nrows; ++r)
+        if (rows[r] >= limit) return TR_INVALID;
+
+    row_columns_t job = {tables, columns, rows, nrows, out};
+    par_for(ncols, 1, get_rows_columns_range, &job);
+    return TR_OK;
 }
 /* payload offsets: the tail of row r starts at dir[w] + sum over the rows before r in its word of max(0, len - H).
  * Only one number per 64 rows is stored (dir); the rest is derived from the length planes. */
@@ -5031,4 +5102,50 @@ int64_t jp_terms(const uint8_t *sel, int invert, const int64_t *codes, int64_t n
     }
 #undef SEL
     *pcost = cost; return w;
+}
+
+/* Exact case-sensitive substring membership over an archived UTF-8 dictionary.
+ * A valid UTF-8 needle cannot begin in the middle of an encoded codepoint. */
+typedef struct {
+    const uint8_t *blob, *needle;
+    const int64_t *offsets;
+    uint8_t *result;
+    uint64_t blob_bytes, needle_bytes;
+    _Atomic int invalid;
+} packed_text_job;
+
+static void packed_text_contains(void *arg, uint64_t start, uint64_t end) {
+    packed_text_job *job = arg;
+    for (uint64_t i = start; i < end; ++i) {
+        int64_t lo = job->offsets[i], hi = job->offsets[i + 1];
+        if (lo < 0 || hi < lo || (uint64_t)hi > job->blob_bytes) {
+            atomic_store_explicit(&job->invalid, 1, memory_order_relaxed);
+            return;
+        }
+        uint64_t remaining = (uint64_t)(hi - lo), n = job->needle_bytes;
+        const uint8_t *p = job->blob + lo;
+        int match = n == 0;
+        while (!match && remaining >= n) {
+            const uint8_t *hit = memchr(p, job->needle[0], (size_t)(remaining - n + 1));
+            if (!hit) break;
+            if (!memcmp(hit, job->needle, (size_t)n)) {
+                match = 1;
+                break;
+            }
+            remaining -= (uint64_t)(hit - p) + 1;
+            p = hit + 1;
+        }
+        job->result[i] = (uint8_t)match;
+    }
+}
+
+int at_packed_text_contains(const uint8_t *blob, uint64_t blob_bytes, const int64_t *offsets,
+                            uint64_t codes, const uint8_t *needle, uint64_t needle_bytes,
+                            uint8_t *result) {
+    if (!blob || !offsets || !result || (needle_bytes && !needle) ||
+        codes >= SIZE_MAX / sizeof(*offsets) || blob_bytes > SIZE_MAX || needle_bytes > SIZE_MAX)
+        return -1;
+    packed_text_job job = {blob, needle, offsets, result, blob_bytes, needle_bytes, 0};
+    par_for(codes, 16384, packed_text_contains, &job);
+    return atomic_load_explicit(&job.invalid, memory_order_relaxed) ? -1 : 0;
 }
