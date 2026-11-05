@@ -156,6 +156,68 @@ class RawPlaneGroupChecks(unittest.TestCase):
         self.assertIn("plane_group_packed_offset", result.stats)
         self.assertEqual(result.rows, self.db.con.execute(query).fetchall())
 
+    def test_cold_cuda_wide_filter_uses_a_bounded_cpu_scope(self):
+        from torbles import sqlgpugroups
+
+        row = np.arange(70_013, dtype=np.int64)
+        sparse, dense = -((1 << 52) + 19), (1 << 53) + 25
+        ref = (row % 127 - 61) * (1 << 42) + row % 23
+        key = (row % 97 - 47) * (1 << 47) + row % 7
+        day, value = 1 + row % 3, 1 + row % 11
+        groups = np.repeat(np.arange(9), [2, 7, 4, 7, 3, 6, 4, 1, 8])
+        ref[-len(groups):], ref[:3_000] = sparse, dense
+        key[-len(groups):] = (groups - 4) * (1 << 48)
+        day[-len(groups):] = 1 + groups % 3
+        value[-1] = 0
+        nullable = pd.array(ref, dtype="Int64")
+        nullable[100] = None
+        frame = pd.DataFrame(dict(ref=nullable, k=key, d=day, v=value))
+        db = torbles.from_ddl(
+            "CREATE TABLE t(ref BIGINT, k BIGINT, d INTEGER, v INTEGER)", {"t": frame}, groups=False,
+        )
+        self.addCleanup(db.close)
+        self.assertIn("ref", db["t"].wide)
+        self.assertIn("k", db["t"].wide)
+
+        def query(literal, offset=2):
+            return (f"SELECT k, d, COUNT(*) c, SUM(v), AVG(v) FROM t "
+                    f"WHERE ref = {literal} AND d BETWEEN 1 AND 3 AND v <> 0 "
+                    f"GROUP BY k,d ORDER BY c DESC LIMIT 4 OFFSET {offset}")
+
+        def oracle(sql):
+            return db.con.execute(sql.replace("ORDER BY c DESC", "ORDER BY c DESC, k, d")).fetchall()
+
+        with patch.object(algq.Table, "gpu_handle", side_effect=AssertionError("cold part uploaded")):
+            for offset in (2, 20):
+                with self.subTest(offset=offset):
+                    sql = query(sparse, offset)
+                    result = db.sql(sql, engine="gpu")
+                    self.assertEqual(result.rows, oracle(sql))
+                    self.assertEqual(result.stats.get("cold_wide_group_cpu"), 1)
+                    self.assertEqual(result.stats.get("cold_wide_group_rows"), len(groups) - 1)
+                    self.assertGreater(result.stats.get("cold_wide_group_avoided_plane_bytes", 0), 0)
+                    self.assertNotIn("cuda_scope_bitmaps", result.stats)
+
+        with patch.object(algq.Table, "gpu_handle", side_effect=AssertionError("cold part uploaded")):
+            sql = (f"SELECT d, COUNT(*) c FROM t WHERE ref = {sparse} "
+                   "GROUP BY d ORDER BY c DESC LIMIT 4 OFFSET 2000")
+            result = db.sql(sql, engine="gpu")
+        self.assertEqual(result.rows, db.con.execute(sql).fetchall())
+        self.assertIn("plane_group_empty_offset", result.stats)
+        self.assertEqual(result.stats.get("cold_wide_scope_cpu"), 1)
+        self.assertNotIn("cuda_scope_bitmaps", result.stats)
+
+        def verify_scope(fact, keys, measures, limit, scope, stats):
+            return fact._plane_group(keys, measures, limit, scope)
+
+        with patch.object(sqlgpugroups, "group", side_effect=verify_scope) as grouped:
+            sql = query(dense)
+            result = db.sql(sql, engine="gpu")
+            grouped.assert_called_once()
+        self.assertEqual(result.rows, oracle(sql))
+        self.assertEqual(result.stats.get("cold_wide_scope_cpu"), 1)
+        self.assertNotIn("cold_wide_group_cpu", result.stats)
+
     def test_unsupported_aggregates_and_order_use_existing_path(self):
         queries = (
             "SELECT watch, COUNT(*) c, AVG(optional) FROM t GROUP BY watch ORDER BY c DESC LIMIT 6",

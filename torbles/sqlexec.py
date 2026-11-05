@@ -4524,12 +4524,25 @@ class _Planner:
 
             if lim + off > sqlgpugroups.LIMIT:
                 return None
-        bitmap = sqlgroupplans.bitmap(self, preds)
+        cold_scope = sqlgroupplans.cold_wide_group_scope(self, preds) if cx.engine == "gpu" else None
+        bitmap = cold_scope[0] if cold_scope is not None else sqlgroupplans.bitmap(self, preds)
         if bitmap is None:
             return None
         specs = [key[:-1] for key in keys]
         if cx.engine == "gpu":
-            result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+            result = None
+            if cold_scope is not None:
+                _, selected, upload_bytes = cold_scope
+                if selected is not None:
+                    result = fact._plane_group(specs, measures, lim + off, bitmap)
+                    if result is not None:
+                        cx.stats["cold_wide_group_cpu"] = cx.stats.get("cold_wide_group_cpu", 0) + 1
+                        cx.stats["cold_wide_group_rows"] = cx.stats.get("cold_wide_group_rows", 0) + selected
+                        cx.stats["cold_wide_group_avoided_plane_bytes"] = (
+                            cx.stats.get("cold_wide_group_avoided_plane_bytes", 0) + upload_bytes
+                        )
+            if result is None:
+                result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
         else:
             result = None
             if not measures:

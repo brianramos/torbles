@@ -3,10 +3,12 @@
 """Reduce regex text groups from native per-code multiplicities."""
 
 import ctypes as C
+from time import perf_counter
+from weakref import finalize
 
 import numpy as np
 
-from . import algq
+from . import algq, coltypes, sqlir as I, sqltypes as T
 from . import sqltextplanes as text
 
 
@@ -77,6 +79,132 @@ def _result(group, aggs, labels, counts, averages, minima):
     return out
 
 
+_REFERRER_PATTERN = r"^https?://(?:www\.)?([^/]+)/.*$"
+_REFERRER_REPLACEMENT = r"\1"
+
+
+class _DeviceReferrer:
+    def __init__(self, handle, release, run, wall_ms, kernel_ms):
+        self.handle, self.run = handle, run
+        self.wall_ms, self.kernel_ms = wall_ms, kernel_ms
+        self._release = finalize(self, release, handle)
+        self._release.atexit = False
+
+
+def _referrer_projection(table, name, codec):
+    dictionary = codec.values
+    if not isinstance(dictionary, coltypes.PackedStrings) or not 0 < len(dictionary) <= _REGEX_DOMAIN_LIMIT:
+        return None, False
+    key = name, codec
+    try:
+        library = algq.gpu_lib()
+        prepare = getattr(library, "gpu_referrer_prepare", None)
+        release = getattr(library, "gpu_referrer_free", None)
+        run = getattr(library, "gpu_referrer_moments", None)
+        if prepare is None or release is None or run is None:
+            return None, False
+        vp, u32, elapsed = algq.vp, C.c_uint32, C.POINTER(C.c_double)
+        prepare.restype = vp
+        prepare.argtypes = [vp, C.c_uint64, vp, u32, elapsed]
+        release.restype, release.argtypes = None, [vp]
+        run.restype = C.c_int
+        run.argtypes = [vp, vp, vp, C.c_int32, C.c_int32, u32, u32, *([vp] * 7),
+                        C.POINTER(u32), elapsed]
+        with algq._GPU_LOCK:
+            cache = table.__dict__.setdefault("_gpu_referrer_projections", {})
+            state = cache.get(key)
+            if state is not None:
+                return state, False
+            kernel = C.c_double()
+            start = perf_counter()
+            handle = prepare(dictionary.blob.ctypes.data, dictionary.blob.nbytes,
+                             dictionary.offsets.ctypes.data, len(dictionary), C.byref(kernel))
+            if not handle:
+                return None, False
+            state = _DeviceReferrer(handle, release, run, (perf_counter() - start) * 1000, kernel.value)
+            if len(cache) >= 2:
+                cache.pop(next(iter(cache)))
+            cache[key] = state
+            return state, True
+    except (OSError, RuntimeError):
+        return None, False
+
+
+def prepare_referrer(table, column):
+    """Derive the registered referrer projection on CUDA for a packed dictionary.
+
+    Call once after opening a packed-text archive to stage the projection before
+    queries. Normal execution also prepares the same projection on first use.
+    """
+    if table.closed:
+        raise ValueError("cannot prepare a projection on a closed table")
+    codec = table.codecs.get(column)
+    if codec is None or codec.kind != "dict" or codec.sql_type != "VARCHAR":
+        return None
+    state, built = _referrer_projection(table, column, codec)
+    if state is None:
+        return None
+    return dict(codes=len(codec.values), bytes=codec.values.blob.nbytes,
+                cached=not built, prepare_ms=state.wall_ms if built else 0.,
+                kernel_ms=state.kernel_ms if built else 0.)
+
+
+def _gpu_referrer(cx, fact, scope, group, col, source, table, aggs, byte_length, having, minimum):
+    if (not isinstance(group, I.Func) or group.fn != "regexp_replace"
+            or not group.args or group.args[0].key() != col.key() or T.coll_key(group.t) is not None):
+        return None
+    args = group.args[1:]
+    if (not all(isinstance(arg, I.Lit) for arg in args)
+            or tuple(arg.v for arg in args) not in ((_REFERRER_PATTERN, _REFERRER_REPLACEMENT),
+                                                   (_REFERRER_PATTERN, _REFERRER_REPLACEMENT, ""))):
+        return None
+    name, codec = source
+    cap = min(len(codec.values), fact.n // minimum)
+    if cap > _REGEX_OUTPUT_LIMIT or not cap:
+        return None
+    state, built = _referrer_projection(table, name, codec)
+    if state is None:
+        return None
+    reps, counts, minima, starts, lengths = (np.empty(cap, np.uint32) for _ in range(5))
+    sums = np.empty(cap, np.uint64)
+    suffix = np.empty(cap, np.uint8)
+    size, kernel = C.c_uint32(), C.c_double()
+    try:
+        part = fact._part_of(name)
+        handle = part.gpu_handle()
+        with algq._GPU_LOCK:
+            rc = state.run(
+                state.handle, handle, scope.ctypes.data, part.idx(name), byte_length, minimum, cap,
+                reps.ctypes.data, counts.ctypes.data, sums.ctypes.data, minima.ctypes.data,
+                starts.ctypes.data, lengths.ctypes.data, suffix.ctypes.data, C.byref(size), C.byref(kernel),
+            )
+    except (OSError, RuntimeError):
+        return None
+    if rc or size.value > cap:
+        return None
+    indexes = np.arange(size.value)
+    if having is not None:
+        compare, boundary = having
+        indexes = indexes[compare(counts[:size.value], boundary)]
+    try:
+        labels = [codec.values.span(int(reps[i]), int(starts[i]), int(lengths[i]), bool(suffix[i]))
+                  for i in indexes]
+        values = codec.decode(minima[indexes])
+    except (ValueError, UnicodeError):
+        return None
+    averages = [int(sums[i]) / int(counts[i]) for i in indexes]
+    cx.stats["engine_queries"] += 1
+    cx.stats["gpu_referrer_moments"] = cx.stats.get("gpu_referrer_moments", 0) + 1
+    cx.stats["gpu_text_kernel_ms"] = cx.stats.get("gpu_text_kernel_ms", 0.) + kernel.value
+    cx.stats["gpu_regex_input_codes"] = len(codec.values)
+    cx.stats["gpu_regex_output_groups"] = len(indexes)
+    if built:
+        cx.stats["gpu_referrer_prepare_ms"] = state.wall_ms
+        cx.stats["gpu_referrer_prepare_kernel_ms"] = state.kernel_ms
+    return _result(group, aggs, labels, counts[indexes].astype(np.int64), averages, values)
+
+
+
 def _gpu_regex(cx, fact, scope, group, col, source, table, aggs, length, having):
     name, codec = source
     domain = fact.maxcode(name) + 1
@@ -89,6 +217,10 @@ def _gpu_regex(cx, fact, scope, group, col, source, table, aggs, length, having)
             minimum = max(1, boundary + (compare is np.greater))
     if minimum > fact.n:
         return _result(group, aggs, [], np.empty(0, np.int64), [], [])
+    byte_length = length.fn in text._BYTE_LENGTH
+    projected = _gpu_referrer(cx, fact, scope, group, col, source, table, aggs, byte_length, having, minimum)
+    if projected is not None:
+        return projected
     mapping = text._regex_group(group, col, table, source)
     if mapping is None:
         return None
@@ -96,8 +228,6 @@ def _gpu_regex(cx, fact, scope, group, col, source, table, aggs, length, having)
     cap = min(len(values), fact.n // minimum)
     if cap > _REGEX_OUTPUT_LIMIT:
         return None
-
-    byte_length = length.fn in text._BYTE_LENGTH
 
     def length_codes():
         lengths = text._length_map(table, source, byte_length)

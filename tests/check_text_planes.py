@@ -4,6 +4,7 @@
 
 from pathlib import Path
 import sys
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
@@ -12,7 +13,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import torbles
-from torbles import sqltexthist, sqltextplanes
+from torbles import coltypes, sqltexthist, sqltextplanes
 
 
 class TextPlaneChecks(unittest.TestCase):
@@ -113,6 +114,68 @@ class TextPlaneChecks(unittest.TestCase):
         result = self.check_query(db, query, predicates=1, projection=True)
         self.assertEqual(result.stats.get("dictionary_plane_groups"), 1)
         self.assertEqual(result.stats.get("dictionary_plane_selected_rows"), 15000)
+
+    def test_packed_varchar_open_and_native_literal_mask(self):
+        db = self.database(1031)
+        self.addCleanup(db.close)
+        with TemporaryDirectory() as archive:
+            db.save(archive)
+            packed = torbles.load(archive, packed_text=True)
+            self.addCleanup(packed.close)
+            values = packed["t"].codecs["url"].values
+            self.assertIsInstance(values, coltypes.PackedStrings)
+            self.assertIsInstance(values.blob, np.memmap)
+            self.assertEqual(list(values), db["t"].codecs["url"].values)
+            if sqltextplanes._packed_contains is None:
+                self.skipTest("native packed substring support unavailable")
+            queries = (
+                "SELECT COUNT(*) FROM t WHERE url LIKE '%café%'",
+                "SELECT COUNT(*) FROM t WHERE url NOT LIKE '%café%'",
+                "SELECT COUNT(*) FROM t WHERE title NOT LIKE '%Google%'",
+                "SELECT url, COUNT(*) FROM t GROUP BY url ORDER BY url",
+            )
+            for sql in queries:
+                with self.subTest(sql=sql):
+                    self.assertEqual(packed.sql(sql).rows, db.sql(sql).rows)
+            packed.close()
+
+    def test_cuda_referrer_projection_matches_torbles_regex(self):
+        try:
+            if not hasattr(torbles.algq.gpu_lib(), "gpu_referrer_prepare"):
+                self.skipTest("native CUDA referrer projection unavailable")
+            if "emulat" in torbles.algq.gpu_name().lower():
+                self.skipTest("CUDA device required")
+        except (OSError, RuntimeError):
+            self.skipTest("CUDA device unavailable")
+        strings = [
+            "", "abc", "https://www.abc/", "http://abc/x", "http://www./", "http://www.abc",
+            "http://café/é", "café", "http://a\nb/x", "http://h/p\n", "h\n", "http://h/p\nx",
+            "http://h/p\n\n", "http://a\x00b/", "https:///x", "HTTPS://abc/", "www.",
+        ]
+        db = torbles.from_ddl(
+            "CREATE TABLE r(url VARCHAR NOT NULL)",
+            {"r": pd.DataFrame({"url": strings * 4096})},
+        )
+        self.addCleanup(db.close)
+        with TemporaryDirectory() as archive:
+            db.save(archive)
+            packed = torbles.load(archive, cuda_referrers=(("r", "url"),))
+            self.addCleanup(packed.close)
+            receipt = packed.text_preparation["r", "url"]
+            self.assertIsNotNone(receipt)
+            self.assertFalse(receipt["cached"])
+            self.assertTrue(sqltexthist.prepare_referrer(packed["r"], "url")["cached"])
+            for length in ("OCTET_LENGTH", "CHAR_LENGTH"):
+                query = (r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
+                         f"COUNT(*), AVG({length}(url)), MIN(url) FROM r WHERE url <> '' "
+                         "GROUP BY k HAVING COUNT(*) >= 2 ORDER BY k")
+                expected = db.sql(query).rows
+                with patch.object(sqltextplanes, "_regex_group", side_effect=AssertionError("Python projection")):
+                    actual = packed.sql(query, engine="gpu")
+                self.assertEqual(actual.stats.get("gpu_referrer_moments"), 1)
+                self.assertEqual(actual.rows, expected)
+            packed.close()
+
 
     def test_text_caches_belong_to_open_table(self):
         first = self.database()

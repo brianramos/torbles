@@ -7,7 +7,7 @@ import re
 
 import numpy as np
 
-from . import algq, sqlfuncs as F, sqlir as I, sqltypes as T
+from . import algq, coltypes, sqlfuncs as F, sqlir as I, sqltypes as T
 from .sqlgroupkeys import plane_group_key
 
 
@@ -39,11 +39,24 @@ def _cache(table, attr, key, build, limit):
     return value
 
 
-def _like_match(pattern, escape, insensitive):
+_packed_contains = getattr(algq.lib, "at_packed_text_contains", None)
+if _packed_contains is not None:
+    _packed_contains.argtypes = [algq.vp, C.c_uint64, algq.vp, C.c_uint64, C.c_char_p, C.c_uint64, algq.vp]
+    _packed_contains.restype = C.c_int
+
+
+def _plain_contains(pattern, escape, insensitive):
     if not escape and not insensitive and len(pattern) >= 2 and pattern[0] == pattern[-1] == "%":
         literal = pattern[1:-1]
         if "%" not in literal and "_" not in literal:
-            return lambda text: literal in text
+            return literal
+    return None
+
+
+def _like_match(pattern, escape, insensitive):
+    literal = _plain_contains(pattern, escape, insensitive)
+    if literal is not None:
+        return lambda text: literal in text
     regex = F.like_regex(pattern, escape, insensitive)
     return lambda text: regex.fullmatch(text) is not None
 
@@ -67,9 +80,11 @@ def dictionary_predicate(planner, expr):
     if not is_fact and (binding not in planner.hidden.values() or not getattr(table, "generated", None)):
         return None
     literals = tuple(arg.v for arg in args)
+    literal = None
     try:
         if term.fn in ("like", "ilike"):
             escape = F._esc(literals[1]) if len(literals) == 2 else None
+            literal = _plain_contains(literals[0], escape, term.fn == "ilike")
             matcher = _like_match(literals[0], escape, term.fn == "ilike")
         else:
             regex = F._rx(*literals)
@@ -80,7 +95,19 @@ def dictionary_predicate(planner, expr):
     validity = table.nullable.get(name)
 
     def make():
-        matches = np.fromiter((bool(matcher(text)) != negated for text in codec.values), np.bool_, count=len(codec.values))
+        values = codec.values
+        matches = None
+        if (_packed_contains is not None and literal is not None
+                and isinstance(values, coltypes.PackedStrings) and len(values)):
+            needle = literal.encode("utf-8")
+            bits = np.empty(len(values), np.bool_)
+            if not _packed_contains(values.blob.ctypes.data, values.blob.nbytes,
+                                    values.offsets.ctypes.data, len(values), needle, len(needle), bits.ctypes.data):
+                if negated:
+                    np.logical_not(bits, out=bits)
+                matches = bits
+        if matches is None:
+            matches = np.fromiter((bool(matcher(text)) != negated for text in values), np.bool_, count=len(values))
         if is_fact:
             return algq.CodeSet(algq.Col(table, name), matches, sql=I.render(expr))
         codes = table.decoded(name)
@@ -188,6 +215,8 @@ def _length_map(fact, source, byte_length):
 
     def build():
         values = codec.values
+        if byte_length and isinstance(values, coltypes.PackedStrings):
+            return np.diff(values.offsets).astype(np.uint64, copy=False)
         if byte_length:
             lens = (len(text) if text.isascii() else len(text.encode("utf-8")) for text in values)
         else:

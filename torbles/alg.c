@@ -3483,3 +3483,49 @@ int64_t jp_terms(const uint8_t *sel, int invert, const int64_t *codes, int64_t n
 #undef SEL
     *pcost = cost; return w;
 }
+
+/* Exact case-sensitive substring membership over an archived UTF-8 dictionary.
+ * A valid UTF-8 needle cannot begin in the middle of an encoded codepoint. */
+typedef struct {
+    const uint8_t *blob, *needle;
+    const int64_t *offsets;
+    uint8_t *result;
+    uint64_t blob_bytes, needle_bytes;
+    _Atomic int invalid;
+} packed_text_job;
+
+static void packed_text_contains(void *arg, uint64_t start, uint64_t end) {
+    packed_text_job *job = arg;
+    for (uint64_t i = start; i < end; ++i) {
+        int64_t lo = job->offsets[i], hi = job->offsets[i + 1];
+        if (lo < 0 || hi < lo || (uint64_t)hi > job->blob_bytes) {
+            atomic_store_explicit(&job->invalid, 1, memory_order_relaxed);
+            return;
+        }
+        uint64_t remaining = (uint64_t)(hi - lo), n = job->needle_bytes;
+        const uint8_t *p = job->blob + lo;
+        int match = n == 0;
+        while (!match && remaining >= n) {
+            const uint8_t *hit = memchr(p, job->needle[0], (size_t)(remaining - n + 1));
+            if (!hit) break;
+            if (!memcmp(hit, job->needle, (size_t)n)) {
+                match = 1;
+                break;
+            }
+            remaining -= (uint64_t)(hit - p) + 1;
+            p = hit + 1;
+        }
+        job->result[i] = (uint8_t)match;
+    }
+}
+
+int at_packed_text_contains(const uint8_t *blob, uint64_t blob_bytes, const int64_t *offsets,
+                            uint64_t codes, const uint8_t *needle, uint64_t needle_bytes,
+                            uint8_t *result) {
+    if (!blob || !offsets || !result || (needle_bytes && !needle) ||
+        codes >= SIZE_MAX / sizeof(*offsets) || blob_bytes > SIZE_MAX || needle_bytes > SIZE_MAX)
+        return -1;
+    packed_text_job job = {blob, needle, offsets, result, blob_bytes, needle_bytes, 0};
+    par_for(codes, 16384, packed_text_contains, &job);
+    return atomic_load_explicit(&job.invalid, memory_order_relaxed) ? -1 : 0;
+}

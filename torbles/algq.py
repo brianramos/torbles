@@ -1349,7 +1349,7 @@ class Table:
         close(), everything is freed then. Not while another thread is running a query on the table."""
         nat = self.__dict__.get("_native")
         if nat is None: return
-        for attr in ("_text_predicates", "_text_groups", "_text_lengths"):
+        for attr in ("_text_predicates", "_text_groups", "_text_lengths", "_gpu_regex_lengths", "_gpu_referrer_projections"):
             self.__dict__.pop(attr, None)
         if self.parts is not None:                     # its views first (they point into the parts), then the parts
             for v in list(self._live_views): v.release()
