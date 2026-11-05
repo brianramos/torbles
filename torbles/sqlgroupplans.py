@@ -61,6 +61,45 @@ def bitmap(planner, preds, *, engine=None):
     return result
 
 
+FILTER_ONLY_UPLOAD_MIN_BYTES = 64 << 20
+
+
+def _plane_payload_bytes(parts, word_bytes):
+    return sum(part.width(name) for part in parts for name in part.cols) * word_bytes
+
+
+def cold_filter_group_scope(planner, preds, keys, measures):
+    """Keep grouping resident when only its filter would open a large part."""
+    fact = planner.tab[planner.fact]
+    if fact.parts is None or planner.joins:
+        return None
+    group_cols = set(measures)
+    for low, high, *_ in keys:
+        group_cols.add(low)
+        if high is not None:
+            group_cols.add(high)
+    group_parts = {fact._part_of(name) for name in group_cols}
+    if any(part._storage().gpu is None for part in group_parts):
+        return None
+
+    filter_cols = set().union(*(algq.pred_cols(pred) for pred in preds))
+    filter_cols.update(fact.wide[name][1] for name in filter_cols & fact.wide.keys())
+    if not filter_cols or not filter_cols.issubset(fact.cols):
+        return None
+    filter_parts = {fact._part_of(name) for name in filter_cols}
+    cold = [part for part in filter_parts - group_parts if part._storage().gpu is None]
+    if not cold:
+        return None
+
+    word_bytes = ((fact.n + 63) // 64) * 8
+    upload_bytes = _plane_payload_bytes(cold, word_bytes)
+    host_bytes = sum(fact.width(name) for name in filter_cols) * word_bytes
+    if upload_bytes < max(FILTER_ONLY_UPLOAD_MIN_BYTES, 2 * host_bytes):
+        return None
+    scope = bitmap(planner, preds, engine="alg")
+    return None if scope is None else (scope, upload_bytes, host_bytes)
+
+
 def _packed_count(part, scope):
     from .sqlscalarplanes import _moments
 
@@ -89,8 +128,7 @@ def cold_wide_group_scope(planner, preds):
     if scope is None:
         return None
     selected = _packed_count(cold[0], scope)
-    columns = sum(part.width(name) for part in cold for name in part.cols)
-    upload_bytes = columns * ((fact.n + 63) // 64) * 8
+    upload_bytes = _plane_payload_bytes(cold, ((fact.n + 63) // 64) * 8)
     # Bound encoded group state by row count, sparsity, and the transfer it
     # replaces. Charge 256 bytes per selected row for keys and hash scratch.
     limit = min(200_000, fact.n // 64, upload_bytes // 256)

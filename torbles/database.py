@@ -645,13 +645,18 @@ class Database:
             self.con = None
 
     # ------------------------------------------------------------------ persistence
-    def save(self, path):
+    def save(self, path, *, referrers=()):
         """Write the database to a directory: one file per torble (its bit planes, memory-mapped on load) plus a
-        manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates)."""
+        manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates).
+        Optional referrers pairs (table, column) persist registered text projections and code counts."""
         with self._sql_lock:
             if self._writable:
                 raise ValueError("persistence of writable tables is not supported")
             save(self, path)
+            if referrers:
+                from torbles.referrer_index import build_archive_referrers
+
+                return build_archive_referrers(path, referrers)
 
 
 # ---------------------------------------------------------------------- helpers
@@ -1016,13 +1021,15 @@ def save(db, path):
 def _fname(s): return re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"%{ord(m.group(0)):02x}", str(s))
 
 
-def load(path, validate=True, con=None, *, packed_text=False, cuda_referrers=()):
+def load(path, validate=True, con=None, *, packed_text=False, cuda_referrers=(), referrer_index=None):
     """Open a saved database. The bit planes are memory-mapped (privately: nothing is written back); with validate,
     every torus face is checked on load and single-bit faults are repaired in memory (the report is in db.integrity).
     con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional).
     packed_text: map VARCHAR dictionaries as UTF-8 bytes and offsets and decode on demand.
     cuda_referrers: optional (table, column) pairs whose registered referrer projection is built
-    on CUDA during load. Preparation receipts are available as db.text_preparation."""
+    on CUDA during load. Preparation receipts are available as db.text_preparation.
+    referrer_index: optional external directory for persisted projections. The default
+    discovers indexes stored in the archive, and False disables index loading."""
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
@@ -1035,9 +1042,20 @@ def load(path, validate=True, con=None, *, packed_text=False, cuda_referrers=())
             before = sqlsnapshot.load_start(path, man, validate)
         files = [] if before is not None else None
         cuda_referrers = tuple(cuda_referrers)
-        _load_tables(db, path, man, validate, files, packed_text=packed_text or bool(cuda_referrers))
+        if referrer_index is None:
+            candidate = os.path.join(path, ".referrer-index")
+            referrer_index = candidate if os.path.isfile(os.path.join(candidate, "index.json")) else False
+        records = ()
+        if referrer_index:
+            from torbles.referrer_index import load_archive_referrers, read_archive_referrers
+
+            records = read_archive_referrers(path, man, referrer_index)
+        _load_tables(db, path, man, validate, files,
+                     packed_text=packed_text or bool(cuda_referrers) or bool(records))
         if files is not None:
             sqlsnapshot.load_finish(db, path, man, files, before)
+        if records:
+            load_archive_referrers(db, path, man, referrer_index, records)
         if cuda_referrers:
             from torbles.sqltexthist import prepare_referrer
 

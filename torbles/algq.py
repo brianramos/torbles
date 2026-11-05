@@ -899,8 +899,10 @@ class _Storage:
     """the native handles of one table (see _release): at is None once the table is closed; header is the torble's
     address until the finalizer frees it; gpu its GPU copy (glib: the GPU library); gtags the tags of its live arrays
     that GPU handles may hold device copies of (see _gpu_tag)"""
-    __slots__ = ("at", "header", "pt", "sides", "gpu", "glib", "gtags")
-    def __init__(self): self.at = self.header = self.pt = self.gpu = self.glib = None; self.sides, self.gtags = [], set()
+    __slots__ = ("at", "header", "pt", "sides", "gpu", "glib", "gtags", "revision")
+    def __init__(self):
+        self.at = self.header = self.pt = self.gpu = self.glib = None
+        self.sides, self.gtags, self.revision = [], set(), 0
 
 
 # Device copies of host arrays. Besides its planes (uploaded once per table: gpu_handle), a GPU query reads host arrays:
@@ -1349,7 +1351,7 @@ class Table:
         close(), everything is freed then. Not while another thread is running a query on the table."""
         nat = self.__dict__.get("_native")
         if nat is None: return
-        for attr in ("_text_predicates", "_text_groups", "_text_lengths", "_gpu_regex_lengths", "_gpu_referrer_projections"):
+        for attr in ("_text_predicates", "_text_groups", "_text_lengths", "_gpu_regex_lengths", "_gpu_referrer_projections", "_referrer_indexes"):
             self.__dict__.pop(attr, None)
         if self.parts is not None:                     # its views first (they point into the parts), then the parts
             for v in list(self._live_views): v.release()
@@ -1581,7 +1583,10 @@ class Table:
     def plain_bytes(self): return 4 * self.n * len(self.cols)
     def repair(self):
         if self.parts is not None: return sum(p.repair() for p in self.parts)
-        return lib.at_repair(self.at)
+        fixed = lib.at_repair(self.at)
+        if fixed:
+            self._storage().revision += 1
+        return fixed
     def nplanes(self):
         if self.parts is not None: return sum(p.nplanes() for p in self.parts)
         return lib.at_nplanes(self.at)
@@ -1595,6 +1600,7 @@ class Table:
         if not 0 <= int(plane) < self.nplanes() or not 0 <= int(row) < self.n:   # the planes hold n rows (none if empty)
             raise IndexError(f"{self.name}: no stored bit at plane {int(plane)} (of {self.nplanes()}), row {int(row)} (of {self.n})")
         lib.at_flip(self.at, int(plane), int(row))
+        self._storage().revision += 1
     def validate(self, maxbad=8):
         if self.parts is not None:
             out = [p.validate(maxbad) for p in self.parts]

@@ -141,6 +141,16 @@ def prepare_referrer(table, column):
     codec = table.codecs.get(column)
     if codec is None or codec.kind != "dict" or codec.sql_type != "VARCHAR":
         return None
+    from .referrer_index import index_for
+
+    saved = index_for(table, column)
+    if saved is not None:
+        state, built = _counted_cuda(saved)
+        if state is not None:
+            return dict(codes=len(codec.values), bytes=sum(a.nbytes for a in saved.arrays),
+                        cached=not built, prepare_ms=state.wall_ms if built else 0.,
+                        kernel_ms=0., persisted=True)
+        return None
     state, built = _referrer_projection(table, column, codec)
     if state is None:
         return None
@@ -149,14 +159,121 @@ def prepare_referrer(table, column):
                 kernel_ms=state.kernel_ms if built else 0.)
 
 
-def _gpu_referrer(cx, fact, scope, group, col, source, table, aggs, byte_length, having, minimum):
+def _registered_referrer(group, col):
     if (not isinstance(group, I.Func) or group.fn != "regexp_replace"
             or not group.args or group.args[0].key() != col.key() or T.coll_key(group.t) is not None):
-        return None
+        return False
     args = group.args[1:]
-    if (not all(isinstance(arg, I.Lit) for arg in args)
-            or tuple(arg.v for arg in args) not in ((_REFERRER_PATTERN, _REFERRER_REPLACEMENT),
-                                                   (_REFERRER_PATTERN, _REFERRER_REPLACEMENT, ""))):
+    return (all(isinstance(arg, I.Lit) for arg in args)
+            and tuple(arg.v for arg in args) in ((_REFERRER_PATTERN, _REFERRER_REPLACEMENT),
+                                                (_REFERRER_PATTERN, _REFERRER_REPLACEMENT, "")))
+
+
+def _minimum_count(having):
+    if having is not None:
+        compare, boundary = having
+        if compare in (np.greater, np.greater_equal, np.equal):
+            return max(1, boundary + (compare is np.greater))
+    return 1
+
+
+def _counted_cuda(state):
+    with algq._GPU_LOCK:
+        if state.cuda is not None:
+            return state.cuda, False
+        library = algq.gpu_lib()
+        prepare = getattr(library, "gpu_referrer_counted_prepare", None)
+        release = getattr(library, "gpu_referrer_counted_free", None)
+        run = getattr(library, "gpu_referrer_counted_moments", None)
+        if prepare is None or release is None or run is None:
+            return None, False
+        vp, u32 = algq.vp, C.c_uint32
+        prepare.restype, prepare.argtypes = vp, [u32, vp, vp, vp, vp]
+        release.restype, release.argtypes = None, [vp]
+        run.restype = C.c_int
+        run.argtypes = [vp, C.c_int32, u32, u32, *([vp] * 7), C.POINTER(u32), C.POINTER(C.c_double)]
+        start = perf_counter()
+        handle = prepare(len(state.arrays[0]), *(a.ctypes.data for a in state.arrays))
+        if not handle:
+            return None, False
+        state.cuda = _DeviceReferrer(handle, release, run, (perf_counter() - start) * 1000, 0.)
+        return state.cuda, True
+
+
+def _persisted_referrer(planner, fact, group, col, source, aggs, length, having):
+    from .referrer_index import index_for
+
+    if planner.joins or length.fn not in text._BYTE_LENGTH or not _registered_referrer(group, col):
+        return None
+    term = planner.s.where
+    if term is not None:
+        if not isinstance(term, I.Func) or term.fn not in ("!=", "<>") or len(term.args) != 2:
+            return None
+        left, right = term.args
+        if isinstance(left, I.Lit):
+            left, right = right, left
+        if left.key() != col.key() or not isinstance(right, I.Lit) or right.v != "":
+            return None
+
+    name, codec = source
+    state = index_for(fact, name)
+    if state is None:
+        return None
+    minimum = _minimum_count(having)
+    cap = min(len(codec.values), fact.n // minimum)
+    if cap > _REGEX_OUTPUT_LIMIT:
+        return None
+    if not cap:
+        planner.cx.stats["referrer_fact_rows_scanned"] = 0
+        return _result(group, aggs, [], np.empty(0, np.int64), [], [])
+    reps, counts, minima, starts, lengths = (np.empty(cap, np.uint32) for _ in range(5))
+    sums, suffix = np.empty(cap, np.uint64), np.empty(cap, np.uint8)
+    size = C.c_uint32()
+    output = (reps, counts, sums, minima, starts, lengths, suffix)
+    args = (int(term is not None), minimum, cap, *(a.ctypes.data for a in output), C.byref(size))
+    stats = planner.cx.stats
+    try:
+        if planner.cx.engine == "gpu":
+            device, built = _counted_cuda(state)
+            if device is None:
+                return None
+            kernel = C.c_double()
+            with algq._GPU_LOCK:
+                rc = device.run(device.handle, *args, C.byref(kernel))
+            if not rc:
+                stats["gpu_referrer_counted_moments"] = 1
+                stats["gpu_text_kernel_ms"] = stats.get("gpu_text_kernel_ms", 0.) + kernel.value
+                if built:
+                    stats["gpu_referrer_counted_prepare_ms"] = device.wall_ms
+        else:
+            native = getattr(algq.lib, "at_referrer_counted_moments", None)
+            if native is None:
+                return None
+            vp, u32 = algq.vp, C.c_uint32
+            native.restype = C.c_int
+            native.argtypes = [u32, *([vp] * 4), C.c_int32, u32, u32, *([vp] * 7), C.POINTER(u32)]
+            rc = native(len(state.arrays[0]), *(a.ctypes.data for a in state.arrays), *args)
+            if not rc:
+                stats["cpu_referrer_counted_moments"] = 1
+    except (OSError, RuntimeError):
+        return None
+    if rc or size.value > cap:
+        return None
+    indexes = np.arange(size.value)
+    if having is not None:
+        compare, boundary = having
+        indexes = indexes[compare(counts[:size.value], boundary)]
+    labels = [codec.values.span(int(reps[i]), int(starts[i]), int(lengths[i]), bool(suffix[i])) for i in indexes]
+    averages = [int(sums[i]) / int(counts[i]) for i in indexes]
+    stats["engine_queries"] += 1
+    stats["referrer_index_codes"] = len(codec.values)
+    stats["referrer_fact_rows_scanned"] = 0
+    return _result(group, aggs, labels, counts[indexes].astype(np.int64), averages, codec.decode(minima[indexes]))
+
+
+
+def _gpu_referrer(cx, fact, scope, group, col, source, table, aggs, byte_length, having, minimum):
+    if not _registered_referrer(group, col):
         return None
     name, codec = source
     cap = min(len(codec.values), fact.n // minimum)
@@ -210,11 +327,7 @@ def _gpu_regex(cx, fact, scope, group, col, source, table, aggs, length, having)
     domain = fact.maxcode(name) + 1
     if not 0 < domain <= min(_REGEX_DOMAIN_LIMIT, len(codec.values)):
         return None
-    minimum = 1
-    if having is not None:
-        compare, boundary = having
-        if compare in (np.greater, np.greater_equal, np.equal):
-            minimum = max(1, boundary + (compare is np.greater))
+    minimum = _minimum_count(having)
     if minimum > fact.n:
         return _result(group, aggs, [], np.empty(0, np.int64), [], [])
     byte_length = length.fn in text._BYTE_LENGTH
@@ -271,6 +384,10 @@ def project_group(planner, preds, aggs, group, col, source, table, fk, length, h
 
     cx, fact = planner.cx, planner.tab[planner.fact]
     name, codec = source
+    if fk is None:
+        persisted = _persisted_referrer(planner, fact, group, col, source, aggs, length, having)
+        if persisted is not None:
+            return persisted
     column = name if fk is None else fk
     domain = len(codec.values) if fk is None else table.n
     # Bound scratch and avoid building one histogram cell per nearly unique row.

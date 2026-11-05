@@ -1936,12 +1936,12 @@ static void *plane_histogram_merge(void *arg) {
 
 /* One encoded axis, directly from the packed planes. Exact counts in the
  * caller's domain, with a bounded worker-local histogram and no row staging. */
-int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
-                            int32_t col, uint32_t domain, uint32_t *counts) {
+static int plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                                int32_t col, uint32_t domain, uint32_t *counts, size_t scratch_bytes) {
     if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
         t->nw != (t->n + 63) / 64 || col < 0 || col >= t->k || t->vflag[col] ||
         t->width[col] < 0 || t->width[col] > 32 || !domain ||
-        domain > PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts || !counts) return -1;
+        domain > scratch_bytes / sizeof *counts || !counts) return -1;
     for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
     if (!t->n) {
         memset(counts, 0, (size_t)domain * sizeof *counts);
@@ -1950,7 +1950,7 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
 
     size_t stride = ((size_t)domain + 15) & ~(size_t)15;
     int workers = nthreads(), useful = 1 + (int)(t->n / 16384);
-    int capacity = (int)(PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts / stride);
+    int capacity = (int)(scratch_bytes / sizeof *counts / stride);
     if (workers > useful) workers = useful;
     if (workers > capacity) workers = capacity;
     if (workers > 64) workers = 64;
@@ -1967,6 +1967,17 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
     if (!rc) pool_jobs(workers, plane_histogram_merge, jobs, sizeof *jobs);
     free(locals);
     return rc;
+}
+
+int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, PLANE_HISTOGRAM_LOCAL_BYTES);
+}
+
+/* Archive preparation admits a larger dictionary under a fixed scratch budget. */
+int at_referrer_code_counts(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, 512u * 1024u * 1024u);
 }
 
 /* Small equality result, with fallback when the match set is larger. */

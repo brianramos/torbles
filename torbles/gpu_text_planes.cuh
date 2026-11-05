@@ -4,6 +4,7 @@
 #ifndef EMULATE
 #include <cuda/atomic>
 #include <memory>
+#include <mutex>
 
 namespace {
 constexpr int TEXT_THREADS = 256;
@@ -30,8 +31,8 @@ struct text_timer {
     cudaEvent_t start = nullptr, end = nullptr;
     ~text_timer() { if (start) cudaEventDestroy(start); if (end) cudaEventDestroy(end); }
     bool begin() {
-        return cudaEventCreate(&start) == cudaSuccess && cudaEventCreate(&end) == cudaSuccess &&
-               cudaEventRecord(start) == cudaSuccess;
+        return (start || cudaEventCreate(&start) == cudaSuccess) &&
+               (end || cudaEventCreate(&end) == cudaSuccess) && cudaEventRecord(start) == cudaSuccess;
     }
     bool finish(double *ms) {
         float elapsed;
@@ -176,6 +177,7 @@ __global__ void text_referrer_intern_kernel(
 }
 
 // Push the histogram's counts and moments forward along the regex code map.
+template<bool ExcludeEmpty = false>
 __global__ void text_regex_moments_kernel(uint32_t domain, const uint32_t *counts,
                                           const uint32_t *mapping, const uint32_t *lengths,
                                           uint32_t groups, uint32_t *group_counts,
@@ -185,7 +187,7 @@ __global__ void text_regex_moments_kernel(uint32_t domain, const uint32_t *count
     const uint64_t step = (uint64_t)gridDim.x * blockDim.x;
     for (uint64_t code = first; code < domain; code += step) {
         uint32_t count = counts[code];
-        if (!count) continue;
+        if (!count || (ExcludeEmpty && !lengths[code])) continue;
         uint32_t group = mapping[code];
         if (group == UINT32_MAX) continue;
         if (group >= groups) {
@@ -198,13 +200,20 @@ __global__ void text_regex_moments_kernel(uint32_t domain, const uint32_t *count
     }
 }
 
+DEV text_referrer_span text_unpack_span(text_referrer_span span) { return span; }
+
+DEV text_referrer_span text_unpack_span(uint64_t span) {
+    return {(uint32_t)span, (uint8_t)(span >> 32), (uint8_t)((span >> 40) & 1u)};
+}
+
+template<typename Span>
 __global__ void text_regex_compact_kernel(uint32_t groups, uint32_t min_count,
                                          const uint32_t *group_counts,
                                          const unsigned long long *group_sums,
                                          const uint32_t *group_min, uint32_t cap,
                                          uint32_t *out_groups, uint32_t *out_counts,
                                          unsigned long long *out_sums, uint32_t *out_min,
-                                         uint32_t *out_n, const text_referrer_span *spans,
+                                         uint32_t *out_n, const Span *spans,
                                          text_referrer_span *out_spans) {
     const uint64_t first = (uint64_t)blockIdx.x * blockDim.x + threadIdx.x;
     const uint64_t step = (uint64_t)gridDim.x * blockDim.x;
@@ -217,7 +226,7 @@ __global__ void text_regex_compact_kernel(uint32_t groups, uint32_t min_count,
         out_counts[slot] = count;
         out_sums[slot] = group_sums[group];
         out_min[slot] = group_min[group];
-        if (spans) out_spans[slot] = spans[group];
+        if (spans) out_spans[slot] = text_unpack_span(spans[group]);
     }
 }
 
@@ -289,6 +298,18 @@ extern "C" int gpu_plane_code_histogram(void *handle, const uint64_t *scope, int
 }
 
 namespace {
+bool text_download_spans(const text_buffer<text_referrer_span> &spans, uint32_t count,
+                         uint32_t *out_start, uint32_t *out_length, uint8_t *out_lf) {
+    std::unique_ptr<text_referrer_span[]> host(new (std::nothrow) text_referrer_span[count]);
+    if (!host || !spans.download(host.get(), count)) return false;
+    for (uint32_t i = 0; i < count; ++i) {
+        out_start[i] = host[i].start;
+        out_length[i] = host[i].length;
+        out_lf[i] = host[i].suffix_lf;
+    }
+    return true;
+}
+
 int text_mapped_moments(const handle_t *h, const uint64_t *scope, int32_t col,
                         uint32_t domain, const uint32_t *mapping, const uint32_t *lengths,
                         uint32_t groups, uint32_t min_count, uint32_t cap,
@@ -324,11 +345,11 @@ int text_mapped_moments(const handle_t *h, const uint64_t *scope, int32_t col,
     text_histogram_kernel<<<text_blocks(h->host.n, 65535), TEXT_THREADS>>>(
         h->dev, device_scope.p, col, domain, counts.p, invalid.p);
     if (cudaGetLastError() != cudaSuccess) return -2;
-    text_regex_moments_kernel<<<text_blocks(domain, 65535), TEXT_THREADS>>>(
+    text_regex_moments_kernel<false><<<text_blocks(domain, 65535), TEXT_THREADS>>>(
         domain, counts.p, mapping, lengths, groups, group_counts.p,
         group_sums.p, group_min.p, invalid.p);
     if (cudaGetLastError() != cudaSuccess) return -2;
-    text_regex_compact_kernel<<<text_blocks(groups, 65535), TEXT_THREADS>>>(
+    text_regex_compact_kernel<text_referrer_span><<<text_blocks(groups, 65535), TEXT_THREADS>>>(
         groups, threshold, group_counts.p, group_sums.p, group_min.p, output_cap, ids.p,
         compact_counts.p, compact_sums.p, compact_min.p, n.p, spans, compact_spans.p);
 
@@ -339,15 +360,8 @@ int text_mapped_moments(const handle_t *h, const uint64_t *scope, int32_t col,
                   !compact_min.download(out_min, count) ||
                   cudaMemcpy(out_sums, compact_sums.p, (size_t)count * sizeof(*out_sums),
                              cudaMemcpyDeviceToHost) != cudaSuccess)) return -2;
-    if (count && spans) {
-        std::unique_ptr<text_referrer_span[]> host(new (std::nothrow) text_referrer_span[count]);
-        if (!host || !compact_spans.download(host.get(), count)) return -2;
-        for (uint32_t i = 0; i < count; ++i) {
-            out_start[i] = host[i].start;
-            out_length[i] = host[i].length;
-            out_lf[i] = host[i].suffix_lf;
-        }
-    }
+    if (count && spans && !text_download_spans(compact_spans, count, out_start, out_length, out_lf))
+        return -2;
     *out_n = count;
     return 0;
 }
@@ -434,6 +448,130 @@ extern "C" int gpu_referrer_moments(void *projection, void *handle, const uint64
                               plan->spans.p, out_start, out_length, out_lf);
 }
 
+namespace {
+struct text_counted_output {
+    uint32_t capacity;
+    text_buffer<uint32_t> reps, counts, minima;
+    text_buffer<unsigned long long> sums;
+    text_buffer<text_referrer_span> spans;
+
+    bool alloc(uint32_t n) {
+        capacity = n;
+        return reps.alloc(n) && counts.alloc(n) && minima.alloc(n) && sums.alloc(n) && spans.alloc(n);
+    }
+};
+
+struct text_referrer_counted {
+    uint32_t domain, rows;
+    int32_t reduced_mode = -1;
+    text_buffer<uint32_t> mapping, lengths, counts, group_counts, group_min, invalid, n;
+    text_buffer<uint64_t> spans;
+    text_buffer<unsigned long long> group_sums;
+    std::unique_ptr<text_counted_output> output;
+    text_timer timer;
+    std::mutex scratch_lock;
+};
+
+template<bool ExcludeEmpty>
+void text_counted_reduce(const text_referrer_counted &plan, unsigned blocks) {
+    text_regex_moments_kernel<ExcludeEmpty><<<blocks, TEXT_THREADS>>>(
+        plan.domain, plan.counts.p, plan.mapping.p, plan.lengths.p, plan.domain, plan.group_counts.p,
+        plan.group_sums.p, plan.group_min.p, plan.invalid.p);
+}
+} // namespace
+
+extern "C" void *gpu_referrer_counted_prepare(uint32_t domain, const uint32_t *mapping,
+                                               const uint32_t *lengths, const uint64_t *spans,
+                                               const uint32_t *counts) {
+    if (!domain || domain > TEXT_DOMAIN || !mapping || !lengths || !spans || !counts) return nullptr;
+    // All group counts and count × length sums fit when the global count fits uint32.
+    uint64_t rows = 0;
+    for (uint32_t code = 0; code < domain; ++code) rows += counts[code];
+    if (rows > UINT32_MAX) return nullptr;
+
+    const size_t bytes = (size_t)domain * (5 * sizeof(uint32_t) + 2 * sizeof(uint64_t))
+                         + 2 * sizeof(uint32_t);
+    size_t available, total;
+    if (cudaMemGetInfo(&available, &total) != cudaSuccess || bytes > available) return nullptr;
+    std::unique_ptr<text_referrer_counted> plan(new (std::nothrow) text_referrer_counted);
+    if (!plan) return nullptr;
+    plan->domain = domain;
+    plan->rows = (uint32_t)rows;
+    if (!plan->mapping.upload(mapping, domain) || !plan->lengths.upload(lengths, domain) ||
+        !plan->spans.upload(spans, domain) || !plan->counts.upload(counts, domain) ||
+        !plan->group_counts.alloc(domain) || !plan->group_sums.alloc(domain) ||
+        !plan->group_min.alloc(domain) || !plan->invalid.alloc(1) || !plan->n.alloc(1)) return nullptr;
+    return plan.release();
+}
+
+extern "C" void gpu_referrer_counted_free(void *handle) {
+    delete (text_referrer_counted *)handle;
+}
+
+extern "C" int gpu_referrer_counted_moments(void *handle, int32_t exclude_empty,
+                                            uint32_t min_count, uint32_t cap,
+                                            uint32_t *out_reps, uint32_t *out_counts, uint64_t *out_sums,
+                                            uint32_t *out_min, uint32_t *out_start, uint32_t *out_length,
+                                            uint8_t *out_lf, uint32_t *out_n, double *ms) {
+    if (ms) *ms = 0;
+    if (!out_n) return -1;
+    *out_n = 0;
+    auto *plan = (text_referrer_counted *)handle;
+    if (!plan || (exclude_empty != 0 && exclude_empty != 1) || !cap ||
+        !out_reps || !out_counts || !out_sums || !out_min || !out_start || !out_length || !out_lf) return -1;
+    const uint32_t threshold = min_count ? min_count : 1;
+    const uint32_t possible = plan->rows / threshold;
+    if (!possible) return 0;
+    const uint32_t output_cap = std::min(cap, std::min(plan->domain, possible));
+    std::lock_guard<std::mutex> guard(plan->scratch_lock);
+    if (!plan->output || output_cap > plan->output->capacity) {
+        const size_t bytes = (size_t)output_cap * (3 * sizeof(uint32_t) + sizeof(uint64_t)
+                                                  + sizeof(text_referrer_span));
+        size_t available, total;
+        if (cudaMemGetInfo(&available, &total) != cudaSuccess) return -2;
+        if (bytes > available) return -1;
+        std::unique_ptr<text_counted_output> next(new (std::nothrow) text_counted_output);
+        if (!next || !next->alloc(output_cap)) return -2;
+        plan->output = std::move(next);
+    }
+    const auto &out = *plan->output;
+    const unsigned blocks = text_blocks(plan->domain, 65535);
+    const bool rebuild = plan->reduced_mode != exclude_empty;
+    if (!plan->timer.begin() || cudaMemset(plan->n.p, 0, sizeof(uint32_t)) != cudaSuccess) return -2;
+    // The inputs are immutable. HAVING and output capacity affect compaction
+    // only, so calls in the same exclusion mode reuse the group moments.
+    if (rebuild) {
+        plan->reduced_mode = -1;
+        const size_t n32 = (size_t)plan->domain * sizeof(uint32_t);
+        const size_t n64 = (size_t)plan->domain * sizeof(unsigned long long);
+        if (cudaMemset(plan->group_counts.p, 0, n32) != cudaSuccess ||
+            cudaMemset(plan->group_sums.p, 0, n64) != cudaSuccess ||
+            cudaMemset(plan->group_min.p, 0xff, n32) != cudaSuccess ||
+            cudaMemset(plan->invalid.p, 0, sizeof(uint32_t)) != cudaSuccess) return -2;
+        if (exclude_empty) text_counted_reduce<true>(*plan, blocks);
+        else text_counted_reduce<false>(*plan, blocks);
+        if (cudaGetLastError() != cudaSuccess) return -2;
+    }
+    text_regex_compact_kernel<uint64_t><<<blocks, TEXT_THREADS>>>(
+        plan->domain, threshold, plan->group_counts.p, plan->group_sums.p, plan->group_min.p,
+        output_cap, out.reps.p, out.counts.p, out.sums.p, out.minima.p, plan->n.p,
+        plan->spans.p, out.spans.p);
+
+    uint32_t bad = 0, count;
+    if (!plan->timer.finish(ms) || (rebuild && !plan->invalid.download(&bad, 1)) ||
+        !plan->n.download(&count, 1)) return -2;
+    if (bad) return -1;
+    if (rebuild) plan->reduced_mode = exclude_empty;
+    if (count > output_cap) return -1;
+    if (count && (!out.reps.download(out_reps, count) || !out.counts.download(out_counts, count) ||
+                  !out.minima.download(out_min, count) ||
+                  cudaMemcpy(out_sums, out.sums.p, (size_t)count * sizeof(*out_sums),
+                             cudaMemcpyDeviceToHost) != cudaSuccess ||
+                  !text_download_spans(out.spans, count, out_start, out_length, out_lf))) return -2;
+    *out_n = count;
+    return 0;
+}
+
 extern "C" int gpu_plane_lookup_sums(void *handle, const uint64_t *scope, int32_t key_col,
                                       int32_t value_col, uint32_t mask, const uint32_t *lookup,
                                       uint64_t lookup_n, const uint32_t *keys, uint32_t nkeys,
@@ -466,6 +604,16 @@ extern "C" int gpu_plane_lookup_sums(void *handle, const uint64_t *scope, int32_
                       cudaMemcpyDeviceToHost) == cudaSuccess ? 0 : -2;
 }
 #else
+extern "C" void *gpu_referrer_counted_prepare(uint32_t, const uint32_t *, const uint32_t *,
+                                               const uint64_t *, const uint32_t *) {
+    return nullptr;
+}
+extern "C" void gpu_referrer_counted_free(void *) {}
+extern "C" int gpu_referrer_counted_moments(void *, int32_t, uint32_t, uint32_t,
+                                            uint32_t *, uint32_t *, uint64_t *, uint32_t *,
+                                            uint32_t *, uint32_t *, uint8_t *, uint32_t *, double *) {
+    return -1;
+}
 extern "C" void *gpu_referrer_prepare(const uint8_t *, uint64_t, const int64_t *, uint32_t, double *) {
     return nullptr;
 }

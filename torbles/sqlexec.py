@@ -3983,8 +3983,14 @@ class _Planner:
                     if s.items:
                         payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
                         atoms = {k: c for k, c in atoms.items() if k in payload}
+                    from time import perf_counter
+
+                    gather_start = perf_counter()
                     out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
                     out.plane_ordered = True
+                    cx.stats["bounded_payload_gather_ms"] = (perf_counter() - gather_start) * 1000
+                    cx.stats["bounded_payload_rows"] = len(ids)
+                    cx.stats["bounded_payload_columns"] = len(atoms)
                     if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned
                     return out, {}
@@ -4524,11 +4530,16 @@ class _Planner:
 
             if lim + off > sqlgpugroups.LIMIT:
                 return None
-        cold_scope = sqlgroupplans.cold_wide_group_scope(self, preds) if cx.engine == "gpu" else None
-        bitmap = cold_scope[0] if cold_scope is not None else sqlgroupplans.bitmap(self, preds)
+        specs = [key[:-1] for key in keys]
+        cold_scope = filter_scope = None
+        if cx.engine == "gpu":
+            cold_scope = sqlgroupplans.cold_wide_group_scope(self, preds)
+            if cold_scope is None:
+                filter_scope = sqlgroupplans.cold_filter_group_scope(self, preds, specs, measures)
+        prepared = cold_scope if cold_scope is not None else filter_scope
+        bitmap = prepared[0] if prepared is not None else sqlgroupplans.bitmap(self, preds)
         if bitmap is None:
             return None
-        specs = [key[:-1] for key in keys]
         if cx.engine == "gpu":
             result = None
             if cold_scope is not None:
@@ -4555,6 +4566,12 @@ class _Planner:
                 result = fact._plane_group(specs, measures, lim + off, bitmap)
         if result is None:
             return None
+        if filter_scope is not None:
+            _, upload_bytes, host_bytes = filter_scope
+            stats = cx.stats
+            stats["cold_filter_scope_cpu"] = stats.get("cold_filter_scope_cpu", 0) + 1
+            stats["cold_filter_avoided_plane_bytes"] = stats.get("cold_filter_avoided_plane_bytes", 0) + upload_bytes
+            stats["cold_filter_host_plane_bytes"] = stats.get("cold_filter_host_plane_bytes", 0) + host_bytes
         codes, counts, sums = result
         counts = counts[off:].tolist()
         rel = Rel(len(counts))

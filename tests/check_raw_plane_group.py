@@ -123,6 +123,15 @@ class RawPlaneGroupChecks(unittest.TestCase):
         self.assertNotIn("scalar_plane_moments", result.stats)
         self.assertEqual(result.rows, self.db.con.execute(query).fetchall())
 
+    def test_unfiltered_count_does_not_open_cuda_parts(self):
+        rows = np.arange(70_013)
+        db = torbles.from_ddl("CREATE TABLE t(x INTEGER)", {"t": pd.DataFrame(dict(x=rows))})
+        self.addCleanup(db.close)
+        with patch.object(torbles.algq.Table, "gpu_handle", side_effect=AssertionError("part upload")):
+            result = db.sql("SELECT COUNT(*) FROM t", engine="gpu")
+        self.assertEqual(result.rows, [(len(rows),)])
+        self.assertEqual(result.stats.get("visible_count_no_upload"), 1)
+
     def test_case_branch_groups_and_empty_offset(self):
         query = ("SELECT watch, ip, flag, width, CASE WHEN ip > 2 THEN phrase ELSE '' END AS k, COUNT(*) c "
                  "FROM labels GROUP BY watch, ip, flag, width, k")
@@ -219,6 +228,45 @@ class RawPlaneGroupChecks(unittest.TestCase):
         self.assertNotIn("cold_wide_group_cpu", result.stats)
         self.assertEqual(result.stats.get("cold_wide_scope_rows"), 2_999)
         self.assertLess(result.stats["cold_wide_group_row_budget"], 2_999)
+
+    def test_large_filter_only_part_keeps_resident_grouping(self):
+        from torbles import sqlgpugroups, sqlgroupplans
+
+        row = np.arange(70_013, dtype=np.int64)
+        padding = {f"p{i}": np.zeros(len(row), dtype=np.int8) for i in range(32)}
+        frame = dict(page=row % 20_017, **padding, active=(row % 7 < 3).astype(np.int8),
+                     unrelated=(row % 13 - 7) * (1 << 50) + row)
+        columns = ", ".join(["page INTEGER", *(f"{name} TINYINT" for name in padding),
+                             "active TINYINT", "unrelated BIGINT"])
+        db = torbles.from_ddl(f"CREATE TABLE t({columns})", {"t": frame}, groups=False)
+        self.addCleanup(db.close)
+        fact = db["t"]
+        group = fact._part_of("page")
+        filtered = fact._part_of("active")
+        self.assertIsNot(group, filtered)
+        self.assertIs(filtered, fact._part_of(fact.wide["unrelated"][1]))
+
+        query = "SELECT page, COUNT(*) c FROM t WHERE active = 1 GROUP BY page"
+        expected = db.con.execute(query + " ORDER BY c DESC, page LIMIT 5 OFFSET 2").fetchall()
+
+        def verify_scope(fact, keys, measures, limit, scope, stats):
+            return fact._plane_group(keys, measures, limit, scope)
+
+        # The mock marks only the group part as resident and verifies that the
+        # compiled CPU scope reaches the ordinary bounded CUDA grouping call.
+        with (patch.object(group._storage(), "gpu", object()),
+              patch.object(sqlgroupplans, "FILTER_ONLY_UPLOAD_MIN_BYTES", 1),
+              patch.object(algq.Table, "gpu_handle", side_effect=AssertionError("filter-only part uploaded")),
+              patch.object(sqlgpugroups, "group", side_effect=verify_scope) as grouped):
+            result = db.sql(query + " ORDER BY c DESC LIMIT 5 OFFSET 2", engine="gpu")
+            grouped.assert_called_once()
+
+        self.assertEqual(result.rows, expected)
+        self.assertEqual(result.stats.get("cold_filter_scope_cpu"), 1)
+        self.assertGreaterEqual(result.stats["cold_filter_avoided_plane_bytes"],
+                                2 * result.stats["cold_filter_host_plane_bytes"])
+        self.assertNotIn("cuda_scope_bitmaps", result.stats)
+        self.assertIsNone(filtered._storage().gpu)
 
     def test_unsupported_aggregates_and_order_use_existing_path(self):
         queries = (

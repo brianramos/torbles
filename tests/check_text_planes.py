@@ -177,6 +177,56 @@ class TextPlaneChecks(unittest.TestCase):
             packed.close()
 
 
+    def test_persisted_referrer_uses_counts_without_fact_scan(self):
+        from torbles import referrer_index, sqlgroupplans
+
+        strings = ["", "abc", "https://www.abc/", "http://abc/x", "http://www./",
+                   "http://café/é", "café", "http://h/p\n", "h\n", "http://h/p\nx"]
+        db = torbles.from_ddl("CREATE TABLE r(url VARCHAR NOT NULL)",
+                             {"r": pd.DataFrame({"url": strings * 7000})})
+        self.addCleanup(db.close)
+        query = (r"SELECT REGEXP_REPLACE(url, '^https?://(?:www\.)?([^/]+)/.*$', '\1') AS k, "
+                 "COUNT(*), AVG(OCTET_LENGTH(url)), MIN(url) FROM r {where} "
+                 "GROUP BY k HAVING COUNT(*) > 1 ORDER BY k")
+        queries = [query.format(where=where) for where in ("", "WHERE url <> ''")]
+        expected = [db.sql(sql).rows for sql in queries]
+        with TemporaryDirectory() as archive:
+            receipt = db.save(archive, referrers=(("r", "url"),))
+            self.assertEqual(receipt["records"][0]["codes"], len(strings))
+            packed = torbles.load(archive)
+            self.addCleanup(packed.close)
+            self.assertIsNotNone(referrer_index.index_for(packed["r"], "url"))
+            backends = [("alg", "cpu")]
+            try:
+                if hasattr(torbles.algq.gpu_lib(), "gpu_referrer_counted_prepare"):
+                    backends.append(("gpu", "gpu"))
+            except (OSError, RuntimeError):
+                pass
+            with patch.object(sqlgroupplans, "bitmap", side_effect=AssertionError("fact scan")), \
+                    patch.object(sqltextplanes, "_regex_group", side_effect=AssertionError("regex rebuild")):
+                for engine, stat in backends:
+                    for sql, wanted in zip(queries, expected, strict=True):
+                        result = packed.sql(sql, engine=engine)
+                        self.assertEqual(result.rows, wanted)
+                        self.assertEqual(result.stats.get(f"{stat}_referrer_counted_moments"), 1)
+                        self.assertEqual(result.stats.get("referrer_fact_rows_scanned"), 0)
+            other = query.format(where="WHERE url = 'abc'")
+            result = packed.sql(other)
+            self.assertEqual(result.rows, db.sql(other).rows)
+            self.assertNotIn("cpu_referrer_counted_moments", result.stats)
+            packed["r"].flip(0, 0)
+            self.assertIsNone(referrer_index.index_for(packed["r"], "url"))
+            packed.close()
+
+            data = next((Path(archive) / referrer_index.DEFAULT_DIR).glob("*-counts.npy"))
+            with data.open("ab") as stream:
+                stream.write(b"changed")
+            stale = torbles.load(archive)
+            self.addCleanup(stale.close)
+            self.assertIsNone(referrer_index.index_for(stale["r"], "url"))
+            stale.close()
+
+
     def test_text_caches_belong_to_open_table(self):
         first = self.database()
         self.addCleanup(first.close)
