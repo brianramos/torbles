@@ -61,6 +61,15 @@ def bitmap(planner, preds, *, engine=None):
     return result
 
 
+def _packed_count(part, scope):
+    from .sqlscalarplanes import _moments
+
+    count = C.c_uint64()
+    if _moments is not None and _moments(part.at, scope.ctypes.data, 0, None, C.byref(count)) == 0:
+        return count.value
+    return sum(int(word).bit_count() for word in scope)
+
+
 def cold_wide_group_scope(planner, preds):
     """Price a mandatory wide equality before its first full-part CUDA upload."""
     fact = planner.tab[planner.fact]
@@ -79,19 +88,17 @@ def cold_wide_group_scope(planner, preds):
     scope = bitmap(planner, preds, engine="alg")
     if scope is None:
         return None
-    # Every occupied word contains at least one selected row. Only unpack
-    # words when the count can still fit the sparse native grouping budget.
-    limit = min(1 << 16, fact.n // 64)
-    selected = None
-    if np.count_nonzero(scope) <= limit:
-        count = int(np.unpackbits(scope[scope != 0].view(np.uint8)).sum())
-        if count <= limit:
-            selected = count
+    selected = _packed_count(cold[0], scope)
     columns = sum(part.width(name) for part in cold for name in part.cols)
     upload_bytes = columns * ((fact.n + 63) // 64) * 8
+    # Bound encoded group state by row count, sparsity, and the transfer it
+    # replaces. Charge 256 bytes per selected row for keys and hash scratch.
+    limit = min(200_000, fact.n // 64, upload_bytes // 256)
     stats = planner.cx.stats
     stats["cold_wide_scope_cpu"] = stats.get("cold_wide_scope_cpu", 0) + 1
-    return scope, selected, upload_bytes
+    stats["cold_wide_scope_rows"] = stats.get("cold_wide_scope_rows", 0) + selected
+    stats["cold_wide_group_row_budget"] = limit
+    return scope, selected, limit, upload_bytes
 
 
 def layout(planner, groups):
@@ -219,9 +226,7 @@ def special_count(planner, preds, aggs):
             return None
         from . import sqlexec as E
 
-        selected = cold_scope[1] if cold_scope is not None else None
-        if selected is None:
-            selected = sum(int(word).bit_count() for word in scope)
+        selected = cold_scope[1] if cold_scope is not None else sum(int(word).bit_count() for word in scope)
         if selected <= offset:
             return _count_relation(planner, aggs, [], "plane_group_empty_offset")
         if fact.n >= E.ALG_MIN_ROWS and selected <= min(200_000, fact.n // 8):

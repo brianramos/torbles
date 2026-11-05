@@ -217,6 +217,8 @@ class RawPlaneGroupChecks(unittest.TestCase):
         self.assertEqual(result.rows, oracle(sql))
         self.assertEqual(result.stats.get("cold_wide_scope_cpu"), 1)
         self.assertNotIn("cold_wide_group_cpu", result.stats)
+        self.assertEqual(result.stats.get("cold_wide_scope_rows"), 2_999)
+        self.assertLess(result.stats["cold_wide_group_row_budget"], 2_999)
 
     def test_unsupported_aggregates_and_order_use_existing_path(self):
         queries = (

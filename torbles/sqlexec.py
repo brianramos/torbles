@@ -4532,10 +4532,12 @@ class _Planner:
         if cx.engine == "gpu":
             result = None
             if cold_scope is not None:
-                _, selected, upload_bytes = cold_scope
-                if selected is not None:
+                _, selected, budget, upload_bytes = cold_scope
+                if selected <= budget:
                     result = fact._plane_group(specs, measures, lim + off, bitmap)
-                    if result is not None:
+                    if result is None:
+                        cx.stats["cold_wide_group_cpu_refused"] = cx.stats.get("cold_wide_group_cpu_refused", 0) + 1
+                    else:
                         cx.stats["cold_wide_group_cpu"] = cx.stats.get("cold_wide_group_cpu", 0) + 1
                         cx.stats["cold_wide_group_rows"] = cx.stats.get("cold_wide_group_rows", 0) + selected
                         cx.stats["cold_wide_group_avoided_plane_bytes"] = (
