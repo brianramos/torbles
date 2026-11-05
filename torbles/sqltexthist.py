@@ -367,6 +367,7 @@ def _gpu_regex(cx, fact, scope, group, col, source, table, aggs, length, having)
         return None
     groups, counts, sums, minima = (arr[:size.value] for arr in (groups, counts, sums, minima))
     if having is not None:
+        compare, boundary = having
         keep = compare(counts, boundary)
         groups, counts, sums, minima = (arr[keep] for arr in (groups, counts, sums, minima))
     cx.stats["engine_queries"] += 1
