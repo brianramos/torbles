@@ -25,12 +25,32 @@ them on the CPU or, for supported plans, on CUDA.
 
 [SQL paths and supported shapes](docs/SQL.md) · [Changelog](CHANGELOG.md)
 
-## Historical benchmarks
+## ClickBench at 100M rows
 
-The 0.8.0 ClickBench comparison covers 43 verified queries on 99,997,497 rows.
-Its Torbles CUDA warm totals were 2.06 s on AC and 4.07 s on battery. The report
-identifies the benchmark build, storage layouts, and first-execution timings.
-[0.8.0 ClickBench results](docs/CLICKBENCH-0.8.0.md) · [0.7.0 subset results](docs/CLICKBENCH.md)
+All 43 queries verified against native DuckDB on all 11 configurations.
+The AC run used the same WSL2 laptop with an RTX 5090 Laptop GPU and
+99,997,497 rows. First totals sum the first execution of each query. Warm
+totals sum the median of three warm executions per query. Setup is separate.
+
+| Engine | Layout | Version | First (s) | Warm (s) |
+|---|---|---|---:|---:|
+| Torbles CUDA | Mapped bitplanes with referrer index | 0.9.0 (2b2b68b) | 41.656 | **2.874** |
+| Umbra | Native database | v0.2-3356-g92839196f2 | 47.711 | 4.413 |
+| CedarDB | Native database | v2026-10-22 | 48.045 | 8.565 |
+| DuckDB | Native database | 2.0.0 | 18.322 | 13.987 |
+| Hyper | Native extract | 0.0.26963 | 58.871 | 14.487 |
+| Torbles CPU | Mapped bitplanes with referrer index | 0.9.0 (2b2b68b) | 22.061 | 19.890 |
+| DuckDB | Parquet † | 2.0.0 | 30.921 | 27.402 |
+| StarRocks | Native database | 4.0.14-7c18dd9 | 35.943 | 31.079 |
+| chDB | MergeTree | 4.4.0 / ClickHouse 26.9.2.1 | 39.036 | 34.168 |
+| DataFusion | Parquet † | 55.0.0 | 54.080 | 52.610 |
+| Sirius | Streamed Parquet | 76ef37d231 / DuckDB 2.0.0 | 130.452 | 115.104 |
+
+† Direct-Parquet DuckDB and DataFusion ran alongside a separate learning job.
+
+Verified replays observed CUDA execution on 41 Torbles queries. Q1 used
+metadata and Q41 ran on the CPU.
+[Method and per-query results](docs/CLICKBENCH-0.9.0.md) · [0.8.0 results](docs/CLICKBENCH-0.8.0.md)
 
 ## Try it
 
