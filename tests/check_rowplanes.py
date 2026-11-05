@@ -4,6 +4,7 @@
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 import duckdb
 
@@ -48,18 +49,31 @@ class RawPlaneTopKChecks(unittest.TestCase):
         self.assertIsNotNone(fact.parts)
         self.assertIn("stamp", fact.wide)
         self.assertIn(fact.wide["stamp"][1], fact.sidecars)
-        result = self.check_query(
+        query = (
             "SELECT * FROM hits WHERE c33 BETWEEN 20 AND 85 AND phrase <> '' "
             "ORDER BY stamp DESC, phrase ASC, id DESC LIMIT 21 OFFSET 17"
         )
+        result = self.check_query(query)
         self.assertGreater(result.stats.get("raw_plane_topk_rows", 0), 21)
         if hasattr(torbles.algq.gpu_lib(), "gpu_topk_bitmap"):
-            gpu = self.db.sql(
-                "SELECT * FROM hits WHERE c33 BETWEEN 20 AND 85 AND phrase <> '' "
-                "ORDER BY stamp DESC, phrase ASC, id DESC LIMIT 21 OFFSET 17", engine="gpu"
-            )
+            gpu = self.db.sql(query, engine="gpu")
             self.assertIn("cuda_raw_topk_rows", gpu.stats)
             self.assertEqual(gpu.rows, result.rows)
+            if sqlrowplanes._payload_columns is not None:
+                self.assertGreater(gpu.stats["bounded_payload_native_columns"], len(fact.col_order))
+
+    @unittest.skipIf(sqlrowplanes._payload_columns is None, "native batched payload gather not built")
+    def test_batched_payload_preserves_nulls_and_falls_back_on_refusal(self):
+        fact = self.db["hits"]
+        query = "SELECT * FROM hits WHERE id BETWEEN 0 AND 5 ORDER BY id DESC LIMIT 6"
+        result = self.check_query(query)
+        self.assertEqual([row[0] for row in result.rows], [5, 4, 3, 2, 1, 0])
+        self.assertIsNone(result.rows[-1][3])
+        self.assertGreater(result.stats["bounded_payload_native_columns"], len(fact.col_order))
+        with patch.object(sqlrowplanes, "_payload_columns", return_value=-1):
+            fallback = self.db.sql(query)
+        self.assertNotIn("bounded_payload_native_columns", fallback.stats)
+        self.assertEqual(fallback.rows, result.rows)
 
     def test_mixed_directions_and_repeated_keys(self):
         result = self.check_query(

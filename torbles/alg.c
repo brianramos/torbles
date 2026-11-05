@@ -2287,6 +2287,66 @@ void at_get_rows(const atable_t *t, int c, const uint64_t *rows, uint64_t n, uin
         out[i] = extract_col(t, x, c, (int)(rows[i] & 63));
     }
 }
+typedef struct {
+    const atable_t *const *tables;
+    const int32_t *columns;
+    const uint64_t *rows;
+    uint64_t nrows;
+    uint32_t *out;
+} row_columns_t;
+
+static void get_rows_columns_range(void *ctx, uint64_t begin, uint64_t end) {
+    const row_columns_t *job = ctx;
+    for (uint64_t c = begin; c < end; ++c)
+        at_get_rows(job->tables[c], job->columns[c], job->rows, job->nrows,
+                    job->out + (size_t)c * job->nrows);
+}
+
+static int get_rows_column_valid(const atable_t *table, int32_t col) {
+    if (!table || table->k < 1 || table->k > MAXCOL || col < 0 || col >= table->k ||
+        table->nw != (table->n >> 6) + !!(table->n & 63) ||
+        table->width[col] < 0 || table->width[col] > 32) return 0;
+
+    int32_t width = table->width[col];
+    if (!table->nw || !width) return 1;
+    int32_t flag = table->vflag[col];
+    if (flag) {
+        const atable_t *side = table->vside[col];
+        if (flag < 1 || flag > table->k || !table->V[flag - 1][0] || !table->vrank[col] ||
+            !side || side->k < 1 || side->k > MAXCOL || side->width[0] != width ||
+            side->nw != (side->n >> 6) + !!(side->n & 63)) return 0;
+        table = side;
+        col = 0;
+    }
+    if (table->nw)
+        for (int32_t p = 0; p < width; ++p)
+            if (!table->V[col][p]) return 0;
+    return 1;
+}
+
+/* Gather the same row ids from several columns, including columns in
+ * different torbles. Caller supplies separate, column-major output. */
+int at_get_rows_columns(uint32_t ncols, const atable_t *const *tables, const int32_t *columns,
+                        const uint64_t *rows, uint64_t nrows, uint32_t *out) {
+    if (!ncols) return TR_OK;
+    if (!tables || !columns || (nrows && (!rows || !out)) ||
+        nrows > SIZE_MAX / sizeof(*rows) ||
+        nrows > SIZE_MAX / sizeof(*out) / ncols) return TR_INVALID;
+
+    uint64_t limit = UINT64_MAX;
+    for (uint32_t c = 0; c < ncols; ++c) {
+        const atable_t *table = tables[c];
+        if (!get_rows_column_valid(table, columns[c])) return TR_INVALID;
+        if (table->n < limit) limit = table->n;
+    }
+    if (!nrows) return TR_OK;
+    for (uint64_t r = 0; r < nrows; ++r)
+        if (rows[r] >= limit) return TR_INVALID;
+
+    row_columns_t job = {tables, columns, rows, nrows, out};
+    par_for(ncols, 1, get_rows_columns_range, &job);
+    return TR_OK;
+}
 /* payload offsets: the tail of row r starts at dir[w] + sum over the rows before r in its word of max(0, len - H).
  * Only one number per 64 rows is stored (dir); the rest is derived from the length planes. */
 void at_tail_offsets(const atable_t *t, int lc, uint32_t H, const uint64_t *dir, const uint64_t *rows, uint64_t n, uint64_t *out) {

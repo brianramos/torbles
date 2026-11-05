@@ -25,6 +25,46 @@ if _topk is not None:
     _topk.argtypes = _TOPK_ARGS
 
 
+_payload_columns = getattr(algq.lib, "at_get_rows_columns", None)
+if _payload_columns is not None:
+    _payload_columns.restype = ctypes.c_int
+    _payload_columns.argtypes = [
+        ctypes.c_uint32, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_int32),
+        ctypes.c_void_p, ctypes.c_uint64, ctypes.c_void_p,
+    ]
+
+
+def bounded_payload(planner, atoms, ids):
+    """Gather raw physical codes for a small, wide, join-free projection."""
+    fact = planner.tab[planner.fact]
+    if (_payload_columns is None or fact.parts is None or not 0 < len(ids) <= 64
+            or planner.joins or planner.snowflake_keys or planner.fact_sample is not None):
+        return None
+    physical = {}
+    moved = getattr(fact, "moved", {})
+    for col in atoms.values():
+        name = col.name
+        if col.b is not planner.fact or name in fact.refbit or name in moved:
+            return None
+        physical[name] = None
+        if wide := fact.wide.get(name):
+            physical[wide[1]] = None
+        if valid := fact.nullable.get(name):
+            physical[valid] = None
+    if len(physical) < 16 or not physical.keys() <= set(fact.cols):
+        return None
+
+    parts = [fact._part_of(name) for name in physical]
+    tables = (ctypes.c_void_p * len(parts))(*(part.at for part in parts))
+    columns = (ctypes.c_int32 * len(parts))(*(part.idx(name) for part, name in zip(parts, physical)))
+    rows = np.ascontiguousarray(ids, dtype=np.uint64)
+    codes = np.empty((len(parts), len(rows)), dtype=np.uint32)
+    if _payload_columns(len(parts), tables, columns, rows.ctypes.data, len(rows), codes.ctypes.data):
+        return None
+    planner.cx.stats["bounded_payload_native_columns"] = len(parts)
+    return dict(zip(physical, codes))
+
+
 def _ordered_columns(planner, fact, col):
     if not isinstance(col, I.Col) or T.coll_key(col.t) is not None:
         return ()

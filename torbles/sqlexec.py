@@ -3972,7 +3972,7 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
-                from torbles.sqlrowplanes import bounded_ids
+                from torbles.sqlrowplanes import bounded_ids, bounded_payload
                 from torbles.sqlscalarplanes import point_ids
                 bounded = point_ids(self)
                 if bounded is None:
@@ -3986,7 +3986,8 @@ class _Planner:
                     from time import perf_counter
 
                     gather_start = perf_counter()
-                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
+                    codes = bounded_payload(self, atoms, ids)
+                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False, payload_codes=codes)
                     out.plane_ordered = True
                     cx.stats["bounded_payload_gather_ms"] = (perf_counter() - gather_start) * 1000
                     cx.stats["bounded_payload_rows"] = len(ids)
@@ -4675,7 +4676,7 @@ class _Planner:
         rel.cols.put(w.key(), ColArr(by_row))
         return rel
 
-    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
+    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True, *, payload_codes=None):
         """Read the selected fact rows' atoms from the planes."""
         if ids is None:
             q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
@@ -4691,6 +4692,8 @@ class _Planner:
         # The temporary arrays belong to this block, not the table's cache.
         dense = fact.n >= 1 << 16 and len(ids) * 4 >= fact.n * 3
         def read_codes(name):
+            if payload_codes is not None and name in payload_codes:
+                return payload_codes[name]
             if not dense: return fact.get_rows(name, ids)
             values = fact._decode_column(name)
             # The bitmap yields unique ascending row ids, so full coverage
