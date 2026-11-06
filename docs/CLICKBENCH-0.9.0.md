@@ -53,3 +53,30 @@ the CPU, and Q22, Q23, Q39, and Q42 used both CPU and CUDA. Sirius logged
 First-use part opens in Q2 and Q4 accounted for 28.1 s of the 41.656 s
 Torbles CUDA first total. The indexed Q29 scanned zero fact rows on both
 backends, with warm medians of 2.63 ms on CUDA and 248.75 ms on CPU.
+
+## First-execution recheck
+
+The 10.166 s prototype and 41.656 s release sweeps opened the same six
+bitplane parts at the same queries. Part-open time increased by 29.512 s,
+accounting for 94% of the difference. This timer includes host-side
+preparation, CUDA allocation, copies, and synchronization.
+
+A fresh-process AC recheck alternated the release and prototype on the
+same archive and index. Linux file residency was sampled with `fincore`
+over the staged plane, dictionary, and index files before each run. Every
+sweep started with a fresh CUDA process and verified all 43 queries and
+their replays.
+
+| Run | Linux-resident input before run (GiB) | First (s) | First-use part opens (s) | Warm (s) |
+|---|---:|---:|---:|---:|
+| Original prototype `b007769` | — | 10.166 | 6.641 | 2.411 |
+| 0.9.0 full panel | — | 41.656 | 36.152 | 2.874 |
+| 0.9.0 recheck 1 | 0.00 | 14.825 | 9.306 | 2.462 |
+| Prototype recheck 2 | 23.09 | 11.373 | 7.968 | 2.633 |
+| 0.9.0 recheck 3 | 23.09 | 9.620 | 6.593 | 2.519 |
+| Prototype recheck 4 | 23.09 | 9.225 | 6.050 | 2.673 |
+
+With 23.09 GiB of the input files resident in Linux, the release measured
+9.620 s first, within the prototype's 9.225–11.373 s range in the same
+sequence. Linux residency describes one layer of caching. The first
+sweep also depends on storage and device initialization.

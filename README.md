@@ -50,6 +50,8 @@ totals sum the median of three warm executions per query. Setup is separate.
 
 Verified replays observed CUDA execution on 41 Torbles queries. Q1 used
 metadata and Q41 ran on the CPU.
+A separate fresh-process recheck with cached input pages measured
+9.620 s for the CUDA first sweep.
 [Method and per-query results](docs/CLICKBENCH-0.9.0.md) · [0.8.0 results](docs/CLICKBENCH-0.8.0.md)
 
 ## Try it
