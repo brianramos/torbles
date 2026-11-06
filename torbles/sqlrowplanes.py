@@ -124,7 +124,8 @@ def bounded_ids(planner, preds):
     if len(keys) > _MAX_KEYS:
         return None
     native = getattr(algq.gpu_lib(), "gpu_topk_bitmap", None) if cx.engine == "gpu" else _topk
-    if cx.engine == "gpu" and native is not None:
+    # The legacy top-k also runs in emulation, which lacks gpu_topk_bitmap.
+    if cx.engine == "gpu":
         legacy = planner.topk_ids(preds)
         if legacy is not None:
             return _order_ids(fact, legacy, keys, desc)[off:], None
