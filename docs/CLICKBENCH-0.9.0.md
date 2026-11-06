@@ -107,3 +107,55 @@ brought additional archive pages into memory.
 Q29 built its regex projection during execution with the index disabled.
 With the index enabled it used the persisted mapping and code counts and
 scanned zero fact rows.
+
+
+## Host, device, and storage profile
+
+Four separate resource sweeps verified all 43 queries on the same 0.9.0
+engine. Peak RSS is the Linux process high-water mark. The anonymous and
+file-backed split comes from the highest sampled RSS. Device memory is the
+maximum NVML reading at 50 ms sampling, less the 326 MiB idle baseline.
+The RTX 5090 Laptop GPU has 23.89 GiB of VRAM.
+
+| Engine | Referrer index | Peak RSS (GiB) | Anonymous / file-backed at sampled RSS peak (GiB) | Peak VRAM above idle (GiB) | Archive pages resident before run (GiB) | WSL block reads (GiB) |
+|---|---|---:|---:|---:|---:|---:|
+| Torbles CPU | Enabled | 16.94 | 5.51 / 11.41 | 0.00 | 22.72 | 0.06 |
+| Torbles CPU | Disabled | 20.20 | 6.42 / 13.75 | 0.00 | 24.78 | 0.00 |
+| Torbles CUDA | Enabled | 16.75 | 1.74 / 14.93 | 12.26 | 0.00 | 23.21 |
+| Torbles CUDA | Disabled | 18.87 | 1.73 / 17.06 | 11.97 | 22.75 | 2.03 |
+
+File-backed RSS overlaps the Linux page cache. WSL block reads cover the
+guest virtual disk across processes and depend on the starting residency.
+Whole-device writes were about 13–27 MiB per sweep, including log and
+receipt output.
+The first CUDA run read 23.21 GiB from that device with no archive pages
+resident in Linux. The index-disabled CUDA run added 2.03 GiB of resident
+pages from the stored `Referer` dictionary blob. The runner used the
+read-only archive, and the GPU held its working data in VRAM.
+
+The staged Torbles archive occupies 57,290,138,251 apparent bytes
+(53.36 GiB), shared by both backends. The referrer index adds 394,417,380
+bytes (0.37 GiB), for 53.72 GiB total. Most of the archive is 39.32 GB of
+main bitplanes, 6.37 GB of wide-value side planes, and 11.55 GB of
+dictionary arrays.
+
+### Comparator resource receipts
+
+These peaks come from the full-panel runs. Each host column identifies the
+scope of its measurement. Server cgroups include charged file cache.
+Disk sizes are apparent sizes for the indicated storage.
+
+| Configuration | Host peak (GiB) | Host scope | Storage (GiB) | Storage scope |
+|---|---:|---|---:|---|
+| DuckDB native | 17.72 | Process RSS | 17.44 | Native database |
+| DuckDB Parquet | 8.90 | Process RSS | 12.77 | Shared canonical Parquet |
+| Hyper | 23.94 | Server RSS | 18.08 | Native extract |
+| DataFusion | 21.74 | Process RSS | 12.77 | Shared canonical Parquet |
+| chDB | 9.03 | Process RSS | 12.12 | Active MergeTree table |
+| Sirius | 5.85 | Process RSS | 12.77 | Shared canonical Parquet |
+| Umbra | 27.46 | Server cgroup | 6.65 | Native store and metadata |
+| CedarDB | 25.59 | Server cgroup | 7.53 | Native store and metadata |
+| StarRocks | 32.92 | Server cgroup | 33.32 | Backend storage and frontend metadata |
+
+Sirius recorded a 15.93 GiB GPU allocator high-water mark. CedarDB's
+allocated disk usage was 8.78 GiB with its preallocated files.
