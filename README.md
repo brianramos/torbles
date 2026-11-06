@@ -50,10 +50,24 @@ totals sum the median of three warm executions per query. Setup is separate.
 
 Verified replays observed CUDA execution on 41 Torbles queries. Q1 used
 metadata and Q41 ran on the CPU.
-The prebuilt referrer index contains a regex projection and per-code counts.
-A separate cached-input recheck measured 9.620 s for the CUDA first sweep
-with the index. An index-disabled sweep measured 10.783 s.
-[Method and per-query results](docs/CLICKBENCH-0.9.0.md) · [0.8.0 results](docs/CLICKBENCH-0.8.0.md)
+
+### Fastest verified Torbles 0.9.0 sweeps
+
+These separate AC sweeps each verified all 43 queries. Each row pairs the
+first and warm totals from one run. Archive residency is measured in Linux
+at process start. The prebuilt referrer index contains a regex projection and
+per-code counts. Index build time is outside the query timer.
+
+| Torbles backend | Referrer index | Run | Archive pages resident at start (GiB) | First (s) | Warm (s) |
+|---|---|---|---:|---:|---:|
+| CUDA | Enabled | Index control | 24.77 | **9.409** | 2.587 |
+| CUDA | Enabled | Resource profile | 0.00 | 13.546 | **2.377** |
+| CUDA | Disabled | Resource profile | 22.75 | **10.290** | 2.626 |
+| CUDA | Disabled | Index control | 22.72 | 10.783 | **2.599** |
+| CPU | Enabled | Resource profile | 22.72 | **17.415** | **15.665** |
+| CPU | Disabled | Resource profile | 24.78 | **33.549** | **17.518** |
+
+[Index controls](docs/CLICKBENCH-0.9.0.md#referrer-index-control) · [Resource sweeps](docs/CLICKBENCH-0.9.0.md#host-device-and-storage-profile) · [Full-panel method and per-query results](docs/CLICKBENCH-0.9.0.md) · [0.8.0 panel with 2.061 s CUDA warm](docs/CLICKBENCH-0.8.0.md)
 
 ## Try it
 

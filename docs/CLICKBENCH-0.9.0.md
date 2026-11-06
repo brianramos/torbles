@@ -86,7 +86,7 @@ sweep also depends on storage and device initialization.
 
 The persisted index is query-specific preparation. Its 394 MB contain a
 projection for the registered referrer regex and exact counts per visible
-dictionary code. The benchmark builds these files before timing. The
+dictionary code. The index was prepared outside the query timers. The
 23.09 GiB cached-input recheck included 0.37 GiB of resident index pages.
 Each fresh process began with empty in-memory query and device state.
 Earlier executions within a process could warm state for later queries.
@@ -138,6 +138,17 @@ The staged Torbles archive occupies 57,290,138,251 apparent bytes
 bytes (0.37 GiB), for 53.72 GiB total. Most of the archive is 39.32 GB of
 main bitplanes, 6.37 GB of wide-value side planes, and 11.55 GB of
 dictionary arrays.
+
+The table below records the query totals observed during resource sampling.
+The sampler was active throughout these sweeps. Each run used the engine
+source from the full-panel build and a fresh process.
+
+| Torbles backend | Referrer index | First (s) | Warm (s) |
+|---|---|---:|---:|
+| CUDA | Enabled | 13.546 | 2.377 |
+| CUDA | Disabled | 10.290 | 2.626 |
+| CPU | Enabled | 17.415 | 15.665 |
+| CPU | Disabled | 33.549 | 17.518 |
 
 ### Comparator resource receipts
 
