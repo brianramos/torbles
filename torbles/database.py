@@ -560,6 +560,15 @@ class Database:
         import sqlapi
         return sqlapi.Query(self, items)
 
+    def prepare_periodic(self, name, max_words=128):
+        """Verify reusable packed-word periods for a stored table's CPU and CUDA SQL queries."""
+        from torbles import sqlperiodic
+
+        with self._sql_lock:
+            if self.con is None:
+                raise RuntimeError("database is closed")
+            return sqlperiodic.prepare(self.tables[name], max_words)
+
     def sql(self, text, engine="alg"):
         """Run SQL (ISO/IEC 9075 queries; DuckDB's syntax is accepted too) on the torbles. Returns a Relation
         (.columns, .rows, .fetch_columns(), .df()). Joins of a fact with its dimensions, filters and aggregates run on the bit planes;
@@ -640,18 +649,27 @@ class Database:
             self._writable.clear()
             for t in self.tables.values():
                 t.close()
+            self.__dict__.pop("_join_header", None)
             if self._own and self.con is not None:
                 self.con.close()
             self.con = None
 
     # ------------------------------------------------------------------ persistence
-    def save(self, path):
-        """Write the database to a directory: one file per torble (its bit planes, memory-mapped on load) plus a
-        manifest (schema, column types, key designs) and the small arrays (dictionaries, surrogates)."""
+    def save(self, path, *, compression=None, referrers=()):
+        """Write the database, schema and sidecars to a directory.
+
+        Use compression="topology" with a new destination to encode repeating
+        sectors. Optional (table, column) referrers pairs persist registered
+        text projections and visible code counts.
+        """
         with self._sql_lock:
             if self._writable:
                 raise ValueError("persistence of writable tables is not supported")
-            save(self, path)
+            save(self, path, compression=compression)
+            if referrers:
+                from torbles.referrer_index import build_archive_referrers
+
+                return build_archive_referrers(path, referrers)
 
 
 # ---------------------------------------------------------------------- helpers
@@ -930,29 +948,61 @@ def from_frictionless(package, **build_opts):
 
 
 # ---------------------------------------------------------------------- persistence
-def save(db, path):
-    import ctypes
+def save(db, path, *, compression=None):
+    if compression is None:
+        return _save_snapshot(db, path, algq.lib.at_save)
+    if compression != "topology":
+        raise ValueError("compression must be None or 'topology'")
+    writer = algq._at_save_cycles
+    if writer is None:
+        raise RuntimeError("native topology compression requires a rebuilt libalg")
+    from tempfile import TemporaryDirectory
+
+    target = os.path.abspath(path)
+    if os.path.lexists(target):
+        raise FileExistsError(target)
+    parent = os.path.dirname(target)
+    os.makedirs(parent, exist_ok=True)
+    with TemporaryDirectory(prefix=".torbles-", dir=parent) as staging:
+        snapshot = os.path.join(staging, "snapshot")
+        _save_snapshot(db, snapshot, writer)
+        os.rename(snapshot, target)
+
+
+def _save_snapshot(db, path, writer):
     snapshot = None
     if getattr(db, "_sql_snapshot", None) is not None:
         from torbles import sqlsnapshot
         snapshot = sqlsnapshot.token(db)
     files = [] if snapshot is not None else None
+    from torbles import joinheader
+
+    hierarchy = joinheader.build(db)
+    hierarchy_files = {} if hierarchy else None
+
+    def remember(filename):
+        if files is not None or hierarchy_files is not None:
+            relative = os.path.relpath(filename, path)
+            if files is not None:
+                files.append(relative)
+            if hierarchy_files is not None:
+                hierarchy_files[name].add(relative)
 
     def save_torble(at, filename):
-        if algq.lib.at_save(at, filename.encode()) != 0:
+        if writer(at, os.fsencode(filename)) != 0:
             raise OSError(f"cannot write {filename}")
-        if files is not None:
-            files.append(os.path.relpath(filename, path))
+        remember(filename)
 
     def save_array(filename, array):
         np.save(filename, array)
-        if files is not None:
-            files.append(os.path.relpath(filename, path))
+        remember(filename)
 
     os.makedirs(path, exist_ok=True)
     man = dict(format=FORMAT, version=algq.__version__, tables={}, notes=db.notes, order=list(db.tables))
     sgs = {}
     for name, t in db.tables.items():
+        if hierarchy_files is not None:
+            hierarchy_files[name] = set()
         base = os.path.join(path, _fname(name))
         for suf, tb in ([("", t)] if t.parts is None else [(f".part{i}", p) for i, p in enumerate(t.parts)]):
             save_torble(tb.at, base + suf + ".tbl")
@@ -985,6 +1035,8 @@ def save(db, path):
                     sid = sgs[id(sg)] = f"sg{len(sgs)}"
                     save_array(os.path.join(path, sid + ".npy"), np.asarray(sg.s_of_row, np.int64))
                     if sg.stale: raise ValueError("save: a surrogate has stale points (moved rows); compact the fact first")
+                if hierarchy_files is not None:
+                    hierarchy_files[name].add(sid + ".npy")
             refs[fk] = dict(dim=dim.name, bit=bit, surrogate=sid, w=None if sg is None else sg.w,
                             coords=None if sg is None else {k: [int(x) for x in v] for k, v in getattr(sg, "coords", {}).items()})
         if not t.used.all(): arrays["used"] = np.packbits(t.used, bitorder="little")
@@ -1005,6 +1057,8 @@ def save(db, path):
             moved=getattr(t, "moved", {}), groups=getattr(t, "groups", {}), generated=getattr(t, "generated", None),
             used_all=bool(t.used.all()), meta=m, dense_dim=any(t is ot._refdim.get(f) for ot in db.tables.values() for f in getattr(ot, "_refdim", {})))
         man["tables"][name]["meta"] = json.loads(json.dumps(m, default=str))
+    if hierarchy:
+        man[joinheader.HEADER] = joinheader.save_record(path, man, hierarchy, hierarchy_files)
     if snapshot is not None:
         record = sqlsnapshot.save_record(db, path, man, snapshot, files)
         if record is not None:
@@ -1016,10 +1070,15 @@ def save(db, path):
 def _fname(s): return re.sub(r"[^A-Za-z0-9_.-]", lambda m: f"%{ord(m.group(0)):02x}", str(s))
 
 
-def load(path, validate=True, con=None):
-    """Open a saved database. The bit planes are memory-mapped (privately: nothing is written back); with validate,
-    every torus face is checked on load and single-bit faults are repaired in memory (the report is in db.integrity).
-    con: a DuckDB connection holding the source tables, for sql_result() / verify() (optional)."""
+def load(path, validate=True, con=None, *, packed_text=False, cuda_referrers=(), referrer_index=None):
+    """Open a saved database. Raw planes are mapped privately. Compressed
+    planes stay encoded until a dense consumer needs them. With validate,
+    torus faces are checked and single-bit faults are repaired in memory.
+    con: a DuckDB connection holding the source tables for sql_result() / verify().
+    packed_text: map VARCHAR dictionaries as UTF-8 bytes and offsets and decode on demand.
+    cuda_referrers: optional (table, column) pairs prepared on CUDA during load.
+    referrer_index: optional external index directory. The default discovers
+    indexes stored in the archive, and False disables index loading."""
     with open(os.path.join(path, "manifest.json")) as f: man = json.load(f)
     if man.get("format") != FORMAT: raise LoadError(f"{path}: format {man.get('format')}, this torbles reads {FORMAT}")
     db = Database.__new__(Database)
@@ -1031,42 +1090,77 @@ def load(path, validate=True, con=None):
             from torbles import sqlsnapshot
             before = sqlsnapshot.load_start(path, man, validate)
         files = [] if before is not None else None
-        _load_tables(db, path, man, validate, files)
+        from torbles import joinheader
+
+        hierarchy_before = (joinheader.load_start(path, man)
+                            if validate and os.environ.get("TORBLES_JOIN_HEADER", "1") != "0" else None)
+        hierarchy_files = {} if hierarchy_before is not None else None
+        cuda_referrers = tuple(cuda_referrers)
+        if referrer_index is None:
+            candidate = os.path.join(path, ".referrer-index")
+            referrer_index = candidate if os.path.isfile(os.path.join(candidate, "index.json")) else False
+        records = ()
+        if referrer_index:
+            from torbles.referrer_index import load_archive_referrers, read_archive_referrers
+
+            records = read_archive_referrers(path, man, referrer_index)
+        _load_tables(db, path, man, validate, files, hierarchy_files,
+                     packed_text=packed_text or bool(cuda_referrers) or bool(records))
         if files is not None:
             sqlsnapshot.load_finish(db, path, man, files, before)
+        if hierarchy_files is not None:
+            joinheader.load_finish(db, path, man, hierarchy_files, hierarchy_before)
+        if records:
+            load_archive_referrers(db, path, man, referrer_index, records)
+        if cuda_referrers:
+            from torbles.sqltexthist import prepare_referrer
+
+            db.text_preparation = {(table, col): prepare_referrer(db.tables[table], col)
+                                   for table, col in cuda_referrers}
         return db
     except BaseException:
         db.close()                                # what was mapped so far is released now, not with the traceback
         raise
 
 
-def _load_tables(db, path, man, validate, files=None):
+def _load_tables(db, path, man, validate, files=None, hierarchy_files=None, *, packed_text=False):
     import ctypes
     sgs = {}
     err = ctypes.c_int(0)
 
-    def load_torble(filename):
-        if files is not None:
-            files.append(os.path.relpath(filename, path))
-        return algq.lib.at_load(filename.encode(), ctypes.byref(err))
+    def remember(filename):
+        if files is not None or hierarchy_files is not None:
+            relative = os.path.relpath(filename, path)
+            if files is not None:
+                files.append(relative)
+            if hierarchy_files is not None:
+                hierarchy_files[name].add(relative)
 
-    def load_array(filename):
-        if files is not None:
-            files.append(os.path.relpath(filename, path))
-        return np.load(filename)
+    def load_torble(filename, *, lazy=False):
+        remember(filename)
+        loader = algq._at_load_cycles_lazy if lazy else algq.lib.at_load
+        return loader(os.fsencode(filename), ctypes.byref(err))
+
+    def load_array(filename, mmap_mode=None):
+        remember(filename)
+        return np.load(filename, mmap_mode=mmap_mode)
 
     for name in man["order"]:
+        if hierarchy_files is not None:
+            hierarchy_files[name] = set()
         m = man["tables"][name]; base = os.path.join(path, _fname(name))
         t = Table.__new__(Table); t.name = name
         parts = []                                 # a table wider than one torble: its parts, one file each
         try:
             for i, pm in enumerate(m.get("parts") or [dict(file=m["file"], cols=m["cols"], msb=m["msb"])]):
-                at = load_torble(os.path.join(path, pm["file"]))
+                lazy = algq._COMPRESSED_MASKS and algq._at_load_cycles_lazy is not None
+                at = load_torble(os.path.join(path, pm["file"]), lazy=lazy)
                 if not at: raise LoadError(f"{name}: cannot load {pm['file']}: " + {1: "cannot open or map the file", 2: "not a torble file",
-                                           3: "written by an incompatible version", 4: "header damaged", 5: "file truncated"}.get(err.value, str(err.value)))
+                                           3: "written by an incompatible version", 4: "header or payload damaged",
+                                           5: "file truncated"}.get(err.value, str(err.value)))
                 h = t if not m.get("parts") else Table.__new__(Table)
                 if h is not t: h.name = f"{name}#{i}"
-                h._own(at)                         # the mapping is the table's from here on (unmapped with it)
+                h._own(at, lazy=lazy and not algq._at_has_dense(at))
                 h.n, h.cols, h.msb_cols, h._vflag = int(m["rows"]), list(pm["cols"]), set(pm["msb"]), {}
                 parts.append(h)
         except BaseException:
@@ -1097,7 +1191,7 @@ def _load_tables(db, path, man, validate, files=None):
             h._own_side(side)
             rank = load_array(base + "." + _fname(f"rank:{c}") + ".npy")
             flagcol = t.wide[c[:-len("#hi")]][2] if c.endswith("#hi") else None
-            algq.lib.at_set_virtual(h.at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
+            algq.lib.at_set_virtual(h._raw_at, h.cols.index(c), h.cols.index(flagcol), side, rank.ctypes.data)
             h.sidecars[c] = t.sidecars[c] = dict(side=side, rank=rank, rows=sc["rows"], body=None)
             h._vflag[c] = t._vflag[c] = flagcol
         # codecs
@@ -1109,7 +1203,11 @@ def _load_tables(db, path, man, validate, files=None):
             if j["kind"] == "dict":
                 fb = base + "." + _fname(f"dictblob:{c}") + ".npy"
                 if os.path.exists(fb):
-                    vals = ct.unpack_strings(load_array(fb), load_array(base + "." + _fname(f"dictoffs:{c}") + ".npy"))
+                    offsets = base + "." + _fname(f"dictoffs:{c}") + ".npy"
+                    if packed_text and j.get("sql_type", "VARCHAR") == "VARCHAR":
+                        vals = ct.PackedStrings(load_array(fb, "r"), load_array(offsets, "r"))
+                    else:
+                        vals = ct.unpack_strings(load_array(fb), load_array(offsets))
                     if j.get("sql_type") == "BLOB": vals = [v.encode("latin-1") for v in vals]
                     if (j.get("sql_type") or "").startswith("ROW"):
                         import sqltypes as T
@@ -1130,6 +1228,8 @@ def _load_tables(db, path, man, validate, files=None):
                 if sg is None:
                     sg = sgs[r["surrogate"]] = Surrogate(r["w"], load_array(os.path.join(path, r["surrogate"] + ".npy")))
                     sg.coords = r.get("coords") or {}
+                if hierarchy_files is not None:
+                    hierarchy_files[name].add(r["surrogate"] + ".npy")
             t.refbit[fk], t.surr[fk], t._refdim[fk] = int(r["bit"]), sg, dim
         t.orphans = {k: int(v) for k, v in m.get("orphans", {}).items()}
         t.nullable = dict(m.get("nullable", {})); t.fk_nulls = {k: int(v) for k, v in m.get("fk_nulls", {}).items()}
@@ -1138,19 +1238,32 @@ def _load_tables(db, path, man, validate, files=None):
         if m.get("generated"): t.generated = tuple(m["generated"])
         if validate:                              # faces first: nothing is decoded from unchecked planes
             rep = dict(rows_with_faults=0, repaired=0, unrepaired=0)
-            for part, at_ in ([("", t.at)] if t.parts is None else [(f"part{i}", h.at) for i, h in enumerate(t.parts)]) \
-                             + [(c, sc["side"]) for c, sc in t.sidecars.items()]:
-                nbad = algq.lib.at_validate(at_, None, 0)
-                fixed = algq.lib.at_repair(at_) if nbad else 0
-                left = algq.lib.at_validate(at_, None, 0) if nbad else 0
+            def repair(part, nbad, dense):
+                if not nbad:
+                    return
+                at_ = dense()
+                fixed = algq.lib.at_repair(at_)
+                left = algq.lib.at_validate(at_, None, 0)
                 rep["rows_with_faults"] += int(nbad); rep["repaired"] += int(fixed); rep["unrepaired"] += int(left)
                 if left: raise LoadError(f"{name}{'.' + part if part else ''}: {left} row(s) fail the torus face checks and could "
                                          "not be repaired (more than one bit lost)")
+            for part, table in ([("", t)] if t.parts is None else [(f"part{i}", h) for i, h in enumerate(t.parts)]):
+                storage = table._storage()
+                repair(part, algq._validate_planes(storage), storage.dense)
+            for part, side in t.sidecars.items():
+                at_ = side["side"]
+                repair(part, algq.lib.at_validate(at_, None, 0), lambda: at_)
             db.integrity[name] = rep
         if m.get("dense_dim"):                    # a referenced table: its plain columns serve the planner (small)
-            for c in t.cols:
-                if c not in t.sidecars: t.data[c] = t.decoded(c)
-        elif t.cluster is not None and t.cluster not in t.sidecars:
+            columns = [c for c in t.cols if c not in t.sidecars]
+            if hierarchy_files is not None:
+                from torbles.joinheader import LazyColumns
+
+                t.data = LazyColumns(t, columns)
+            else:
+                for c in columns: t.data[c] = t.decoded(c)
+        elif (t.cluster is not None and t.cluster not in t.sidecars
+              and not t._part_of(t.cluster)._storage().needs_dense):
             t.data[t.cluster] = t.decoded(t.cluster)
         db.meta[name] = m.get("meta", {})
     return db

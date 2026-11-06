@@ -79,6 +79,12 @@ typedef struct atable_s {
     int32_t vflag[MAXCOL]; const struct atable_s *vside[MAXCOL]; const uint32_t *vrank[MAXCOL];
     void *map; uint64_t maplen;       /* loaded from a file: the planes live in this private mapping (at_load) */
     uint64_t revision;               /* invalidates experimental relationship proofs after native mutation */
+    uint16_t *cycle_periods;         /* loaded v2: sector-major physical-column periods, zero for ordinary */
+    uint32_t cycle_sectors;
+    const struct atable_s *cycle_sources[MAXCOL];  /* owning parts for borrowed view columns */
+    uint8_t cycle_columns[MAXCOL];
+    uint64_t cycle_revision;         /* native revision covered by the loaded index */
+    struct tb_cycle_store_s *cycle_store;  /* independent encoded edge payloads owned by a v2 table */
 } atable_t;
 
 static inline uint64_t tb_pdep(uint64_t src, uint64_t mask) {   /* scatter the low bits of src into the set bits of mask */

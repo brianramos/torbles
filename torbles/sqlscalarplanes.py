@@ -38,6 +38,17 @@ def run(planner, preds, aggs):
             or s.qualify is not None or s.distinct or not aggs
             or any(expr.key() not in aggs for expr, _ in s.items)):
         return None
+    if not preds and s.where is None and not planner.joins and all(a.name == "count_star" for a in aggs.values()):
+        if all(not a.distinct and a.filter is None and not a.order for a in aggs.values()):
+            part = fact if fact.parts is None else fact.parts[0]
+            count = sqlgroupplans._packed_count(part, fact.used_bm)
+            rel = E.Rel(1)
+            for key in aggs:
+                rel.cols[key] = [count]
+            rel.plane_ordered = True
+            cx.stats["engine_queries"] += 1
+            cx.stats["visible_count_no_upload"] = 1
+            return rel
     source = algq._plan_table(fact)
     columns, plans = {}, {}
     for key, agg in aggs.items():

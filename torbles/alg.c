@@ -23,6 +23,8 @@
 #include "torble.h"
 #include "version.h"
 #include "relationships.h"
+#include "periodic.h"
+#include "cycle_storage.h"
 #include <unistd.h>
 
 const char *at_version(void) { return TORBLES_RELEASE; }
@@ -284,6 +286,367 @@ static uint64_t *plane_alloc(atable_t *t) {          /* not cleared: the build w
 }
 static inline uint64_t rowmask(const atable_t *t, uint64_t w) {
     uint64_t left = t->n - w * 64; return left >= 64 ? ~0ULL : ((1ULL << left) - 1);
+}
+
+static const uint64_t *periodic_plane(const atable_t *t, unsigned col, unsigned bit) {
+    const atable_t *owner = t->cycle_sources[col];
+    return owner ? owner->V[t->cycle_columns[col]][bit] : t->V[col][bit];
+}
+
+static int periodic_column(const atable_t *t, int32_t col) {
+    if (col < 0 || col >= t->k || t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) return 0;
+    if (at_cycle_v_planes(t, 0, (uint32_t)col, NULL) > 0) return 1;
+    for (int bit = 0; bit < t->width[col]; ++bit) if (!periodic_plane(t, col, bit)) return 0;
+    return 1;
+}
+
+/* A prefix of length twice the bound is sufficient. By Fine-Wilf its
+ * least period divides every other bounded prefix period. Any extension
+ * with an allowed period therefore repeats that same least motif. */
+static unsigned periodic_prefix(const atable_t *t, unsigned col, size_t first,
+                                unsigned max_words) {
+    size_t prefix = 2 * (size_t)max_words;
+    for (unsigned period = 1; period <= max_words; ++period) {
+        int bit;
+        for (bit = 0; bit < t->width[col]; ++bit) {
+            const uint64_t *v = periodic_plane(t, col, bit);
+            if (v && memcmp(v + first + period, v + first, (prefix - period) * sizeof *v)) break;
+        }
+        if (bit == t->width[col]) return period;
+    }
+    return 0;
+}
+
+static int periodic_verify(const atable_t *t, unsigned col, size_t first,
+                           size_t full, uint64_t tail, size_t prefix,
+                           unsigned period) {
+    for (int bit = 0; bit < t->width[col]; ++bit) {
+        const uint64_t *v = periodic_plane(t, col, bit);
+        if (!v) continue;
+        v += first;
+        if (memcmp(v + prefix, v + prefix - period, (full - prefix) * sizeof *v) ||
+            (tail && ((v[full] ^ v[full % period]) & tail))) return 0;
+    }
+    return 1;
+}
+
+static int periodic_layout(const atable_t *t) {
+    return t && t->k >= 1 && t->k <= MAXCOL &&
+           t->nw == t->n / 64 + (t->n % 64 != 0) &&
+           t->nw <= SIZE_MAX / sizeof(uint64_t);
+}
+
+/* The word periods of the stored XOR planes are also periods of their
+ * logical codes because XOR across planes is invertible. */
+int at_periodic_periods(const atable_t *t, uint32_t max_words,
+                        uint16_t *periods, uint32_t capacity) {
+    if (!periodic_layout(t) || !at_has_dense(t) || !periods || !max_words || max_words > 128 ||
+        capacity < (uint32_t)t->k) return -1;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    uint16_t found[MAXCOL] = {0};
+    size_t full = (size_t)(t->n / 64);
+    if (max_words > full / 2) max_words = (uint32_t)(full / 2);
+    uint64_t tail = t->n % 64 ? rowmask(t, full) : 0;
+    for (int col = 0; col < t->k && max_words; ++col) {
+        if (t->vflag[col] || t->width[col] < 1 || t->width[col] > 32) continue;
+        unsigned period = periodic_prefix(t, (unsigned)col, 0, max_words);
+        if (period && periodic_verify(t, (unsigned)col, 0, full, tail, 2 * max_words, period))
+            found[col] = (uint16_t)period;
+    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
+    memcpy(periods, found, (size_t)t->k * sizeof *periods);
+    return 0;
+}
+
+static unsigned periodic_lcm(unsigned a, unsigned b) {
+    unsigned x = a, y = b;
+    while (y) { unsigned r = x % y; x = y; y = r; }
+    return (a / x) * b;
+}
+
+typedef struct {
+    const atable_t *owner;
+    const uint16_t *periods;
+    uint64_t revision;
+} periodic_index_t;
+
+static uint32_t periodic_index_columns(const atable_t *t, uint32_t columns,
+                                       periodic_index_t *indices) {
+    if (__atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) != t->cycle_revision) return 0;
+    uint32_t nsectors = (uint32_t)((t->nw + TP_SECTOR_WORDS - 1) / TP_SECTOR_WORDS);
+    uint32_t indexed = 0;
+    for (uint32_t mask = columns; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask), source_col = col;
+        const atable_t *owner = t->cycle_sources[col];
+        if (owner) source_col = t->cycle_columns[col];
+        else owner = t;
+        uint64_t revision = __atomic_load_n(&owner->revision, __ATOMIC_ACQUIRE);
+        if (owner->n != t->n || owner->nw != t->nw || source_col >= (unsigned)owner->k ||
+            !owner->cycle_periods || owner->cycle_sectors != nsectors ||
+            revision != owner->cycle_revision) continue;
+        if (indices) indices[col] = (periodic_index_t){owner, owner->cycle_periods + source_col, revision};
+        indexed |= UINT32_C(1) << col;
+    }
+    return indexed;
+}
+
+int at_periodic_has_persisted(const atable_t *t, uint32_t columns_mask) {
+    if (!periodic_layout(t) || !t->n || t->n > UINT32_MAX || (columns_mask >> t->k)) return 0;
+    return periodic_index_columns(t, columns_mask, NULL) != 0;
+}
+
+static unsigned periodic_index_period(const periodic_index_t *index, uint32_t sector) {
+    return index->periods[(size_t)sector * index->owner->k];
+}
+
+static int periodic_index_current(uint32_t indexed, const periodic_index_t *indices) {
+    for (uint32_t mask = indexed; mask; mask &= mask - 1) {
+        const periodic_index_t *index = indices + __builtin_ctz(mask);
+        if (index->revision != __atomic_load_n(&index->owner->revision, __ATOMIC_ACQUIRE)) return 0;
+    }
+    return 1;
+}
+
+/* A later local motif can be shorter than the first motif. Its first p
+ * words alone only prove the match if the first motif also repeats at p. */
+static int periodic_reference_repeats(const atable_t *t, unsigned col, unsigned first_period,
+                                      unsigned period) {
+    unsigned shift = period % first_period;
+    if (!shift) return 1;
+    tb_cycle_v_t edges[NB];
+    if (at_cycle_v_planes(t, 0, col, edges) > 0) {
+        for (int bit = 0; bit < t->width[col]; ++bit) {
+            const tb_cycle_v_t *edge = &edges[bit];
+            if (!edge->period) return 0;
+            for (uint32_t i = 0, n = edge->period; i < n; ++i)
+                if (edge->data[i] != edge->data[(i + shift) % n]) return 0;
+        }
+        return 1;
+    }
+    unsigned right = first_period - shift;
+    for (int bit = 0; bit < t->width[col]; ++bit) {
+        const uint64_t *v = periodic_plane(t, col, bit);
+        if (memcmp(v, v + shift, right * sizeof *v) ||
+            memcmp(v, v + right, shift * sizeof *v)) return 0;
+    }
+    return 1;
+}
+
+static int periodic_global_match(const atable_t *t, unsigned col, uint32_t first,
+                                  uint32_t words, uint32_t cycle) {
+    tb_cycle_v_t reference[NB], local[NB];
+    if (at_cycle_v_planes(t, 0, col, reference) > 0 &&
+        at_cycle_v_planes(t, first / TP_SECTOR_WORDS, col, local) > 0) {
+        uint32_t offset = first % TP_SECTOR_WORDS;
+        for (int bit = 0; bit < t->width[col]; ++bit) {
+            if (!reference[bit].period) return 0;
+            for (uint32_t i = 0; i < words; ++i)
+                if (tb_cycle_v_word(&local[bit], offset + i) !=
+                    tb_cycle_v_word(&reference[bit], first + i)) return 0;
+        }
+        return 1;
+    }
+    for (uint32_t phase = first % cycle; words; phase = 0) {
+        uint32_t span = cycle - phase;
+        if (span > words) span = words;
+        for (int bit = 0; bit < t->width[col]; ++bit) {
+            const uint64_t *v = periodic_plane(t, col, bit);
+            if (memcmp(v + first, v + phase, span * sizeof *v)) return 0;
+        }
+        first += span;
+        words -= span;
+    }
+    return 1;
+}
+
+static int periodic_global_tail(const atable_t *t, unsigned col, uint32_t full,
+                                uint32_t cycle, uint64_t tail) {
+    tb_cycle_v_t reference[NB], local[NB];
+    if (at_cycle_v_planes(t, 0, col, reference) > 0 &&
+        at_cycle_v_planes(t, full / TP_SECTOR_WORDS, col, local) > 0) {
+        for (int bit = 0; bit < t->width[col]; ++bit)
+            if ((tb_cycle_v_word(&local[bit], full % TP_SECTOR_WORDS) ^
+                 tb_cycle_v_word(&reference[bit], full % cycle)) & tail) return 0;
+    } else {
+        for (int bit = 0; bit < t->width[col]; ++bit) {
+            const uint64_t *v = periodic_plane(t, col, bit);
+            if ((v[full] ^ v[full % cycle]) & tail) return 0;
+        }
+    }
+    return 1;
+}
+
+static unsigned periodic_global_local(const periodic_index_t *index, uint32_t sector,
+                                       uint32_t full_words) {
+    unsigned period = periodic_index_period(index, sector);
+    return period <= TP_SECTOR_WORDS / TP_MIN_REPEATS && period <= full_words ? period : 0;
+}
+
+int at_periodic_ingested_global(const atable_t *t, uint32_t columns_mask,
+                                uint32_t *cycle, uint64_t *uses) {
+    if (!cycle || !periodic_layout(t) || !t->n || t->n > UINT32_MAX || !columns_mask ||
+        (columns_mask >> t->k)) return -1;
+    *cycle = 0;
+    if (uses) *uses = 0;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (revision != t->cycle_revision) return -1;
+    periodic_index_t indices[MAXCOL];
+    uint32_t indexed = periodic_index_columns(t, columns_mask, indices);
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        if (!periodic_column(t, col)) return -1;
+        const atable_t *owner = t->cycle_sources[col];
+        if (owner && owner->cycle_periods &&
+            __atomic_load_n(&owner->revision, __ATOMIC_ACQUIRE) != owner->cycle_revision) return -1;
+    }
+    if (indexed != columns_mask) return 0;
+
+    uint32_t nsectors = (uint32_t)((t->nw + TP_SECTOR_WORDS - 1) / TP_SECTOR_WORDS);
+    uint32_t full = (uint32_t)(t->n / 64), cap = full / TP_MIN_REPEATS;
+    if (cap > TP_MAX_CYCLE_WORDS) cap = TP_MAX_CYCLE_WORDS;
+    uint32_t candidate = 1, result = 0;
+    uint64_t inspected = 0;
+    /* The whole candidate prefix fits in the first sector. Later periods
+     * are certificates to compare, so they cannot increase its length. */
+    uint32_t first_words = full < TP_SECTOR_WORDS ? full : TP_SECTOR_WORDS;
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        unsigned period = periodic_global_local(indices + col, 0, first_words);
+        ++inspected;
+        if (!period) goto finished;
+        candidate = periodic_lcm(candidate, period);
+        if (candidate > cap) goto finished;
+    }
+
+    uint32_t tail_rows = (uint32_t)(t->n % 64);
+    for (uint32_t sector = 1; sector < nsectors; ++sector) {
+        uint32_t first = sector * TP_SECTOR_WORDS, words = full - first;
+        if (words > TP_SECTOR_WORDS) words = TP_SECTOR_WORDS;
+        int final = sector + 1 == nsectors;
+        for (uint32_t mask = columns_mask; mask; mask &= mask - 1) {
+            unsigned col = (unsigned)__builtin_ctz(mask);
+            const periodic_index_t *index = indices + col;
+            unsigned period = periodic_global_local(index, sector, words);
+            ++inspected;
+            /* Only a bounded final literal can be matched without an index. */
+            if (final && words + (tail_rows != 0) <= candidate) {
+                if (!periodic_global_match(t, col, first, words, candidate)) goto finished;
+                continue;
+            }
+            if (!period || !periodic_reference_repeats(t, col, periodic_index_period(index, 0), period) ||
+                !periodic_global_match(t, col, first, period, candidate)) goto finished;
+        }
+    }
+    if (tail_rows) {
+        uint64_t tail = (UINT64_C(1) << tail_rows) - 1;
+        for (uint32_t mask = columns_mask; mask; mask &= mask - 1)
+            if (!periodic_global_tail(t, (unsigned)__builtin_ctz(mask), full, candidate, tail)) goto finished;
+    }
+    result = candidate;
+
+finished:
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        !periodic_index_current(indexed, indices)) return -1;
+    *cycle = result;
+    if (uses) *uses = inspected;
+    return 0;
+}
+
+static unsigned periodic_sector_cycle(const atable_t *t, uint32_t columns,
+                                      const tp_sector_t *sector, unsigned max_words,
+                                      uint32_t indexed, const periodic_index_t *indices,
+                                      uint32_t sector_id, uint64_t *persisted_uses) {
+    unsigned cap = sector->full_words / TP_MIN_REPEATS;
+    if (cap > TP_MAX_CYCLE_WORDS) cap = TP_MAX_CYCLE_WORDS;
+    if (max_words > cap) max_words = cap;
+    if (!max_words) return 0;
+    unsigned periods[MAXCOL], cycle = 1;
+
+    /* Consult the validated file index first. A zero entry keeps this sector
+     * on the ordinary path, even if another dependency has no loaded index. */
+    for (uint32_t mask = indexed; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        const periodic_index_t *index = indices + col;
+        unsigned period = periodic_index_period(index, sector_id);
+        ++*persisted_uses;
+        if (!period || period > cap) return 0;
+        cycle = periodic_lcm(cycle, period);
+        if (cycle > cap) return 0;
+    }
+
+    /* Probe legacy or invalidated dependencies before reading beyond their
+     * prefixes. Loaded dependencies have already been proved by the loader. */
+    uint32_t discover = columns & ~indexed;
+    for (uint32_t mask = discover; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        if (!periodic_plane(t, col, 0)) return 0;
+        unsigned period = periodic_prefix(t, col, sector->first_word, max_words);
+        if (!period) return 0;
+        cycle = periodic_lcm(cycle, period);
+        if (cycle > cap) return 0;
+        periods[col] = period;
+    }
+    uint64_t tail = sector->tail_rows ? (UINT64_C(1) << sector->tail_rows) - 1 : 0;
+    for (uint32_t mask = discover; mask; mask &= mask - 1) {
+        unsigned col = (unsigned)__builtin_ctz(mask);
+        if (!periodic_verify(t, col, sector->first_word, sector->full_words,
+                             tail, 2 * max_words, periods[col])) return 0;
+    }
+    return cycle;
+}
+
+static void periodic_sector_metrics(tp_sector_metrics_t *m, const tp_sector_t *sector) {
+    if (sector->cycle_words) ++m->periodic_sectors;
+    else ++m->ordinary_sectors;
+    m->representative_words += (sector->cycle_words ? sector->cycle_words : sector->full_words)
+                               + (sector->tail_rows != 0);
+}
+
+int at_periodic_plan_sectors_ex(const atable_t *t, uint32_t columns_mask,
+                                uint32_t sector_words, uint32_t max_words,
+                                tp_sector_t *sectors, uint32_t capacity,
+                                tp_sector_metrics_t *metrics, uint64_t *persisted_uses) {
+    if (!periodic_layout(t) || !t->n || t->n > UINT32_MAX || !columns_mask ||
+        (columns_mask >> t->k) || !sectors || sector_words > TP_MAX_SECTOR_WORDS ||
+        !max_words || max_words > 128) return -1;
+    if (!sector_words) sector_words = (uint32_t)t->nw;
+    uint32_t nsectors = (uint32_t)((t->nw + sector_words - 1) / sector_words);
+    if (capacity < nsectors) return -1;
+
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    for (uint32_t mask = columns_mask; mask; mask &= mask - 1)
+        if (!periodic_column(t, __builtin_ctz(mask))) return -1;
+    periodic_index_t indices[MAXCOL];
+    uint32_t indexed = 0;
+    if (sector_words == TP_SECTOR_WORDS || (nsectors == 1 && t->nw <= TP_SECTOR_WORDS))
+        indexed = periodic_index_columns(t, columns_mask, indices);
+    uint32_t full = (uint32_t)(t->n / 64);
+    uint64_t uses = 0;
+    tp_sector_metrics_t result = {0};
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        uint32_t first = i * sector_words, words = full - first;
+        if (words > sector_words) words = sector_words;
+        tp_sector_t sector = {first, words, 0, i + 1 == nsectors ? (uint32_t)(t->n % 64) : 0};
+        sector.cycle_words = periodic_sector_cycle(t, columns_mask, &sector, max_words,
+                                                    indexed, indices, i, &uses);
+        sectors[i] = sector;
+        periodic_sector_metrics(&result, &sector);
+    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        !periodic_index_current(indexed, indices)) return -1;
+    if (metrics) *metrics = result;
+    if (persisted_uses) *persisted_uses = uses;
+    return 0;
+}
+
+int at_periodic_plan_sectors(const atable_t *t, uint32_t columns_mask,
+                             uint32_t sector_words, uint32_t max_words,
+                             tp_sector_t *sectors, uint32_t capacity,
+                             tp_sector_metrics_t *metrics) {
+    return at_periodic_plan_sectors_ex(t, columns_mask, sector_words, max_words,
+                                       sectors, capacity, metrics, NULL);
 }
 
 /* Radix ordering over the stored XOR planes. Each pass holds only the
@@ -800,6 +1163,7 @@ atable_t *at_create(uint64_t n, int ncols, const uint32_t **cols, const int32_t 
 #include <fcntl.h>
 #define TB_MAGIC "TORBLE\x01\x00"
 #define TB_FORMAT 1
+#define TB_CYCLE_FORMAT 2
 #define TB_SAVED_COLS 64
 typedef struct { char magic[8]; uint32_t format, endian; uint64_t n, nw; int32_t k, nplanes, maxcol, pad;
                  int32_t width[TB_SAVED_COLS], msb[TB_SAVED_COLS]; uint64_t hdrlen, planebytes, hash; } tbhdr_t;
@@ -835,13 +1199,420 @@ int at_save(const atable_t *t, const char *path) {
     if (!ok || rename(tmp, path) != 0) { remove(tmp); return -1; }
     return 0;
 }
+/* v2 keeps the physical V and H directory, followed by one record per plane
+ * and 4096-word sector. Payloads follow in the same order without padding.
+ * Period zero stores the exact native words. A positive period stores one
+ * motif; the final partial word is reconstructed with its occupied-bit mask.
+ * The metadata hash covers the directory and records. Each record includes
+ * a CRC32C of its payload. */
+#define TB_CYCLE_MAX_PERIOD 128
+#define TB_MAX_PLANES ((2 * MAXCOL + 2) * NB)
+#define TB_FNV_SEED UINT64_C(0xcbf29ce484222325)
+typedef uint8_t tb_plane_id_t[4];
+typedef struct { uint16_t period, words; uint32_t crc; } tb_cycle_block_t;
+_Static_assert(sizeof(tb_cycle_block_t) == 8, "cycle block layout");
+
+static int tb_cycle_directory(const tbhdr_t *h, tb_plane_id_t *dir) {
+    int width[MAXCOL], np = 0;
+    for (int c = 0; c < h->k; ++c) {
+        int b = h->width[c];
+        if ((b != -1 && (b < 1 || b >= NB)) || (h->msb[c] != 0 && h->msb[c] != 1))
+            return 0;
+        width[c] = b == -1 ? 1 : b;          /* physical virtual placeholder */
+        for (int j = 0; j <= width[c]; ++j) {
+            dir[np][0] = 0; dir[np][1] = c; dir[np][2] = j; dir[np++][3] = 0;
+        }
+    }
+    for (int i = 0; i <= h->k; ++i) {
+        int hi = i == h->k ? width[0] : width[i];
+        if (i + 1 < h->k && width[i + 1] > hi) hi = width[i + 1];
+        for (int j = 1; j <= hi; ++j) {
+            dir[np][0] = 1; dir[np][1] = i; dir[np][2] = j; dir[np++][3] = 0;
+        }
+    }
+    return np;
+}
+
+static size_t tb_cycle_sectors(uint64_t nw) {
+    return (size_t)(nw / TP_SECTOR_WORDS + (nw % TP_SECTOR_WORDS != 0));
+}
+
+static size_t tb_cycle_words(uint64_t nw, size_t first) {
+    size_t left = (size_t)nw - first;
+    return left < TP_SECTOR_WORDS ? left : TP_SECTOR_WORDS;
+}
+
+static uint64_t tb_cycle_tail(uint64_t n, size_t first, size_t words) {
+    unsigned tail = (unsigned)(n % 64);
+    return tail && first + words == n / 64 + 1 ? (UINT64_C(1) << tail) - 1 : 0;
+}
+
+static unsigned tb_cycle_motif(const uint64_t *plane, size_t full, uint64_t tail) {
+    unsigned bound = full / 2 < TB_CYCLE_MAX_PERIOD ? (unsigned)(full / 2) : TB_CYCLE_MAX_PERIOD;
+    size_t prefix = 2 * bound;
+    for (unsigned period = 1; period <= bound; ++period) {
+        if (memcmp(plane + period, plane, (prefix - period) * sizeof *plane)) continue;
+        /* The least period of this prefix divides every bounded period, so
+         * an incompatible extension cannot be saved by a larger motif. */
+        if (memcmp(plane + prefix, plane + prefix - period, (full - prefix) * sizeof *plane))
+            return 0;
+        if (tail && plane[full] != (plane[full % period] & tail)) return 0;
+        return period;
+    }
+    return 0;
+}
+
+#if !defined(__SSE4_2__) || !defined(__x86_64__)
+static uint32_t tb_cycle_crc_table[256];
+static pthread_once_t tb_cycle_crc_once = PTHREAD_ONCE_INIT;
+static void tb_cycle_crc_init(void) {
+    for (unsigned i = 0; i < 256; ++i) {
+        uint32_t crc = i;
+        for (int j = 0; j < 8; ++j)
+            crc = (crc >> 1) ^ ((crc & 1) ? UINT32_C(0x82f63b78) : 0);
+        tb_cycle_crc_table[i] = crc;
+    }
+}
+#endif
+
+static uint32_t tb_cycle_crc(const void *payload, size_t words) {
+    uint32_t crc = UINT32_MAX;
+    const unsigned char *src = payload;
+#if defined(__SSE4_2__) && defined(__x86_64__)
+    for (size_t i = 0; i < words; ++i) {
+        uint64_t word;
+        memcpy(&word, src + i * sizeof word, sizeof word);
+        crc = (uint32_t)_mm_crc32_u64(crc, word);
+    }
+#else
+    pthread_once(&tb_cycle_crc_once, tb_cycle_crc_init);
+    for (size_t i = 0; i < words * sizeof(uint64_t); ++i)
+        crc = (crc >> 8) ^ tb_cycle_crc_table[(crc ^ src[i]) & 255];
+#endif
+    return ~crc;
+}
+
+static int tb_cycle_write(const char *path, const tbhdr_t *h, const tb_plane_id_t *dir,
+                          const tb_cycle_block_t *blocks, const uint64_t *const *planes,
+                          const atable_t *t, uint64_t revision, size_t sectors) {
+    char tmp[4096];
+    if (snprintf(tmp, sizeof tmp, "%s.tmp.XXXXXX", path) >= (int)sizeof tmp) return -1;
+    int fd = mkstemp(tmp);
+    if (fd < 0) return -1;
+    FILE *f = fdopen(fd, "wb");
+    if (!f) { close(fd); unlink(tmp); return -1; }
+    size_t nplanes = (size_t)h->nplanes, nblocks = nplanes * sectors;
+    int ok = fwrite(h, sizeof *h, 1, f) == 1 &&
+             fwrite(dir, sizeof *dir, nplanes, f) == nplanes &&
+             fwrite(blocks, sizeof *blocks, nblocks, f) == nblocks;
+    for (size_t p = 0; ok && p < nplanes; ++p) {
+        for (size_t s = 0; ok && s < sectors; ++s) {
+            size_t words = blocks[p * sectors + s].words;
+            ok = fwrite(planes[p] + s * TP_SECTOR_WORDS, sizeof(uint64_t), words, f) == words;
+        }
+    }
+    if (ok && (fflush(f) != 0 || fsync(fd) != 0)) ok = 0;
+    if (fclose(f) != 0) ok = 0;
+    if (!ok || revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        rename(tmp, path) != 0) {
+        unlink(tmp);
+        return -1;
+    }
+    return 0;
+}
+
+/* Keep v1 when no motifs are stored or the complete encoded file does not
+ * beat the existing mapped representation. */
+int at_save_cycles(const atable_t *t, const char *path) {
+    if (!periodic_layout(t) || !path) return -1;
+    if (!t->nw) return at_save(t, path);
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    tbhdr_t h = {0};
+    memcpy(h.magic, TB_MAGIC, sizeof h.magic);
+    h.format = TB_CYCLE_FORMAT; h.endian = 0x01020304u; h.maxcol = MAXCOL;
+    h.n = t->n; h.nw = t->nw; h.k = t->k;
+    for (int c = 0; c < t->k; ++c) {
+        h.width[c] = t->vflag[c] ? -1 : t->width[c];
+        h.msb[c] = t->msb[c];
+    }
+    tb_plane_id_t dir[TB_MAX_PLANES];
+    int np = tb_cycle_directory(&h, dir);
+    if (!np) return at_save(t, path);
+    const uint64_t *planes[TB_MAX_PLANES];
+    int actual = 0;
+    for (int c = 0; c < t->k; ++c)
+        for (int j = 0; j < NB; ++j) actual += t->V[c][j] != NULL;
+    for (int i = 0; i <= t->k; ++i)
+        for (int j = 0; j < NB; ++j) actual += t->H[i][j] != NULL;
+    if (actual != np) return at_save(t, path);
+    for (int p = 0; p < np; ++p) {
+        const uint8_t *id = dir[p];
+        planes[p] = id[0] ? t->H[id[1]][id[2]] : t->V[id[1]][id[2]];
+        if (!planes[p]) return at_save(t, path);
+    }
+    h.nplanes = np;
+    h.planebytes = tb_planebytes(h.nw);
+    size_t sectors = tb_cycle_sectors(h.nw);
+    size_t dir_bytes = (size_t)np * sizeof *dir;
+    size_t old_header = (sizeof h + dir_bytes + 4095) & ~(size_t)4095;
+    if (sectors > UINT32_MAX || h.planebytes > (SIZE_MAX - old_header) / (size_t)np ||
+        sectors > (SIZE_MAX - sizeof h - dir_bytes) / (size_t)np / sizeof(tb_cycle_block_t))
+        return -1;
+    size_t blocks_bytes = (size_t)np * sectors * sizeof(tb_cycle_block_t);
+    h.hdrlen = sizeof h + dir_bytes + blocks_bytes;
+    tb_cycle_block_t *blocks = malloc(blocks_bytes);
+    if (!blocks) return -1;
+    size_t payload_words = 0;
+    int motifs = 0;
+    for (int p = 0; p < np; ++p) {
+        for (size_t s = 0; s < sectors; ++s) {
+            size_t first = s * TP_SECTOR_WORDS;
+            size_t words = tb_cycle_words(h.nw, first);
+            uint64_t tail = tb_cycle_tail(h.n, first, words);
+            unsigned period = tb_cycle_motif(planes[p] + first, words - !!tail, tail);
+            tb_cycle_block_t *b = &blocks[(size_t)p * sectors + s];
+            b->period = period;
+            b->words = period ? period : words;
+            payload_words += b->words;
+            motifs |= period != 0;
+        }
+    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) { free(blocks); return -1; }
+    size_t old_bytes = old_header + (size_t)np * h.planebytes;
+    if (!motifs || h.hdrlen >= old_bytes || payload_words > (old_bytes - h.hdrlen - 1) / 8) {
+        free(blocks);
+        return at_save(t, path);
+    }
+    for (int p = 0; p < np; ++p) {
+        for (size_t s = 0; s < sectors; ++s) {
+            tb_cycle_block_t *b = &blocks[(size_t)p * sectors + s];
+            b->crc = tb_cycle_crc(planes[p] + s * TP_SECTOR_WORDS, b->words);
+        }
+    }
+    h.hash = tb_fnv(&h, offsetof(tbhdr_t, hash), TB_FNV_SEED);
+    h.hash = tb_fnv(dir, dir_bytes, h.hash);
+    h.hash = tb_fnv(blocks, blocks_bytes, h.hash);
+    int rc = tb_cycle_write(path, &h, dir, blocks, planes, t, revision, sectors);
+    free(blocks);
+    return rc;
+}
+
+static void tb_cycle_expand(uint64_t *dst, size_t words,
+                            const tb_cycle_v_t *block, uint64_t tail) {
+    size_t filled = block->words;
+    memcpy(dst, block->data, filled * sizeof *dst);
+    if (!block->period) return;
+    size_t full = words - !!tail;
+    while (filled < full) {
+        size_t step = full - filled < filled ? full - filled : filled;
+        memcpy(dst + filled, dst, step * sizeof *dst);
+        filled += step;
+    }
+    if (tail) dst[full] = dst[full % block->period] & tail;
+}
+
+static int tb_cycle_value_plane(const tbhdr_t *h, const uint8_t *id) {
+    return !id[0] && h->width[id[1]] > 0 && id[2] < h->width[id[1]];
+}
+
+static void tb_cycle_store_free(tb_cycle_store_t *store) {
+    if (!store) return;
+    free(store->data);
+    free(store->blocks);
+    free(store->ids);
+    free(store);
+}
+
+static pthread_mutex_t TB_MATERIALIZE_LOCK = PTHREAD_MUTEX_INITIALIZER;
+
+int at_has_dense(const atable_t *t) {
+    if (!t) return 0;
+    pthread_mutex_lock(&TB_MATERIALIZE_LOCK);
+    int dense = !t->cycle_store || t->map;
+    for (int c = 0; dense && c < t->k; ++c)
+        if (t->cycle_sources[c] && !t->V[c][0]) dense = 0;
+    pthread_mutex_unlock(&TB_MATERIALIZE_LOCK);
+    return dense;
+}
+
+uint64_t at_cycle_packed_bytes(const atable_t *t) {
+    return t && t->cycle_store ? t->cycle_store->payload_bytes : 0;
+}
+
+/* The caller holds the materialization lock. The immutable encoded
+ * representation remains available to direct queries. */
+static int tb_materialize_owner(atable_t *t) {
+    if (!t->cycle_store || t->map) return 0;
+    const tb_cycle_store_t *store = t->cycle_store;
+    size_t maplen = (size_t)store->nplanes * store->planebytes;
+    void *dense = mmap(NULL, maplen, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (dense == MAP_FAILED) return -1;
+    for (size_t p = 0; p < store->nplanes; ++p) {
+        const uint8_t *id = store->ids[p];
+        uint64_t *plane = (uint64_t *)((char *)dense + p * store->planebytes);
+        for (size_t s = 0; s < t->cycle_sectors; ++s) {
+            size_t first = s * TP_SECTOR_WORDS;
+            size_t words = tb_cycle_words(t->nw, first);
+            const tb_cycle_v_t *block = &store->blocks[p * t->cycle_sectors + s];
+            tb_cycle_expand(plane + first, words, block, tb_cycle_tail(t->n, first, words));
+        }
+        if (id[0]) t->H[id[1]][id[2]] = plane; else t->V[id[1]][id[2]] = plane;
+    }
+    t->map = dense;
+    t->maplen = maplen;
+    at_faces(t);
+    return 0;
+}
+
+/* A view keeps its header identity on fallback. Its flattened sources own
+ * both packed and dense storage, so rebuilding aliases never copies values. */
+int at_materialize(atable_t *t) {
+    if (!t) return -1;
+    pthread_mutex_lock(&TB_MATERIALIZE_LOCK);
+    int rc = tb_materialize_owner(t);
+    for (int c = 0; !rc && c < t->k; ++c) {
+        atable_t *owner = (atable_t *)t->cycle_sources[c];
+        if (!owner || t->V[c][0]) continue;
+        rc = tb_materialize_owner(owner);
+        if (!rc) memcpy(t->V[c], owner->V[t->cycle_columns[c]], sizeof t->V[c]);
+    }
+    pthread_mutex_unlock(&TB_MATERIALIZE_LOCK);
+    return rc;
+}
+
+/* Validate the immutable encoded image while loading. It owns every
+ * independent V/H edge and suffices to materialize a writable torus later,
+ * even after the original file has been removed. */
+static atable_t *tb_cycle_load(const void *m, size_t bytes, int *err) {
+    tbhdr_t header;
+    memcpy(&header, m, sizeof header);
+    const tbhdr_t *h = &header;
+    *err = 4;
+    if (memcmp(h->magic, TB_MAGIC, 8) || h->format != TB_CYCLE_FORMAT ||
+        h->endian != 0x01020304u || h->k < 1 || h->k > MAXCOL ||
+        !h->nw || h->nw != h->n / 64 + (h->n % 64 != 0) || h->nw > SIZE_MAX / 8 ||
+        h->pad || h->maxcol < h->k || h->maxcol > TB_SAVED_COLS ||
+        h->planebytes != tb_planebytes(h->nw)) return NULL;
+    tb_plane_id_t dir[TB_MAX_PLANES];
+    int np = tb_cycle_directory(h, dir);
+    if (!np || np != h->nplanes || h->planebytes > SIZE_MAX / (size_t)np) return NULL;
+    size_t sectors = tb_cycle_sectors(h->nw);
+    size_t dir_bytes = (size_t)np * sizeof *dir;
+    if (sectors > UINT32_MAX ||
+        sectors > (SIZE_MAX - sizeof *h - dir_bytes) / (size_t)np / sizeof(tb_cycle_block_t))
+        return NULL;
+    size_t metadata = sizeof *h + dir_bytes + (size_t)np * sectors * sizeof(tb_cycle_block_t);
+    if (h->hdrlen != metadata) return NULL;
+    if (metadata > bytes) { *err = 5; return NULL; }
+    const unsigned char *file = m;
+    unsigned char *index = malloc(metadata - sizeof *h);
+    if (!index) { *err = 1; return NULL; }
+    memcpy(index, file + sizeof *h, metadata - sizeof *h);
+    const unsigned char *blocks = index + dir_bytes;
+    atable_t *t = NULL;
+    if (memcmp(dir, index, dir_bytes) ||
+        tb_fnv(index, metadata - sizeof *h,
+               tb_fnv(h, offsetof(tbhdr_t, hash), TB_FNV_SEED)) != h->hash) goto fail;
+
+    /* Bound all spans and allocations using the checksummed metadata.
+     * The payload CRCs below apply to the exact owned bytes we expand. */
+    size_t cursor = metadata;
+    for (int p = 0; p < np; ++p) {
+        for (size_t s = 0; s < sectors; ++s) {
+            tb_cycle_block_t b;
+            memcpy(&b, blocks + ((size_t)p * sectors + s) * sizeof b, sizeof b);
+            size_t first = s * TP_SECTOR_WORDS;
+            size_t words = tb_cycle_words(h->nw, first);
+            uint64_t tail = tb_cycle_tail(h->n, first, words);
+            if (b.period > TB_CYCLE_MAX_PERIOD ||
+                (b.period && (size_t)b.period * 2 > words - !!tail) ||
+                b.words != (b.period ? b.period : words)) goto fail;
+            size_t len = (size_t)b.words * sizeof(uint64_t);
+            if (len > bytes - cursor) { *err = 5; goto fail; }
+            cursor += len;
+        }
+    }
+    if (cursor != bytes || (size_t)np > SIZE_MAX / sizeof(tb_cycle_v_t) / sectors) goto fail;
+
+    *err = 1;
+    t = calloc(1, sizeof *t);
+    if (!t) goto fail;
+    t->n = h->n; t->nw = h->nw; t->k = h->k;
+    t->cycle_sectors = (uint32_t)sectors;
+    t->cycle_periods = calloc(sectors * (size_t)t->k, sizeof *t->cycle_periods);
+    t->cycle_store = calloc(1, sizeof *t->cycle_store);
+    if (!t->cycle_periods || !t->cycle_store) goto fail;
+    tb_cycle_store_t *store = t->cycle_store;
+    for (int c = 0; c < t->k; ++c) store->first[c] = UINT16_MAX;
+    store->nplanes = (uint16_t)np;
+    store->planebytes = (size_t)h->planebytes;
+    store->payload_bytes = bytes - metadata;
+    store->ids = malloc(dir_bytes);
+    store->blocks = malloc((size_t)np * sectors * sizeof *store->blocks);
+    store->data = malloc(store->payload_bytes);
+    if (!store->ids || !store->blocks || !store->data) goto fail;
+    memcpy(store->ids, dir, dir_bytes);
+    memcpy(store->data, file + metadata, store->payload_bytes);
+    for (int c = 0; c < t->k; ++c) {
+        t->width[c] = h->width[c] < 0 ? 1 : h->width[c];
+        t->msb[c] = h->msb[c];
+    }
+    size_t offset = 0;
+    for (int p = 0; p < np; ++p) {
+        const uint8_t *id = dir[p];
+        unsigned col = id[1], bit = id[2];
+        int value = tb_cycle_value_plane(h, id);
+        if (value && bit == 0) store->first[col] = (uint16_t)p;
+        for (size_t s = 0; s < sectors; ++s) {
+            size_t entry = (size_t)p * sectors + s;
+            tb_cycle_block_t b;
+            memcpy(&b, blocks + entry * sizeof b, sizeof b);
+            const uint64_t *payload = store->data + offset;
+            if (tb_cycle_crc(payload, b.words) != b.crc) { *err = 4; goto fail; }
+            store->blocks[entry] = (tb_cycle_v_t){payload, b.period, b.words};
+            offset += b.words;
+            if (value) {
+                uint16_t *period = &t->cycle_periods[s * (size_t)t->k + col];
+                unsigned next = bit == 0 ? b.period :
+                                (*period && b.period ? periodic_lcm(*period, b.period) : 0);
+                *period = next <= TP_MAX_CYCLE_WORDS ? (uint16_t)next : 0;
+            }
+        }
+    }
+    free(index);
+    t->bytes = (uint64_t)np * t->nw * 8;
+    *err = 0;
+    return t;
+fail:
+    free(index);
+    if (t) {
+        free(t->cycle_periods);
+        tb_cycle_store_free(t->cycle_store);
+        free(t);
+    }
+    return NULL;
+}
 /* err: 0 ok, 1 cannot open/map, 2 not a torble file, 3 format/version or build mismatch, 4 header damaged, 5 truncated */
-atable_t *at_load(const char *path, int *err) {
+static atable_t *tb_load(const char *path, int *err, int lazy) {
     int fd = open(path, O_RDONLY); if (fd < 0) { *err = 1; return NULL; }
-    struct stat st; if (fstat(fd, &st) != 0 || (uint64_t)st.st_size < sizeof(tbhdr_t)) { close(fd); *err = st.st_size < (off_t)sizeof(tbhdr_t) ? 5 : 1; return NULL; }
+    struct stat st;
+    if (fstat(fd, &st) != 0) { close(fd); *err = 1; return NULL; }
+    if (st.st_size < (off_t)sizeof(tbhdr_t)) { close(fd); *err = 5; return NULL; }
+    if ((uint64_t)st.st_size > SIZE_MAX) { close(fd); *err = 1; return NULL; }
     void *m = mmap(NULL, (size_t)st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0); close(fd);
     if (m == MAP_FAILED) { *err = 1; return NULL; }
     tbhdr_t *h = m; *err = 0;
+    if (!memcmp(h->magic, TB_MAGIC, 8) && h->format == TB_CYCLE_FORMAT &&
+        h->endian == 0x01020304u && h->k >= 1 && h->k <= MAXCOL) {
+        atable_t *t = tb_cycle_load(m, (size_t)st.st_size, err);
+        munmap(m, (size_t)st.st_size);
+        if (!t || lazy) return t;
+        int status = at_materialize(t);
+        tb_cycle_store_free(t->cycle_store);
+        t->cycle_store = NULL;
+        if (status) { free(t->cycle_periods); free(t); *err = 1; return NULL; }
+        return t;
+    }
     if (memcmp(h->magic, TB_MAGIC, 8)) *err = 2;
     else if (h->format != TB_FORMAT || h->endian != 0x01020304u || h->k < 1 || h->k > MAXCOL) *err = 3;
     else if (h->nplanes < 1 || h->nplanes > (2 * MAXCOL + 2) * NB || sizeof *h + (uint64_t)h->nplanes * 4 > h->hdrlen || h->hdrlen > (uint64_t)st.st_size) *err = 4;
@@ -863,6 +1634,9 @@ atable_t *at_load(const char *path, int *err) {
     at_faces(t);
     return t;
 }
+atable_t *at_load(const char *path, int *err) { return tb_load(path, err, 0); }
+atable_t *at_load_cycles_lazy(const char *path, int *err) { return tb_load(path, err, 1); }
+
 /* release a torble's storage, its planes (built) or its mapping (loaded), and leave the header as an empty torble of a
  * new revision: an object that kept the header's address (a relationship catalog decodes through its own pointer, after
  * checking the revision) then finds a changed, empty table instead of freed memory. The header goes with at_free. */
@@ -874,6 +1648,10 @@ void at_release(atable_t *t) {
         for (int i = 0; i <= t->k; i++) for (int j = 0; j < NB; j++) free(t->H[i][j]);
     }
     t->map = NULL; t->maplen = 0;
+    free(t->cycle_periods);
+    t->cycle_periods = NULL; t->cycle_sectors = 0;
+    tb_cycle_store_free(t->cycle_store);
+    t->cycle_store = NULL;
     memset(t->V, 0, sizeof t->V); memset(t->H, 0, sizeof t->H); t->nfaces = 0;
     t->n = t->nw = 0; t->bytes = 0;
     for (int c = 0; c < MAXCOL; c++) { t->vflag[c] = 0; t->vside[c] = NULL; t->vrank[c] = NULL; }   /* (sidecars: freed apart) */
@@ -887,18 +1665,23 @@ void at_free(atable_t *t) {
 }
 /* make column c virtual: its values are in sidecar `side` for the rows flagged in column flagcol (rank directory) */
 void at_set_virtual(atable_t *t, int c, int flagcol, const atable_t *side, const uint32_t *rank) {
+    /* Installing a sidecar does not touch physical edges. Retain any
+     * current proofs for other columns; virtual columns never use them. */
+    int cycles_current = t->cycle_periods && t->cycle_revision == t->revision;
     t->revision++;
     t->vflag[c] = flagcol + 1; t->vside[c] = side; t->vrank[c] = rank;
     t->width[c] = side->width[0]; t->msb[c] = side->msb[0];
+    if (cycles_current) t->cycle_revision = t->revision;
 }
 /* A view: a torble header whose column i is column col[i] of torble src[i], the sources row-aligned (the same rows in
  * the same order: the parts of a table wider than one torble). Its value planes are the sources' own (nothing is
  * copied), so a query reads a side part's planes at the same 64-row word as the main part's: the join of the parts on
  * the row id is the identity substitution. It has no torus of its own (no H planes, no faces): the integrity checks
- * belong to the sources. A self-extending column needs its flag column in the view. NULL: no column or more than
+ * belong to the sources. The view is read-only and shares its sources' period proof owners. A self-extending
+ * column needs its flag column in the view. NULL: no column or more than
  * MAXCOL, sources of different lengths, a column out of range, a flag column missing, or no memory. Freed with
  * at_view_free (the header only), before its sources. */
-atable_t *at_view(int k, const atable_t *const *src, const int32_t *col) {
+static atable_t *tb_view(int k, const atable_t *const *src, const int32_t *col) {
     if (k < 1 || k > MAXCOL || !src || !col || !src[0]) return NULL;
     atable_t *t = (atable_t *)calloc(1, sizeof *t);
     if (!t) return NULL;
@@ -908,6 +1691,13 @@ atable_t *at_view(int k, const atable_t *const *src, const int32_t *col) {
         if (!s || s->n != t->n || c < 0 || c >= s->k) { free(t); return NULL; }
         t->width[i] = s->width[c]; t->msb[i] = s->msb[c];
         for (int j = 0; j < NB; j++) t->V[i][j] = s->V[c][j];
+        if (s->cycle_sources[c]) {
+            t->cycle_sources[i] = s->cycle_sources[c];
+            t->cycle_columns[i] = s->cycle_columns[c];
+        } else if (s->cycle_periods) {
+            t->cycle_sources[i] = s;
+            t->cycle_columns[i] = (uint8_t)c;
+        }
         if (s->vflag[c]) {
             int f = s->vflag[c] - 1, fi = -1;
             for (int m = 0; m < k && fi < 0; m++) if (src[m] == s && col[m] == f) fi = m;
@@ -915,6 +1705,12 @@ atable_t *at_view(int k, const atable_t *const *src, const int32_t *col) {
             t->vflag[i] = fi + 1; t->vside[i] = s->vside[c]; t->vrank[i] = s->vrank[c];
         }
     }
+    return t;
+}
+atable_t *at_view(int k, const atable_t *const *src, const int32_t *col) {
+    pthread_mutex_lock(&TB_MATERIALIZE_LOCK);
+    atable_t *t = tb_view(k, src, col);
+    pthread_mutex_unlock(&TB_MATERIALIZE_LOCK);
     return t;
 }
 void at_view_free(atable_t *t) { free(t); }
@@ -1055,6 +1851,173 @@ uint64_t at_validate(const atable_t *t, uint64_t *bad, uint64_t maxbad) {
     uint64_t nb = 0; for (int i = 0; i < T; i++) nb += jobs[i].nb;
     if (nb && bad && maxbad) validate_part(t, 0, t->nw, bad, maxbad);      /* list the corrupt rows, in order */
     return nb;
+}
+
+/* The packed directory names the same independent edges as at_faces.
+ * Store one-based plane indices so an absent edge is the zero operand. */
+typedef struct { uint16_t edge[4]; unsigned n; } tb_cycle_face_t;
+static unsigned tb_cycle_faces(const atable_t *t, tb_cycle_face_t *faces) {
+    uint16_t v[MAXCOL][NB] = {{0}}, h[MAXCOL + 1][NB] = {{0}};
+    const tb_cycle_store_t *store = t->cycle_store;
+    for (unsigned p = 0; p < store->nplanes; ++p) {
+        const uint8_t *id = store->ids[p];
+        (id[0] ? h : v)[id[1]][id[2]] = (uint16_t)(p + 1);
+    }
+    unsigned nfaces = 0;
+    for (int row = 0; row <= t->k; ++row) {
+        int next = row == t->k ? 0 : row + 1;
+        for (int j = 0; j < NB; ++j) {
+            uint16_t edges[4] = {
+                h[row][j], j + 1 < NB ? h[row][j + 1] : 0,
+                row < t->k ? v[row][j] : 0, next < t->k ? v[next][j] : 0
+            };
+            tb_cycle_face_t face = {{0}, 0};
+            for (unsigned i = 0; i < 4; ++i)
+                if (edges[i]) face.edge[face.n++] = (uint16_t)(edges[i] - 1);
+            if (face.n) faces[nfaces++] = face;
+        }
+    }
+    return nfaces;
+}
+
+typedef struct { uint64_t acc[TP_SECTOR_WORDS]; unsigned words; int dirty; } tb_cycle_faults_t;
+static void tb_cycle_fault(tb_cycle_faults_t *faults, uint64_t mask, unsigned first,
+                           unsigned stop, unsigned step) {
+    if (!mask) return;
+    if (!faults->dirty) {
+        memset(faults->acc, 0, (size_t)faults->words * sizeof *faults->acc);
+        faults->dirty = 1;
+    }
+    for (unsigned w = first; w < stop; w += step) faults->acc[w] |= mask;
+}
+
+static inline uint64_t tb_cycle_face_word(const tb_cycle_v_t *const *edges, unsigned n, unsigned w) {
+    uint64_t mask = 0;
+    for (unsigned i = 0; i < n; ++i) mask ^= tb_cycle_v_word(edges[i], w);
+    return mask;
+}
+
+/* Literal/constant plaquettes are common in mixed snapshots. XOR/OR the
+ * spans as contiguous vectors before paying to enumerate any bad word. */
+static uint64_t tb_cycle_raw_syndrome(const uint64_t *const *raw, unsigned n,
+                                      uint64_t seed, unsigned words) {
+    uint64_t any = 0;
+    switch (n) {
+    case 1:
+        for (unsigned w = 0; w < words; ++w) any |= seed ^ raw[0][w];
+        break;
+    case 2:
+        for (unsigned w = 0; w < words; ++w) any |= seed ^ raw[0][w] ^ raw[1][w];
+        break;
+    case 3:
+        for (unsigned w = 0; w < words; ++w) any |= seed ^ raw[0][w] ^ raw[1][w] ^ raw[2][w];
+        break;
+    default:
+        for (unsigned w = 0; w < words; ++w) any |= raw[0][w] ^ raw[1][w] ^ raw[2][w] ^ raw[3][w];
+        break;
+    }
+    return any;
+}
+
+static void tb_cycle_face_syndrome(const tb_cycle_v_t *const *edges, unsigned n,
+                                  unsigned full, uint64_t tail, tb_cycle_faults_t *faults) {
+    const uint64_t *raw[4];
+    unsigned nraw = 0, varying = 0, cycle = 1;
+    uint64_t seed = 0;
+    for (unsigned i = 0; i < n; ++i) {
+        unsigned period = edges[i]->period;
+        if (!period) raw[nraw++] = edges[i]->data;
+        else if (period == 1) seed ^= edges[i]->data[0];
+        else {
+            ++varying;
+            if (cycle <= full) cycle = periodic_lcm(cycle, period);
+        }
+    }
+    if (!nraw && cycle <= full) {
+        for (unsigned w = 0; w < cycle; ++w)
+            tb_cycle_fault(faults, tb_cycle_face_word(edges, n, w), w, full, cycle);
+    } else if (full && (varying || tb_cycle_raw_syndrome(raw, nraw, seed, full))) {
+        for (unsigned w = 0; w < full; ++w)
+            tb_cycle_fault(faults, tb_cycle_face_word(edges, n, w), w, w + 1, 1);
+    }
+    if (tail) {
+        uint64_t mask = tb_cycle_face_word(edges, n, full) & tail;
+        tb_cycle_fault(faults, mask, full, full + 1, 1);
+    }
+}
+
+static uint64_t tb_cycle_validate_sector(const atable_t *t, const tb_cycle_face_t *faces,
+                                         unsigned nfaces, uint64_t sector,
+                                         uint64_t *bad, uint64_t maxbad) {
+    size_t first = (size_t)sector * TP_SECTOR_WORDS;
+    unsigned words = (unsigned)tb_cycle_words(t->nw, first);
+    uint64_t tail = tb_cycle_tail(t->n, first, words);
+    unsigned full = words - !!tail;
+    tb_cycle_faults_t faults;
+    faults.words = words;
+    faults.dirty = 0;
+    const tb_cycle_store_t *store = t->cycle_store;
+    for (unsigned f = 0; f < nfaces; ++f) {
+        const tb_cycle_v_t *edges[4];
+        for (unsigned i = 0; i < faces[f].n; ++i)
+            edges[i] = &store->blocks[(size_t)faces[f].edge[i] * t->cycle_sectors + sector];
+        tb_cycle_face_syndrome(edges, faces[f].n, full, tail, &faults);
+    }
+    if (!faults.dirty) return 0;
+    uint64_t count = 0;
+    for (unsigned w = 0; w < words; ++w) {
+        uint64_t x = faults.acc[w];
+        while (x && bad && count < maxbad) {
+            bad[count++] = (first + w) * 64 + (unsigned)__builtin_ctzll(x);
+            x &= x - 1;
+        }
+        count += (unsigned)__builtin_popcountll(x);
+    }
+    return count;
+}
+
+typedef struct {
+    const atable_t *t;
+    const tb_cycle_face_t *faces;
+    unsigned nfaces;
+    _Atomic uint64_t *next;
+    uint64_t count;
+} tb_cycle_validate_job_t;
+
+static void *tb_cycle_validate_worker(void *arg) {
+    tb_cycle_validate_job_t *job = arg;
+    for (;;) {
+        uint64_t s = atomic_fetch_add(job->next, 1);
+        if (s >= job->t->cycle_sectors) return NULL;
+        job->count += tb_cycle_validate_sector(job->t, job->faces, job->nfaces, s, NULL, 0);
+    }
+}
+
+/* The packed image describes the original edges, including closing V
+ * edges and H. It cannot validate later changes to a materialized torus. */
+int at_cycle_validate(const atable_t *t, uint64_t *bad, uint64_t maxbad, uint64_t *nbad) {
+    if (!t || !t->cycle_store || !t->cycle_sectors || !nbad) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (revision != t->cycle_revision) return -1;
+    tb_cycle_face_t faces[(MAXCOL + 1) * NB];
+    unsigned nfaces = tb_cycle_faces(t, faces);
+    int threads = nthreads();
+    if ((unsigned)threads > t->cycle_sectors) threads = (int)t->cycle_sectors;
+    _Atomic uint64_t next = 0;
+    tb_cycle_validate_job_t jobs[64];
+    for (int i = 0; i < threads; ++i)
+        jobs[i] = (tb_cycle_validate_job_t){t, faces, nfaces, &next, 0};
+    pool_jobs(threads, tb_cycle_validate_worker, jobs, sizeof *jobs);
+    uint64_t count = 0;
+    for (int i = 0; i < threads; ++i) count += jobs[i].count;
+    if (count && bad && maxbad) {
+        uint64_t listed = 0;
+        for (uint64_t s = 0; s < t->cycle_sectors && listed < maxbad; ++s)
+            listed += tb_cycle_validate_sector(t, faces, nfaces, s, bad + listed, maxbad - listed);
+    }
+    if (revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE)) return -1;
+    *nbad = count;
+    return 0;
 }
 
 /* per-thread group accumulator for worker threads: small open-addressing hash, merged into the result at the end.
@@ -1936,12 +2899,12 @@ static void *plane_histogram_merge(void *arg) {
 
 /* One encoded axis, directly from the packed planes. Exact counts in the
  * caller's domain, with a bounded worker-local histogram and no row staging. */
-int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
-                            int32_t col, uint32_t domain, uint32_t *counts) {
+static int plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                                int32_t col, uint32_t domain, uint32_t *counts, size_t scratch_bytes) {
     if (!t || t->k < 1 || t->k > MAXCOL || t->n > UINT32_MAX ||
         t->nw != (t->n + 63) / 64 || col < 0 || col >= t->k || t->vflag[col] ||
         t->width[col] < 0 || t->width[col] > 32 || !domain ||
-        domain > PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts || !counts) return -1;
+        domain > scratch_bytes / sizeof *counts || !counts) return -1;
     for (int b = 0; b < t->width[col]; ++b) if (!t->V[col][b]) return -1;
     if (!t->n) {
         memset(counts, 0, (size_t)domain * sizeof *counts);
@@ -1950,7 +2913,7 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
 
     size_t stride = ((size_t)domain + 15) & ~(size_t)15;
     int workers = nthreads(), useful = 1 + (int)(t->n / 16384);
-    int capacity = (int)(PLANE_HISTOGRAM_LOCAL_BYTES / sizeof *counts / stride);
+    int capacity = (int)(scratch_bytes / sizeof *counts / stride);
     if (workers > useful) workers = useful;
     if (workers > capacity) workers = capacity;
     if (workers > 64) workers = 64;
@@ -1967,6 +2930,17 @@ int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
     if (!rc) pool_jobs(workers, plane_histogram_merge, jobs, sizeof *jobs);
     free(locals);
     return rc;
+}
+
+int at_plane_code_histogram(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, PLANE_HISTOGRAM_LOCAL_BYTES);
+}
+
+/* Archive preparation admits a larger dictionary under a fixed scratch budget. */
+int at_referrer_code_counts(const atable_t *t, const uint64_t *filter,
+                            int32_t col, uint32_t domain, uint32_t *counts) {
+    return plane_code_histogram(t, filter, col, domain, counts, 512u * 1024u * 1024u);
 }
 
 /* Small equality result, with fallback when the match set is larger. */
@@ -1989,6 +2963,7 @@ int at_plane_equal_ids(const atable_t *t, const uint64_t *visible, const at_grou
     if (width < 64 && (code >> width)) return 0;
     uint32_t low = (uint32_t)(code & ((UINT64_C(1) << low_width) - 1));
     uint32_t high = key->high < 0 ? 0 : (uint32_t)(code >> key->shift);
+    if (key->high >= 0 && (((uint64_t)high << key->shift) | low) != code) return 0;
     for (uint64_t word = 0; word < t->nw; ++word) {
         uint64_t mask = rowmask(t, word) & visible[word];
         if (!mask) continue;
@@ -2126,6 +3101,485 @@ static inline uint32_t extract_msb(const uint64_t *x, int nb, int r) {  /* first
 static inline uint32_t extract_col(const atable_t *t, const uint64_t *x, int c, int r) {
     return t->msb[c] ? extract_msb(x, t->width[c], r) : extract(x, t->width[c], r);
 }
+static int periodic_validity(const atable_t *t, int32_t valid) {
+    return valid == -1 || (periodic_column(t, valid) && t->width[valid] == 1);
+}
+
+static int periodic_program(const atable_t *t, const pinstr_t *prog, int32_t nprog) {
+    if (nprog < 0 || nprog > TP_MAX_PROGRAM || (nprog && !prog)) return 0;
+    int depth = 0;
+    uint32_t checked = 0;
+    for (int32_t i = 0; i < nprog; ++i) {
+        const pinstr_t *p = prog + i;
+        if (p->op == P_AND || p->op == P_OR || p->op == P_XOR) {
+            if (depth < 2) return 0;
+            --depth;
+            continue;
+        }
+        if (p->op == P_NOT) {
+            if (!depth) return 0;
+            continue;
+        }
+        if (++depth > TP_MAX_STACK || p->op < P_TRUE || p->op > P_XOR) return 0;
+        if (p->op == P_TRUE) continue;
+        if (p->col < 0 || p->col >= t->k) return 0;
+        uint32_t col = UINT32_C(1) << p->col;
+        if (!(checked & col)) {
+            if (!periodic_column(t, p->col)) return 0;
+            checked |= col;
+        }
+        unsigned width = (unsigned)t->width[p->col];
+        if ((p->op == P_CUBE || p->op == P_CLT || p->op == P_CGE) &&
+            (!p->b || (width < 32 && (p->b >> width)))) return 0;
+        if (p->op == P_PREFIX && p->b > width) return 0;
+        if (p->op == P_BIT && p->a >= 32) return 0;
+    }
+    return !nprog || depth == 1;
+}
+
+static int periodic_plan(const atable_t *t, const tp_plan_t *plan) {
+    if (plan->nkeys > TP_MAX_KEYS || plan->nmeasures > TP_MAX_MEASURES ||
+        !plan->groups || plan->groups > TP_MAX_GROUPS) return 0;
+    uint32_t groups = 1;
+    for (uint32_t i = 0; i < plan->nkeys; ++i) {
+        const tp_key_t *key = plan->keys + i;
+        if (!periodic_column(t, key->col) || !periodic_validity(t, key->valid) ||
+            !key->radix || groups > TP_MAX_GROUPS / key->radix) return 0;
+        groups *= key->radix;
+    }
+    if (groups != plan->groups) return 0;
+    for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+        const tp_measure_t *measure = plan->measures + i;
+        if ((measure->flags & ~(TP_SUM | TP_MIN | TP_MAX)) ||
+            !periodic_validity(t, measure->valid) ||
+            ((measure->flags || measure->col != -1) && !periodic_column(t, measure->col))) return 0;
+    }
+    return 1;
+}
+
+typedef struct {
+    tb_cycle_v_t edges[MAXCOL][NB];
+    uint8_t predicate_width[MAXCOL];
+    uint32_t predicate_mask;
+} periodic_encoded_t;
+
+static uint32_t periodic_predicate_widths(const atable_t *t, const pinstr_t *prog, int32_t nprog,
+                                          uint8_t *widths) {
+    uint32_t mask = 0;
+    for (int32_t i = 0; i < nprog; ++i) {
+        const pinstr_t *p = &prog[i];
+        if (p->op == P_TRUE || p->op == P_NOT || p->op == P_AND ||
+            p->op == P_OR || p->op == P_XOR) continue;
+        unsigned width = t->width[p->col];
+        if (p->op == P_BIT) width = p->a >= width ? 0 : t->msb[p->col] ? width - p->a : p->a + 1;
+        else if (p->op == P_PREFIX) width = p->b;
+        else if (p->op == P_CUBE || p->op == P_CLT || p->op == P_CGE) width = 32 - __builtin_clz(p->b);
+        if (width > widths[p->col]) widths[p->col] = width;
+        if (width) mask |= UINT32_C(1) << p->col;
+    }
+    return mask;
+}
+
+static uint64_t periodic_read_edges(const atable_t *t, periodic_encoded_t *source, uint32_t sector,
+                                    uint32_t mask, const uint8_t *widths) {
+    uint64_t bytes = 0;
+    for (; mask; mask &= mask - 1) {
+        unsigned col = __builtin_ctz(mask);
+        int width = at_cycle_v_planes(t, sector, col, source->edges[col]);
+        if (width < 0) return UINT64_MAX;
+        if (widths) width = widths[col];
+        for (int j = 0; j < width; ++j) bytes += (uint64_t)source->edges[col][j].words * 8;
+    }
+    return bytes;
+}
+
+static inline const uint64_t *periodic_decode(const atable_t *t, dec_t *d, int col, uint64_t word,
+                                              int width, const periodic_encoded_t *source) {
+    if (!source) return decode_n(t, d, col, word, width);
+    int begin = d->nd[col];
+    uint64_t bits = begin ? d->p[col][begin - 1] : 0;
+    uint32_t phase = (uint32_t)(word % TP_SECTOR_WORDS);
+    for (int j = begin; j < width; ++j) {
+        bits ^= tb_cycle_v_word(&source->edges[col][j], phase);
+        d->p[col][j] = bits;
+    }
+    if (begin < width) d->nd[col] = width;
+    return d->p[col];
+}
+
+static uint64_t periodic_mask(const atable_t *t, dec_t *d, uint64_t word,
+                              const pinstr_t *prog, int32_t nprog, const periodic_encoded_t *source) {
+    if (source)
+        for (uint32_t mask = source->predicate_mask; mask; mask &= mask - 1) {
+            int col = __builtin_ctz(mask);
+            periodic_decode(t, d, col, word, source->predicate_width[col], source);
+        }
+    return eval_prog(t, prog, nprog, d, word) & rowmask(t, word);
+}
+
+static uint64_t periodic_valid_word(const atable_t *t, dec_t *d, int col, uint64_t word,
+                                    const periodic_encoded_t *source) {
+    return col < 0 ? UINT64_MAX : periodic_decode(t, d, col, word, 1, source)[0];
+}
+
+static int periodic_reduce_word(const atable_t *t, uint64_t word, uint64_t repeats,
+                                const pinstr_t *prog, int32_t nprog,
+                                const tp_plan_t *plan, tp_state_t *out, const periodic_encoded_t *source) {
+    dec_t d;
+    DEC_RESET(d);
+    uint64_t pending = periodic_mask(t, &d, word, prog, nprog, source);
+    if (!pending) return 0;
+    const uint64_t *keys[TP_MAX_KEYS], *measures[TP_MAX_MEASURES];
+    uint64_t key_valid[TP_MAX_KEYS], measure_valid[TP_MAX_MEASURES];
+    for (uint32_t i = 0; i < plan->nkeys; ++i) {
+        const tp_key_t *key = plan->keys + i;
+        key_valid[i] = periodic_valid_word(t, &d, key->valid, word, source);
+        keys[i] = periodic_decode(t, &d, key->col, word, t->width[key->col], source);
+    }
+    for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+        const tp_measure_t *measure = plan->measures + i;
+        measure_valid[i] = periodic_valid_word(t, &d, measure->valid, word, source);
+        measures[i] = measure->flags
+            ? periodic_decode(t, &d, measure->col, word, t->width[measure->col], source) : NULL;
+    }
+
+    /* Split the bitmap by the first remaining row's mixed-radix key.
+     * Intersect decoded value planes instead of transposing every row. */
+    while (pending) {
+        unsigned row = (unsigned)__builtin_ctzll(pending);
+        uint64_t group_mask = pending;
+        uint32_t group = 0;
+        for (uint32_t i = 0; i < plan->nkeys; ++i) {
+            const tp_key_t *key = plan->keys + i;
+            uint32_t code = 0;
+            if (!(key_valid[i] >> row & 1)) {
+                code = key->radix - 1;
+                group_mask &= ~key_valid[i];
+            } else {
+                int width = t->width[key->col];
+                group_mask &= key_valid[i];
+                for (int bit = 0; bit < width; ++bit) {
+                    uint64_t plane = keys[i][t->msb[key->col] ? width - 1 - bit : bit];
+                    uint32_t set = (uint32_t)((plane >> row) & 1);
+                    code |= set << bit;
+                    group_mask &= set ? plane : ~plane;
+                }
+                if (code >= key->radix - (key->valid >= 0)) return -1;
+            }
+            group = group * key->radix + code;
+        }
+        pending &= ~group_mask;
+        tp_state_t *state = out + group;
+        state->count += (uint64_t)__builtin_popcountll(group_mask) * repeats;
+        for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+            uint64_t mask = group_mask & measure_valid[i];
+            if (!mask) continue;
+            state->valid[i] += (uint64_t)__builtin_popcountll(mask) * repeats;
+            const tp_measure_t *measure = plan->measures + i;
+            if (measure->flags & TP_SUM) {
+                uint64_t sum = 0;
+                int width = t->width[measure->col];
+                for (int bit = 0; bit < width; ++bit) {
+                    uint64_t plane = measures[i][t->msb[measure->col] ? width - 1 - bit : bit];
+                    sum += (uint64_t)__builtin_popcountll(plane & mask) << bit;
+                }
+                state->sums[i] += sum * repeats;
+            }
+            if (measure->flags & (TP_MIN | TP_MAX)) {
+                uint32_t lo, hi;
+                ext_word(measures[i], t->width[measure->col], t->msb[measure->col], mask, &lo, &hi);
+                if ((measure->flags & TP_MIN) && lo < state->mins[i]) state->mins[i] = lo;
+                if ((measure->flags & TP_MAX) && hi > state->maxs[i]) state->maxs[i] = hi;
+            }
+        }
+    }
+    return 0;
+}
+
+static void periodic_init_states(const tp_plan_t *plan, tp_state_t *out) {
+    memset(out, 0, (size_t)plan->groups * sizeof *out);
+    for (uint32_t group = 0; group < plan->groups; ++group)
+        for (uint32_t i = 0; i < TP_MAX_MEASURES; ++i) out[group].mins[i] = UINT32_MAX;
+}
+
+static int periodic_reduce_range(const atable_t *t, const tp_sector_t *sector,
+                                 const pinstr_t *prog, int32_t nprog,
+                                 const tp_plan_t *plan, tp_state_t *out, uint32_t encoded,
+                                 uint64_t *payload) {
+    uint32_t full = sector->full_words, cycle = sector->cycle_words;
+    uint32_t phases = cycle ? cycle : full;
+    uint32_t copies = cycle ? full / cycle : 1, extra = cycle ? full % cycle : 0;
+    periodic_encoded_t source;
+    if (encoded) {
+        memset(source.predicate_width, 0, sizeof source.predicate_width);
+        source.predicate_mask = periodic_predicate_widths(t, prog, nprog, source.predicate_width);
+        uint64_t bytes = periodic_read_edges(t, &source, sector->first_word / TP_SECTOR_WORDS, encoded, NULL);
+        if (bytes == UINT64_MAX) return -1;
+        *payload += bytes;
+    }
+    for (uint32_t phase = 0; phase < phases; ++phase)
+        if (periodic_reduce_word(t, (uint64_t)sector->first_word + phase,
+                                 copies + (phase < extra), prog, nprog, plan, out,
+                                 encoded ? &source : NULL)) return -1;
+    if (sector->tail_rows) {
+        uint32_t tail_word = sector->first_word + full;
+        if (encoded && tail_word / TP_SECTOR_WORDS != sector->first_word / TP_SECTOR_WORDS) {
+            uint64_t bytes = periodic_read_edges(t, &source, tail_word / TP_SECTOR_WORDS, encoded, NULL);
+            if (bytes == UINT64_MAX) return -1;
+            *payload += bytes;
+        }
+        if (periodic_reduce_word(t, tail_word, 1, prog, nprog, plan, out, encoded ? &source : NULL)) return -1;
+    }
+    return 0;
+}
+
+int at_periodic_reduce(const atable_t *t, uint32_t cycle_words, const pinstr_t *prog,
+                        int32_t nprog, const tp_plan_t *plan, tp_state_t *out) {
+    if (!periodic_layout(t) || !at_has_dense(t) || !plan || !out || t->n > UINT32_MAX ||
+        !cycle_words || cycle_words > TP_MAX_CYCLE_WORDS || cycle_words > t->n / 64) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+    periodic_init_states(plan, out);
+    tp_sector_t whole = {0, (uint32_t)(t->n / 64), cycle_words, (uint32_t)(t->n % 64)};
+    int rc = periodic_reduce_range(t, &whole, prog, nprog, plan, out, 0, NULL);
+    return revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ? rc : -1;
+}
+
+typedef struct {
+    const atable_t *t;
+    const tp_sector_t *sectors;
+    const pinstr_t *prog;
+    const tp_plan_t *plan;
+    uint32_t nsectors, encoded;
+    int32_t nprog;
+    _Atomic uint32_t next;
+    _Atomic int invalid;
+} periodic_sector_work_t;
+
+typedef struct { periodic_sector_work_t *work; tp_state_t *out; uint64_t payload; } periodic_sector_job_t;
+
+static void *periodic_sector_worker(void *arg) {
+    periodic_sector_job_t *job = arg;
+    periodic_sector_work_t *work = job->work;
+    periodic_init_states(work->plan, job->out);
+    while (!atomic_load_explicit(&work->invalid, memory_order_relaxed)) {
+        uint32_t i = atomic_fetch_add_explicit(&work->next, 1, memory_order_relaxed);
+        if (i >= work->nsectors) break;
+        if (periodic_reduce_range(work->t, work->sectors + i, work->prog, work->nprog,
+                                  work->plan, job->out, work->encoded, &job->payload))
+            atomic_store_explicit(&work->invalid, 1, memory_order_relaxed);
+    }
+    return NULL;
+}
+
+static void periodic_merge_states(const tp_plan_t *plan, tp_state_t *out, const tp_state_t *part) {
+    for (uint32_t g = 0; g < plan->groups; ++g) {
+        out[g].count += part[g].count;
+        for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+            out[g].valid[i] += part[g].valid[i];
+            out[g].sums[i] += part[g].sums[i];
+            if (out[g].mins[i] > part[g].mins[i]) out[g].mins[i] = part[g].mins[i];
+            if (out[g].maxs[i] < part[g].maxs[i]) out[g].maxs[i] = part[g].maxs[i];
+        }
+    }
+}
+
+static int periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
+                                   uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
+                                   const tp_plan_t *plan, tp_state_t *out,
+                                   tp_sector_metrics_t *metrics, uint32_t encoded, uint64_t *payload) {
+    if (!periodic_layout(t) || !sectors || !nsectors || nsectors > t->nw ||
+        !plan || !out || t->n > UINT32_MAX) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    if (!periodic_plan(t, plan) || !periodic_program(t, prog, nprog)) return -1;
+
+    uint32_t full = (uint32_t)(t->n / 64), at = 0;
+    tp_sector_metrics_t result = {0};
+    for (uint32_t i = 0; i < nsectors; ++i) {
+        const tp_sector_t *sector = sectors + i;
+        uint32_t tail = i + 1 == nsectors ? (uint32_t)(t->n % 64) : 0;
+        if (sector->first_word != at || sector->full_words > full - at ||
+            (!sector->full_words && !tail) || sector->tail_rows != tail ||
+            sector->cycle_words > TP_MAX_CYCLE_WORDS ||
+            sector->cycle_words > sector->full_words / TP_MIN_REPEATS) return -1;
+        if (encoded && !(nsectors == 1 && sector->cycle_words) &&
+            (sector->first_word % TP_SECTOR_WORDS ||
+             sector->full_words + (tail != 0) > TP_SECTOR_WORDS)) return -1;
+        at += sector->full_words;
+        periodic_sector_metrics(&result, sector);
+    }
+    if (at != full) return -1;
+
+    int workers = nthreads(), useful = 1 + (int)(result.representative_words / 2048);
+    if (workers > useful) workers = useful;
+    if ((uint32_t)workers > nsectors) workers = (int)nsectors;
+    periodic_sector_work_t work = {
+        .t = t, .sectors = sectors, .prog = prog, .plan = plan, .nsectors = nsectors, .nprog = nprog,
+        .encoded = encoded,
+    };
+    periodic_sector_job_t jobs[64] = {{&work, out}};
+    tp_state_t *partials = NULL;
+    if (workers > 1) {
+        partials = malloc((size_t)(workers - 1) * plan->groups * sizeof *partials);
+        if (!partials) return -1;
+        for (int i = 1; i < workers; ++i)
+            jobs[i] = (periodic_sector_job_t){&work, partials + (size_t)(i - 1) * plan->groups};
+    }
+    pool_jobs(workers, periodic_sector_worker, jobs, sizeof *jobs);
+    int rc = -1;
+    if (!atomic_load_explicit(&work.invalid, memory_order_relaxed) &&
+        revision == __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) &&
+        (!encoded || tb_cycle_has_mask(t, encoded))) {
+        for (int i = 1; i < workers; ++i) periodic_merge_states(plan, out, jobs[i].out);
+        if (metrics) *metrics = result;
+        if (payload) {
+            *payload = 0;
+            for (int i = 0; i < workers; ++i) *payload += jobs[i].payload;
+        }
+        rc = 0;
+    }
+    free(partials);
+    return rc;
+}
+
+int at_periodic_reduce_sectors(const atable_t *t, const tp_sector_t *sectors,
+                               uint32_t nsectors, const pinstr_t *prog, int32_t nprog,
+                               const tp_plan_t *plan, tp_state_t *out,
+                               tp_sector_metrics_t *metrics) {
+    if (!at_has_dense(t)) return -1;
+    return periodic_reduce_sectors(t, sectors, nsectors, prog, nprog, plan, out, metrics, 0, NULL);
+}
+
+int at_periodic_reduce_encoded(const atable_t *t, uint32_t cycle, const tp_sector_t *sectors,
+                               uint32_t nsectors, uint32_t mask, const pinstr_t *prog, int32_t nprog,
+                               const tp_plan_t *plan, tp_state_t *out, uint64_t *payload) {
+    if (!periodic_layout(t) || !t->n || t->n > UINT32_MAX || !plan || !out ||
+        !tb_cycle_has_mask(t, mask) || !periodic_program(t, prog, nprog) || !periodic_plan(t, plan)) return -1;
+    uint8_t widths[MAXCOL] = {0};
+    uint32_t reads = periodic_predicate_widths(t, prog, nprog, widths);
+    for (uint32_t i = 0; i < plan->nkeys; ++i) {
+        const tp_key_t *key = plan->keys + i;
+        reads |= UINT32_C(1) << key->col;
+        if (key->valid >= 0) reads |= UINT32_C(1) << key->valid;
+    }
+    for (uint32_t i = 0; i < plan->nmeasures; ++i) {
+        const tp_measure_t *m = plan->measures + i;
+        if (m->flags) reads |= UINT32_C(1) << m->col;
+        if (m->valid >= 0) reads |= UINT32_C(1) << m->valid;
+    }
+    if (reads & ~mask) return -1;
+    tp_sector_t whole = {0, (uint32_t)(t->n / 64), cycle, (uint32_t)(t->n % 64)};
+    if (cycle) {
+        if (sectors || nsectors) return -1;
+        sectors = &whole;
+        nsectors = 1;
+    }
+    return periodic_reduce_sectors(t, sectors, nsectors, prog, nprog, plan, out, NULL, mask, payload);
+}
+
+typedef struct {
+    const atable_t *t;
+    const pinstr_t *prog;
+    const uint64_t *visible;
+    uint64_t *out;
+    int32_t nprog;
+    uint32_t sectors, mask;
+    uint8_t widths[MAXCOL];
+    _Atomic uint32_t next;
+    _Atomic int invalid;
+} cycle_bitmap_work_t;
+
+typedef struct {
+    cycle_bitmap_work_t *work;
+    uint64_t count, payload, evaluated;
+} cycle_bitmap_job_t;
+
+static uint32_t cycle_bitmap_period(const periodic_encoded_t *source, uint32_t words) {
+    unsigned cap = words / TP_MIN_REPEATS, cycle = 1;
+    for (uint32_t mask = source->predicate_mask; mask; mask &= mask - 1) {
+        unsigned col = __builtin_ctz(mask);
+        for (unsigned j = 0; j < source->predicate_width[col]; ++j) {
+            unsigned period = source->edges[col][j].period;
+            if (!period) return 0;
+            cycle = periodic_lcm(cycle, period);
+            if (cycle > cap) return 0;
+        }
+    }
+    return cycle;
+}
+
+static void *cycle_bitmap_worker(void *arg) {
+    cycle_bitmap_job_t *job = arg;
+    cycle_bitmap_work_t *work = job->work;
+    const atable_t *t = work->t;
+    periodic_encoded_t source = {.predicate_mask = work->mask};
+    memcpy(source.predicate_width, work->widths, sizeof source.predicate_width);
+    while (!atomic_load_explicit(&work->invalid, memory_order_relaxed)) {
+        uint32_t sector = atomic_fetch_add_explicit(&work->next, 1, memory_order_relaxed);
+        if (sector >= work->sectors) break;
+        uint32_t first = sector * TP_SECTOR_WORDS;
+        uint32_t words = t->nw - first < TP_SECTOR_WORDS ? (uint32_t)(t->nw - first) : TP_SECTOR_WORDS;
+        uint32_t tail = first + words == t->nw && t->n % 64;
+        uint32_t full = words - tail;
+        uint64_t bytes = periodic_read_edges(t, &source, sector, work->mask, work->widths);
+        if (bytes == UINT64_MAX) {
+            atomic_store_explicit(&work->invalid, 1, memory_order_relaxed);
+            break;
+        }
+        job->payload += bytes;
+        uint32_t cycle = cycle_bitmap_period(&source, full);
+        uint32_t phases = cycle ? cycle : words;
+        job->evaluated += phases;
+        uint64_t *out = work->out + first;
+        for (uint32_t phase = 0; phase < phases; ++phase) {
+            dec_t d;
+            DEC_RESET(d);
+            out[phase] = periodic_mask(t, &d, first + phase, work->prog, work->nprog, &source);
+        }
+        if (cycle) {
+            for (uint32_t filled = cycle; filled < full;) {
+                uint32_t n = full - filled < filled ? full - filled : filled;
+                memcpy(out + filled, out, n * sizeof *out);
+                filled += n;
+            }
+            if (tail) out[full] = out[full % cycle] & rowmask(t, first + full);
+        }
+        for (uint32_t i = 0; i < words; ++i) {
+            if (work->visible) out[i] &= work->visible[first + i];
+            job->count += __builtin_popcountll(out[i]);
+        }
+    }
+    return NULL;
+}
+
+int at_cycle_filter_bitmap(const atable_t *t, const pinstr_t *prog, int32_t nprog,
+                           const uint64_t *visible, uint64_t *out, uint64_t metrics[3]) {
+    if (!periodic_layout(t) || !t->n || t->n > UINT32_MAX || !out || !metrics ||
+        !periodic_program(t, prog, nprog)) return -1;
+    cycle_bitmap_work_t work = {
+        .t = t, .prog = prog, .visible = visible, .out = out, .nprog = nprog,
+        .sectors = (uint32_t)((t->nw + TP_SECTOR_WORDS - 1) / TP_SECTOR_WORDS),
+    };
+    work.mask = periodic_predicate_widths(t, prog, nprog, work.widths);
+    if (!tb_cycle_has_mask(t, work.mask)) return -1;
+    uint64_t revision = __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE);
+    int workers = nthreads();
+    if ((uint32_t)workers > work.sectors) workers = (int)work.sectors;
+    cycle_bitmap_job_t jobs[64] = {0};
+    for (int i = 0; i < workers; ++i) jobs[i].work = &work;
+    pool_jobs(workers, cycle_bitmap_worker, jobs, sizeof *jobs);
+    if (atomic_load_explicit(&work.invalid, memory_order_relaxed) ||
+        revision != __atomic_load_n(&t->revision, __ATOMIC_ACQUIRE) ||
+        !tb_cycle_has_mask(t, work.mask)) return -1;
+    metrics[0] = metrics[1] = metrics[2] = 0;
+    for (int i = 0; i < workers; ++i) {
+        metrics[0] += jobs[i].count;
+        metrics[1] += jobs[i].payload;
+        metrics[2] += jobs[i].evaluated;
+    }
+    return 0;
+}
+
 /* Bounded native profiling for relationship-system physical alternatives. The
  * sampled masks have exactly the ordinary fact executor's filter/semijoin/delta
  * semantics. No result rows or column-sized intermediate arrays are materialized. */
@@ -2253,6 +3707,21 @@ uint64_t bm_ids(const uint64_t *bm, uint64_t nw, uint32_t *out) {
     for (uint64_t w = 0; w < nw; w++) { uint64_t x = bm[w]; while (x) { out[k++] = (uint32_t)(w * 64 + __builtin_ctzll(x)); x &= x - 1; } }
     return k;
 }
+/* Enumerate only a bounded result. The caller can discard the prefix on
+ * overflow; no ID at or beyond nrows is returned. */
+int64_t bm_ids_bounded(const uint64_t *bm, uint64_t nrows, uint64_t *out, uint64_t capacity) {
+    if (!nrows) return 0;
+    if (!bm || (capacity && !out)) return -1;
+    if (capacity > INT64_MAX) capacity = INT64_MAX;
+    uint64_t count = 0, words = nrows / 64 + (nrows % 64 != 0);
+    for (uint64_t w = 0; w < words; ++w) {
+        uint64_t bits = bm[w], left = nrows - w * 64;
+        if (left < 64) bits &= (UINT64_C(1) << left) - 1;
+        if ((uint64_t)__builtin_popcountll(bits) > capacity - count) return -1;
+        for (; bits; bits &= bits - 1) out[count++] = w * 64 + __builtin_ctzll(bits);
+    }
+    return (int64_t)count;
+}
 /* decode a full column to integers (dimension attributes) */
 typedef struct { const atable_t *t; int c; uint32_t *out; } dcctx_t;
 static void decode_range(void *v, uint64_t w0, uint64_t w1);
@@ -2267,14 +3736,165 @@ static void decode_range(void *v, uint64_t w0, uint64_t w1) {
         for (int r = 0; r < 64 && w * 64 + r < t->n; r++) out[w * 64 + r] = t->msb[c] ? revb((uint32_t)A[r], t->width[c]) : (uint32_t)A[r];
     }
 }
-/* values of column c at the given rows (any column, virtual ones included): each row's word is decoded once */
-void at_get_rows(const atable_t *t, int c, const uint64_t *rows, uint64_t n, uint32_t *out) {
-    dec_t D; uint64_t cur = ~0ULL; const uint64_t *x = 0;
-    for (uint64_t i = 0; i < n; i++) {
-        uint64_t w = rows[i] >> 6;
-        if (w != cur) { DEC_RESET(D); x = decode(t, &D, c, w); cur = w; }
-        out[i] = extract_col(t, x, c, (int)(rows[i] & 63));
+typedef struct {
+    const atable_t *table;
+    unsigned col;
+    uint32_t sector;
+    int encoded;
+    tb_cycle_v_t edges[NB];
+} gather_edges_t;
+
+static int gather_edges(gather_edges_t *g, const atable_t *t, unsigned col) {
+    if (!t || col >= MAXCOL || col >= (unsigned)t->k || t->vflag[col] ||
+        t->width[col] < 0 || t->width[col] > 32) return 0;
+    g->table = t;
+    g->col = col;
+    g->sector = 0;
+    g->encoded = at_cycle_v_planes(t, 0, col, g->edges) > 0;
+    if (g->encoded) return 1;
+    /* A view created before dense fallback can still have empty aliases.
+     * Its flattened owner already holds the current values. */
+    if (t->cycle_sources[col]) {
+        g->table = t->cycle_sources[col];
+        g->col = t->cycle_columns[col];
     }
+    if (!g->table->width[g->col]) return 1;
+    if (!g->table->cycle_store) return g->table->V[g->col][0] != NULL;
+    pthread_mutex_lock(&TB_MATERIALIZE_LOCK);
+    int dense = g->table->V[g->col][0] != NULL;
+    pthread_mutex_unlock(&TB_MATERIALIZE_LOCK);
+    return dense;
+}
+
+static int gather_word(gather_edges_t *g, uint64_t word, int width, uint64_t *out) {
+    uint64_t value = 0;
+    if (g->encoded) {
+        uint32_t sector = (uint32_t)(word / TP_SECTOR_WORDS), phase = (uint32_t)(word % TP_SECTOR_WORDS);
+        if (sector != g->sector) {
+            if (at_cycle_v_planes(g->table, sector, g->col, g->edges) < 0) return 0;
+            g->sector = sector;
+        }
+        for (int bit = 0; bit < width; ++bit) {
+            value ^= tb_cycle_v_word(&g->edges[bit], phase);
+            out[bit] = value;
+        }
+    } else {
+        for (int bit = 0; bit < width; ++bit) {
+            value ^= g->table->V[g->col][bit][word];
+            out[bit] = value;
+        }
+    }
+    return 1;
+}
+
+static int gather_virtual_word(const atable_t *t, int c, uint64_t word, uint64_t flag,
+                                gather_edges_t *lo, gather_edges_t *hi, uint64_t *out) {
+    int width = t->width[c], count = __builtin_popcountll(flag);
+    if (!count) {
+        memset(out, 0, (size_t)width * sizeof *out);
+        return 1;
+    }
+    uint64_t rank = t->vrank[c][word], sideword = rank >> 6;
+    unsigned shift = (unsigned)(rank & 63);
+    int two = shift + (unsigned)count > 64;
+    uint64_t a[32] = {0}, b[32] = {0};
+    if ((sideword < lo->table->nw && !gather_word(lo, sideword, width, a)) ||
+        (two && sideword + 1 < hi->table->nw && !gather_word(hi, sideword + 1, width, b))) return 0;
+    uint64_t mask = count == 64 ? UINT64_MAX : (UINT64_C(1) << count) - 1;
+    for (int bit = 0; bit < width; ++bit) {
+        uint64_t packed = a[bit] >> shift;
+        if (two) packed |= b[bit] << (64 - shift);
+        out[bit] = tb_pdep(packed & mask, flag);
+    }
+    return 1;
+}
+
+/* Values at the requested rows. Only the current column's word and compact
+ * sector descriptors are decoded; a virtual column follows its flag and
+ * sidecar rank without materializing either torble. */
+void at_get_rows(const atable_t *t, int c, const uint64_t *rows, uint64_t n, uint32_t *out) {
+    if (!n || !t || c < 0 || c >= t->k || !rows || !out) return;
+    int flag = t->vflag[c], width = t->width[c];
+    gather_edges_t source, lo, hi;
+    if (!gather_edges(&source, t, flag ? (unsigned)(flag - 1) : (unsigned)c)) return;
+    if (flag) {
+        if (!t->vrank[c] || !gather_edges(&lo, t->vside[c], 0) || lo.table->width[lo.col] != width) return;
+        hi = lo;
+    }
+    uint64_t cur = UINT64_MAX, planes[32];
+    for (uint64_t i = 0; i < n; ++i) {
+        uint64_t w = rows[i] >> 6;
+        if (rows[i] >= t->n) { out[i] = 0; continue; }
+        if (w != cur) {
+            if (flag) {
+                uint64_t bits;
+                if (!gather_word(&source, w, 1, &bits) ||
+                    !gather_virtual_word(t, c, w, bits & rowmask(t, w), &lo, &hi, planes)) return;
+            } else if (!gather_word(&source, w, width, planes)) return;
+            cur = w;
+        }
+        out[i] = extract_col(t, planes, c, (int)(rows[i] & 63));
+    }
+}
+typedef struct {
+    const atable_t *const *tables;
+    const int32_t *columns;
+    const uint64_t *rows;
+    uint64_t nrows;
+    uint32_t *out;
+} row_columns_t;
+
+static void get_rows_columns_range(void *ctx, uint64_t begin, uint64_t end) {
+    const row_columns_t *job = ctx;
+    for (uint64_t c = begin; c < end; ++c)
+        at_get_rows(job->tables[c], job->columns[c], job->rows, job->nrows,
+                    job->out + (size_t)c * job->nrows);
+}
+
+static int get_rows_column_valid(const atable_t *table, int32_t col) {
+    if (!table || table->k < 1 || table->k > MAXCOL || col < 0 || col >= table->k ||
+        table->nw != (table->n >> 6) + !!(table->n & 63) ||
+        table->width[col] < 0 || table->width[col] > 32) return 0;
+
+    int32_t width = table->width[col];
+    if (!table->nw || !width) return 1;
+    int32_t flag = table->vflag[col];
+    if (flag) {
+        const atable_t *side = table->vside[col];
+        if (flag < 1 || flag > table->k || !table->V[flag - 1][0] || !table->vrank[col] ||
+            !side || side->k < 1 || side->k > MAXCOL || side->width[0] != width ||
+            side->nw != (side->n >> 6) + !!(side->n & 63)) return 0;
+        table = side;
+        col = 0;
+    }
+    if (table->nw)
+        for (int32_t p = 0; p < width; ++p)
+            if (!table->V[col][p]) return 0;
+    return 1;
+}
+
+/* Gather the same row ids from several columns, including columns in
+ * different torbles. Caller supplies separate, column-major output. */
+int at_get_rows_columns(uint32_t ncols, const atable_t *const *tables, const int32_t *columns,
+                        const uint64_t *rows, uint64_t nrows, uint32_t *out) {
+    if (!ncols) return TR_OK;
+    if (!tables || !columns || (nrows && (!rows || !out)) ||
+        nrows > SIZE_MAX / sizeof(*rows) ||
+        nrows > SIZE_MAX / sizeof(*out) / ncols) return TR_INVALID;
+
+    uint64_t limit = UINT64_MAX;
+    for (uint32_t c = 0; c < ncols; ++c) {
+        const atable_t *table = tables[c];
+        if (!get_rows_column_valid(table, columns[c])) return TR_INVALID;
+        if (table->n < limit) limit = table->n;
+    }
+    if (!nrows) return TR_OK;
+    for (uint64_t r = 0; r < nrows; ++r)
+        if (rows[r] >= limit) return TR_INVALID;
+
+    row_columns_t job = {tables, columns, rows, nrows, out};
+    par_for(ncols, 1, get_rows_columns_range, &job);
+    return TR_OK;
 }
 /* payload offsets: the tail of row r starts at dir[w] + sum over the rows before r in its word of max(0, len - H).
  * Only one number per 64 rows is stored (dir); the rest is derived from the length planes. */
@@ -3482,4 +5102,50 @@ int64_t jp_terms(const uint8_t *sel, int invert, const int64_t *codes, int64_t n
     }
 #undef SEL
     *pcost = cost; return w;
+}
+
+/* Exact case-sensitive substring membership over an archived UTF-8 dictionary.
+ * A valid UTF-8 needle cannot begin in the middle of an encoded codepoint. */
+typedef struct {
+    const uint8_t *blob, *needle;
+    const int64_t *offsets;
+    uint8_t *result;
+    uint64_t blob_bytes, needle_bytes;
+    _Atomic int invalid;
+} packed_text_job;
+
+static void packed_text_contains(void *arg, uint64_t start, uint64_t end) {
+    packed_text_job *job = arg;
+    for (uint64_t i = start; i < end; ++i) {
+        int64_t lo = job->offsets[i], hi = job->offsets[i + 1];
+        if (lo < 0 || hi < lo || (uint64_t)hi > job->blob_bytes) {
+            atomic_store_explicit(&job->invalid, 1, memory_order_relaxed);
+            return;
+        }
+        uint64_t remaining = (uint64_t)(hi - lo), n = job->needle_bytes;
+        const uint8_t *p = job->blob + lo;
+        int match = n == 0;
+        while (!match && remaining >= n) {
+            const uint8_t *hit = memchr(p, job->needle[0], (size_t)(remaining - n + 1));
+            if (!hit) break;
+            if (!memcmp(hit, job->needle, (size_t)n)) {
+                match = 1;
+                break;
+            }
+            remaining -= (uint64_t)(hit - p) + 1;
+            p = hit + 1;
+        }
+        job->result[i] = (uint8_t)match;
+    }
+}
+
+int at_packed_text_contains(const uint8_t *blob, uint64_t blob_bytes, const int64_t *offsets,
+                            uint64_t codes, const uint8_t *needle, uint64_t needle_bytes,
+                            uint8_t *result) {
+    if (!blob || !offsets || !result || (needle_bytes && !needle) ||
+        codes >= SIZE_MAX / sizeof(*offsets) || blob_bytes > SIZE_MAX || needle_bytes > SIZE_MAX)
+        return -1;
+    packed_text_job job = {blob, needle, offsets, result, blob_bytes, needle_bytes, 0};
+    par_for(codes, 16384, packed_text_contains, &job);
+    return atomic_load_explicit(&job.invalid, memory_order_relaxed) ? -1 : 0;
 }

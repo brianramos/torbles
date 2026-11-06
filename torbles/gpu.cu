@@ -1213,6 +1213,7 @@ static void *dev_array(handle_t *h, const void *host, uint64_t bytes, uint64_t t
     else T->p[T->n++] = d;
     return d;
 }
+#include "gpu_periodic.cuh"
 #ifndef EMULATE
 #include "gpu_scalar_planes.cuh"
 #include "gpu_group_planes.cuh"

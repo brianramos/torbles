@@ -559,7 +559,7 @@
    "id": "FND-004",
    "family_id": null,
    "title": "Reusable state bank, partitions and invalidation",
-   "status": "validated",
+   "status": "existing",
    "wave": "W1",
    "depends_on": [
     "FND-001",
@@ -618,7 +618,8 @@
     "CPU accumulation is single-threaded (only decoding uses the engine's threads); dense groups take memory for absent groups too.",
     "The overflow proof is conservative (max magnitude per factor times rows), so some requests whose sums would fit are refused.",
     "Dimension lookups are copied at build; the native freshness check covers the fact table, and the Python layer tracks dimension revisions.",
-    "Not supported: lookups through derived surrogate keys, self-extending columns as group keys, date/timestamp/string columns as values."
+    "Not supported: lookups through derived surrogate keys, self-extending columns as group keys, date/timestamp/string columns as values.",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "tests": [
@@ -681,7 +682,7 @@
    "id": "FND-005",
    "family_id": null,
    "title": "Native module and operator registry",
-   "status": "validated",
+   "status": "existing",
    "wave": "W1",
    "depends_on": [
     "FND-001",
@@ -728,7 +729,8 @@
    ],
    "limitations": [
     "Descriptors are written by hand: a test checks that every named entry point exists in the libraries, every kernel file and tr_mgpu_* entry is described and every capability id exists, not that descriptions are complete.",
-    "Only the registry's own request kind and the LATTICE-002/SPEC-002 transforms execute through the registry; other families run through their own APIs, and their cost coefficients are not calibrated."
+    "Only the registry's own request kind and the LATTICE-002/SPEC-002 transforms execute through the registry; other families run through their own APIs, and their cost coefficients are not calibrated.",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "tests": [
@@ -923,7 +925,7 @@
    "id": "FND-007",
    "family_id": null,
    "title": "Proof certificates and evidence scope",
-   "status": "validated",
+   "status": "existing",
    "wave": "W3",
    "depends_on": [
     "FND-001"
@@ -966,7 +968,8 @@
    ],
    "limitations": [
     "Polynomial checks are exact within 128 bits (wider rows refused, or checked modulo p and recorded as approximate); derivations combine polynomial claims only; hypotheses record sample counts, not a confidence bound.",
-    "Source tokens are process-specific: a persisted snapshot is never fresh in another process (it stays readable)."
+    "Source tokens are process-specific: a persisted snapshot is never fresh in another process (it stays readable).",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "source_sha256": {
@@ -1032,7 +1035,7 @@
    "id": "FND-008",
    "family_id": null,
    "title": "Complete-plan choice and cost evidence",
-   "status": "validated",
+   "status": "existing",
    "wave": "W1",
    "depends_on": [
     "FND-005"
@@ -1082,7 +1085,8 @@
    ],
    "limitations": [
     "Cached states are reused on the CPU only, not kept in device memory.",
-    "The planner covers the registry's request kind and the DISC-001 verifier; later families register their candidates."
+    "The planner covers the registry's request kind and the DISC-001 verifier; later families register their candidates.",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "source_sha256": {
@@ -6478,7 +6482,7 @@
    "id": "DISC-001",
    "family_id": "DISC",
    "title": "Existing bounded affine, sum and product discovery",
-   "status": "validated",
+   "status": "existing",
    "wave": "W0",
    "depends_on": [],
    "scope": "Current native exhaustive modules discover/probe affine, sum and product relations with bounded candidate budgets and snapshot evidence.",
@@ -6529,7 +6533,8 @@
    ],
    "limitations": [
     "The CUDA verifier copies one hypothesis's columns to the device per call; there is no device-resident catalog, and discovery (proposal enumeration) is CPU only.",
-    "Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor."
+    "Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor.",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "source_sha256": {
@@ -6815,7 +6820,7 @@
    "id": "PRE-001",
    "family_id": "PRE",
    "title": "Affine and monotone-piece preimages",
-   "status": "validated",
+   "status": "existing",
    "wave": "W3",
    "depends_on": [
     "FND-001",
@@ -6866,7 +6871,8 @@
     "Residue spans have no bit-plane program (a code lookup is the engine candidate); self-extending (wide) columns are not supported.",
     "The law certificates cover the algebraic substitution of the codec; the integer rounding is proved by the exact computation and the exhaustive tests, not by a certificate; a branch whose coefficients leave int64 has none.",
     "The direct check evaluates in int64 rationals: a row it cannot decide is reported (overflow), not checked.",
-    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet."
+    "The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "source_sha256": {
@@ -8634,7 +8640,7 @@
    "id": "META-001",
    "family_id": "META",
    "title": "Scoped query equivalence and counterexamples",
-   "status": "validated",
+   "status": "existing",
    "wave": "W3",
    "depends_on": [
     "FND-001",
@@ -8687,7 +8693,8 @@
     "representation limits: 64 distinct conditions per set, 4096 parts or questions, 128 cone nodes per question, measure pairs of one check over at most 8 columns and 256 pairs, evaluation widths up to 512 bits",
     "families compute COUNT, present-measure counts and exact SUM only (no MIN / MAX / AVG / GROUP BY); the family runs, universal decisions and relation reductions run on the CPU only",
     "the relationship optimizer bridge takes integer measures of degree <= 2 over catalog columns (tr_optimize's limits: 32 terms, 12 columns, 32-bit codes); relationships_stage.c (an executor transformation) is not used",
-    "snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU"
+    "snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU",
+    "The linked validation receipts record earlier builds. The native table header changed in 0.9.0."
    ],
    "validation": {
     "source_sha256": {
@@ -9125,7 +9132,7 @@
  ],
  "current_slice": {
   "name": "Typed domains, executable modules and compatible scalar state reuse",
-  "status": "validated bounded implementation; broader capabilities remain partial",
+  "status": "bounded implementation with historical validation evidence",
   "capability_ids": [
    "FND-001",
    "FND-004",

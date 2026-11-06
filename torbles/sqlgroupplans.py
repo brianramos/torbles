@@ -40,10 +40,17 @@ def count_order(s):
             and expr.name in ("count_star", "count"))
 
 
-def bitmap(planner, preds):
+def bitmap(planner, preds, *, engine=None):
     fact = planner.tab[planner.fact]
+    engine = planner.cx.engine if engine is None else engine
     if not preds and not planner.joins:
         return fact.used_bm
+    if engine == "alg" and not planner.joins:
+        from . import sqlperiodic
+        encoded = sqlperiodic.bitmap(fact, preds, planner.cx.stats)
+        if encoded is not None:
+            planner.cx.stats["engine_queries"] += 1
+            return encoded
     query = algq.Query(fact, join_mode="auto")
     for binding, fk in planner.joins.items():
         query.join(planner.tab[binding], fk)
@@ -51,13 +58,92 @@ def bitmap(planner, preds):
         query.where(pred)
     query._rows = query._rowbits = True
     try:
-        result = query._run_codes(planner.cx.engine) & fact.used_bm
-        if planner.cx.engine == "gpu" and query.device == "gpu":
+        result = query._run_codes(engine) & fact.used_bm
+        if engine == "gpu" and query.device == "gpu":
             planner.cx.stats["cuda_scope_bitmaps"] = planner.cx.stats.get("cuda_scope_bitmaps", 0) + 1
     except (TypeError, ValueError, OverflowError):
         return None
     planner.cx.stats["engine_queries"] += 1
     return result
+
+
+FILTER_ONLY_UPLOAD_MIN_BYTES = 64 << 20
+
+
+def _plane_payload_bytes(parts, word_bytes):
+    return sum(part.width(name) for part in parts for name in part.cols) * word_bytes
+
+
+def cold_filter_group_scope(planner, preds, keys, measures):
+    """Keep grouping resident when only its filter would open a large part."""
+    fact = planner.tab[planner.fact]
+    if fact.parts is None or planner.joins:
+        return None
+    group_cols = set(measures)
+    for low, high, *_ in keys:
+        group_cols.add(low)
+        if high is not None:
+            group_cols.add(high)
+    group_parts = {fact._part_of(name) for name in group_cols}
+    if any(part._storage().gpu is None for part in group_parts):
+        return None
+
+    filter_cols = set().union(*(algq.pred_cols(pred) for pred in preds))
+    filter_cols.update(fact.wide[name][1] for name in filter_cols & fact.wide.keys())
+    if not filter_cols or not filter_cols.issubset(fact.cols):
+        return None
+    filter_parts = {fact._part_of(name) for name in filter_cols}
+    cold = [part for part in filter_parts - group_parts if part._storage().gpu is None]
+    if not cold:
+        return None
+
+    word_bytes = ((fact.n + 63) // 64) * 8
+    upload_bytes = _plane_payload_bytes(cold, word_bytes)
+    host_bytes = sum(fact.width(name) for name in filter_cols) * word_bytes
+    if upload_bytes < max(FILTER_ONLY_UPLOAD_MIN_BYTES, 2 * host_bytes):
+        return None
+    scope = bitmap(planner, preds, engine="alg")
+    return None if scope is None else (scope, upload_bytes, host_bytes)
+
+
+def _packed_count(part, scope):
+    from .sqlscalarplanes import _moments
+
+    count = C.c_uint64()
+    # A zero-measure count only reads the mask and the part's row bounds.
+    if _moments is not None and _moments(part._raw_at, scope.ctypes.data, 0, None, C.byref(count)) == 0:
+        return count.value
+    return sum(int(word).bit_count() for word in scope)
+
+
+def cold_wide_group_scope(planner, preds):
+    """Price a mandatory wide equality before its first full-part CUDA upload."""
+    fact = planner.tab[planner.fact]
+    parts = {
+        fact._part_of(name)
+        for clause in preds
+        for pred in algq.conjuncts(clause)
+        if isinstance(pred, algq.Cmp) and pred.op == "EQ" and pred.col.table is fact
+        and pred.col.name in fact.wide
+        for name in (pred.col.name, fact.wide[pred.col.name][1])
+    }
+    cold = [part for part in parts if part._storage().gpu is None]
+    if not cold:
+        return None
+
+    scope = bitmap(planner, preds, engine="alg")
+    if scope is None:
+        return None
+    selected = _packed_count(cold[0], scope)
+    upload_bytes = _plane_payload_bytes(cold, ((fact.n + 63) // 64) * 8)
+    # Bound encoded group state by row count, sparsity, and the transfer it
+    # replaces. Charge 256 bytes per selected row for keys and hash scratch.
+    limit = min(200_000, fact.n // 64, upload_bytes // 256)
+    stats = planner.cx.stats
+    stats["cold_wide_scope_cpu"] = stats.get("cold_wide_scope_cpu", 0) + 1
+    stats["cold_wide_scope_rows"] = stats.get("cold_wide_scope_rows", 0) + selected
+    stats["cold_wide_group_row_budget"] = limit
+    return scope, selected, limit, upload_bytes
 
 
 def layout(planner, groups):
@@ -176,17 +262,20 @@ def special_count(planner, preds, aggs):
     fact = planner.tab[planner.fact]
     descriptors = [plane_group_key(expr, planner.fact, fact) for expr in s.group]
     if offset and count_order(s) and all(isinstance(expr, I.Col) for expr in s.group):
-        scope = bitmap(planner, preds)
+        packed_rank = limit + offset > 1024 and all(
+            spec is not None and spec[1] is None and spec[3] == 0 for spec in descriptors
+        )
+        cold_scope = cold_wide_group_scope(planner, preds) if gpu and packed_rank else None
+        scope = cold_scope[0] if cold_scope is not None else bitmap(planner, preds)
         if scope is None:
             return None
         from . import sqlexec as E
 
-        selected = sum(int(word).bit_count() for word in scope)
+        selected = cold_scope[1] if cold_scope is not None else sum(int(word).bit_count() for word in scope)
         if selected <= offset:
             return _count_relation(planner, aggs, [], "plane_group_empty_offset")
         if fact.n >= E.ALG_MIN_ROWS and selected <= min(200_000, fact.n // 8):
-            if (limit + offset > 1024
-                    and all(spec is not None and spec[1] is None and spec[3] == 0 for spec in descriptors)):
+            if packed_rank:
                 ranked = _rank_packed_counts(planner, scope, descriptors, aggs, limit, offset)
                 if ranked is not None:
                     return ranked

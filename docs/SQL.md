@@ -214,6 +214,101 @@ Results). A window whose values every row outputs keeps them as an integer or do
 and an ORDER BY the rows already follow is not applied; returning a million rows still builds a million Python
 tuples, as any engine does (`bench/window_output.py`).
 
+### Automatic periodic aggregation
+
+For eligible SQL, the optimizer looks for an exact packed-word cycle across
+the value and validity planes the query reads. It checks the whole table
+first, then contiguous sectors of 4,096 words (262,144 rows). A bounded prefix
+check screens out irregular columns before full verification. Per-column
+periods of up to 128 words can compose into a shared cycle of up to 4,096
+words. The optimizer caches proofs and misses by the referenced physical
+columns and their revisions, including for tables split across torbles.
+
+Native CPU and CUDA reductions weight the packed masks for complete cycles
+and account for remaining words and a final partial word. A sector plan can
+include ordinary scans for irregular sectors when the full plan eliminates at
+least three quarters of its word work. CUDA uploads the compact value planes
+and reuses the device copy. The route covers integer scalar and grouped
+`COUNT`, `SUM`, `AVG`, `MIN`, and `MAX` with supported predicates, up to
+three group keys and two measure columns, on densely visible stored tables.
+
+`db.prepare_periodic("events")` can still precompute whole-table periods on
+one physical torble. Set `TORBLES_PERIODIC=0` before import to compare the
+ordinary SQL executor. Result statistics expose proof time and cache hits,
+whether a table or sector plan ran, and the number of proven and ordinary
+sectors. CUDA also reports the plane payload, uploaded bytes, and kernel time.
+
+### Topology compression during ingestion
+
+Save a newly ingested database with `db.save(path, compression="topology")`
+to store compact sectors inside the native torble files. Use a new destination.
+The writer encodes the physical V and H edges in 4,096-word sectors, choosing
+exact motifs or literal words for each edge. In particular, an H edge is the
+XOR between adjacent column potentials. It can repeat even when both columns
+are individually irregular. The writer keeps the independent edges that
+carry the torus face checks and uses the raw file format when it is smaller.
+
+`torbles.load(path)` checks the encoded directory and payload. The default
+face validation XORs the stored V and H blocks directly. Clean snapshots
+stay compact on reopen. Repair and ordinary kernels restore dense planes
+on demand. Eligible CPU and CUDA SQL can compose sector cycles from the
+stored directory.
+Separately encoded V edges can prove a column cycle longer than the
+query-time discovery bound. A bounded phase comparison can also coalesce
+compatible sector motifs into one table-wide cycle.
+`periodic_ingested_proof_uses` records directory lookups on the first plan.
+Native revisions still invalidate stored proofs after in-memory changes.
+
+For a packed word, a value bitmask is the prefix XOR of its V edges.
+The CPU evaluates predicates and weighted reductions over encoded phase
+words. A consumer that needs row identities receives the resulting
+predicate bitmap, repeating its verified mask phases as needed. CUDA
+uploads referenced motifs and literal slices, and builds only the
+representative bitplanes on device. `periodic_encoded` identifies this
+route. `periodic_encoded_payload_bytes` records referenced block bytes on
+CPU and value bytes uploaded on initial CUDA setup. CUDA separately
+reports descriptor bytes and resident representative planes.
+
+### Selective row reads
+
+Read-only projections can enumerate a small set of row IDs from a native
+filter bitmap without a primary key. For supported ordered limits, the
+planner reads the order keys for those candidates before gathering the
+winning rows' payload. Sparse payload reads decode only the requested
+words and can leave topology-compressed parts compact. Larger match sets
+use the ordinary bitmap or ordering paths.
+
+### Packed text and persisted referrer projections
+
+Use `torbles.load(path, packed_text=True)` to map saved VARCHAR dictionaries
+as UTF-8 bytes and offsets. Returned strings are decoded on demand.
+
+To prepare the registered referrer projection and its visible-row code counts
+during archive creation, use `db.save(path, referrers=(("hits", "Referer"),))`.
+This option can also be used with topology compression. On reopen, Torbles
+automatically discovers a compatible index and can evaluate eligible
+`REGEXP_REPLACE` groups with native CPU or CUDA reductions over the dictionary.
+The indexed plan reports `referrer_fact_rows_scanned = 0`. A predicate outside
+the supported scope falls back to ordinary execution. Use
+`referrer_index=False` on load to disable index discovery.
+
+### Stored hierarchy joins
+
+Snapshots can carry a versioned `join_hierarchy` section in the database
+manifest. It holds occupied high-bit foreign-key cells and verified
+attribute values for stored paths of up to three joins. Each attribute
+stores values over the coordinate bits that determine it. The manifest can
+be read independently of the native plane files. On validated reopen,
+Torbles checks the proof against the saved schema and file identities.
+
+For eligible inner joins with fact-side aggregates, a dimension or ancestor
+filter becomes a predicate on the fact's foreign-key coordinate bits.
+The fact's reference-validity bit still excludes missing keys. The same
+predicate can run on ordinary bitplanes or through the native CPU and CUDA
+periodic paths. Other query shapes and stale proofs use the usual join
+planner. The result exposes `join_header_paths` and `join_header_plan_ms`
+when the header route runs.
+
 ## Data types
 
 | SQL type | values | stored columns |
@@ -429,7 +524,9 @@ outside the frame, and `^`, `$` and `MATCH_NUMBER()` are not allowed (ISO 7.11).
 
 Register a table with Database.add_writable_table(name, columns, primary_key="id") to run INSERT, UPDATE, DELETE,
 and MERGE through Database.sql. Writable tables are in memory and have fixed nonnullable unsigned integer columns and
-one immutable primary key. See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
+one immutable primary key. A SQL filter with an exact integer equality on that key can use the same lookup as
+UPDATE and DELETE. The reader gathers the selected row from the bitplanes and evaluates any remaining predicates.
+See [refresh and SQL DML](REFRESH.md#sql-dml) for supported forms, examples and benchmarks.
 
 ### Not supported, and why
 

@@ -1392,6 +1392,10 @@ def _writable_aggregate(s, bindings, aggs, cx):
     if len(bindings) != 1 or len(s.group) > 1:
         return None
     binding = bindings[0]
+    from torbles.sqldml import point_key
+
+    if point_key(binding, binding.writable, terms) is not None:
+        return None  # The ordinary finalizer can aggregate the gathered point row.
     group = s.group[0] if s.group else None
     if group is not None and (not isinstance(group, I.Col) or group.b is not binding):
         return None
@@ -3152,6 +3156,11 @@ def plan_star(s, bindings, need, aggs, cx):
         if j.kind in ("inner", "cross"): conj += _conjuncts(j.cond)
     conj += _conjuncts(s.where)
     edges = _edges(conj + [c for cs in left.values() for c in cs])
+    if edges and not left and getattr(cx.db, "_join_header", None):
+        from torbles import sqlheaderjoins
+        result = sqlheaderjoins.run(s, bindings, joins, conj, edges, need, aggs, cx)
+        if result is not None:
+            return result
     # the fact: every other binding is joined to it through one of its foreign keys
     fact, used = None, None
     cands = sorted(bindings, key=lambda b: -b.table.n)
@@ -3844,6 +3853,12 @@ class _Planner:
     def run_pass(self, rest, need, aggs, extra):
         s, cx = self.s, self.cx
         first_pass = not getattr(self, "_ran_pass", False); self._ran_pass = True
+        if cx.engine in ("alg", "gpu") and s.aggregate and aggs:
+            from torbles import sqlperiodic
+
+            periodic = sqlperiodic.run(self, rest, aggs, extra)
+            if periodic is not None:
+                return periodic, {}
         preds = list(extra)            # engine predicates (algq), conjunction
         residual = []                  # IR conjuncts evaluated per group
         empty = False
@@ -3972,7 +3987,7 @@ class _Planner:
             aggplan = {}
             ids = None
             if rows_block and not residual and not empty:
-                from torbles.sqlrowplanes import bounded_ids
+                from torbles.sqlrowplanes import bounded_ids, bounded_payload
                 from torbles.sqlscalarplanes import point_ids
                 bounded = point_ids(self)
                 if bounded is None:
@@ -3983,8 +3998,15 @@ class _Planner:
                     if s.items:
                         payload = {c.key() for x, _ in s.items for c in I.cols_of(x)}
                         atoms = {k: c for k, c in atoms.items() if k in payload}
-                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False)
+                    from time import perf_counter
+
+                    gather_start = perf_counter()
+                    codes = bounded_payload(self, atoms, ids)
+                    out = self.rows_rel(atoms, preds, False, ids=ids, fact_order=False, payload_codes=codes)
                     out.plane_ordered = True
+                    cx.stats["bounded_payload_gather_ms"] = (perf_counter() - gather_start) * 1000
+                    cx.stats["bounded_payload_rows"] = len(ids)
+                    cx.stats["bounded_payload_columns"] = len(atoms)
                     if s.order and scanned is not None:
                         cx.stats["raw_plane_topk_rows"] = scanned
                     return out, {}
@@ -4524,12 +4546,32 @@ class _Planner:
 
             if lim + off > sqlgpugroups.LIMIT:
                 return None
-        bitmap = sqlgroupplans.bitmap(self, preds)
+        specs = [key[:-1] for key in keys]
+        cold_scope = filter_scope = None
+        if cx.engine == "gpu":
+            cold_scope = sqlgroupplans.cold_wide_group_scope(self, preds)
+            if cold_scope is None:
+                filter_scope = sqlgroupplans.cold_filter_group_scope(self, preds, specs, measures)
+        prepared = cold_scope if cold_scope is not None else filter_scope
+        bitmap = prepared[0] if prepared is not None else sqlgroupplans.bitmap(self, preds)
         if bitmap is None:
             return None
-        specs = [key[:-1] for key in keys]
         if cx.engine == "gpu":
-            result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
+            result = None
+            if cold_scope is not None:
+                _, selected, budget, upload_bytes = cold_scope
+                if selected <= budget:
+                    result = fact._plane_group(specs, measures, lim + off, bitmap)
+                    if result is None:
+                        cx.stats["cold_wide_group_cpu_refused"] = cx.stats.get("cold_wide_group_cpu_refused", 0) + 1
+                    else:
+                        cx.stats["cold_wide_group_cpu"] = cx.stats.get("cold_wide_group_cpu", 0) + 1
+                        cx.stats["cold_wide_group_rows"] = cx.stats.get("cold_wide_group_rows", 0) + selected
+                        cx.stats["cold_wide_group_avoided_plane_bytes"] = (
+                            cx.stats.get("cold_wide_group_avoided_plane_bytes", 0) + upload_bytes
+                        )
+            if result is None:
+                result = sqlgpugroups.group(fact, specs, measures, lim + off, bitmap, cx.stats)
         else:
             result = None
             if not measures:
@@ -4540,6 +4582,12 @@ class _Planner:
                 result = fact._plane_group(specs, measures, lim + off, bitmap)
         if result is None:
             return None
+        if filter_scope is not None:
+            _, upload_bytes, host_bytes = filter_scope
+            stats = cx.stats
+            stats["cold_filter_scope_cpu"] = stats.get("cold_filter_scope_cpu", 0) + 1
+            stats["cold_filter_avoided_plane_bytes"] = stats.get("cold_filter_avoided_plane_bytes", 0) + upload_bytes
+            stats["cold_filter_host_plane_bytes"] = stats.get("cold_filter_host_plane_bytes", 0) + host_bytes
         codes, counts, sums = result
         counts = counts[off:].tolist()
         rel = Rel(len(counts))
@@ -4643,23 +4691,43 @@ class _Planner:
         rel.cols.put(w.key(), ColArr(by_row))
         return rel
 
-    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True):
+    def rows_rel(self, atoms, preds, empty, ids=None, fact_order=True, *, payload_codes=None):
         """Read the selected fact rows' atoms from the planes."""
+        cx, fact = self.cx, self.tab[self.fact]
+        sparse = algq._SPARSE_GATHER and algq._bm_ids_bounded is not None
+        if (ids is None and sparse and not empty and preds and cx.engine in ("alg", "gpu")
+                and not self.joins and self.fact_sample is None):
+            from torbles.sqlgroupplans import bitmap
+
+            scope = bitmap(self, preds)
+            if scope is not None:
+                ids = algq._sparse_bitmap_ids(scope, fact.n)
+                if ids is None:
+                    ids = algq._bitmap_ids(scope, fact.n)
+                else:
+                    cx.stats["raw_sparse_bitmap_rows"] = cx.stats.get("raw_sparse_bitmap_rows", 0) + len(ids)
         if ids is None:
-            q = algq.Query(self.tab[self.fact]); q.join_mode = "auto"
+            q = algq.Query(fact); q.join_mode = "auto"
             for b, fk in self.joins.items(): q.join(self.tab[b], fk)
             for p in preds: q.where(p)
-            self.cx.stats["engine_queries"] += 1
-            ids = np.zeros(0, np.uint64) if empty else q.rows(self.cx.engine)
+            cx.stats["engine_queries"] += 1
+            ids = np.zeros(0, np.uint64) if empty else q.rows(cx.engine)
         if self.fact_sample is not None: ids = ids[self.fact_sample[np.asarray(ids, np.int64)]]
         rel = Rel(len(ids))
-        fact = self.tab[self.fact]
         cache = {}
+        encoded_columns = set()
         # Dense gathers amortize word transposition and parallel decoding.
         # The temporary arrays belong to this block, not the table's cache.
         dense = fact.n >= 1 << 16 and len(ids) * 4 >= fact.n * 3
         def read_codes(name):
-            if not dense: return fact.get_rows(name, ids)
+            if payload_codes is not None and name in payload_codes:
+                return payload_codes[name]
+            if not dense:
+                if sparse and len(ids):
+                    part = fact._part_of(name)
+                    if part._storage().needs_dense and not algq._at_has_dense(part._raw_at):
+                        encoded_columns.add(name)
+                return fact.get_rows(name, ids)
             values = fact._decode_column(name)
             # The bitmap yields unique ascending row ids, so full coverage
             # already has exactly the output's row order.
@@ -4695,6 +4763,10 @@ class _Planner:
             vals = cd.decode(algq._codes_array(codes)) if cd is not None else codes
             if ok is not None: vals = [x if o else None for x, o in zip(vals, ok.tolist())]
             rel.cols[k] = vals
+        if sparse and not dense and cache:
+            cx.stats["raw_sparse_gather_rows"] = cx.stats.get("raw_sparse_gather_rows", 0) + len(ids)
+            if encoded_columns:
+                cx.stats["raw_sparse_encoded_columns"] = cx.stats.get("raw_sparse_encoded_columns", 0) + len(encoded_columns)
         return rel
 
     def engine(self, keys, atom_list, preds, empty, variants, vpreds, mlist, direct_groups=False):
@@ -5455,6 +5527,15 @@ def _mat_binding(b, cols, conds, cx, deferred=None):
         return _pushed_rows(rel, conds, cx, deferred)
     writable = getattr(b, "writable", None)
     if writable is not None:
+        if conds:
+            from torbles.sqldml import point_key, read_point
+
+            key = point_key(b, writable, conds)
+            if key is not None:
+                rel = read_point(b, writable, key, cols, cx)
+                cx.stats["writable_key_lookup"] = cx.stats.get("writable_key_lookup", 0) + 1
+                cx.stats["writable_key_rows"] = cx.stats.get("writable_key_rows", 0) + rel.n
+                return _pushed_rows(rel, conds, cx, deferred)
         names = list(dict.fromkeys(c.name for c in cols))
         data = writable.scan(names) if names else {}
         n = len(data[names[0]]) if names else writable.store.count()

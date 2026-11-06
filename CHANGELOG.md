@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0, alpha
+
+- Discover and verify packed-word cycles for eligible SQL aggregates. Native
+  CPU and CUDA reductions weight the representative words and account for
+  partial cycles and irregular sectors.
+- Save topology-compressed snapshots with exact motifs for repeating torus
+  edges. Validate stored faces on reopen and let eligible filters and
+  reductions use the encoded planes directly.
+- Persist verified hierarchy joins in the snapshot manifest. Eligible
+  ancestor filters and fact-side aggregates use stored foreign-key
+  coordinates, including attributes determined by a subset of their bits.
+- Gather selective read-only projections from stored bitplanes without a
+  primary key. Reuse the writable table’s primary-key lookup for eligible
+  reads and batch the payload gather for sparse ordered results.
+- Reopen VARCHAR dictionaries as mapped UTF-8 bytes and offsets. Persist
+  exact code counts and a registered referrer projection for eligible
+  native CPU and CUDA groups. The indexed path can derive group counts,
+  byte-length sums, and minimum source codes without a fact scan.
+- Use visible-row metadata for eligible counts and consider native CPU
+  filtering or grouping when a CUDA path would upload a cold part.
+
+[SQL paths and supported shapes](docs/SQL.md)
+
 ## 0.8.0, alpha
 
 - Compile literal regex predicates into dictionary membership masks. Eligible

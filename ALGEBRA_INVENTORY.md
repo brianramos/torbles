@@ -12,11 +12,11 @@ Coverage: **32 families, 81 actionable capabilities, including 13 shared foundat
 
 | Status | Capabilities |
 |---|---:|
-| existing | 0 |
+| existing | 7 |
 | partial | 0 |
 | planned | 0 |
 | in_progress | 0 |
-| validated | 81 |
+| validated | 74 |
 
 A planned target or acceptance case is not an implementation or a passed test. Prior native-stage benchmarks cover their recorded workloads only. A capability becomes validated only within its stated bounds and with linked test and benchmark receipts.
 
@@ -97,7 +97,7 @@ Measured runtime: `bae446434669e110608f41ece4187a911334e477`.
 
 Typed domains, executable modules and compatible scalar state reuse
 
-Status: **validated bounded implementation; broader capabilities remain partial**.
+Status: **bounded implementation with historical validation evidence**.
 
 Owned native domain contracts and actual polynomial/moment operator dispatch, plus bounded exact compatible scalar-cache reuse. Existing calculus functions are revalidated through typed dispatch. See [current benchmark and validation evidence](results/algebra_domains/README.md).
 
@@ -392,7 +392,7 @@ Current typed runtime passed all 48 focused tests and the full actual-CUDA quick
 
 ### FND-004: Reusable state bank, partitions and invalidation
 
-Status: **validated**. Delivery wave: **W1**.
+Status: **existing**. Delivery wave: **W1**.
 
 Cache immutable state banks keyed by exact domain, revision, codec, validity, basis and grouping grain; support compatible refinement/rollup maps and deliberate refresh.
 
@@ -417,16 +417,16 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_state.c](torbles/math_state.c): Bounded exact-descriptor scalar moment cache with owned clones, LRU and retained-byte accounting.
 - [tests/test_math_state.py](tests/test_math_state.py): Compatible reuse, source invalidation, lifetime, budget and metadata controls.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_scope.h](torbles/math_scope.h)
-- [torbles/math_scope.c](torbles/math_scope.c)
-- [torbles/math_bank.h](torbles/math_bank.h)
-- [torbles/math_bank.c](torbles/math_bank.c)
-- [torbles/math_bank_gpu.cu](torbles/math_bank_gpu.cu)
-- [torbles/math_bank.py](torbles/math_bank.py)
-- [tests/test_math_bank.py](tests/test_math_bank.py)
-- [bench/benchmark_math_bank.py](bench/benchmark_math_bank.py)
+- `torbles/math_scope.h`
+- `torbles/math_scope.c`
+- `torbles/math_bank.h`
+- `torbles/math_bank.c`
+- `torbles/math_bank_gpu.cu`
+- `torbles/math_bank.py`
+- `tests/test_math_bank.py`
+- `bench/benchmark_math_bank.py`
 
 Acceptance tests:
 
@@ -444,6 +444,7 @@ Additional limits:
 - The overflow proof is conservative (max magnitude per factor times rows), so some requests whose sums would fit are refused.
 - Dimension lookups are copied at build; the native freshness check covers the fact table, and the Python layer tracks dimension revisions.
 - Not supported: lookups through derived surrogate keys, self-extending columns as group keys, date/timestamp/string columns as values.
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -466,7 +467,7 @@ Partial capability only: receipts validate the bounded implemented scalar/typed 
 
 ### FND-005: Native module and operator registry
 
-Status: **validated**. Delivery wave: **W1**.
+Status: **existing**. Delivery wave: **W1**.
 
 Modules declare carriers, laws, valid transforms, sufficient state, proof dependencies, native kernels and complete construction/reuse costs.
 
@@ -488,17 +489,17 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/math_modules.c](torbles/math_modules.c): Executable dispatch for two actual built-ins: Qpolynomial transforms and scalar moment contraction.
 - [tests/test_math_modules.py](tests/test_math_modules.py): Native-domain/carrier checks and actual dispatch, including bypass-route spies.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_registry.h](torbles/math_registry.h)
-- [torbles/math_registry.c](torbles/math_registry.c)
-- [torbles/math_registry_gpu.cu](torbles/math_registry_gpu.cu)
-- [torbles/math_registry.py](torbles/math_registry.py)
-- [tests/test_math_registry.py](tests/test_math_registry.py)
-- [bench/benchmark_math_registry.py](bench/benchmark_math_registry.py)
-- [torbles/math_modules.c](torbles/math_modules.c)
-- [torbles/math_modules.h](torbles/math_modules.h)
-- [tests/test_math_modules.py](tests/test_math_modules.py)
+- `torbles/math_registry.h`
+- `torbles/math_registry.c`
+- `torbles/math_registry_gpu.cu`
+- `torbles/math_registry.py`
+- `tests/test_math_registry.py`
+- `bench/benchmark_math_registry.py`
+- `torbles/math_modules.c`
+- `torbles/math_modules.h`
+- `tests/test_math_modules.py`
 
 Acceptance tests:
 
@@ -514,6 +515,7 @@ Additional limits:
 
 - Descriptors are written by hand: a test checks that every named entry point exists in the libraries, every kernel file and tr_mgpu_* entry is described and every capability id exists, not that descriptions are complete.
 - Only the registry's own request kind and the LATTICE-002/SPEC-002 transforms execute through the registry; other families run through their own APIs, and their cost coefficients are not calibrated.
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -595,7 +597,7 @@ Measured runtime: `7486dba58c4d3c10db73621a157db475adb0a074`.
 
 ### FND-007: Proof certificates and evidence scope
 
-Status: **validated**. Delivery wave: **W3**.
+Status: **existing**. Delivery wave: **W3**.
 
 Unify universal laws, enforced schema facts, exhaustive snapshot certificates and statistical hypotheses. Certificates include exact domain/revision and arithmetic carrier.
 
@@ -617,14 +619,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships.c](torbles/relationships.c): Existing exhaustive affine/sum/product verification and snapshot scope checks.
 - [tests/test_relationship_cache.py](tests/test_relationship_cache.py): Existing stale proof/compiled-plan reuse checks.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_certificates.h](torbles/math_certificates.h)
-- [torbles/math_certificates.c](torbles/math_certificates.c)
-- [torbles/math_certificates_gpu.cu](torbles/math_certificates_gpu.cu)
-- [torbles/math_certificates.py](torbles/math_certificates.py)
-- [tests/test_math_certificates.py](tests/test_math_certificates.py)
-- [bench/benchmark_math_certificates.py](bench/benchmark_math_certificates.py)
+- `torbles/math_certificates.h`
+- `torbles/math_certificates.c`
+- `torbles/math_certificates_gpu.cu`
+- `torbles/math_certificates.py`
+- `tests/test_math_certificates.py`
+- `bench/benchmark_math_certificates.py`
 
 Acceptance tests:
 
@@ -640,6 +642,7 @@ Additional limits:
 
 - Polynomial checks are exact within 128 bits (wider rows refused, or checked modulo p and recorded as approximate); derivations combine polynomial claims only; hypotheses record sample counts, not a confidence bound.
 - Source tokens are process-specific: a persisted snapshot is never fresh in another process (it stays readable).
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -654,7 +657,7 @@ Measured runtime: `15056b1fc92e0921a8623ce2f6a128a3df1d8c90`.
 
 ### FND-008: Complete-plan choice and cost evidence
 
-Status: **validated**. Delivery wave: **W1**.
+Status: **existing**. Delivery wave: **W1**.
 
 Cost chaining, algebraic combination, basis construction/reuse, fusion and materialization independently. Preserve explicit scan and CPU/GPU finalization accounting.
 
@@ -677,16 +680,16 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_stage.c](torbles/relationships_stage.c): Existing bounded stage alternatives and native finalization.
 - [wsl/ab_table.py](wsl/ab_table.py): Existing matched A/B with each side's own round-to-round noise (the prior mixed-scaling comparison: Recorded in the prototype it comes from (prototype/mixed-scaling, results/mixed_scaling); not copied into this repository.)
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_planner.h](torbles/math_planner.h)
-- [torbles/math_planner.c](torbles/math_planner.c)
-- [torbles/math_planner_gpu.cu](torbles/math_planner_gpu.cu)
-- [torbles/math_planner.py](torbles/math_planner.py)
-- [tests/test_math_planner.py](tests/test_math_planner.py)
-- [bench/benchmark_math_planner.py](bench/benchmark_math_planner.py)
-- [torbles/math_registry.c](torbles/math_registry.c)
-- [torbles/math_registry_gpu.cu](torbles/math_registry_gpu.cu)
+- `torbles/math_planner.h`
+- `torbles/math_planner.c`
+- `torbles/math_planner_gpu.cu`
+- `torbles/math_planner.py`
+- `tests/test_math_planner.py`
+- `bench/benchmark_math_planner.py`
+- `torbles/math_registry.c`
+- `torbles/math_registry_gpu.cu`
 
 Acceptance tests:
 
@@ -702,6 +705,7 @@ Additional limits:
 
 - Cached states are reused on the CPU only, not kept in device memory.
 - The planner covers the registry's request kind and the DISC-001 verifier; later families register their candidates.
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -3670,7 +3674,7 @@ Polynomial identities, conserved quantities and hidden coordinates.
 
 ### DISC-001: Existing bounded affine, sum and product discovery
 
-Status: **validated**. Delivery wave: **W0**.
+Status: **existing**. Delivery wave: **W0**.
 
 Current native exhaustive modules discover/probe affine, sum and product relations with bounded candidate budgets and snapshot evidence.
 
@@ -3693,19 +3697,19 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c): Existing bounded equation composition/search.
 - [tests/test_relationships.py](tests/test_relationships.py): Recorded relationship tests; rerun required for new changes.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/relationships.h](torbles/relationships.h)
-- [torbles/relationships.c](torbles/relationships.c)
-- [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c)
-- [torbles/relationships.py](torbles/relationships.py)
-- [torbles/math_disc.h](torbles/math_disc.h)
-- [torbles/math_disc.c](torbles/math_disc.c)
-- [torbles/math_disc_gpu.cu](torbles/math_disc_gpu.cu)
-- [torbles/math_disc.py](torbles/math_disc.py)
-- [tests/test_math_disc.py](tests/test_math_disc.py)
-- [tests/test_relationships.py](tests/test_relationships.py)
-- [bench/benchmark_math_disc.py](bench/benchmark_math_disc.py)
+- `torbles/relationships.h`
+- `torbles/relationships.c`
+- `torbles/relationships_optimizer.c`
+- `torbles/relationships.py`
+- `torbles/math_disc.h`
+- `torbles/math_disc.c`
+- `torbles/math_disc_gpu.cu`
+- `torbles/math_disc.py`
+- `tests/test_math_disc.py`
+- `tests/test_relationships.py`
+- `bench/benchmark_math_disc.py`
 
 Acceptance tests:
 
@@ -3721,6 +3725,7 @@ Additional limits:
 
 - The CUDA verifier copies one hypothesis's columns to the device per call; there is no device-resident catalog, and discovery (proposal enumeration) is CPU only.
 - Evidence is exact for the observed snapshot of non-NULL logical integer columns with <=32-bit stored codes; it is not a universal law or predictor.
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -3856,7 +3861,7 @@ Push conditions on derived values back to generators.
 
 ### PRE-001: Affine and monotone-piece preimages
 
-Status: **validated**. Delivery wave: **W3**.
+Status: **existing**. Delivery wave: **W3**.
 
 Transform predicates on derived values into exact generator intervals with integer rounding, sign and NULL guards.
 
@@ -3878,14 +3883,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/algq.py](torbles/algq.py): Existing typed comparisons and dimension predicate substitution.
 - [torbles/coltypes.py](torbles/coltypes.py): Existing logical codec intervals; general derived-function preimages remain planned.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_pre.h](torbles/math_pre.h)
-- [torbles/math_pre.c](torbles/math_pre.c)
-- [torbles/math_pre_gpu.cu](torbles/math_pre_gpu.cu)
-- [torbles/math_pre.py](torbles/math_pre.py)
-- [tests/test_math_pre.py](tests/test_math_pre.py)
-- [bench/benchmark_math_pre.py](bench/benchmark_math_pre.py)
+- `torbles/math_pre.h`
+- `torbles/math_pre.c`
+- `torbles/math_pre_gpu.cu`
+- `torbles/math_pre.py`
+- `tests/test_math_pre.py`
+- `bench/benchmark_math_pre.py`
 
 Acceptance tests:
 
@@ -3904,6 +3909,7 @@ Additional limits:
 - The law certificates cover the algebraic substitution of the codec; the integer rounding is proved by the exact computation and the exhaustive tests, not by a certificate; a branch whose coefficients leave int64 has none.
 - The direct check evaluates in int64 rationals: a row it cannot decide is reported (overflow), not checked.
 - The CUDA kernel has been compiled with nvcc and verified in the emulation only; no device run yet.
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 
@@ -4811,7 +4817,7 @@ Equivalence, implication, containment and shared query-family computation.
 
 ### META-001: Scoped query equivalence and counterexamples
 
-Status: **validated**. Delivery wave: **W3**.
+Status: **existing**. Delivery wave: **W3**.
 
 Prove supported equivalence/implication/containment on a declared snapshot or universal domain, or return concrete counterexamples.
 
@@ -4833,14 +4839,14 @@ Existing evidence (scoped building blocks, not a completion claim for extensions
 - [torbles/relationships_optimizer.c](torbles/relationships_optimizer.c): Existing bounded equivalent-polynomial search under verified rules.
 - [torbles/relationships_stage.c](torbles/relationships_stage.c): Existing exact bounded stage decompositions; no general query theorem prover.
 
-Implemented files:
+Implementation targets (proposed until the capability is validated):
 
-- [torbles/math_equiv.h](torbles/math_equiv.h)
-- [torbles/math_equiv.c](torbles/math_equiv.c)
-- [torbles/math_equiv_gpu.cu](torbles/math_equiv_gpu.cu)
-- [torbles/math_equiv.py](torbles/math_equiv.py)
-- [tests/test_math_equiv.py](tests/test_math_equiv.py)
-- [bench/benchmark_math_equiv.py](bench/benchmark_math_equiv.py)
+- `torbles/math_equiv.h`
+- `torbles/math_equiv.c`
+- `torbles/math_equiv_gpu.cu`
+- `torbles/math_equiv.py`
+- `tests/test_math_equiv.py`
+- `bench/benchmark_math_equiv.py`
 
 Acceptance tests:
 
@@ -4860,6 +4866,7 @@ Additional limits:
 - families compute COUNT, present-measure counts and exact SUM only (no MIN / MAX / AVG / GROUP BY); the family runs, universal decisions and relation reductions run on the CPU only
 - the relationship optimizer bridge takes integer measures of degree <= 2 over catalog columns (tr_optimize's limits: 32 terms, 12 columns, 32-bit codes); relationships_stage.c (an executor transformation) is not used
 - snapshot verdicts are not maintained across revisions (re-check on the new scope); CUDA was run in the CPU emulation here, not on a physical GPU
+- The linked validation receipts record earlier builds. The native table header changed in 0.9.0.
 
 Validation receipts:
 

@@ -78,6 +78,17 @@ def _other_key(expr, target, primary_key, source):
     return None
 
 
+def point_key(binding, table, terms):
+    """Find a non-failing integer literal equality among pushed conjuncts."""
+    for term in terms:
+        key = _other_key(term, binding, table.primary_key, None)
+        if key is not None:
+            value = _lossless_column(key).v
+            if value is None or type(value) is int:
+                return key
+    return None
+
+
 def _lookup(table, values):
     ids = np.full(len(values), -1, np.int64)
     keys, positions = [], []
@@ -99,6 +110,14 @@ def _target_rel(binding, table, ids, needed):
     for name, values in cols.items():
         rel.cols.put(binding.col(name).key(), E.ColArr(values))
     return rel
+
+
+def read_point(binding, table, key, needed, cx):
+    values = E.ev(key, E.Rel(1), cx)
+    # The logical ID must still refer to the same visible row at gather time.
+    with table._lock:
+        ids = _lookup(table, values)
+        return _target_rel(binding, table, ids[ids >= 0], needed)
 
 
 def _source_rel(binding, needed, cx):
@@ -192,9 +211,8 @@ def _change(db, table, node, engine):
         for term in E._conjuncts(bound.where):
             key = _other_key(term, target, table.primary_key, None)
             if key is not None:
-                ids = _lookup(table, E.ev(key, E.Rel(1), cx))
                 needed = _needed([bound.where, *(e for e, _ in bound.items)], {target})
-                target._dml_rel = _target_rel(target, table, ids[ids >= 0], needed)
+                target._dml_rel = read_point(target, table, key, needed, cx)
                 indexed = True
                 break
     rows = E.run(db, bound, engine).rows
